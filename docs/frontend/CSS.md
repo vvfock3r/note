@@ -1915,9 +1915,350 @@ floorBox.addEventListener("click", (e) => {
 
 
 
+## `2D`变形和`3D`旋转
 
 
 
+### 准备工作
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .main {
+            width: 800px;
+            height: 800px;
+            margin: 300px auto;
+            text-align: center;
+        }
+
+        .description:after {
+            content: "正常的图片";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+        }
+
+        .box img {
+        }
+    </style>
+</head>
+<body>
+
+<div class="main">
+    <h2 class="description"></h2>
+    <div class="box">
+        <img src="https://img2.baidu.com/it/u=2129210531,2234000365&fm=26&fmt=auto" alt="">
+    </div>
+</div>
+
+</body>
+</html>
+```
+
+![image-20211108222443722](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222443722.png)
+
+
+
+### 旋转变形
+
+| 属性               | 值                | 说明                                                         |
+| ------------------ | ----------------- | ------------------------------------------------------------ |
+| `transform`        | `rotate(<n>deg);` | 旋转变形；若角度n为正值，则顺时针旋转，否则逆时针旋转<br />旋转一周的角度是360度，即正旋转300度(`rotate(300deg);`)和<br />负旋转60度(`rotate(-60deg);`)是一样的效果 |
+| `transform-origin` | `0 0;`            | 设置旋转中心；`0 0;`就是左上角，`0 100%;`左下角，其他也类似  |
+
+
+
+#### 测试1：盒子旋转45度
+
+```css
+        .description:after {
+            content: "盒子旋转45度，内部的元素也会跟着旋转";
+        }
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 盒子旋转45度 */
+            transform: rotate(45deg);
+        }
+
+        .box img {
+        }
+```
+
+
+
+![image-20211108220129891](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220129891.png)
+
+#### 测试2：只旋转图片
+
+```css
+        .description:after {
+            content: "只旋转图片，不旋转盒子";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+        }
+
+        .box img {
+            /* 图片旋转45度 */
+            transform: rotate(45deg);
+        }
+```
+
+![image-20211108220549546](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220549546.png)
+
+#### 测试3：盒子顺时针转，图片逆时针转
+
+```css
+        .description:after {
+            content: "盒子顺时针转，图片逆时针转";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+            /* 盒子旋转45度 */
+            transform: rotate(45deg);
+        }
+
+        .box img {
+            /* 图片旋转45度 */
+            transform: rotate(-45deg);
+        }
+```
+
+![image-20211108220854953](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220854953.png)
+
+#### 测试4：以盒子左上角为旋转点旋转45度
+
+```css
+        .description:after {
+            content: "以盒子左上角为旋转点旋转";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 以盒子左上角为旋转点旋转45度 */
+            transform: rotate(45deg);
+            transform-origin: 0 0;
+        }
+
+        .box img {
+
+        }
+```
+
+![image-20211108221332997](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108221332997.png)
+
+### 缩放变形
+
+| 属性        | 值            | 说明                                                         |
+| ----------- | ------------- | ------------------------------------------------------------ |
+| `transform` | `scale(<n>);` | 缩放变形；n代表缩放倍数；也可以写两个值，分别代表宽和高缩放的倍数<br />当数值大于1时表示放大倍数，小于1时表示缩小倍数 |
+
+
+
+#### 测试1：将盒子放大2倍
+
+```css
+        .description:after {
+            content: "将盒子放大2倍";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 将盒子放大2倍 */
+            transform: scale(2);
+        }
+
+        .box img {
+
+        }
+```
+
+![image-20211108222559382](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222559382.png)
+
+#### 测试2：将盒子缩放至原来的二分之一
+
+```css
+       .description:after {
+            content: "将盒子缩放至原来的二分之一";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 将盒子缩放至原来的二分之一 */
+            transform: scale(.5);
+        }
+
+        .box img {
+
+        }
+```
+
+![image-20211108222822196](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222822196.png)
+
+### 斜切变形
+
+| 属性        | 值                            | 说明                                                         |
+| ----------- | ----------------------------- | ------------------------------------------------------------ |
+| `transform` | `skew(x斜切角度，y斜切角度);` | 角度单位为`deg`<br />注意：当只有一个参数的时候，第二个参数默认为`0deg` |
+
+#### 测试1：斜切变形
+
+```css
+        .description:after {
+            content: "斜切变形";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 斜切变形 */
+            transform: skew(-20deg, -10deg);
+        }
+
+        .box img {
+
+        }
+```
+
+![image-20211108223528671](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108223528671.png)
+
+### 位移变形
+
+| 属性        | 值                        | 说明                                                         |
+| ----------- | ------------------------- | ------------------------------------------------------------ |
+| `transform` | `translate(300px, 10px);` | 两个值分别代表向右移动300像素，向下移动10像素<br />这与相对定位很类似，也会在"老家留坑" |
+
+#### 测试1：位移变形
+
+```css
+        .description:after {
+            content: "位移变形";
+        }
+
+        .box {
+            width: 180px;
+            height: 246px;
+            border: 5px solid green;
+            padding: 80px;
+            margin: 60px auto;
+
+            /* 位移变形 */
+            transform: translate(300px, 10px);
+        }
+
+        .box img {
+
+        }
+```
+
+![image-20211108224227593](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108224227593.png)
+
+### `3D`旋转
+
+| 属性          | 值                                         | 说明                                                         |
+| ------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| `transform`   | `rotateX(<n>deg);`<br />`rotateY(<n>deg);` | 分别代表绕横轴和绕纵轴旋转，两个可以一块写，使用逗号隔开     |
+| `perspective` | 像素                                       | 用来定义透视的强度，可以理解为"人眼到舞台的距离"，单位是像素<br />这个属性一般设置在`3D`旋转元素的父元素上 |
+
+#### 测试1：简单旋转测试
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+
+        div {
+            width: 202px;
+            height: 202px;
+            margin: 200px auto;
+            border: 1px solid #000000;
+        }
+
+        p {
+            width: 200px;
+            height: 200px;
+            background-color: orange;
+        }
+
+        /* div需要设置perspective */
+        div {
+            perspective: 300px;
+        }
+
+        /* 设置3D旋转,先设置0度，一会在控制台调试 */
+        p {
+            transform: rotateX(0deg);
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <p></p>
+</div>
+</body>
+</html>
+```
+
+![image-20211108224227593](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/3d%E6%97%8B%E8%BD%AC%E6%B5%8B%E8%AF%95.gif)
 
 
 
