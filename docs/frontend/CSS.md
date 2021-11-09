@@ -1019,7 +1019,7 @@
 
 
 
-## 布局2：定位布局（重要）--> z-index补充
+## 布局2：定位布局（重要）
 
 **定位布局要点**
 
@@ -1082,6 +1082,14 @@
 
 * 返回顶部
 * 楼层导航
+
+<hr />
+
+**z-index**
+
+`z-index`属性是一个没有单位的正整数，数值大的能够压盖数值小的
+
+
 
 
 
@@ -1611,6 +1619,62 @@ floorBox.addEventListener("click", (e) => {
 ```
 
 ![image-20211106141136470](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%8A%A8%E7%94%BB23.gif)
+
+
+
+### 测试6：z-index
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        [class*='box'] {
+            width: 200px;
+            height: 200px;
+            border: 1px solid #000000;
+            box-sizing: border-box;
+            margin: 50px;
+        }
+
+        .box1 {
+            background-color: red;
+            position: absolute;
+            top: 0;
+            left: 50px;
+            /* z-index */
+            /*z-index: 999;*/
+        }
+
+        .box2 {
+            background-color: green;
+            position: absolute;
+            top: 50px;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="box1"></div>
+<div class="box2"></div>
+</body>
+</html>
+```
+
+![image-20211108172924551](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ZWsG8gjk6zTBdGPK.png)
+
+![image-20211108173144694](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/FWsG8gjk6zTBdGPA.png)
+
+
 
 
 
