@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<script>
+const test = (waitTime) => {
+    let n = 0;
+    let flag = true;
+    return function () {
+        if (!flag) return
+        flag = false
+        setTimeout(() => {
+            console.log(++n);
+            flag = true;
+        }, waitTime)
+    }
+}
+window.addEventListener('mousemove', test(1000))
+</script>
+</body>
+</html>

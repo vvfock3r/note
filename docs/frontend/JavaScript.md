@@ -1,7 +1,3 @@
-sidebar: auto
-
-
-
 ## 基本数据类型
 
 ### 变量作用域
@@ -4162,6 +4158,187 @@ oBox.style.fontSize = '32px';                    // 注意单位
 
 
 ![image-20211018195345536](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018195345536.png)
+
+### 防抖
+
+当持续触发事件时，事件不会执行，只有在用户停止触发事件一段时间之后再执行这个事件一次
+
+
+
+**举个例子**
+
+在没有做防抖的情况下，当我们快速输入`abcdef`的时，前端监听的`input`事件会执行多次
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .box {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -100px;
+            margin-left: -100px;
+        }
+
+        .box input {
+            height: 30px;
+            padding: 0 20px;
+            outline: none;
+            border: 1px solid #999999;
+        }
+
+        .box input:focus {
+            border: 1px solid #79bbff;
+        }
+
+        #display p {
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <input type="text" id="search" placeholder="请输入关键字搜索">
+    <div id="display"></div>
+</div>
+<script>
+    window.addEventListener('input', () => {
+        const value = document.getElementById("search").value;
+        const p = document.createElement('p');
+        p.innerText = `你输入的内容: ${value}`
+        document.getElementById("display").appendChild(p);
+    })
+</script>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E6%9C%AA%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
+
+防抖的原理：
+
+用户每次输入都会延迟执行`input`事件（设置延迟器），
+
+当第二次输入"b"时，会把上一次的延迟器清除，然后再执行同样的延迟器，
+
+当我们快速输入的间隔（如果小于延迟器），那么会将多次输入合并为一次`input`事件，就达到了防抖的效果，
+
+防抖的本质就是将多次事件合并，当用户停止触发事件，将事件执行一次；
+
+
+
+**修改代码如下**
+
+```javascript
+<script>
+function test(waitTime) {
+    let timer = null;
+    return function () {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const value = document.getElementById("search").value;
+            const p = document.createElement('p');
+            p.innerText = `你输入的内容: ${value}`
+            document.getElementById("display").appendChild(p);
+        }, waitTime)
+    }
+}
+
+window.addEventListener('input', test(240));
+</script>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
+
+> 延迟器的毫秒数根据实际情况调整
+
+
+
+### 节流
+
+当持续触发事件时，保证一定时间段内只调用一次事件处理函数
+
+
+
+**未节流时**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<script>
+const test = () => {
+    let n = 0;
+    return function () {
+        console.log(++n);
+    }
+}
+window.addEventListener('mousemove', test());
+</script>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E6%9C%AA%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
+
+节流的原理：
+
+在节流函数外设置一个变量flag，默认为true，代表当前允许节流函数执行（事件执行），
+
+节流函数一旦执行，就会设置`flag`为`false`，此时如果高频操作，其他节流函数碰到`flag`为`false`就直接返回
+
+这就跟互斥锁很类似，拿不到锁的直接就结束了
+
+
+
+**节流时**
+
+修改代码
+
+```html
+<script>
+const test = (waitTime) => {
+    let n = 0;
+    let flag = true;
+    return function () {
+        if (!flag) return
+        flag = false
+        setTimeout(() => {
+            console.log(++n);
+            flag = true;
+        }, waitTime)
+    }
+}
+window.addEventListener('mousemove', test(1000))
+</script>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
 
 ## BOM
 

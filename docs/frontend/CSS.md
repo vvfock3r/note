@@ -2206,7 +2206,7 @@ floorBox.addEventListener("click", (e) => {
 | ----------- | ----------------------------- | ------------------------------------------------------------ |
 | `transform` | `skew(x斜切角度，y斜切角度);` | 角度单位为`deg`<br />注意：当只有一个参数的时候，第二个参数默认为`0deg` |
 
-#### 测试1：斜切变形
+**测试1：斜切变形**
 
 ```css
         .description:after {
@@ -2237,7 +2237,7 @@ floorBox.addEventListener("click", (e) => {
 | ----------- | ------------------------- | ------------------------------------------------------------ |
 | `transform` | `translate(300px, 10px);` | 两个值分别代表向右移动300像素，向下移动10像素<br />这与相对定位很类似，也会在"老家留坑" |
 
-#### 测试1：位移变形
+**测试1：位移变形**
 
 ```css
         .description:after {
@@ -2269,7 +2269,7 @@ floorBox.addEventListener("click", (e) => {
 | `transform`   | `rotateX(<n>deg);`<br />`rotateY(<n>deg);` | 分别代表绕横轴和绕纵轴旋转，两个可以一块写，使用逗号隔开     |
 | `perspective` | 像素                                       | 用来定义透视的强度，可以理解为"人眼到舞台的距离"，单位是像素<br />这个属性一般设置在`3D`旋转元素的父元素上 |
 
-#### 测试1：简单旋转测试
+**测试1：简单旋转测试**
 
 `demo.html`
 
@@ -2323,6 +2323,27 @@ floorBox.addEventListener("click", (e) => {
 ```
 
 ![image-20211108224227593](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/3d%E6%97%8B%E8%BD%AC%E6%B5%8B%E8%AF%95.gif)
+
+## 过渡
+
+`transition`过渡属性可以为一个元素在不同样式之间变化自动添加"补间动画"
+
+```css
+transition: width       1s      linear        0s;
+		 什么属性要过渡  动画时长  变化速度曲线   开始延迟时间
+		 这里也可以写all，
+		意思是所有属性都会过渡
+```
+
+
+
+**哪些属性可以参与过渡**
+
+* 所有数值类型的属性都可以参与过渡，比如说`width`、`height`、`left`、`top`、`border-radius`等 
+* 文字颜色、背景颜色等
+* 所有变形（包括2D和3D）
+
+
 
 
 
