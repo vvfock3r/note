@@ -2330,10 +2330,10 @@ floorBox.addEventListener("click", (e) => {
 
 ```css
 transition: width       1s      linear        0s;
-		 什么属性要过渡  动画时长  变化速度曲线   开始延迟时间
-		 这里也可以写all，
-		意思是所有属性都会过渡
+		 什么属性要过渡  动画时长  变化速度曲线   开始延迟时间		 
 ```
+
+> 第一个参数也可以写all，代表所有属性都要过渡
 
 
 
@@ -2345,7 +2345,306 @@ transition: width       1s      linear        0s;
 
 
 
+`demo.html`
 
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+
+        }
+
+        .main {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+
+        .main .item {
+            width: 19%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            border: 1px solid #999999;
+            padding: 20px;
+            margin-right: 1%;
+            margin-bottom: 20px;
+            min-width: 260px;
+            min-height: 260px;
+            position: relative;
+        }
+
+        .main .item h3 {
+            width: 100%;
+            height: 20%;
+            text-align: center;
+        }
+
+        .main .item .example {
+            width: 100%;
+            height: 80%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item [class*=box] {
+            background-color: orange;
+            color: #333;
+            font-size: 12px;
+        }
+
+
+        /* 测试1：过渡与非过渡效果对比 */
+        .box1, .box2 {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            left: 10%;
+        }
+
+        .box1 {
+            top: 20%;
+        }
+
+        .box2 {
+            top: 60%;
+        }
+
+        .box1:hover, .box2:hover {
+            width: 200px;
+        }
+
+        .box2 {
+            transition: width 1s linear 0s; /* width属性参与过渡 */
+        }
+
+        /* 测试2： 过渡定位属性 */
+        .item .box3 {
+            background-color: white;
+        }
+
+        .box3 p {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            position: relative;
+            top: 0;
+            left: 0;
+            transition: left 1s linear 0s;
+        }
+
+        .box3:hover p {
+            left: 200px;
+        }
+
+        /* 测试3：多属性过渡 */
+        .box4 {
+            width: 100px;
+            height: 100px;
+            transition: border-radius 1s linear 0s,
+            background-color 1s linear 0s;
+        }
+
+        .box4:hover {
+            border-radius: 50%;
+            background-color: green;
+        }
+
+        /* 测试4： 2D变形 */
+        .box5 {
+            width: 100px;
+            height: 100px;
+            transition: transform 1s linear 0s;
+        }
+
+        .box5:hover {
+            transform: rotate(360deg);
+        }
+
+        /* 测试5： 3D旋转 */
+        .item .box6 {
+            perspective: 300px;
+            width: 102px;
+            height: 102px;
+            border: 1px solid #000;
+            background-color: white;
+        }
+
+        .box6 p {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            transition: transform 1s linear 0s;
+        }
+
+        .box6:hover p {
+            transform: rotateX(360deg);
+        }
+
+        /* 实战1： 渐变提示 */
+        .example .box7 {
+            width: 280px;
+            height: 150px;
+            background-color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .box7 img {
+            max-height: 100%;
+            max-width: 100%;
+        }
+
+        .box7 div {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            color: #ffffff;
+            background-color: rgba(0, 0, 0, .5);
+            width: 271px;
+            height: 30px;
+            line-height: 30px;
+            padding: 0 10px;
+            opacity: 0;
+            transition: opacity .5s linear 0s;
+        }
+
+        .box7:hover div {
+            opacity: 1;
+        }
+
+
+        /* 实战2： 翻页效果 */
+        .example .box8 {
+            background-color: white;
+        }
+
+        .box8 {
+            width: 200px;
+            height: 200px;
+            perspective: 800px;
+            position: relative;
+        }
+
+        .box8 img {
+            width: 200px;
+            height: 200px;
+            border: 1px solid #000;
+            border-radius: 50%;
+        }
+
+        .box8 img.dog {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            transition: transform 1s ease 0s;
+        }
+
+        .box8:hover img.dog {
+            transform: rotateY(-180deg);
+        }
+
+        /* 实战3： 待补充 */
+        .example .box9 {
+            background-color: #ffffff;
+            font-size: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="main">
+    <div class="item">
+        <h3>测试1：过渡与非过渡效果对比</h3>
+        <div style="background-color: red">
+            <div class="box1">无过渡属性时</div>
+            <div class="box2">有过渡属性时</div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试2：过渡定位属性</h3>
+        <div class="example">
+            <div class="box3">
+                <p></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试3：多属性过渡</h3>
+        <div class="example">
+            <div class="box4"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试4：2D变形</h3>
+        <div class="example">
+            <div class="box5"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试5：3D旋转</h3>
+        <div class="example">
+            <div class="box6">
+                <p></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战1：渐变提示</h3>
+        <div class="example">
+            <div class="box7">
+                <img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/eKAPy0nvMuGsUJaT.jpg" alt="">
+                <div>鸟巢国家体育场</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战2：翻页效果</h3>
+        <div class="example">
+            <div class="box8">
+                <img class="cat" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/SKk151Hi5WDjnbNE.jpg"
+                     alt="">
+                <img class="dog" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ac2eOfdt8KH0AEEU.jpg"
+                     alt="">
+            </div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战3：</h3>
+        <div class="example">
+            <div class="box9">
+                等待补充...
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
 
 
 
