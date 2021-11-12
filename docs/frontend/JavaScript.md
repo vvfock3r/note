@@ -4716,6 +4716,157 @@ window对象是当前JS脚本运行所处的窗口，而这个窗口包含DOM结
 
 
 
+## 事件循环
+
+**JavaScript是一门单线程的语言**
+
+JavaScript最初的用途就是与浏览器交互，运行在浏览器环境中，
+
+为了保证了程序执行的一致性，所以采用的是单线程
+
+
+
+到了今天，单线程在保证了执行顺序的同时也限制了JavaScript的效率，因此开发出了web worker技术。
+
+这项技术号称让JavaScript成为一门多线程语言。
+
+然而，使用web worker技术开的多线程有着诸多限制，例如 所有新线程都受主线程的完全控制，不能独立执行。
+
+
+
+可以预见，未来的JavaScript也会一直是一门单线程的语言。
+
+
+
+**JavaScript是一门非阻塞的语言**
+
+JavaScript的另一个特点是“非阻塞”，这就涉及到了`event loop`（事件循环）
+
+
+
+
+
+**执行栈和任务队列**
+
+* 执行栈存储同步任务
+
+* 任务队列中存储异步任务
+
+  不同的异步任务被分为两类：
+
+  * 微任务（micro task），以下事件属于微任务
+    * `new Promise()`
+    * `process.nextTick`
+    * `Object.observe`
+    * `new MutaionObserver()`
+  * 宏任务（macro task），以下事件属于宏任务：
+    * `setInterval()`
+    * `setTimeout()`
+    * `I/O`
+    * `UI渲染`
+    * `script`标签中的整体代码
+
+* 执行顺序问题
+
+  先执行同步任务，将同步任务执行完，
+
+  再执行异步任务，异步任务中先执行微任务，再执行宏任务
+
+​		
+
+- js事件循环总是从一个macrotask开始执行
+- 一个事件循环过程中，只执行一个macrotask，但是可能执行多个microtask
+- 执行栈中的任务产生的microtask会在当前事件循环内执行
+- 执行栈中的任务产生的macrotask要在下一次事件循环才会执行
+
+
+
+
+
+测试1：同步任务和异步任务的执行顺序
+
+```javascript
+<script>
+    // 异步任务
+    setTimeout(() => {
+        console.log("异步任务执行")
+    }, 0)
+
+    // 同步任务
+    const end = 99999;
+    for (let i = 0; i <= end; i++) {
+        if (i === 10 || i === end) {
+            console.log(i)
+        }
+    }
+
+    // 同步任务
+    console.log("End")
+</script>
+```
+
+
+
+
+
+测试2：异步任务中微任务和宏任务的执行顺序
+
+```javascript
+<script>
+    // 宏任务
+    setTimeout(function () {
+        console.log(1);
+    });
+
+    // 微任务
+    new Promise(function (resolve, reject) {
+        console.log(2)
+        resolve(3)
+    }).then(function (val) {
+        setTimeout(() => {
+            console.log(val);
+        })
+    })
+
+	// 输出结果: ?
+</script>
+```
+
+
+
+测试3：异步任务中微任务和宏任务的执行顺序
+
+```javascript
+<script>
+    (function test() {
+    	// 宏任务
+        setTimeout(function () {
+            console.log(4)
+        }, 0);
+    
+    	// 微任务
+        new Promise(function executor(resolve) {
+            console.log(1);
+            for (var i = 0; i < 10000; i++) {
+                i == 9999 && resolve();
+            }
+            console.log(2);
+        }).then(function () {
+            console.log(5);
+        });
+        console.log(3);
+    })()
+
+	// 输出结果: ?
+</script>
+```
+
+
+
+
+
+
+
 
 
 
