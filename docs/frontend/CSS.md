@@ -2648,3 +2648,335 @@ transition: width       1s      linear        0s;
 
 
 
+## 动画
+
+动画是比过渡更加智能、功能更强大的的CSS样式
+
+制作动画分为两步骤
+
+* 定义动画
+
+  ```css
+  /* 两帧动画 */
+  @keyframes r {  /* @keyframes表示要定义动画，固定写法；r是动画的名字，根据实际情况起名 */
+      from {		/* from表示动画起始状态，固定写法 */
+          transform: rotate(0deg);	/* css code */
+      }
+      to {		/* to表示动画结束状态，固定写法 */
+          transform: rotate(360deg);	/* css code */
+      }
+  }
+  
+  /* 多帧动画 */
+  @keyframes r {
+      0% {		
+          transform: rotate(0deg);
+      }
+      20% {		
+          transform: rotate(60deg);	
+      }
+  	40% {		
+          transform: rotate(120deg);	
+      }
+  	60% {		
+          transform: rotate(180deg);	
+      }
+  	80% {		
+          transform: rotate(240deg);	
+      }
+  	100% {		
+          transform: rotate(360deg);	
+      }    
+  }
+  ```
+
+* 调用动画
+
+  使用`animation`来调用动画，用法与过渡类似
+
+  ```css
+  animation: r		1s		linear	 0s                 3                      alternate/forwards
+  		  动画名字	动画总时长  缓动曲线  开始时的延迟时间  动画执行次数 (可选值)    偶数次自动逆向执行/动画停止在最后结束状态 (可选值)
+  ```
+
+  > 动画执行次数还可以写`infinite`，表示动画一直执行
+
+
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+
+        }
+
+        .main {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+
+        .main .item {
+            width: 19%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            border: 1px solid #999999;
+            padding: 20px;
+            margin-right: 1%;
+            margin-bottom: 20px;
+            min-width: 260px;
+            min-height: 260px;
+            position: relative;
+        }
+
+        .main .item h3 {
+            width: 100%;
+            height: 20%;
+            text-align: center;
+        }
+
+        .main .item .example {
+            width: 100%;
+            height: 80%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item [class*=box] {
+            background-color: orange;
+            color: #333;
+            font-size: 12px;
+        }
+
+
+        /* 测试1： 动画定义与调用 */
+        @keyframes demo { /* 定义动画 */
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .box1 {
+            width: 120px;
+            height: 120px;
+            animation: demo 1s linear 0s infinite; /* 调用动画 */
+        }
+
+        /* 测试2：左右移动 */
+        @keyframes move { /* 定义动画 */
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(170px);
+            }
+        }
+
+        .main .item:nth-child(2) .example {
+            justify-content: flex-start !important;
+            background-color: azure;
+        }
+
+        .example .box2 {
+            width: 150px;
+            height: 150px;
+            animation: move 1s linear 0s infinite alternate; /* 调用动画 */
+        }
+
+        /* 测试3：多关键帧动画 */
+        @keyframes changeColor {
+            0% {
+                background-color: red;
+            }
+            20% {
+                background-color: green;
+            }
+            40% {
+                background-color: blue;
+            }
+            60% {
+                background-color: yellow;
+            }
+            80% {
+                background-color: black;
+            }
+            100% {
+                background-color: purple;
+            }
+        }
+
+        .box3 {
+            width: 150px;
+            height: 150px;
+            animation: changeColor 3s linear 0s infinite alternate; /* 调用动画 */
+        }
+
+        /* 实战1：发光的灯泡 */
+        .item:nth-child(3) { /* 换下一行 */
+            margin-right: 38%;
+        }
+
+        @keyframes stars {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .example .box4 {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            position: relative;
+        }
+
+        .example .box4 img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .example .box4 .bulb { /* 灯泡 */
+            position: absolute;
+        }
+
+        .example .box4 .light { /* 光 */
+            position: absolute;
+            top: -20px;
+            left: 0;
+            animation: stars 1s linear 0s infinite alternate;
+        }
+
+        /* 实战2：自带主角光环按钮 */
+        .example .box5 {
+            background-color: white;
+        }
+
+        @keyframes btn {
+            0% {
+                opacity: 0;
+                transform: skew(-45deg) translateX(0);
+            }
+            50% {
+                opacity: 1;
+                transform: skew(-45deg) translateX(140px);
+            }
+            100% {
+                opacity: 0;
+                transform: skew(-45deg) translateX(140px);
+            }
+        }
+
+        /* 按钮样式 */
+        .box5 button {
+            display: inline-block;
+            width: 120px;
+            height: 42px;
+            outline: none;
+            border-radius: 3px;
+            border: 1px solid #2194e0;
+            color: #2194e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 鼠标触碰样式 */
+        .box5 button:hover {
+            color: #ffffff;
+            background-color: #2194e0;
+        }
+
+        /* 闪光遮罩 */
+        .box5 button:before {
+            content: '';
+            width: 3em;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            opacity: 0;
+        }
+
+        /* 闪光遮罩动画 */
+        .box5 button:hover:before {
+            animation: btn .6s ease-in-out 0s 1 forwards;
+        }
+    </style>
+</head>
+<body>
+<div class="main">
+    <div class="item">
+        <h3>测试1：动画定义与调用</h3>
+        <div class="example">
+            <div class="box1"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试2：左右移动</h3>
+        <div class="example">
+            <div class="box2"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试3：多关键帧动画</h3>
+        <div class="example">
+            <div class="box3"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战1：发光的灯泡</h3>
+        <div class="example">
+            <div class="box4">
+                <img class="bulb" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/dengpao.png" alt="">
+                <img class="light" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/guang.png" alt="">
+            </div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战2：自带主角光环按钮</h3>
+        <div class="example">
+            <div class="box5">
+                <button>自带主角光环按钮</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%8A%A8%E7%94%BB%E5%AD%A6%E4%B9%A0.gif)
+
+
+
+
+

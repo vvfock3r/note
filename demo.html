@@ -58,234 +58,206 @@
         }
 
 
-        /* 测试1：过渡与非过渡效果对比 */
-        .box1, .box2 {
-            width: 80px;
-            height: 80px;
-            position: absolute;
-            left: 10%;
+        /* 测试1： 动画定义与调用 */
+        @keyframes demo { /* 定义动画 */
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .box1 {
-            top: 20%;
+            width: 120px;
+            height: 120px;
+            animation: demo 1s linear 0s infinite; /* 调用动画 */
         }
 
-        .box2 {
-            top: 60%;
+        /* 测试2：左右移动 */
+        @keyframes move { /* 定义动画 */
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(170px);
+            }
         }
 
-        .box1:hover, .box2:hover {
-            width: 200px;
+        .main .item:nth-child(2) .example {
+            justify-content: flex-start !important;
+            background-color: azure;
         }
 
-        .box2 {
-            transition: width 1s linear 0s; /* width属性参与过渡 */
-        }
-
-        /* 测试2： 过渡定位属性 */
-        .item .box3 {
-            background-color: white;
-        }
-
-        .box3 p {
-            width: 100px;
-            height: 100px;
-            background-color: orange;
-            position: relative;
-            top: 0;
-            left: 0;
-            transition: left 1s linear 0s;
-        }
-
-        .box3:hover p {
-            left: 200px;
-        }
-
-        /* 测试3：多属性过渡 */
-        .box4 {
-            width: 100px;
-            height: 100px;
-            transition: border-radius 1s linear 0s,
-            background-color 1s linear 0s;
-        }
-
-        .box4:hover {
-            border-radius: 50%;
-            background-color: green;
-        }
-
-        /* 测试4： 2D变形 */
-        .box5 {
-            width: 100px;
-            height: 100px;
-            transition: transform 1s linear 0s;
-        }
-
-        .box5:hover {
-            transform: rotate(360deg);
-        }
-
-        /* 测试5： 3D旋转 */
-        .item .box6 {
-            perspective: 300px;
-            width: 102px;
-            height: 102px;
-            border: 1px solid #000;
-            background-color: white;
-        }
-
-        .box6 p {
-            width: 100px;
-            height: 100px;
-            background-color: orange;
-            transition: transform 1s linear 0s;
-        }
-
-        .box6:hover p {
-            transform: rotateX(360deg);
-        }
-
-        /* 实战1： 渐变提示 */
-        .example .box7 {
-            width: 280px;
+        .example .box2 {
+            width: 150px;
             height: 150px;
-            background-color: #ffffff;
+            animation: move 1s linear 0s infinite alternate; /* 调用动画 */
+        }
+
+        /* 测试3：多关键帧动画 */
+        @keyframes changeColor {
+            0% {
+                background-color: red;
+            }
+            20% {
+                background-color: green;
+            }
+            40% {
+                background-color: blue;
+            }
+            60% {
+                background-color: yellow;
+            }
+            80% {
+                background-color: black;
+            }
+            100% {
+                background-color: purple;
+            }
+        }
+
+        .box3 {
+            width: 150px;
+            height: 150px;
+            animation: changeColor 3s linear 0s infinite alternate; /* 调用动画 */
+        }
+
+        /* 实战1：发光的灯泡 */
+        .item:nth-child(3) { /* 换下一行 */
+            margin-right: 38%;
+        }
+
+        @keyframes stars {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .example .box4 {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            position: relative;
+        }
+
+        .example .box4 img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .example .box4 .bulb { /* 灯泡 */
+            position: absolute;
+        }
+
+        .example .box4 .light { /* 光 */
+            position: absolute;
+            top: -20px;
+            left: 0;
+            animation: stars 1s linear 0s infinite alternate;
+        }
+
+        /* 实战2：自带主角光环按钮 */
+        .example .box5 {
+            background-color: white;
+        }
+
+        @keyframes btn {
+            0% {
+                opacity: 0;
+                transform: skew(-45deg) translateX(0);
+            }
+            50% {
+                opacity: 1;
+                transform: skew(-45deg) translateX(140px);
+            }
+            100% {
+                opacity: 0;
+                transform: skew(-45deg) translateX(140px);
+            }
+        }
+
+        /* 按钮样式 */
+        .box5 button {
+            display: inline-block;
+            width: 120px;
+            height: 42px;
+            outline: none;
+            border-radius: 3px;
+            border: 1px solid #2194e0;
+            color: #2194e0;
             position: relative;
             overflow: hidden;
         }
 
-        .box7 img {
-            max-height: 100%;
-            max-width: 100%;
-        }
-
-        .box7 div {
-            position: absolute;
-            left: 0;
-            bottom: 0;
+        /* 鼠标触碰样式 */
+        .box5 button:hover {
             color: #ffffff;
-            background-color: rgba(0, 0, 0, .5);
-            width: 271px;
-            height: 30px;
-            line-height: 30px;
-            padding: 0 10px;
-            opacity: 0;
-            transition: opacity .5s linear 0s;
+            background-color: #2194e0;
         }
 
-        .box7:hover div {
-            opacity: 1;
-        }
-
-
-        /* 实战2： 翻页效果 */
-        .example .box8 {
-            background-color: white;
-        }
-
-        .box8 {
-            width: 200px;
-            height: 200px;
-            perspective: 800px;
-            position: relative;
-        }
-
-        .box8 img {
-            width: 200px;
-            height: 200px;
-            border: 1px solid #000;
-            border-radius: 50%;
-        }
-
-        .box8 img.dog {
+        /* 闪光遮罩 */
+        .box5 button:before {
+            content: '';
+            width: 3em;
+            height: 100%;
             position: absolute;
             top: 0;
             left: 0;
-            transform-origin: 0 0;
-            transition: transform 1s ease 0s;
-        }
-
-        .box8:hover img.dog {
-            transform: rotateY(-180deg);
-        }
-
-        /* 实战3： 待补充 */
-        .example .box9 {
             background-color: #ffffff;
-            font-size: 20px;
+            opacity: 0;
         }
 
+        /* 闪光遮罩动画 */
+        .box5 button:hover:before {
+            animation: btn .6s ease-in-out 0s 1 forwards;
+        }
     </style>
 </head>
 <body>
 <div class="main">
     <div class="item">
-        <h3>测试1：过渡与非过渡效果对比</h3>
-        <div style="background-color: red">
-            <div class="box1">无过渡属性时</div>
-            <div class="box2">有过渡属性时</div>
+        <h3>测试1：动画定义与调用</h3>
+        <div class="example">
+            <div class="box1"></div>
         </div>
     </div>
 
     <div class="item">
-        <h3>测试2：过渡定位属性</h3>
+        <h3>测试2：左右移动</h3>
         <div class="example">
-            <div class="box3">
-                <p></p>
+            <div class="box2"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>测试3：多关键帧动画</h3>
+        <div class="example">
+            <div class="box3"></div>
+        </div>
+    </div>
+
+    <div class="item">
+        <h3>实战1：发光的灯泡</h3>
+        <div class="example">
+            <div class="box4">
+                <img class="bulb" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/dengpao.png" alt="">
+                <img class="light" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/guang.png" alt="">
             </div>
         </div>
     </div>
 
     <div class="item">
-        <h3>测试3：多属性过渡</h3>
+        <h3>实战2：自带主角光环按钮</h3>
         <div class="example">
-            <div class="box4"></div>
-        </div>
-    </div>
-
-    <div class="item">
-        <h3>测试4：2D变形</h3>
-        <div class="example">
-            <div class="box5"></div>
-        </div>
-    </div>
-
-    <div class="item">
-        <h3>测试5：3D旋转</h3>
-        <div class="example">
-            <div class="box6">
-                <p></p>
-            </div>
-        </div>
-    </div>
-
-    <div class="item">
-        <h3>实战1：渐变提示</h3>
-        <div class="example">
-            <div class="box7">
-                <img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/eKAPy0nvMuGsUJaT.jpg" alt="">
-                <div>鸟巢国家体育场</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="item">
-        <h3>实战2：翻页效果</h3>
-        <div class="example">
-            <div class="box8">
-                <img class="cat" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/SKk151Hi5WDjnbNE.jpg"
-                     alt="">
-                <img class="dog" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ac2eOfdt8KH0AEEU.jpg"
-                     alt="">
-            </div>
-        </div>
-    </div>
-
-    <div class="item">
-        <h3>实战3：</h3>
-        <div class="example">
-            <div class="box9">
-                等待补充...
+            <div class="box5">
+                <button>自带主角光环按钮</button>
             </div>
         </div>
     </div>
