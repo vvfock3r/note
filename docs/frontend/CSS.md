@@ -2978,5 +2978,209 @@ transition: width       1s      linear        0s;
 
 
 
+## 移动端基础
+
+
+
+### 像素
+
+| 概念                                                         | 说明                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 分辨率                                                       | 屏幕由一个一个的"点"组成，分辨率代表屏幕宽高各有多少个"点"组成；<br />分辨率指的是物理像素 |
+| 物理像素（`physical pixel`）/<br />设备像素（`dp`：`device pixel`） | 硬件真实的像素点，<br />同一块屏幕的物理像素是固定的         |
+| `CSS`像素/<br />逻辑像素（logical pixel）/<br />设备独立像素（`dip`：`device independent pixel`） | 实际开发中使用的像素，比如`width: 200px;`<br />              |
+| 设备像素比（`dpr `= 设备像素 / `CSS`像素）                   | 如果一个`CSS`像素(长或宽)对应1个设置像素(长或宽)，那就`dpr=1`<br />如果一个`CSS`像素(长或宽)对应2个设置像素(长或宽)，那就`dpr=2`<br />`dpr `= 2 表示一个`CSS`像素用`2x2`个设备像素来绘制，实际上就是4个设备像素 |
+| 缩放                                                         | 缩放改变的是`CSS`像素对应物理像素的个数                      |
+| `PPI`/ `DPI`                                                 | 每英寸的物理像素点，（宽的平方+高的平方）开根号 / 对角线长度 |
+
+
+
+### 视口(`viewport`)
+
+视口的概念是在移动端才提出来的，视口的意思是
+
+> 温馨提示：
+>
+> 在本章的实验中，调整视口宽度的时候，显示效果经常会有问题，可以从几下几个方面排查：
+>
+> * 缩放比例是否是100%（也就是不缩放），下图这个值
+>
+>   ![image-20211114162808016](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114162808016.png)
+>
+> * 浏览器本身会有一些缓存或Bug啥的，多刷新、重启几次就好了
+>
+> * PC端浏览器是否有缩放（`Ctrl+鼠标滚轮`会缩放网页大小，按`Ctrl+小键盘数字0`可以取消缩放）
+
+
+
+**测试1：默认的视口宽度**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>   
+</head>
+<body>
+</body>
+</html>
+```
+
+![image-20211114152633423](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114152633423.png)
+
+我们随便写一个页面，可以没有任何内容，以手机模式查看，可以看到`html`标签占据的宽度为`980px`，这个大小就是<span style="color: red;">默认的视口宽度</span>，
+
+等同于下面这段代码
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- viewport代表视口，width=980意思是视口宽度为980px -->
+    <meta name="viewport" content="width=980"/>
+    <title>Document</title>
+</head>
+<body>
+</body>
+</html>
+```
+
+
+
+**测试2：默认视口下，盒子在移动端会进行缩放**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- viewport代表视口，width=980意思是视口宽度为980px -->
+    <meta name="viewport" content="width=980"/>
+    <title>Document</title>
+</head>
+<body>
+<div style="width: 200px; height: 200px; background-color: orange"></div>
+</body>
+</html>
+```
+
+
+
+![image-20211114155251727](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114155251727.png)
+
+可以看到，同一张网页在PC和移动端显示，盒子显示的都是`200 * 200px`，但是大小看起来完全不一样，按照我们的设想，
+
+只要浏览器宽度大于200，不管是400还是2000，那么同一个盒子大小看起来应该都是一样的，为什么会不一样呢？
+
+
+
+首先，盒子是`200px`没问题，在PC端和移动端都是一样的大小，这也没问题，但是，
+
+移动端浏览器要在`414px`上完整的显示出视口`980px`的内容（可以理解成这是移动端默认的特性），
+所以它给我们缩放了，那么效果就是都是`200px`的盒子，大小不一致
+
+
+
+如何让这个盒子看起来大小一样呢？
+
+设置移动端视口为`414px`，让我们改一下视口宽度，再看一下效果
+
+![image-20211114160408824](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114160408824.png)
+
+> 可以看到，盒子大小是一致的了
+
+
+
+**测试3：兼容不同宽度移动端设备**
+
+上面我们代码中手动指定了宽度为`414px`，但是不同的移动端有不同的宽度，如何兼容呢？
+
+视口宽度不要写死，指定为设备宽度就可以了，看代码
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- width=device-width指定视口宽度为设备宽度 -->
+    <meta name="viewport" content="width=device-width"/>
+    <title>Document</title>
+</head>
+<body>
+<div style="width: 200px; height: 200px; background-color: orange"></div>
+</body>
+</html>
+```
+
+![image-20211114162011771](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114162011771.png)
+
+
+
+**测试4：用户可缩放和缩放比**
+
+缩放比
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- initial-scale=1.0指定初始化缩放比为1，也就是不缩放，等同于 width=device-width -->
+	<!-- 还有另外两个属性，最大缩放比和最小缩放比，maximum-scale=1.0, minimum-scale=1.0 -->
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"/>
+    <title>Document</title>
+</head>
+<body>
+<div style="width: 200px; height: 200px; background-color: orange"></div>
+</body>
+</html>
+```
+
+还有一个参数就是控制是否允许缩放，就是`user-scalable`,值为`yes`或`no`，一般我们设置为`no`，但是部分浏览器会忽略这个属性
+
+
+
+**测试5：最终的写法**
+
+为了浏览器兼容性，一般用的时候我们都会把上面几个属性都写上（其实他们实现的都是同一个功能，就是调整视口）
+
+常用的写法就是下面这样
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>
+```
+
+> 注：在`IDE`中（`WebStorm`或`VSCode`），在空白网页输入`!`，并按下`Tab`即可出来上面的代码
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
