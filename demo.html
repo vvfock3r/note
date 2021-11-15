@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-cn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
@@ -7,105 +7,23 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <style>
-        /*
-            媒体查询，设置了6个断点，将一行分为24个格子
-
-            X-Small             超小屏，一行容纳1个格子
-            Small               小屏，一行容纳2个格子
-            Medium              中屏，一行容纳4个格子
-            Large               大屏，一行容纳6个格子
-            Extra large         特大屏，一行容纳12个格子
-            Extra extra large   超大屏，一行容纳24个格子
-        */
-
-        /* X-Small 超小屏*/
-        @media (max-width: 575px) {
-            .col {
-                width: 100%;
-            }
-        }
-
-        /* Small 小屏*/
-        @media (min-width: 576px) {
-            .col {
-                width: 50%;
-            }
-        }
-
-        /* Medium 中屏*/
-        @media (min-width: 768px) {
-            .col {
-                width: 25%;
-            }
-        }
-
-        /* Large 大屏*/
-        @media (min-width: 992px) {
-            .col {
-                width: 16.666666666667%;
-            }
-        }
-
-        /* Extra large 特大屏*/
-        @media (min-width: 1200px) {
-            .col {
-                width: 8.3333333333333%;
-            }
-        }
-
-        /* Extra extra large 超大屏*/
-        @media (min-width: 1400px) {
-            .col {
-                width: 4.1666666666667%;
-            }
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        .box {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        div {
-            height: 50px;
-            line-height: 50px;
-            background-color: orange;
+        .box1 {
+            width: 200px;
             border: 1px solid #000;
-            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            text-indent: 2em;
         }
     </style>
 </head>
 <body>
-<div class="box">
-    <div class="col">1</div>
-    <div class="col">2</div>
-    <div class="col">3</div>
-    <div class="col">4</div>
-    <div class="col">5</div>
-    <div class="col">6</div>
-    <div class="col">7</div>
-    <div class="col">8</div>
-    <div class="col">9</div>
-    <div class="col">10</div>
-    <div class="col">11</div>
-    <div class="col">12</div>
-    <div class="col">13</div>
-    <div class="col">14</div>
-    <div class="col">15</div>
-    <div class="col">16</div>
-    <div class="col">17</div>
-    <div class="col">18</div>
-    <div class="col">19</div>
-    <div class="col">20</div>
-    <div class="col">21</div>
-    <div class="col">22</div>
-    <div class="col">23</div>
-    <div class="col">24</div>
+<h3>使用em来缩进段落</h3>
+<div class="box1">
+    在下面的示例中，您可以看到一些相对长度单位和绝对长度单位的行为。第一个框以像素为单位设置width。作为一个绝对单位，这个宽度将保持不变，无论其他如何变化。
+    第二个框的宽度设置为vw(视口宽度)单位。这个值相对于视口宽度，所以10vw是视口宽度的10%。如果您更改浏览器窗口的宽度，那么框的大小应该会更改，但是这个示例使用
+    嵌入到页面中，所以这将不起作用。要查看实际情况，您必须在打开示例的浏览器选项卡后尝试该示例 试一试。
+    第三个盒子使用em单位。这些是相对于字体大小的。我在包含 的元素上设置了一个1em的字体大小，它有一个.wrapper类。将这个值更改为1.5em，您将看到所有元素的字体大小都增加了，但是只有最后一项会变宽，因为宽度与字体大小有关。
+    按照上面的说明操作之后，尝试以其他方式处理这些值，看看您将收获什么。
 </div>
 </body>
 </html>

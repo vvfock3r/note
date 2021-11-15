@@ -3357,6 +3357,71 @@ transition: width       1s      linear        0s;
 
 ![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%AA%92%E4%BD%93%E6%9F%A5%E8%AF%A2.gif)
 
+### 移动端常用单位
+
+```css
+    <style>
+        /*
+            ! 有一个重要的规则，chrome最小的字体大小是12px，即使你设置了font-size: 10px，那么也是12px
+
+            px  固定像素，布局和字体大小用的比较多
+            %   百分比，布局用的比较多
+
+            em  1em的大小 = 1 * 自身元素的font-size大小
+                如果自身没有font-size，那么该元素就会从父元素继承font-size，看起来好像是跟父元素有关，其实是继承的
+                如果自身的font-size也是em单位，那么也会从父元素继承
+                em很少使用，不过有一个好用的地方在于，段落首行缩进2个字符，同样这样写：
+                    text-ident: 2em;
+
+            rem 1rem = 1 * html的font-size大小
+                相比em，rem用的更多
+
+            vh  视口高度， 100vh = 高度占满整个屏幕
+            vw  视口宽度， 100vw = 宽度占满整个屏幕
+        */
+    </style>
+```
+
+**测试1：使用em来缩进段落**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .box1 {
+            width: 200px;
+            border: 1px solid #000;
+            padding: 10px;
+            font-size: 12px;
+            text-indent: 2em;
+        }
+    </style>
+</head>
+<body>
+<h3>使用em来缩进段落</h3>
+<div class="box1">
+    在下面的示例中，您可以看到一些相对长度单位和绝对长度单位的行为。第一个框以像素为单位设置width。作为一个绝对单位，这个宽度将保持不变，无论其他如何变化。
+    第二个框的宽度设置为vw(视口宽度)单位。这个值相对于视口宽度，所以10vw是视口宽度的10%。如果您更改浏览器窗口的宽度，那么框的大小应该会更改，但是这个示例使用
+    嵌入到页面中，所以这将不起作用。要查看实际情况，您必须在打开示例的浏览器选项卡后尝试该示例 试一试。
+    第三个盒子使用em单位。这些是相对于字体大小的。我在包含 的元素上设置了一个1em的字体大小，它有一个.wrapper类。将这个值更改为1.5em，您将看到所有元素的字体大小都增加了，但是只有最后一项会变宽，因为宽度与字体大小有关。
+    按照上面的说明操作之后，尝试以其他方式处理这些值，看看您将收获什么。
+</div>
+</body>
+</html>
+```
+
+
+
+![image-20211115221120865](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211115221120865.png)
+
 
 
 
