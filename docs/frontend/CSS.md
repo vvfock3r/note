@@ -3172,6 +3172,195 @@ transition: width       1s      linear        0s;
 
 
 
+### 媒体查询（media query）
+
+媒体查询就是查询屏幕大小，根据不同的屏幕大小，我们可以设置不同的`CSS`属性
+
+**语法**
+
+```css
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        /*
+            @media              媒体查询，固定语法
+            screen              媒介类型，screen代表屏幕，其他的还有，print（打印，Ctrl+P），speech（阅读器），all（所有值，也是默认值）
+            and                 逻辑运算符，与(and)、或(or)、非(not)
+            min-width: 1024px   媒体特征表达式
+                                    min-width   最小宽度
+                                    max-width   最大宽度
+                                    orientation landscape   横屏
+                                    orientation portrait    竖屏
+        */
+        @media screen and (min-width: 1024px) {
+            body {
+                background-color: red;
+            }
+        }
+
+        /*
+            语句中可以包含逗号
+                @media screen and (min-width: 1024px)   这是一条语句
+                @media(min-width: 1024px)               这是另一条语句，要注意的是scrren和第二条语句没有任何关系
+
+               逗号是或的意思，意思就是两条语句任意一条满足条件就执行
+
+            在任意一条语句中，如果not和and连用，那么not否定的就是后面所有的and(逗号前)
+        */
+        @media screen and (min-width: 1024px), (min-width: 1024px) {
+
+        }
+
+    </style>
+</head>
+<body>
+
+</body>
+</html>
+```
+
+
+
+**断点**
+
+在我们实际写页面的时候，对于不同屏幕有没有一些业界公认的划分规范呢，这时候可以参考一下Bootstrap是如何划分的，
+
+下面这些划分我们就成为断点，文档地址：https://getbootstrap.com/docs/5.1/layout/breakpoints/
+
+![image-20211115210507671](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211115210507671.png)
+
+**示例**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        /*
+            媒体查询，设置了6个断点，将一行分为24个格子
+
+            X-Small             超小屏，一行容纳1个格子
+            Small               小屏，一行容纳2个格子
+            Medium              中屏，一行容纳4个格子
+            Large               大屏，一行容纳6个格子
+            Extra large         特大屏，一行容纳12个格子
+            Extra extra large   超大屏，一行容纳24个格子
+        */
+
+        /* X-Small 超小屏*/
+        @media (max-width: 575px) {
+            .col {
+                width: 100%;
+            }
+        }
+
+        /* Small 小屏*/
+        @media (min-width: 576px) {
+            .col {
+                width: 50%;
+            }
+        }
+
+        /* Medium 中屏*/
+        @media (min-width: 768px) {
+            .col {
+                width: 25%;
+            }
+        }
+
+        /* Large 大屏*/
+        @media (min-width: 992px) {
+            .col {
+                width: 16.666666666667%;
+            }
+        }
+
+        /* Extra large 特大屏*/
+        @media (min-width: 1200px) {
+            .col {
+                width: 8.3333333333333%;
+            }
+        }
+
+        /* Extra extra large 超大屏*/
+        @media (min-width: 1400px) {
+            .col {
+                width: 4.1666666666667%;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .box {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        div {
+            height: 50px;
+            line-height: 50px;
+            background-color: orange;
+            border: 1px solid #000;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div class="col">1</div>
+    <div class="col">2</div>
+    <div class="col">3</div>
+    <div class="col">4</div>
+    <div class="col">5</div>
+    <div class="col">6</div>
+    <div class="col">7</div>
+    <div class="col">8</div>
+    <div class="col">9</div>
+    <div class="col">10</div>
+    <div class="col">11</div>
+    <div class="col">12</div>
+    <div class="col">13</div>
+    <div class="col">14</div>
+    <div class="col">15</div>
+    <div class="col">16</div>
+    <div class="col">17</div>
+    <div class="col">18</div>
+    <div class="col">19</div>
+    <div class="col">20</div>
+    <div class="col">21</div>
+    <div class="col">22</div>
+    <div class="col">23</div>
+    <div class="col">24</div>
+</div>
+</body>
+</html>
+```
+
+
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%AA%92%E4%BD%93%E6%9F%A5%E8%AF%A2.gif)
+
+
+
+
+
 
 
 
