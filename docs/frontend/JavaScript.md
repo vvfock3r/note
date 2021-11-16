@@ -2380,6 +2380,149 @@ https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Rest
 
 
 
+### 类（class）
+
+类和构造函数很像，但是更加面向对象，使用更加友好
+
+
+
+#### 基本用法
+
+```javascript
+<script>
+class Person {      // (1) 类名后面没有()
+    constructor(name, age) {    // (3) 实例化类时会调用此方法
+        this.name = name;
+        this.age = age;
+    }
+
+    // 定义类方法，各实例拥有的该方法相等，占用同一份内存
+    speak() {
+        console.log(`hello, i'm ${this.name}`);
+    }
+}   // (2) }后面也不需要加;
+
+
+const zs = new Person("张三", 18);
+const ls = new Person("李四", 20);
+
+console.log(zs.speak === ls.speak); // true
+zs.speak();     // hello, i'm 张三
+ls.speak();     // hello, i'm 李四
+</script>
+```
+
+> 也可以使用另一种写法，`const Person = class {};`，但是并不推荐
+
+
+
+#### 实例属性
+
+```javascript
+<script>
+class Person {
+    // 这种写法就等同于 constructor中写this.name = "1";
+    // 注意这里没有使用let、const，也没有使用this
+    name = '1';
+    age = 0;
+
+    // constructor(name, age) {
+    //     this.name = name;
+    //     this.age = age;
+    // }
+
+	// 这个方法并没有在实例上，而是在类的原型上
+    getName = () => {
+        return this.name;
+    }
+}
+
+const zs = new Person("张三", 18);
+console.log(zs.getName());  // 1
+
+</script>
+```
+
+#### 静态属性和静态方法
+
+```javascript
+<script>
+class Person {
+    // 使用static关键字定义的方法就是静态方法
+    // 静态方法中的this指向类本身，而不是实例
+    static getName = () => {
+        return "Bob"
+    }
+
+    // 静态属性如果下面这样写的话，会有兼容性问题，解决办法是：
+    // 可以改成方法的形式，或在类外面Person.version = "1.0"
+    // static name = "Bob";
+}
+
+const zs = new Person("张三", 18);
+console.log(zs.getName());  // Bob
+</script>
+```
+
+#### 私有属性和方法
+
+一般情况下定义的属性和方法都是公开的
+
+私有属性和方法，就是说只能在类里面使用，在类外面不能使用；
+
+`JavaScript`目前并没有私有属性和方法的语法，但是根据公共的规范，
+
+一般以_开头的属性或方法，我们称为私有属性或方法
+
+
+
+#### 类的继承
+
+```javascript
+<script>
+// 定义一个父类
+class Person {
+    constructor(name, sex, age) {
+        this.name = name;
+        this.sex = sex;
+        this.age = age;
+    }
+
+    speak() {
+        return `Hello, i'm ${this.name}`
+    }
+}
+
+// 定义一个子类，继承自Person
+class Programmer extends Person {
+    constructor(name, sex, age) {
+        // super作为函数调用，代表父类的构造方法，只能用在子类的constructor方法中
+        // 调用父类的constructor； super前面不能有this操作，语法限制
+        super(name, sex, age);
+    }
+
+    // super作为对象使用，代表父类的原型，也就是Person.prototype
+    // 所以定义在父类实例上的方法或属性，是无法通过super调用的
+    // 通过super调用父类方法时，方法内部的this指向当前子类实例    
+    speak() {
+        console.log("i'm child class")
+        return super.speak();
+    }
+    
+    // super用在静态方法中，指向的父类，而不是父类的原型
+    // 使用super的时候必须显示指定super作为何种类型使用，所以console.log(super); 这样会报错
+}
+
+const zs = new Programmer("张三", "男", "32");
+console.log(zs.name);   // 张三
+console.log(zs.sex);    // 男
+console.log(zs.age);    // 32
+console.log(zs.speak());    // Hello, i'm 张三
+</script>
+```
+
+
+
 ## 正则表达式
 
 ### 第一个例子

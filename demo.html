@@ -6,24 +6,44 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <style>
-        .box1 {
-            width: 200px;
-            border: 1px solid #000;
-            padding: 10px;
-            font-size: 12px;
-            text-indent: 2em;
-        }
-    </style>
 </head>
 <body>
-<h3>使用em来缩进段落</h3>
-<div class="box1">
-    在下面的示例中，您可以看到一些相对长度单位和绝对长度单位的行为。第一个框以像素为单位设置width。作为一个绝对单位，这个宽度将保持不变，无论其他如何变化。
-    第二个框的宽度设置为vw(视口宽度)单位。这个值相对于视口宽度，所以10vw是视口宽度的10%。如果您更改浏览器窗口的宽度，那么框的大小应该会更改，但是这个示例使用
-    嵌入到页面中，所以这将不起作用。要查看实际情况，您必须在打开示例的浏览器选项卡后尝试该示例 试一试。
-    第三个盒子使用em单位。这些是相对于字体大小的。我在包含 的元素上设置了一个1em的字体大小，它有一个.wrapper类。将这个值更改为1.5em，您将看到所有元素的字体大小都增加了，但是只有最后一项会变宽，因为宽度与字体大小有关。
-    按照上面的说明操作之后，尝试以其他方式处理这些值，看看您将收获什么。
-</div>
+<script>
+// 定义一个父类
+class Person {
+    constructor(name, sex, age) {
+        this.name = name;
+        this.sex = sex;
+        this.age = age;
+    }
+
+    speak() {
+        return `Hello, i'm ${this.name}`
+    }
+}
+
+// 定义一个子类，继承自Person
+class Programmer extends Person {
+    constructor(name, sex, age) {
+        // super作为函数调用，代表父类的构造方法，只能用在子类的constructor方法中
+        // 调用父类的constructor； super前面不能有this操作，语法限制
+        super(name, sex, age);
+    }
+
+    // super作为对象使用，代表父类的原型，也就是Person.prototype
+    // 所以定义在父类实例上的方法或属性，是无法通过super调用的
+    // 通过super调用父类方法时，方法内部的this指向当前子类实例
+    speak() {
+        console.log("i'm child class")
+        return super.speak();
+    }
+}
+
+const zs = new Programmer("张三", "男", "32");
+console.log(zs.name);   // 张三
+console.log(zs.sex);    // 男
+console.log(zs.age);    // 32
+console.log(zs.speak());    // Hello, i'm 张三
+</script>
 </body>
 </html>
