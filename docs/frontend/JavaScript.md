@@ -2523,6 +2523,161 @@ console.log(zs.speak());    // Hello, i'm 张三
 
 
 
+### 模块（`Module`）
+
+每个模块有自己的独立作用域，避免命名冲突
+
+* 只要在`JS`文件中使用了`import`或`export`，就需要在HTML中的script标签上加`type=module`
+* 被导入的模块都会执行一遍，也仅执行一遍
+* 没有导出也可以被导入
+
+> 模块学习时需要有一个服务器环境
+
+
+
+
+
+**导入和导出**
+
+```javascript
+<script type="module">
+    /*
+        说明
+            模块没有导出，也可以导入，且多次导入同一文件仅执行一次
+        注意
+            script标签需添加 type="module"
+ 
+        t1.js内容：
+            console.log("t1.js被执行了");
+            var   t1JSTest = "test";
+     */
+ 
+    // 测试
+    import "./js/t1.js";    // 导入成功，执行里面所有的代码，输出 t1.js被执行了
+    // console.log(t1JSTest);  // 报错了，t1JSTest is not defined
+ 
+</script>
+ 
+<script type="module">
+    /*
+        注意
+            script标签需添加 type="module"
+ 
+        方式1：
+            导出：export default 对象
+            导入：import 别名 from 模块;
+            说明：
+                一个模块只能有一个export default
+                可以导出变量、数组、对象、(匿名)函数、(匿名)类等
+ 
+            t2.js内容：
+                const cm = 9.857;
+                export default age;
+ 
+        方式2：
+            基本用法
+                导出语法 ：export 声明或语句
+                导出示例1：export const age = 18;
+                导出示例2：
+                        const age = 18;
+                        export {age};
+ 
+                导入语法：import {导出对象} from 模块;
+                导入示例：import {age} from './js/t3.js'
+ 
+                t3.js内容：
+                    const age = 18;
+                    export {age};
+ 
+            批量导出导入
+                导出
+                    const age = 18;
+                    const name = "Bob";
+                    export {age, name};
+                导入
+                    import {age, name} from 模块;
+ 
+            导出导入起别名
+                导出
+                    ...代码省略
+                    export {age as Age, name as Name};
+                导入
+                    import {Age as age, Name as name} from 模块;
+ 
+            整体导出导入
+                导出（不变）
+                    ...代码省略
+                    export {age as Age, name as Name};
+                导入
+                    import * as obj from 模块;
+ 
+            同时导入
+                在一条语句中，即导入export default的东西，又导入export {x1,x2}的东西
+                语法：
+                    import name,{age, sex} from 模块
+                注意事项：
+                    导入时，一定是export default导出东西在前面，比如上面的import name
+    */
+ 
+    // 方式一测试
+    import myCM from './js/t2.js';     // 成功导入，导入时的名字无所谓
+    console.log(myCM);                  // 9.857
+ 
+    // 方式二测试 - 基本用法
+    import {age} from './js/t3.js';
+ 
+    console.log(age);
+ 
+    // 整体导入
+    import * as obj from './js/t4.js';
+ 
+    console.log(obj.age); 
+</script>
+```
+
+
+
+**注意事项**
+
+```javascript
+<script type="module">
+    /*
+        模块顶层的this指向
+            使用普通的script src引入，this指向window对象，比如 <script src="./js/t4.js">，闭合标签这里不写了，知道就行
+            使用模块导入的方式，顶层this指向undefined
+ 
+        import关键字 和 import()函数
+            （1）这俩不是一个东西
+            （2）import关键字具有提升效果，会提升到整个代码的头部，率先执行；export也一样
+            （3）import()函数可以支持让我们按需导入，没有提升效果
+ 
+        导入导出复合写法
+            t5.js
+                const t5 = "t5 moudle";
+                export {t5};
+            t6.js
+                export {t5} from "./t5.js";     // 复合写法
+ 
+            复合写法等同于
+                import {t5} from './t5.js';
+                export {t5};
+            总结：
+                复合写法中无法使用t5这个对象
+                不推荐使用复合写法，理解起来比较复杂
+                复合写法的场景：
+                    多个文件合并，给使用者提供统一接口
+     */
+    // 导入导出复合写法测试
+    import {t5} from "./js/t6.js";
+ 
+    console.log(t5);    // t5 moudle
+</script>
+```
+
+
+
+
+
 ## 正则表达式
 
 ### 第一个例子

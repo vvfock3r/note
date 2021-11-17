@@ -8,42 +8,6 @@
     <title>Document</title>
 </head>
 <body>
-<script>
-// 定义一个父类
-class Person {
-    constructor(name, sex, age) {
-        this.name = name;
-        this.sex = sex;
-        this.age = age;
-    }
 
-    speak() {
-        return `Hello, i'm ${this.name}`
-    }
-}
-
-// 定义一个子类，继承自Person
-class Programmer extends Person {
-    constructor(name, sex, age) {
-        // super作为函数调用，代表父类的构造方法，只能用在子类的constructor方法中
-        // 调用父类的constructor； super前面不能有this操作，语法限制
-        super(name, sex, age);
-    }
-
-    // super作为对象使用，代表父类的原型，也就是Person.prototype
-    // 所以定义在父类实例上的方法或属性，是无法通过super调用的
-    // 通过super调用父类方法时，方法内部的this指向当前子类实例
-    speak() {
-        console.log("i'm child class")
-        return super.speak();
-    }
-}
-
-const zs = new Programmer("张三", "男", "32");
-console.log(zs.name);   // 张三
-console.log(zs.sex);    // 男
-console.log(zs.age);    // 32
-console.log(zs.speak());    // Hello, i'm 张三
-</script>
 </body>
 </html>
