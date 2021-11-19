@@ -3424,6 +3424,76 @@ transition: width       1s      linear        0s;
 
 
 
+## `CSS`变量
+
+使用`CSS`变量可以方便的实现<span style="color:red;">换肤功能</span>、<span style="color:red;">暗黑模式</span>等功能
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        /* 设置CSS变量, :root表示应用于全局作用域 */
+        :root {
+            --width: 200;
+            --height: 200px;
+            --color: green;
+        }
+
+        .box {
+            border-radius: 50%;
+        }
+
+        /* 使用CSS变量 */
+        .box {
+            background-color: var(--color, blue); /* 这里设置blue为默认值，当没有--color变量时会用到这个值 */
+            width: calc(var(--width) * 1px); /* 注意，不能写成 var(--width)px */
+            height: var(--height); /* 当然，变量也可以直接定义成字符串 */
+        }
+    </style>
+</head>
+<body>
+<div class="box"></div>
+<script>
+    // JS使用CSS变量
+
+    /* Dom根节点root */
+    const root = document.documentElement;
+    /* getComputedStyle获取当前元素所有最终使用的CSS属性值 */
+    const root_computed = getComputedStyle(root);
+
+    // 读取CSS变量值
+    let bgColor = root_computed.getPropertyValue('--color');
+    console.log(`:root中的背景颜色：${bgColor}`)
+    console.log('\n')
+
+    // 设置CSS变量
+    setTimeout(() => {
+        console.log("重置盒子背景颜色: red")
+        root.style.setProperty('--color', 'red');
+        let bgColor = root_computed.getPropertyValue('--color');
+        console.log(`:root中的背景颜色：${bgColor}`)
+        console.log('\n')
+    }, 3000)
+
+    // 删除CSS变量
+    setTimeout(() => {
+        console.log("删除盒子背景颜色属性")
+        root.style.removeProperty('--color');
+        let bgColor = root_computed.getPropertyValue('--color');
+        console.log(`:root中的背景颜色：${bgColor}`)
+    }, 8000)
+</script>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/CSS-Var.gif)
+
 
 
 
