@@ -2345,6 +2345,14 @@ transition: width       1s      linear        0s;
 
 
 
+**哪些属性不能过渡（列举一些特殊值）**
+
+* display（参考下面**元素隐藏与显示过渡效果说明**）
+
+
+
+**过渡效果测试**
+
 `demo.html`
 
 ```html
@@ -2645,6 +2653,145 @@ transition: width       1s      linear        0s;
 ```
 
 ![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
+
+
+
+**元素隐藏与显示过渡效果说明**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>元素隐藏与显示过度效果</title>
+    <style>
+        /* 公共样式 */
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        li {
+            list-style: none;
+        }
+
+        /* 网站头部 */
+        .header {
+            background-color: rgb(50, 62, 78);
+            height: 60px;
+            line-height: 60px;
+        }
+
+        /* 一级导航 */
+        .nav {
+            width: 360px;
+            margin: 0 auto;
+        }
+
+        .nav > ul {
+            overflow: hidden;
+
+        }
+
+        .nav > ul > li {
+            float: left;
+            width: 100px;
+            text-align: center;
+            margin-right: 20px;
+            color: white;
+        }
+
+        .nav > ul > li:hover {
+            background-color: black;
+        }
+
+        /* 子菜单 */
+        .submenu {
+            position: absolute;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 1s, opacity 1s;;
+        }
+
+        .submenu li {
+            background-color: white;
+            color: black;
+            width: 100px;
+        }
+
+        .submenu li:hover {
+            background-color: #999999;
+            color: white;
+        }
+
+        .nav > ul > li:hover .submenu {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* main */
+        .main {
+            width: 660px;
+            margin: 0 auto;
+            margin-top: 100px;
+            border: 1px solid #999999;
+            padding: 30px;
+            text-align: left;
+        }
+
+        .main h4 {
+            text-align: center;
+            padding-bottom: 30px;
+        }
+
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="nav">
+        <ul>
+            <li>
+                前端
+                <div class="submenu">
+                    <ul>
+                        <li>HTML</li>
+                        <li>CSS</li>
+                        <li>JavaScript</li>
+                    </ul>
+                </div>
+            </li>
+            <li>后端</li>
+            <li>中间件</li>
+        </ul>
+    </div>
+</div>
+
+<div class="main">
+    <h4>元素隐藏与显示过度效果说明</h4>
+    <pre>
+        (1) 元素隐藏最常用的是使用display:none，但是过度效果(transition)不支持display属性
+        (2) 所以可以使用其他方法达到隐藏效果，同时支持过度属性，比如
+                position: absolute;
+                visibility: hidden;
+        (3) transition过度支持visibility属性，但是visibility没有过度效果：
+                由显示变为隐藏，过度为3秒，那么等第3秒的时会"刷一下的"将元素隐藏，
+                由隐藏变为显示，过度为3秒，那么等第0.0000...1秒时会"刷一下的"将元素显示
+        (4) 所以需要使用opacity配合transition，这俩个属性全部设为过度，效果就比较完美了
+    </pre>
+</div>
+
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%85%83%E7%B4%A0%E9%9A%90%E8%97%8F%E4%B8%8E%E6%98%BE%E7%A4%BA%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C%E8%AF%B4%E6%98%8E.gif)
 
 
 
