@@ -8,7 +8,7 @@ module.exports = {
     lang: 'zh-CN',
 
     // 站点标题，显示在做左上角
-    title: "VVFock3r's NoteBook",
+    title: "NoteBook",
 
     // 站点描述
     description: '打怪升级之旅oh~',
