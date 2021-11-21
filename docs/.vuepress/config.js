@@ -51,7 +51,7 @@ module.exports = {
                     {
                         text: '可视化',
                         children: [
-                            // {text: '浏览器原生图像渲染', link: '/frontend/webcharts'},
+                            {text: '浏览器原生绘图', link: '/frontend/浏览器原生绘图.html'},
                             // {text: 'Apache Echarts', link: '/frontend/echarts'},
                         ]
                     },
