@@ -6,313 +6,41 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        .main {
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-
-        .line {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        .item {
-            flex: 1;
-            min-width: 200px;
-            min-height: 200px;
-            margin-right: 20px;
-            margin-bottom: 20px;
-            padding: 20px;
-            border: 1px solid rgba(0, 0, 0, .5);
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .item h3 {
-            margin-bottom: 20px;
-        }
-
-
-        /* (1)矩形 */
-        [class*=box1] {
-            margin-right: 20px;
-        }
-
-        .box1-1 {
-            width: 50px;
-            height: 50px;
-            background-color: orange;
-        }
-
-        .box1-2 {
-            width: 50px;
-            height: 50px;
-            background-color: orange;
-            transform: rotate(45deg);
-        }
-
-        /* (2)圆形 */
-        .box2-1 {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: green;
-        }
-
-        .box2-2 {
-            width: 100px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: green;
-        }
-
-        .box2-3 {
-            width: 50px;
-            height: 100px;
-            border-radius: 50%;
-            background-color: green;
-        }
-
-        .box2-4 {
-            width: 50px;
-            height: 50px;
-            border: 5px solid;
-            border-radius: 50%;
-            border-color: green;
-        }
-
-        /* (3)三角形(原理) */
-        .box3 {
-            width: 0;
-            height: 0;
-            border: 50px solid;
-            border-color: red green blue yellow;
-        }
-
-        .box4-1 {
-            width: 0;
-            height: 0;
-            border: 30px solid;
-            border-color: red transparent transparent red;
-        }
-
-        .box4-2 {
-            width: 0;
-            height: 0;
-            border: 30px solid;
-            border-color: green green transparent transparent;
-        }
-
-        .box4-3 {
-            width: 0;
-            height: 0;
-            border: 30px solid;
-            border-color: transparent transparent yellow yellow;
-        }
-
-        .box4-4 {
-            width: 0;
-            height: 0;
-            border: 30px solid;
-            border-color: transparent blue blue transparent;
-        }
-
-        .box5 {
-            width: 150px;
-            height: 150px;
-            border: 30px solid;
-            border-color: red green yellow blue;
-        }
-
-        [class*=box6] {
-            margin-right: 20px;
-        }
-
-        .box6-1 {
-            width: 50px;
-            height: 50px;
-            background-color: green;
-            transform: skew(-30deg);
-        }
-
-        .box6-2 {
-            width: 50px;
-            height: 50px;
-            background-color: green;
-            transform: rotate(45deg) skew(15deg, 15deg);
-        }
-
-        [class*=box7] {
-            margin-right: 20px;
-        }
-
-        .box7-1 {
-            width: 40px;
-            height: 40px;
-            background-color: green;
-            border-radius: 40px 0 0 0;
-        }
-
-        .box7-2 {
-            width: 40px;
-            height: 40px;
-            background-color: green;
-            border-radius: 40px 0 0 0;
-            transform: rotate(45deg);
-        }
-
-        .box7-3 {
-            width: 40px;
-            height: 40px;
-            background-color: green;
-            border-radius: 40px 40px 0 0;
-        }
-
-
-        .line:nth-child(2) .item:nth-child(3) {
-            align-items: flex-start;
-        }
-
-        .line:nth-child(2) .item:nth-child(3) h3 {
-            align-self: center;
-        }
-
-        .box8 {
-            max-width: 150px;
-            border-radius: 10px;
-            background-color: green;
-            position: relative;
-            text-align: left;
-            padding: 9px;
-            padding-right: 8px;
-            font-size: 12px;
-
-            margin-bottom: 10px;
-        }
-
-        .box8:before {
-            content: '';
-            width: 0;
-            height: 0;
-
-            border: 6px solid;
-            border-color: transparent green transparent transparent;
-
-            position: absolute;
-            top: 50%;
-            left: -12px;
-            margin-top: -6px;
-        }
-
-        .box9 {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            box-shadow: 20px 20px 0 0 green;
-        }
-
-        .box-10 {
-            height: 100px;
-            width: 20px;
-            background: red;
-            position: relative;
-        }
-
-        .box-10:after {
-            content: "";
-            width: 100px;
-            height: 20px;
-            background: red;
-            position: absolute;
-            left: -40px;
-            top: 40px;
-        }
-
-    </style>
 </head>
 <body>
-<div class="main">
-    <div class="line">
-        <div class="item">
-            <h3>(1) 矩形</h3>
-            <div style="display: flex;">
-                <div class="box1-1"></div>
-                <div class="box1-2"></div>
-            </div>
-        </div>
-        <div class="item">
-            <h3>(2) 圆形</h3>
-            <div style="display: flex">
-                <div>
-                    <div class="box2-1"></div>
-                    <div class="box2-2"></div>
-                </div>
-                <div class="box2-3"></div>
-                <div class="box2-4"></div>
-            </div>
-        </div>
-        <div class="item">
-            <h3>(3) 三角形(原理)</h3>
-            <div class="box3"></div>
-        </div>
-        <div class="item">
-            <h3>(4) 三角形(变形)</h3>
-            <div style="display: flex;">
-                <div class="box4-1"></div>
-                <div class="box4-2"></div>
-            </div>
-            <div style="display: flex; margin-top: 5px;">
-                <div class="box4-3"></div>
-                <div class="box4-4"></div>
-            </div>
-        </div>
-        <div class="item">
-            <h3>(5) 梯形(原理)</h3>
-            <div class="box5"></div>
-        </div>
-    </div>
-    <div class="line">
-        <div class="item">
-            <h3>(6) 平行四边形</h3>
-            <div style="display: flex;">
-                <div class="box6-1"></div>
-                <div class="box6-2"></div>
-            </div>
-        </div>
-        <div class="item">
-            <h3>(7) 扇形</h3>
-            <div style="display: flex;">
-                <div class="box7-1"></div>
-                <div class="box7-2"></div>
-                <div class="box7-3"></div>
-            </div>
-        </div>
-        <div class="item">
-            <h3>(8) 聊天框</h3>
-            <div class="box8">面试官您好</div>
-            <div class="box8">咱们公司非常优秀，但是很遗憾的通知您，贵公司已经进入我的侯选库，希望早日找到合适的候选人！</div>
-        </div>
-        <div class="item">
-            <h3>(9) 月亮</h3>
-            <div class="box9"></div>
-        </div>
-        <div class="item">
-            <h3>(10) 十字架</h3>
-            <div class="box-10"></div>
-        </div>
-    </div>
-</div>
+<canvas id="canvas" width="400" height="400" style="border: 1px solid green;"></canvas>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext('2d');
+
+// 公共样式
+ctx.strokeStyle = 'rgb(66,133,244)';
+ctx.lineWidth = 30;
+
+// 线条1和线条2
+ctx.beginPath();
+ctx.lineTo(100, 80);
+ctx.lineTo(200, 50);
+ctx.lineTo(300, 120);
+ctx.lineJoin = 'miter'; // 默认值，呈现一个尖角
+ctx.stroke();
+
+// 线条3和线条4
+ctx.beginPath();
+ctx.lineTo(100, 160);
+ctx.lineTo(200, 100);
+ctx.lineTo(300, 240);
+ctx.lineJoin = 'bevel'; // 呈现一个斜接
+ctx.stroke();
+
+// 线条5和线条6
+ctx.beginPath();
+ctx.lineTo(100, 320);
+ctx.lineTo(200, 200);
+ctx.lineTo(300, 480);
+ctx.lineJoin = 'round'; // 呈现一个圆角
+ctx.stroke();
+
+</script>
 </body>
 </html>
