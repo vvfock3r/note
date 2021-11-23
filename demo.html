@@ -13,33 +13,17 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext('2d');
 
-// 公共样式
-ctx.strokeStyle = 'rgb(66,133,244)';
-ctx.lineWidth = 30;
+// 绘制两个一模一样的正方形，竖直排序，并让第二个正方形x轴放大5倍，看一下效果
 
-// 线条1和线条2
-ctx.beginPath();
-ctx.lineTo(100, 80);
-ctx.lineTo(200, 50);
-ctx.lineTo(300, 120);
-ctx.lineJoin = 'miter'; // 默认值，呈现一个尖角
-ctx.stroke();
+// 样式
+ctx.lineWidth = 1;
+ctx.strokeStyle = 'red';
+ctx.fillStyle = 'green';
 
-// 线条3和线条4
-ctx.beginPath();
-ctx.lineTo(100, 160);
-ctx.lineTo(200, 100);
-ctx.lineTo(300, 240);
-ctx.lineJoin = 'bevel'; // 呈现一个斜接
-ctx.stroke();
-
-// 线条5和线条6
-ctx.beginPath();
-ctx.lineTo(100, 320);
-ctx.lineTo(200, 200);
-ctx.lineTo(300, 480);
-ctx.lineJoin = 'round'; // 呈现一个圆角
-ctx.stroke();
+// 正方形
+ctx.rotate(30 * Math.PI / 180); // 顺时针旋转30度
+ctx.fillRect(200, 200, 100, 100);
+ctx.strokeRect(200, 200, 100, 100);
 
 </script>
 </body>
