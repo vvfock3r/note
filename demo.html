@@ -8,22 +8,33 @@
     <title>Document</title>
 </head>
 <body>
-<canvas id="canvas" width="400" height="400" style="border: 1px solid green;"></canvas>
+<canvas id="canvas" width="1200" height="600" style="border: 1px solid green;"></canvas>
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext('2d');
 
-// 样式
-ctx.lineWidth = 1;
-ctx.strokeStyle = 'red';
-ctx.fillStyle = 'green';
 
-// 图形变换
-ctx.transform(1, 0, 0, 1, -200, -200);  // 水平位移-200（即向左位移200px），垂直位移-200（即向上位移200px）
+// 顺时针（默认）绘制10个不同角度的圆
+for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    // 圆心坐标
+    //      图1：(50, 60)
+    //      图2：(150, 60)
+    //      依次递增
+    // 圆半径固定为30px
+    // 开始角度固定为0度
+    // 结束角度：
+    //      我们代码循环10次，10次平分一个圆的弧度，所以每次循环的结束角度都比上一次大10分之1
+    //      2 * Math.PI，这是一个圆的结束角度，
+    //      / 10，就是每一份的角度,
+    //      * (i+1) 就是第n份的弧度
+    ctx.arc(50 + i * 100, 60, 50, 0, 2 * Math.PI / 10 * (i + 1));
+    ctx.stroke();
+}
 
-// 正方形
-ctx.fillRect(200, 200, 100, 100);   // 在200,200绘制，但因为有位移加持，中和之后坐标点在0,0
-ctx.strokeRect(200, 200, 100, 100);
+
+
+
 </script>
 </body>
 </html>
