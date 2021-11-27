@@ -13,19 +13,26 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext('2d');
 
-ctx.fillStyle = 'green';
-ctx.strokeStyle = 'blue';
-ctx.font = "bold 20px Arial"
+// 线条1，宽度1px，比较模糊
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.lineTo(50, 100);
+ctx.lineTo(350, 100);
+ctx.stroke();
 
-// 文本宽度度量
-const msg = "欢迎来到Canvas世界";
-const width = ctx.measureText(msg).width;
+// 线条2，宽度2px，清晰
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.lineTo(50, 150);
+ctx.lineTo(350, 150);
+ctx.stroke();
 
-// 渲染文字
-ctx.fillText(msg, 100, 100);
-ctx.fillText(`以上字符串宽度为${width}px`, 50, 200);
-
-// 高度暂时没有对应的API来获取
+// 线条3，宽度1px，这是优化过后的（对每个数值+0.5），比较清晰，要求不高情况下推荐
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.lineTo(50.5, 200.5);
+ctx.lineTo(350.5, 200.5);
+ctx.stroke();
 
 </script>
 </body>
