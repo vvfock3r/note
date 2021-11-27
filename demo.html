@@ -13,20 +13,19 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext('2d');
 
-// ---------------------------------------------------
-// 贝塞尔二次曲线-示例2
-
-ctx.beginPath();
-ctx.moveTo(0, 200);
-ctx.bezierCurveTo(150, 50, 200, 300, 400, 150);
-ctx.lineTo(400, 400);
-ctx.lineTo(0, 400);
-ctx.closePath();
-
-ctx.strokeStyle = 'green';
 ctx.fillStyle = 'green';
-ctx.stroke();
-ctx.fill();
+ctx.strokeStyle = 'blue';
+ctx.font = "bold 20px Arial"
+
+// 文本宽度度量
+const msg = "欢迎来到Canvas世界";
+const width = ctx.measureText(msg).width;
+
+// 渲染文字
+ctx.fillText(msg, 100, 100);
+ctx.fillText(`以上字符串宽度为${width}px`, 50, 200);
+
+// 高度暂时没有对应的API来获取
 
 </script>
 </body>
