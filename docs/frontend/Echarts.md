@@ -152,9 +152,11 @@ chart.setOption({
 
 ![image-20211128140752858](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128140752858.png)
 
-#### 组件 - x轴
+#### 组件 - 直角坐标系
 
 x轴和y轴是两个组件，一般组合起来使用构成直角坐标系
+
+##### x轴
 
 x轴：https://echarts.apache.org/zh/option.html#xAxis
 
@@ -327,9 +329,7 @@ chart.setOption({
 
 
 
-#### 组件 - y轴
-
-x轴和y轴是两个组件，一般组合起来使用构成直角坐标系
+##### y轴
 
 y轴：https://echarts.apache.org/zh/option.html#yAxis
 
