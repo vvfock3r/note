@@ -30,72 +30,23 @@ chart.setOption({
 
     // 设置x轴
     xAxis: {
-        data: [
-            {
-                value: "食品",
-                textStyle: {
-                    color: 'green'
-                },
-            },
-            {
-                value: "数码",
-                textStyle: {
-                    color: 'black'
-                },
-            },
-            {
-                value: "服饰",
-                textStyle: {
-                    color: 'orange'
-                },
-            },
-            {
-                value: "箱包",
-                textStyle: {
-                    color: 'blue'
-                },
-            },
-        ],
+        data: ['食品', '数码', '服饰', '箱包'],
     },
 
     // 设置y轴
-    yAxis: {
-        // 默认为true
-        show: true,
-
-        // 默认为数值轴
-        type: 'value',
-
-        // 固定数值最小值和最大值
-        // 如果不设置的话，最小值和最大值是动态变化的
-        min: 0,
-        max: 200,
-
-        // 分割段数，默认为5
-        // 在我们的代码中，max(200) / 10 = 20，即每段的值为20
-        splitNumber: 10,
-
-        // Y轴文字样式
-        axisLabel: {
-            formatter: function (value, index) {
-                return value >= 100 ? 'Green ' + value : 'Red ' + value;
-            },
-            textStyle: {
-                color: function (value, index) {
-                    return value >= 100 ? 'green' : 'red';
-                }
-            }
-        },
-
-        // 是否留白，默认为true, 这个设置了好像没有生效？
-        boundaryGap: false,
-    },
+    yAxis: {},
 
     // 设置图表类型和图标数据
-    series: {
-        type: 'bar', // 柱状图
-        data: [100, 120, 50, 150] // 每个值和x轴分别对应
-    },
+    series: [
+        {
+            type: 'bar', // 柱状图
+            data: [100, 120, 50, 150] // 每个值和x轴分别对应
+        },
+        {
+            type: 'bar', // 柱状图
+            data: [80, 100, 30, 130] // 每个值和x轴分别对应
+        },
+    ],
 })
 </script>
 </body>

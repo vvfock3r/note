@@ -152,6 +152,50 @@ chart.setOption({
 
 ![image-20211128140752858](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128140752858.png)
 
+#### 组件 - 系列
+
+系列：https://echarts.apache.org/zh/option.html#series
+
+
+
+**系列的概念**
+
+简单来说，就是你要绘制哪种图形，比如一个直线图就是一个系列，一个柱状图也是一个系列，同样的还有饼图、K线图等等，
+
+总结一下就是**一个系列就是一种图形**
+
+参考下图：
+
+![image-20211128194633870](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128194633870.png)
+
+
+
+**系列的使用**
+
+光有系列还不够，每个系列还需要一些其他组件搭配使用，比如折线图、柱状图一般要和**直角坐标系**搭配来使用等
+
+
+
+**可存在多个系列**
+
+一个图标中可以存在多个系列，下面代码使用柱状图和折线图来说明
+
+> 当然，一个图表中也可以存在多个不同类型的系列，比如柱状图和折线图2个系列组成一个图表
+
+![image-20211128201039944](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128201039944.png)
+
+![image-20211128201555807](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128201555807.png)
+
+
+
+
+
+
+
+
+
+
+
 #### 组件 - 直角坐标系
 
 x轴和y轴是两个组件，一般组合起来使用构成直角坐标系
@@ -448,8 +492,6 @@ chart.setOption({
 ```
 
 ![image-20211128190227557](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128190227557.png)
-
-
 
 
 
