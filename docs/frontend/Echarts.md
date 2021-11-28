@@ -152,7 +152,7 @@ chart.setOption({
 
 ![image-20211128140752858](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128140752858.png)
 
-#### 组件 - 系列
+#### 组件 - 系列简介
 
 系列：https://echarts.apache.org/zh/option.html#series
 
@@ -188,11 +188,7 @@ chart.setOption({
 
 
 
-
-
-
-
-
+系列的内容太多，后面再详细解释每种图形的属性
 
 
 
