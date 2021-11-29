@@ -194,11 +194,15 @@ chart.setOption({
 
 #### 组件 - 直角坐标系
 
-x轴和y轴是两个组件，一般组合起来使用构成直角坐标系
+X轴和Y轴是两个组件，一般组合起来使用构成直角坐标系
 
-##### x轴
+X轴：https://echarts.apache.org/zh/option.html#xAxis
 
-x轴：https://echarts.apache.org/zh/option.html#xAxis
+Y轴：https://echarts.apache.org/zh/option.html#yAxis
+
+
+
+**X轴**
 
 `demo.html`
 
@@ -369,16 +373,12 @@ chart.setOption({
 
 
 
-##### y轴
+**Y轴**
 
-y轴：https://echarts.apache.org/zh/option.html#yAxis
-
-
-
-y轴和x轴很类似，所有相同的概念在这里就不重复说明了，y轴其余比较关心的有：
+Y轴和X轴很类似，所有相同的概念在这里就不重复说明了，Y轴其余比较关心的有：
 
 * 固定最小值和最大值
-* y轴分段显示设置
+* Y轴分段显示设置
 
 `demo.html`
 
@@ -491,6 +491,8 @@ chart.setOption({
 
 #### 组件 - 提示框
 
+文档：https://echarts.apache.org/zh/option.html#tooltip
+
 提示框最重要的是要知道如何改写样式，参考如下代码
 
 `demo.html`
@@ -576,6 +578,8 @@ chart.setOption({
 ![image-20211128212905392](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212905392.png)
 
 #### 组件 - 图例
+
+文档：https://echarts.apache.org/zh/option.html#legend
 
 图例一般用在多个系列的图表中，用来显示每个系列的说明
 
@@ -684,4 +688,341 @@ chart.setOption({
 ![image-20211128215351897](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215351897.png)![image-20211128215534945](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215534945.png)
 
 ![image-20211128215717266](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215717266.png)
+
+
+
+#### 组件 - 工具栏
+
+文档：https://echarts.apache.org/zh/option.html#toolbox
+
+工具栏内置有[导出图片](https://echarts.apache.org/zh/option.html#toolbox.feature.saveAsImage)，[数据视图](https://echarts.apache.org/zh/option.html#toolbox.feature.dataView)，[动态类型切换](https://echarts.apache.org/zh/option.html#toolbox.feature.magicType)，[数据区域缩放](https://echarts.apache.org/zh/option.html#toolbox.feature.dataZoom)，[重置](https://echarts.apache.org/zh/option.html#toolbox.feature.reset)五个工具
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+        left: 'center',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: Array.from(Array(30), (v, k) => k + 1),   // 生成1-30号数据
+    },
+
+    // 设置y轴
+    yAxis: {},
+
+    // 工具栏
+    toolbox: {
+        show: true,
+        feature: {
+            // 保存为图片
+            saveAsImage: {
+                title: '保存为图片',
+            },
+
+            // 区域缩放，这个有两个图标，一个是缩放，一个是还原
+            // 区域缩放使用方法：点击缩放图标，然后选中图标某一块区域，便能实现放大
+            // 区域还原使用方法：直接点击图标即可
+            dataZoom: {},
+
+            // 重置，还原配置项
+            restore: {},
+
+            // 显示数据，而不是图形
+            dataView: {},
+        }
+    },
+
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",
+            type: 'line',
+            // 随机生成10 - 300之间的正整数
+            data: Array.from(Array(30), () => 10 + parseInt(Math.random() * 290, 10)),
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211129225254096](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129225254096.png)
+
+
+
+
+
+
+
+
+
+#### 组件 - Grid
+
+文档：https://echarts.apache.org/zh/option.html#grid
+
+`grid`用来调整图表的位置
+
+**基本示例**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+        left: 'center',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: ['食品', '数码', '服饰', '箱包'],
+    },
+
+    // 设置y轴
+    yAxis: {},
+
+    // 调整图表位置(不包含其他组件，比如图例等)
+    grid: {
+        // 以为下默认值
+        // top: 60,
+        // bottom: 60,
+        // left: '10%',
+        // right: '10%',
+
+        // 如果我们想让图表再靠下一点的话，可以调整top和bottom的值
+        top: 40,
+        bottom: 40,
+
+        // 如果我们想让图表再向左右都靠一点的话
+        left: '5%',
+        right: '5%',
+    },
+
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",
+            type: 'bar', // 柱状图
+            data: [100, 120, 50, 150] // 每个值和x轴分别对应
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211129215801320](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129215801320.png)
+
+**背景颜色调整示例**
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+        left: 'center',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: ['食品', '数码', '服饰', '箱包'],
+    },
+
+    // 设置y轴
+    yAxis: {
+        splitLine: {
+            show: true,
+            lineStyle: {
+                // 使用深浅的间隔色
+                color: 'rgba(0,0,0,.1)',
+            }
+        },
+    },
+
+    // 调整图表位置(不包含其他组件，比如图例等)
+    grid: {
+        // 显示网格线
+        show: true,
+
+        // 设置背景颜色
+        backgroundColor: '#ccc',
+    },
+
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",
+            type: 'bar', // 柱状图
+            data: [100, 120, 50, 150] // 每个值和x轴分别对应
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211129221217335](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129221217335.png)
+
+
+
+#### 组件 - 坐标轴指示器
+
+文档：https://echarts.apache.org/zh/option.html#axisPointer
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+        left: 'center',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: Array.from(Array(30), (v, k) => k + 1),   // 生成1-30号数据
+        axisPointer: {
+            show: true,
+        },
+    },
+
+    // 设置y轴
+    yAxis: {
+        axisPointer: {
+            show: true,
+        },
+    },
+    
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",
+            type: 'line', // 柱状图
+            // 随机生成10 - 300之间的正整数
+            data: Array.from(Array(30), () => 10 + parseInt(Math.random() * 290, 10)),
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211129222757068](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129222757068.png)
+
+> X轴和Y轴中的虚线就是坐标轴指示器
+
+
+
+
+
+
 

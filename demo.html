@@ -26,34 +26,46 @@ chart.setOption({
     title: {
         text: '销售额',
         subtext: '包含北京和上海两个地区',
+        left: 'center',
     },
 
     // 设置x轴
     xAxis: {
-        data: ['食品', '数码', '服饰', '箱包'],
+        data: Array.from(Array(30), (v, k) => k + 1),   // 生成1-30号数据
     },
 
     // 设置y轴
     yAxis: {},
 
-    // 提示框
-    tooltip: {},
+    // 工具栏
+    toolbox: {
+        show: true,
+        feature: {
+            // 保存为图片
+            saveAsImage: {
+                title: '保存为图片',
+            },
 
-    // 图例
-    legend: {},
+            // 区域缩放，这个有两个图标，一个是缩放，一个是还原
+            // 区域缩放使用方法：点击缩放图标，然后选中图标某一块区域，便能实现放大
+            // 区域还原使用方法：直接点击图标即可
+            dataZoom: {},
 
+            // 重置，还原配置项
+            restore: {},
+
+            // 显示数据，而不是图形
+            dataView: {},
+        }
+    },
 
     // 设置图表类型和图标数据
     series: [
         {
             name: "北京",
-            type: 'bar', // 柱状图
-            data: [100, 120, 50, 150] // 每个值和x轴分别对应
-        },
-        {
-            name: "上海",
-            type: 'bar', // 柱状图
-            data: [80, 100, 30, 130] // 每个值和x轴分别对应
+            type: 'line',
+            // 随机生成10 - 300之间的正整数
+            data: Array.from(Array(30), () => 10 + parseInt(Math.random() * 290, 10)),
         },
     ],
 })
