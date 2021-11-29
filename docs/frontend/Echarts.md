@@ -489,7 +489,199 @@ chart.setOption({
 
 ![image-20211128190227557](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128190227557.png)
 
+#### 组件 - 提示框
 
+提示框最重要的是要知道如何改写样式，参考如下代码
 
+`demo.html`
 
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: ['食品', '数码', '服饰', '箱包'],
+    },
+
+    // 设置y轴
+    yAxis: {},
+
+    // 提示框
+    tooltip: {
+        show: true,
+        // 触发类型,默认为 item, 其他可选：axis，none
+        trigger: 'item',
+
+        // 提示框内容，信息比较多，参考文档：https://echarts.apache.org/zh/option.html#tooltip.formatter
+        // 我们来重写一下样式（如果想看默认样式，把下面这段代码注释即可）
+        formatter: function (params, ticket, callback) {
+            console.log(params);
+            // seriesName   系列名称
+            // 小圆点        params.marker
+            // name         类目轴的类目文字
+            // data/value   对应的Y轴数值
+            return `以下为自定义样式<hr style="margin: 0;padding: 0;"/>${params.seriesName}<br />${params.marker} ${params.name} ${params.value}`;
+        },
+    },
+
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",	 // 这里需要给系列设置一个名字，提示框会用到
+            type: 'bar',
+            data: [100, 120, 50, 150]
+        },
+        {
+            name: "上海", // 这里需要给系列设置一个名字，提示框会用到
+            type: 'bar',
+            data: [80, 100, 30, 130]
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211128212706694](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212706694.png)
+
+![image-20211128212905392](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212905392.png)
+
+#### 组件 - 图例
+
+图例一般用在多个系列的图表中，用来显示每个系列的说明
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- (1)引入echarts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+<!-- (2)创建图表容器 -->
+<div id="chart" style="width: 800px; height: 400px; border: 1px solid green;"></div>
+
+<script>
+// 图表容器Dom
+const chartDom = document.getElementById('chart');
+
+// 初始化echarts对象
+const chart = echarts.init(chartDom);
+
+// 设置图表参数（这会将图表绘制出来）
+chart.setOption({
+    // 设置标题
+    title: {
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
+    },
+
+    // 设置x轴
+    xAxis: {
+        data: ['食品', '数码', '服饰', '箱包'],
+    },
+
+    // 设置y轴
+    yAxis: {},
+
+    // 提示框
+    tooltip: {},
+
+    // 图例
+    legend: {
+        show: true,
+
+        // 图例类型
+        //   * plain(普通图例)
+        //   * scroll(可滚动翻页的图例。当图例数量较多时可以使用)
+        type: 'scroll',
+
+        // 布局朝向
+        //   * horizontal 水平布局
+        //   * vertical   垂直布局
+        orient: 'vertical',
+
+        // 系列公共样式
+        top: 20,
+        right: 0,
+
+        data: [
+            // 不同系列设置不同的样式
+            {
+                name: "北京",
+                icon: 'circle',
+                textStyle: {
+                    color: 'rgb(92,123,217)',
+                }
+            },
+
+            // 不同系列设置不同的样式
+            {
+                name: "上海",
+                icon: 'roundRect',
+                textStyle: {
+                    color: 'rgb(145,204,117)',
+                }
+            }
+        ]
+    },
+
+    // 设置图表类型和图标数据
+    series: [
+        {
+            name: "北京",
+            type: 'bar', // 柱状图
+            data: [100, 120, 50, 150] // 每个值和x轴分别对应
+        },
+        {
+            name: "上海",
+            type: 'bar', // 柱状图
+            data: [80, 100, 30, 130] // 每个值和x轴分别对应
+        },
+    ],
+})
+</script>
+</body>
+</html>
+```
+
+![image-20211128215351897](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215351897.png)![image-20211128215534945](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215534945.png)
+
+![image-20211128215717266](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215717266.png)
 

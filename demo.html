@@ -24,8 +24,8 @@ const chart = echarts.init(chartDom);
 chart.setOption({
     // 设置标题
     title: {
-        text: 'Echarts入门',
-        subtext: '这里是副标题',
+        text: '销售额',
+        subtext: '包含北京和上海两个地区',
     },
 
     // 设置x轴
@@ -36,13 +36,22 @@ chart.setOption({
     // 设置y轴
     yAxis: {},
 
+    // 提示框
+    tooltip: {},
+
+    // 图例
+    legend: {},
+
+
     // 设置图表类型和图标数据
     series: [
         {
+            name: "北京",
             type: 'bar', // 柱状图
             data: [100, 120, 50, 150] // 每个值和x轴分别对应
         },
         {
+            name: "上海",
             type: 'bar', // 柱状图
             data: [80, 100, 30, 130] // 每个值和x轴分别对应
         },
