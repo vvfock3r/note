@@ -463,6 +463,47 @@
 小技巧：可以用 !!值 来求得值的布尔属性,和Boolean函数效果相同
 ```
 
+
+
+### 空值合并操作符??
+
+`??`和`||`很像，下面对比来说一下
+
+`||`：当左侧为假时返回右侧的值，否则返回左侧的值
+
+`??`：当左侧的值为null 或者 undefined 时返回右侧的值，否则返回左侧的值
+
+```javascript
+// 当我们取值的时候很多时候会给一个默认值，这时候他们的差异就很明显了
+const config = {
+	retry: 0,
+};
+let retry1 = config.retry || 3;
+let retry2 = config.retry ?? 3;
+console.log(retry1);	// 3
+console.log(retry2);	// 0
+```
+
+### 可选链操作符?. 
+
+如果一个对象层次很深，并且属性值是否存在不固定，那么获取起来就很麻烦
+
+使用`?.`可以方便的获取，并且不会报错
+
+```javascript
+let user = {};
+
+// console.log(user.address.city);
+// 这会报错,因为user.address的值为undefined，此时再取.city属性就会报错，报错信息如下:
+// VM128:1 Uncaught TypeError: Cannot read property 'city' of undefined
+//    at <anonymous>:1:26
+
+// 使用?.就可以很高效的解决报错的问题
+console.log(user?.address?.city);  // undefined
+let city = user?.address?.city ?? '未知';
+console.log(city); // 未知
+```
+
 ### void运算符
 
 `void `是运算符，语法：`void expression`，但是一般表达式都写上小括号
