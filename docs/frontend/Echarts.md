@@ -1022,6 +1022,229 @@ chart.setOption({
 
 
 
+### 常见图形
+
+#### 折线图
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .box .chart {
+            width: 48%;
+            height: 450px;
+            margin: 10px;
+            border: 1px solid green;
+        }
+
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+    <div id="chart3" class="chart"></div>
+    <div id="chart4" class="chart"></div>
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM);
+chart1.setOption({
+    title: {
+        text: '2021年11月份楼盘售卖情况',
+        subtext: '一份中规中矩的折线图',
+        left: 'center',
+        top: 13,
+    },
+    xAxis: {
+        data: Array.from(Array(15), (v, k) => k + 1),   // 生成1-30号数据
+        axisTick: {
+            alignWithLabel: true,   // 竖线指向类目轴中的文字
+            interval: 0,    // 显示X轴下面的全部竖线
+        },
+        axisLabel: {
+            interval: 0, // 显示全部类目文字
+        },
+        axisPointer: {
+            show: true,
+        },
+    },
+    yAxis: {
+        min: 0,
+        max: 300,
+    },
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            let categoryName = `2021年11月${params[0].name}号`;
+            let itemList = [];
+            for (series of params) {
+                const line = `${series.marker} ${series.seriesName} ${series.data}`;
+                itemList.push(line);
+            }
+            return `${categoryName}<br />${itemList.join('<br />')}`
+        },
+    },
+    legend: {
+        right: 20,
+        top: 20,
+    },
+    series: [
+        {
+            name: '成交',
+            type: 'line',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
+        },
+        {
+            name: '预购',
+            type: 'line',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 190, 10)),
+        },
+        {
+            name: '意向',
+            type: 'line',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 290, 10)),
+        },
+    ]
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM);
+
+// 自定义标记所用的值
+const customMarkList = Array.from(Array(15), () => 50 + parseInt(Math.random() * 50, 10));
+const customMarkLast = customMarkList.length - 1;
+
+chart2.setOption({
+    title: {
+        text: '线条样式定制',
+        subtext: '提示: 请点击最下方图例来激活系列',
+        left: 'center',
+        top: 13,
+    },
+    xAxis: {
+        data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
+    },
+    yAxis: {},
+    legend: {
+        bottom: 15,
+        selected: {
+            '默认线条': true,
+            '数值显示': false,
+            '抹去小圆点': false,
+            '抹去尖角': false,
+            '数值标记': false,
+        }
+    },
+
+    series: [
+        {
+            name: '默认线条',
+            type: 'line',
+            data: Array.from(Array(15), () => 250 + parseInt(Math.random() * 50, 10)),
+        },
+        {
+            name: '数值显示',
+            type: 'line',
+            data: Array.from(Array(15), () => 200 + parseInt(Math.random() * 50, 10)),
+            // 定义图表上的文本标签
+            label: {
+                show: true,  // 开启后可以显示具体数值, 默认为false
+                color: 'green',
+            },
+        },
+        {
+            name: '抹去小圆点',
+            type: 'line',
+            data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
+            symbol: 'none',     // 去掉小圆点
+        },
+        {
+            name: '抹去尖角',
+            type: 'line',
+            data: Array.from(Array(15), () => 100 + parseInt(Math.random() * 50, 10)),
+            symbol: 'none',     // 去掉小圆点
+            smooth: true,       // 抹去尖角，变得平滑
+        },
+        {
+            name: '数值标记',
+            type: 'line',
+            data: customMarkList,
+            markPoint: {
+                data: [
+                    // 这个会把折线中数值最大的标记出来，同理也可以标记最小值、平均值
+                    {
+                        name: '最大值',
+                        type: 'max',
+                        value: 'abc',
+                    },
+                    // 自定义标记，比如我就标记第一个
+                    {
+                        name: '自定义标记',
+                        xAxis: customMarkLast,                  // x轴索引
+                        yAxis: customMarkList[customMarkLast],  // y轴索引
+                        value: 'Mark',           // 标记后显示的值是什么
+                        symbol: 'pin',           // 标记样式，默认为pin，没有更好看的了..
+                    }
+                ],
+            },
+        },
+    ]
+})
+</script>
+
+<!-- 图表3 -->
+<script>
+
+</script>
+
+<!-- 图表4 -->
+<script>
+
+</script>
+</body>
+</html>
+```
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/echarts-line1.gif)
+
+
+
+
+
+
+
 
 
 
