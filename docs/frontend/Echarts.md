@@ -89,6 +89,8 @@ chart.setOption({
 
 文档：https://echarts.apache.org/zh/option.html#title
 
+::: details 点击查看完整代码
+
 `demo.html`
 
 ```html
@@ -150,6 +152,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211128140752858](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128140752858.png)
 
 #### 组件 - 系列简介
@@ -203,6 +207,8 @@ Y轴：https://echarts.apache.org/zh/option.html#yAxis
 
 
 **X轴**
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -369,6 +375,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211128160412701](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128160412701.png)
 
 
@@ -381,6 +389,8 @@ Y轴和X轴很类似，所有相同的概念在这里就不重复说明了，Y�
 * Y轴分段显示设置
 
 `demo.html`
+
+::: details 点击查看代码
 
 ```html
 <!doctype html>
@@ -487,6 +497,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211128190227557](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128190227557.png)
 
 #### 组件 - 提示框
@@ -494,6 +506,8 @@ chart.setOption({
 文档：https://echarts.apache.org/zh/option.html#tooltip
 
 提示框最重要的是要知道如何改写样式，参考如下代码
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -573,6 +587,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211128212706694](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212706694.png)
 
 ![image-20211128212905392](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212905392.png)
@@ -582,6 +598,8 @@ chart.setOption({
 文档：https://echarts.apache.org/zh/option.html#legend
 
 图例一般用在多个系列的图表中，用来显示每个系列的说明
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -685,6 +703,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211128215351897](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215351897.png)![image-20211128215534945](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215534945.png)
 
 ![image-20211128215717266](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215717266.png)
@@ -696,6 +716,8 @@ chart.setOption({
 文档：https://echarts.apache.org/zh/option.html#toolbox
 
 工具栏内置有[导出图片](https://echarts.apache.org/zh/option.html#toolbox.feature.saveAsImage)，[数据视图](https://echarts.apache.org/zh/option.html#toolbox.feature.dataView)，[动态类型切换](https://echarts.apache.org/zh/option.html#toolbox.feature.magicType)，[数据区域缩放](https://echarts.apache.org/zh/option.html#toolbox.feature.dataZoom)，[重置](https://echarts.apache.org/zh/option.html#toolbox.feature.reset)五个工具
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -776,6 +798,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211129225254096](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129225254096.png)
 
 
@@ -792,7 +816,11 @@ chart.setOption({
 
 `grid`用来调整图表的位置
 
+
+
 **基本示例**
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -867,9 +895,13 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211129215801320](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129215801320.png)
 
 **背景颜色调整示例**
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -944,6 +976,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211129221217335](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129221217335.png)
 
 
@@ -951,6 +985,8 @@ chart.setOption({
 #### 组件 - 坐标轴指示器
 
 文档：https://echarts.apache.org/zh/option.html#axisPointer
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -1016,6 +1052,8 @@ chart.setOption({
 </html>
 ```
 
+:::
+
 ![image-20211129222757068](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129222757068.png)
 
 > X轴和Y轴中的虚线就是坐标轴指示器
@@ -1025,6 +1063,8 @@ chart.setOption({
 ### 常见图形
 
 #### 折线图
+
+::: details 点击查看完整代码
 
 `demo.html`
 
@@ -1236,6 +1276,8 @@ chart2.setOption({
 </body>
 </html>
 ```
+
+:::
 
 ![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/echarts-line1.gif)
 
