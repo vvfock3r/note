@@ -1103,15 +1103,13 @@ chart.setOption({
             margin: 10px;
             border: 1px solid green;
         }
-
     </style>
 </head>
 <body>
 <div class="box">
     <div id="chart1" class="chart"></div>
     <div id="chart2" class="chart"></div>
-    <div id="chart3" class="chart"></div>
-    <div id="chart4" class="chart"></div>
+
 </div>
 
 <!-- 图表1 -->
@@ -1194,9 +1192,15 @@ chart2.setOption({
         top: 13,
     },
     xAxis: {
+        name: 'x轴名称',
         data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
     },
-    yAxis: {},
+    yAxis: {
+        name: 'y轴名称',
+        axisLine: {
+            show: true,
+        },
+    },
     legend: {
         bottom: 15,
         selected: {
@@ -1205,6 +1209,7 @@ chart2.setOption({
             '抹去小圆点': false,
             '抹去尖角': false,
             '数值标记': false,
+            '面积图': false,
         }
     },
 
@@ -1247,7 +1252,6 @@ chart2.setOption({
                     {
                         name: '最大值',
                         type: 'max',
-                        value: 'abc',
                     },
                     // 自定义标记，比如我就标记第一个
                     {
@@ -1260,18 +1264,14 @@ chart2.setOption({
                 ],
             },
         },
+        {
+            name: '面积图',
+            type: 'line',
+            data: Array.from(Array(15), () => 0 + parseInt(Math.random() * 50, 10)),
+            areaStyle: {},
+        },
     ]
 })
-</script>
-
-<!-- 图表3 -->
-<script>
-
-</script>
-
-<!-- 图表4 -->
-<script>
-
 </script>
 </body>
 </html>
@@ -1283,9 +1283,17 @@ chart2.setOption({
 
 
 
+#### 柱状图
 
+::: details 点击查看完整代码
 
+`demo.html`
 
+```html
+待补充
+```
+
+:::
 
 
 
