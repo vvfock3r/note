@@ -1285,12 +1285,125 @@ chart2.setOption({
 
 #### 柱状图
 
+> 很多属性与折线图可以共用，只写几个不一样的
+
 ::: details 点击查看完整代码
 
 `demo.html`
 
 ```html
-待补充
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .box .chart {
+            width: 48%;
+            height: 450px;
+            margin: 10px;
+            border: 1px solid green;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM);
+chart1.setOption({
+    title: {
+        text: '显示数值的柱状图',
+        left: 'center',
+        top: 13,
+    },
+    xAxis: {
+        data: Array.from(Array(15), (v, k) => k + 1),   // 生成1-30号数据
+        axisTick: {
+            alignWithLabel: true,   // 竖线指向类目轴中的文字
+            interval: 0,    // 显示X轴下面的全部竖线
+        },
+        axisLabel: {
+            interval: 0, // 显示全部类目文字
+        },
+    },
+    yAxis: {},
+
+    series: {
+        type: 'bar',
+        data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
+        label: {
+            show: true,  // 开启后可以显示具体数值, 默认为false
+            position: 'top', // 在顶部显示数值
+        },
+    },
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM);
+
+// 自定义标记所用的值
+const customMarkList = Array.from(Array(15), () => 50 + parseInt(Math.random() * 50, 10));
+const customMarkLast = customMarkList.length - 1;
+
+chart2.setOption({
+    title: {
+        text: '堆叠柱状图',
+        left: 'center',
+        top: 13,
+    },
+    xAxis: {
+        data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
+    },
+    yAxis: {},
+
+    series: [
+        {
+            type: 'bar',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
+            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
+        },
+        {
+            type: 'bar',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 10, 10)),
+            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
+        },
+    ]
+})
+</script>
+</body>
+</html>
 ```
 
 :::

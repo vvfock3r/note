@@ -47,8 +47,7 @@ const chart1DOM = document.getElementById('chart1');
 const chart1 = echarts.init(chart1DOM);
 chart1.setOption({
     title: {
-        text: '2021年11月份楼盘售卖情况',
-        subtext: '一份中规中矩的折线图',
+        text: '显示数值的柱状图',
         left: 'center',
         top: 13,
     },
@@ -61,46 +60,17 @@ chart1.setOption({
         axisLabel: {
             interval: 0, // 显示全部类目文字
         },
-        axisPointer: {
-            show: true,
+    },
+    yAxis: {},
+
+    series: {
+        type: 'bar',
+        data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
+        label: {
+            show: true,  // 开启后可以显示具体数值, 默认为false
+            position: 'top', // 在顶部显示数值
         },
     },
-    yAxis: {
-        min: 0,
-        max: 300,
-    },
-    tooltip: {
-        formatter: function (params, ticket, callback) {
-            let categoryName = `2021年11月${params[0].name}号`;
-            let itemList = [];
-            for (series of params) {
-                const line = `${series.marker} ${series.seriesName} ${series.data}`;
-                itemList.push(line);
-            }
-            return `${categoryName}<br />${itemList.join('<br />')}`
-        },
-    },
-    legend: {
-        right: 20,
-        top: 20,
-    },
-    series: [
-        {
-            name: '成交',
-            type: 'line',
-            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
-        },
-        {
-            name: '预购',
-            type: 'line',
-            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 190, 10)),
-        },
-        {
-            name: '意向',
-            type: 'line',
-            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 290, 10)),
-        },
-    ]
 })
 </script>
 
@@ -115,89 +85,25 @@ const customMarkLast = customMarkList.length - 1;
 
 chart2.setOption({
     title: {
-        text: '线条样式定制',
-        subtext: '提示: 请点击最下方图例来激活系列',
+        text: '堆叠柱状图',
         left: 'center',
         top: 13,
     },
     xAxis: {
-        name: 'x轴名称',
         data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
     },
-    yAxis: {
-        name: 'y轴名称',
-        axisLine: {
-            show: true,
-        },
-    },
-    legend: {
-        bottom: 15,
-        selected: {
-            '默认线条': true,
-            '数值显示': false,
-            '抹去小圆点': false,
-            '抹去尖角': false,
-            '数值标记': false,
-            '面积图': false,
-        }
-    },
+    yAxis: {},
 
     series: [
         {
-            name: '默认线条',
-            type: 'line',
-            data: Array.from(Array(15), () => 250 + parseInt(Math.random() * 50, 10)),
+            type: 'bar',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
+            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
         },
         {
-            name: '数值显示',
-            type: 'line',
-            data: Array.from(Array(15), () => 200 + parseInt(Math.random() * 50, 10)),
-            // 定义图表上的文本标签
-            label: {
-                show: true,  // 开启后可以显示具体数值, 默认为false
-                color: 'green',
-            },
-        },
-        {
-            name: '抹去小圆点',
-            type: 'line',
-            data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
-            symbol: 'none',     // 去掉小圆点
-        },
-        {
-            name: '抹去尖角',
-            type: 'line',
-            data: Array.from(Array(15), () => 100 + parseInt(Math.random() * 50, 10)),
-            symbol: 'none',     // 去掉小圆点
-            smooth: true,       // 抹去尖角，变得平滑
-        },
-        {
-            name: '数值标记',
-            type: 'line',
-            data: customMarkList,
-            markPoint: {
-                data: [
-                    // 这个会把折线中数值最大的标记出来，同理也可以标记最小值、平均值
-                    {
-                        name: '最大值',
-                        type: 'max',
-                    },
-                    // 自定义标记，比如我就标记第一个
-                    {
-                        name: '自定义标记',
-                        xAxis: customMarkLast,                  // x轴索引
-                        yAxis: customMarkList[customMarkLast],  // y轴索引
-                        value: 'Mark',           // 标记后显示的值是什么
-                        symbol: 'pin',           // 标记样式，默认为pin，没有更好看的了..
-                    }
-                ],
-            },
-        },
-        {
-            name: '面积图',
-            type: 'line',
-            data: Array.from(Array(15), () => 0 + parseInt(Math.random() * 50, 10)),
-            areaStyle: {},
+            type: 'bar',
+            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 10, 10)),
+            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
         },
     ]
 })
