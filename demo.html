@@ -27,7 +27,7 @@
         }
 
         .box .chart {
-            width: 48%;
+            width: 30%;
             height: 450px;
             margin: 10px;
             border: 1px solid green;
@@ -38,7 +38,10 @@
 <div class="box">
     <div id="chart1" class="chart"></div>
     <div id="chart2" class="chart"></div>
-
+    <div id="chart3" class="chart"></div>
+    <div id="chart4" class="chart"></div>
+    <div id="chart5" class="chart"></div>
+    <div id="chart6" class="chart"></div>
 </div>
 
 <!-- 图表1 -->
@@ -47,29 +50,21 @@ const chart1DOM = document.getElementById('chart1');
 const chart1 = echarts.init(chart1DOM);
 chart1.setOption({
     title: {
-        text: '显示数值的柱状图',
+        text: '默认饼图',
         left: 'center',
         top: 13,
     },
-    xAxis: {
-        data: Array.from(Array(15), (v, k) => k + 1),   // 生成1-30号数据
-        axisTick: {
-            alignWithLabel: true,   // 竖线指向类目轴中的文字
-            interval: 0,    // 显示X轴下面的全部竖线
-        },
-        axisLabel: {
-            interval: 0, // 显示全部类目文字
-        },
-    },
-    yAxis: {},
-
+    tooltip: {},
     series: {
-        type: 'bar',
-        data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
-        label: {
-            show: true,  // 开启后可以显示具体数值, 默认为false
-            position: 'top', // 在顶部显示数值
-        },
+        name: '文章分类',
+        type: 'pie',
+        data: [
+            {name: 'Python', value: 10},
+            {name: 'Go', value: 30},
+            {name: 'Java', value: 15},
+            {name: 'Shell', value: 15},
+            {name: '容器', value: 15},
+        ],
     },
 })
 </script>
@@ -78,34 +73,343 @@ chart1.setOption({
 <script>
 const chart2DOM = document.getElementById('chart2');
 const chart2 = echarts.init(chart2DOM);
-
-// 自定义标记所用的值
-const customMarkList = Array.from(Array(15), () => 50 + parseInt(Math.random() * 50, 10));
-const customMarkLast = customMarkList.length - 1;
-
 chart2.setOption({
     title: {
-        text: '堆叠柱状图',
+        text: '调整图形位置和大小(1)',
+        subtext: '语法: 圆心坐标center和内外半径radius', // 这时候需要调整显示文字或调整饼图大小或位置等
         left: 'center',
-        top: 13,
+        top: 10,
     },
-    xAxis: {
-        data: Array.from(Array(15), () => 150 + parseInt(Math.random() * 50, 10)),
-    },
-    yAxis: {},
+    tooltip: {},
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: [
+            {name: 'Python', value: 10},
+            {name: 'Go', value: 30},
+            {name: 'Java', value: 15},
+            {name: 'Shell', value: 15},
+            {name: '容器', value: 15},
+        ],
 
-    series: [
+        // 调整圆的位置
+        // center指的是圆心的x坐标和y坐标，默认为 ['50%', '50%']
+        // 比如如果想靠左一点，那么将x轴坐标(第一个参数)调小即可
+        center: ['50%', '50%'],
+
+        // 调整圆的大小
+        // radius设置圆的半径，语法是: [内半径, 外半径]，默认值是：[0, '75%']
+        // 外半径最容易理解，就是我们平常理解的圆半径
+        // 内半径默认是0，如果设置了这个值，会变成空心圆，内半径就是空心的半径
+        radius: [0, '60%'],
+    },
+})
+</script>
+
+<!-- 图表3 -->
+<script>
+const chart3DOM = document.getElementById('chart3');
+const chart3 = echarts.init(chart3DOM);
+chart3.setOption({
+    title: [
+        // 标题1
         {
-            type: 'bar',
-            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 90, 10)),
-            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
+            text: '调整图形位置和大小和双标题(2)',
+            subtext: '注意: 设置内圆半径radius',
+            left: 'center',
+            top: 10,
         },
+        // 标题2
         {
-            type: 'bar',
-            data: Array.from(Array(15), () => 10 + parseInt(Math.random() * 10, 10)),
-            stack: '市值',     // 数据堆叠，两个柱状图设置成相同名称即可实现堆叠
+            text: "标题2",
+            subtext: '副标题',
+            x: '48%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+    tooltip: {},
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: [
+            {name: 'Python', value: 10},
+            {name: 'Go', value: 30},
+            {name: 'Java', value: 15},
+            {name: 'Shell', value: 15},
+            {name: '容器', value: 15},
+        ],
+
+        // 调整一下圆的位置，不然会和副标题重叠
+        center: ['50%', '55%'],
+
+        // 调整一下大小，不然label文字显示不全
+        radius: ['50%', '70%'],
+
+        // 提示框
+        tooltip: {}
+    },
+})
+</script>
+
+<!-- 图表4 -->
+<script>
+const chart4DOM = document.getElementById('chart4');
+const chart4 = echarts.init(chart4DOM);
+chart4.setOption({
+    title: {
+        text: '定制显示文字和提示框',
+        subtext: '注意: 文字过长会引起显示不完全的情况', // 这时候需要调整显示文字或调整饼图大小或位置等
+        left: 'center',
+        top: 10,
+    },
+    tooltip: {},
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: [
+            {name: 'Python', value: 10},
+            {name: 'Go', value: 30},
+            {name: 'Java', value: 15},
+            {name: 'Shell', value: 15},
+            {name: '容器', value: 15},
+        ],
+        // label 标签文字
+        label: {
+            show: true, // 默认显示标签文字
+
+            // 默认文字在圆外边，其他可选值: inside/inner(这俩一模一样，没有区别)、center
+            // 选择inside或inner的话，就没有指示线条了
+            position: 'outside',
+
+            // 自定义显示文本
+            formatter: function (params) {
+                // params.value
+                // params.percent 该数据所占的百分比, 这里的百分比是echarts帮我们计算出来的，
+                //                如果想在其他地方(比如图例)获取百分比，好像只能自己计算
+                let percent = parseInt(params.percent, 10);
+                return `${params.name} ${params.value} (${percent}%)`;
+            },
         },
-    ]
+
+        // 调整一下圆的位置，不然会和副标题重叠
+        center: ['50%', '55%'],
+
+        // 调整一下大小，不然label文字显示不全
+        radius: [0, '70%'],
+
+        // 定制提示框
+        tooltip: {
+            formatter: function (params, ticket, callback) {
+                console.log(params);
+                // seriesName   系列名称
+                // 小圆点        params.marker
+                // name         名称
+                // data/value   数值
+                // percent      百分比
+                return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+            },
+        }
+    },
+})
+</script>
+
+<!-- 图表5 -->
+<script>
+const chart5DOM = document.getElementById('chart5');
+const chart5 = echarts.init(chart5DOM);
+const chart5_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart5.setOption({
+    title: {
+        text: '其他调整',
+        subtext: '①线条②数据库留白③定制图例(不支持HTML)',
+        left: 'center',
+        top: 10,
+    },
+
+    // 提示框
+    tooltip: {},
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '70%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart5_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.percent}%)`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart5_data,
+
+        // 定制线条
+        labelLine: {
+            length: 50, // 线段1长度
+            length2: 15, // 线段2长度
+            smooth: false,   // 使线段更平滑(没有尖叫)，和折线图中的smooth一个意思
+        },
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: false,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['35%', '55%'],
+
+        // 调整一下大小
+        radius: [0, '40%'],
+    },
+})
+</script>
+
+<!-- 图表6 -->
+<script>
+const chart6DOM = document.getElementById('chart6');
+const chart6 = echarts.init(chart6DOM);
+const data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart6.setOption({
+    title: [
+        // 标题1
+        {
+            text: '最终成品',
+            subtext: 'PS: 图例不支持HTML, 数值如何对齐?',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
 })
 </script>
 </body>
