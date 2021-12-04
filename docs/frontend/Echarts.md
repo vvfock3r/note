@@ -1841,3 +1841,1362 @@ chart6.setOption({
 
 ![image-20211204180301819](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204180301819.png)
 
+
+
+### 颜色主题和图形渲染
+
+文档：[https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）](https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）)
+
+
+
+#### 切换内置主题
+
+内置的主题：
+
+* 默认主题
+* 明亮模式 `light`
+* 暗黑模式 `dark`
+
+> 在文档中只提到了`dark`主题，在别的资料中看到了`litght`主题，实验了也确实有效果，
+>
+> 默认主题可以写任何字符串，只要不与已经存在的主题冲突，就会自动应用默认主题，比如`default`
+
+
+
+如果要修改主题，只需要在初始化时设置第二个参数即可，比如
+
+```javascript
+const chart = echarts.init(chartDom2, "dark");
+```
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .box .chart {
+            width: 30%;
+            height: 450px;
+            margin: 10px;
+            border: 1px solid green;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+    <div id="chart3" class="chart"></div>
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM,);
+const chart1_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart1.setOption({
+    title: [
+        // 标题1
+        {
+            text: '默认主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart1_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart1_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM, 'light');
+const chart2_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart2.setOption({
+    title: [
+        // 标题1
+        {
+            text: 'light主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart2_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart2_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+
+<!-- 图表3 -->
+<script>
+const chart3DOM = document.getElementById('chart3');
+const chart3 = echarts.init(chart3DOM, 'dark');
+const chart3_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart3.setOption({
+    title: [
+        // 标题1
+        {
+            text: 'dark主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart3_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart3_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+</body>
+</html>
+```
+
+:::
+
+![image-20211204184203145](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204184203145.png)
+
+
+
+#### 使用自定义主题
+
+文档：https://echarts.apache.org/zh/theme-builder.html
+
+**第一步：先选择一个合适的主题，并拷贝到剪贴板**
+
+![image-20211204184625176](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204184625176.png)
+
+
+
+**第二步：将JS代码粘贴到HTML文件中**
+
+js代码中会给主题起一个名字，在代码中可以找到，比如
+
+```javascript
+echarts.registerTheme('westeros', {
+```
+
+> 这里为了方便直接将主题代码放入head > script标签中
+
+
+
+**第三步：将主题修改为JavaScript代码中注册的主题**
+
+```javascript
+const chart = echarts.init(chartDom, 'westeros');
+```
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .box .chart {
+            width: 30%;
+            height: 450px;
+            margin: 10px;
+            border: 1px solid green;
+        }
+    </style>
+    <!-- echarts定制主题westeros -->
+    <script>
+    (function (root, factory) {
+        if (typeof define === 'function' && define.amd) {
+            // AMD. Register as an anonymous module.
+            define(['exports', 'echarts'], factory);
+        } else if (typeof exports === 'object' && typeof exports.nodeName !== 'string') {
+            // CommonJS
+            factory(exports, require('echarts'));
+        } else {
+            // Browser globals
+            factory({}, root.echarts);
+        }
+    }(this, function (exports, echarts) {
+        var log = function (msg) {
+            if (typeof console !== 'undefined') {
+                console && console.error && console.error(msg);
+            }
+        };
+        if (!echarts) {
+            log('ECharts is not Loaded');
+            return;
+        }
+        echarts.registerTheme('westeros', {
+            "color": [
+                "#516b91",
+                "#59c4e6",
+                "#edafda",
+                "#93b7e3",
+                "#a5e7f0",
+                "#cbb0e3"
+            ],
+            "backgroundColor": "rgba(0,0,0,0)",
+            "textStyle": {},
+            "title": {
+                "textStyle": {
+                    "color": "#516b91"
+                },
+                "subtextStyle": {
+                    "color": "#93b7e3"
+                }
+            },
+            "line": {
+                "itemStyle": {
+                    "borderWidth": "2"
+                },
+                "lineStyle": {
+                    "width": "2"
+                },
+                "symbolSize": "6",
+                "symbol": "emptyCircle",
+                "smooth": true
+            },
+            "radar": {
+                "itemStyle": {
+                    "borderWidth": "2"
+                },
+                "lineStyle": {
+                    "width": "2"
+                },
+                "symbolSize": "6",
+                "symbol": "emptyCircle",
+                "smooth": true
+            },
+            "bar": {
+                "itemStyle": {
+                    "barBorderWidth": 0,
+                    "barBorderColor": "#ccc"
+                }
+            },
+            "pie": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "scatter": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "boxplot": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "parallel": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "sankey": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "funnel": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "gauge": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                }
+            },
+            "candlestick": {
+                "itemStyle": {
+                    "color": "#edafda",
+                    "color0": "transparent",
+                    "borderColor": "#d680bc",
+                    "borderColor0": "#8fd3e8",
+                    "borderWidth": "2"
+                }
+            },
+            "graph": {
+                "itemStyle": {
+                    "borderWidth": 0,
+                    "borderColor": "#ccc"
+                },
+                "lineStyle": {
+                    "width": 1,
+                    "color": "#aaa"
+                },
+                "symbolSize": "6",
+                "symbol": "emptyCircle",
+                "smooth": true,
+                "color": [
+                    "#516b91",
+                    "#59c4e6",
+                    "#edafda",
+                    "#93b7e3",
+                    "#a5e7f0",
+                    "#cbb0e3"
+                ],
+                "label": {
+                    "color": "#eee"
+                }
+            },
+            "map": {
+                "itemStyle": {
+                    "areaColor": "#f3f3f3",
+                    "borderColor": "#516b91",
+                    "borderWidth": 0.5
+                },
+                "label": {
+                    "color": "#000"
+                },
+                "emphasis": {
+                    "itemStyle": {
+                        "areaColor": "#a5e7f0",
+                        "borderColor": "#516b91",
+                        "borderWidth": 1
+                    },
+                    "label": {
+                        "color": "#516b91"
+                    }
+                }
+            },
+            "geo": {
+                "itemStyle": {
+                    "areaColor": "#f3f3f3",
+                    "borderColor": "#516b91",
+                    "borderWidth": 0.5
+                },
+                "label": {
+                    "color": "#000"
+                },
+                "emphasis": {
+                    "itemStyle": {
+                        "areaColor": "#a5e7f0",
+                        "borderColor": "#516b91",
+                        "borderWidth": 1
+                    },
+                    "label": {
+                        "color": "#516b91"
+                    }
+                }
+            },
+            "categoryAxis": {
+                "axisLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": "#cccccc"
+                    }
+                },
+                "axisTick": {
+                    "show": false,
+                    "lineStyle": {
+                        "color": "#333"
+                    }
+                },
+                "axisLabel": {
+                    "show": true,
+                    "color": "#999999"
+                },
+                "splitLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": [
+                            "#eeeeee"
+                        ]
+                    }
+                },
+                "splitArea": {
+                    "show": false,
+                    "areaStyle": {
+                        "color": [
+                            "rgba(250,250,250,0.05)",
+                            "rgba(200,200,200,0.02)"
+                        ]
+                    }
+                }
+            },
+            "valueAxis": {
+                "axisLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": "#cccccc"
+                    }
+                },
+                "axisTick": {
+                    "show": false,
+                    "lineStyle": {
+                        "color": "#333"
+                    }
+                },
+                "axisLabel": {
+                    "show": true,
+                    "color": "#999999"
+                },
+                "splitLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": [
+                            "#eeeeee"
+                        ]
+                    }
+                },
+                "splitArea": {
+                    "show": false,
+                    "areaStyle": {
+                        "color": [
+                            "rgba(250,250,250,0.05)",
+                            "rgba(200,200,200,0.02)"
+                        ]
+                    }
+                }
+            },
+            "logAxis": {
+                "axisLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": "#cccccc"
+                    }
+                },
+                "axisTick": {
+                    "show": false,
+                    "lineStyle": {
+                        "color": "#333"
+                    }
+                },
+                "axisLabel": {
+                    "show": true,
+                    "color": "#999999"
+                },
+                "splitLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": [
+                            "#eeeeee"
+                        ]
+                    }
+                },
+                "splitArea": {
+                    "show": false,
+                    "areaStyle": {
+                        "color": [
+                            "rgba(250,250,250,0.05)",
+                            "rgba(200,200,200,0.02)"
+                        ]
+                    }
+                }
+            },
+            "timeAxis": {
+                "axisLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": "#cccccc"
+                    }
+                },
+                "axisTick": {
+                    "show": false,
+                    "lineStyle": {
+                        "color": "#333"
+                    }
+                },
+                "axisLabel": {
+                    "show": true,
+                    "color": "#999999"
+                },
+                "splitLine": {
+                    "show": true,
+                    "lineStyle": {
+                        "color": [
+                            "#eeeeee"
+                        ]
+                    }
+                },
+                "splitArea": {
+                    "show": false,
+                    "areaStyle": {
+                        "color": [
+                            "rgba(250,250,250,0.05)",
+                            "rgba(200,200,200,0.02)"
+                        ]
+                    }
+                }
+            },
+            "toolbox": {
+                "iconStyle": {
+                    "borderColor": "#999"
+                },
+                "emphasis": {
+                    "iconStyle": {
+                        "borderColor": "#666"
+                    }
+                }
+            },
+            "legend": {
+                "textStyle": {
+                    "color": "#999999"
+                }
+            },
+            "tooltip": {
+                "axisPointer": {
+                    "lineStyle": {
+                        "color": "#ccc",
+                        "width": 1
+                    },
+                    "crossStyle": {
+                        "color": "#ccc",
+                        "width": 1
+                    }
+                }
+            },
+            "timeline": {
+                "lineStyle": {
+                    "color": "#8fd3e8",
+                    "width": 1
+                },
+                "itemStyle": {
+                    "color": "#8fd3e8",
+                    "borderWidth": 1
+                },
+                "controlStyle": {
+                    "color": "#8fd3e8",
+                    "borderColor": "#8fd3e8",
+                    "borderWidth": 0.5
+                },
+                "checkpointStyle": {
+                    "color": "#8fd3e8",
+                    "borderColor": "#8a7ca8"
+                },
+                "label": {
+                    "color": "#8fd3e8"
+                },
+                "emphasis": {
+                    "itemStyle": {
+                        "color": "#8fd3e8"
+                    },
+                    "controlStyle": {
+                        "color": "#8fd3e8",
+                        "borderColor": "#8fd3e8",
+                        "borderWidth": 0.5
+                    },
+                    "label": {
+                        "color": "#8fd3e8"
+                    }
+                }
+            },
+            "visualMap": {
+                "color": [
+                    "#516b91",
+                    "#59c4e6",
+                    "#a5e7f0"
+                ]
+            },
+            "dataZoom": {
+                "backgroundColor": "rgba(0,0,0,0)",
+                "dataBackgroundColor": "rgba(255,255,255,0.3)",
+                "fillerColor": "rgba(167,183,204,0.4)",
+                "handleColor": "#a7b7cc",
+                "handleSize": "100%",
+                "textStyle": {
+                    "color": "#333"
+                }
+            },
+            "markPoint": {
+                "label": {
+                    "color": "#eee"
+                },
+                "emphasis": {
+                    "label": {
+                        "color": "#eee"
+                    }
+                }
+            }
+        });
+    }));
+    </script>
+</head>
+<body>
+<div class="box">
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+    <div id="chart3" class="chart"></div>
+    <div id="chart4" class="chart"></div>
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM,);
+const chart1_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart1.setOption({
+    title: [
+        // 标题1
+        {
+            text: '默认主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart1_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart1_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM, 'light');
+const chart2_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart2.setOption({
+    title: [
+        // 标题1
+        {
+            text: 'light主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart2_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart2_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+
+<!-- 图表3 -->
+<script>
+const chart3DOM = document.getElementById('chart3');
+const chart3 = echarts.init(chart3DOM, 'dark');
+const chart3_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart3.setOption({
+    title: [
+        // 标题1
+        {
+            text: 'dark主题',
+            subtext: 'echarts内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart3_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart3_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+
+<!-- 图表4 -->
+<script>
+const chart4DOM = document.getElementById('chart4');
+const chart4 = echarts.init(chart4DOM, 'westeros');
+const chart4_data = [
+    {name: 'Python', value: 10, percent: 11},
+    {name: 'Go', value: 30, percent: 35},
+    {name: 'Java', value: 15, percent: 17},
+    {name: 'Shell', value: 15, percent: 15},
+    {name: '容器', value: 15, percent: 17},
+]
+chart4.setOption({
+    title: [
+        // 标题1
+        {
+            text: 'westeros',
+            subtext: '非内置主题',
+            left: 'center',
+            top: 10,
+        },
+        // 标题2
+        {
+            text: "累计文章数量",
+            subtext: '85',
+            x: '39%',     // 移动位置
+            y: '48%',     // 移动位置
+            textAlign: 'center',
+            // 修改字体大小、颜色
+            textStyle: {
+                fontSize: 14,
+                color: '#999',
+            },
+            subtextStyle: {
+                fontSize: 28,
+                color: '#333',
+            }
+        }
+    ],
+
+    // 定制提示框
+    tooltip: {
+        formatter: function (params, ticket, callback) {
+            return `
+                    ${params.seriesName}<br />
+                    <span>${params.marker}</span>
+                    <span style="display:inline-block; width: 50px;">${params.name}</span>
+                    <span style="display: inline-block; width: 20px;">${params.value}</span>
+                    <span>(${params.percent}%)</span>
+                `;
+        },
+    },
+
+    // 图例
+    legend: {
+        // 排列规则
+        type: 'scroll',
+        orient: 'vertical',
+
+        // 位置调整
+        left: '77%',
+        top: 'middle',
+
+        // 注意：这里不支持HTML代码,可以使用\n换行
+        formatter: function (name) {
+            const item = chart4_data.filter((item) => item.name === name)[0];
+            return `${name} (${item.value})`;
+        },
+
+        // 文本样式
+        textStyle: {
+            color: '#8c8c8c',
+        },
+    },
+
+    // label 标签文字
+    label: {
+        show: true,
+        position: 'outside',
+
+        // 自定义显示文本
+        formatter: function (params) {
+            let percent = parseInt(params.percent, 10);
+            return `${params.name} (${percent}%)`;
+        },
+    },
+
+    series: {
+        name: '文章分类',
+        type: 'pie',
+        data: chart4_data,
+
+        // 数据排列顺序，默认为true，代表顺时针排序
+        clockwise: true,
+
+        // 定制各个数据块之间的留白
+        itemStyle: {
+            borderWidth: 4,
+            borderColor: '#fff',
+        },
+
+        // 调整一下圆的位置
+        center: ['40%', '55%'],
+
+        // 调整一下大小
+        radius: ['42%', '52%'],
+    },
+})
+</script>
+</body>
+</html>
+```
+
+:::
+
+![image-20211204185432778](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204185432778.png)
+
+#### 切换渲染方式
+
+文档：https://echarts.apache.org/handbook/zh/best-practices/canvas-vs-svg
+
+默认使用`Canvas`进行渲染，如果要更换为`SVG`渲染方式，可以这样做
+
+```javascript
+const chart4 = echarts.init(chart4DOM, 'default', {renderer: 'svg'});	// 注意是在第三个参数上
+```
+
