@@ -3200,3 +3200,261 @@ chart4.setOption({
 const chart4 = echarts.init(chart4DOM, 'default', {renderer: 'svg'});	// 注意是在第三个参数上
 ```
 
+
+
+### 图表数据集
+
+文档：[https://echarts.apache.org/handbook/zh/concepts/dataset/](https://echarts.apache.org/handbook/zh/concepts/dataset/)
+
+数据集（`dataset`）是专门用来管理数据的组件，从 ECharts4开始支持。
+
+> 虽然官方推荐使用 `数据集` 来管理数据，但是个人觉得还不是太完善（某些场景下不支持数据集），不够通用，
+>
+> 所以这里也就简单记录一下用法
+
+
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box [id*=chart] {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1"></div>
+    <div id="chart2"></div>
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM);
+
+// 注意观察数据结构，x轴数据和y轴数据是分离的
+let chart1_x = ['第一季度', '第二季度', '第三季度', '第四季度']
+let chart1_y = [100, 110, 95, 130]
+
+chart1.setOption({
+    title: {
+        text: '2021年六点半公司销售额',
+        left: 'center',
+    },
+
+    xAxis: {
+        data: chart1_x,
+    },
+    yAxis: {},
+    series: {
+        type: 'line',
+        data: chart1_y,
+    }
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM);
+
+// 使用dataset代替上面的数据结构
+let chart2_dataset = {
+    source: [
+        ["第一季度", 100],
+        ["第二季度", 110],
+        ["第三季度", 95],
+        ["第四季度", 130],
+    ]
+}
+
+
+chart2.setOption({
+    title: {
+        text: '2021年六点半公司销售额',
+        left: 'center',
+    },
+
+    // x轴里不写具体的数据了(即不写data属性了)
+    // x轴默认type就是category，但是不知道为什么，这里必须显示声明x轴为类目轴才能正常绘图，可能是个bug?
+    xAxis: {
+        type: 'category',
+    },
+    // 默认情况下为数值轴，不用显示声明
+    yAxis: {},
+
+    // 指定dataset数据源
+    dataset: chart2_dataset,
+
+    series: {
+        type: 'line',
+        // 原来的data不用写了，只需要使用encode告诉x轴和y轴使用数据源中哪列数据就好了
+        // x轴使用第1列数据(索引为0)，y轴使用第2列数据(索引为1)
+        encode: {x: 0, y: 1},
+        // 如果是饼图的话，就不能再用x和y了，需要使用itemName和value
+    }
+})
+</script>
+</body>
+</html>
+```
+
+:::
+
+![image-20211204221413843](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204221413843.png)
+
+
+
+### 图表大小动态调整
+
+文档：[https://echarts.apache.org/handbook/zh/concepts/chart-size/#响应容器大小的变化](https://echarts.apache.org/handbook/zh/concepts/chart-size/#响应容器大小的变化)
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box [id*=chart] {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1"></div>
+    <div id="chart2"></div>
+</div>
+
+<!-- 图表1 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM);
+
+chart1.setOption({
+    title: {
+        text: '2021年六点半公司销售额',
+        subtext: '未动态调整大小',
+        left: 'center',
+    },
+
+    xAxis: {
+        data: ['第一季度', '第二季度', '第三季度', '第四季度'],
+    },
+    yAxis: {},
+    series: {
+        type: 'line',
+        data: [100, 110, 95, 130],
+    }
+})
+</script>
+
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM);
+
+chart2.setOption({
+    title: {
+        text: '2021年六点半公司销售额',
+        subtext: '动态调整大小',
+        left: 'center',
+    },
+
+    xAxis: {
+        data: ['第一季度', '第二季度', '第三季度', '第四季度'],
+    },
+    yAxis: {},
+    series: {
+        type: 'line',
+        data: [100, 110, 95, 130],
+    }
+})
+</script>
+
+<!-- 这里动态调整图表2的大小，观察两个图有什么区别 -->
+<script>
+window.onresize = function () {
+    chart2.resize();
+};
+</script>
+</body>
+</html>
+```
+
+:::
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gxLWjbc.gif)
+
+
+
+
+
+
+
+
+
+
+
