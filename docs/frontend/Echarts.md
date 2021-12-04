@@ -1845,11 +1845,11 @@ chart6.setOption({
 
 ### 颜色主题和图形渲染
 
-文档：[https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）](https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）)
-
 
 
 #### 切换内置主题
+
+文档：[https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）](https://echarts.apache.org/handbook/zh/concepts/style/#颜色主题（theme）)
 
 内置的主题：
 
@@ -2255,7 +2255,7 @@ chart3.setOption({
 
 #### 使用自定义主题
 
-文档：https://echarts.apache.org/zh/theme-builder.html
+文档：[https://echarts.apache.org/zh/theme-builder.html](https://echarts.apache.org/zh/theme-builder.html)
 
 **第一步：先选择一个合适的主题，并拷贝到剪贴板**
 
@@ -3192,7 +3192,7 @@ chart4.setOption({
 
 #### 切换渲染方式
 
-文档：https://echarts.apache.org/handbook/zh/best-practices/canvas-vs-svg
+文档：[https://echarts.apache.org/handbook/zh/best-practices/canvas-vs-svg](https://echarts.apache.org/handbook/zh/best-practices/canvas-vs-svg)
 
 默认使用`Canvas`进行渲染，如果要更换为`SVG`渲染方式，可以这样做
 
