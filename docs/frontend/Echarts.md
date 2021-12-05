@@ -3450,6 +3450,119 @@ window.onresize = function () {
 
 
 
+### 图表销毁和重建
+
+文档：[https://echarts.apache.org/handbook/zh/concepts/chart-size/#容器节点被销毁以及被重建时](https://echarts.apache.org/handbook/zh/concepts/chart-size/#容器节点被销毁以及被重建时)
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box [id*=chart] {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1"></div>
+</div>
+
+<!-- 图表 -->
+<script>
+const chart1DOM = document.getElementById('chart1');
+
+function showLineChart(dom) {
+    const chart1 = echarts.init(dom);
+
+    chart1.setOption({
+        title: {
+            text: '2021年六点半公司销售额',
+            subtext: '销毁和重建: 显示图表->3秒后销毁->2秒后重建',
+            left: 'center',
+        },
+
+        xAxis: {
+            data: ['第一季度', '第二季度', '第三季度', '第四季度'],
+        },
+        yAxis: {},
+        series: {
+            type: 'line',
+            data: [100, 110, 95, 130],
+        }
+    })
+
+    return chart1;
+}
+
+// 显示图表
+let chart1 = showLineChart(chart1DOM);
+
+// 3秒收销毁echarts实例
+setTimeout(() => {
+    chart1.dispose();
+}, 3000)
+
+// 2秒后再重建
+setTimeout(() => {
+    showLineChart(chart1DOM);
+}, 5000)
+</script>
+</body>
+</html>
+```
+
+:::
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gxLWjbd.gif)
+
+
+
+
+
+### 图表数据动态更新
+
+
+
+
+
+
+
+### 图表服务端渲染(Python版本)
+
+
+
 
 
 

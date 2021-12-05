@@ -36,60 +36,47 @@
 <body>
 <div class="box">
     <div id="chart1"></div>
-    <div id="chart2"></div>
 </div>
 
-<!-- 图表1 -->
+<!-- 图表 -->
 <script>
 const chart1DOM = document.getElementById('chart1');
-const chart1 = echarts.init(chart1DOM);
 
-chart1.setOption({
-    title: {
-        text: '2021年六点半公司销售额',
-        subtext: '未动态调整大小',
-        left: 'center',
-    },
+function showLineChart(dom) {
+    const chart1 = echarts.init(dom);
 
-    xAxis: {
-        data: ['第一季度', '第二季度', '第三季度', '第四季度'],
-    },
-    yAxis: {},
-    series: {
-        type: 'line',
-        data: [100, 110, 95, 130],
-    }
-})
-</script>
+    chart1.setOption({
+        title: {
+            text: '2021年六点半公司销售额',
+            subtext: '销毁和重建: 显示图表->3秒后销毁->2秒后重建',
+            left: 'center',
+        },
 
-<!-- 图表2 -->
-<script>
-const chart2DOM = document.getElementById('chart2');
-const chart2 = echarts.init(chart2DOM);
+        xAxis: {
+            data: ['第一季度', '第二季度', '第三季度', '第四季度'],
+        },
+        yAxis: {},
+        series: {
+            type: 'line',
+            data: [100, 110, 95, 130],
+        }
+    })
 
-chart2.setOption({
-    title: {
-        text: '2021年六点半公司销售额',
-        subtext: '动态调整大小',
-        left: 'center',
-    },
+    return chart1;
+}
 
-    xAxis: {
-        data: ['第一季度', '第二季度', '第三季度', '第四季度'],
-    },
-    yAxis: {},
-    series: {
-        type: 'line',
-        data: [100, 110, 95, 130],
-    }
-})
-</script>
+// 显示图表
+let chart1 = showLineChart(chart1DOM);
 
-<!-- 这里动态调整图表2的大小，观察两个图有什么区别 -->
-<script>
-window.onresize = function () {
-    chart2.resize();
-};
+// 3秒收销毁echarts实例
+setTimeout(() => {
+    chart1.dispose();
+}, 3000)
+
+// 2秒后再重建
+setTimeout(() => {
+    showLineChart(chart1DOM);
+}, 5000)
 </script>
 </body>
 </html>
