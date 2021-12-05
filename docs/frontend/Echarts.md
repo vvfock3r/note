@@ -3553,7 +3553,132 @@ setTimeout(() => {
 
 ### 图表数据动态更新
 
+::: details 点击查看完整代码
 
+`demo.html`
+
+```html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .box {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box [id*=chart] {
+            width: 800px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <div id="chart1"></div>
+</div>
+
+<!-- 图表 -->
+<script>
+const chartDOM = document.getElementById('chart1');
+const chart = echarts.init(chartDOM);
+const options = {
+    title: {
+        text: '实时总资产',
+        subtext: '动态数据更新',
+        left: 'center',
+    },
+
+    xAxis: {
+        name: '',
+        data: [],
+    },
+    yAxis: {
+        name: '资产额(万元)',
+    },
+    series: {
+        type: 'line',
+        data: [],
+        symbol: 'none',
+        smooth: true,
+        areaStyle: {},
+    }
+}
+
+// 辅助函数：获取前n秒的时间
+function getLastSeconds(n, step = 1) {
+    let end = new Date().getTime();
+    let start = new Date(end - n * 1000 + 1000).getTime();
+    let ret = [];
+
+    for (let i = start; i <= end; i = i + step * 1000) {
+        let t = new Date(i);
+        ret.push([t.getHours(), t.getMinutes(), t.getSeconds()].join(':'));
+    }
+    return ret;
+}
+
+// 辅助函数：生成一个长度为number的数组，每个元素为随机数，范围为start到end
+function getRandom(number, start, end) {
+    let ret = [];
+    for (let i = 1; i <= number; i++) {
+        let data = start + parseInt(Math.random() * (end - start));
+        ret.push(data);
+    }
+    return ret;
+}
+
+let y = getRandom(60, 100, 110);
+
+setInterval(() => {
+    // 开启loading
+    chart.showLoading();
+
+    // 更新x轴数据
+    options.xAxis.data = getLastSeconds(60);
+    options.xAxis.name = [new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()].join('/');
+
+    // 更新y轴数据
+    options.series.data = (function () {
+        y = y.slice(1)
+        y.push(getRandom(1, 100, 110)[0]);
+        return y;
+    })()
+
+    // 更新图表
+    chart.setOption(options);
+
+    // 关闭loading
+    chart.hideLoading();
+}, 1000)
+</script>
+</body>
+</html>
+```
+
+:::
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gcLWjbf.gif)
 
 
 
