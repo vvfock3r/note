@@ -3684,15 +3684,153 @@ setInterval(() => {
 
 
 
-### 图表服务端渲染(Python版本)
+### 图表服务端渲染
+
+#### Python版本
+
+主要分为两个步骤：
+
+* 使用`pyecharts`绘图，生成`HTML`文件，参考官网：[https://pyecharts.org/](https://pyecharts.org/)
+
+* 将`HTML`渲染成图片，有很多种方式，在本文档中我们使用`snapshot-phantomjs`，
+
+  参考文档：[https://pyecharts.org/#/zh-cn/render_images?id=snapshot-phantomjs](https://pyecharts.org/#/zh-cn/render_images?id=snapshot-phantomjs)
 
 
 
+**安装依赖包**
+
+* 安装`pyecharts`
+
+```bash
+pip install -r pyecharts -i https://mirrors.aliyun.com/pypi/simple/
+```
 
 
 
+* 安装`PhantomJS`
+
+`PhantomJS`是一款无界面浏览器，可以解析`JavaScript`
+
+> 注：`PhantomJS`开发已经暂停，但未来也有可能会重启这个项目，所以如果有更好的选择，就尽量不要使用它了
+
+官方文档：https://phantomjs.org/download.html
+
+官网Github：https://github.com/ariya/phantomjs
 
 
 
+下载指定系统的包，解压，添加到环境变量即可
+
+```bash
+export PATH=$PATH:/root/phantomjs-2.1.1-linux-x86_64/bin/
+
+# phantomjs --version
+2.1.1
+```
 
 
+
+* 安装`PhantomJS`Python依赖包
+
+```bash
+pip install -r snapshot-phantomjs -i https://mirrors.aliyun.com/pypi/simple/
+```
+
+
+
+**编写测试代码**
+
+`demo.py`
+
+```python
+#!/usr/bin/env python
+# --*--coding:utf-8--*--
+
+from pyecharts import options as opts
+from pyecharts.charts import Bar
+from pyecharts.render import make_snapshot
+
+from snapshot_phantomjs import snapshot
+
+
+def bar_chart() -> Bar:
+    c = (
+        Bar()
+            .add_xaxis(["衬衫", "毛衣", "领带", "裤子", "风衣", "高跟鞋", "袜子"])
+            .add_yaxis("商家A", [114, 55, 27, 101, 125, 27, 105])
+            .add_yaxis("商家B", [57, 134, 137, 129, 145, 60, 49])
+            .set_series_opts(label_opts=opts.LabelOpts(position="right"))
+            .set_global_opts(title_opts=opts.TitleOpts(title="Bar-测试渲染图片"))
+    )
+    return c
+
+
+make_snapshot(snapshot, bar_chart().render(), "bar.png", is_remove_html=True)
+```
+
+执行完成，将得到下面一张图片
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/bar.png)
+
+**常见问题**
+
+* 图片中文乱码问题
+
+  `CentOS 7.x`下，使用`PhantomJS`生成的图片中如果带中文字符，那么可能会显示乱码，
+
+  `windows`下显示正常，那么很大可能就是Linux缺相关字体导致的
+
+  ```bash
+  # 查看当前安装的字体，如果下面命令找不到，yum -y install fontconfig
+  fc-list
+  
+  # 将Windows下的字体打包，上传到Linux中
+  将Windows字体目录 C:\Windows\Fonts下的所有字体打包，上传到Linux字体目录中
+  
+  # 创建一个名为chinese的字体目录，目录名叫什么无所谓
+  # 具体你的linux目录是不是这个，可以参考fc-list的输出，看看当前的字体都在哪个目录下
+  mkdir /usr/share/fonts/chinese/
+  chmod -R 755 /usr/share/fonts/chinese/
+  
+  # 生成缓存
+  fc-cache
+  fc-list		# 再次查看字体，可以看到我们上传的Windows字体了，再执行脚本应该就没问题了
+  ```
+
+  参考：https://blog.csdn.net/wlwlwlwl015/article/details/51482065
+
+* `ReferenceError: Can't find variable: echarts`
+
+  报错信息
+
+  ```bash
+  Taceback (most recent call last):
+    ...
+    File "/data/venv/lib/python3.7/site-packages/pyecharts/render/snapshot.py", line 45, in make_snapshot
+      raise OSError(content_array)
+  OSError: ["ReferenceError: Can't find variable: echarts\n\n  file:////opt/app/daily_report/render.html:12 in global code\nReferenceError: Can't find variable: echarts\n\n  undefined:1\nnull\n"]
+  ```
+
+  尝试手动在浏览器打开`render.html`可以正常显示图形（需要将`make_snapshot`中的参数`is_remove_html=False`设置为`False`），但是却无法绘制出图片
+
+  这是因为没有正常加载`echarts.min.js`文件，导致执行JS代码时报错：`ReferenceError`，类似于下面这种报错
+
+  ![]()![ReferenceError](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ReferenceError.png)
+
+  解决办法原理：将`pyecharts`包中`glob.py`文件中`echarts.min.js`的地址替换为本地地址
+
+  ```bash
+  (1)修改echarts.min.js的访问地址
+  vim /data/venv/lib/python3.7/site-packages/pyecharts/globals.py			# 文件路径根据实际情况替换
+  
+  125 class _OnlineHost:                 
+  126     #DEFAULT_HOST = "https://assets.pyecharts.org/assets/"			# 注释掉这行
+  127     DEFAULT_HOST = "file:///data/js/"								# 替换为本地路径，该路径下必须有一个名为echarts.min.js的文件
+  128     NOTEBOOK_HOST = "http://localhost:8888/nbextensions/assets/"
+  
+  (2)下载echarts.min.js
+  	cd /data/js/ && wget https://assets.pyecharts.org/assets/echarts.min.js  --no-check-certificate
+  
+  (3)再次执行脚本，应该就没问题了
+  ```
