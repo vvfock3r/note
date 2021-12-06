@@ -1,6 +1,10 @@
 ## Echarts
 
-官网：https://echarts.apache.org/zh/index.html
+官网：[https://echarts.apache.org/zh/index.html](https://echarts.apache.org/zh/index.html)
+
+官网示例：[https://echarts.apache.org/examples/zh/index.html](https://echarts.apache.org/examples/zh/index.html)
+
+第三方示例：[https://www.makeapie.com/explore.html](https://www.makeapie.com/explore.html)
 
 
 
@@ -1840,6 +1844,38 @@ chart6.setOption({
 :::
 
 ![image-20211204180301819](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204180301819.png)
+
+#### 地图
+
+地图与常见的折线图/柱状图/饼图不太一样，首先了解一下`GeoJSON`
+
+
+
+**GeoJSON概念**
+
+> GeoJSON是一种对各种地理数据结构进行编码的格式，基于Javascript对象表示法(JavaScript Object Notation, 简称JSON)的地理空间信息数据交换格式。GeoJSON对象可以表示几何、特征或者特征集合。GeoJSON支持下面几何类型：点、线、面、多点、多线、多面和几何集合。GeoJSON里的特征包含一个几何对象和其他属性，特征集合表示一系列特征。     --- 百度百科
+
+
+
+**Echarts和GeoJSON**
+
+> ECharts 可以使用 [GeoJSON](http://geojson.org/) 格式的数据作为地图的轮廓，你可以获取第三方的 [GeoJSON](http://geojson.org/) 数据注册到 ECharts 中。例如第三方资源 [maps](https://github.com/echarts-maps)  --- Echarts
+
+
+
+**如何获取`中国地图`的GeoJSON？**
+
+echarts最新版本并不提供任何地图数据，但是老版本里提供了，我们可以先拿过来学习使用
+
+JS版本：[https://raw.githubusercontent.com/apache/echarts/5.0.0-beta.2/map/js/china.js](https://raw.githubusercontent.com/apache/echarts/5.0.0-beta.2/map/js/china.js)
+
+
+
+
+
+
+
+
 
 
 

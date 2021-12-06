@@ -6,6 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>
+    <script src="./china.js"></script>
     <title>Document</title>
     <style>
         * {
@@ -24,93 +25,142 @@
             width: 100%;
             height: 100%;
             justify-content: center;
-            align-items: center;
         }
 
         .box [id*=chart] {
-            width: 800px;
+            width: 32%;
             height: 400px;
+            margin-right: 1%;
+            border: 1px solid #333;
         }
     </style>
 </head>
 <body>
 <div class="box">
     <div id="chart1"></div>
+    <div id="chart2"></div>
+    <div id="chart3"></div>
 </div>
 
-<!-- 图表 -->
+<!-- 图表1 -->
 <script>
-const chartDOM = document.getElementById('chart1');
-const chart = echarts.init(chartDOM);
-const options = {
+const chart1DOM = document.getElementById('chart1');
+const chart1 = echarts.init(chart1DOM);
+chart1.setOption({
     title: {
-        text: '实时总资产',
-        subtext: '动态数据更新',
+        text: '默认的地图轮廓',
+        subtext: '没有任何数据',
         left: 'center',
+        top: 20,
     },
 
-    xAxis: {
-        name: '',
-        data: [],
-    },
-    yAxis: {
-        name: '资产额(万元)',
-    },
     series: {
-        type: 'line',
-        data: [],
-        symbol: 'none',
-        smooth: true,
-        areaStyle: {},
+        type: 'map',
+        map: 'china',
     }
-}
+})
+</script>
 
-// 辅助函数：获取前n秒的时间
-function getLastSeconds(n, step = 1) {
-    let end = new Date().getTime();
-    let start = new Date(end - n * 1000 + 1000).getTime();
-    let ret = [];
+<!-- 图表2 -->
+<script>
+const chart2DOM = document.getElementById('chart2');
+const chart2 = echarts.init(chart2DOM);
+chart2.setOption({
+    title: {
+        text: '填充数据',
+        subtext: '',
+        left: 'center',
+        top: 20,
+    },
 
-    for (let i = start; i <= end; i = i + step * 1000) {
-        let t = new Date(i);
-        ret.push([t.getHours(), t.getMinutes(), t.getSeconds()].join(':'));
-    }
-    return ret;
-}
+    // 开启提示框
+    tooltip: {},
 
-// 辅助函数：生成一个长度为number的数组，每个元素为随机数，范围为start到end
-function getRandom(number, start, end) {
-    let ret = [];
-    for (let i = 1; i <= number; i++) {
-        let data = start + parseInt(Math.random() * (end - start));
-        ret.push(data);
-    }
-    return ret;
-}
+    series: [
+        {
+            name: 'xxx',
+            type: 'map',
+            map: 'china',
 
-let y = getRandom(60, 100, 110);
+            // 选中模式(data中的selected)，默认为单选(single)
+            selectedMode: 'multiple',
 
-setInterval(() => {
-    // 开启loading
-    chart.showLoading();
+            data: [
+                {name: '河北', value: 2, selected: true,},
+                {name: '湖北', value: 1, selected: true,},
+                {name: '黑龙江', value: 3, selected: true,},
+            ],
+        },
+    ]
+})
+</script>
 
-    // 更新x轴数据
-    options.xAxis.data = getLastSeconds(60);
-    options.xAxis.name = [new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()].join('/');
+<!-- 图表3 -->
+<script>
+const chart3DOM = document.getElementById('chart3');
+const chart3 = echarts.init(chart3DOM);
+chart3.setOption({
+    title: {
+        text: '颜色主题',
+        subtext: '还没找到合适的配色',
+        left: 'center',
+        top: 20,
+    },
 
-    // 更新y轴数据
-    options.series.data = (function () {
-        y = y.slice(1)
-        y.push(getRandom(1, 100, 110)[0]);
-        return y;
-    })()
+    // 开启提示框
+    tooltip: {},
 
-    // 更新图表
-    chart.setOption(options);
+    // 开启图例
+    legend: {
+        orient: 'vertical',
+        left: 20,
+        bottom: 50,
+    },
 
-    // 关闭loading
-    chart.hideLoading();
-}, 1000)
+    series:
+        {
+            name: '小于2s',
+            type: 'map',
+            map: 'china',
+
+            // 缩放比例, 默认为1
+            zoom: 1,
+
+            // 在地图区域显示图例的颜色
+            showLegendSymbol: false,
+
+            // 选中模式(data中的selected)，默认为单选(single)
+            selectedMode: 'multiple',
+            data: [
+                {name: '河南', value: 2, selected: true,},
+                {name: '内蒙古', value: 1, selected: true,},
+                {name: '青海', value: 3, selected: true,},
+            ],
+
+            // 默认情况下的地图区域样式
+            itemStyle: {
+                areaColor: "#EEEEEE",   // 默认的背景颜色
+                borderColor: '#FFFFFF',     // 默认的描边颜色
+            },
+
+            // 高亮时(鼠标放上去后)的地图区域样式
+            emphasis: {
+                itemStyle: {
+                    areaColor: 'skyblue',  // 背景颜色
+                    borderColor: 'skyblue',           // 描边颜色
+                }
+            },
+
+            // 选中时的地图区域样式
+            select: {
+                itemStyle: {
+                    areaColor: 'rgb(145,204,117)',          // 背景颜色
+                    borderColor: 'rgb(145,204,117)',        // 描边颜色
+                }
+            }
+        },
+
+})
 </script>
 </body>
 </html>
