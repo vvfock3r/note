@@ -1,4 +1,4 @@
-## 基本数据类型
+基本数据类型
 
 ### 变量作用域
 
@@ -5202,6 +5202,233 @@ JavaScript的另一个特点是“非阻塞”，这就涉及到了`event loop`�
 
 
 
+## WebSocket
+
+### 基础语法
+
+**前端代码编写**
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script>
+    // 创建WebSocket实例，这会去连接WebSocket服务端
+    var ws = new WebSocket("ws://localhost:8080/ws");
+
+    // 查看WebSocket连接状态
+    //  0       WebSocket.CONNECTING  正在连接
+    //  1       WebSocket.OPEN        连接成功，可以通信了
+    //  2       WebSocket.CLOSING     连接正在关闭
+    //  3       WebSocket.CLOSED      连接已经关闭，或者打开连接失败
+    switch (ws.readyState) {
+        case WebSocket.CONNECTING:
+            console.log("状态: 正在连接");
+            break;
+        case WebSocket.OPEN:
+            console.log("状态: 连接成功");
+            break;
+        case WebSocket.CLOSING:
+            console.log("状态: 连接关闭中");
+            break;
+        case WebSocket.CLOSED:
+            console.log("状态: 连接已关闭");
+            break;
+    }
+
+    // 连接成功后的回调函数
+    ws.addEventListener('open', (event) => {
+        console.log('回调: 连接成功')
+    })
+
+    // 连接关闭后的回调函数
+    ws.addEventListener('close', (event) => {
+        console.log('回调: 连接已关闭或连接失败')
+    })
+
+    // 发送消息(需要在建立连接成功以后, 否则也发不出去~~)
+    ws.addEventListener('open', (event) => {
+        let s = Array.from(Array(100), (v, k) => k + 1).join('+');
+        ws.send(s);
+    })
+
+    // 收到服务器数据后的回调函数
+    // 服务器数据可能是文本，也可能是二进制数据（blob对象或Arraybuffer对象
+    ws.addEventListener('message', (event) => {
+        console.log('收到了服务器发来的消息: ', event.data);
+    })
+</script>
+</body>
+</html>
+```
+
+:::
+
+
+
+**服务端代码编写**
+
+服务端使用Python3的`fastapi`框架，文档地址：[https://fastapi.tiangolo.com/zh/advanced/websockets/](https://fastapi.tiangolo.com/zh/advanced/websockets/)
+
+* 安装依赖
+
+  ```bash
+  pip install fastapi uvicorn[standard]
+  ```
+
+* 编写示例代码
+
+  ::: details 点击查看完整代码
+
+  `demo.py`
+
+  ```python
+  #!/usr/bin/env python
+  
+  from fastapi import FastAPI, WebSocket
+  import uvicorn
+  from datetime import datetime
+  
+  app = FastAPI()
+  
+  
+  @app.websocket("/ws")
+  async def websocket_endpoint(websocket: WebSocket):
+      # 等待客户端连接
+      await websocket.accept()
+      print("接到客户端链接")
+  
+      # 接收客户端发来的消息(这里只演示接收文本消息，约定用户发过来数学计算)
+      data = await websocket.receive_text()
+  
+      # 数值计算, eval有安全隐患，这里仅演示使用
+      ret = eval(data)
+  
+      # 返回数据
+      await websocket.send_text(f"{data} = {ret}")
+      print("返回数据给客户端")
+  
+      # 函数执行完毕，关闭连接
+      print("关闭客户端链接")
+  
+  
+  if __name__ == '__main__':
+      uvicorn.run("demo:app", host="127.0.0.1", port=8080)
+  ```
+
+  :::
+
+* 运行结果
+
+  ![image-20211208212721268](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211208212721268.png)
+
+
+
+### 服务端推送示例
+
+服务端每秒推送一个随机数到客户端
+
+::: details 点击查看完整代码
+
+`demo.py`
+
+```python
+#!/usr/bin/env python
+
+import random
+import time
+
+from fastapi import FastAPI, WebSocket
+import uvicorn
+
+app = FastAPI()
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+
+    while True:
+        n = random.randint(100, 999)
+        await websocket.send_text(str(n))
+        time.sleep(1)
+
+
+if __name__ == '__main__':
+    uvicorn.run("demo:app", host="127.0.0.1", port=8080)
+```
+
+:::
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .box {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -100px;
+            margin-left: -100px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box #msg {
+            color: green;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+<div class="box">
+    <span id="msg"></span>
+</div>
+<script>
+    // DOM对象
+    const msg = document.getElementById('msg');
+
+    // 创建WebSocket实例，这会去连接WebSocket服务端
+    var ws = new WebSocket("ws://localhost:8080/ws");
+
+    // ws收到消息事件
+    ws.addEventListener('message', function (e) {
+        msg.innerText = e.data;
+    })
+</script>
+</body>
+</html>
+```
+
+:::
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/f4cLWjbf.gif)
 
 
 
@@ -5211,6 +5438,106 @@ JavaScript的另一个特点是“非阻塞”，这就涉及到了`event loop`�
 
 
 
+### 表单简单交互示例
+
+::: details 点击查看完整代码
+
+`demo.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .box {
+            width: 400px;
+            margin: 0 auto;
+            margin-top: 100px;
+        }
+
+        .box input {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <form id="form">
+        <input type="text" name="input" autocomplete="off" autofocus/>
+        <input type="submit" name="submit" value="提交">
+    </form>
+    <ul id="list"></ul>
+</div>
+<script>
+    // HTML对象
+    const form = document.getElementById("form");   // 表单
+    const list = document.getElementById('list');   // 列表
+
+    function createWebSocket() {
+        return new WebSocket("ws://localhost:8080/ws");
+    }
+
+    // 创建WebSocket实例，这会去连接WebSocket服务端
+    var ws = createWebSocket();
+
+    // 提交事件
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        ws.send(form.input.value);
+    })
+
+    // ws收到消息事件
+    ws.addEventListener('message', function (e) {
+        const li = document.createElement('li');
+        li.innerText = e.data;
+        list.appendChild(li);
+        form.input.value = '';
+        form.input.focus();
+    })
+
+</script>
+</body>
+</html>
+```
+
+:::
+
+::: details 点击查看完整代码
+
+`demo.py`
+
+```python
+#!/usr/bin/env python
+
+from fastapi import FastAPI, WebSocket
+import uvicorn
+
+app = FastAPI()
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+
+    while True:
+        data = await websocket.receive_text()
+        try:
+            ret = eval(data)
+        except Exception as e:
+            ret = e
+        await websocket.send_text(f"{data} = {ret}")
+
+
+if __name__ == '__main__':
+    uvicorn.run("demo:app", host="127.0.0.1", port=8080)
+
+```
+
+:::
+
+![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/f3cLWjbf.gif)
 
 
 
