@@ -1,5 +1,5 @@
 ---
 sidebar: off
 ---
-
+<Home />
 

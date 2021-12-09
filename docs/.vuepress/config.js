@@ -80,11 +80,13 @@ module.exports = {
 
     // 插件配置
     plugins: [
-        // 自动将.vuepress/components下的文件注册为组件
+        // 手动注册组件
         [
             '@vuepress/register-components',
             {
-                componentsDir: path.resolve(__dirname, './components'),
+                components: {
+                    Home: path.resolve(__dirname, './components/Home/Home.vue'),
+                },
             },
         ],
     ],
