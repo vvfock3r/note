@@ -20,10 +20,13 @@ export default {
                 {name: '运维', value: 1},
                 {name: '前端', value: 5},
                 {name: '算法', value: 1},
-            ];
-            const total = data.reduce((pre, item) => {
-                return pre.value + item.value;
-            })
+            ]
+            const total = data.reduce((total, current) => {
+                return {
+                    value: total.value + current.value,
+                }
+            });
+
             chart.setOption({
                 // 标题
                 title: [
@@ -34,7 +37,7 @@ export default {
                     },
                     {
                         text: "累计文章数量",
-                        subtext: total,
+                        subtext: total.value,
                         x: '44%',     // 移动位置
                         y: '45%',     // 移动位置
                         textAlign: 'center',
@@ -78,7 +81,7 @@ export default {
 
                     // 自定义显示文本
                     formatter: function (params) {
-                        let percent = parseInt(params.percent, 10);
+                        let percent = Math.round(params.percent * 10) / 10; // 保留一位小数
                         return `${params.name} (${percent}%)`;
                     },
                 },
