@@ -27,6 +27,19 @@ module.exports = {
         // 右上角导航
         navbar: [
             {
+                text: '运维',
+                children: [
+                    {
+                        text: 'Linux基础',
+                        children: [
+                            {text: 'Bash', link: '/ops/Bash'},
+                            // {text: 'Linux原理', link: '/ops/Linux'},
+                        ]
+                    },
+                ]
+            },
+
+            {
                 text: '前端',
                 children: [
                     {
