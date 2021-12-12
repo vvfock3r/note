@@ -17,8 +17,9 @@ export default {
             const pieDom = document.getElementById('pie');
             const chart = echarts.init(pieDom, 'light');
             const data = [
-                {name: '前端', value: 5, percent: 83.333333333333},
-                {name: '算法', value: 1, percent: 16.666666666667},
+                {name: '运维', value: 1},
+                {name: '前端', value: 5},
+                {name: '算法', value: 1},
             ];
             const total = data.reduce((pre, item) => {
                 return pre.value + item.value;
