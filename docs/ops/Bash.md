@@ -490,7 +490,292 @@ set -euo pipefail
 
 
 
+### 语句
 
+#### 测试语句
+
+测试语句可以使用 [ 比较语句 ] 和 [[ 比较语句 ]]，注意语句和前后中括号都有一个空格 也可以用test
+
+使用[[ ... ]]条件判断结构，而不是[ ... ]，能够防止脚本中的许多逻辑错误。比如，&&、||、<和> 操作符能够正常存在于[[ ]]条件判断结构中，但是如果出现在[ ]结构中的话，可能会报错，但有些判断使用[[ ]]会出错而使用[ ]确没问题，具体如何使用，自己测试一下就好。
+
+
+
+**整数比较**
+
+| 代码 | 说明     |
+| ---- | -------- |
+| -eq  | 等于     |
+| -ne  | 不等于   |
+| -lt  | 小于     |
+| -le  | 小于等于 |
+| -gt  | 大于     |
+| -ge  | 大于等于 |
+
+`demo.sh`
+
+```bash
+#!/bin/bash
+read -p "请输入一个整数:" num
+if [ -z $num ];then
+    echo "输入不存在!"
+    exit 1
+fi
+nu=$(echo $num | tr -d '[0-9]' | sed 's/^-//')
+if [ -z $nu ];then
+    echo "您输入的是整数，检测通过"
+else
+    echo "请您输入合法的整数"
+fi
+```
+
+**字符串比较**
+
+| 代码 | 说明                                             |
+| ---- | ------------------------------------------------ |
+| -n   | 检测字符串是否不为空                             |
+| -z   | 检测字符串是否为空                               |
+| ==   | 测试两个字符串是否相等                           |
+| !=   | 测试两个字符串是否不相等                         |
+| =~   | 测试字符串（前者）是否包含另外一个字符串（后者） |
+
+`demo.sh`
+
+```bash
+#!/bin/bash
+if [[ "abc" =~ "ab" ]];then
+    echo ok
+else
+    echo faile
+fi
+```
+
+**文件操作符**
+
+| 代码 | 说明                     |
+| ---- | ------------------------ |
+| -d   | 测试是否是目录           |
+| -e   | 测试文件或者目录是否存在 |
+| -f   | 测试是否是一般文件       |
+| -r   | 测试文件是否是可读       |
+| -w   | 测试文件是否可写         |
+| -x   | 测试文件是否可执行       |
+| -s   | 测试文件大小是否不为空   |
+| -L   | 测试文件是否是链接文件   |
+
+**逻辑运算符**
+
+| 代码 | 说明                 |
+| ---- | -------------------- |
+| !    | 非，取反             |
+| -a   | 与，同时为真则为真   |
+| -o   | 或，有一个为真则为真 |
+
+下面的两个脚本效果是一样的，注意第一个脚本不能用[[ ]]
+
+```bash
+#!/bin/bash
+if [ 1 -lt 2 -a 2 -lt 3 ];then
+        echo ok
+else
+        echo no
+fi
+ 
+ 
+#!/bin/bash
+if [[ 1 -lt 2 ]] && [[ 2 -lt 3 ]];then
+        echo ok
+else
+        echo no
+fi
+```
+
+
+
+#### if语句
+
+```bash
+if 表达式;then
+    表达式
+elif 表达式;then
+    表达式
+else
+    表达式
+fi
+#elif和else都不是必须的
+```
+
+#### while语句
+
+```bash
+while 表达式;do
+    表达式
+done
+```
+
+#### for语句
+
+```bash
+结构一：
+for((表达式;表达式;表达式;)); do
+    表达式
+done
+比如
+for((i=1;i<=100;i++)); do
+    echo $i
+done
+ 
+结构二：
+for i in 表达式; do
+    表达式
+done
+比如
+for i in `seq 100`; do
+    echo $i
+done
+ 
+for i in {1..100}; do
+    echo $i
+done
+{1..100}表示起始为1，结束位100，步长默认为1，可以指定{1..100..2},比如
+[root@localhost ~]# for i in {a..z..2}; do echo $i;done
+```
+
+一个简单的进度条
+
+`demo.sh`
+
+```bash
+#!/bin/sh
+b=''
+for ((i=0;$i<=100;i+=2))
+do
+    printf "progress:[%-50s]%d%%\r" $b $i
+    sleep 0.1
+ 
+    b=#$b
+done
+echo
+```
+
+#### case语句
+
+```bash
+#!/bin/bash
+echo -n '请输入一个数字:'
+read number
+ 
+case $number in
+ 
+(1|2|3)
+        echo '1-3';;
+(4|5|6)
+        echo  '4-6';;
+(7|8|9)
+        echo '7-9';;
+*)
+        echo '输入的不是数字!';;
+esac
+```
+
+#### continue和break 
+
+```bash
+# continue 跳过本次循环，继续下一次循环
+
+#!/bin/bash
+for ((i=1;i<=100;i++)); do
+    if [ $i -eq 50 ];then
+        continue
+    fi
+    sum=$((sum+i))
+done
+echo $sum
+ 
+[root@localhost ~]# bash test.sh
+5000
+
+# break 直接退出整个循环
+#!/bin/bash
+for ((i=1;i<=1150;i++))； do
+    if [ $i -eq 101 ];then
+        break
+    fi
+    sum=$((sum+i))
+done
+echo $sum
+ 
+[root@localhost ~]# bash test.sh
+5050
+```
+
+#### eval将字符串作为语句执行
+
+```bash
+# 经典的获取最后一个参数命令
+#!/bin/bash
+echo "最后一个参数是:"$(eval echo "\$$#")
+
+# 其他举例
+[root@localhost ~]# seq 10 >1.txt
+[root@localhost ~]# name="cat 1.txt"
+[root@localhost ~]# eval $name
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
+#### exec执行命令后退出当前终端
+
+```bash
+# 检测网络
+ping -i 0.1  -c 10 www.baidu.com &>/dev/null || exec  echo "Network is unreachable"
+
+# 检测用户
+if [ `id -u` -ne 0 ];then exec echo "Must be root can run it"; fi
+```
+
+#### getopts命令行参数处理
+
+> 注：只支持短选项
+
+```bash
+#!/bin/bash
+#取得每个选项的值
+if [ $# -lt 1 ]
+then
+    echo "there is no option";
+else
+    while getopts ":a:i:s:v:x:" opt;
+    do
+        case $opt  in
+        a)echo "option is a ,the value is $OPTARG" ;;
+ 
+        i)echo "option is i ,the value is $OPTARG" ;;
+ 
+        s)echo "option is s,the value is $OPTARG" ;;
+ 
+    v)echo "option is v ,the value is $OPTARG" ;;
+ 
+    x)echo "option is x ,the value is $OPTARG" ;;
+ 
+        esac
+     done
+fi
+ 
+[root@localhost ~]# bash test.sh -a A -i I -s S -x X -v V
+option is a ,the value is A
+option is i ,the value is I
+option is s,the value is S
+option is x ,the value is X
+option is v ,the value is V
+```
 
 
 
