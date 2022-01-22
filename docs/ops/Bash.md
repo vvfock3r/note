@@ -46,7 +46,7 @@ Shell的实现有很多方式，这里我们主要说Bash，操作系统使用�
   There is NO WARRANTY, to the extent permitted by law.
   ```
 
-  > 有时候会简单有人使用sh，这很多时候是Bash的软连接
+  > 有时候会使用sh命令，这通常是Bash的软连接
   >
   > ```bash
   > [root@localhost ~]# ls -l `which sh`
@@ -84,8 +84,6 @@ Shell的实现有很多方式，这里我们主要说Bash，操作系统使用�
 
 
 ### 变量
-
-关于变量的信息，都可以通过`man bash`来查询到
 
 
 
