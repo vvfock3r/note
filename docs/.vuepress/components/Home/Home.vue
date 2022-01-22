@@ -117,9 +117,17 @@ export default {
             })
         }
 
+        const disposePieChart = () => {
+            const pieDom = document.getElementById('pie');
+            const chart = echarts.init(pieDom, 'light');
+            chart.dispose();
+        }
+
         onMounted(() => {
+            disposePieChart();
             showPieChart();
         })
+
     }
 }
 </script>
