@@ -72,6 +72,18 @@ module.exports = {
             },
 
             {
+                text: '后端',
+                children: [
+                    {
+                        text: 'Python',
+                        children: [
+                            {text: 'Python核心语法', link: '/backend/Python'},
+                        ]
+                    },
+                ]
+            },
+
+            {
                 text: '算法',
                 children: [
                     {

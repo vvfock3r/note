@@ -262,6 +262,7 @@ etcd_deployment_type: host      # 配置etcd部署方式，默认是docker，如
 vi inventory/mycluster/group_vars/k8s-cluster/addons.yml
 dashboard_enabled: true			# 修改为true
 ingress_nginx_enabled: true		# 修改为true
+metrics_server_enabled: true    # 修改为true
 ```
 
 #### 部署Kubernetes集群
@@ -401,5 +402,4 @@ vi /etc/kubernetes/manifests/kube-scheduler.yaml
 # 重启kubelet
 systemctl restart kubelet
 ```
-
 
