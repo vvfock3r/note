@@ -1960,7 +1960,7 @@ for i in range(9):
 
 ### 线程同步 - Semaphore
 
-### 线程池
+### 线程池 - ThreadPoolExecutor
 
 ThreadPoolExecutor构造参数
 
@@ -2037,3 +2037,210 @@ with ThreadPoolExecutor(max_workers=5, thread_name_prefix="Thread-Add") as execu
     for result in results:
         logging.warning("add result: {}".format(result))
 ```
+
+## 
+
+### 五、协程
+
+#### 同步和异步
+
+对于一个函数来说，同步指的是函数返回值就是我们想要的最终结果，异步则指不会直接拿到最终结果。
+
+那么异步函数如何拿到最终结果，可以有如下几种方法
+
+* 给异步函数传入一个回调函数，在回调函数中我们可以拿到最终结果
+* 异步函数返回给我们一个中间结果，比如说是一个对象，通过对象的xx方法可以拿到结果
+
+<span style="color: red;font-weight: bold;">总结：同步/异步就看是否能直接拿到最终结果，需要注意的是与代码运行时长是没有任何关系的</span>
+
+<br />
+
+#### 阻塞和非阻塞
+
+阻塞和非阻塞直接讲并不容易讲清楚，所以这里结合队列做一下说明
+
+
+
+阻塞队列
+
+* 入队阻塞：当队列满了之后再入队，则会进行阻塞，直到满足以下情况：
+  * 若设置了超时时间，入队超时，阻塞结束
+  * 当其他线程消费队列数据后导致队列不满，本线程入队成功，阻塞结束
+* 出队阻塞：当队列为空时再出队，则会进行阻塞，直到满足以下情况：
+  * 若设置了超时时间，出队超时，阻塞结束
+  * 当其他线程入队数据后，本线程出队成功，阻塞结束
+
+非阻塞队列
+
+* 入队不会阻塞，如何保证不会阻塞：
+  * 不考虑内存限制的话，最简单的方法就是不设置队列大小，一直可以放入数据
+  * 如果考虑内存限制的话，可以使用双端队列，当队列满了之后再放入数据会先把最开始的数据删掉，然后就能正常放入
+* 出队不会阻塞，如何保证不会阻塞：
+  * 当队列为空时返回`None`或者报错即可
+
+
+
+阻塞队列-入队阻塞演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+'''阻塞队列-入队阻塞演示'''
+
+import logging
+import random
+import time
+from queue import Queue
+from threading import Thread
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 初始化队列，队列大小为3
+q = Queue(maxsize=3)
+
+
+# 生产者
+def producer():
+    '''入队阻塞：向队列中放入3个数据时，队列就已经满了，此时再进行put就会进行阻塞
+    '''
+    for i in range(4):
+        item = random.randint(10, 99)
+        q.put(item)
+        logging.warning(f"队列放入数据: {item} | 当前队列大小: {q.qsize()} | 队列是否已满: {q.full()}")
+
+# 消费者
+def consumer():
+    '''消费队列中的一个数据'''
+    time.sleep(3)  # 为了更好的显示队列阻塞，所以让消费者先暂停3秒钟再消费
+    item = q.get()
+    logging.warning(f"队列消费数据: {item} | 当前队列大小: {q.qsize()} | 队列是否已满: {q.full()}")
+
+
+Thread(target=producer, name="Producer").start()
+Thread(target=consumer, name="Consumer").start()
+```
+
+:::
+
+非阻塞队列-入队非阻塞演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+'''非阻塞队列-入队非阻塞演示'''
+
+import logging
+import random
+import time
+from collections import deque
+from threading import Thread
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 初始化双端队列，队列大小为3
+q = deque(maxlen=3)
+
+
+# 生产者
+def producer():
+    '''入队非阻塞：向队列中放入3个数据时，队列就已经满了，此时再进行put就会删除之前放的数据，给新数据腾位置
+    '''
+    for i in range(4):
+        item = random.randint(10, 99)
+        q.append(item)
+
+        msg = f"队列放入数据: {item} | 当前队列大小: {len(q)} | 队列是否已满: {str(len(q) == q.maxlen):<5} | 队列数据: {q}"
+        logging.warning(msg)
+
+
+# 消费者
+def consumer():
+    '''消费队列中的一个数据'''
+    time.sleep(3)  # 为了更好的显示队列非阻塞，所以让消费者先暂停3秒钟再消费
+    item = q.pop()
+
+    msg = f"队列消费数据: {item} | 当前队列大小: {len(q)} | 队列是否已满: {str(len(q) == q.maxlen):<5} | 队列数据: {q}"
+    logging.warning(msg)
+
+
+Thread(target=producer, name="Producer").start()
+Thread(target=consumer, name="Consumer").start()
+```
+
+:::
+
+<span style="color: red;font-weight: bold;">总结：阻塞和非阻塞是指是否能直接能立即返回，需要注意的是与是否能直接拿到最终结果无关</span>
+
+<br />
+
+#### 重头戏：IO
+
+上面所说的同步/异步/阻塞/非阻塞都是概念性的，需要与具体的某个东西结合起来才符合我们的实际情况，比如阻塞队列，而与这些概念关系最密切的当属`IO`操作。
+
+IO说简单点就是输入和输出(Input/Output)，往深入说就太太太复杂了，可以参考一下经典的三种IO模型：`select`、`poll`、`epoll`
+
+
+
+我们来列举常见的一些IO操作
+
+* 磁盘IO：读写文件
+* 网络IO：发送/接收网络请求
+* 与USB设备、显示器、键盘、鼠标等交互产生的IO，比如`print("hello")`就会涉及到IO操作
+
+
+
+IO操作类型
+
+| 类型         | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 同步阻塞IO   | 这是我们写代码最常用的方式，这种方式最符合开发者的思考逻辑，但是效率不高<br />比如使用`open`函数读写文件，使用第三方库`requests`发送网络请求等 |
+| 同步非阻塞IO | 一般不用，不在讨论范围内                                     |
+| 异步阻塞IO   | 一般不用，不在讨论范围内                                     |
+| 异步非阻塞IO | 我们将要学习的协程，就是用来实现异步非阻塞IO，相比同步阻塞IO，代码会难写一些，但是效率更高 |
+
+
+
+#### 协程概念
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
