@@ -331,8 +331,6 @@ C:\Users\VVFock3r>python -q
 
 ## 
 
-
-
 ## 二、函数
 
 ### 函数说明
@@ -1323,11 +1321,719 @@ def timer(start_time=3):
 
 ## 
 
-## 四、多线程和多进程
+## 四、多线程
 
-待补充
+### 线程说明
+
+* 线程是CPU调度的最小单元
+* 每个可执行程序都会有一个主线程，主线程一般我们都用来做协调工作，由主线程来创建其他线程称为工作线程
+* 线程之间数据共享
+* 线程状态
+  * 就绪(Ready)：线程能够运行但是还没有开始运行，等待被调度
+  * 运行(Running)：线程一旦调度就处于运行中
+  * 阻塞(Blocked)：线程等待外部事件而无法运行，比如I``/O``等待
+  * 终止(Teminated)：线程退出
+* 工作线程一旦启动，不可暂停和取消，除非代码运行完成或抛出异常而停止；工作线程崩溃不影响主线程正常运行
 
 
 
+### CPython线程使用场景
+
+线程是最出名的实现并发和并行的方式之一，但是在CPython中由于GIL的存在，线程只能实现并发，而不能实现并行。
+
+可以说CPython的线程并不是真正的线程，但是它在某些场景下仍旧可以为我们的代码提速，其原理在于：
+
+* 对于CPU密集型的应用，由于线程会一直霸占CPU，除非线程执行完成或主动交出控制权，所以使用多线程一般会导致程序变慢（线程创建和销毁需要开销）
+* 对于IO密集型应用，遇到IO阻塞时系统会自动进行线程切换，所以可以极大的提高程序效率
 
 
+
+### 基本使用
+
+函数形式
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+from datetime import datetime
+from threading import Thread
+
+
+# 定义一个普通函数
+def show_time(msg):
+    print('{}{}'.format(msg, datetime.now()))
+
+
+# 实例化Thread类，创建一个线程，执行我们的函数show_time，函数参数以元组形式使用args传递
+for i in range(5):
+    t = Thread(target=show_time, args=("当前时间是: ",))
+    t.start()
+```
+
+类形式
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+from datetime import datetime
+from threading import Thread
+
+
+class ShowTime(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def run(self) -> None:
+        print('当前时间是: {}\n'.format(datetime.now()), end="")
+
+
+for i in range(5):
+    t = ShowTime()
+    t.start()
+```
+
+### 线程属性
+
+Thread类签名
+
+```python
+def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs=None, *, daemon=None)
+
+targe	线程调度的函数
+name	线程名字
+args	线程函数参数，是一个元祖
+daemon	后面有讲解
+```
+
+Thread实例属性和方法
+
+| 属性/方法      | 说明                                                         |
+| -------------- | ------------------------------------------------------------ |
+| start()        | 执行任务（启动新线程）,start会启动新线程然后调用run方法      |
+| run()          | 执行任务（在当前线程中），run方法会执行具体的任务            |
+| name/getName() | 线程名，默认以Thread-1、Thread-2形式命名                     |
+| setName()      | 设置线程名称                                                 |
+| ident          | 线程ID，非0整数，线程启动后才会有ID，否则为None。线程退出，此ID依旧可以访问。此ID可以重复使用 |
+| is_alive()     | 返回线程是否还活着，等同于.isAlive()                         |
+
+threading模块属性和方法
+
+| 属性/方法        | 说明                                                 |
+| ---------------- | ---------------------------------------------------- |
+| current_thread() | 返回当前线程对象                                     |
+| get_ident()      | 返回当前线程的ID，非0整数                            |
+| main_thread()    | 返回主线程对象                                       |
+| active_count()   | 当前处于alive状态的线程个数                          |
+| enumerate()      | 返回所有的活着的线程列表，不包括未开始和已终止的线程 |
+
+### 线程安全
+
+线程执行一段代码的时候，这段代码要么不执行，要么一定会执行完(执行过程中不会切换到其他线程)，这段代码就称为线程安全
+
+
+
+（1）直接使用`print`函数是线程不安全的，但通过修改使用方式，可以达到线程安全；`logging`是线程安全，更推荐使用`logging`来代替`print`
+
+`print`线程安全说明
+
+```python
+print("hello world")            # 线程不安全
+print("hello world\n", end="")  # 线程安全
+
+# 原理在于：
+#   (1)print("hello world")其实是两步操作，先输出hello world，再输出换行符\n，这中间是可以被打断的
+#   (2)通过指定end=""，等同于将第二步操作给去掉
+```
+
+线程安全演示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+from threading import Thread, current_thread
+
+
+def thread_safe():
+    for i in range(100):
+        print("{} is running".format(current_thread().name))  # 线程不安全
+        # print("{} is running\n".format(current_thread().name), end="")    # 线程安全
+        # logging.warning("{} is running".format(current_thread().name))    # 线程安全
+
+
+for i in range(5):
+    t = Thread(target=thread_safe)
+    t.start()
+```
+
+![image-20220330204518155](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220330204518155.png)
+
+（2）`queue`是线程安全的，但是下面的代码是线程不安全的
+
+`queue`线程不安全原理
+
+```python
+if q.qsize() > 0:
+	q.get()
+
+# 问题描述：qsize()>0不能保证一定能get()，qsize()<maxsize不能保证一定put()
+# 原因在于：qsize()和get()本身是线程安全的,但是这两个组合到一块就不能保证是线程安全，因为这是两步操作了，中间是可能被打断的
+# 解决办法：qsize()和get()的组合代码加锁
+```
+
+`queue`线程安全演示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import random
+import time
+from queue import Queue
+from threading import Thread, Lock
+
+# 初始化队列
+q = Queue()
+
+# 初始化全局锁
+lock = Lock()
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)-10s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+# 线程不安全代码(未加锁)
+def thread_safe():
+    if q.qsize() <= 0:
+        time.sleep(random.random())
+        q.put(random.randint(1, 100))
+    logging.warning("队列大小: {}".format(q.qsize()))
+
+
+# 线程安全代码(已加锁)
+def thread_safe2():
+    with lock:
+        if q.qsize() <= 0:
+            time.sleep(random.random())
+            q.put(random.randint(1, 100))
+        logging.warning("队列大小: {}".format(q.qsize()))
+
+# 开启100个线程
+for i in range(100):
+    Thread(target=thread_safe).start()
+    # Thread(target=thread_safe2).start()
+```
+
+### daemon
+
+设置线程daemon为False后，当主线程执行结束后，要等待非daemon线程执行完成
+
+设置daemon为True后，当主线程执行结束后，daemon线程也会立即退出
+
+子线程的daemon的值从父线程中继承来，父线程如果不设置默认为False
+
+
+
+daemon相关方法
+
+| 属性                                | 说明                                                  |
+| ----------------------------------- | ----------------------------------------------------- |
+| threading.Thread(...., daemon=True) | 创建线程时设置daemon属性                              |
+| 线程.setDaemon(True)                | 线程创建完成后，也可以设置daemon属性，必须在start之前 |
+| 线程.isDaemon()/daemon              | 返回daemon状态                                        |
+
+
+
+daemon线程应用场景
+
+* 随时可以被终止的线程
+
+* 后台任务，如发送心跳包、监控；
+* 主线程工作才有用的线程，如主线程维护这公共资源，主线程已经清理了，准备退出，而工作线程使用这些资源已经没有意义了，一起退出最合适
+
+
+
+daemon示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import time
+from threading import Thread, current_thread
+
+
+def show_msg():
+    time.sleep(0.1)
+    print("{}\n".format(current_thread().getName()), end="")
+
+
+# 开启10个线程
+for i in range(10):
+    Thread(target=show_msg).start()  # 未设置daemon属性，默认继承夫线程，默认为False
+    # Thread(target=show_msg, daemon=True).start()  # 设置daemon属性
+
+print("End")
+
+# 未设置daemon时，输出结果：
+#     End
+#     Thread-3
+#     Thread-2
+#     Thread-7
+#     Thread-5
+#     Thread-4
+#     Thread-6
+#     Thread-9
+#     Thread-1
+#     Thread-10
+#     Thread-8
+#
+# 设置daemon时，由于主线程很快会执行完成，而子线程会阻塞0.1秒，所以不会输出子线程名，输出结果：
+#     End
+```
+
+
+
+### join阻塞线程
+
+如果想让所有线程工作完毕后，主线程再执行代码，此时可以使用`线程.join()`来等待线程执行完毕
+
+join作用
+
+* 阻塞线程直到执行完毕
+* 它还可以设置超时时间，当超过超时时间，不管线程是否执行完毕，都会向下执行
+* `join`无视`daemon`的值
+
+将`daemon`代码改造一下，使代码最后再输出`End`
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import time
+from threading import Thread, current_thread
+
+
+def show_msg():
+    time.sleep(0.1)
+    print("{}\n".format(current_thread().getName()), end="")
+
+
+# 开启10个线程
+threads = []
+for i in range(10):
+    t = Thread(target=show_msg, daemon=True)
+    t.start()
+    threads.append(t)  # 将线程收集起来
+
+# 等待每个线程执行完毕
+for thread in threads:
+    thread.join()
+
+print("End")
+```
+
+
+
+### 线程锁
+
+Lock相关类：
+
+* Lock：独占锁或叫做互斥锁，同一时间只有一个线程能获取到锁
+
+* RLock：可重入锁，同一时间只有一个线程能获取到锁，在同一个线程内可多次acquire()，但也需要执行相同次数的release()
+
+
+
+lock实例方法
+
+| 方法                       | 说明                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| acquire(blocking, timeout) | 尝试获取锁，获取成功返回True，获取失败的话：<br />（1）默认会一直阻塞<br />（2）如果指定blocking为False，直接返回False，表示获取锁失败<br />（3）如果指定了timeout，那么超时以后返回False |
+| release()                  | 释放锁                                                       |
+| locked()                   | 查看是否上锁，已上锁返回True，否则返回False（注意RLOCK实例没有这个方法） |
+
+
+
+死锁和RLOCK
+
+连续两次acquire请求会导致死锁，因为第一次获得锁之后还没有释放时，第二次acquire请求紧接着就到来，
+
+但是acquire会让程序阻塞，无法执行release()，这就导致锁永远无法释放，就像下面这样
+
+```python
+Lock.acquire()
+Lock.acquire()
+Lock.release()
+Lock.release()
+```
+
+RLock就不存在上面提到的死锁问题，只需要保证有多少次acquire()，就有多少次release()即可
+
+
+
+Lock演示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+from threading import Thread, current_thread, Lock, RLock
+
+# 初始化锁
+lock = Lock()
+
+# 全局变量
+data = 0
+
+
+def add(n):
+    global data
+    for i in range(1000000):
+        # 未加锁
+        data += n
+
+        # 加锁（方式一）
+        lock.acquire()
+        data += n
+        lock.release()
+
+        # 加锁（方式二）
+        # if lock.acquire():
+        #     data += n
+        #     lock.release()
+
+        # 加锁（方式三）
+        # with lock:
+        #     data += n
+
+
+# 开启2个线程, 一个线程不断+1，另一个线程不断-1
+t1 = Thread(target=add, args=(1,))
+t2 = Thread(target=add, args=(-1,))
+t1.start()
+t2.start()
+t1.join()
+t2.join()
+
+print(data)
+print("End")
+
+# 未加锁输出结果：
+# 924375
+# End
+# 加锁输出结果
+# 0
+# End
+```
+
+### 线程局部变量
+
+创建一个全局变量`request = local()`，使用多线程对`request`进行修改时，会先将request拷贝到自身线程中一份，不会影响到全局和其他线程中的`request`
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import time
+import logging
+from threading import Thread, local, current_thread, active_count
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 初始化全局变量
+# class Request(object): pass
+# request = Request()
+
+
+# 初始化线程局部变量
+request = local()
+
+
+def thread_local(request):
+    request.thread_name = current_thread().getName()
+    time.sleep(1)
+    logging.warning('request.thread_name: {}'.format(request.thread_name))
+
+
+for i in range(6):
+    Thread(target=thread_local, args=(request,)).start()
+
+while active_count() > 1:
+    time.sleep(1)
+
+print("End")
+```
+
+### 线程同步 - 事件Event
+
+Event是线程通信间最简单的实现，使用一个变量flag，通过flag的True或False变化来执行不同操作
+
+Event变化会通知到所有线程
+
+
+
+Event实例方法
+
+| 方法               | 说明                                                         |
+| ------------------ | ------------------------------------------------------------ |
+| set()              | 标记为True                                                   |
+| clear()            | 标记为False                                                  |
+| is_set()           | 新创建的event或使用``clear``()后为False，当设置``set``()后返回True |
+| wait(timeout=None) | 等待，满足以下条件后立即执行：<br />（1）当调用``set``()后立即执行，此时wait返回值为True<br />（2）当超时后立即执行，此时wait返回值为False |
+
+Event演示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import time
+import threading
+import logging
+
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+def test(event):
+    # 子线程中每隔3秒循环一次，无限循环，除非主线程主动暂停，这里是一个技巧，以后可以使用
+    while not event.wait(3):
+        logging.warning("Running")
+
+
+# 初始化event
+event = threading.Event()
+
+# 开启两个子线程
+threading.Thread(target=test, args=(event,)).start()
+threading.Thread(target=test, args=(event,)).start()
+
+# 模拟主线程运行中
+time.sleep(7)
+
+# 通知所有子线程退出
+event.set()
+```
+
+### Event应用 - 延迟器 Timer
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+import logging
+from threading import Timer
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)8d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+def add(x, y):
+    ret = x + y
+    logging.warning(ret)
+    return ret
+
+
+t = Timer(5, add, args=(4, 5))  # 创建一个定时器，5秒后执行add函数
+t.start()  # 启动线程
+
+logging.warning("延迟器已经启动...")
+logging.warning("做一些其他的事...")
+
+# 取消线程
+#   此时函数还没有执行，程序退出
+#   如果函数已经运行，此时cancel依然可以正常执行，但是函数已经无法取消
+# t.cancel()
+```
+
+### 线程同步 - 条件变量Condition
+
+Condition内部会维护一个锁（默认是RLock），获取到锁的线程使用notify机制来通知（或称为唤醒）其他线程（1个或多个），然后使用wait释放锁并进入等待，当自身被其他线程通知（或唤醒）时，又会重新获取锁，继续向下执行
+
+
+
+Condition实例方法
+
+| 方法                              | 说明                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| acquire(blocking, timeout)        | 与RLock实例的acquire方法一致                                 |
+| release()                         | 与RLock实例的release方法一致                                 |
+| notify(n=1)                       | 唤醒一个或多个线程                                           |
+| notify_all()                      | 唤醒所有线程                                                 |
+| wait(timeout=None)                | 进入等待状态（这会释放锁），直到被唤醒或超时（又会重新获取锁），被唤醒返回True，超时返回False<br />如果未获得锁就使用wait，则报错`RuntimeError: cannot wait on un-acquired lock` |
+| wait_for(predicate, timeout=None) | wait_for是更灵活的一种wait方式，predicate需要指定一个可调用对象，<br />（1）当predicate()返回True，则继续往下执行<br />（2）当predicate()返回False，则和wait行为一致了<br />（3）timeout参数含义不变，若超时以后还会调用predicate一次 |
+
+生产者消费者模型
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import random
+import time
+from threading import Thread, Condition, Lock
+from queue import Queue
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 初始化条件变量
+condition = Condition()
+# condition = Condition(Lock())
+
+# 初始化全局数据
+data = Queue(maxsize=3)
+
+
+class Producer(Thread):
+    def __init__(self):
+        super().__init__()
+
+    def run(self) -> None:
+        def wrapper():
+            # 获取锁
+            # 注意：如果直接使用condition.acquire()的话不要忘记release(),
+            #      否则当condition = Condition(Lock())时会造成死锁，使用默认的RLock也会造成死锁，只是不容易复现
+            with condition:
+                # 添加数据至容器满
+                while not data.full():
+                    item = random.randint(10, 99)
+                    data.put(item)
+                    logging.warning(f"添加数据项: {item}, 当前队列大小: {data.qsize()}")
+
+                # 通知小伙伴消费
+                condition.notify()  # 通知，但还未释放锁
+                logging.warning("队列已满, 通知其他线程消费")
+                condition.wait()  # 释放锁，并进入等待模式; 被唤醒时又会重新获取锁
+
+        while True:
+            wrapper()
+
+
+class Consumer(Thread):
+    def __init__(self):
+        super().__init__()
+
+    def run(self) -> None:
+        def wrapper():
+            with condition:
+                while not data.empty():
+                    item = data.get()
+                    logging.warning(f"消费数据项: {item}, 当前队列大小: {data.qsize()}")
+                condition.notify()
+                logging.warning("队列已空, 通知其他线程添加\n")
+                time.sleep(3)  # 暂停一下，方便控制台看的清楚
+                condition.wait()
+
+        while True:
+            wrapper()
+
+
+# 创建多个生产者和消费者
+for i in range(9):
+    t = Producer()
+    t.setName("Producer-{}".format(i + 1))
+    t.start()
+
+    t = Consumer()
+    t.setName("Consumer-{}".format(i + 1))
+    t.start()
+```
+
+
+
+### 线程同步 - Barrier
+
+### 线程同步 - Semaphore
+
+### 线程池
+
+ThreadPoolExecutor构造参数
+
+| 参数               | 说明                                       |
+| ------------------ | ------------------------------------------ |
+| max_workers        | 指定线程池的最大线程数，默认为CPU核数的5倍 |
+| thread_name_prefix | 指定线程池中线程的名称前缀                 |
+
+ThreadPoolExecutor实例方法
+
+| 方法                        | 说明                                                         |
+| --------------------------- | ------------------------------------------------------------ |
+| submit(fn, *args, **kwargs) | 提交任务，线程池会分配一个线程迟总任务，返回一个Future实例，如果池已经满了，还可以继续提交 |
+| shutdown(wait=True)         | 清理池，池中的线程/进程全部杀掉，同时不再接受新提交的任务，<br />如果继续提交会报错`RuntimeError: cannot schedule new futures after shutdown` |
+
+Future实例方法
+
+| 方法                    | 说明                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| done()                  | 如果调用成功执行或取消成功，那么返回True，否则返回False      |
+| cancelled()             | 如果复用被成功的取消，那么返回True                           |
+| running()               | 如果正在运行且不能被取消，那么返回True                       |
+| cancel()                | 尝试取消调用，如果已经执行且不能取消返回False，否则返回True  |
+| result(timeout=None)    | 取返回的结果，timeout为None,一直等待返回，超时抛出concurrent.futures.TimeoutError异常 |
+| exception(timeout=None) | 取返回的异常，timeout为None,一直等待返回,超时抛出concurrent.futures.TimeoutError异常 |
+
+线程池简单演示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import time
+import logging
+from concurrent.futures import ThreadPoolExecutor
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+def add(x: int, y: int):
+    logging.warning("Function add run")
+
+    time.sleep(2)  # 模拟函数龟速运行
+    if x == 2:  # 模拟意外报错
+        raise Exception("Error: Parameter x in add function is not allowed to be 2")
+
+    ret = x + y  # 正确计算结果
+
+    logging.warning("Function add finished")
+    return ret
+
+
+with ThreadPoolExecutor(max_workers=5, thread_name_prefix="Thread-Add") as executor:
+    # 提交多个任务,并将任务收集起来
+    # 当任务数 > 工作线程时，还可以继续提交任务，submit函数并不会阻塞，而是会将任务放到队列中
+    # 查看源码发现使用的是queue.SimpleQueue()，简单队列，先进先出，队列大小没有限制
+    tasks = []
+    for i in range(5):
+        future = executor.submit(add, i, i)
+        tasks.append(future)
+    # logging.warning("全部任务已提交")
+
+    # 获取每个任务执行结果，并将结果收集起来
+    results = []
+    for j in tasks:
+        if j.exception() is None:  # 线程未崩溃(报错)
+            results.append(j.result())
+        else:
+            results.append(j.exception())  # 线程崩溃信息
+
+    # 依次输出每个任务的结果
+    for result in results:
+        logging.warning("add result: {}".format(result))
+```
