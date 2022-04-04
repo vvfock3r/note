@@ -2040,9 +2040,9 @@ with ThreadPoolExecutor(max_workers=5, thread_name_prefix="Thread-Add") as execu
 
 ## 
 
-### 五、协程
+## 五、协程
 
-#### 同步和异步
+### 同步和异步
 
 对于一个函数来说，同步指的是函数返回值就是我们想要的最终结果，异步则指不会直接拿到最终结果。
 
@@ -2055,7 +2055,7 @@ with ThreadPoolExecutor(max_workers=5, thread_name_prefix="Thread-Add") as execu
 
 <br />
 
-#### 阻塞和非阻塞
+### 阻塞和非阻塞
 
 阻塞和非阻塞直接讲并不容易讲清楚，所以这里结合队列做一下说明
 
@@ -2183,7 +2183,7 @@ Thread(target=consumer, name="Consumer").start()
 
 <br />
 
-#### 重头戏：IO
+### IO
 
 上面所说的同步/异步/阻塞/非阻塞都是概念性的，需要与具体的某个东西结合起来才符合我们的实际情况，比如阻塞队列，而与这些概念关系最密切的当属`IO`操作。
 
@@ -2210,19 +2210,449 @@ IO操作类型
 
 
 
-#### 协程概念
+### 协程概念
 
 
 
+### 协程基本使用
+
+官方文档：https://docs.python.org/zh-cn/3.9/library/asyncio.html
 
 
 
+#### 定义协程函数
+
+使用`async`关键字定义的函数便是一个协程函数
 
 
 
+#### 运行协程函数
+
+直接调用协程函数，返回的叫做协程对象
+
+协程对象需要借助外力启动，才能真正执行函数代码，此时有如下几种方法
+
+* 在协程函数外部，使用`asyncio.run(协程对象)`，这个是协程执行最高入口点
+* 在协程函数内部，可以使用几下几种方法运行新的协程：
+  * 使用`await 协程对象`
+  * 使用`await asyncio.create_task(协程对象)`并发运行一个或多个协程
+
+> await是一个关键字，详细内容参考：可等待对象
 
 
 
+协程函数举例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import asyncio
+
+# 初始化日志
+import time
+
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def main():  # 使用async关键字定义协程函数
+    logging.warning("hello")
+
+    # 运行协程函数-方式2, 使用await
+    # 挂起当前协程，执行asyncio.sleep(3), 并等待它执行完成, asyncio.sleep与普通的time.sleep不一样，他是协程函数
+    # 这里需要执行3秒钟
+    await asyncio.sleep(3)
+
+    # 运行协程函数-方式3，并发执行多个协程
+    # 这里总共需要执行5秒钟，注意并不是10秒钟
+    task1 = asyncio.create_task(asyncio.sleep(5))
+    task2 = asyncio.create_task(asyncio.sleep(5))
+    await task1
+    await task2
+
+    logging.warning("wrold")  # 继续执行当前协程
+
+    # main函数总共需要执行3+5=8秒钟
+
+
+# 运行协程函数-方式1, 这里是最高入口点
+asyncio.run(main())
+```
+
+
+
+#### 并发运行协程函数
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import asyncio
+
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def show_message(message: str):
+    await asyncio.sleep(1)
+    logging.warning(message)
+
+
+async def show_message2(message: str):
+    await asyncio.sleep(1)
+    return message
+
+
+async def main():
+    # 并发运行多个协程1 - create_task - 输出结果是无序的
+    logging.warning("并发运行多个协程1 - create_task - 输出结果是无序的")
+    tasks = [asyncio.create_task(show_message(f"create_task_{i}")) for i in range(5)]
+    for task in tasks:
+        await task
+    logging.warning("")
+
+    # 并发运行多个协程1 - create_task - 改写函数，仅让输出结果有序
+    logging.warning("并发运行多个协程1 - create_task - 改写函数，仅让输出结果有序")
+    tasks = [asyncio.create_task(show_message2(f"create_task_{i}")) for i in range(5)]
+    for task in tasks:
+        ret = await task
+        logging.warning(ret)
+    logging.warning("")
+
+    # 并发运行多个协程2 - gather - 输出结果是有顺序的
+    logging.warning("并发运行多个协程2 - gather - 输出结果是有顺序的")
+    tasks = [show_message2(f"create_task_{i}") for i in range(5)]
+    rets = await asyncio.gather(*tasks)
+    for i in rets:
+        logging.warning(i)
+    logging.warning("")
+
+    # 其他并发运行多个协程方法
+    #   * await asyncio.wait()
+    #   * asyncio.as_completed()
+
+
+# 运行协程函数-方式1, 这里是最高入口点
+asyncio.run(main())
+```
+
+#### 协程函数的威力 - 测试网络IO
+
+协程属于异步但其内部编写的代码可能是同步阻塞的，下面以`requests`和`aiohttp`来做一个演示
+
+安装第三方库
+
+```bash
+pip install requests aiohttp
+```
+
+代码演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import asyncio
+import time
+import aiohttp
+import requests
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def request_sync(url: str, number: int):
+    start = time.time()
+
+    # 统计HTTP请求状态码结果
+    Counter = {
+        "Success": 0,
+        "Failed": 0,
+    }
+
+    # 发送网络请求
+    with requests.session() as session:
+        for i in range(number):
+            r = session.get(url)
+            if r.status_code == 200:
+                Counter["Success"] += 1
+            else:
+                Counter["Failed"] += 1
+
+    logging.warning(f"Function [ request_sync   ] running time: {int(time.time() - start)} seconds | {Counter}")
+
+
+async def request_async(url: str, number: int):
+    start = time.time()
+
+    # 统计HTTP请求状态码结果
+    Counter = {
+        "Success": 0,
+        "Failed": 0,
+    }
+
+    async def wrapper(session: aiohttp.ClientSession):
+        async with session.get(url) as r:
+            if r.status == 200:
+                Counter["Success"] += 1
+            else:
+                Counter["Failed"] += 1
+
+    # 发送网络请求
+    async with aiohttp.ClientSession() as session:
+        tasks = [wrapper(session) for _ in range(number)]
+        await asyncio.gather(*tasks)
+
+    logging.warning(f"Function [ request_async  ] running time: {int(time.time() - start)} seconds | {Counter}")
+
+
+asyncio.run(request_sync("https://www.qq.com", 1000))
+asyncio.run(request_async("https://www.qq.com", 1000))
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-04 11:28:37,125	 [MainThread, 247048] Function [ request_sync   ] running time: 53 seconds | {'Success': 1000, 'Failed': 0}
+2022-04-04 11:29:01,859	 [MainThread, 247048] Function [ request_async  ] running time: 24 seconds | {'Success': 1000, 'Failed': 0}
+```
+
+
+
+#### 协程函数并不是万能的 - 测试磁盘IO
+
+这次我们来读写文件测试，使用非阻塞函数`aiofiles`来代替`open`
+
+安装aiofiles
+
+```bash
+pip install aiofiles
+```
+
+代码演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import logging
+import random
+import asyncio
+import time
+import aiofiles
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def write_sync(file_prefix: str, number: int, lines: int):
+    '''
+    :param file_prefix: 文件名前缀
+    :param number: 文件个数
+    :param lines: 每个文件行数
+    :return: None
+    '''
+
+    start = time.time()
+
+    # 定义文件列表
+    file_names = [f"{file_prefix}-{i}.txt" for i in range(number)]
+
+    # 定义文件内容
+    content = ""
+    for i in range(lines):
+        line = "".join(random.sample('zyxwvutsrqponmlkjihgfedcba', 10)) + "\n"
+        content += line
+
+    # 生成文件-阻塞
+    for file in file_names:
+        with open(file, "w+") as f:
+            f.write(content)
+    logging.warning(f"Function [ write_sync  ] running time: {int(time.time() - start)} seconds")
+
+
+async def write_async(file_prefix: str, number: int, lines: int):
+    '''
+    :param file_prefix: 文件名前缀
+    :param number: 文件个数
+    :param lines: 每个文件行数
+    :return: None
+    '''
+
+    start = time.time()
+
+    # 定义文件列表
+    file_names = [f"{file_prefix}-{i}.txt" for i in range(number)]
+
+    # 定义文件内容
+    content = ""
+    for i in range(lines):
+        line = "".join(random.sample('zyxwvutsrqponmlkjihgfedcba', 10)) + "\n"
+        content += line
+
+    # 生成文件函数-非阻塞
+    async def wrapper(file):
+        async with aiofiles.open(file, mode='w+') as f:
+            await f.write(content)
+
+    # 生成文件-非阻塞
+    tasks = [wrapper(file) for file in file_names]
+    await asyncio.gather(*tasks)
+
+    logging.warning(f"Function [ write_async ] running time: {int(time.time() - start)} seconds")
+
+
+# 生成30个文件，每个文件包含800万行
+asyncio.run(write_sync("sync", 30, 8000000))
+asyncio.run(write_async("async", 30, 8000000))
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-04 11:30:32,599	 [MainThread, 241668] Function [ write_sync  ] running time: 312 seconds
+2022-04-04 11:35:17,728	 [MainThread, 241668] Function [ write_async ] running time: 285 seconds
+```
+
+可以看到确实有效果，但是提速并不明显
+
+尤其是当我们减少文件数量、减少文件内容的时候，两种方式运行效果几乎一致，甚至有可能出现协程会更慢的情况
+
+这是为什么呢？可能是因为网络IO和磁盘IO的不同导致的。
+
+
+
+#### 协程与同步阻塞混合编程
+
+注入事件循环中的执行器（默认为线程池），后面去讲到
+
+代码演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+import time
+
+import requests
+import urllib3
+from functools import partial
+
+# 不验证HTTPS证书后会弹出警告，此代码用于关闭警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def download_sync(urls: list):
+    name = "download_sync"
+
+    start = time.time()
+    for url in urls:
+        # 发送HTTP请求
+        response = requests.get(url, verify=False)
+
+        # 写入磁盘
+        file_name = url.rsplit("/")[-1]
+        with open(file_name, mode="wb") as f:
+            f.write(response.content)
+
+    logging.warning(f"{name:14} 下载完成 | 用时: {time.time() - start}秒")
+
+
+# 协程和requests库混合编程
+async def download_async(urls: list):
+    name = "download_async"
+
+    async def wrapper(url):
+        # 获取事件循环
+        loop = asyncio.get_event_loop()
+        
+        # run_in_executor中并不能给执行的函数传递字典参数，所以这里用get2来代替requests.get
+        get2 = partial(requests.get, verify=False)
+        
+        # 执行器执行同步阻塞函数
+        future = loop.run_in_executor(None, get2, url)
+        response = await future
+
+        # 写入磁盘
+        file_name = url.rsplit("/")[-1]
+        with open(file_name, mode="wb") as f:
+            f.write(response.content)
+
+    start = time.time()
+    tasks = [wrapper(url) for url in urls]
+    await asyncio.wait(tasks)
+    logging.warning(f"{name:14} 下载完成 | 用时: {time.time() - start}秒")
+
+
+if __name__ == "__main__":
+    urls = [
+        "https://img-pre.ivsky.com/img/tupian/pre/202108/09/fengniao.jpg",
+        "https://img-pre.ivsky.com/img/tupian/pre/202108/09/fengniao-003.jpg",
+        "https://img-pre.ivsky.com/img/tupian/pre/202108/09/fengniao-004.jpg"
+    ]
+
+    asyncio.run(download_sync(urls))
+    asyncio.run(download_async(urls))
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-04 12:23:50,691	 [MainThread, 252956] download_sync  下载完成 | 用时: 0.9531307220458984秒
+2022-04-04 12:23:51,035	 [MainThread, 252956] download_async 下载完成 | 用时: 0.3437678813934326秒
+```
+
+可以看到效果提升还是比较明显
+
+
+
+### 协程深入理解
+
+#### 早期的协程执行最高入口
+
+略
+
+#### 事件循环
+
+
+
+#### 可等待对象
+
+#### 协程对象
+
+#### Task对象
+
+#### Future对象
+
+#### 异步迭代器
+
+#### 异步上下文管理器
 
 
 
