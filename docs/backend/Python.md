@@ -305,6 +305,8 @@ python -Wignore warn_test.py	# 不输出warn信息
 PYTHONWARNINGS
 此变量等价于 -W 选项。 如果被设为一个以逗号分隔的字符串，它就相当于多次指定 -W，列表中后出现的过滤器优先级会高于列表中先出现的。
 
+# 还可以在代码中设置 warnings.filterwarnings("ignore")来关闭警告
+
 更细致的控制请参考官方文档
 ```
 
@@ -2216,7 +2218,7 @@ IO操作类型
 
 ### 协程基本使用
 
-官方文档：https://docs.python.org/zh-cn/3.9/library/asyncio.html
+官方文档：[https://docs.python.org/zh-cn/3.9/library/asyncio.html](https://docs.python.org/zh-cn/3.9/library/asyncio.html)
 
 
 
@@ -2636,21 +2638,232 @@ if __name__ == "__main__":
 
 #### 早期的协程执行最高入口
 
-略
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+
+
+async def main():
+    print("hello world")
+
+# 运行协程函数
+# asyncio.run(main())
+
+# 也可以使用低级API来运行协程函数
+loop = asyncio.get_event_loop()  # 获取事件循环对象
+loop.run_until_complete(main())  # 将协程对象放入事件循环
+```
 
 #### 事件循环
+
+官方文档：[https://docs.python.org/zh-cn/3.9/library/asyncio-eventloop.html](https://docs.python.org/zh-cn/3.9/library/asyncio-eventloop.html)
+
+看一下官网的描述：
+
+> 事件循环是每个 asyncio 应用的核心。 事件循环会运行异步任务和回调，执行网络 IO 操作，以及运行子进程。
+
+简单来说，事件循环就是一个大循环，用来调度协程对象，可以让我们更精细的控制协程调度
+
+
+
+**创建和运行**
+
+事件循环相关方法
+
+| 方法                                      | 说明                                                         |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| asyncio.new_event_loop()                  | 创建一个事件循环                                             |
+| asyncio.set_event_loop(loop)              | 将loop设置为当前OS线程的当前事件循环                         |
+| **asyncio.get_event_loop()**              | 获取当前事件循环，如果当前没有运行则创建一个新的事件循环     |
+| **asyncio.get_running_loop()**            | 返回当前OS线程中正在运行的事件循环，如果没有运行则引发RuntimeError<br />（1）此函数只能由协程或回调来调用。<br />（2）官方更推荐使用这个而不是`get_event_loop` |
+| asyncio.get_event_loop_policy()           | 获取当前事件循环策略                                         |
+| **asyncio.set_event_loop_policy(policy)** | 设置当前事件循环策略，比如使用`uvloop`提供的事件循环策略来加快协程执行速度 |
+
+事件循环代码演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 因为事件循环尚未运行，所以这里会报错 RuntimeError: no running event loop
+# loop = asyncio.get_running_loop()
+# print(loop)
+
+# 看看事件循环到底是个啥?
+loop1 = asyncio.get_event_loop()
+logging.warning(f"事件循环1: {loop1} | 内存地址: {id(loop1)}")
+
+# 创建一个新的事件循环对象，并设置为当前事件循环
+loop2 = asyncio.new_event_loop()
+asyncio.set_event_loop(loop2)
+logging.warning(f"事件循环2: {asyncio.get_event_loop()} | 内存地址: {id(asyncio.get_event_loop())}")
+
+
+async def show_current_loop(message):
+    current_loop = asyncio.get_running_loop()
+    logging.warning(f"{message}: {current_loop} | 内存地址：{id(current_loop)}")
+
+
+# 运行事件循环
+loop1.run_until_complete(show_current_loop("在事件循环1中运行"))
+loop2.run_until_complete(show_current_loop("在事件循环1中运行"))
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-04 16:09:19,252	 [MainThread, 261928] 事件循环1: <_WindowsSelectorEventLoop running=False closed=False debug=False> | 内存地址: 1926186899208
+2022-04-04 16:09:19,252	 [MainThread, 261928] 事件循环2: <_WindowsSelectorEventLoop running=False closed=False debug=False> | 内存地址: 1926189799880
+2022-04-04 16:09:19,252	 [MainThread, 261928] 在事件循环1中运行: <_WindowsSelectorEventLoop running=True closed=False debug=False> | 内存地址：1926186899208
+2022-04-04 16:09:19,252	 [MainThread, 261928] 在事件循环1中运行: <_WindowsSelectorEventLoop running=True closed=False debug=False> | 内存地址：1926189799880
+```
+
+> （1）第一行输出：running=False 说明虽然创建了事件循环，但并未运行
+>
+> （2）第二行输出：我们又创建了一个事件循环，两个对比一下，发现内存地址并不相同
+>
+> （3）第三行输出：我们编写的异步代码在第1个事件循环中运行：
+>
+> ​								① running已变成了True，说明事件循环运行起来了
+>
+> ​								② 内存地址与事件循环1相同
+>
+> （4）第四行输出：我们编写的异步代码在第2个事件循环中运行
+
+<span style="color: red;font-weight: bold;">总结：可以有多个事件循环；协程函数需要在一个具体的事件循环中执行</span>
+
+<br />
+
+**事件循环实例方法**
+
+| 方法                            | 说明                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| loop.run_until_complete(future) | 运行直到 future ( Future 的实例 )被完成；也可以传入协程对象，会自动处理<br />（1）如果当前事件循环loop处于停止状态(stop)，会自动启动<br />（2）如果当前事件循环loop处于关闭状态(close)，则会抛出异常`RuntimeError: Event loop is closed` |
+| loop.run_forever()              | 运行事件循环直到 stop() 被调用                               |
+| loop.stop()                     | 停止事件循环                                                 |
+| loop.is_running()               | 事件循环是否正在运行                                         |
+| loop.close()                    | 关闭事件循环，当这个函数被调用的时候，循环必须处于非运行状态 |
+| loop.is_closed()                | 事件循环是否已经被关闭                                       |
+
+
 
 
 
 #### 可等待对象
 
-#### 协程对象
+文档：[https://docs.python.org/zh-cn/3.9/library/asyncio-task.html#awaitables](https://docs.python.org/zh-cn/3.9/library/asyncio-task.html#awaitables)
+
+如果一个对象可以在 [`await`](https://docs.python.org/zh-cn/3.9/reference/expressions.html#await) 语句中使用，那么它就是 **可等待** 对象。许多 asyncio API 都被设计为接受可等待对象。
+
+可等待对象有三种主要类型: 
+
+* 协程
+* Task
+* Future
+* 拥有`__await__`方法的对象
+
+
 
 #### Task对象
 
+文档：[https://docs.python.org/zh-cn/3.9/library/asyncio-task.html#task-object](https://docs.python.org/zh-cn/3.9/library/asyncio-task.html#task-object)
+
+Task说明
+
+* Task对象是对协程对象的一层包装，该协程会被**自动调度执行**
+
+  Task创建完后会被**自动调度执行**，所以如果在事件循环运行之前创建Task，会报错`RuntimeError: no running event loop`
+
+* Task对象是线程不安全的
+* Task是Future的子类
+
+
+
+创建Task实例的方法
+
+* 高级API ：`asyncio.create_task(协程对象, *, name=None)`（推荐使用）
+* 低级API ：`loop.create_task(协程对象, *, name=None)`
+* 低级API：`asyncio.ensure_future(obj, *, loop=None)`
+
+
+
 #### Future对象
 
+文档：[https://docs.python.org/zh-cn/3.9/library/asyncio-future.html#asyncio.Future](https://docs.python.org/zh-cn/3.9/library/asyncio-future.html#asyncio.Future)
+
+Future说明
+
+* Future表示异步操作的 **最终结果**，是一种特殊的**低层级** 可等待对象，通常情况下**没有必要**在应用层级的代码中创建 Future 对象
+* Future对象是线程不安全的
+
+
+
+Future简单示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def display(future: asyncio.Future):
+    future.set_result("Hello World")  # 设置future返回值
+
+
+async def main():
+    loop = asyncio.get_running_loop()  # 得到当前事件循环
+    future = loop.create_future()  # 在当前事件循环中创建一个Future对象
+    await loop.create_task(display(future))  # 创建一个Task对象放入事件循环，绑定display函数，display函数内手动给future赋值
+    data = await future  # 等待Future获取结果
+    logging.warning(data)  # 输出结果 Hello World
+
+
+asyncio.run(main())
+```
+
+
+
+#### 对象检测
+
+| 检测方法                              | 说明                 |
+| ------------------------------------- | -------------------- |
+| asyncio.iscoroutinefunction(协程函数) | 返回是否是协程函数   |
+| asyncio.iscoroutine(协程对象)         | 返回是否是协程对象   |
+| asyncio.isfuture(future)              | 返回是否是Future对象 |
+| inspect.isawaitable(对象)             | 返回是否是可等待对象 |
+
+> 协程函数、协程对象也可以使用`inspect.iscoroutinefunction(协程函数)`和`inspect.iscoroutine(协程对象)`来检测，
+>
+> 但是`inspect`只能检测使用`async def`定义的协程，对于使用基于生成器的协程，则无法检测
+
+
+
 #### 异步迭代器
+
+
+
+
+
+
 
 #### 异步上下文管理器
 
