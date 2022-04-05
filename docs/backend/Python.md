@@ -2251,13 +2251,11 @@ IO操作类型
 
 import logging
 import asyncio
-
-# 初始化日志
 import time
 
+# 初始化日志
 FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
 logging.basicConfig(format=FORMAT)
-
 
 async def main():  # 使用async关键字定义协程函数
     logging.warning("hello")
@@ -2749,16 +2747,15 @@ loop2.run_until_complete(show_current_loop("在事件循环1中运行"))
 
 **事件循环实例方法**
 
-| 方法                            | 说明                                                         |
-| ------------------------------- | ------------------------------------------------------------ |
-| loop.run_until_complete(future) | 运行直到 future ( Future 的实例 )被完成；也可以传入协程对象，会自动处理<br />（1）如果当前事件循环loop处于停止状态(stop)，会自动启动<br />（2）如果当前事件循环loop处于关闭状态(close)，则会抛出异常`RuntimeError: Event loop is closed` |
-| loop.run_forever()              | 运行事件循环直到 stop() 被调用                               |
-| loop.stop()                     | 停止事件循环                                                 |
-| loop.is_running()               | 事件循环是否正在运行                                         |
-| loop.close()                    | 关闭事件循环，当这个函数被调用的时候，循环必须处于非运行状态 |
-| loop.is_closed()                | 事件循环是否已经被关闭                                       |
-
-
+| 方法                                        | 说明                                                         |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| loop.run_until_complete(future)             | 运行直到 future ( Future 的实例 )被完成；也可以传入协程对象，会自动处理<br />（1）如果当前事件循环loop处于停止状态(stop)，会自动启动<br />（2）如果当前事件循环loop处于关闭状态(close)，则会抛出异常`RuntimeError: Event loop is closed` |
+| loop.run_forever()                          | 运行事件循环直到 stop() 被调用                               |
+| loop.stop()                                 | 停止事件循环                                                 |
+| loop.is_running()                           | 事件循环是否正在运行                                         |
+| loop.close()                                | 关闭事件循环，当这个函数被调用的时候，循环必须处于非运行状态 |
+| loop.is_closed()                            | 事件循环是否已经被关闭                                       |
+| loop.run_in_executor(executor, func, *args) | 在指定的执行器中调用func,返回Future对象；执行器可以为：<br />（1）None,使用默认执行器，线程池<br />（2）concurrent.futures.ThreadPoolExecutor()对象，线程池<br />（3）concurrent.futures.ProcessPoolExecutor()对象，进程池<br />如果要给函数func传递字典参数，则可以使用标准库`functools.partial`来对函数进行一层包装 |
 
 
 
@@ -2768,7 +2765,7 @@ loop2.run_until_complete(show_current_loop("在事件循环1中运行"))
 
 如果一个对象可以在 [`await`](https://docs.python.org/zh-cn/3.9/reference/expressions.html#await) 语句中使用，那么它就是 **可等待** 对象。许多 asyncio API 都被设计为接受可等待对象。
 
-可等待对象有三种主要类型: 
+可等待对象有几下几种类型: 
 
 * 协程
 * Task
@@ -2859,31 +2856,260 @@ asyncio.run(main())
 
 #### 异步迭代器
 
+文档：[https://docs.python.org/zh-cn/3.9/reference/datamodel.html#asynchronous-iterators](https://docs.python.org/zh-cn/3.9/reference/datamodel.html#asynchronous-iterators)
 
 
 
+异步迭代器可以在其 `__anext__` 方法中调用异步代码
+
+异步迭代器可在 [`async for`](https://docs.python.org/zh-cn/3.9/reference/compound_stmts.html#async-for) 语句中使用
+
+
+
+异步迭代器需要定义如下方法
+
+（1）`def __aiter__(self)`
+
+必须返回一个可等待对象，一般返回自己
+
+（2）`async def __anext__(self)`
+
+必须返回一个下一次迭代的结果值。 当迭代结束时应该引发 [`StopAsyncIteration`](https://docs.python.org/zh-cn/3.9/library/exceptions.html#StopAsyncIteration) 错误
+
+代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import random
+
+
+class Random:
+    def __init__(self, n=None):
+        self.n = n
+        self._count = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.n is not None:
+            if self._count >= self.n:
+                raise StopAsyncIteration
+            self._count += 1
+        return random.randint(1, 100)
+
+
+async def main():
+    async for x in Random(n=10):  # 异步迭代
+        print(x)
+
+
+asyncio.run(main())
+```
 
 
 
 #### 异步上下文管理器
 
+文档：[https://docs.python.org/zh-cn/3.9/reference/datamodel.html#asynchronous-context-managers](https://docs.python.org/zh-cn/3.9/reference/datamodel.html#asynchronous-context-managers)
 
 
 
+异步上下文管理器 是上下文管理器的一种，它能够在其 `__aenter__` 和 `__aexit__` 方法中暂停执行。
+
+异步上下文管理器可在 [`async with`](https://docs.python.org/zh-cn/3.9/reference/compound_stmts.html#async-with) 语句中使用
 
 
 
+异步上下文管理器需要实现如下方法
+
+（1）`async def __aenter__(self)`
+
+返回值是`async with xx as xx`语句中as后面的对象，必须返回一个可等待对象
+
+（2）`async def __aexit__(self, exc_type, exc_val, exc_tb)`
+
+当`with`语句执行结束时调用此函数，用于执行一些资源清理的操作
+
+代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+class ClientSession:
+    async def __aenter__(self):
+        '''
+        async with xxx as xx
+        as后面的对象，就是本函数的返回值
+        '''
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        '''with语法运行结束后执行的清理操作'''
+        self._close()
+
+    def get(self):
+        logging.warning("执行Get方法")
+
+    def _close(self):
+        logging.warning("关闭Session")
+
+
+async def main():
+    async with ClientSession() as session:
+        session.get()
+
+asyncio.run(main())
+```
 
 
 
+#### 控制协程并发数量
+
+可以自己手动控制也可以使用`asyncio.Semaphore(并发)`，两个代码都不难，但以下两种代码还是有些区别的，假设总请求数为10，并发为2，那么：
+
+* 手动控制的是等2个请求完全完成后再去请求后2个，`Semaphore`是2个请求中任意一个完成就会再启动一个新请求，
+
+  `Semaphore`效率更高，手动控的制控制台信息更直观
+
+* `Semaphore`代码量更小
 
 
 
+自己手动控制并发演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+import time
+import aiohttp
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+async def request_async(url: str, request_total: int, concurrent: int = 1000):
+    '''
+    :param url: URL
+    :param request_total: 总共发送多少次请求
+    :param concurrent: 并发数量，需要 > 0
+    :return: None
+    '''
+    start = time.time()
+
+    # 统计HTTP请求状态码结果
+    Counter = {
+        "Success": 0,
+        "Failed": 0,
+    }
+
+    async def wrapper(session: aiohttp.ClientSession):
+        logging.warning("Started a request")
+        async with session.get(url) as r:
+            if r.status == 200:
+                Counter["Success"] += 1
+            else:
+                Counter["Failed"] += 1
+        logging.warning("Completed a request")
+
+    # 发送网络请求
+    async with aiohttp.ClientSession() as session:
+        while request_total > 0:
+            # --------------------------- 并发控制 --------------------------------
+            # 剩余请求小于并发数，直接请求即可
+            if request_total <= concurrent:
+                tasks = [wrapper(session) for _ in range(request_total)]
+                request_total = 0
+            # 按照一定数量并发执行
+            else:
+                tasks = [wrapper(session) for _ in range(concurrent)]
+                request_total -= concurrent
+            # --------------------------- 并发控制 --------------------------------
+            await asyncio.gather(*tasks)
+
+    logging.warning(f"Function [ request_async  ] running time: {int(time.time() - start)} seconds | {Counter}")
+
+
+asyncio.run(request_async("https://www.qq.com", request_total=10 concurrent=2))
+```
+
+:::
 
 
 
+使用`asyncio.Semaphore`控制并发
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import asyncio
+import logging
+import time
+import aiohttp
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
 
 
+async def request_async(url: str, request_total: int, concurrent: int = 1000):
+    '''
+    :param url: URL
+    :param request_total: 总共发送多少次请求
+    :param concurrent: 并发数量，需要 > 0
+    :return: None
+    '''
+    start = time.time()
+
+    # (1)并发控制, 不能设置为0，否则会发生死锁
+    semphore = asyncio.Semaphore(concurrent)
+
+    # 统计HTTP请求状态码结果
+    Counter = {
+        "Success": 0,
+        "Failed": 0,
+    }
+
+    async def wrapper(session: aiohttp.ClientSession):
+        async with semphore:  # (2)并发控制
+            logging.warning("Started a request")
+            async with session.get(url) as r:
+                if r.status == 200:
+                    Counter["Success"] += 1
+                else:
+                    Counter["Failed"] += 1
+            logging.warning("Completed a request")
+
+    # 发送网络请求
+    async with aiohttp.ClientSession() as session:
+        tasks = [wrapper(session) for _ in range(request_total)]
+        await asyncio.gather(*tasks)
+
+    logging.warning(f"Function [ request_async  ] running time: {int(time.time() - start)} seconds | {Counter}")
 
 
+asyncio.run(request_async("https://www.qq.com", request_total=10, concurrent=2))
+```
 
+:::
