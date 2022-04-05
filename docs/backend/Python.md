@@ -335,9 +335,426 @@ C:\Users\VVFock3r>python -q
 
 ## 二、变量和数据结构
 
-补充中
+### 查看变量
+
+| 内置函数  | 说明                                                         |
+| --------- | ------------------------------------------------------------ |
+| globals() | 返回全局变量组成的字典                                       |
+| locals()  | 返回当前作用域内变量组成的字典，如果当前在全局则返回全局变量组成的字典 |
+| vars(obj) | 返回obj对象作用域内变量组成的字典，<br />（1）如果不传参数，vars和locals作用一样<br />（2）如果传1个参数，等同于`obj.__dict__` |
+
+代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+# 定义全局变量
+x = 1
+
+# 测试1 - 全局作用域
+logging.warning("测试1: 在全局使用3个函数, 效果是一样的")
+logging.warning(globals() == locals() == vars())
 
 
+# 测试2 - 局部作用域(函数)
+def test2():
+    logging.warning("测试2: 在函数内部, locals()和vars()效果是一样的, 他俩和global()是不一样的")
+    y = 2
+    logging.warning(locals() == vars())
+    logging.warning(locals() == globals())
+
+
+# 测试3 - 局部作用域(对象)
+def test3():
+    class MyObj: pass
+
+    logging.warning("测试3: var(obj) == obj.__dict__")
+    logging.warning(vars(MyObj) == MyObj.__dict__)
+
+
+test2()
+test3()
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-05 10:53:24,984	 [MainThread, 291696] 测试1: 在全局使用3个函数, 效果是一样的
+2022-04-05 10:53:24,984	 [MainThread, 291696] True
+2022-04-05 10:53:24,984	 [MainThread, 291696] 测试2: 在函数内部, locals()和vars()效果是一样的, 他俩和global()是不一样的
+2022-04-05 10:53:24,984	 [MainThread, 291696] True
+2022-04-05 10:53:24,984	 [MainThread, 291696] False
+2022-04-05 10:53:24,984	 [MainThread, 291696] 测试3: var(obj) == obj.__dict__
+2022-04-05 10:53:24,984	 [MainThread, 291696] True
+```
+
+### 基本数据结构 - 列表(list)
+
+文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#list](https://docs.python.org/zh-cn/3/library/stdtypes.html#list)
+
+**列表推导式**
+
+```python
+x = [x for x in range(100)]
+x = [{chr(x):x} for x in range(97, 123)]
+x = [{x:y} for x in range(1,3) for y in range(3)]
+```
+
+**列表方法**
+
+| 分类     | 方法                                                       | 说明                                                         |
+| -------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| 插入元素 | **`append(self, object, /)`**                              | 在尾部插入一个元素，时间复杂度 O(1)                          |
+|          | `insert(self, index, object, /)`                           | 在指定索引处插入一个元素，时间复杂度 O(n)                    |
+| 删除元素 | **`pop(self, index=-1, /)`**                               | 默认从索引为-1的位置弹出该值（弹出后列表删除该元素），<br />尾部弹出时间复杂度为 O(1)，其他位置弹出时间复杂度为 O(n)；<br />如果元素不存在，则引发 `IndexError` |
+|          | `remove(self, value, /)`                                   | 删除第一个值为value的元素，时间复杂度 O(n) ；<br />如果元素不存在，则引发 ValueError |
+|          | `clear(self, /)`                                           | 清空列表所有元素， 时间复杂度 O(1)                           |
+| 列表反转 | `reverse(self, /)`                                         | 列表反转（会改变原列表内容）                                 |
+|          | `reversed(list)`                                           | 列表反转，返回一个迭代器（不会改变原列表内容）               |
+| 列表排序 | `sort(self, /, *, key=None, reverse=False)`                | 根据key指定的函数进行排序，返回值为None（会改变原列表内容）  |
+|          | `sorted(iterable, /, *, key=None, reverse=False)`          | 根据key指定的函数进行排序，返回一个迭代器（不会改变原列表内容） |
+| 列表复制 | `copy(self, /)`                                            | 返回一个新列表，浅拷贝（shadow copy），<br />根据被拷贝对象不同而操作不同：<br />（1）如果是不可变类型，则分配一块新内存地址；<br />（2）如果是可变类型，则直接引用 |
+|          | `[::]`                                                     | 同`copy()`                                                   |
+|          | `copy.deepcopy(x, memo=None, _nil=[])`                     | 返回一个新列表，深拷贝(deep copy)                            |
+| 列表查找 | `index(self, value, start=0, stop=9223372036854775807, /)` | 返回value在列表中的索引号，找不到抛出ValueError异常          |
+|          | `count(self, value, /)`                                    | 返回value在列表中出现的次数                                  |
+
+**列表常见操作效率对比**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import timeit
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+def test1():
+    logging.warning("[]和list()效率对比(运行100万次时间总和)")
+    logging.warning("         []: {}秒".format(timeit.timeit(stmt="[]")))
+    logging.warning("     list(): {}秒".format(timeit.timeit(stmt="list()")))
+
+
+def test2():
+    def t1():
+        x = []
+        for i in range(100000):
+            x.append(i)
+
+    def t2():
+        x = []
+        for i in range(100000):
+            x.insert(5, i)
+
+    logging.warning("append与insert效率对比(列表插入10万个数据,运行10次的时间总和)")
+    logging.warning("     append: {}秒".format(timeit.timeit(stmt=t1, number=10)))
+    logging.warning("     insert: {}秒".format(timeit.timeit(stmt=t2, number=10)))
+
+
+test1()
+test2()
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-05 11:34:28,170	 [MainThread, 295460] []和list()效率对比(运行100万次时间总和)
+2022-04-05 11:34:28,185	 [MainThread, 295460]          []: 0.0168023秒
+2022-04-05 11:34:28,248	 [MainThread, 295460]      list(): 0.0661798秒
+2022-04-05 11:34:28,248	 [MainThread, 295460] append与insert效率对比(列表插入10万个数据,运行10次的时间总和)
+2022-04-05 11:34:28,310	 [MainThread, 295460]      append: 0.06255819999999998秒
+2022-04-05 11:34:47,223	 [MainThread, 295460]      insert: 18.904270200000003秒
+```
+
+
+
+### 基本数据结构 - 元组(tuple)
+
+文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#tuple](https://docs.python.org/zh-cn/3/library/stdtypes.html#tuple)
+
+**元祖方法**
+
+| 分类 | 方法                                                 | 说明                                                         |
+| ---- | ---------------------------------------------------- | ------------------------------------------------------------ |
+| 查找 | `index(value, start=0, stop=9223372036854775807, /)` | 返回value在元组中第一次出现的索引号，找不到抛出ValueError异常 |
+|      | `count(value, /)`                                    | 返回value在元组中出现的次数                                  |
+
+
+
+**高级数据结构：命名元组**
+
+命名元组函数签名
+
+```python
+namedtuple(typename, field_names, *, rename=False, defaults=None, module=None)
+```
+
+命名元组示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+from collections import namedtuple
+
+
+def main():
+    # 命名元组 - 基本使用
+    Person = namedtuple("Person", ["name", "sex", "age"])
+    user = Person("小明", "男", 20)
+    print(f"{user.name} | {user.sex} | {user.age}")  # 命名元组使用方法
+    print(f"{user[0]} | {user[1]} | {user[2]}")  # 也可以像普通元组一样使用
+    print(f"{user._fields}")  # 查看所有的属性
+
+    # 命名元组 - 安全模式
+    #   如果属性与python关键字时(比如def)重叠时，代码会报错，
+    #   使用rename=True可以避免这个错误，会将名字替换为 _索引
+    Product = namedtuple("Product", ["name", "def", "color", "price", "class"], rename=True)
+    product = Product("冰糖雪梨", "", "黄色", "3元", "")
+    print(product._fields)  # ('name', '_1', 'color', 'price', '_4'), 可以看到已经进行了替换
+
+    # 命名元组 - 用的不是很多，其他的内容就一并带过了
+    #   默认参数
+    #   _replace(**kwargs)替换生成新的命名元组并返回
+    #   _make()批量给命名元组赋值
+
+
+if __name__ == '__main__':
+    main()
+```
+
+:::
+
+### 基本数据结构 - 字符串(str)
+
+文档：[https://docs.python.org/3/library/stdtypes.html#str](https://docs.python.org/3/library/stdtypes.html#str)
+
+
+
+**（1）字符串类签名**
+
+```python
+class str(object=b'', encoding='utf-8', errors='strict')
+```
+
+根据传入的对象创建一个新字符串
+
+* 如果`encoding`和`errors`都没有指定值，那么会调用`object.__str__()`，如果对象没有`__str__()`方法，那么会调用`repr(object)`
+
+* 如果encoding和errors至少指定一个值，那么该输入对象应该是一个 bytes-like对象，
+
+  此时就相当于`str(bytes, encoding, errors)` == `bytes.decode(encoding, errors)`
+
+* encoding默认值从`sys.getdefaultencoding()`中获取
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import sys
+
+print(str(b'abc'))  # b'abc'，这里是字节类型
+print(str(b'abc', encoding="utf-8"))  # abc，这里是字符串类型
+print(sys.getdefaultencoding())  # utf-8
+print(str(b'abc', encoding="utf-8") == bytes.decode(b'abc', encoding="utf-8"))  # True
+```
+
+
+
+**（2）格式化输出的几种方法**
+
+① 使用%（已经不推荐使用，仅作了解）
+
+```python
+print("I am %d years old, and i has %d friends" % (27, 3))
+print('%(language)s has %(number)03d quote types.' % {'language': "Python", "number": 2})  
+
+# I am 27 years old, and i has 3 friends
+# Python has 002 quote types.
+```
+
+② 使用format（推荐）
+
+```python
+print("Hello {name1}, hello {name2}".format(name1="python", name2="world"))  
+print("Hello {name1}, hello {name2}".format_map({"name1": "python", "name2": "world"}))
+
+# Hello python, hello world
+# Hello python, hello world
+```
+
+③ 使用f-string（推荐）
+
+```python
+name1 = "python"
+name2 = "world"
+print(f"Hello {name1}, hello {name2}")
+
+# Hello python, hello world
+```
+
+输出方法总结
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# 第1种方法
+print("I am %s years old" % "18")
+
+# 第2种方法
+print("I am %(year)d years old" % {"year": 18})
+
+# 第3种方法
+print("I am {year} years old".format(year=18))
+
+# 第4种方法
+print("I am {} years old".format(18))
+
+# 第5种方法
+print("I am {year} years old".format_map({"year": 18}))
+
+# 第6种方法
+year = 18
+print(f"I am {year} years old")
+```
+
+**（3）格式化输修饰符**
+
+| 修饰符   | 说明                                                         |
+| -------- | ------------------------------------------------------------ |
+| `^`      | 剧中                                                         |
+| `<`      | 左对齐                                                       |
+| `>`      | 右对齐                                                       |
+| `,`      | 逗号，可以做千位分隔符                                       |
+| `{:n}`   | 用空白补充该变量的长度到n(在两边补充)                        |
+| `{:#^n}` | 用#号补充该变量的长度到n(在两边补充)，并设置为剧中对齐；格式为：`补充-对齐-宽度-小数点保留位数` |
+
+格式化修饰符演示
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# （1）保留两位小数
+print(f'\n(1) 默认情况下: 5/3 = {5 / 3} | 保留两位小数: 5/3 = {5 / 3:.2f}\n')
+
+# (2) 千位分隔符
+print('(2) 千位分隔符: {:,}\n'.format(123456789))
+
+# （3）字符串长度为20,将字符串居中，两侧添加_
+print("(3) 样式设置: {:_^20}\n".format("Hello World!"))
+
+
+# (4) 中文对齐问题（命令行有效，Pycharm中汉字和英文宽度比例有问题）
+#     一个中文占据2个ASCII码的宽度
+#     一个ASCII码占1个字节大小，一个中文占3个字节大小
+
+def is_chinese(uchar):
+    '''检测是否是中文'''
+
+    # 针对中文标点符号，根据实际情况继续添加
+    symbols = ["、", "。"]
+    if len(list(filter(lambda x: x in symbols, uchar))) != 0:
+        return True
+
+    # 中文检测
+    if uchar >= u'\u4e00' and uchar <= u'\u9fa5':
+        return True
+    else:
+        return False
+
+
+def chinese_number(ustr):
+    '''返回中文字符的数量'''
+    c_n = 0
+    for i in ustr:
+        if is_chinese(i):
+            c_n += 1
+    return c_n
+
+
+print("(4) 中文对齐问题(CMD下生效,Pycharm中有问题)")
+msg1 = [
+    "调用该方法的字符串将作为元素之间的分隔",
+    "此静态方法返回一个可供 str.translate() 使用的转换对照表。",
+    '即那些具有"Lm"、"Lt"、"Lu"、"Ll" 或 "Lo" 之一的通用类别属性的字符',
+]
+msg2 = ["占位符", "占位符", "占位符"]
+fmt = '[ |{name:{width}}| |{years:<20}| ]'
+for name, years in zip(msg1, msg2):
+    print(fmt.format(name=name, width=(100 - chinese_number(name)), years=years))
+```
+
+:::
+
+输出结果
+
+![image-20220405164801876](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220405164801876.png)
+
+**（4）字符串常用方法**
+
+| 分类           | 方法                                         | 说明                                                         |
+| -------------- | -------------------------------------------- | ------------------------------------------------------------ |
+| 大小写转换     | str.casefold()                               | 返回一个新字符串，把所有大写字母改为小写（除了英文，对于其他语言同样有效） |
+|                | str.lower()                                  | 返回一个新字符串，把所有大写字母改为小写（针对A-Z）          |
+|                | str.upper()                                  | 返回一个新字符串，把所有小写字母改为大写（针对A-Z）          |
+|                | str.swapcase()                               | 翻转字符串，大写变小写，小写变大写                           |
+| 搜索           | str.count(*sub*[, *start*[, *end*]])         | 返回sub在字符串出现的次数，start和end表示起始范围（可选）    |
+|                | str.find(*sub*[, *start*[, *end*]])          | 检查字符串sub是否包含在字符串中，如果有则返回索引值，没有则返回-1<br />只有当你明确确定位置或需要得到索引值时，才应该使用find方法，否则应该使用in<br />类似的还有`str.rfind`，从右向左开始查找 |
+|                | str.index(*sub*[, *start*[, *end*]])         | 与find类型，当sub找不到的时候会引发`ValueError异常`<br />类似的还有rindex，从右向左开始查找 |
+| 分割和合并     | str.split(*sep=None*, *maxsplit=-1*)         | 以\n,\r和\r\n和空白为分隔符分割字符串，返回一个列表，sep指定分隔符，maxsplit指定分割次数<br />类似的有str.rsplit，从右向左开始分割 |
+|                | str.splitlines([*keepends*])                 | 以\n,\r和\r\n为分隔符，返回一个列表;如果keepends为True,则分隔符保留，否则丢弃 |
+|                | str.join(*iterable*)                         | 字符串连接<br />join里的参数的所有元素必须是字符串类型，否则会报错,解决方法可以这样：<br />`'-'.join([str(x) for x in range(10)])` |
+| 替换           | str.replace(*old*, *new*[, *count*])         | 将字符串中的old替换为new，count指定替换次数，可选，默认全部替换 |
+| 删除左右空白   | str.strip([*chars*])                         | 删除字符串两侧的字符，默认为空白，<br />类似的还有lstrip（只删除左边的字符）、rstrip（只删除右边的字符） |
+| 开头、结尾匹配 | str.startswith(*prefix*[, *start*[, *end*]]) | 检查字符串是否以prefix子字符串开头，start和end表示匹配的起始范围（可选） |
+|                | str.endswith(*suffix*[, *start*[, *end*]])   | 同上                                                         |
+| 制表符         | str.expandtabs(*tabsize=8*)                  | 返回一个新字符串，把字符串中的制表符(\t)替换成tabsize个空格，tabsize默认是8 |
+| 类型判断       | str.isdigit()                                | 如果字符串只包含数字则返回True，否则返回False                |
+|                | str.isdecimal()                              | 如果字符串只包含十进制数则返回True，否则返回False            |
+|                | str.isnumeric()                              | 如果字符串只包含数字字符则返回True，否则返回False            |
+|                | str.isalpha()                                | 如果字符串至少有一个字符并且所有字符都是字母则返回Trule,否则返回False |
+|                | str.isalnum()                                | 如果字符串至少有一个字符并且所有字符都是数字或者字母则返回Trule,否则返回False |
+|                | str.isascii()                                | 如果字符串为空或者为ASCII码返回True，否则返回False           |
+|                | 更多类型判断...                              |                                                              |
+
+**（5）str和byte转换**
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+print('中'.encode(encoding="utf-8"))  # b'\xe4\xb8\xad'
+print(b'\xe4\xb8\xad'.decode("utf-8"))  # 中
+```
+
+
+
+## 
 
 ## 三、函数
 
