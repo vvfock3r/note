@@ -752,9 +752,75 @@ print('中'.encode(encoding="utf-8"))  # b'\xe4\xb8\xad'
 print(b'\xe4\xb8\xad'.decode("utf-8"))  # 中
 ```
 
+### 基本数据结构 - 字典(dict)
+
+文档：https://docs.python.org/zh-cn/3/library/stdtypes.html#dict
+
+**字典创建**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# (1) 普通方法创建字典
+a = dict(one=1, two=2, three=3)
+b = {'one': 1, 'two': 2, 'three': 3}
+c = dict(zip(['one', 'two', 'three'], [1, 2, 3]))
+d = dict([('two', 2), ('one', 1), ('three', 3)])
+e = dict({'three': 3, 'one': 1, 'two': 2})
+print(f"(1) 普通方式创建的字典: {a == b == c == d == e}")
+
+# (2) 通过fromkeys创建字典
+a = {}
+b = a.fromkeys((1, 2), ["a", "b", "c"])
+print(f"(2) 通过fromkeys创建字典: {b}")
+
+# (3) 字典推导式
+print("(3) 字典推导式")
+print("    {}".format({x: chr(x) for x in list(range(65, 68))}))
+print("    {}".format({i: chr(i + 65) for i in list(range(3))}))
+```
+
+:::
+
+输出结果
+
+```bash
+(1) 普通方式创建的字典: True
+(2) 通过fromkeys创建字典: {1: ['a', 'b', 'c'], 2: ['a', 'b', 'c']}
+(3) 字典推导式
+    {65: 'A', 66: 'B', 67: 'C'}
+    {0: 'A', 1: 'B', 2: 'C'}
+```
+
+**字典方法**
+
+| 分类 | 方法                        | 说明                                                       |
+| ---- | --------------------------- | ---------------------------------------------------------- |
+| 添加 | dict[key] = value           | 直接赋值，没有即新增，有的话为覆盖                         |
+|      | dict.update(dict)           | 字典合并                                                   |
+|      | dict.setdefault(k, [value]) | k存在则返回v的值，否则设置dict[k] = value，并返回value的值 |
+| 删除 | del dict[key]               | 直接删除                                                   |
+|      | dict.pop(key)               | 弹出value值，如果key未找到则抛出KeyError                   |
+|      | dict.popitem ()             | 随机弹出键值对                                             |
+|      | dict.clear()                | 删除字典所有元素                                           |
+| 查找 | dict[key]                   | 返回value值，如果key不存在，则抛出KeyError                 |
+|      | dict.get(key, [default])    | 返回value值，如果key不存在，则返回default值或None          |
+| 拷贝 | dict.copy()                 | 浅拷贝                                                     |
+|      | copy.deepcopy(dict)         | 深拷贝                                                     |
+| 遍历 | dict.keys()                 | 返回所有的key                                              |
+|      | dict.values()               | 返回所有的value                                            |
+|      | dict.items()                | 返回k和v                                                   |
 
 
-## 
+
+### 基本数据结构：可变集合(set)
+
+补充中
+
+
 
 ## 三、函数
 
