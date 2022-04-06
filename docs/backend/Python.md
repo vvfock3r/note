@@ -399,7 +399,7 @@ test3()
 2022-04-05 10:53:24,984	 [MainThread, 291696] True
 ```
 
-### 基本数据结构 - 列表(list)
+### 列表(list)
 
 文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#list](https://docs.python.org/zh-cn/3/library/stdtypes.html#list)
 
@@ -417,6 +417,7 @@ x = [{x:y} for x in range(1,3) for y in range(3)]
 | -------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
 | 插入元素 | **`append(self, object, /)`**                              | 在尾部插入一个元素，时间复杂度 O(1)                          |
 |          | `insert(self, index, object, /)`                           | 在指定索引处插入一个元素，时间复杂度 O(n)                    |
+|          | `extend(self, list)`                                       | 列表合并（会改变原列表内容）                                 |
 | 删除元素 | **`pop(self, index=-1, /)`**                               | 默认从索引为-1的位置弹出该值（弹出后列表删除该元素），<br />尾部弹出时间复杂度为 O(1)，其他位置弹出时间复杂度为 O(n)；<br />如果元素不存在，则引发 `IndexError` |
 |          | `remove(self, value, /)`                                   | 删除第一个值为value的元素，时间复杂度 O(n) ；<br />如果元素不存在，则引发 ValueError |
 |          | `clear(self, /)`                                           | 清空列表所有元素， 时间复杂度 O(1)                           |
@@ -487,7 +488,7 @@ test2()
 
 
 
-### 基本数据结构 - 元组(tuple)
+### 元组(tuple)
 
 文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#tuple](https://docs.python.org/zh-cn/3/library/stdtypes.html#tuple)
 
@@ -546,7 +547,7 @@ if __name__ == '__main__':
 
 :::
 
-### 基本数据结构 - 字符串(str)
+### 字符串(str)
 
 文档：[https://docs.python.org/3/library/stdtypes.html#str](https://docs.python.org/3/library/stdtypes.html#str)
 
@@ -752,9 +753,9 @@ print('中'.encode(encoding="utf-8"))  # b'\xe4\xb8\xad'
 print(b'\xe4\xb8\xad'.decode("utf-8"))  # 中
 ```
 
-### 基本数据结构 - 字典(dict)
+### 字典(dict)
 
-文档：https://docs.python.org/zh-cn/3/library/stdtypes.html#dict
+文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#dict](https://docs.python.org/zh-cn/3/library/stdtypes.html#dict)
 
 **字典创建**
 
@@ -816,11 +817,290 @@ print("    {}".format({i: chr(i + 65) for i in list(range(3))}))
 
 
 
-### 基本数据结构：可变集合(set)
+### 可变集合(set)
 
-补充中
+文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#set](https://docs.python.org/zh-cn/3/library/stdtypes.html#set)
+
+**创建集合**
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 
 
+a = {1}
+b = {2, "B", (1, 2, 3)}
+c = set(range(5))
+
+print(a)
+print(b)
+print(c)
+```
+
+输出结果
+
+```bash
+{1}
+{2, (1, 2, 3), 'B'}
+{0, 1, 2, 3, 4}
+```
+
+**集合方法**
+
+| 分类     | 方法                              | 说明                                           |
+| -------- | --------------------------------- | ---------------------------------------------- |
+| 添加元素 | .add(value)                       | 添加元素                                       |
+|          | .update(set)                      | 集合合并                                       |
+| 删除元素 | .remove(value)                    | 删除元素，如果元素不存在则抛出KeyError错误     |
+|          | .clear()                          | 删除所有元素                                   |
+|          | .pop()                            | 从下标0开始弹出元素                            |
+| 拷贝     | .copy()                           | 浅拷贝                                         |
+| 集合操作 | .union(set)                       | 返回一个新集合，是两个集合的并集               |
+|          | .intersection(set)                | 返回一个新集合，是两个集合的交集               |
+|          | .intersection_update(set)         | **就地修改原集合，是两个集合的交集**           |
+|          | .difference(set)                  | 返回一个新集合，是原集合独有的元素             |
+|          | .difference_update(set)           | **就地修改原集合，是原集合独有的元素**         |
+|          | .issubset(set)                    | 返回一个布尔值，判断原集合是否是新集合的子集   |
+|          | .issuperset(set)                  | 返回一个布尔值，判断原集合是否是新集合的父集   |
+|          | .isdisjoint(set)                  | 返回一个布尔值，判断两个集合是否【没有交集】   |
+|          | .symmetric_difference(set)        | 返回一个新集合，取两个集合不一样的所有元素     |
+|          | .symmetric_difference_update(set) | **就地修改原集合，取两个集合不一样的所有元素** |
+
+### 不可变集合(frozenset)
+
+文档：[https://docs.python.org/zh-cn/3/library/stdtypes.html#frozenset](https://docs.python.org/zh-cn/3/library/stdtypes.html#frozenset)
+
+和``set``类似，只是少了许多方法，用法都是一样的
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+
+a = frozenset([1, 2, 3])
+print(a)
+print(dir(a))
+
+# frozenset({1, 2, 3})
+# ['copy', 'difference', 'intersection', 'isdisjoint', 'issubset', 'issuperset', 'symmetric_difference', 'union']
+```
+
+
+
+### 可变对象和不可变对象
+
+**引用计数模型**
+
+![698051107556314373](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/698051107556314373.png)
+
+代码示例
+
+::: details 点击查看完整代码和输出结果
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import sys
+
+# 使用sys.getrefcount(obj)可以查看一个对象的引用计数，因为这个API也会使对象增加一个临时引用，所以真实的引用计数应该再减去1
+
+
+# 初始化变量
+a = [1, 2, 3]
+print(f"代码: a = {a}")
+print(f"说明: 引用计数(a):{sys.getrefcount(a) - 1}, 内存地址:{hex(id(a))}\n")
+
+# b = a
+print("代码: b = a")
+b = a
+print(f"说明: ")
+print(f"     引用计数(a): {sys.getrefcount(a) - 1}, 内存地址:{hex(id(a))}")
+print(f"     引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}\n")
+
+# 删除变量
+del a
+print("代码: del a")
+print(f"说明: 引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}\n")
+
+c = [1, 2, 3]
+print(f"代码: c = {c}")
+print(f"     引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}")
+print(f"     引用计数(c): {sys.getrefcount(c) - 1}, 内存地址:{hex(id(c))}\n")
+
+print("-------------------------------------------------------------------")
+
+# 初始化变量
+a = (1, 2, 3)
+print(f"代码: a = {a}")
+print(f"说明: 引用计数(a):{sys.getrefcount(a) - 1}, 内存地址:{hex(id(a))}\n")
+
+# b = a
+print("代码: b = a")
+b = a
+print(f"说明: ")
+print(f"     引用计数(a): {sys.getrefcount(a) - 1}, 内存地址:{hex(id(a))}")
+print(f"     引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}\n")
+
+# 删除变量
+del a
+print("代码: del a")
+print(f"说明: 引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}\n")
+
+c = (1, 2, 3)
+print(f"代码: c = {c}")
+print(f"     引用计数(b): {sys.getrefcount(b) - 1}, 内存地址:{hex(id(b))}")
+print(f"     引用计数(c): {sys.getrefcount(c) - 1}, 内存地址:{hex(id(c))}\n")
+
+print("-" * 100)
+```
+
+输出结果
+
+```bash
+代码: a = [1, 2, 3]
+说明: 引用计数(a):1, 内存地址:0x1e465c15208
+
+代码: b = a
+说明: 
+     引用计数(a): 2, 内存地址:0x1e465c15208
+     引用计数(b): 2, 内存地址:0x1e465c15208
+
+代码: del a
+说明: 引用计数(b): 1, 内存地址:0x1e465c15208
+
+代码: c = [1, 2, 3]
+     引用计数(b): 1, 内存地址:0x1e465c15208			=> 
+     引用计数(c): 1, 内存地址:0x1e465c15408			=> 备注: 引用计数为1，且内存地址不一样
+
+-------------------------------------------------------------------
+代码: a = (1, 2, 3)
+说明: 引用计数(a):3, 内存地址:0x1e46616cf48
+
+代码: b = a
+说明: 
+     引用计数(a): 4, 内存地址:0x1e46616cf48
+     引用计数(b): 4, 内存地址:0x1e46616cf48
+
+代码: del a
+说明: 引用计数(b): 3, 内存地址:0x1e46616cf48
+
+代码: c = (1, 2, 3)
+     引用计数(b): 4, 内存地址:0x1e46616cf48			=>
+     引用计数(c): 4, 内存地址:0x1e46616cf48			=> 备注: 引用计数为不为1，且内存地址一样
+```
+
+:::
+
+💡 不同Python版本对于一些细节处理并不一致，了解即可
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import sys
+
+print("Python version: {}".format('.'.join(str(x) for x in sys.version_info[:3])))  # 这里使用3.7.9测试
+print('----------------------------------------------------------------------------------------------------')
+
+# 测试1: -5 ~ 256范文内的数字会提前加载到内存中,进行缓存
+a, b = 1000, 1000
+print(a is b)  # b创建之前a尚未创建,所以a和b分配到了两块不同的内存地址,所以输出False
+
+a, b = 1, 1
+print(a is b)  # b创建之前a尚未创建, 但是-5~256范围内的数字已经提前加载到了内存中, a和b拿到了相同的内存地址,所以输出True
+print('----------------------------------------------------------------------------------------------------')
+```
+
+关于Python更多“神奇”的操作，可以参考   [https://github.com/robertparley/wtfpython-cn](https://github.com/robertparley/wtfpython-cn)
+
+
+
+**嵌套问题**
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# a是一个元组, 不可变对象
+a = (1, 2, [3])
+print(hex(id(a)))  # 0x2d731accf48
+
+# 但是并不意味着 a的值永远就不能变
+a[2].append(4)
+print(hex(id(a)))  # 0x2d731accf48
+print(a)  # (1, 2, [3, 4])
+```
+
+
+
+**关于哈希**
+
+* 可哈希 == 不可变对象
+* 不可哈希 == 可变对象 
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+# 测试
+d = {}
+d[5] = "Python"
+d[5.0] = "Go"
+d[5.1] = "Java"
+print(d)
+
+# 输出结果: {5: 'Go', 5.1: 'Java'}
+# 发现问题: 5.0的key怎么没了?
+# 分析原因:
+#   (1) 字典的key不允许重复,重复的话会覆盖前面的value
+#   (2) 字典如何判断key是否重复呢? 使用hash(key)检查哈希值是否重复来判断(扩展: 可变对象==不可哈希，所以不能用来做字典的key)
+# 确认原因(看如下代码)
+print(hash(5) == hash(5.0))  # True
+print(hash(5) == hash(5.1))  # False
+
+# set和 frozenset也是使用哈希值存的,我们来测试以下
+s = set()
+s.add(5)
+s.add(5.0)
+s.add(5.1)
+print(s)  # {5.1, 5}
+```
+
+
+
+**深浅拷贝**
+
+浅拷贝
+
+说明：拷贝后仅仅是最顶层开辟了新的空间，里层的元素内存地址还是一样的
+
+方法：各类对象(list``/dict``)等的copy方法、对象[::]、copy.copy方法
+
+深拷贝
+
+说明：除了顶层拷贝还对子元素也进行了拷贝（本质上递归浅拷贝），两个元素真正意义上的互不影响
+
+方法：copy.deepcopy()
+
+
+
+### **🎉基本数据类型对比**
+
+| 数据类型             | (容器内的)元素是否有顺序 | 是否是可变对象 | 值或KEY是否允许重复 |
+| -------------------- | ------------------------ | -------------- | ------------------- |
+| 数字                 | ✔                        | ❌              | ✔                   |
+| 布尔值               | ✔                        | ❌              | ✔                   |
+| 列表                 | ✔                        | ✔              | ✔                   |
+| 元祖                 | ✔                        | ❌              | ✔                   |
+| 字符串               | ✔                        | ❌              | ✔                   |
+| 字节序列(bytes)      | ✔                        | ❌              | ✔                   |
+| 字节数组(bytesarray) | ✔                        | ✔              | ✔                   |
+| 字典                 | ✔                        | ✔              | ❌                   |
+| 集合                 | ❌                        | ✔              | ❌                   |
+| 不可变集合           | ❌                        | ❌              | ❌                   |
+
+## 
 
 ## 三、函数
 
