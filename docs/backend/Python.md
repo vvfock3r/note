@@ -3879,8 +3879,115 @@ asyncio.run(request_async("https://www.qq.com", request_total=10, concurrent=2))
 
 :::
 
+#### 协程局部变量
+
+文档：[https://docs.python.org/zh-cn/3.10/library/contextvars.html](https://docs.python.org/zh-cn/3.10/library/contextvars.html)
+
+`contextvars`与`threading.local`类似，用于异步中管理上下文
+
+💡 提醒： `asyncio`并没有提供`local`类
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import asyncio
+import logging
+import contextvars
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+class MyClass:
+    def __init__(self, value=None):
+        self.value = value
+
+    def set(self, value):
+        self.value = value
+
+    def get(self):
+        return self.value
+
+
+# 全局变量
+data1 = MyClass()
+
+# 全局变量(协程局部变量)
+data2 = contextvars.ContextVar("")
+
+
+async def task1(n):
+    data1.set(n)
+    await asyncio.sleep(0.1)
+    logging.warning(f"Task1-{n}: {data1.get()}")
+    # assert n == data.get()
+
+
+async def task2(n):
+    data2.set(n)
+    await asyncio.sleep(0.1)
+    logging.warning(f"Task2-{n}: {data2.get()}")
+    # assert n == data.get()
+
+
+async def main():
+    # 测试1
+    logging.warning("测试1：协程并发修改全局变量")
+    tasks1 = [task1(x) for x in range(10)]
+    await asyncio.gather(*tasks1)
+    logging.warning("-" * 50)
+
+    # 测试2
+    logging.warning("测试2：协程局部变量")
+    tasks2 = [task2(x) for x in range(10)]
+    await asyncio.gather(*tasks2)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
+:::
+
+输出结果
+
+```bash
+2022-04-07 11:45:22,185	 [MainThread, 360196] 测试1：协程并发修改全局变量
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-0: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-2: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-6: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-9: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-8: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-5: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-7: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-4: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-1: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] Task1-3: 9
+2022-04-07 11:45:22,294	 [MainThread, 360196] --------------------------------------------------
+2022-04-07 11:45:22,294	 [MainThread, 360196] 测试2：协程局部变量
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-0: 0
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-2: 2
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-6: 6
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-9: 9
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-8: 8
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-5: 5
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-7: 7
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-4: 4
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-1: 1
+2022-04-07 11:45:22,403	 [MainThread, 360196] Task2-3: 3
+```
+
+
+
+
+
+
+
 ## 
 
 ## 六、面向对象
 
-补充中
