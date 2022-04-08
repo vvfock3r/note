@@ -4061,6 +4061,7 @@ logging.warning(f"{bob.name}")
 |                | `__del__`                                   | 在实例将被销毁时调用                                         |
 | 属性字典       | `__dict__`                                  | 对象所有属性组成的字典（这个属性对我们学习/调试阶段可太重要了） |
 | self[key]      | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用                                    |
+| 可视化         | `__repr__`、`__str__`、`__format__`         | 可视化                                                       |
 
 
 
@@ -4076,7 +4077,6 @@ logging.warning(f"{bob.name}")
 #!/usr/bin/env python
 # -*- coding:utf-8-*-
 
-
 # class Demo:
 #    pass
 
@@ -4088,6 +4088,8 @@ class Demo:
 ```
 
 使用`__new__`实现线程安全的单例类
+
+::: details 点击查看完整代码
 
 ```python
 #!/usr/bin/env python
@@ -4122,6 +4124,8 @@ for i in range(10):
     threading.Thread(target=lambda: print(Single())).start()
 ```
 
+:::
+
 #### `__del__`
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__)
@@ -4129,6 +4133,8 @@ for i in range(10):
 在实例将被销毁时调用，注意：`del x` 并不直接调用 `x.__del__()` --- 前者会将 `x` 的引用计数减一，而后者仅会在 `x` 的引用计数变为零时被调用。
 
 代码示例
+
+::: details 点击查看完整代码
 
 ```python
 #!/usr/bin/env python
@@ -4162,6 +4168,8 @@ time.sleep(3)
 # 3
 # __del__ called
 ```
+
+:::
 
 
 
@@ -4200,6 +4208,8 @@ print(Demo("Bob").__dict__)
 [文档：https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__)
 
 代码示例
+
+::: details 点击查看完整代码
 
 ```python
 #!/usr/bin/env python
@@ -4247,6 +4257,8 @@ d["color"] = "red"
 del d["version"]
 ```
 
+:::
+
 输出结果
 
 ```bash
@@ -4258,6 +4270,97 @@ Called: __getitem__(name)
 Demo
 Called: __setitem__(color, red)
 Called: __delitem__(version)
+```
+
+
+
+#### 可视化
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__)
+
+* `__str__`和`__repr__`作用类似，推荐两个定义成一样的，并且优先定义`__repr__`（`__str__`也可以不定义会自动调用`__repr__`）
+
+* `__str__`和`__repr__`不同的例子可以参考`datetime`模块实现
+
+  ```python
+  from datetime import date
+  print(str(date.today()))   # 2022-04-08
+  print(repr(date.today()))  # datetime.date(2022, 4, 8)
+  ```
+
+* `__format__`用的并不多，当需要一个对象可以展示多种样式时可以定义这个方法
+
+
+
+示例代码
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+
+class Person2(Person):
+    def __repr__(self):
+        return f'<Person2 {self.name}>'
+
+
+# 默认情况下的输出
+bob = Person("Bob")
+print(bob)  # <__main__.Person object at 0x0000017AE21FD548>
+
+# 优化默认输出
+jack = Person2("Jack")
+print(jack)  # <Person2 Jack>
+print("-" * 50)
+
+
+# __format__可以定制多种输出格式
+class Point:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f"<Point ({self.x}, {self.y})>"
+
+    def __format__(self, format_spec):
+        # 显示格式，也可以放到类外边去定义
+        FORMAT = {
+            "default": "<Point ({}, {})>",  # 默认显示格式
+            "parentheses": "({}, {})",  # 小括号显示格式
+            "dictionary": "{{'x':{}, 'y':{} }}",  # 字典显示格式
+        }
+
+        # 不指定则使用默认显示形式
+        if format_spec == "":
+            return self.__repr__()
+
+        return FORMAT[format_spec].format(self.x, self.y)
+
+
+point = Point(100, 200)
+print(f"{point}")  # 默认显示格式， <Point (100, 200)>
+print(f"{point:parentheses}")  # 小括号显示格式， (100, 200)
+print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
+```
+
+:::
+
+输出结果
+
+```bash
+<__main__.Person object at 0x00000210C7965908>
+<Person2 Jack>
+--------------------------------------------------
+<Point (100, 200)>
+(100, 200)
+{'x':100, 'y':200 }
 ```
 
 
