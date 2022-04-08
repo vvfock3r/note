@@ -3983,11 +3983,286 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
 ## 
 
 ## 六、面向对象
+
+### 装饰器
+
+（1）属性装饰器 `@property`
+
+* 可以将一个方法可以当做属性来访问，访问时不需要加()
+* 同时该属性不允许直接修改，如果需要修改和删除功能，需要编写`@函数名.setter`和`@函数名.deleter`装饰的同名函数
+* 通过黑魔法【._类名__属性名】可以修改属性值，但是强烈不建议使用这种方法
+
+（2）类方法装饰器 `@classmethod`
+
+被修饰的函数第一个参数不再是实例对象而是 类对象
+
+（3）静态方法装饰器 `@staticmethod`
+
+修饰的函数第一个参数可以不用传，装饰器会自动给我们传进去
+
+
+
+代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import logging
+
+# 初始化日志
+FORMAT = '%(asctime)-15s\t [%(threadName)s, %(thread)d] %(message)s'
+logging.basicConfig(format=FORMAT)
+
+
+class Person:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        logging.warning("@property")
+        return self.__name
+
+    @name.setter
+    def name(self, name):
+        logging.warning("@name.setter")
+        self.__name = name
+
+    @name.deleter
+    def name(self):
+        logging.warning("@name.deleter")
+        del self.__name
+
+
+logging.warning("属性访问")
+bob = Person("bob")
+logging.warning(f"{bob.name}\n")
+
+logging.warning("属性设置")
+bob.name = "Bob"
+logging.warning(f"{bob.name}\n")
+
+logging.warning("黑魔法设置属性")
+bob._Person__name = "abc"
+logging.warning(f"{bob.name}")
+```
+
+
+
+### 魔法方法
+
+| 分类           | 魔法方法                                    | 说明                                                         |
+| -------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| 实例创建和销毁 | `__new__`                                   | 创建类实例对象并返回                                         |
+|                | `__del__`                                   | 在实例将被销毁时调用                                         |
+| 属性字典       | `__dict__`                                  | 对象所有属性组成的字典（这个属性对我们学习/调试阶段可太重要了） |
+| self[key]      | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用                                    |
+
+
+
+#### `__new__`
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__)
+
+创建类实例对象并返回，它可以让我们定制实例创建过程，比如实现**单例模式**
+
+默认的`__new__`行为
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+# class Demo:
+#    pass
+
+# 将以上代码展开的话，就等同于如下代码
+class Demo:
+    def __new__(cls, *args, **kwargs):
+        # return object.__new__(cls) # 写法1
+        return super().__new__(cls)  # 写法2
+```
+
+使用`__new__`实现线程安全的单例类
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import threading
+
+class Single:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "_instance"):
+            with cls._instance_lock:
+                if not hasattr(cls, "_instance"):
+                    cls._instance = object.__new__(cls)
+        return getattr(cls, "_instance")
+
+
+# 原理说明
+#   每次创建【类实例对象】时先检查【类对象】上是否有_instance属性，
+#       如果有，说明已经实例化过了，直接返回类实例化对象
+#       如果没有，那么才开始创建实例对象
+#           获取锁
+#               类属性_instance = 类实例化对象
+#           返回类属性_instance
+#
+# 问: 加锁之后为什么还要判断有没有_instance属性?
+# 答: 如果不判断，那么线程1获取锁后，还没执行完，这时候线程2已经在尝试获取锁了，等线程1执行完，实际上已经是单例了，
+#     线程2又获取了一遍锁，又生成一个新对象，实际就并不是线程安全了。这与线程安全章节的queue陷阱类似。
+
+for i in range(10):
+    threading.Thread(target=lambda: print(Single())).start()
+```
+
+#### `__del__`
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__)
+
+在实例将被销毁时调用，注意：`del x` 并不直接调用 `x.__del__()` --- 前者会将 `x` 的引用计数减一，而后者仅会在 `x` 的引用计数变为零时被调用。
+
+代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import sys
+import time
+
+class Demo:
+    def __del__(self):
+        print("__del__ called")
+
+
+a = Demo()
+b = a
+c = a
+
+print(a is b is c)  # True
+print(sys.getrefcount(a) - 1)  # 引用计数为3， a，b,c
+
+del a  # del会将对象的引用计数-1，只有当对象的引用计数为0时，才会调用__del__，所以这里并不会有任何输出
+
+time.sleep(3)
+
+# 程序在结束时，会将引用计数置为0，并调用一次__del__
+# __del__ called
+
+
+# 输出结果
+# True
+# 3
+# __del__ called
+```
+
+
+
+#### `__dict__`
+
+文档：[https://docs.python.org/zh-cn/3.10/library/stdtypes.html#object.__dict__](https://docs.python.org/zh-cn/3.10/library/stdtypes.html#object.__dict__)
+
+这个太重要了，后面会经常用到，给一个简单的例子
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Demo:
+    '''测试Demo'''
+
+    def __init__(self, name):
+        self.name = name
+        self.sex = "man"
+
+
+print(Demo.__dict__)
+print(Demo("Bob").__dict__)
+
+# 第一次输出为 类字典
+# {'__module__': '__main__', '__doc__': '测试Demo', '__init__': <function Demo.__init__ at 0x00000229047F8C18>, '__dict__': <attribute '__dict__' of 'Demo' objects>, '__weakref__': <attribute '__weakref__' of 'Demo' objects>}
+
+# 第二次输出为 实例字典
+# {'name': 'Bob', 'sex': 'man'}
+```
+
+
+
+#### `self[key]`
+
+[文档：https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__)
+
+代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+# 测试1：准备几种不同的数据结构
+l = [100, 200, 300]
+d = {"name": "bob", "age": 20, 10: 20}
+
+print(l.__getitem__(0))  # 等同于 l[0], 列表没有key，只有索引，所以0代表的是索引
+print(d.__getitem__("name"))  # 等同于d["name"]
+print(d.__getitem__(10))  # 等同于d[10]，这里虽然是数字，看起来像是通过索引来访问（其实不是），本质上还是通过key
+
+
+# 测试2：
+class Demo:
+    def __init__(self, *args, **kwargs):
+        self.data = {
+            "name": "Demo",
+            "version": "v1"
+        }
+
+    def __getitem__(self, item):
+        print(f"Called: __getitem__({item})")
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        print(f"Called: __setitem__({key}, {value})")
+        self.data[key] = value
+
+    def __delitem__(self, key):
+        print(f"Called: __delitem__({key})")
+        del self.data[key]
+
+
+print("-" * 50)
+# (1)
+d = Demo()
+print(d["name"])
+
+# (2)
+d["color"] = "red"
+
+# (3)
+del d["version"]
+```
+
+输出结果
+
+```bash
+100
+bob
+20
+--------------------------------------------------
+Called: __getitem__(name)
+Demo
+Called: __setitem__(color, red)
+Called: __delitem__(version)
+```
+
+
+
+
+
+
 
