@@ -4063,6 +4063,7 @@ logging.warning(f"{bob.name}")
 | self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用                                    |
 | 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                                                       |
 | 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                                           |
+| with上下文管理     | `__enter__`、`__exit__`                     |                                                              |
 
 
 
@@ -4606,17 +4607,105 @@ False
 
 
 
+#### with上下文管理
+
+文档
+
+（1）[https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement](https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement)
+
+（2）[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__)
 
 
 
+**说明**
+
+`__enter__`：
+
+* **使用`with..as`语句时，`__enter__`的返回值就等于`as`后面跟的变量**
+* 如果`__enter__`方法发生错误，那么意味着`with`语句尚未开始执行，`__exit__`自然也不会执行
+* 如果`__enter__`方法未发生错误，那么`__exit__()` 将总是被调用
 
 
 
+`__exit__`:
+
+* `with`语句执行完成后，会自动执行`__exit__`方法，即使在with上下文中遇到异常，`__exit__`也会被执行
+* **`__exit__`的返回值决定`with`语句中的异常是否向外抛出（等效于`False`为抛出异常，等效于`True`为压制异常）**
 
 
 
+**两种调用方法**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Demo:
+    def __enter__(self):
+        print('__enter__ called')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__ called')
+
+    def demo(self):
+        return self
 
 
+# 使用实例的方式调用
+with Demo() as f:
+    print("Class test")
+
+print('-' * 50)
+
+# 使用实例方法调用
+with Demo().demo() as c:
+    print("Func test")
+```
+
+:::
+
+输出结果
+
+```bash
+__enter__ called
+Class test
+__exit__ called
+--------------------------------------------------
+__enter__ called
+Func test
+__exit__ called
+```
+
+
+
+**异常抛出与压制**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Demo:
+    def __enter__(self):
+        print('__enter__ called')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__ called')
+        return True  # 压制异常(如果有)
+        # return False  # 抛出异常(如果有), 这句也可以不写，默认return None就等效于False
+
+
+# 使用实例的方式调用
+with Demo() as a:
+    raise Exception("error")
+```
+
+:::
 
 
 
