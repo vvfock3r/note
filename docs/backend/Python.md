@@ -4064,6 +4064,7 @@ logging.warning(f"{bob.name}")
 | 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                                                       |
 | 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                                           |
 | with上下文管理     | `__enter__`、`__exit__`                     |                                                              |
+| 实例属性查找       | `__getattribute__`                          |                                                              |
 
 
 
@@ -4707,9 +4708,117 @@ with Demo() as a:
 
 :::
 
+#### 实例属性查找
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__)
 
 
 
+**实例属性查找顺序如下**
+
+（1）主要顺序
+
+① 调用`__getattribute__(item)` --> 返回（计算后的）正常值
+
+② 调用`__getattribute__(item)` --> 返回（计算后的）异常值`AttributeError` --> 如果定义了`__getattr__`则调用，否则继续抛出原来的`AttributeError`
+
+> 我们可以称`__getattribute__`为属性拦截器
+
+<br />
+
+（2）计算后的值如何获得？
+实例字典 --> 类字典 --> ... --> 直到`object`类字典 --> `object`抛出`AttributeError`
+
+<br />
+
+（3）注意事项
+
+① `__getattribute__(item)`方法中不能再使用`self.x`、`self.__dict__`等属性，因为这会造成无限递归
+
+② `__getattr__`中不能再使用`self.不存在的属性`，因为这同样会造成无限递归
+
+③ `object`对象没有`__getattr__`方法，所以我们不能调用父类或object的`__getattr__`方法
+
+<br />
+
+**实例属性查找-正常值示例**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+    
+    def __init__(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def __getattribute__(self, item):
+        print(f"Called __getattribute__({item})")
+        return super().__getattribute__(item)
 
 
+# 实例化对象
+person = Person("bob")
+
+# 实例属性查找-1
+print(person.name)
+print("-" * 30)
+# Called __getattribute__(name)
+# bob
+
+# 实例属性查找-2
+print(person.getName())
+# Called __getattribute__(getName)
+# Called __getattribute__(name)
+# bob
+```
+
+:::
+
+**实例属性查找-AttributeError示例**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+
+    def __init__(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def __getattribute__(self, item):
+        print(f"Called __getattribute__({item})")
+        return super().__getattribute__(item)
+
+    def __getattr__(self, item):
+        # object对象没有__getattr__方法, 不能使用super
+        return f"实例对象{self.__class__.__name__}不存在{item}属性"
+
+
+# 实例化对象
+person = Person("bob")
+
+# 实例属性查找
+print(person.abc)
+```
+
+:::
+
+输出结果
+
+```bash
+Called __getattribute__(abc)
+Called __getattribute__(__class__)
+实例对象Person不存在abc属性
+```
 
