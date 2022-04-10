@@ -4255,6 +4255,71 @@ c = C()
 
 
 
+### 反射
+
+反射就是通过**字符串**映射出对象的方法
+
+具有反射能力的函数包括`type()`、`isinstance()`、`callable()`、`dir`、`getattr()`等
+
+这里主要说一下`getattr`系列的几个函数
+
+| 函数                             | 说明                                                         |
+| -------------------------------- | ------------------------------------------------------------ |
+| getattr(object, name, [default]) | 获取object.name属性值，如果属性不存在且未设置`default`，则抛出`AttributeError`，name必须为字符串 |
+| setattr(object, name, value)     | 设置object.name属性值，如果存在则覆盖否则新增，name必须为字符串 |
+| hasattr(object, name)            | 判断是否有object.name属性，name必须为字符串                  |
+| delattr(object, name)            | 删除object.name属性，如果属性不存在抛出`AttributeError`，name必须为字符串 |
+
+代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+def show(self):
+    return (self.x, self.y)
+
+
+# (1) 直接给类增加方法，可以正常调用该方法
+Point.show = show
+p = Point(1, 2)
+print(p.show())  # (1, 2)
+
+# (2) 使用setattr给类增加方法，，可以正常调用该方法
+setattr(Point, "show", show)
+p = Point(3, 4)
+print(p.show())     # (3, 4)
+#
+# # (3) 给实例增加方法，需要将实例传入到show方法中
+p = Point(5, 6)
+setattr(p, "show", show)
+print(p.show(p))        # 这里需要将实例传入到show方法中
+
+# (4) 给实例增加方法，需要将实例传入到show方法中
+p = Point(7, 8)
+p.show = show
+print(p.show(p))  # 这里需要将实例传入到show方法中
+```
+
+:::
+
+输出结果
+
+```bash
+(1, 2)
+(3, 4)
+(5, 6)
+(7, 8)
+```
+
 
 
 ### 魔法方法
