@@ -4003,9 +4003,9 @@ if __name__ == '__main__':
 
 修饰的函数第一个参数可以不用传，装饰器会自动给我们传进去
 
-
-
 代码示例
+
+::: details 点击查看完整代码
 
 ```python
 #!/usr/bin/env python
@@ -4051,21 +4051,215 @@ bob._Person__name = "abc"
 logging.warning(f"{bob.name}")
 ```
 
+:::
+
+### 继承
+
+Python支持单继承和多继承
+
+
+
+#### 哪些属性不会继承
+
+父类中的**私有属性**在子类中不能直接访问，但可以通过**._父类__属性**来访问
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class A:
+    def __init__(self):
+        self.__money = 1000
+        self._name = "我叫大A"
+
+
+class B(A):
+    def getMoney(self):
+        # 直接访问是访问不到的，会报错，也就是没有继承下来
+        return self.__money
+
+    def getMoney2(self):
+        print(self.__dict__)  # {'_A__money': 1000, '_name': '我叫大A'}
+
+        # return self._A__money  # 写法1, Pycharm会有黄色警告
+        return self.__dict__["_A__money"]  # 写法2
+
+
+print(B().getMoney2())
+```
+
+:::
+
+输出结果
+
+```bash
+{'_A__money': 1000, '_name': '我叫大A'}
+1000
+```
+
+
+
+#### 类与类之间的属性查找顺序
+
+按照【深度优先】的搜索顺序，使用的是C3算法
+
+使用`类对象.__mro__` 或 `类对象.mro()方法` 可以显示查找顺序
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class A:
+    def __init__(self):
+        print("Class A.__init__ called")
+
+
+class B:
+    def __init__(self):
+        print("Class B.__init__ called")
+
+
+class C(A, B):
+    def __init__(self):
+        print("Class C.__init__ called")
+        super().__init__()
+
+
+c = C()
+print(C.mro())  # 返回列表
+print(C.__mro__)  # 返回元组
+```
+
+:::
+
+输出结果
+
+```bash
+Class C.__init__ called
+Class A.__init__ called
+[<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>]
+(<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>)
+```
+
+
+
+#### super解决多继承下的问题
+
+若要调用父类方法，强烈建议使用`super()`而不是直接写父类名，因为在多继承中这会有问题
+
+错误代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Base:
+    def __init__(self):
+        print("Class Base.__init__ called")
+
+
+class A(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print("Class A.__init__ called")
+
+
+class B(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print("Class B.__init__ called")
+
+
+class C(A, B):
+    def __init__(self):
+        A.__init__(self)
+        B.__init__(self)	# 并且，A和B的调用顺序也没有遵循MRO顺序，不够规范
+        print("Class C.__init__ called")
+
+
+c = C()
+
+# 输出结果
+# Class Base.__init__ called
+# Class A.__init__ called
+# Class Base.__init__ called
+# Class B.__init__ called
+# Class C.__init__ called
+
+# 可以看到Base.__init__调用了2次！
+```
+
+:::
+
+正确代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Base:
+    def __init__(self):
+        print("Class Base.__init__ called")
+
+
+class A(Base):
+    def __init__(self):
+        super().__init__()
+        print("Class A.__init__ called")
+
+
+class B(Base):
+    def __init__(self):
+        super().__init__()
+        print("Class B.__init__ called")
+
+
+class C(A, B):
+    def __init__(self):
+        super().__init__()
+        print("Class C.__init__ called")
+
+
+c = C()
+
+# 输出结果
+# Class Base.__init__ called
+# Class B.__init__ called
+# Class A.__init__ called
+# Class C.__init__ called
+
+# 可以看到Base.__init__调用了1次
+```
+
+:::
+
+
+
+
+
 
 
 ### 魔法方法
 
-| 分类               | 魔法方法                                    | 说明                                                         |
-| ------------------ | ------------------------------------------- | ------------------------------------------------------------ |
-| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回                                         |
-|                    | `__del__`                                   | 在实例将被销毁时调用                                         |
-| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典（这个属性对我们学习/调试阶段可太重要了） |
-| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用                                    |
-| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                                                       |
-| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                                           |
-| with上下文管理     | `__enter__`、`__exit__`                     |                                                              |
-| 实例属性查找       | `__getattribute__`                          |                                                              |
-| 描述器             | `__get__`、`__set__`、`__delete__`          |                                                              |
+| 分类               | 魔法方法                                    | 说明                      |
+| ------------------ | ------------------------------------------- | ------------------------- |
+| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回      |
+|                    | `__del__`                                   | 在实例将被销毁时调用      |
+| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典    |
+| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用 |
+| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                    |
+| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器        |
+| with上下文管理     | `__enter__`、`__exit__`                     |                           |
+| 实例属性查找       | `__getattribute__`                          |                           |
+| 描述器             | `__get__`、`__set__`、`__delete__`          |                           |
 
 
 
@@ -4900,7 +5094,7 @@ Class A().__get__ called
 
 ##### 非数据描述器应用
 
-实现`@classmethod`和`@staticmethod`装饰器
+实现`@classmethod`、`@staticmethod`、`@property`装饰器
 
 ::: details 点击查看完整代码
 
@@ -4927,6 +5121,14 @@ class ClassMethod:
         return partial(self.fn, owner)
 
 
+class Property:
+    def __init__(self, fn):
+        self.fn = fn
+
+    def __get__(self, instance, owner):
+        return self.fn(instance)
+
+
 class A:
     @classmethod
     # @ClassMethod  # c_method = ClassMethod(c_method)
@@ -4938,9 +5140,15 @@ class A:
     def static_method(*args, **kwargs):
         print("static method")
 
+    # @property
+    @Property
+    def ping(self):
+        return "pong"
+
 
 A.class_methd()
 A().static_method()
+print(A().ping)
 ```
 
 :::
@@ -4949,6 +5157,8 @@ A().static_method()
 
 ```bash
 class method
+static method
+pongclass method
 static method
 ```
 
