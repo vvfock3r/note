@@ -4250,7 +4250,7 @@ c = C()
 | `类对象.__base__`                  | 类对象的父类对象，多继承情况下也只显示一个（注意：实例对象没有这个属性） |
 | `类对象.__bases__`                 | 类对象的父类对象元祖，多继承情况下显示所有父类（注意：实例对象没有这个属性） |
 | `类对象.__subclasses__`            | 类对象的子类对象列表，与`__bases__`相对应（注意：实例对象没有这个属性） |
-| `类对象.__mro__` 或 `类对象.mro()` | 类与类之间的属性查找顺序（前面已经讲过）                     |
+| `类对象.__mro__` 或 `类对象.mro()` | 类与类之间的属性查找顺序（前面已经讲过）（注意：实例对象没有这个属性） |
 | `实例对象.__class`__               | 实例所属的类对象（本章扩展内容，与继承没有关系，单纯是记录一下） |
 
 
@@ -4259,17 +4259,40 @@ c = C()
 
 ### 魔法方法
 
-| 分类               | 魔法方法                                    | 说明                      |
-| ------------------ | ------------------------------------------- | ------------------------- |
-| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回      |
-|                    | `__del__`                                   | 在实例将被销毁时调用      |
-| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典    |
-| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用 |
-| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                    |
-| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器        |
-| with上下文管理     | `__enter__`、`__exit__`                     |                           |
-| 实例属性查找       | `__getattribute__`                          |                           |
-| 描述器             | `__get__`、`__set__`、`__delete__`          |                           |
+| 分类               | 魔法方法                                    | 说明                              |
+| ------------------ | ------------------------------------------- | --------------------------------- |
+| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回              |
+|                    | `__del__`                                   | 在实例将被销毁时调用              |
+| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典            |
+| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用         |
+| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                            |
+| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                |
+| with上下文管理     | `__enter__`、`__exit__`                     |                                   |
+| 实例属性查找       | `__getattribute__`                          |                                   |
+| 描述器             | `__get__`、`__set__`、`__delete__`          |                                   |
+| 运算符重载         | `__lt__`                                    | 小于，<                           |
+|                    | `__le__`                                    | 小于等于，<=                      |
+|                    | `__eq__`                                    | 等于，==                          |
+|                    | `__gt__`                                    | 大于，>                           |
+|                    | `__ge__`                                    | 大于等于，>=                      |
+|                    | `__ne__`                                    | 不等于，!=                        |
+|                    |                                             |                                   |
+|                    | `__add__`                                   | 加，+                             |
+|                    | `__sub__`                                   | 减，-                             |
+|                    | __`mul__`                                   | 乘，*                             |
+|                    | __`truediv__`                               | 除，5 / 3 = 1.6666666666666667    |
+|                    | `__floordiv__`                              | 地板除，5 // 3 = 1                |
+|                    | `__mod__`                                   | 取余，%                           |
+|                    | `__pow__`                                   | 计算次方， 2 ** 3 = 2 * 2 * 2 = 8 |
+|                    | `__divmod__`                                | 等同于 `(x//y, x%y)`              |
+|                    |                                             |                                   |
+|                    | `__iadd__`                                  | +=                                |
+|                    | `__isub__`                                  | -=                                |
+|                    | `__imul__`                                  | *=                                |
+|                    | `__itruediv__`                              | /=                                |
+|                    | `__imod__`                                  | %=                                |
+|                    | `__ifloordiv__`                             | //=                               |
+|                    | `__ipow__`                                  | **=                               |
 
 
 
@@ -5173,6 +5196,96 @@ static method
 ```
 
 
+
+#### 运算符重载
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types)
+
+示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from functools import total_ordering
+
+
+# __lt__、__le__、__gt__、__ge__全部写完的话太麻烦，使用total_ordering装饰器后，只需要实现其中一种即可；
+# 但是如需不需要最好不要加这个装饰器，因为可能带来性能问题
+
+@total_ordering
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __repr__(self):
+        return f"<Point ({self.x}, {self.y})>"
+
+    def __add__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __iadd__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __gt__(self, other):
+        return self.x > other.x
+
+
+# 实例化
+p1 = Point(1, 2)
+p2 = Point(1, 3)
+
+# 支持+ +=等运算符
+p3 = p1 + p2
+p1 += p2
+print(p1 == p3)
+
+# 可哈希,可作为dict/set等的key
+d = {}
+d[p3] = "p3"
+print(d)
+```
+
+:::
+
+输出结果
+
+```bash
+True
+{<Point (2, 5)>: 'p3'}
+```
+
+**pathlib中的运算符重载**
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from pathlib import Path
+
+host1 = Path("C:\Windows\System32\drivers\etc") / "hosts"
+host2 = Path("C:\Windows\System32\drivers\etc") / Path("hosts")
+
+print(host1)
+print(host1.exists())
+
+print(host2)
+print(host2.exists())
+
+# C:\Windows\System32\drivers\etc\hosts
+# True
+# C:\Windows\System32\drivers\etc\hosts
+# True
+```
 
 
 
