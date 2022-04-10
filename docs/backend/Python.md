@@ -4065,6 +4065,7 @@ logging.warning(f"{bob.name}")
 | 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                                           |
 | with上下文管理     | `__enter__`、`__exit__`                     |                                                              |
 | 实例属性查找       | `__getattribute__`                          |                                                              |
+| 描述器             | `__get__`、`__set__`、`__delete__`          |                                                              |
 
 
 
@@ -4821,4 +4822,139 @@ Called __getattribute__(abc)
 Called __getattribute__(__class__)
 实例对象Person不存在abc属性
 ```
+
+
+
+#### 描述器
+
+##### 描述器定义
+
+如果实现了`__get__`、`__set__` 、`__delete__`中的任何一个，就实现了描述器定义
+
+如果只实现了`__get__`，那么就是非数据描述器；
+
+如果实现了`__get__`和`__set__` 或 `__get__`和`__delete__` ，那么就是数据描述器
+
+
+
+##### 非数据描述器示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class A:
+    '''描述器定义'''
+
+    def __init__(self, x):
+        print("Class A().__init__ called")
+        self.x = x
+
+    def __get__(self, instance, owner):
+        """
+        self: A的实例对象
+        instance: B的实例对象
+        owner: B类对象
+        """
+        print("Class A().__get__ called")
+        print(self, instance, owner)
+        return self
+
+
+class B:
+    """
+    描述器使用
+        类属性为 另一个类的实例，且另一个类定义了描述器
+        下面的 x 就是一个描述器
+    """
+    x = A(100)
+
+    def __init__(self):
+        print("Class B().__init__ called")
+
+
+print('--> 1')
+b = B()
+
+print('--> 2')
+print(b.x)
+```
+
+:::
+
+输出结果
+
+```bash
+Class A().__init__ called
+--> 1
+Class B().__init__ called
+--> 2
+Class A().__get__ called
+<__main__.A object at 0x000002AD2912EB48> <__main__.B object at 0x000002AD2912EB88> <class '__main__.B'>
+<__main__.A object at 0x000002AD2912EB48>
+```
+
+
+
+##### 非数据描述器应用
+
+实现`@classmethod`和`@staticmethod`装饰器
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from functools import partial
+
+
+class StaticMethod:
+    def __init__(self, fn):
+        self.fn = fn
+
+    def __get__(self, instance, owner):
+        return self.fn
+
+
+class ClassMethod:
+    def __init__(self, fn):
+        self.fn = fn
+
+    def __get__(self, instance, owner):
+        return partial(self.fn, owner)
+
+
+class A:
+    @classmethod
+    # @ClassMethod  # c_method = ClassMethod(c_method)
+    def class_methd(cls):
+        print("class method")
+
+    # @staticmethod
+    @StaticMethod  # s_method = StaticMethod(s_method)
+    def static_method(*args, **kwargs):
+        print("static method")
+
+
+A.class_methd()
+A().static_method()
+```
+
+:::
+
+输出结果
+
+```bash
+class method
+static method
+```
+
+
+
+
+
+
 
