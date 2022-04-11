@@ -5354,5 +5354,223 @@ print(host2.exists())
 
 
 
+### 元类
+
+**文档**
+
+（1）[https://docs.python.org/zh-cn/3.10/library/functions.html#type](https://docs.python.org/zh-cn/3.10/library/functions.html#type)
+
+（2）[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#metaclasses](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#metaclasses)
+
+元类就是创建类的类，type除了可以查看对象类型，还是内置的元类
+
+
+
+**使用内置元类type创建类**
+
+示例代码
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+# 方式一：使用class定义类
+class A:
+    x = 800
+
+
+# 方式二：使用type类创建类
+# 语法：type(类名，继续的父类元组(可以为空)， 属性字典)
+B = type("B", (), {"x": 800})
+
+print(A)
+print(B)
+
+print(type(A))
+print(type(B))
+
+print(A().x)
+print(B().x)
+
+print(A.mro())
+print(B.mro())
+```
+
+:::
+
+输出结果
+
+```bash
+<class '__main__.A'>
+<class '__main__.B'>
+<class 'type'>
+<class 'type'>
+800
+800
+[<class '__main__.A'>, <class 'object'>]
+[<class '__main__.B'>, <class 'object'>]
+```
+
+
+
+**自定义元类**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+# 下面两段代码其实是一样的（除了类名不一样），metaclass指定了元类是谁
+# class A:
+#     x = 800
+#
+#
+# class B(metaclass=type):
+#     x = 800
+
+
+# 定义自己的元类
+class MetaClass(type):  # 自定义元类必须要继承type
+    def __new__(cls, name, bases, attrs):
+        print("Metaclass.__new__ called")
+        return super().__new__(cls, name, bases, attrs)
+
+    def __init__(self, name, bases, attrs):
+        print("Metaclass.__init__ called")
+        super().__init__(name, bases, attrs)
+
+    def __call__(self, *args, **kwargs):
+        print("Metaclass.__call__ called")
+        return super().__call__(*args, **kwargs)
+
+
+class B(metaclass=MetaClass):
+    f = "2"
+
+    def __init__(self, name):
+        print("B.__init__ called")
+        self.name = name
+
+
+b = B("小B")
+```
+
+:::
+
+输出结果
+
+```python
+Metaclass.__new__ called
+Metaclass.__init__ called
+Metaclass.__call__ called
+B.__init__ called
+```
+
+
+
+**使用元类创建单例类**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+import threading
+import time
+
+
+class MetaSingle(type):
+    _instance_lock = threading.Lock()
+
+    def __call__(cls, *args, **kwargs):
+        '''
+        下面Single类实例化过程其实就等于元类的__call__调用过程，原理如下：
+
+            （1）Single   = MetaSingle("Single", (), {})
+            （2）Single() = MetaSingle("Single", (), {})()
+        '''
+        if not hasattr(cls, "_instance"):
+            with cls._instance_lock:
+                time.sleep(0.1)  # 这里是为了测试使用
+                if not hasattr(cls, "_instance"):
+                    cls._instance = super().__call__(*args, **kwargs)
+        return cls._instance
+
+
+class Single(metaclass=MetaSingle):
+    def __init__(self, name):
+        self.name = name
+
+
+for i in range(10):
+    threading.Thread(target=lambda: print(Single("a"))).start()
+```
+
+:::
+
+输出结果
+
+```bash
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+<__main__.Single object at 0x000001D92436EE48>
+```
+
+
+
+### 抽象类
+
+抽象类就是提取一对类的共同特征，抽象称一个类
+
+抽象类不能单独实例化、执行，必须由其他类继承
+
+所有类都要继承自抽象类，抽象类提供的方法必须实现，否则会报错
+
+示例代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from abc import ABCMeta, abstractmethod
+
+
+class A(metaclass=ABCMeta):
+    @abstractmethod
+    def read(self):
+        pass
+
+    @abstractmethod
+    def write(self):
+        pass
+
+
+class B(A):
+    '''必须实现read和write方法，否则会报错, 比如： TypeError: Can't instantiate abstract class B with abstract methods write'''
+
+    def read(self):
+        pass
+
+    def write(self):
+        pass
+
+
+b = B()
+```
+
 
 
