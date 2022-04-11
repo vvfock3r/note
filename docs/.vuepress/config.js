@@ -80,6 +80,12 @@ module.exports = {
                             {text: 'Python核心语法', link: '/backend/Python'},
                         ]
                     },
+					{
+                        text: 'Go',
+                        children: [
+                            {text: 'Go语法', link: '/backend/Go'},
+                        ]
+                    },
                 ]
             },
 
