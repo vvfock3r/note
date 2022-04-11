@@ -83,7 +83,7 @@ module.exports = {
 					{
                         text: 'Go',
                         children: [
-                            {text: 'Go语法', link: '/backend/Go'},
+                            {text: 'Go核心语法', link: '/backend/Go'},
                         ]
                     },
                 ]
