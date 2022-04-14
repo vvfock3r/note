@@ -599,13 +599,7 @@ switch-fallthrough判断
 200
 ```
 
-
-
-
-
-
-
-
+## 
 
 ## 数据类型
 
@@ -983,11 +977,11 @@ func main() {
 
 #### unicode系列
 
-unicode包包含基本的 ***\*字符判断函数\****。
+`unicode`包包含基本的字符判断函数。
 
-utf8包主要 ***\*负责rune和byte之间的转换\****。
+`utf8`包主要负责`rune`和`byte`之间的转换。
 
-utf16包负责 ***\*rune和uint16数组\****之间的转换
+`utf16`包负责`rune`和`uint16`数组之间的转换
 
 
 
@@ -995,9 +989,9 @@ utf16包负责 ***\*rune和uint16数组\****之间的转换
 
 `unicode`：[https://pkg.go.dev/unicode](https://pkg.go.dev/unicode)
 
-`unicode/utf8`：https://pkg.go.dev/unicode/utf8
+`unicode/utf8`：[https://pkg.go.dev/unicode/utf8](https://pkg.go.dev/unicode/utf8)
 
-`unicode/utf16`：https://pkg.go.dev/unicode/utf16
+`unicode/utf16`：[https://pkg.go.dev/unicode/utf16](https://pkg.go.dev/unicode/utf16)
 
 
 
@@ -1473,15 +1467,14 @@ package main
 import "fmt"
 
 func main() {
-	arr := [4]int{10, 20, 30, 40}
-
-	s1 := arr[0:2]
+	s1 := []int{10, 20, 30, 40}
 	s2 := s1
-	s3 := append(s1, 1, 2, 3)
+
+	s1 = append(s1, 1, 2, 3)
 	s1[0] = 11
 
+	fmt.Println(s1[0])
 	fmt.Println(s2[0])
-	fmt.Println(s3[0])
 }
 ```
 
@@ -1491,8 +1484,497 @@ func main() {
 11
 10
 
-第一个为11，是因为s2和s1共用了底层数组，所以s1修改导致s2也发生变化
-第二个为10，是因为创建s3时会有容量扩容操作，将s1的数据赋值给新的内存空间，s3指向新的地址，s1的修改自然影响不到s3，s3的数据还是旧的，就是10
+第一个为11
+第二个为10，是因为s1添加元素后会有容量扩容操作，将s1的数据赋值给新的内存空间，s1指向新的地址，s1的修改自然影响不到s2，s2的数据还是旧的，就是10
 ```
 
 :::
+
+### 映射
+
+映射是存储一系列无序的key/value键值对
+
+key只能为可使用==运算的值类型（字符串、数字、布尔、数组），value可以为任意类型
+
+零值为nil
+
+#### 声明
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 直接声明
+	var names1 map[string]string     //使用var声明但是不初始化(没有分配内存空间)后面赋值会报错；不带大括号的是类型
+	var names2 = map[string]string{} // 声明并初始化；带大括号的是值
+
+	// 使用make声明
+	var names3 = make(map[string]string)      // 使用make声明并初始化
+	var names4 = make(map[string]string, 100) // 使用make声明并初始化，并指定容量（注意：map的容量不可以使用cap函数获取，会报错）
+
+	// 尝试赋值
+	//names1["a"] = "b" // 这个会报错，panic: assignment to entry in nil map
+	names2["a"] = "b"
+	names3["a"] = "b"
+	names4["a"] = "b"
+
+	fmt.Printf("类型: %T | 值: %#v | 元素个数: %d\n", names1, names1, len(names1))
+	fmt.Printf("类型: %T | 值: %#v | 元素个数: %d\n", names2, names2, len(names2))
+	fmt.Printf("类型: %T | 值: %#v | 元素个数: %d\n", names3, names3, len(names3))
+	fmt.Printf("类型: %T | 值: %#v | 元素个数: %d\n", names4, names4, len(names4))
+
+	//类型: map[string]string | 值: map[string]string(nil) | 元素个数: 0
+	//类型: map[string]string | 值: map[string]string{"a":"b"} | 元素个数: 1
+	//类型: map[string]string | 值: map[string]string{"a":"b"} | 元素个数: 1
+	//类型: map[string]string | 值: map[string]string{"a":"b"} | 元素个数: 1
+}
+```
+
+#### 基本操作
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 声明数组
+	names := make(map[string]string)
+
+	// 添加元素，若已存在会覆盖
+	names["Top1"] = "Go"
+	names["Top2"] = "Python"
+	names["Top3"] = "JavaScript"
+	names["Top4"] = ""
+
+	// 删除元素, delete函数只用于map，函数无返回值
+	delete(names, "Top3")
+
+	// 遍历map，遍历出来是无序的
+	for k, v := range names {
+		fmt.Printf("names[%s]=%s\n", k, v)
+	}
+	//names[Top2]=Python
+	//names[Top4]=
+	//names[Top1]=Go
+
+	// 判断元素是否存在,若不存在默认会返回对应基本数据类型的零值,所以我们一定要通过返回的布尔值来判断元素是否存在
+	key := "Top4"
+	if v, ok := names[key]; ok {
+		fmt.Printf("Key %s exists and value is %q\n", key, v)
+	} else {
+		fmt.Printf("Key %s does not exist\n", key)
+	}
+	// Key Top4 exists and value is ""
+}
+```
+
+#### value可以是一个方法
+
+map的value可以是一个方法
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	m1 := map[int]func(op int) int{}
+
+	m1[1] = func(op int) int { return op }
+	m1[2] = func(op int) int { return op * op }
+	m1[3] = func(op int) int { return op * op * op }
+
+	fmt.Println(m1) // map[1:0x47b920 2:0x47b940 3:0x47b960]
+
+	fmt.Println(m1[1](2), m1[2](2), m1[3](2)) // 2 4 8
+}
+```
+
+#### 实现set类型
+
+go语言中没有``set``类型，可以使用map来自定义`set`
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 初始化set
+	intSet := make(map[int]bool)
+
+	// 添加元素
+	intSet[1] = true
+	intSet[2] = false
+
+	// 删除元素
+	delete(intSet, 2)
+
+	// 检查元素是否存在
+	n := 1
+	if intSet[n] {
+		fmt.Printf("%d is in set", n)
+	} else {
+		fmt.Printf("%d is not in set", n)
+	}
+	// 1 is in set
+}
+```
+
+### 🎉数据类型总结
+
+| 数据类型 | 元素是否有序 | 值类型/引用类型 | 指针类型初始化关键字 | 零值               |
+| -------- | ------------ | --------------- | -------------------- | ------------------ |
+| 数字     | ✔            | 值类型          | `new`                | `0`                |
+| 字符串   | ✔            | 值类型          | `new`                | 空字符串           |
+| 布尔值   | ✔            | 值类型          | `new`                | `false`            |
+| 数组     | ✔            | 值类型          | `new`                | 元素数据类型的零值 |
+| 切片     | ✔            | 引用类型        | `make`               | `nil`              |
+| 映射     | ❌            | 引用类型        | `make`               | `nil`              |
+
+## 
+
+## 函数
+
+### 函数定义
+
+* 函数可以没有返回值，也可以有多个返回值
+
+#### 基本示例
+
+```go
+package main
+
+import "fmt"
+
+// 参数x和y都是int类型，函数返回值也是int类型
+func add(x, y int) int {
+	return x + y
+}
+
+func main() {
+	fmt.Println(add(1, 2))
+	fmt.Println(add(3, 4))
+}
+```
+
+#### 可省略参数
+
+```go
+package main
+
+import "fmt"
+
+// options ...数据类型，这样定义的参数可以不传值
+func Login(host, port, username, password string, options ...map[string]string) {
+	fmt.Println(host, port, username, password, options)
+}
+
+func main() {
+	Login("0.0.0.0", "3306", "root", "123456")
+	Login("0.0.0.0", "3306", "root", "123456", map[string]string{"ssl": "true"})
+}
+
+//0.0.0.0 3306 root 123456 []
+//0.0.0.0 3306 root 123456 [map[ssl:true]]
+```
+
+#### 实参为nil
+
+```go
+package main
+
+import "fmt"
+
+// 定义函数
+func MyFunc(s []string) []string {
+	s = append(s, "hello world!")
+	return s
+}
+
+func main() {
+	// 函数要求传入一个字符串切片，而他的零值为nil，所以我们可以传入nil，在函数内部相当于是: s := make([]string, 0)
+	fmt.Println(MyFunc(nil)) // [hello world!]
+}
+```
+
+
+
+#### 接受任意类型参数
+
+并不推荐这样写函数，仅作学习使用
+
+```go
+package main
+
+import "fmt"
+
+// 使用可省略参数 + interface，可接受任何类型的参数（包括不传），函数内部使用断言再去判断参数类型
+func test(i ...interface{}) {
+	if len(i) >= 1 {
+		if m, ok := i[0].(map[string]string); ok {
+			fmt.Println(m["name"])
+		}
+	} else {
+		fmt.Println("anomoy")
+	}
+}
+
+func main() {
+	test()
+	test(map[string]string{
+		"name": "bob",
+	})
+}
+```
+
+### 内置函数
+
+#### copy
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 位数相同的情况下，全部覆盖
+	var s = []int{1, 2, 3}
+	copy(s, []int{3, 2, 1})
+	fmt.Println(s) // [3, 2, 1]
+
+	// dst位数少的情况下，只覆盖部分
+	var s1 = []int{1, 2}
+	copy(s1, []int{3, 2, 1})
+	fmt.Println(s1) // [3, 2]
+
+	// dst为空的情况下，copy之后还是空
+	var s2 = []int{}
+	copy(s2, []int{1, 2, 3})
+	fmt.Println(s2) // []
+
+	// src位数少的情况下，只覆盖部分
+	var s3 = []int{4, 4, 4}
+	copy(s3, []int{3, 2})
+	fmt.Println(s3) // [3 2 4]
+}
+```
+
+### defer延迟调用
+
+defer是延迟调用，比如有`A`、`B`两个函数，在`A`函数中`defer B()`，那么就意味着在`A`函数`return`或`panic`之后调用`B`函数
+
+#### defer应用场景
+
+* 释放资源
+
+  ```go
+  m.mutex.Lock()
+  defer m.mutex.Unlock()
+  ```
+
+* 异常处理
+
+* 修改函数返回值
+
+
+
+#### defer机制
+
+* defer后面的表达式不能加圆括号
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import "fmt"
+  
+  func main() {
+  	defer (fmt.Println(1))	// defer后面的函数调用，不能加括号，会报语法错误
+  }
+  
+  ```
+
+  :::
+
+* 若执行多次`defer语句`，则满足`LIFO`（后进先出），即<span style="color: red;font-weight: bold;">后defer的先执行</span>
+
+* <span style="color: red;font-weight: bold;">被defer的函数的参数在执行到defer语句的时候就被确定下来了</span>
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import "fmt"
+  
+  func test1() {
+  	fmt.Println("测试1")
+  	for i := 0; i <= 5; i++ {
+  		defer fmt.Printf("%d %p \n", i, &i)
+  	}
+  }
+  
+  func test2() {
+  	fmt.Println("\n测试2")
+  	for i := 0; i <= 5; i++ {
+  		defer func() {
+  			fmt.Printf("%d %p \n", i, &i)
+  		}()
+  	}
+  }
+  
+  func test3() {
+  	fmt.Println("\n测试3")
+  	for i := 0; i <= 5; i++ {
+  		defer func(i int) {
+  			fmt.Printf("%d %p \n", i, &i)
+  		}(i)
+  	}
+  }
+  
+  func main() {
+  	test1()
+  	test2()
+  	test3()
+  }
+  ```
+
+  :::
+
+  ::: details 点击查看输出结果
+
+  ```bash
+  测试1
+  5 0xc0000180b8 
+  4 0xc0000180b8 
+  3 0xc0000180b8 
+  2 0xc0000180b8 
+  1 0xc0000180b8 
+  0 0xc0000180b8 
+                 
+  测试2          
+  6 0xc0000180f0 
+  6 0xc0000180f0 
+  6 0xc0000180f0 
+  6 0xc0000180f0 
+  6 0xc0000180f0 
+  6 0xc0000180f0 
+                 
+  测试3          
+  5 0xc0000180f8 
+  4 0xc000018110 
+  3 0xc000018118 
+  2 0xc000018120 
+  1 0xc000018128 
+  0 0xc000018130 
+  ```
+
+  :::
+
+* <span style="color: red;font-weight: bold;">defer和return执行顺序的问题</span>
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import "fmt"
+  
+  // 在defer中修改返回值成功，前提是必须提前声明返回值
+  func add1(x, y int) (result int) {
+  	defer func() {
+  		result += 10
+  	}()
+  	return x + y
+  }
+  
+  // 在defer中修改返回值失败，并未提前声明返回值
+  // 原因是：
+  // 		return并非原子操作，共分为两步，赋值和函数返回
+  //		赋值：将结果写入到返回值中，如果未提前声明，就写入到一个临时变量中
+  //		函数返回：函数带着当前返回值退出
+  // 执行顺序：return赋值 --> defer --> return函数返回
+  
+  func add2(x, y int) int {
+  	result := x + y // result必须定义在前面
+  	fmt.Printf("%p\n", &result)
+  	defer func() {
+  		result += 10
+  		fmt.Printf("%p\n", &result)
+  	}()
+  	return result
+  }
+  
+  func main() {
+  	fmt.Println(add1(1, 2)) // 13
+  	fmt.Println(add2(4, 5)) // 9
+  }
+  ```
+
+  :::
+
+* defer可以捕捉`panic`
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import "fmt"
+  
+  func Close() {
+  	// recover函数只能用在defer中
+  	if err := recover(); err != nil {
+  		fmt.Println("panic: ", err)
+  	} else {
+  		fmt.Println("Close success!")
+  	}
+  }
+  
+  func WithPanic() {
+  	defer Close()
+  	panic(1)
+  }
+  
+  func NonPanic() {
+  	defer Close()
+  }
+  
+  func main() {
+  	WithPanic()
+  	NonPanic()
+  }
+  
+  // 输出结果
+  // panic:  1
+  // Close success!
+  ```
+
+  :::
+
+* derfer一定会执行吗？
+
+  ```go
+  package main
+  
+  import (
+  	"fmt"
+  	"os"
+  )
+  
+  func main() {
+  	defer fmt.Println("defer called")
+  	os.Exit(0)
+  }
+  
+  // 运行之后，发现什么都没有输出，说明defer没有正常执行
+  ```
+
+  ## 
+
+### 结构体
