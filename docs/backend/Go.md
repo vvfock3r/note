@@ -2004,7 +2004,7 @@ defer是延迟调用，比如有`A`、`B`两个函数，在`A`函数中`defer B(
 
 ## 别名和自定义类型
 
-### 基础
+### 别名和自定义类型
 
 ```go
 package main
@@ -2019,7 +2019,7 @@ func main() {
 	// 定义别名， 使用=， 不能给Counter添加方法等
 	type Counter = int
 
-	// 使用，可以继续像使用int一样使用，本质上它就是int
+	// 使用别名，可以继续像使用int一样使用，本质上它就是int
 	var a Counter = 20
 	fmt.Println(add(1, a)) // 21
 
@@ -2738,4 +2738,239 @@ func main() {
 	fmt.Println(unsafe.Sizeof(P2{})) // 24
 }
 ```
+
+## 
+
+## 接口
+
+### 概念
+
+接口是一个类型，就和`int`、`string`、`map`等一样，是类型，不是值
+
+接口是一系列方法的集合，比如`io.Writer`就是一个接口
+
+某个值实现了某个接口的所有方法，我们称它实现了某个接口，比如`os.Stdout`实现了`io.Writer`接口
+
+下面用代码演示一下
+
+```go
+package main
+
+import (
+	"io"
+	"os"
+)
+
+func main() {
+	// 声明变量w,类型为 io.Writer, 这是一个接口类型的变量
+	var w io.Writer
+
+	// 给接口类型变量赋值
+	w = os.Stdout
+
+	// 调用
+	_, _ = w.Write([]byte("hello"))	// hello
+}
+```
+
+### 基础
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+// 定义Sender接口
+type Sender interface {
+	Send(string) error
+}
+
+// 定义微信媒介
+type Weixin struct {
+	User     string
+	Password string
+	Phone    string
+	To       string
+}
+
+func (s *Weixin) Send(msg string) error { // 指针方法
+	fmt.Printf("Weixin Send: %s\n", msg)
+	return nil
+}
+
+// 定义邮箱媒介
+type Email struct {
+	Addr     string
+	Port     string
+	User     string
+	Password string
+	to       string
+}
+
+func (e Email) Send(msg string) error { // 值方法
+	fmt.Printf("Email Send: %s\n", msg)
+	return nil
+}
+
+func main() {
+	// 测试1
+	var x Sender    // 声明x为Sender接口类型
+	x = &Weixin{}   // 给x赋值, 接收者是指针类型的,所以这里必须使用指针类型
+	x.Send("hello") // 调用方法
+
+	// 测试2
+	var y, z Sender // 声明Sender接口类型
+	y = Email{}     // 赋值
+	z = &Email{}    // 赋值
+	y.Send("hello") // 调用方法
+	z.Send("hello") // 调用方法,指针对象调用的本质还是值对象调用,只是语法糖
+
+	// 输出结果
+	// Weixin Send: hello
+	// Email Send: hello
+	// Email Send: hello
+	// 总结:
+	// (1) 指针类型接收者的方法必须使用指针对象来调用
+	// (2) 值类型接收者的方法既可以用值对象调用,也可以用指针对象调用
+}
+```
+
+:::
+
+### 空接口
+
+<span style="color: red; font-weight: bold;">空接口意为着可以接受任意类型的值</span>，
+
+<span style="color: blue; font-weight: bold;">也意味着我们不能确定值是什么类型</span>
+
+```go
+package main
+
+import "fmt"
+
+// 定义空接口
+type Empty interface{}
+
+func main() {
+	var a Empty
+	a = 1
+	fmt.Println(a)	// 1
+	a = "Hello"
+	fmt.Println(a)	// Hello
+}
+```
+
+### 断言和查询
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+//定义一个结构体
+type EmailSender struct {
+	Addr     string
+	Port     string
+	User     string
+	Password string
+	to       string
+}
+
+func (s *EmailSender) Send(msg string) error {
+	fmt.Println("Hello " + msg)
+	return nil
+}
+
+//定义一个结构体
+type WeiChartSender struct {
+	User     string
+	Password string
+	to       string
+	Phone    string
+}
+
+func (s *WeiChartSender) Send(msg string) error {
+	fmt.Println("Hello " + msg)
+	return nil
+}
+
+//定义一个接口
+type Sender interface {
+	Send(string) error
+}
+
+func main() {
+	// 初始化
+	var a Sender = &WeiChartSender{User: "我是小a"} // 定义sender为Sender接口类型; 如果用new初始化,直接赋值就会报错了
+	b := new(WeiChartSender)                     // 定义b为WeiChartSender结构体指针类型
+	b.User = "我是小b"
+
+	// 正常调用方法
+	fmt.Println("正常方法调用:")
+	_ = a.Send("world!") // Hello world!
+	_ = b.Send("world!") // Hello world!
+
+	// 查看各个类型,看起来两个类型都一样
+	fmt.Println("\n查看类型:")
+	fmt.Printf("%T\n", a) // *main.WeiChartSender
+	fmt.Printf("%T\n", b) // *main.WeiChartSender
+
+	// 调用属性, 接口类型的不能调用,因为接口只能要求函数, 定义不了属性,当然也没有实现
+	fmt.Println("\n查看属性:")
+	//fmt.Println(a.User) // 这个会报错 a.User undefined (type Sender has no field or method User)
+	fmt.Printf("b.User=%s\n", b.User)
+
+	// 接口类型转换为结构体 -- 断言方式
+	fmt.Println("\n断言方式:")
+	if obj, ok := a.(*WeiChartSender); ok {
+		fmt.Printf("断言成功: %#v\n", obj)
+		fmt.Printf("a.User=%s\n", obj.User)
+	} else {
+		fmt.Printf("断言失败")
+	}
+
+	// 接口类型转换为结构体 -- 查询方式
+	fmt.Println("\n查询方式:")
+	switch obj := a.(type) {
+	case *WeiChartSender:
+		fmt.Printf("查询成功: %#v\n", obj)
+        fmt.Printf("a.User=%s\n", obj.User)
+	default:
+		fmt.Printf("查询失败\n")
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+正常方法调用:
+Hello world!                                                                
+Hello world!                                                                
+                                                                            
+查看类型:                                                                   
+*main.WeiChartSender                                                        
+*main.WeiChartSender                                                        
+                                                                            
+查看属性:                                                                   
+b.User=我是小b                                                              
+                                                                            
+断言方式:                                                                   
+断言成功: &main.WeiChartSender{User:"我是小a", Password:"", to:"", Phone:""}
+a.User=我是小a                                                              
+                                                                            
+查询方式:                                                                   
+查询成功: &main.WeiChartSender{User:"我是小a", Password:"", to:"", Phone:""}
+a.User=我是小a
+```
+
+
 
