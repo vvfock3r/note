@@ -1624,6 +1624,8 @@ func main() {
 }
 ```
 
+> 更好的实现set的方法是使用结构体，参考《空结构体》章节
+
 ### 数据类型总结🎉
 
 | 数据类型 | 元素是否有序 | 值类型/引用类型 | 指针类型初始化关键字 | 零值               |
@@ -2071,7 +2073,7 @@ main.HandFunc
 
 Go语言的结构体其实就相当于其他编程语言的类
 
-### 定义和初始化
+### 基础
 
 ::: details 点击查看完整代码
 
@@ -2139,8 +2141,6 @@ func main() {
 `key1:"value1" key2:"value2" key3:"value3"...` // 键值对用空格分隔
 ```
 
-
-
 ::: details 点击查看完整代码
 
 ```go
@@ -2200,9 +2200,134 @@ Password     min=6,max=10
 
 
 
+### 空结构体
+
+**空结构体占用内存为0**
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+type Empty struct{}
+
+func main() {
+	// 使用unsafe.Sizeof可以查看占用内存大小,单位字节
+	fmt.Printf("%d\n", unsafe.Sizeof(int8(100)))  // 1
+	fmt.Printf("%d\n", unsafe.Sizeof(int16(100))) // 2
+	fmt.Printf("%d\n", unsafe.Sizeof(Empty{}))    // 0
+}
+```
+
+**空结构体的应用场景**
+
+* 方法分组
+
+  将相同类型的方法组合在一起，便于后续扩展和维护
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import (
+  	"fmt"
+  	"runtime"
+  	"strconv"
+  )
+  
+  type Platform struct{}
+  
+  func (e *Platform) GetOS() string {
+  	return runtime.GOOS
+  }
+  
+  func (e *Platform) GetOSBit() int {
+  	return strconv.IntSize
+  }
+  
+  func main() {
+  	var platform Platform
+  	fmt.Printf("%s %dbits\n", platform.GetOS(), platform.GetOSBit())	// windows 64bits
+  }
+  ```
+
+  :::
+
+* 实现`set`类型
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import "fmt"
+  
+  type Set map[string]struct{}
+  
+  func (s Set) Add(item string) {
+  	s[item] = struct{}{}
+  }
+  
+  func (s Set) Remove(item string) {
+  	delete(s, item)
+  }
+  
+  func (s Set) Exist(item string) bool {
+  	_, ok := s[item]
+  	return ok
+  }
+  
+  func main() {
+  	set := make(Set)
+  	set.Add("123")
+  	set.Add("456")
+  	fmt.Println(set.Exist("123")) // true
+  	set.Remove("123")
+  	fmt.Println(set.Exist("123")) // false
+  }
+  ```
+
+  :::
+
+* 空通道
+
+  实现通知型`channel`，其不需要发送任何数据，只是用于协调`Goroutine`运行
+
+  ::: details 点击查看完整代码
+
+  ```go
+  package main
+  
+  import (
+  	"fmt"
+  	"time"
+  )
+  
+  func main() {
+  	ch := make(chan struct{})
+  
+  	go func() {
+  		time.Sleep(3 * time.Second)
+  		close(ch)
+  	}()
+  
+  	fmt.Println("a")
+  	<-ch
+  	fmt.Println("b")
+  }
+  ```
+
+  :::
+
 ### 结构体组合
 
 类似于类的继承
+
+**基础用法**
 
 ::: details 点击查看完整代码
 
@@ -2243,6 +2368,40 @@ func main() {
 ```
 
 :::
+
+**K-V同名简写**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type Basic struct {
+	Name string
+	Age  int
+}
+
+type User struct {
+	Basic // Basic: Basic的简写形式
+}
+
+func main() {
+	u := User{
+		Basic{
+			Name: "July",
+			Age:  18,
+		},
+	}
+
+	fmt.Printf("%#v\n", u) // main.User{Basic:main.Basic{Name:"July", Age:18}}
+}
+```
+
+:::
+
+
 
 ### 结构体方法
 
@@ -2464,6 +2623,97 @@ func main() {
 	//&main.User{Name:"bob", Age:0xa, Sex:"superman"}
 	//&main.User{Name:"jack", Age:0x14, Sex:"man"}  
 	//&main.User{Name:"julie", Age:0xa, Sex:"woman"}
+}
+```
+
+### 结构体内存大小计算
+
+**结论先行**
+
+结构体内存占用大小是<span style="color: red; font-weight: bold;">每个字段内存对齐之后占用之和</span>，并不是每个字段占用之和
+
+
+
+**（1）结构体内存对齐规则**
+
+* 第一个字段在与结构体偏移量为0的地址处
+* 其他字段要对齐到对齐数的整数倍的地址处
+
+
+
+**（2）查看每种数据类型占用大小和对齐数**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	fmt.Printf("bool  : Size %2d, Alignment %d\n", unsafe.Sizeof(bool(true)), unsafe.Alignof(bool(true)))
+	fmt.Printf("int8  : Size %2d, Alignment %d\n", unsafe.Sizeof(int8(0)), unsafe.Alignof(int8(0)))
+	fmt.Printf("int16 : Size %2d, Alignment %d\n", unsafe.Sizeof(int16(0)), unsafe.Alignof(int16(0)))
+	fmt.Printf("int32 : Size %2d, Alignment %d\n", unsafe.Sizeof(int32(0)), unsafe.Alignof(int32(0)))
+	fmt.Printf("int64 : Size %2d, Alignment %d\n", unsafe.Sizeof(int64(0)), unsafe.Alignof(int64(0)))
+	fmt.Printf("byte  : Size %2d, Alignment %d\n", unsafe.Sizeof(byte(1)), unsafe.Alignof(byte(1)))
+	fmt.Printf("rune  : Size %2d, Alignment %d\n", unsafe.Sizeof(rune(10000)), unsafe.Alignof(rune(10000)))
+	fmt.Printf("string: Size %2d, Alignment %d\n", unsafe.Sizeof(string("1")), unsafe.Alignof(string("1")))
+	fmt.Printf("struct: Size %2d, Alignment %d\n", unsafe.Sizeof(struct{}{}), unsafe.Alignof(struct{}{}))
+}
+```
+
+:::
+
+输出结果
+
+```go
+bool  : Size  1, Alignment 1
+int8  : Size  1, Alignment 1
+int16 : Size  2, Alignment 2
+int32 : Size  4, Alignment 4
+int64 : Size  8, Alignment 8
+byte  : Size  1, Alignment 1
+rune  : Size  4, Alignment 4
+string: Size 16, Alignment 8
+struct: Size  0, Alignment 1
+
+// Size代表占用内存大小（单位字节）
+// Alignment代表内存对齐数字（单位字节）
+```
+
+
+
+**（3）对齐规则验证**
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+type P1 struct {
+	a bool   // 偏移量为0, 自身占用1个字节
+	b int32  // 与a做内存对齐,int32类型的对齐倍数为4,导致偏移量为4,自身又占用4个字节,所以本字段结束位置在偏移量为8的位置
+	c byte   // 与b做内存对齐,偏移量为9的位置
+	d string // 与c做内存对齐,偏移量开始位置在16,自身占用16,最终位置在32
+}
+
+type P2 struct {
+	a bool   // 偏移量为0,最终位置1
+	c byte   // 偏移量为1,最终位置2
+	b int32  // 偏移量开始为4,结束为8
+	d string // 偏移量开始为8,结束为 8 + 16 = 24
+}
+
+func main() {
+	fmt.Println(unsafe.Sizeof(P1{})) // 32
+	fmt.Println(unsafe.Sizeof(P2{})) // 24
 }
 ```
 
