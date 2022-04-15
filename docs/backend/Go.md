@@ -2427,13 +2427,25 @@ func WithSex(sex string) Option {
 	}
 }
 
+func DefaultOptions() []Option {
+	return []Option{WithAge(10), WithSex("superman")}
+}
+
 // 构造方法
 func NewUser(name string, options ...Option) *User {
 	// (1) 必须有的字段直接写到函数签名中，这里只有一个name
 	// (2) 可有可无的通过options动态传递
 	// (3) 以后若增加新的选项，也不需要改构造函数
 
+	// 实例化结构体
 	user := &User{Name: name}
+
+	// 设置默认参数
+	for _, option := range DefaultOptions() {
+		option(user)
+	}
+
+	// 自定义参数
 	for _, option := range options {
 		option(user)
 	}
@@ -2443,12 +2455,15 @@ func NewUser(name string, options ...Option) *User {
 func main() {
 	bob := NewUser("bob")
 	jack := NewUser("jack", WithAge(20), WithSex("man"))
+	julie := NewUser("julie", WithSex("woman"))
 
 	fmt.Printf("%#v\n", bob)
 	fmt.Printf("%#v\n", jack)
-    // 输出结果
-    // &main.User{Name:"bob", Age:0x0, Sex:""}
-    // &main.User{Name:"jack", Age:0x14, Sex:"man"}
+	fmt.Printf("%#v\n", julie)
+
+	//&main.User{Name:"bob", Age:0xa, Sex:"superman"}
+	//&main.User{Name:"jack", Age:0x14, Sex:"man"}  
+	//&main.User{Name:"julie", Age:0xa, Sex:"woman"}
 }
 ```
 
