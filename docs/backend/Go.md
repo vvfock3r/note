@@ -1624,7 +1624,7 @@ func main() {
 }
 ```
 
-### 🎉数据类型总结
+### 数据类型总结🎉
 
 | 数据类型 | 元素是否有序 | 值类型/引用类型 | 指针类型初始化关键字 | 零值               |
 | -------- | ------------ | --------------- | -------------------- | ------------------ |
@@ -1975,6 +1975,480 @@ defer是延迟调用，比如有`A`、`B`两个函数，在`A`函数中`defer B(
   // 运行之后，发现什么都没有输出，说明defer没有正常执行
   ```
 
-  ## 
 
-### 结构体
+## 
+
+## 别名和自定义类型
+
+### 基础
+
+```go
+package main
+
+import "fmt"
+
+func add(x, y int) int {
+	return x + y
+}
+
+func main() {
+	// 定义别名， 使用=， 不能给Counter添加方法等
+	type Counter = int
+
+	// 使用，可以继续像使用int一样使用，本质上它就是int
+	var a Counter = 20
+	fmt.Println(add(1, a)) // 21
+
+	// ------------------------------------------------------
+	// 自定义类型, 这是一个全新的类型
+	type Number int
+
+	// 错误使用自定义类型
+	var b Number = 100
+	//fmt.Println(add(1, b)) // 这里会报错，因为Number已经是全新的类型了
+
+	// 类型转换
+	fmt.Printf("%T %#v\n", int8(b), int8(b))     // int8 100
+	fmt.Printf("%T %#v\n", Number(a), Number(a)) // main.Number 20
+}
+```
+
+### 仿`http handler`对象转换
+
+::: details 点击查看完整代码
+
+```go
+package main
+ 
+import "fmt"
+ 
+// 自定义类型
+// 可以使用HandFunc(函数名) 将函数转为HandFunc对象，函数需要和HandFunc保持签名一致
+type HandFunc func(x int, y int) int
+ 
+// 自定义类型-扩展方法
+func (f HandFunc) ServeHTTP(x int, y int) int {
+   // 这里的f是HandFunc对象，也是上面所说的函数对象
+   // 所以这里调用f(x, y)就相当于调用 函数(x, y)
+   return f(x, y)
+}
+ 
+// 自定义函数
+func add(x int, y int) int {
+   return x + y
+}
+ 
+func main() {
+   // 将自定义函数转为自定义类型
+   add2 := HandFunc(add)
+   fmt.Printf("%T\n", add)
+   fmt.Printf("%T\n", add2)
+ 
+   // 正常调用
+   fmt.Println(add(1, 2))
+   fmt.Println(add2(1, 2))
+ 
+   // 自定义类型可以调用更多的方法
+   fmt.Println(add2.ServeHTTP(1, 2))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+func(int, int) int
+main.HandFunc
+3            
+3            
+3        
+```
+
+## 
+
+## 结构体
+
+Go语言的结构体其实就相当于其他编程语言的类
+
+### 定义和初始化
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 结构体定义语法
+//     语法1： type 结构体名称 struct {}
+//     语法2： 还可以定义匿名结构体，参考下方代码
+type User struct {
+	id      int
+	name    string
+	address string
+	phone   string
+}
+
+func main() {
+	// 初始化空结构体
+	fmt.Println(User{}) // {0   }
+
+	//使用字面量初始化
+	user1 := User{
+		id: 1, name: "Serry", address: "广东省", phone: "19111111111",
+	}
+	fmt.Println(user1) // {1 Serry 广东省 19111111111}
+
+	// 使用属性初始化
+	var user2 User
+	user2.id = 1
+	user2.name = "Bob"
+	user2.address = "河北省保定市"
+	user2.phone = "13788888888"
+	fmt.Println(user2) // {1 Bob 河北省保定市 13788888888}
+
+	// 使用new函数初始化【指针类型结构体】
+	var user3 *User = new(User)
+	fmt.Println(user3) // &{0   }
+
+	// 定义匿名结构体并初始化
+	user4 := struct {
+		id    int
+		phone string
+	}{
+		id:    1,
+		phone: "12345678910",
+	}
+
+	fmt.Println(user4) // {1 12345678910}
+}
+```
+
+:::
+
+### 自定义Tag
+
+已知使用了结构体`Tag`的库：[https://github.com/golang/go/wiki/Well-known-struct-tags](https://github.com/golang/go/wiki/Well-known-struct-tags)
+
+`Tag`使用语法
+
+```go
+`key1:"value1" key2:"value2" key3:"value3"...` // 键值对用空格分隔
+```
+
+
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	Name     string `my:"username"`
+	Age      uint8
+	Password string `my:"min=6,max=10"`
+}
+
+func GetTag(u User) {
+	// 通过反射获取类型
+	t := reflect.TypeOf(u)
+
+	// 代码						类型							说明
+	// t.NumField()											结构体字段数量
+	// t.Field(0)											第1个字段
+	//	t.Field(1).Name 		字符串						字段名，这里是 Name
+	// 	t.Field(1).Tag  		StructTag(自定义字符串类型)	Tag，这里是 my:"username"
+	//  t.Field(1).Tag.Get()	方法							根据key获取value, key不存在返回空字符串
+
+	fmt.Printf("%-10s   %-s\n", "Struct Key", "Tag Value")
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		key := field.Name
+		value := field.Tag.Get("my")
+		fmt.Printf("%-10s   %-s\n", key, value)
+	}
+}
+
+func main() {
+	user := User{
+		Name:     "Jack",
+		Age:      5,
+		Password: "123456",
+	}
+	GetTag(user)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+Struct Key   Tag Value
+Name         username    
+Age                      
+Password     min=6,max=10
+```
+
+
+
+### 结构体组合
+
+类似于类的继承
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type Addr struct {
+	province string
+	street   string
+	number   string
+}
+
+type User struct {
+	id    int
+	name  string
+	addr  Addr
+	phone string
+}
+
+func main() {
+	var addr = Addr{
+		province: "Hebei",
+		street:   "天威路",
+		number:   "10",
+	}
+
+	var user = User{
+		id:    1,
+		name:  "bob",
+		addr:  addr,
+		phone: "137111111111",
+	}
+
+	fmt.Println(user)
+}
+```
+
+:::
+
+### 结构体方法
+
+**语法**
+
+```go
+// 定义结构体
+type Person struct {
+	name string
+}
+
+// 一般我们会为结构体定义一个构造方法（这不是必须的）
+func NewPerson(name string) *Person {
+	return &Person{name: name}
+}
+
+// 定义结构体方法
+// 语法：func (接收者变量 接收者类型) 方法名(参数列表) (返回参数)
+//      接收者变量: 建议使用接收者类型名称首字母的小写，而不是self、this之类的命名
+//      接收者类型：值类型和指针类型
+func (p *Person) GetName() string {
+	return p.name
+}
+```
+
+**值接收者会进行结构体拷贝**
+
+测试1：值接收者会将结构体拷贝一份到方法内
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+}
+
+func NewPerson(name string) Person {
+	return Person{name: name}
+}
+
+func (p Person) GetName() string {
+	return p.name
+}
+func (p Person) SetName(name string) {
+	fmt.Printf("SetName: %p\n", &p)
+	p.name = name
+}
+
+func main() {
+	bob := NewPerson("bob")
+	fmt.Printf("main: %p\n", &bob)
+
+	bob.SetName("jack")
+	fmt.Println(bob.GetName())
+
+	// 输出结果
+	// main: 0xc00004a250
+	// SetName: 0xc00004a260
+	// bob
+    // 总结：值接收者会将结构体拷贝一份到方法内，所以导致并没有对结构体修改成功
+}
+```
+
+:::
+
+测试2：指针接收者不会拷贝结构体
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+}
+
+func NewPerson(name string) *Person {
+	return &Person{name: name}
+}
+
+func (p *Person) GetName() string {
+    // 这里是一个语法糖，本质上为 return (*p).name
+	return p.name
+}
+func (p *Person) SetName(name string) {
+	fmt.Printf("SetName: %p\n", p)
+	p.name = name
+}
+
+func main() {
+	bob := NewPerson("bob")
+	fmt.Printf("main: %p\n", bob)
+
+	bob.SetName("jack")
+	fmt.Println(bob.GetName())
+
+	// 输出结果
+	// main: 0xc00010e110
+	// SetName: 0xc00010e110
+	// jack
+    // 总结：指针接收者不会拷贝结构体，所以对结构体修改成功
+}
+```
+
+:::
+
+**结构体是map-v的怪异行为**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+type Person struct {
+	Name string
+	Sex  string
+	Age  int
+}
+
+func main() {
+	m := map[uint]Person{
+		0: Person{"张无忌", "男", 20},
+		1: Person{"赵敏", "女", 21},
+	}
+
+	// 测试1：这会报错 cannot assign to struct field m[0].Age in map
+	m[0].Age += 1
+
+	// 测试2：迂回解决
+	//tmp := m[0]
+	//tmp.Age += 1
+	//m[0] = tmp
+	//fmt.Println(m[0].Age)
+
+	// 测试3：定义map为指针类型后解决
+	//m2 := map[uint]*Person{
+	//	0: &Person{"张无忌", "男", 20},
+	//	1: &Person{"赵敏", "女", 21},
+	//}
+	//
+	//m2[0].Age += 1
+	//fmt.Println(m2[0].Age)
+}
+```
+
+:::
+
+### 函数式选项模式✨
+
+该模式解决的问题是如何更动态灵活地为对象配置参数
+
+```go
+package main
+
+import "fmt"
+
+// 定义结构体
+type User struct {
+	Name string // 必须字段
+	Age  uint8  // 非必须
+	Sex  string // 非必须
+}
+
+// 定义各种选项
+type Option func(*User)
+
+func WithAge(age uint8) Option {
+	return func(user *User) {
+		user.Age = age
+	}
+}
+
+func WithSex(sex string) Option {
+	return func(user *User) {
+		user.Sex = sex
+	}
+}
+
+// 构造方法
+func NewUser(name string, options ...Option) *User {
+	// (1) 必须有的字段直接写到函数签名中，这里只有一个name
+	// (2) 可有可无的通过options动态传递
+	// (3) 以后若增加新的选项，也不需要改构造函数
+
+	user := &User{Name: name}
+	for _, option := range options {
+		option(user)
+	}
+	return user
+}
+
+func main() {
+	bob := NewUser("bob")
+	jack := NewUser("jack", WithAge(20), WithSex("man"))
+
+	fmt.Printf("%#v\n", bob)
+	fmt.Printf("%#v\n", jack)
+    // 输出结果
+    // &main.User{Name:"bob", Age:0x0, Sex:""}
+    // &main.User{Name:"jack", Age:0x14, Sex:"man"}
+}
+```
+
