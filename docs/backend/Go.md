@@ -2972,5 +2972,168 @@ a.User=我是小a
 a.User=我是小a
 ```
 
+### 常用接口
+
+#### Stringer
+
+字符串功能接口
+
+定义如下
+
+```go
+// fmt.print.go
+type Stringer interface {
+	String() string
+}
+```
+
+测试代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type A struct {
+	Name string
+	Age  uint
+	Sex  string
+}
+
+func (a A) String() string {
+	return fmt.Sprintf("String: 大家好, 我是%s, 性别%s, 年龄%d", a.Name, a.Sex, a.Age)
+}
+
+func (a A) GoString() string {
+	return fmt.Sprintf("GoString: 大家好, 我是%s, 性别%s, 年龄%d", a.Name, a.Sex, a.Age)
+}
+
+func main() {
+	a := &A{
+		Name: "张三",
+		Age:  18,
+		Sex:  "男",
+	}
+	fmt.Println(a)
+	fmt.Printf("%v\n", a)
+	fmt.Printf("%+v\n", a)
+	fmt.Printf("%#v\n", a) // GoString
+
+	fmt.Printf("%s\n", a)
+	fmt.Printf("%q\n", a)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+String: 大家好, 我是张三, 性别男, 年龄18
+String: 大家好, 我是张三, 性别男, 年龄18  
+String: 大家好, 我是张三, 性别男, 年龄18  
+GoString: 大家好, 我是张三, 性别男, 年龄18
+String: 大家好, 我是张三, 性别男, 年龄18  
+"String: 大家好, 我是张三, 性别男, 年龄18"
+```
+
+#### Reader
+
+**定义**
+
+```go
+// io.Reader
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+```
+
+> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`（`0<=n<=len(p)`）和错误
+
+**更详细的读取规则**
+
+（1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
+
+（2）读取失败，此时有`err != nil`，`err`代表具体的错误
+
+（3）读到`EOF`，此时支持以下两种处理情况：
+
+​		① 返回实际读取的字节数n，将`err`设置为`EOF`（推荐）
+
+​		② 返回实际读取的字节数n，将`err`设置为`nil`，对于这种情况，在下一次读取时需要返回`n == 0, err == nil`（不推荐）
+
+（4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
+
+读取文件示例
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func Read() {
+	// 打开文件
+	fileName := "test.log"
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("文件不存在: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 循环读取文件
+	buffer := make([]byte, 1024)
+	for {
+		n, err := f.Read(buffer)
+
+		// 处理数据
+		if n > 0 {
+            fmt.Printf("%s", buffer[:n])	// 注意这里[:n]
+		}
+
+		// 判断是否可以读取下一行
+		if err == nil {
+			continue
+		}
+
+		// 文件读取完成
+		if err == io.EOF {
+			break
+		}
+
+		// 文件读取失败
+		log.Fatalf("文件读取失败: %s:%s\n", fileName, err)
+	}
+}
+
+func main() {
+	Read()
+}
+```
+
+:::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
