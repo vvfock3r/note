@@ -3121,9 +3121,152 @@ func main() {
 
 :::
 
+## 
+
+## `Goroutine`
+
+### 基础知识
+
+**概念**
+
+Go语言中每个并发执行的单元叫`Goroutine`（协程），使用**`go`关键字后接函数调用**来创建一个`Goroutine`
 
 
 
+**基本使用**
+
+::: details 测试1: 执行协程
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func taskA() {
+	for i := 0; i <= 10; i++ {
+		fmt.Println(i)
+	}
+}
+
+func taskB() {
+	for i := 'A'; i <= 'Z'; i++ {
+		fmt.Printf("%c\n", i)
+	}
+}
+
+func main() {
+	fmt.Println("start")
+	go taskA() // 启动一个协程
+	go taskB() // 启动另一个协程
+	fmt.Println("end")
+}
+
+// 输出结果
+// start
+// end
+
+// 问：协程函数没有执行吗？
+// 答：原因是main()函数并不会等待所有协程执行完后再退出,这里main函数已经执行完了，协程还没执行到for循环，所以造成协程没有执行的假象
+```
+
+:::
+
+::: details 测试2: 等待所有协程执行完再退出-使用WaitGroup-方式1
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var wg sync.WaitGroup
+
+func taskA() {
+	for i := 0; i <= 10; i++ {
+		fmt.Println(i)
+	}
+	wg.Done()
+}
+
+func taskB() {
+	for i := 'A'; i <= 'Z'; i++ {
+		fmt.Printf("%c\n", i)
+	}
+	wg.Done()
+}
+
+func main() {
+	fmt.Println("start")
+	wg.Add(2)
+	go taskA() // 启动一个协程
+	go taskB() // 启动另一个协程
+
+	wg.Wait()
+	fmt.Println("end")
+}
+
+// 输出结果
+// start
+// A
+// 内容太多省略...	
+// 10
+// end
+```
+
+:::
+
+::: details 测试3: 等待所有协程执行完再退出-使用WaitGroup-方式2（推荐）
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func taskA(wg *sync.WaitGroup) {
+	for i := 0; i <= 10; i++ {
+		fmt.Println(i)
+	}
+	wg.Done()
+}
+
+func taskB(wg *sync.WaitGroup) {
+	for i := 'A'; i <= 'Z'; i++ {
+		fmt.Printf("%c\n", i)
+	}
+	wg.Done()
+}
+
+func main() {
+	fmt.Println("start")
+
+	// 如果需要作为函数参数传递wg，则wg必须是引用类型
+	wg := new(sync.WaitGroup)
+
+	wg.Add(2)
+	go taskA(wg) // 启动一个协程
+	go taskB(wg) // 启动另一个协程
+
+	wg.Wait()
+	fmt.Println("end")
+}
+
+// 输出结果
+// start
+// A
+// 内容太多省略...	
+// 10
+// end
+```
+
+:::
 
 
 
