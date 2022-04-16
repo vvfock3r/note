@@ -2773,7 +2773,111 @@ func main() {
 }
 ```
 
-### 基础
+### 接口类型都可以用在哪
+
+接口是一种类型，那么都可以用在哪呢？
+
+（1）声明变量为接口类型
+
+（2）函数形参指定为接口类型
+
+（3）结构体字段指定为接口类型
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"os"
+)
+
+func WriteString(w io.Writer, msg string) (n int, err error) {
+	return w.Write([]byte(msg))
+}
+
+type User struct {
+	io.Writer
+}
+
+func main() {
+	// 应用1: 声明为接口变量
+	var w io.Writer
+	w = os.Stdout
+	if _, err := w.Write([]byte("hello ")); err != nil {
+		log.Fatal(err)
+	}
+
+	// 应用2: 函数形参为接口类型
+	if _, err := WriteString(os.Stdout, "world"); err != nil {
+		log.Fatal(err)
+	}
+
+	// 应用3: 结构体字段为接口类型
+	user := User{os.Stdout}
+	if _, err := user.Write([]byte("!\n")); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// 输出结果：
+// hello world!
+```
+
+:::
+
+### 接口类型值都可以是什么
+
+凡是实现了接口中定义的方法的对象都可以是接口值，都有哪些呢？
+
+（1）结构体（这个是最常用的）
+
+（2）自定义类型（一个自定义类型作为接口类型的值，感觉有点奇怪哈~）
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+)
+
+// 定义接口
+type Writer interface {
+	Write([]byte) (n int, err error)
+}
+
+// 自定义类型
+type Stdout string
+
+func (m Stdout) Write(w []byte) (n int, err error) {
+	return os.Stdout.Write(w)
+}
+
+func main() {
+	var a Stdout // 声明变量a为自定义类型
+	var b Writer // 声明变量b为接口类型
+	b = a        // 自定义类型实现了Reader接口,所以可以将a赋值给b
+
+	// 调用方法
+	if _, err := b.Write([]byte("hello")); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// 输出结果
+// hello
+```
+
+:::
+
+
+
+### 值接收者和指针接收者
 
 ::: details 点击查看完整代码
 
@@ -2838,6 +2942,8 @@ func main() {
 ```
 
 :::
+
+
 
 ### 空接口
 
