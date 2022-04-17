@@ -3231,11 +3231,11 @@ func main() {
 
 ## `Goroutine`
 
-### 基础知识
+### `Goroutine`
 
 **概念**
 
-Go语言中每个并发执行的单元叫`Goroutine`（协程），使用**`go`关键字后接函数调用**来创建一个`Goroutine`
+Go语言中每个并发执行的单元叫`Goroutine`（协程），使用`go`关键字后接函数调用来创建一个`Goroutine`
 
 
 
@@ -3374,15 +3374,694 @@ func main() {
 
 :::
 
+### Channel
+
+#### 基础
+
+`Channel`用于`Goroutine`之间的通信，中文可以称为”管道"或"通道"
 
 
 
+**根据状态可以分为**
+
+* `nil`，只声明未初始化的`Channel`
+* 正常，声明并初始化的`Channel`
+* 关闭，使用`close(Channel)`
 
 
 
+**根据缓冲方式可以分为**
+
+* 无缓冲区`Channel`
+* 带缓冲区`Channel`
 
 
 
+**根据读写方式可以分为**
+
+* 读写`Channel`
+
+* 只读`Channel`
+
+* 只写`Channel`
+
+  
 
 
 
+**定义**
+
+```go
+// 声明一个int类型的channel
+var channel chan int
+fmt.Printf("%T\n", channel) // chan int
+
+// ch赋值
+channel = make(chan int)
+fmt.Printf("%#v\n", channel) // (chan int)(0xc00005a060)
+
+// 以上两句可以简写成如下形式（推荐这种写法）
+ch := make(chan int)
+```
+
+**读和写**
+
+```go
+// 写数据：将100写入到channel中
+ch <- 100
+
+// 读数据-方式1， v代表读到的值
+v := <-ch
+
+// 读数据-方式2， v代表读到的值, ok代表channel的状态，true为channel正常，false为channel已经关闭
+v, ok := <-ch
+
+// 读取管道-方式3, 使用range遍历，这里只有一个返回值，若Channel关闭则for循环也随之结束
+for v:= range ch {
+    fmt.Println(v)
+}
+
+// 关闭channel
+close(ch)
+
+// 记忆技巧：箭头代表数据流向
+```
+
+#### 无缓冲区`Channel`
+
+**定义**
+
+```go
+ch := make(chan int)	// 无缓冲区channel, 等同于make(chan int, 0)，第二个参数代表可缓冲数据个数
+```
+
+**特性**
+
+* 读和写不能在同一个协程中
+* 读写次数不一致会发生死锁：`fatal error: all goroutines are asleep - deadlock!`
+* 管道关闭后：
+  * 假如继续读，不会阻塞，而是会读取到零值
+  * 假如继续写，会报错：`panic: send on closed channel`
+* 如果管道一切都正常，未读取之前写入会阻塞，未写入之前读取也会阻塞
+
+
+
+::: details 测试1: 基础使用
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+)
+
+func main() {
+	// 声明并初始化channel
+	ch := make(chan int, 0)
+
+	// 写数据
+	go func() {
+		for curTime := range time.Tick(time.Second) {
+			second := curTime.Second()
+			ch <- second
+			log.Printf("Write to Channel  %d\n", second)
+		}
+	}()
+
+	// 读数据
+	for v := range ch {
+		log.Printf("Read from Channel %d\n\n", v)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/17 11:51:32 Write to Channel  32
+2022/04/17 11:51:32 Read from Channel 32
+
+2022/04/17 11:51:33 Write to Channel  33
+2022/04/17 11:51:33 Read from Channel 33
+
+2022/04/17 11:51:34 Write to Channel  34
+2022/04/17 11:51:34 Read from Channel 34
+```
+
+::: details 测试2: 代替WaitGroup
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func taskA(ch chan struct{}) {
+	for i := 0; i <= 10; i++ {
+		fmt.Println(i)
+	}
+	ch <- struct{}{}
+}
+
+func taskB(ch chan struct{}) {
+	for i := 'A'; i <= 'Z'; i++ {
+		fmt.Printf("%c\n", i)
+	}
+	ch <- struct{}{}
+}
+
+func main() {
+	fmt.Println("start")
+
+	// 声明并初始化channel, 这里channel的作用仅是做通知用，所以使用空结构体（不占空间）
+	ch := make(chan struct{})
+
+	go taskA(ch) // 启动一个协程
+	go taskB(ch) // 启动另一个协程
+
+	// 读取数据, 利用无缓冲channel 读取之前未写入会阻塞的特性
+	for i := 0; i < 2; i++ {
+		<-ch
+	}
+	fmt.Println("end")
+}
+```
+
+:::
+
+#### 带缓冲区`Channel`
+
+```go
+ch := make(chan int, 3)	// 代表缓冲区长度为3，可以放3个数据
+```
+
+**特性**
+
+* 读和写可以在同一个协程中
+
+* 读写次数可以不一致，最大差不能超过缓冲区长度，否则同样会引发死锁：`fatal error: all goroutines are asleep - deadlock!`
+
+  举个例子，缓冲区大小为1，则写入1次读取0次没有问题，写入2次读取0次就会引发死锁
+
+* 管道关闭后：
+
+  * 假如继续读，不会阻塞，而是会先读取缓冲区，若缓冲区读完会读到零值
+  * 假如继续写，会报错：`panic: send on closed channel`
+
+* 如果管道一切都正常，
+
+  * 只有1个协程情况下（`main函数`），写满缓冲区再写入会报错，读完缓冲区再读取也会报错
+  * 至少2个协程情况下（`go`关键字至少启动1个），写满缓冲区再写入会阻塞，读完缓冲区再读取也会阻塞
+
+::: details 测试1: 读和写可以在同一个协程中
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始化随机数种子
+	rand.Seed(time.Now().Unix())
+
+	// 声明并初始化channel
+	ch := make(chan int, 1)
+
+	// 写入数据（0-99之间的随机数）
+	ch <- rand.Intn(99)
+
+	// 读取数据
+	fmt.Println("读取数据: ", <-ch)
+}
+```
+
+:::
+
+::: details 测试2: 读写次数可以不一致
+
+```go
+package main
+
+import (
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始化随机数种子
+	rand.Seed(time.Now().Unix())
+
+	// 声明并初始化channel，缓冲区大小为10
+	ch := make(chan int, 10)
+
+	// 写入数据次数, 写入10次读取0次没问题，写入11次读取0次就会发生死锁，因为缓冲区写满了
+	n := 10
+
+	// 写入数据（0-99之间的随机数）
+	for i := 0; i < n; i++ {
+		ch <- rand.Intn(99)
+	}
+}
+```
+
+:::
+
+::: details 测试3: Channel关闭后再读取，会读完缓冲区后读取到零值
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 写缓冲区
+	ch <- 100
+	ch <- 200
+	ch <- 300
+
+	// 关闭channel
+	close(ch)
+
+	// 读取数据
+	for i := 0; i < 5; i++ {
+		fmt.Println(<-ch)
+	}
+}
+
+// 输出结果
+// 100
+// 200
+// 300
+// 0
+// 0
+```
+
+:::
+
+::: details 测试4: Channel关闭后再写入会直接报错，而不是写入到缓冲区
+
+```go
+package main
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 关闭channel
+	close(ch)
+
+	// 写数据，channel已经关闭了，不能写入到缓冲区，会直接报错，这和无缓冲channel表现一致
+	ch <- 100
+}
+```
+
+:::
+
+::: details 测试5: 1个协程情况下（`main函数`），写满缓冲区再写入会报错
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 写数据
+	ch <- 100
+	ch <- 100
+	ch <- 100
+	ch <- 100 // 这里直接报错
+
+	fmt.Println(<-ch)
+}
+```
+
+:::
+
+::: details 测试6: 1个协程情况下（`main函数`），读完缓冲区再读取也会报错
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 写入
+	ch <- 100
+
+	// 读取
+	fmt.Println(<-ch) // 正常读取
+	fmt.Println(<-ch) // 报错
+}
+```
+
+:::
+
+::: details 测试7: 至少2个协程情况下（go关键字至少启动1个），写满缓冲区再写入会阻塞
+
+```go
+package main
+
+import (
+	"log"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 开启一个协程
+	go func() {
+		time.Sleep(time.Second * 60)
+		log.Println("协程运行结束")
+	}()
+
+	// 写入
+	// 		循环次数：缓冲区+1次
+	//		协程未运行完之前，第4次写入会卡住，等协程运行完，第4次写入就会报错
+	for i := 0; i <= cap(ch); i++ {
+		log.Printf("【开始】第%d次写入数据 | 当前协程数量: %d\n", i+1, runtime.NumGoroutine())
+		ch <- 100
+		log.Printf("【结束】第%d次写入数据 | 当前协程数量: %d\n\n", i+1, runtime.NumGoroutine())
+	}
+}
+```
+
+输出结果
+
+```bash
+2022/04/17 13:28:40 【开始】第1次写入数据 | 当前协程数量: 2
+2022/04/17 13:28:40 【结束】第1次写入数据 | 当前协程数量: 2
+
+2022/04/17 13:28:40 【开始】第2次写入数据 | 当前协程数量: 2
+2022/04/17 13:28:40 【结束】第2次写入数据 | 当前协程数量: 2
+
+2022/04/17 13:28:40 【开始】第3次写入数据 | 当前协程数量: 2
+2022/04/17 13:28:40 【结束】第3次写入数据 | 当前协程数量: 2
+
+2022/04/17 13:28:40 【开始】第4次写入数据 | 当前协程数量: 2
+2022/04/17 13:29:40 协程运行结束
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [chan send]:
+main.main()
+        C:/Users/Administrator/GolandProjects/learn/main.go:24 +0x18d
+
+Process finished with the exit code 2
+```
+
+:::
+
+::: details 测试8: 至少2个协程情况下（go关键字至少启动1个），读完缓冲区再读取也会阻塞
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+)
+
+func main() {
+	// 声明并初始化channel，缓冲区大小为3
+	ch := make(chan int, 3)
+
+	// 开启一个协程
+	go func() {
+		time.Sleep(time.Second * 60)
+		log.Println("协程运行结束")
+	}()
+
+	// 读取
+	log.Println("开始读取")
+	v, ok := <-ch
+	log.Println("读取结束", v, ok)
+}
+```
+
+输出结果
+
+```bash
+2022/04/17 13:36:51 开始读取
+2022/04/17 13:37:51 协程运行结束
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [chan receive]:
+main.main()
+        C:/Users/Administrator/GolandProjects/learn/main.go:20 +0x79
+```
+
+:::
+
+#### 只读和只写限制
+
+只是在原有的`Channel`上加了一层限制，只能读或只能写，默认的`Channel`是读写都支持的
+
+**示例代码**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+func chanReadOnly() {
+	// 声明带缓冲区的channel，默认是支持读写的
+	ch := make(chan int, 3)
+	ch <- 100
+	ch <- 200
+	ch <- 300
+
+	// 声明为只读channel
+	var chReadOnly <-chan int
+	chReadOnly = ch
+
+	// 读数据
+	fmt.Println(<-chReadOnly)
+
+	// 写数据会报错
+	//chReadOnly <- 400
+}
+
+func chanWriteOnly() {
+	// 声明只写channel
+	ch := make(chan<- int, 3)
+
+	// 写数据
+	ch <- 100
+	ch <- 200
+	ch <- 300
+
+	// 读数据会报错
+	//fmt.Println(<-ch)
+}
+
+func main() {
+	chanReadOnly()
+	chanWriteOnly()
+}
+```
+
+:::
+
+#### select
+
+**说明**
+
+`select`是专门为`Goroutine`设计的，类似于`switch..case`语法
+
+* 每个`case `表达式中都只能包含操作`Channel`的表达式，比如读或写
+* 如果有多个`case `都可以运行，`select`会随机公平地选出一个执行，其他不会执行
+* 如果多个`case `都不能运行，若有`default `子句，则执行该语句，反之，`select `将阻塞，直到某个`case `可以运行
+
+
+
+**示例代码**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	c1 := make(chan int, 10)
+	c2 := make(chan int, 10)
+
+	// 测试1：直接执行会执行default语句
+
+	// 测试2: 给C1管道写入数据；结果：在C1管道中读取到值： 1
+	//c1 <- 1
+
+	// 测试3，直接关闭管道；结果：C1管道中的数据为零值:  0
+	//close(c1)
+
+	// 测试4，两个管道都关闭，那么select会随机取一个，然后执行select后面的逻辑
+	//close(c1)
+	//close(c2)
+
+	// 在多个管道中，只要有一个操作成功就执行相应逻辑
+	select {
+	case v, ok := <-c1:
+		if ok {
+			fmt.Println("在C1管道中读取到值：", v)
+		} else {
+			fmt.Println("C1管道中的数据为零值: ", v)
+		}
+
+	case v, ok := <-c2:
+		if ok {
+			fmt.Println("在C2管道中读取到值：", v)
+		} else {
+			fmt.Println("C2管道中的数据为零值: ", v)
+		}
+	default:
+		fmt.Println("select default运行")
+	}
+}
+```
+
+:::
+
+**应用**
+
+::: details 设置函数执行超时时间（有问题版本，主要是学习超时核心逻辑）
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func Add(x, y int) int {
+	time.Sleep(time.Second * 2) // 模拟函数耗时操作
+	return x + y
+}
+
+func main() {
+	// 声明并初始化channel
+	ch := make(chan int)
+
+	// 执行协程
+	go func() {
+		ret := Add(111, 222) // 这个是我们原有的函数,并不做任何修改，非侵入式做超时控制
+		ch <- ret
+	}()
+
+	// 超时控制
+	select {
+	case <-time.After(time.Second * 1):
+		fmt.Println("执行超时")
+	case v, ok := <-ch:
+		if ok {
+			fmt.Println("执行成功: ", v)
+		} else {
+			fmt.Println("执行报错: ", v)
+		}
+	}
+}
+
+// 都有哪些问题？
+// (1) main内代码太多了，将超时控制的代码单独封装到一个函数中
+// (2) Goroutine泄漏：假设超时以后，协程中还会写数据到channel中，而外边已经没有读的了，会一直阻塞，造成Goroutine泄漏
+// (3) 该函数Add返回值没有包含错误，在实际场景中有些函数会有错误，错误如何传递？
+```
+
+:::
+
+::: details 设置函数执行超时时间（优化）
+
+* 单独封装了一个函数
+
+* `Goroutine`泄漏问题将无缓冲的`channel`改为带缓冲区的`channel`，但仍需要原本的`Add`函数执行完成后才会退出AddWithTimeout内部启动的协程。
+
+  Go不支持外部杀死一个正在运行的协程，参考：[https://github.com/golang/go/issues/32610](https://github.com/golang/go/issues/32610)
+
+* 传递错误
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"log"
+	"runtime"
+	"time"
+)
+
+func Add(x, y int) int {
+	time.Sleep(time.Second * 10) // 模拟函数耗时操作
+	return x + y
+}
+
+func AddWithTimeout(x, y, timeout int) (int, error) {
+	// 声明返回值
+	var result int
+	var err error
+
+	// 声明并初始化channel
+	ch := make(chan int, 1)
+
+	// 执行协程
+	go func() {
+		ret := Add(x, y) // 这个是我们原有的函数,并不做任何修改
+		ch <- ret
+	}()
+
+	// 超时控制
+	select {
+	case <-time.After(time.Millisecond * time.Duration(timeout)):
+		err = errors.New(fmt.Sprintf("Function executed for more than %d seconds: AddWithTimeout(%d, %d)", timeout, x, y))
+	case v := <-ch:
+		result = v
+	}
+
+	return result, err
+}
+
+func main() {
+	for i := 0; i < 100000; i++ {
+		go func() {
+			_, err := AddWithTimeout(1, 2, 3000)
+			err = err
+		}()
+	}
+
+	for range time.Tick(time.Second) {
+		g := runtime.NumGoroutine()
+		log.Printf("当前Goroutine数量: %d\n", g)
+		if g <= 1 {
+			break
+		}
+	}
+}
+```
+
+:::
