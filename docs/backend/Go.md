@@ -3233,15 +3233,15 @@ func main() {
 
 ### `Goroutine`
 
-**概念**
+#### 基础
 
 Go语言中每个并发执行的单元叫`Goroutine`（协程），使用`go`关键字后接函数调用来创建一个`Goroutine`
 
+`Goroutine`是并发安全的
 
 
-**基本使用**
 
-::: details 测试1: 执行协程
+::: details 测试协程代码
 
 ```go
 package main
@@ -3280,7 +3280,9 @@ func main() {
 
 :::
 
-::: details 测试2: 等待所有协程执行完再退出-使用WaitGroup-方式1
+####  等待Goroutine执行完成
+
+::: details 等待所有协程执行完再退出-使用WaitGroup-方式1
 
 ```go
 package main
@@ -3290,6 +3292,7 @@ import (
 	"sync"
 )
 
+// 声明WaitGroup
 var wg sync.WaitGroup
 
 func taskA() {
@@ -3326,7 +3329,7 @@ func main() {
 
 :::
 
-::: details 测试3: 等待所有协程执行完再退出-使用WaitGroup-方式2（推荐）
+::: details 等待所有协程执行完再退出-使用WaitGroup-方式2（推荐）
 
 ```go
 package main
@@ -3373,6 +3376,68 @@ func main() {
 ```
 
 :::
+
+::: details 等待所有协程执行完再退出-使用 Channel
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func taskA(ch chan struct{}) {
+	for i := 0; i <= 10; i++ {
+		fmt.Println(i)
+	}
+	ch <- struct{}{}
+}
+
+func taskB(ch chan struct{}) {
+	for i := 'A'; i <= 'Z'; i++ {
+		fmt.Printf("%c\n", i)
+	}
+	ch <- struct{}{}
+}
+
+func main() {
+	fmt.Println("start")
+
+	// 初始化channel
+	n := 2 // 代表启动几个groutine
+	ch := make(chan struct{}, n)
+
+	go taskA(ch) // 启动一个协程
+	go taskB(ch) // 启动另一个协程
+
+	// 阻塞
+	for i := 0; i < n; i++ {
+		<-ch
+	}
+
+	fmt.Println("end")
+}
+
+// 输出结果
+// start
+// A
+// 内容太多省略...	
+// 10
+// end
+```
+
+:::
+
+#### Goroutine相关函数
+
+| 函数                     | 说明                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| `runtime.NumGoroutine()` | 返回当前存在的`Goroutine`数量                                |
+| `runtime.Gosched()`      | 暂停当前`Goroutine`，由Go自动调度其他`Goroutine`执行         |
+| `runtime.Goexit()`       | 退出当前`Goroutine`                                          |
+| `runtime.GOMAXPROCS(n)`  | 设置可以使用的最大CPU数量，默认值为`runtime.NumCPU()`；返回上一次设置的值 |
+
+
 
 ### Channel
 
@@ -3511,47 +3576,7 @@ func main() {
 2022/04/17 11:51:34 Read from Channel 34
 ```
 
-::: details 测试2: 代替WaitGroup
 
-```go
-package main
-
-import (
-	"fmt"
-)
-
-func taskA(ch chan struct{}) {
-	for i := 0; i <= 10; i++ {
-		fmt.Println(i)
-	}
-	ch <- struct{}{}
-}
-
-func taskB(ch chan struct{}) {
-	for i := 'A'; i <= 'Z'; i++ {
-		fmt.Printf("%c\n", i)
-	}
-	ch <- struct{}{}
-}
-
-func main() {
-	fmt.Println("start")
-
-	// 声明并初始化channel, 这里channel的作用仅是做通知用，所以使用空结构体（不占空间）
-	ch := make(chan struct{})
-
-	go taskA(ch) // 启动一个协程
-	go taskB(ch) // 启动另一个协程
-
-	// 读取数据, 利用无缓冲channel 读取之前未写入会阻塞的特性
-	for i := 0; i < 2; i++ {
-		<-ch
-	}
-	fmt.Println("end")
-}
-```
-
-:::
 
 #### 带缓冲区`Channel`
 
@@ -3885,7 +3910,7 @@ func main() {
 
 :::
 
-#### select
+#### 多路复用select
 
 **说明**
 
@@ -3894,6 +3919,7 @@ func main() {
 * 每个`case `表达式中都只能包含操作`Channel`的表达式，比如读或写
 * 如果有多个`case `都可以运行，`select`会随机公平地选出一个执行，其他不会执行
 * 如果多个`case `都不能运行，若有`default `子句，则执行该语句，反之，`select `将阻塞，直到某个`case `可以运行
+* 空`select`会一直阻塞
 
 
 
@@ -3947,7 +3973,136 @@ func main() {
 
 :::
 
-**应用**
+**for{ select }问题**
+
+当需要循环操作时需要与`for`连用，这时候如果`select`中含有`break`，那么只能跳出`select`层而不能跳出`for`循环，下面演示一下
+
+::: details 问题代码：for{ select }中只能跳出select不能跳出for循环
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始化channel
+	ch := make(chan int, 10)
+
+	// 抽奖，获奖的ID放入channel中
+	go func() {
+		rand.Seed(time.Now().UnixNano())
+		for range time.Tick(time.Second) {
+			ch <- rand.Intn(500)
+		}
+	}()
+
+	// 开奖，从channel中读数据
+	for {
+		select {
+		case v := <-ch:
+			if v >= 100 && v <= 400 { // 为了提高中奖几率..
+				fmt.Println("恭喜你中奖了，请去领奖")
+				break
+			}
+		}
+	}
+
+	// 领奖
+	fmt.Println("感谢CCTV, 感谢MTV, 感谢党和人民的栽培...")
+}
+```
+
+:::
+
+::: details 修正-方式1：使用break 标签
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始化channel
+	ch := make(chan int, 10)
+
+	// 抽奖，获奖的ID放入channel中
+	go func() {
+		rand.Seed(time.Now().UnixNano())
+		for range time.Tick(time.Second) {
+			ch <- rand.Intn(500)
+		}
+	}()
+
+	// 开奖，从channel中读数据
+ForEnd:		// 添加一个标签
+	for {
+		select {
+		case v := <-ch:
+			if v >= 100 && v <= 400 { // 为了提高中奖几率..
+				fmt.Println("恭喜你中奖了，请去领奖")
+				break ForEnd	// 跳出此标签
+			}
+		}
+	}
+
+	// 领奖
+	fmt.Println("感谢CCTV, 感谢MTV, 感谢党和人民的栽培...")
+}
+```
+
+:::
+
+::: details 修正-方式2：使用goto 标签
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始化channel
+	ch := make(chan int, 10)
+
+	// 抽奖，获奖的ID放入channel中
+	go func() {
+		rand.Seed(time.Now().UnixNano())
+		for range time.Tick(time.Second) {
+			ch <- rand.Intn(500)
+		}
+	}()
+
+	// 开奖，从channel中读数据
+	for {
+		select {
+		case v := <-ch:
+			if v >= 100 && v <= 400 { // 为了提高中奖几率..
+				fmt.Println("恭喜你中奖了，请去领奖")
+				goto ForEnd	// 跳到指定标签
+			}
+		}
+	}
+ForEnd: // 定义标签
+
+	// 领奖
+	fmt.Println("感谢CCTV, 感谢MTV, 感谢党和人民的栽培...")
+}
+```
+
+:::
+
+#### 练习:select:设置函数执行超时时间
 
 ::: details 设置函数执行超时时间（有问题版本，主要是学习超时核心逻辑）
 
@@ -3995,15 +4150,15 @@ func main() {
 
 :::
 
-::: details 设置函数执行超时时间（优化）
+::: details 设置函数执行超时时间（优化后版本，还算完美）
 
 * 单独封装了一个函数
 
-* `Goroutine`泄漏问题将无缓冲的`channel`改为带缓冲区的`channel`，但仍需要原本的`Add`函数执行完成后才会退出AddWithTimeout内部启动的协程。
+* `Goroutine`泄漏问题将无缓冲的`channel`改为带缓冲区的`channel`，但仍需要原本的`Add`函数执行完成后才会退出`AddWithTimeout`内部启动的协程。
 
   Go不支持外部杀死一个正在运行的协程，参考：[https://github.com/golang/go/issues/32610](https://github.com/golang/go/issues/32610)
 
-* 传递错误
+* 添加传递错误，`channel`修改为通知型
 
 ```go
 package main
@@ -4016,44 +4171,42 @@ import (
 	"time"
 )
 
-func Add(x, y int) int {
-	time.Sleep(time.Second * 10) // 模拟函数耗时操作
-	return x + y
+func Add(x, y int) (int, error) {
+	time.Sleep(time.Second * 5) // 模拟函数耗时操作
+	return x + y, nil
 }
 
-func AddWithTimeout(x, y, timeout int) (int, error) {
-	// 声明返回值
-	var result int
-	var err error
-
+func AddWithTimeout(x, y, timeout int) (ret int, err error) {
 	// 声明并初始化channel
-	ch := make(chan int, 1)
+	ch := make(chan struct{}, 1)
 
 	// 执行协程
 	go func() {
-		ret := Add(x, y) // 这个是我们原有的函数,并不做任何修改
-		ch <- ret
+		ret, err = Add(x, y) // 这个是我们原有的函数,并不做任何修改
+		ch <- struct{}{}
 	}()
 
 	// 超时控制
 	select {
 	case <-time.After(time.Millisecond * time.Duration(timeout)):
 		err = errors.New(fmt.Sprintf("Function executed for more than %d seconds: AddWithTimeout(%d, %d)", timeout, x, y))
-	case v := <-ch:
-		result = v
+	case <-ch:
 	}
-
-	return result, err
+	return
 }
 
 func main() {
+    // 开启多个协程
 	for i := 0; i < 100000; i++ {
 		go func() {
-			_, err := AddWithTimeout(1, 2, 3000)
+			ret, err := AddWithTimeout(1, 2, 5000)
+			ret = ret
 			err = err
+			//fmt.Printf("执行结果: %d, %v\n", ret, err)
 		}()
 	}
 
+    // 每隔1秒输出当前Goroutine数量
 	for range time.Tick(time.Second) {
 		g := runtime.NumGoroutine()
 		log.Printf("当前Goroutine数量: %d\n", g)
@@ -4065,3 +4218,52 @@ func main() {
 ```
 
 :::
+
+#### 练习:channel:多个协程顺序打印数字
+
+有4个`goroutine`，每个`goroutine`打印一个数字，要求按照1``/2/3/4``这样的顺序打印输出
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+)
+
+type Token struct{}
+
+func newWorker(id int, ch chan Token, nextCh chan Token) {
+	for {
+		token := <-ch
+		log.Println(id + 1)
+		time.Sleep(time.Second)
+		nextCh <- token
+	}
+}
+
+func main() {
+	chs := []chan Token{
+		make(chan Token),
+		make(chan Token),
+		make(chan Token),
+		make(chan Token),
+	}
+
+	// 启动4个协程
+	for i := 0; i < 4; i++ {
+		go newWorker(i, chs[i], chs[(i+1)%4])
+	}
+
+	// 给第一个chan发送数据
+	chs[0] <- Token{}
+
+	// 会一直阻塞
+	select {}
+}
+```
+
+:::
+
