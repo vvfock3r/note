@@ -3229,7 +3229,7 @@ func main() {
 
 ## 
 
-## `Goroutine`
+## 并发编程
 
 ### `Goroutine`
 
@@ -4267,3 +4267,221 @@ func main() {
 
 :::
 
+
+
+### Context
+
+官方文档：[https://pkg.go.dev/context](https://pkg.go.dev/context)
+
+`context`是Go的标准库，用来管理`Goroutine`的上下文，`context`是并发安全的
+
+使用上下文的程序应遵循以下规则
+
+* 不要在结构类型中存储上下文；相反，将上下文显式地传递给每个需要它的函数
+* 上下文应该是第一个参数，通常命名为`ctx`
+* 即使函数允许，也不要传递nil上下文。如果您不确定要使用哪个上下文，请使用`context.TODO()`
+
+<br />
+
+#### `WithCancel`
+
+用来取消子协程，以及孙子协程，以及孙子的孙子协程等
+
+函数签名
+
+```go
+func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
+```
+
+示例代码
+
+::: details 先看一段正常的代码
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+func worker(wg *sync.WaitGroup) {
+    defer wg.Done()
+	for i := 0; i < 10; i++ {
+		log.Println(i + 1)
+		time.Sleep(time.Second)
+	}	
+}
+
+func main() {
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+
+	go worker(wg)
+
+	wg.Wait()
+}
+```
+
+:::
+
+::: details 对协程发送退出信号
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"sync"
+	"time"
+)
+
+func worker(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+LOOP:
+	for i := 0; i < 10; i++ {
+
+		// 退出信号
+		select {
+		case <-ctx.Done():
+			break LOOP
+		default:
+		}
+
+		// 业务代码
+		log.Println(i + 1)
+		time.Sleep(time.Second)
+	}
+}
+
+func main() {
+	// 初始化
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := new(sync.WaitGroup)
+
+	// 开始工作了
+	wg.Add(1)
+	go worker(ctx, wg)
+
+	// 5秒后退出
+	time.Sleep(time.Second * 5)
+	cancel()
+	wg.Wait()
+}
+```
+
+:::
+
+<br />
+
+#### `WithDeadline`和`WithTimeout`
+
+`WithDeadline`和`WithTimeout`是在`WithCancel`的基础上，增加了一个过期时间
+
+函数签名
+
+```go
+func WithDeadline(parent Context, d time.Time) (Context, CancelFunc)			// 增加一个具体的过期时间点
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)	// 增加一个相对的过期时间段
+```
+
+示例代码
+
+::: details 函数超时控制
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"sync"
+	"time"
+)
+
+func worker(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+LOOP:
+	for i := 0; i < 10; i++ {
+
+		// 退出信号
+		select {
+		case <-ctx.Done():
+			break LOOP
+		default:
+		}
+
+		// 业务代码
+		log.Println(i + 1)
+		time.Sleep(time.Second)
+	}
+}
+
+func main() {
+	// 初始化
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	wg := new(sync.WaitGroup)
+
+	// 开始工作了
+	wg.Add(1)
+	go worker(ctx, wg)
+
+	// 等待任务完成或超时
+	wg.Wait()
+	cancel()
+}
+```
+
+:::
+
+#### WithValue
+
+可以携带一个值
+
+函数签名
+
+```go
+func WithValue(parent Context, key, val any) Context
+```
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"sync"
+	"time"
+)
+
+func Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 0; i < 5; i++ {
+		log.Println(i)
+		time.Sleep(time.Second)
+	}
+	fmt.Println(ctx.Value("key"))
+}
+
+func main() {
+	// 初始化
+	ctx := context.WithValue(context.Background(), "key", "value")
+	wg := new(sync.WaitGroup)
+
+	// 工作
+	wg.Add(1)
+	go Work(ctx, wg)
+
+	// 等待工作完成
+	wg.Wait()
+}
+```
+
+:::
