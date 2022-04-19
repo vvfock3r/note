@@ -4488,7 +4488,9 @@ func main() {
 
 :::
 
-### 数据竞争
+### 并发原语
+
+#### 数据竞争
 
 并发读写共享资源的时候会出现数据竞争`（data race）`，所以需要并发原语来进行保护
 
@@ -4586,5 +4588,258 @@ func main() {
 // 10000
 ```
 
+#### 并发原语 - 锁
 
+锁接口
+
+```go
+// A Locker represents an object that can be locked and unlocked.
+type Locker interface {
+	Lock()
+	Unlock()
+}
+```
+
+互斥锁
+
+`sync.Mutex` 互斥锁，在某一时刻只能有一个协程可以拿到锁，拿不到的会一直阻塞，适合读少写多的场景
+
+```go
+Lock()		// 加锁
+Unlock()    // 解锁
+```
+
+读写锁
+
+`sync.RWMutex` 读写锁，在某一时刻只能由任意的`reader`持有，或者是只能被单个的`writer`持有，适合读多写少的场景
+
+```go
+Lock()/Unlock()     // 写操作调用的方法
+RLock()/RUnlock()   // 读操作调用的方法
+RLocker()           // 为读操作返回一个Locker接口的对象，他的Lock方法会调用RLock，他的Unlock会调用RUnlock
+```
+
+
+
+**💡 注意：未持有锁的协程也可以释放锁**
+
+::: details 测试代码-1
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+func main() {
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+
+	go func() {
+		mu.Lock()
+		log.Println("获取锁")
+		wg.Done()
+	}()
+
+	go func() {
+		time.Sleep(time.Second)
+		mu.Unlock()
+		log.Println("释放锁")
+		wg.Done()
+	}()
+
+	wg.Wait()
+}
+// 未持有锁的协程也可以释放锁，但是非常不推荐这么使用
+```
+
+:::
+
+::: details 测试代码-2
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+func main() {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	wg.Add(2)
+	go func() {
+		time.Sleep(time.Second * 1)
+		mu.Lock()
+		log.Println("f1 lock")
+
+		time.Sleep(time.Second * 10)
+		mu.Unlock()
+		log.Println("f1 unlock")
+
+		wg.Done()
+	}()
+
+	go func() {
+		time.Sleep(time.Second * 2)
+		mu.Unlock()
+		log.Println("f2 unlock")
+
+		time.Sleep(time.Second * 5)
+		mu.Lock()
+		log.Println("f2 lock")
+		wg.Done()
+	}()
+
+	wg.Wait()
+	log.Println("End")
+}
+```
+
+:::
+
+
+
+**利用读写锁设计一个并发安全的Map**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+)
+
+type RWMap struct {
+	sync.RWMutex
+	m map[int]int
+}
+
+func NewRWMap(n int) *RWMap {
+	return &RWMap{
+		m: make(map[int]int, n),
+	}
+}
+
+func (m *RWMap) Get(k int) (int, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	v, ok := m.m[k]
+	return v, ok
+}
+
+func (m *RWMap) Set(k int, v int) {
+	m.Lock()
+	defer m.Unlock()
+	m.m[k] = v
+}
+
+func (m *RWMap) Delete(k int) {
+	m.Lock()
+	defer m.Unlock()
+	delete(m.m, k)
+}
+
+func (m *RWMap) Len() int {
+	m.RLock()
+	defer m.RUnlock()
+	return len(m.m)
+}
+
+func (m *RWMap) Each(f func(k, v int) bool) {
+	m.RLock()
+	defer m.RUnlock()
+	for k, v := range m.m {
+		if !f(k, v) {
+			return
+		}
+	}
+}
+
+func main() {
+	// 初始化
+	var wg sync.WaitGroup
+	m := NewRWMap(1)
+
+	// 写数据
+	log.Println("开始写入数据")
+	for i := 0; i < 10000000; i++ {
+		wg.Add(1)
+		go func(i int) {
+			m.Set(i, i)
+			wg.Done()
+		}(i) // 注意这里要将i传入
+	}
+	wg.Wait()
+	log.Println("写入数据完成")
+
+	// 遍历
+	log.Println("开始遍历数据")
+	m.Each(func(k, v int) bool {
+		if k != v {
+			log.Printf("key is error: %d", k)
+		}
+		return true
+	})
+	log.Println("遍历数据完成")
+}
+```
+
+:::
+
+#### 并发原语 - Map
+
+`sync.Map`是Go为我们提供的并发安全的`Map`，适用于读多写少的场景
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var m sync.Map
+	var wg sync.WaitGroup
+
+	// 写数据，并发写
+	for i := 0; i <= 20; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			m.Store(i, i)
+		}(i)
+	}
+	wg.Wait()
+	// 写数据，支持不同的数据类型
+	m.Store("a", 1)
+	m.Store('a', "中国")
+
+	// 读数据
+	fmt.Println(m.Load(10))            // 读取
+	fmt.Println(m.LoadAndDelete(10))   // 读取并删除
+	fmt.Println(m.LoadOrStore(10, 20)) // 读取,第二个返回值代表是否读取到，若读不到则设置value为该值并返回
+
+	// 删除数据
+	m.Delete("a") // 无返回值
+	m.Delete("a")
+
+	// 遍历
+	m.Range(func(key, value any) bool {
+		fmt.Println(key, value)
+		return true
+	})
+}
+```
 
