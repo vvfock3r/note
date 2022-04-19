@@ -4358,6 +4358,8 @@ LOOP:
 
 func main() {
 	// 初始化
+    // Background返回一个空Context。它永远不会被取消，没有截止日期，也没有值。
+	// Background是所有Context树的根。
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 
@@ -4422,6 +4424,7 @@ LOOP:
 func main() {
 	// 初始化
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+    defer cancel()	// 这是一个好习惯
 	wg := new(sync.WaitGroup)
 
 	// 开始工作了
@@ -4430,7 +4433,6 @@ func main() {
 
 	// 等待任务完成或超时
 	wg.Wait()
-	cancel()
 }
 ```
 
@@ -4485,3 +4487,104 @@ func main() {
 ```
 
 :::
+
+### 数据竞争
+
+并发读写共享资源的时候会出现数据竞争`（data race）`，所以需要并发原语来进行保护
+
+<br />
+
+在编译`(cmpile)`、测试`（test）`、运行`（run）`前使用`-race`选项能检测数据竞争问题，
+
+他的原理是：在程序运行以后，会监控程序对内存地址访问，并打印出提示
+
+注意事项：
+
+* 如果程序在以后会访问某个资源，此时使用`-race`是检测不到的
+* 开启了`-race`不要部署到线上，因为会有性能问题，测试期间可以开启`-race`
+
+
+
+先准备一段代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var data int = 0
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			data++
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+
+// 每次运行结果都不一样，大概在为9600左右，原理是产生了数据竞争，data++不是一个原子操作，操作是可以被打断的
+// 比如说 有2个协程同时拿到了data为100，那么协程1给data+1=101，协程2也给data+1=101，经过这俩协程一番操作，data只增长了1，
+// 所以我们虽然循环了一万次，其实结果要<=10000，如果将上面的循环次数修改为100次，那么结果是正确的，但其实是还是有问题的
+```
+
+下面开启`--race`检测数据竞争
+
+```bash
+Goroutine 8 (running) created at:
+  main.main()
+      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
+
+Goroutine 7 (finished) created at:
+  main.main()
+      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
+==================
+10000
+Found 1 data race(s)	# 发现1个数据竞争
+exit status 66
+```
+
+最常用的办法就是使用锁，来看一下代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var data int = 0
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			mu.Lock()
+			data++
+			mu.Unlock()
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+
+// 运行并开启--race检测
+// go run -race main.go  
+// 10000
+```
+
+
+
