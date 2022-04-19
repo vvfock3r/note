@@ -4605,8 +4605,8 @@ type Locker interface {
 `sync.Mutex` 互斥锁，在某一时刻只能有一个协程可以拿到锁，拿不到的会一直阻塞，适合读少写多的场景
 
 ```go
-Lock()		// 加锁
-Unlock()    // 解锁
+Lock()/Unlock()		// 加锁/解锁
+TryLock()			// 尝试获取锁，返回布尔值，此函数不会阻塞
 ```
 
 读写锁
@@ -4614,9 +4614,10 @@ Unlock()    // 解锁
 `sync.RWMutex` 读写锁，在某一时刻只能由任意的`reader`持有，或者是只能被单个的`writer`持有，适合读多写少的场景
 
 ```go
-Lock()/Unlock()     // 写操作调用的方法
-RLock()/RUnlock()   // 读操作调用的方法
-RLocker()           // 为读操作返回一个Locker接口的对象，他的Lock方法会调用RLock，他的Unlock会调用RUnlock
+Lock()/Unlock()     	// 写操作调用的方法
+RLock()/RUnlock()   	// 读操作调用的方法
+TryLock()/TryRLock()	// 尝试获取锁,不会阻塞
+RLocker()           	// 为读操作返回一个Locker接口的对象，他的Lock方法会调用RLock，他的Unlock会调用RUnlock
 ```
 
 
@@ -4940,3 +4941,64 @@ func main() {
 
 #### 并发原语 - 只执行一次
 
+`sync.Once`只暴露了一个方法`Do`,多次调用`Do`方法，但是只有第一次调用`Do`方法时参数`f`函数才会执行，`f`函数是无参数无返回值的函数
+
+**单例模式与重置**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+type Person struct {
+	name string
+}
+
+var (
+	once   sync.Once
+	person *Person
+)
+
+func NewPerson(name string) *Person {
+	once.Do(func() {
+		person = &Person{name: name}
+	})
+	return person
+}
+
+func RestPerson() {
+	once = sync.Once{}
+}
+
+func main() {
+	// 单例模式
+	fmt.Printf("%p\n", NewPerson("a"))
+	fmt.Printf("%p\n", NewPerson("b"))
+
+	// 重置
+	RestPerson()
+    
+    // 继续单例模式
+	fmt.Printf("%p\n", NewPerson("c"))
+	fmt.Printf("%p\n", NewPerson("d"))
+}
+
+// 输出结果
+// 0xc00004a250
+// 0xc00004a250
+// 0xc00004a260
+// 0xc00004a260
+```
+
+:::
+
+>  👀  其他单例模式扩展
+>
+> 方法1：定义包级别的变量  
+> 方法2：包级别`init`函数初始化  
+> 方法3：在`main`函数中，执行一个初始化函数
