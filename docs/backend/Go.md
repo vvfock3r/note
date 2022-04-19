@@ -4708,7 +4708,9 @@ func main() {
 
 
 
-**利用读写锁设计一个并发安全的Map**
+#### 并发安全的Map的3种实现
+
+##### （1）原生Map+读写锁
 
 ::: details 点击查看完整代码
 
@@ -4725,38 +4727,37 @@ type RWMap struct {
 	m map[int]int
 }
 
+// 构造函数
 func NewRWMap(n int) *RWMap {
 	return &RWMap{
 		m: make(map[int]int, n),
 	}
 }
 
-func (m *RWMap) Get(k int) (int, bool) {
+// 读操作
+func (m *RWMap) Load(k int) (int, bool) {
 	m.RLock()
 	defer m.RUnlock()
 	v, ok := m.m[k]
 	return v, ok
 }
 
-func (m *RWMap) Set(k int, v int) {
+// 写操作
+func (m *RWMap) Store(k int, v int) {
 	m.Lock()
 	defer m.Unlock()
 	m.m[k] = v
 }
 
+// 删操作
 func (m *RWMap) Delete(k int) {
 	m.Lock()
 	defer m.Unlock()
 	delete(m.m, k)
 }
 
-func (m *RWMap) Len() int {
-	m.RLock()
-	defer m.RUnlock()
-	return len(m.m)
-}
-
-func (m *RWMap) Each(f func(k, v int) bool) {
+// 遍历操作
+func (m *RWMap) Range(f func(k, v int) bool) {
 	m.RLock()
 	defer m.RUnlock()
 	for k, v := range m.m {
@@ -4764,6 +4765,33 @@ func (m *RWMap) Each(f func(k, v int) bool) {
 			return
 		}
 	}
+}
+
+// 复合操作
+func (m *RWMap) LoadAndDelete(k int) (int, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	v, ok := m.m[k]
+	delete(m.m, k)
+	return v, ok
+}
+
+func (m *RWMap) LoadAndStore(k int, v int) (int, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	v, ok := m.m[k]
+	if ok {
+		return v, true
+	}
+	m.m[k] = v
+	return v, false
+}
+
+// 获取大小
+func (m *RWMap) Len() int {
+	m.RLock()
+	defer m.RUnlock()
+	return len(m.m)
 }
 
 func main() {
@@ -4776,7 +4804,7 @@ func main() {
 	for i := 0; i < 10000000; i++ {
 		wg.Add(1)
 		go func(i int) {
-			m.Set(i, i)
+			m.Store(i, i)
 			wg.Done()
 		}(i) // 注意这里要将i传入
 	}
@@ -4785,7 +4813,7 @@ func main() {
 
 	// 遍历
 	log.Println("开始遍历数据")
-	m.Each(func(k, v int) bool {
+	m.Range(func(k, v int) bool {
 		if k != v {
 			log.Printf("key is error: %d", k)
 		}
@@ -4797,9 +4825,13 @@ func main() {
 
 :::
 
-#### 并发原语 - Map
+##### （2）标准库 sync.Map
 
 `sync.Map`是Go为我们提供的并发安全的`Map`，适用于读多写少的场景
+
+（适用场景与原生`map` + `sync.RWMutex`类似，相比而言`sync.Map`读的性能更好写的性能更差）
+
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -4842,4 +4874,69 @@ func main() {
 	})
 }
 ```
+
+:::
+
+##### （3）第三方库：`map`分片
+
+`Github`地址：[https://github.com/orcaman/concurrent-map](https://github.com/orcaman/concurrent-map)
+
+`concurrent-map`提供了一种高性能的解决方案:通过对内部`map`进行分片，降低锁粒度，从而达到最少的锁等待时间(锁冲突)
+
+**实现逻辑**
+
+* 默认对`map`分了32片（每一片是一个结构体，每个结构体包含原生Map和读写锁），所有分片存储在一个切片中`[]*ConcurrentMapShared`
+* 每次操作时(增删改查)，先通过`GetShard(key)`获取`key`所在的分片，然后对分片加锁后再操作
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"github.com/orcaman/concurrent-map"
+	"log"
+	"strconv"
+	"sync"
+)
+
+func main() {
+	// 初始化
+	var wg sync.WaitGroup
+	m := cmap.New() // 初始化Map
+	loop := 1000000 // 循环次数
+
+	// 写数据，值必须为string，这是代码里写死的
+	for i := 0; i < loop; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			m.Set(strconv.Itoa(i), i*i)
+		}(i)
+	}
+	wg.Wait()
+
+	// 获取数据并校验
+	for i := 0; i < loop; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			if v, ok := m.Get(strconv.Itoa(i)); ok {
+				if v != i*i {
+					log.Printf("key err: %d\n", i)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+```
+
+:::
+
+
+
+#### 并发原语 - 只执行一次
 
