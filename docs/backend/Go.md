@@ -5002,3 +5002,57 @@ func main() {
 > 方法1：定义包级别的变量  
 > 方法2：包级别`init`函数初始化  
 > 方法3：在`main`函数中，执行一个初始化函数
+
+#### 并发原语 - 通用池Pool
+
+
+
+#### 并发原语 - 条件变量(不推荐)
+
+`sync.Cond`并不被推荐使用，这里权当了解一下
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+var done = false
+
+func read(name string, c *sync.Cond) {
+	c.L.Lock()
+	for !done {
+		c.Wait() // 会释放锁，被唤醒时又会重新获得锁
+	}
+	log.Println(name, "starts reading")
+	c.L.Unlock()
+}
+
+func write(name string, c *sync.Cond) {
+	log.Println(name, "starts writing")
+	time.Sleep(time.Second)
+	c.L.Lock()
+	done = true
+	c.L.Unlock()
+	log.Println(name, "wakes all")
+	c.Broadcast()
+}
+
+func main() {
+	cond := sync.NewCond(&sync.Mutex{})
+
+	go read("reader1", cond)
+	go read("reader2", cond)
+	go read("reader3", cond)
+	write("writer", cond)
+
+	time.Sleep(time.Second * 3)
+}
+```
+
+:::
