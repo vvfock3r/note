@@ -4709,7 +4709,7 @@ func main() {
 
 
 
-#### 并发安全的Map的3种实现
+#### 案例：并发安全的Map的3种实现
 
 ##### （1）原生Map+读写锁
 
@@ -5003,7 +5003,242 @@ func main() {
 > 方法2：包级别`init`函数初始化  
 > 方法3：在`main`函数中，执行一个初始化函数
 
-#### 并发原语 - 通用池Pool
+#### 并发原语 - 临时缓存池Pool
+
+`sync.Pool`是一个临时缓存池，并发安全
+
+**注意事项**
+
+* 池对象可以随时被垃圾回收掉，所以HTTP长连接、数据库长连接等不适合使用它
+* 池中要放入引用类型的对象，不然是对象的拷贝则起不到缓存池的作用
+* 在对象用完以后，放入池中之前，最好做一下清理工作，不然下次从池中会拿到一个有使用痕迹的对象
+* `Get()`和`Put(x)`是并发安全的，但是`New()`不是并发安全的，但是并不影响我们使用
+
+
+
+**定义和方法**
+
+```go
+// sync.Pool结构体定义
+type Pool struct {
+	... 			// 忽略
+	New func() any	// 当池为空时会调用此方法来创建对象并放入池中
+}
+
+// sync.Pool结构体方法
+func (p *Pool) Get() any {}		// 从池中取走一个元素，同时会在池中删除这个元素
+								// 如果Pool中没有元素了，会使用结构体的New方法创建一个元素
+        						// 如果结构体没有定义New方法，那么Get方法会返回nil，所以在使用Get时要判断nil的情况
+func (p *Pool) Put(x any) {}	// 将元素放到Pool，如果元素为nil，那么Pool会忽略这个值
+```
+
+**基本使用**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+type User struct {
+	Name string
+}
+
+func (u *User) Clean() {
+	u.Name = ""
+}
+
+func main() {
+	// 初始化池
+	pool := &sync.Pool{
+		New: func() interface{} {
+			return new(User)
+		}}
+
+	// 从池中获取对象
+	user := pool.Get().(*User)
+	fmt.Printf("%#v %p\n", user, user)
+
+	// 使用对象
+	user.Name = "bob"
+	fmt.Printf("%#v %p\n", user, user)
+
+	// 用完了，放回池中
+	user.Clean() // 放回池之前执行清理工作，不然下次从池中会拿到一个有使用痕迹的对象
+	pool.Put(user)
+
+	// 再次申请一个
+	user2 := pool.Get().(*User)
+	fmt.Printf("%#v %p\n", user2, user2)
+}
+
+// 输出结果
+// &main.User{Name:""} 0xc00004a250
+// &main.User{Name:"bob"} 0xc00004a250
+// &main.User{Name:""} 0xc00004a250
+```
+
+:::
+
+#### 案例：并发安全的字节池的2种实现
+
+##### （1）`sync.Pool`实现
+
+代码来自`Hugo`：[https://github.com/gohugoio/hugo](https://github.com/gohugoio/hugo)
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"sync"
+)
+
+var bufferPool = &sync.Pool{
+	New: func() any {
+		return &bytes.Buffer{}
+	},
+}
+
+// GetBuffer returns a buffer from the pool.
+func GetBuffer() (buf *bytes.Buffer) {
+	return bufferPool.Get().(*bytes.Buffer)
+}
+
+// PutBuffer returns a buffer to the pool.
+// The buffer is reset before it is put back into circulation.
+func PutBuffer(buf *bytes.Buffer) {
+	buf.Reset()
+	bufferPool.Put(buf)
+}
+
+func main() {
+	// 从池子取出对象
+	buf := GetBuffer()
+	fmt.Printf("长度: %d | 容量: %d\n", buf.Len(), buf.Cap())
+
+	// 使用
+	for i := 0; i < 10000; i++ {
+		buf.Write([]byte("Hello"))
+	}
+	fmt.Printf("长度: %d | 容量: %d\n", buf.Len(), buf.Cap())
+
+	// 放入池子
+	PutBuffer(buf)
+
+	// 再次从池子取出
+	buf2 := GetBuffer()
+	fmt.Printf("长度: %d | 容量: %d\n", buf2.Len(), buf2.Cap())
+}
+```
+
+:::
+
+##### （2）使用channel实现
+
+代码来自minio：[https://github.com/minio/minio](https://github.com/minio/minio)
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+// BytePoolCap implements a leaky pool of []byte in the form of a bounded channel.
+type BytePoolCap struct {
+	c    chan []byte
+	w    int
+	wcap int
+}
+
+// NewBytePoolCap creates a new BytePool bounded to the given maxSize, with new
+// byte arrays sized based on width.
+func NewBytePoolCap(maxSize int, width int, capwidth int) (bp *BytePoolCap) {
+	return &BytePoolCap{
+		c:    make(chan []byte, maxSize),
+		w:    width,
+		wcap: capwidth,
+	}
+}
+
+// Get gets a []byte from the BytePool, or creates a new one if none are
+// available in the pool.
+func (bp *BytePoolCap) Get() (b []byte) {
+	select {
+	case b = <-bp.c:
+	// reuse existing buffer
+	default:
+		// create new buffer
+		if bp.wcap > 0 {
+			b = make([]byte, bp.w, bp.wcap)
+		} else {
+			b = make([]byte, bp.w)
+		}
+	}
+	return
+}
+
+// Put returns the given Buffer to the BytePool.
+func (bp *BytePoolCap) Put(b []byte) {
+	select {
+	case bp.c <- b:
+		// buffer went back into pool
+	default:
+		// buffer didn't go back into pool, just discard
+	}
+}
+
+// Width returns the width of the byte arrays in this pool.
+func (bp *BytePoolCap) Width() (n int) {
+	return bp.w
+}
+
+// WidthCap returns the cap width of the byte arrays in this pool.
+func (bp *BytePoolCap) WidthCap() (n int) {
+	return bp.wcap
+}
+
+func main() {
+	// 初始化池子
+	pool := NewBytePoolCap(10000, 512, 512)
+
+	// 从池子取出对象
+	buf := pool.Get()
+	fmt.Printf("长度: %d | 容量: %d\n", len(buf), cap(buf))
+
+	// 使用
+	for i := 0; i < 10000; i++ {
+		buf = append(buf, 'h')
+	}
+	fmt.Printf("长度: %d | 容量: %d\n", len(buf), cap(buf))
+
+	// 放入池子
+	pool.Put(buf)
+
+	// 再次从池子取出
+	buf2 := pool.Get()
+	fmt.Printf("长度: %d | 容量: %d\n", len(buf2), cap(buf2))
+}
+```
+
+:::
+
+##### （3）可能需要的注意事项
+
+* 内存泄漏问题：
+  * 描述：当`byte`很大的时候，再放入池子，就会引起内存泄漏
+  * 解决：放回池子时判断`Byte`大小，如果很大就直接丢弃
+* 内存浪费问题：
+  * 描述：如果池子内的`buffer`比较大，但是实际用的话比较小，就存在浪费问题了
+  * 解决：定义多种规格的池子，按需使用
 
 
 
