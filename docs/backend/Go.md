@@ -5234,13 +5234,59 @@ func main() {
 ##### （3）可能需要的注意事项
 
 * 内存泄漏问题：
+
   * 描述：当`byte`很大的时候，再放入池子，就会引起内存泄漏
   * 解决：放回池子时判断`Byte`大小，如果很大就直接丢弃
+
+  * 参考实现：
+
+    ```go
+    // fmt包print.go文件
+    
+    // 定义池子
+    var ppFree = sync.Pool{
+    	New: func() any { return new(pp) },
+    }
+    
+    // 放回池子操作
+    func (p *pp) free() {
+    	// Proper usage of a sync.Pool requires each entry to have approximately
+    	// the same memory cost. To obtain this property when the stored type
+    	// contains a variably-sized buffer, we add a hard limit on the maximum buffer
+    	// to place back in the pool.
+    	//
+    	// See https://golang.org/issue/23199
+    	if cap(p.buf) > 64<<10 {	// 容量过大则丢弃
+    		return
+    	}
+    
+    	p.buf = p.buf[:0]
+    	p.arg = nil
+    	p.value = reflect.Value{}
+    	p.wrappedErr = nil
+    	ppFree.Put(p)
+    }
+    ```
+
 * 内存浪费问题：
+
   * 描述：如果池子内的`buffer`比较大，但是实际用的话比较小，就存在浪费问题了
+
   * 解决：定义多种规格的池子，按需使用
 
+  * 参考实现：
 
+    ```go
+    // net/http包server.go
+    
+    var (
+    	bufioReaderPool   sync.Pool
+    	bufioWriter2kPool sync.Pool
+    	bufioWriter4kPool sync.Pool
+    )
+    ```
+
+    
 
 #### 并发原语 - 条件变量(不推荐)
 
