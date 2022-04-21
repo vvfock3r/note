@@ -5519,3 +5519,32 @@ func main() {
 
 :::
 
+#### 原子操作举例
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+func main() {
+	var data int64 = 0
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			//data++ // 非原子操作，这会引起数据竞争
+			atomic.AddInt64(&data, 1) // 原子操作
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+```
+
