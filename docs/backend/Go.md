@@ -5352,3 +5352,170 @@ func main() {
 
 ### sync/atomic
 
+官方文档：[https://pkg.go.dev/sync/atomic](https://pkg.go.dev/sync/atomic)
+
+`sync/atomic`包提供了一系列原子相关操作
+
+**特点**
+
+* 原子操作是不允许中断的（`interrupt`），所以可以实现无锁并发（`lock free`）
+* 原子操作是不允许中断的（`interrupt`），所以它必须很快，所以提供的原子方法数量很少
+* 原子操作由底层硬件实现，`Mutex`是由操作系统实现的，所以原子操作性能更好
+
+#### **基本数据类型-原子操作**
+
+| 分类       | 方法                                                         | 说明                                                         |
+| ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 加减法     | (1)`AddInt32(addr *int32, delta int32) (new int32)`<br />(2)`AddInt64(addr *int64, delta int64) (new int64)`<br />(3)`AddUint32(addr *uint32, delta uint32) (new uint32)`<br />(4)`AddUint64(addr *uint64, delta uint64) (new uint64)`<br />(5)`AddUintptr(addr *uintptr, delta uintptr) (new uintptr)` | （1）减法需要注意：<br />对于`Int`类型，加一个负数即可<br />对于`Uint`类型，使用位运算来得到负数<br />（2）这个只支持5种数据类型 |
+| 交换       | (1)`SwapInt32(addr *int32, new int32) (old int32)`<br />(2)`SwapInt64(addr *int64, new int64) (old int64)`<br />(3)`SwapUint32(addr *uint32, new uint32) (old uint32)`<br />(4)`SwapUint64(addr *uint64, new uint64) (old uint64)`<br />(5)`SwapUintptr(addr *uintptr, new uintptr) (old uintptr)`<br />(6)`SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer) (old unsafe.Pointer)` | "赋值"并返回旧值                                             |
+| 比较并交换 | (1)`CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)`<br />(2)`CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool)`<br />(3)`CompareAndSwapUint32(addr *uint32, old, new uint32) (swapped bool)`<br />(4)`CompareAndSwapUint64(addr *uint64, old, new uint64) (swapped bool)`<br />(5)`CompareAndSwapUintptr(addr *uintptr, old, new uintptr) (swapped bool)`<br />(6)`CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapped bool)` | "比较并赋值"并返回旧值                                       |
+| 加载       | (1)`LoadInt32(addr *int32) (val int32)`<br />(2)`LoadInt64(addr *int64) (val int64)`<br />(3)`LoadUint32(addr *uint32) (val uint32)`<br />(4)`LoadUint64(addr *uint64) (val uint64)`<br />(5)`LoadUintptr(addr *uintptr) (val uintptr)`<br />(6)`LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)` | "读取"变量的值                                               |
+| 存储       | (1)`StoreInt32(addr *int32, val int32)`<br />(2)`StoreInt64(addr *int64, val int64)`<br />(3)`StoreUint32(addr *uint32, val uint32)`<br />(4)`StoreUint64(addr *uint64, val uint64)`<br />(5)`StoreUintptr(addr *uintptr, val uintptr)`<br />(6)`StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)` | "赋值"不会返回旧值<br />这个和`Swap`系列函数很像             |
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync/atomic"
+)
+
+func Add() {
+	// 加法
+	var x int32 = 100
+	var y uint32 = 1000
+
+	// 因为x是有符号整数，可以减法可以写成加法，-1 -> + -1
+	atomic.AddInt32(&x, int32(-1))
+
+	// 因为y是无符号整数，所以不能使用uint32(-1)
+	// 这时候可以使用^作为一元运算符使用，按位取反，得到-1
+	atomic.AddUint32(&y, ^uint32(0))
+
+	fmt.Printf("加减法:\n")
+	fmt.Printf("x = %d\n", x)
+	fmt.Printf("y = %d\n", y)
+}
+
+func Swap() {
+	fmt.Printf("\n交换:\n")
+	var x int32 = -100
+	var y int32 = 200
+	old := atomic.SwapInt32(&x, y) // y值保持不变，x值更新为y值，old为x的旧值
+	fmt.Printf("x = %d\n", x)
+	fmt.Printf("y = %d\n", y)
+	fmt.Printf("old = %d\n", old)	
+}
+
+func CompareAndSwap() {
+	// 先比较，再决定是否覆盖
+	// 如果x == y，那么用z覆盖x，并返回true
+	// 如果x != y，那么什么都不做，并返回false
+	fmt.Printf("\n比较并交换:\n")
+	var x int32 = -300
+	var y int32 = -300
+	var z int32 = 400
+	if atomic.CompareAndSwapInt32(&x, y, z) {
+		fmt.Printf("比较并交换成功: %d %d %d\n", x, y, z)
+	} else {
+		fmt.Printf("比较并交换失败: %d %d %d\n", x, y, z)
+	}
+}
+
+func Load() {
+	fmt.Printf("\n加载:\n")
+	var x int32 = -999
+	fmt.Printf("x = %d\n", atomic.LoadInt32(&x)) // -999
+}
+
+func Store() {
+	fmt.Printf("\n存储:\n")
+	var x int32 = 888
+	atomic.StoreInt32(&x, int32(222))
+	fmt.Printf("x = %d\n", x) // 222
+}
+
+func main() {
+	Add()
+	Swap()
+	CompareAndSwap()
+	Load()
+	Store()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+加减法:
+x = 99                      
+y = 999                     
+                            
+交换:                       
+x = 200                     
+y = 200                     
+old = -100                  
+                            
+比较并交换:                 
+比较并交换成功: 400 -300 400
+                            
+载入:                       
+x = -999                    
+                            
+存储:                       
+x = 222
+```
+
+#### 任意数据类型-原子操作
+
+如果是其他类型的数据，`atomic`为我们提供了`Value`结构体来原子操作
+
+注意事项
+
+* 默认为`nil`值
+* 原子值存储的第一个值，决定了它今后能且只能存储哪一个类型的值
+* 切片、映射等不支持"比较并交换"
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync/atomic"
+)
+
+func main() {
+	// 初始化
+	var v atomic.Value
+
+	// 存储任意数据类型
+	v.Store("hello")
+
+	// 加载任意数据类型
+	x := v.Load().(string)
+	fmt.Printf("x的数据类型: %T | x的值: %#v\n", x, x)
+
+	// 交换
+	v.Swap("world!")
+
+	// 比较并交换
+	if v.CompareAndSwap("world!", "hello world!") {
+		fmt.Printf("比较并交换成功: %s\n", v.Load())
+	} else {
+		fmt.Printf("比较并交换失败: %s\n", v.Load())
+	}
+}
+```
+
+:::
+
