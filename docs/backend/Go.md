@@ -464,6 +464,7 @@ func BitReverse() {
 	for _, v := range []uint8{0, 1, 2} {
 		fmt.Printf("^uint8(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
 	}
+    // 备注: 这里我们将^作为一元运算符使用，它还可以作为二元运算符使用。
 }
 
 func LeftShift() {
@@ -697,6 +698,14 @@ switch-fallthrough判断
 100                   
 200
 ```
+
+### 单元测试和性能测试
+
+
+
+
+
+
 
 ## 
 
@@ -5829,3 +5838,8 @@ func main() {
 }
 ```
 
+
+
+## IO
+
+待补充
