@@ -699,13 +699,93 @@ switch-fallthrough判断
 200
 ```
 
-### 单元测试和性能测试
+### 测试基础
 
+| 功能\属性 | 文件名要求               | 函数签名要求                | 执行命令                                    |
+| --------- | ------------------------ | --------------------------- | ------------------------------------------- |
+| 单元测试  | 文件名要以`_test.go`结尾 | `TestXX(t *testing.T)`      | 测试当前目录下所有文件：`go test .`         |
+| 性能测试  | 文件名要以`_test.go`结尾 | `BenchmarkXX(b *testing.B)` | 测试当前目录下所有文件：`go test -bench . ` |
 
+**单元测试举例**
 
+::: details 点击查看完整代码
 
+```go
+package main
 
+import "testing"
 
+func Add(n1, n2 int) int {
+	return n1 + n2
+}
+
+func TestAdd(t *testing.T) {
+	tests := []struct{ a, b, c int }{
+		{1, 2, 3},
+		{4, 5, 9},
+		{5, 6, 11},
+		{6, 7, 14}, // 这里故意写错
+	}
+
+	for _, v := range tests {
+		if ret := Add(v.a, v.b); ret != v.c {
+			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
+		}
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+=== RUN   TestAdd
+    a_test.go:19: Add(6, 7) got 13, expectd 14
+--- FAIL: TestAdd (0.00s)
+
+FAIL
+```
+
+**性能测试举例**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "testing"
+
+func Add(n1, n2 int) int {
+	return n1 + n2
+}
+
+func BenchmarkAdd(b *testing.B) {
+	x := 10000
+	y := -25000
+	z := -15000
+
+	// 这里是重置时间，如果上面有耗时初始化的话可以添加这一句
+	b.ResetTimer()
+
+	// b.N是性能测试为我们提供的计数器
+	for i := 0; i < b.N; i++ {
+		if v := Add(x, y); v != z {
+			b.Errorf("Add(%d, %d) got %d, expectd %d\n", x, y, v, z)
+		}
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+BenchmarkAdd-8          1000000000               0.2460 ns/op
+PASS
+ok      learn   0.956s
+```
 
 ## 
 
