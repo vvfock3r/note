@@ -1648,7 +1648,189 @@ func main() {
 
 > 更好的实现set的方法是使用结构体，参考《空结构体》章节
 
-### 数据类型总结🎉
+### 基本数据类型转换
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"math"
+	"strconv"
+)
+
+func Int2Float() {
+	fmt.Printf("Int转Float:\n")
+	x := 99
+	fmt.Printf("%T\n", float32(x))
+}
+func Float2Int() {
+	fmt.Printf("\nFloat转Int:\n")
+
+	// 小数部分会被截断
+	x := 100.7
+	y := -3.9
+	fmt.Printf("%T %d\n", int64(x), int64(x)) // 100
+	fmt.Printf("%T %d\n", int64(y), int64(y)) // -3
+
+	// 注意：
+	//fmt.Printf("%T\n", int64(3.0)) // 不会报错
+	//fmt.Printf("%T\n", int64(3.1)) // 会报错,小数部分不为0直接转就会报错
+}
+func CeilAndFloorAndRound() {
+	fmt.Printf("\n向上取整/向下取整/四舍五入:\n")
+	// 向上取整，函数签名：Ceil(x float64) float64
+	x := 1.11
+	fmt.Printf("%T %f\n", math.Ceil(x), math.Ceil(x)) // float64 2.000000
+
+	// 向下取整，函数签名：Floor(x float64) float64
+	y := 1.99
+	fmt.Printf("%T %f\n", math.Floor(y), math.Floor(y)) // float64 1.000000
+
+	// 四舍五入，函数签名：
+	fmt.Printf("%T %f\n", math.Round(1.49), math.Round(1.49)) // float64 1.000000
+}
+func AddQuote() {
+	fmt.Printf("\n输出添加双引号/单引号:\n")
+	fmt.Println(strconv.Quote("字符串"))
+	fmt.Println(strconv.QuoteRune('字'))
+}
+
+func String2Int() {
+	fmt.Printf("\n字符串转数字:\n")
+
+	// 函数签名：Atoi(s string) (int, error)，等同于 ParseInt(s, 10, 0)
+	if i, err := strconv.Atoi("10"); err == nil {
+		fmt.Println(i)
+	}
+
+	// 函数签名：ParseInt(s string, base int, bitSize int) (i int64, err error)
+	// 指定字符串为10进制数字，转换到int8类型 (0:int、8:int8、16:int16、32:int32、64:int64)
+	// 用法一样的还有：ParseUint(s string, base int, bitSize int) (uint64, error)
+	if i, err := strconv.ParseInt("b", 16, 8); err == nil {
+		fmt.Println(i)
+	}
+
+	// 函数签名：ParseFloat(s string, bitSize int) (float64, error)
+	if i, err := strconv.ParseFloat("1.20", 16); err == nil {
+		fmt.Println(i)
+	}
+}
+func String2Bool() {
+	fmt.Printf("\n字符串转布尔:\n")
+	// 转换规则代码：
+	//switch str {
+	//case "1", "t", "T", "true", "TRUE", "True":
+	//	return true, nil
+	//case "0", "f", "F", "false", "FALSE", "False":
+	//	return false, nil
+	//}
+	// 如果是TRue，这种字符串就无法转换了，可以先使用strings.ToLower或strings.ToUpper转换后再转为布尔值
+	if b, err := strconv.ParseBool("true"); err == nil {
+		fmt.Printf("%T %v\n", b, b)
+	}
+}
+func Int2String() {
+	fmt.Printf("\n数字转字符串:\n")
+
+	// int -> 字符串
+	x := strconv.Itoa(100)
+	fmt.Printf("%T %s\n", x, x)
+
+	// 函数签名：FormatInt(i int64, base int) string，base代表是多少进制的数字
+	// 先转成10进制数字，然后转为数字
+	// 用法一样的函数还有strconv.FormatUint
+	y := strconv.FormatInt(11, 8)
+	fmt.Printf("%T %s\n", y, y)
+}
+func Bool2String() {
+	fmt.Printf("\n布尔转字符串:\n")
+
+	// 函数签名：FormatBool(b bool) string
+	// 返回 "true" or "false"
+	fmt.Printf("%s\n", strconv.FormatBool(false))
+}
+func Any2String() {
+	fmt.Printf("\n任意数据类型转字符串:\n")
+
+	// 这里以float举例
+
+	// float -> 字符串
+	y := fmt.Sprintf("%.2f", 3.1415926)
+	fmt.Printf("%T %s\n", y, y)
+}
+
+func main() {
+	// ----------------------- 数字之间转换 ------------------
+	// 数字之间转换
+	Int2Float()
+	Float2Int()
+
+	// 数字向上取整/向下取整/四舍五入
+	CeilAndFloorAndRound()
+
+	// ----------------------- 字符串之间转换 ------------------
+	// 字节/Rune/字符串之间的转换参考strings/bytes/unicode包
+	AddQuote() // 输出添加双引号/单引号
+
+	// ----------------------- 字符串转到其他类型 Parse系列函数------------------
+	String2Int()
+	String2Bool()
+
+	// ----------------------- 其他类型转到字符串 Format系列函数------------------
+	Int2String()
+	Bool2String()
+	Any2String()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+Int转Float:
+float32                    
+                           
+Float转Int:                
+int64 100                  
+int64 -3                   
+                           
+向上取整/向下取整/四舍五入:
+float64 2.000000           
+float64 1.000000           
+float64 1.000000           
+                           
+输出添加双引号/单引号:     
+"字符串"                   
+'字'                       
+                           
+字符串转数字:              
+10                         
+11                         
+1.2                        
+                           
+字符串转布尔:              
+bool true                  
+                           
+数字转字符串:              
+string 100
+string 13
+
+布尔转字符串:
+false
+
+任意数据类型转字符串:
+string 3.14
+```
+
+
+
+
+
+### 基本数据类型总结🎉
 
 | 数据类型 | 元素是否有序 | 值类型/引用类型 | 指针类型初始化关键字 | 零值               |
 | -------- | ------------ | --------------- | -------------------- | ------------------ |
@@ -5358,7 +5540,7 @@ func main() {
 
 **特点**
 
-* 原子操作是不允许中断的（`interrupt`），所以可以实现无锁并发（`lock free`）
+* 原子操作是不允许中断的（`interrupt`），所以可以实现无锁并发（`lock-free`）
 * 原子操作是不允许中断的（`interrupt`），所以它必须很快，所以提供的原子方法数量很少
 * 原子操作由底层硬件实现，`Mutex`是由操作系统实现的，所以原子操作性能更好
 
