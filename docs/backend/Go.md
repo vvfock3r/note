@@ -5922,4 +5922,129 @@ func main() {
 
 ## IO
 
-待补充
+### 文件读写
+
+#### 打开或创建文件
+
+方式一：`OpenFile`
+
+```go
+OpenFile(name string, flag int, perm FileMode) (*File, error)
+```
+
+::: details 点击查看详细介绍
+
+```go
+// flag选项
+//	(1)打开模式（必须指定其一）
+//		os.O_RDONLY         以只读方式打开文件       如果文件不存在则报错
+//		os.O_WRONLY         以只写方式打开          如果文件不存在则报错
+//		os.O_RDWR           以读写方式打开文件       如果文件不存在则报错
+//	(2)辅助控制行为
+//		os.O_APPEND         追加方式写入
+//		os.O_CREATE         文件不存在则创建文件；Windows系统该属性会自带写属性                                          
+//		os.O_EXCL           文件必须不存在；使用场景比如：只允许进程打开自己的文件 或 多进程运行时退出，只允许单进程运行
+//		os.O_TRUNC          文件存在则截断（清空内容）
+
+// 常用flag组合选项
+//	读文件
+//		os.O_RDONLY                             读文件，文件不存在则报错
+//	写文件
+//		os.O_RDWR | os.O_CREATE                 写文件，当文件不存在时自动创建文件
+//		os.O_RDWR | os.O_CREATE | os.O_APPEND   写文件，当文件不存在时自动创建文件，当文件存在时追加内容
+//		os.O_RDWR | os.O_CREATE | os.O_TRUNC    写文件，当文件不存在时自动创建文件，当文件存在时清空文件内容
+
+// perm选项
+// 	文件权限
+//	(1)只有在创建文件时才有用，当不需要创建文件时可以设置为0
+//	(2)内置常量os.ModePerm = 0777
+```
+
+:::
+
+方式二：`Open`
+
+```go
+func Open(name string) (*File, error) {
+	return OpenFile(name, O_RDONLY, 0)
+}
+
+// 核心为OpenFile，以只读模式打开文件，当文件不存在时会报错
+```
+
+方式三：`Create`
+
+```go
+func Create(name string) (*File, error) {
+	return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666)
+}
+
+// 核心为OpenFile，当文件不存在时会创建，当文件存在时会清空文件内容
+// 使用时多加注意，不要误清空了文件内容!!!
+```
+
+#### 文件/目录操作函数
+
+| 分类               | 函数                                             | 说明                                                         |
+| ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
+| 创建临时文件或目录 | `CreateTemp(dir, pattern string) (*File, error)` | 创建临时文件，返回临时文件的路径<br />（1）`dir`指定在哪个目录下创建临时目录，为空会使用用户默认临时目录<br />（2）`pattern `指定文件名前缀，如果包含`*`，那么代指整个文件名，<br />`*`被替换为随机字符串 |
+|                    | `MkdirTemp(dir, pattern string) (string, error)` | 同上，只不过创建的是临时目录                                 |
+| 创建目录           | `Mkdir(name string, perm FileMode) error`        | 创建目录；<br />（1）不支持创建多级目录<br />（2）目录存在时会报错 |
+|                    | `MkdirAll(path string, perm FileMode) error`     | 创建目录<br />（1）支持创建多级目录<br />（2）目录存在时会报错 |
+| 删除文件或目录     | `Remove(name string) error`                      | 删除文件或空目录，不存在时会报错                             |
+|                    | `RemoveAll(path string) error`                   | 删除文件或目录，支持非空目录，不存在时会报错                 |
+| 重命名             | `Rename(oldpath, newpath string) error`          | 文件或目录重命名                                             |
+| 文件详情           | `Stat(name string) (FileInfo, error)`            | 获取文件详情                                                 |
+|                    | `Lstat(name string) (FileInfo, error)`           | 同上，区别是对于链接文件，`Stat`具有穿透能力而`Lstat`没有    |
+| 判断是哪种错误     | `IsExist(err error) bool`                        | 是否是文件存在错误                                           |
+|                    | `IsNotExist(err error) bool`                     | 是否是文件不存在错误                                         |
+|                    | `IsPermission(err error) bool`                   | 是否是权限错误                                               |
+|                    | `IsTimeout(err error) bool`                      | 是否是超时错误                                               |
+
+判断文件或目录是否存在
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+// 判断文件或目录是否存在
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func main() {
+	for _, path := range []string{"main.go", "go.mod", "test.log", "C:\\Windows"} {
+		if exists, err := PathExists(path); err == nil {
+			fmt.Printf("%s exist: %t\n", path, exists)
+		} else {
+			fmt.Printf("%s exist: %t\n", path, "unknown")
+		}
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+main.go exist: true
+go.mod exist: true    
+test.log exist: false 
+C:\Windows exist: true
+```
+
+#### 文件读写函数
