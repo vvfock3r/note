@@ -3515,35 +3515,6 @@ String: 大家好, 我是张三, 性别男, 年龄18
 "String: 大家好, 我是张三, 性别男, 年龄18"
 ```
 
-#### Reader
-
-**定义**
-
-```go
-// io.Reader
-type Reader interface {
-	Read(p []byte) (n int, err error)
-}
-```
-
-> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`（`0<=n<=len(p)`）和错误
-
-**更详细的读取规则**
-
-（1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
-
-（2）读取失败，此时有`err != nil`，`err`代表具体的错误
-
-（3）读到`EOF`，此时支持以下两种处理情况：
-
-​		① 返回实际读取的字节数n，将`err`设置为`EOF`（推荐）
-
-​		② 返回实际读取的字节数n，将`err`设置为`nil`，对于这种情况，在下一次读取时需要返回`n == 0, err == nil`（不推荐）
-
-（4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
-
-:::
-
 ## 
 
 ## 并发编程
@@ -5869,7 +5840,9 @@ func main() {
 
 ## IO
 
-### os包基础文件读写
+### `os`包：基础文件读写
+
+官方文档：[https://pkg.go.dev/os](https://pkg.go.dev/os)
 
 #### 打开文件
 
@@ -6213,5 +6186,135 @@ func main() {
 2022/04/24 14:31:00 读取文件成功: D:\iso\CentOS-7-x86_64-DVD-1708.iso: 4521459712 bytes
 
 # 可以看到，4个多G的文件2秒钟读完了
+```
+
+### `io`包：IO基本接口定义
+
+官方文档：[https://pkg.go.dev/io](https://pkg.go.dev/io)
+
+#### Reader
+
+**Reader定义**
+
+```go
+// io.Reader
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+```
+
+> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`和`error`
+
+**Reader读取规则**
+
+（1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
+
+（2）读取失败，此时有`err != nil`，`err`代表具体的错误
+
+（3）读到`EOF`，此时支持以下两种处理情况：
+
+​		① 返回实际读取的字节数n，将`err`设置为`EOF`（推荐）
+
+​		② 返回实际读取的字节数n，将`err`设置为`nil`，对于这种情况，在下一次读取时需要返回`n == 0, err == nil`（不推荐）
+
+（4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
+
+**Reader接口的几种实现**
+
+| 结构体/接口                                                  | 具体实现                           | 备注                                                         |
+| ------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------ |
+| 从文件中读：<br />`os.File`结构体                            | `os.OpenFile()`                    | 文件读取                                                     |
+|                                                              | `os.Stdin`/`os.Stdout`/`os.Stderr` | 主要为标准输入读取`Stdin`                                    |
+| 从字符串中读：<br />`strings.Reader`结构体                   | `strings.NewReader()`              | `Reader`接口：本质是调用内置函数`copy`，无法读取中文<br />`RuneReader`接口：本质是按字节遍历，如果字节在ASCII码范围内<br />则使用`rune`包装一下返回，否则调用`utf8.DecodeRuneInString`解码出第一个`Rune`并返回 |
+| 从字节中读：<br />`bytes.Reader`结构体                       | `bytes.NewReader()`                | 类似于`strings.Reader`结构体                                 |
+| 从缓冲中读：<br />`bytes.Buffer`结构体<br />`bufio.Reader`结构体 | 详细介绍见后面章节                 | 详细介绍见后面章节                                           |
+| 从网络连接中读：<br />`net.Conn`接口                         | 以后补充                           | 以后补充                                                     |
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"time"
+)
+
+func ReadFromStdin() {
+	buf := make([]byte, 1024)
+	for {
+		// 读取输入
+		fmt.Printf("%s 请输入名字：", time.Now().Format("2006/01/02 15:04:05"))
+		n, err := os.Stdin.Read(buf)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// 解析输入
+		name := strings.TrimSpace(string(buf[:n]))
+
+		// 判断输入是否合法
+		if len(name) > 0 {
+			log.Printf("您的名字为: %s", name)
+			break
+		}
+	}
+}
+
+func ReadFromStringReader() {
+	reader := strings.NewReader("hello world!")
+	buf := make([]byte, 1024)
+	for {
+		n, err := reader.Read(buf)
+		if n > 0 {
+			log.Printf("%s\n", buf[:n])
+		}
+		if err == nil {
+			continue
+		}
+		if err == io.EOF {
+			break
+		}
+		log.Println("read error")
+	}
+}
+
+func ReadRuneFromStringReader() {
+	reader := strings.NewReader("a你好")
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+		}
+		log.Printf("%s", string(r))
+	}
+}
+
+func main() {
+	ReadFromStdin()
+	ReadFromStringReader()
+	ReadRuneFromStringReader()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/24 16:52:13 请输入名字：愤怒的西瓜
+2022/04/24 16:52:32 您的名字为: 愤怒的西瓜
+2022/04/24 16:52:32 hello world!
+2022/04/24 16:52:32 a
+2022/04/24 16:52:32 你
+2022/04/24 16:52:32 好
 ```
 
