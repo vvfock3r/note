@@ -3542,59 +3542,6 @@ type Reader interface {
 
 （4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
 
-读取文件示例
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-)
-
-func Read() {
-	// 打开文件
-	fileName := "test.log"
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("文件不存在: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 循环读取文件
-	buffer := make([]byte, 1024)
-	for {
-		n, err := f.Read(buffer)
-
-		// 处理数据
-		if n > 0 {
-            fmt.Printf("%s", buffer[:n])	// 注意这里[:n]
-		}
-
-		// 判断是否可以读取下一行
-		if err == nil {
-			continue
-		}
-
-		// 文件读取完成
-		if err == io.EOF {
-			break
-		}
-
-		// 文件读取失败
-		log.Fatalf("文件读取失败: %s:%s\n", fileName, err)
-	}
-}
-
-func main() {
-	Read()
-}
-```
-
 :::
 
 ## 
@@ -5922,9 +5869,9 @@ func main() {
 
 ## IO
 
-### 文件读写
+### os包基础文件读写
 
-#### 打开或创建文件
+#### 打开文件
 
 方式一：`OpenFile`
 
@@ -5983,7 +5930,7 @@ func Create(name string) (*File, error) {
 // 使用时多加注意，不要误清空了文件内容!!!
 ```
 
-#### 文件/目录操作函数
+#### 常规操作函数
 
 | 分类               | 函数                                             | 说明                                                         |
 | ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
@@ -6047,4 +5994,224 @@ test.log exist: false
 C:\Windows exist: true
 ```
 
-#### 文件读写函数
+#### 写入数据
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"os"
+)
+
+func main() {
+	// 打开文件，文件存在则清空内容，不存在则创建
+	f, err := os.OpenFile("test.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		log.Fatalf("Open file error: %s\n", err)
+	}
+	defer f.Close()
+
+	// 写入内容 - 字节
+	byteLine := []byte("人之初，性本善。性相近，习相远。")
+	byteLine = append(byteLine, '\n')
+	if _, err := f.Write(byteLine); err != nil {
+		log.Fatalf("Write error: %s", byteLine)
+	}
+
+	// 写入内容 - 字符串
+	stringLine := "苟不教，性乃迁。教之道，贵以专。"
+	stringLine = stringLine + "\n"
+	if _, err := f.WriteString(stringLine); err != nil {
+		log.Fatalf("Write error: %s", stringLine)
+	}
+
+	// 获取文件指针位置 (从当前位置开始，偏移为0的位置)
+	currentSeek, err := f.Seek(0, io.SeekCurrent)
+	if err != nil {
+		log.Fatalf("Get file current seek error: %s\n", err)
+	}
+
+	// 使用指针写入（写入的长度会将指针后面的内容覆盖）
+	// 这里我们使用”新“替换掉”贵以专。“中的”贵“,思路就是文件指针移动到”贵“字上，然后替换即可
+	// 偏移量计算：1('\n') + 12("贵新专。"，一个汉字3个字节，注意这里的句号是中文的，也计算在汉字里面) = 13
+	seekRune := []byte("新")
+	if _, err := f.WriteAt(seekRune, currentSeek-13); err != nil {
+		log.Fatalf("Write error: %s", byteLine)
+	}
+}
+```
+
+:::
+
+#### 读取数据
+
+`Read(b []byte) (n int, err error)`
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func Read() {
+	// 打开文件
+	fileName := "test.log"
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("文件不存在: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 循环读取文件
+	buffer := make([]byte, 1024)
+	for {
+		n, err := f.Read(buffer)
+
+		// 处理数据
+		if n > 0 {
+            fmt.Printf("%s", buffer[:n])	// 注意这里[:n]
+		}
+
+		// 判断是否可以读取下一行
+		if err == nil {
+			continue
+		}
+
+		// 文件读取完成
+		if err == io.EOF {
+			break
+		}
+
+		// 文件读取失败
+		log.Fatalf("文件读取失败: %s:%s\n", fileName, err)
+	}
+}
+
+func main() {
+	Read()
+}
+```
+
+:::
+
+`ReadAt(b []byte, off int64) (n int, err error)`
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func ReadAt() {
+	// 打开文件
+	fileName := "test.log"
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("文件不存在: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 获取文件指针(末尾)
+	seekEnd, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		log.Fatalf("File seek error: %s\n", err)
+	}
+
+	// ReadAt读取
+	buf := make([]byte, 4)
+	n, err := f.ReadAt(buf, seekEnd-4) // 读取文件末尾的4个字节，换行符1个字节，中文1个字节
+	if err != nil {
+		log.Fatalf("File readat error: %s\n", err)
+	}
+	fmt.Println(string(buf[:n]))
+}
+
+func main() {
+	ReadAt()
+}
+```
+
+:::
+
+#### 读写快捷函数
+
+`os.WriteFile`和`os.ReadFile`底层调用的是`OpenFile`，一次性加载数据到内存中，适合读取小文件，大文件有撑爆内存的风险
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+)
+
+func main() {
+	// 写入文件
+	writeFileName := "test.log"
+	err := os.WriteFile(writeFileName, []byte("Hello, 这里是测试日志"), os.ModePerm)
+	if err != nil {
+		log.Fatalf("写入文件失败: %s\n", writeFileName)
+	}
+	log.Printf("写入文件成功: %s\n", writeFileName)
+
+	// 函数源码如下：
+	//func WriteFile(name string, data []byte, perm FileMode) error {
+	//	f, err := OpenFile(name, O_WRONLY|O_CREATE|O_TRUNC, perm)
+	//	if err != nil {
+	//	return err
+	//}
+	//	_, err = f.Write(data)
+	//	if err1 := f.Close(); err1 != nil && err == nil {
+	//	err = err1
+	//}
+	//	return err
+	//}
+	// 可以看到，(1)读写模式打开文件 (2)文件若不存在会自动创建 (3)文件若存在则会截断(清空内容)，所以使用这个函数前需要小心一些
+
+	// 读取文件
+	readFileName := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
+	log.Printf("开始读取文件: %s\n", readFileName)
+	buf, err := os.ReadFile(readFileName)
+	if err != nil {
+		log.Fatalf("读取文件失败: %s: %s\n", readFileName, err)
+	}
+	log.Printf("读取文件成功: %s: %d bytes\n", readFileName, len(buf))
+	// 查看源码可以看到，
+	//		(1)使用Open打开文件
+	//		(2)当文件大小(int64类型)能正常转为int类型时，buf就取这个值；否则buf设置为512
+	//		   int最大值转为GB是多少呢？ math.MaxInt / 1024 / 1024 / 1024 = 8589934591
+	//		   当文件小于8589934591GB时，都是一次性读入内存中
+	// 		   所以使用这个函数，就等同于将文件一次性读入内存，请确保内存充足..
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/24 14:30:58 写入文件成功: test.log
+2022/04/24 14:30:58 开始读取文件: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+2022/04/24 14:31:00 读取文件成功: D:\iso\CentOS-7-x86_64-DVD-1708.iso: 4521459712 bytes
+
+# 可以看到，4个多G的文件2秒钟读完了
+```
+
