@@ -6022,6 +6022,7 @@ func main() {
 
 #### 读取数据
 
+**按字节从文件开始读取数据**
 `Read(b []byte) (n int, err error)`
 
 ::: details 点击查看完整代码
@@ -6077,6 +6078,8 @@ func main() {
 
 :::
 
+**按字节从文件任意位置读取数据**
+
 `ReadAt(b []byte, off int64) (n int, err error)`
 
 ::: details 点击查看完整代码
@@ -6121,6 +6124,276 @@ func main() {
 ```
 
 :::
+
+#### 读取中文乱码问题
+
+一个中文占3个字节，如果只是简单的使用`Read`按字节读取文件的话，有可能会遇到中文乱码问题
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"unicode/utf8"
+)
+
+func WriteFile(fileName string) {
+	// 生成数据
+	data := make([]byte, 0)
+	for i := 0; i < 170; i++ {
+		data = append(data, []byte("中")...)
+	}
+	data = append(data, []byte("国")...)
+
+	// 写入文件
+	err := os.WriteFile(fileName, data, os.ModePerm)
+	if err != nil {
+		log.Fatalf("写入文件失败: %s\n", fileName)
+	} else {
+		log.Printf("写入文件成功: %s: %d bytes\n", fileName, len(data))
+	}
+}
+
+func ReadByte(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	buf := make([]byte, 512)
+	for {
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+
+		// 显示数据,最后一个中文显示乱码
+		log.Printf("显示文件内容: %s\n", string(buf[:n]))
+
+		// 检测切片[]byte是否包含完整且合法的UTF-8编码序列（不能有乱码）
+		log.Printf("检测字节切片是否是完整且合法的UTF-8编码序列: %t\n", utf8.Valid(buf[:n]))
+	}
+}
+
+func ReadAllByte(fileName string) {
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+	}
+	log.Printf("读取文件成功: %s: %d bytes\n", fileName, len(data))
+	log.Printf("显示文件内容: %s\n", string(data))
+}
+
+func ReadByRune(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	reader := bufio.NewReader(f)
+	data := make([]rune, 0)
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+		//log.Printf("读取文件成功: %s: %d bytes\n", fileName, size)
+		data = append(data, r)
+	}
+	// 显示数据,最后一个中文显示乱码
+	log.Printf("显示文件内容: %s\n", string(data))
+}
+
+func ReadByteBySeek(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	var bufsize int64 = 512
+	oldSize := bufsize
+	for {
+		// 读取数据
+		buf := make([]byte, bufsize)
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+
+		// 非完整的UTF8序列处理
+		if !utf8.Valid(buf[:n]) {
+			// 指针回退
+			if ret, err := f.Seek(int64(n)*-1, io.SeekCurrent); err != nil {
+				log.Fatalf("读取文件失败: %s: %s %s \n", fileName, err, ret)
+			}
+			// buf字节数+1
+			bufsize++
+
+			continue
+		}
+
+		// 完整的UTF8序列处理
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+		log.Printf("显示文件内容: %s\n", buf[:n])
+		bufsize = oldSize
+	}
+}
+
+func ReadByteNoSeek(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	lastLeft := make([]byte, 0) // 上次读取留下来的不完整的字节切片
+	for {
+		// 读取数据
+		buf := make([]byte, 300)
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+
+		// 与上次读取遗留字节合并
+		buf = append(lastLeft, buf...)
+		n += len(lastLeft)
+		lastLeft = make([]byte, 0) // 重新初始化
+
+		// 检查序列完整性
+		for {
+			if utf8.Valid(buf[:n]) {
+				break
+			}
+			lastByte := buf[n-1:][0]
+			lastLeft = append([]byte{lastByte}, lastLeft...)
+			n--
+		}
+
+		// 完整的UTF8序列处理
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+		log.Printf("显示文件内容: %s\n", buf[:n])
+	}
+}
+
+func main() {
+	fileName := "test.log"
+
+	// 写数据
+	fmt.Println("------------------ 写入数据 ---------------------")
+	WriteFile(fileName)
+
+	// 按字节读数据(会读到乱码)
+	fmt.Println("\n------------------ 按字节读数据(会读到乱码) ---------------------")
+	ReadByte(fileName)
+
+	// 解决方案1：一次性全部读取到内存中
+	// 缺点：内存占用过大，不适用大文件
+	fmt.Println("\n------------------ 解决方案1：一次性全部读取到内存中 ---------------------")
+	ReadAllByte(fileName)
+
+	// 解决方案2：按Rune读取文件
+	// 缺点：一个字符一个字符的读，效率太低
+	fmt.Println("\n------------------ 解决方案2：按Rune方式读取 ---------------------")
+	ReadByRune(fileName)
+
+	// 解决方案3：按字节读取，如果不是完整UTF8序列则回退文件指针，动态微调buf大小
+	// 缺点：需要通过Seek指针操作
+	fmt.Println("\n- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -")
+	ReadByteBySeek(fileName)
+
+	// 解决方案4：按字节读取，如果不是完整UTF8序列，那么将字节切片分割，只是用完整的UTF8序列，乱码部分与下一次读取连接起来
+	// 缺点：代码比较复杂
+	fmt.Println("\n------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------")
+	ReadByteNoSeek(fileName)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+------------------ 写入数据 ---------------------
+2022/04/25 15:56:39 写入文件成功: test.log: 513 bytes
+
+------------------ 按字节读数据(会读到乱码) ---------------------
+2022/04/25 15:56:39 读取文件成功: test.log: 512 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中��
+2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
+2022/04/25 15:56:39 读取文件成功: test.log: 1 bytes
+2022/04/25 15:56:39 显示文件内容: �
+2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
+
+------------------ 解决方案1：一次性全部读取到内存中 ---------------------      
+2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+------------------ 解决方案2：按Rune方式读取 ---------------------
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -
+2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------
+2022/04/25 15:56:39 读取文件成功: test.log: 510 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中
+2022/04/25 15:56:39 读取文件成功: test.log: 3 bytes
+2022/04/25 15:56:39 显示文件内容: 国
+```
+
+
 
 #### 读写快捷函数
 
@@ -6192,7 +6465,7 @@ func main() {
 
 官方文档：[https://pkg.go.dev/io](https://pkg.go.dev/io)
 
-#### Reader
+#### Reader基本接口
 
 **Reader定义**
 
@@ -6318,3 +6591,35 @@ func main() {
 2022/04/24 16:52:32 好
 ```
 
+#### Reader其他接口
+
+```go
+// 读取一次返回一个字节
+type ByteReader interface {
+	ReadByte() (byte, error)
+}
+
+// 读取一次返回一个Rune
+type RuneReader interface {
+	ReadRune() (r rune, size int, err error)
+}
+
+// 可以从指定位置(字节)处读取
+type ReaderAt interface {
+	ReadAt(p []byte, off int64) (n int, err error)
+}
+```
+
+
+
+#### 封装Reader的函数
+
+`io.LimitReader(r Reader, n int64) Reader`
+
+`io.NewSectionReader(r ReaderAt, off int64, n int64)`
+
+`io.Pipe`
+
+`ReadFull`意思是：必须要读满缓冲区
+
+`ReadAll`：全部读完
