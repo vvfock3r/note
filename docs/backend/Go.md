@@ -6219,7 +6219,7 @@ func ReadByRune(fileName string) {
 		//log.Printf("读取文件成功: %s: %d bytes\n", fileName, size)
 		data = append(data, r)
 	}
-	// 显示数据,最后一个中文显示乱码
+	// 显示数据
 	log.Printf("显示文件内容: %s\n", string(data))
 }
 
@@ -6614,12 +6614,13 @@ type ReaderAt interface {
 
 #### 封装Reader的函数
 
-`io.LimitReader(r Reader, n int64) Reader`
+| 函数                                                         | 说明                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `func ReadAll(r Reader) ([]byte, error)`                     | 从`Reader`中读完所有数据再返回，当文件过大时有撑爆内存的风险 |
+| `func ReadFull(r Reader, buf []byte) (n int, err error)`     | 读满缓冲区再返回，未读满缓冲区（即使读到`EOF`）也会返回错误  |
+| `func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)` | 最少要读`min`个字节，即使读到`EOF`也会返回错误               |
+| `func io.LimitReader(r Reader, n int64) Reader`              | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
+| `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
 
-`io.NewSectionReader(r ReaderAt, off int64, n int64)`
 
-`io.Pipe`
 
-`ReadFull`意思是：必须要读满缓冲区
-
-`ReadAll`：全部读完
