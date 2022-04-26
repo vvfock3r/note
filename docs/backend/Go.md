@@ -6612,15 +6612,72 @@ type ReaderAt interface {
 
 
 
-#### 封装Reader的函数
+#### Reader封装函数
 
 | 函数                                                         | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | `func ReadAll(r Reader) ([]byte, error)`                     | 从`Reader`中读完所有数据再返回，当文件过大时有撑爆内存的风险 |
 | `func ReadFull(r Reader, buf []byte) (n int, err error)`     | 读满缓冲区再返回，未读满缓冲区（即使读到`EOF`）也会返回错误  |
 | `func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)` | 最少要读`min`个字节，即使读到`EOF`也会返回错误               |
-| `func io.LimitReader(r Reader, n int64) Reader`              | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
+| `func LimitReader(r Reader, n int64) Reader`                 | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
 | `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
+
+#### Writer和Closer接口
+
+**接口定义**
+
+```go
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+	Close() error
+}
+```
+
+
+
+#### Reader和Writer复合函数
+
+**io.Copy系列**
+
+（1）`func Copy(dst Writer, src Reader) (written int64, err error)`
+
+主要功能为：从`Reader`中读取，并写入到`Writer`中，返回写入的字节数和错误
+
+> 实现的细节：
+>
+> 1. 如果`src`实现了`WriteTo`接口，那么就调用`src.WriteTo(dst)`方法
+> 2. 如果`dst`实现了`ReaderFrom`接口，那么就调用`dst.ReadFrom(src)`方法
+> 3. 如果以上两个接口都没实现，那么就从`src`读取数据到缓冲区再写入`Writer`
+> 4. 如果`src`是`*LimitedReader`结构体，那么`buffer`大小设定为规定的大小，否则设置为`32KB`
+
+（2）`func CopyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error)`
+
+与`io.Copy`不同的地方在于可以自定义`buffer`大小的`Copy`，但是请注意只有在`src.WriteTo`和`dst.ReadFrom`都没有实现的情况下生效
+
+（3）`func CopyN(dst Writer, src Reader, n int64) (written int64, err error)`
+
+只拷贝N个字节，本质上是通过`LimitReader`来限制`Reader`所能读取的字节数
+
+**io.Pipe**
+
+```go
+func Pipe() (*PipeReader, *PipeWriter)
+```
+
+同步内存管道，线程安全
+
+从w中写入，从r中读出
+
+本质上是无缓冲的channel，所以不能在同一个协程中读和写
+
+
+
+
+
+
 
 
 
