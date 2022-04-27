@@ -6667,17 +6667,338 @@ type Closer interface {
 func Pipe() (*PipeReader, *PipeWriter)
 ```
 
-同步内存管道，线程安全
+* 从w中写入，从r中读出
+* 线程安全
 
-从w中写入，从r中读出
-
-本质上是无缓冲的channel，所以不能在同一个协程中读和写
-
+* 本质上是无缓冲的`channel`，所以不能在同一个协程中读和写
 
 
 
+### bufio包：带缓冲的IO包
 
+官方文档：[https://pkg.go.dev/bufio](https://pkg.go.dev/bufio)
 
+#### 缓冲原理
+
+![bufio](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/bufio.png)
+
+本质上来讲，就是通过减少系统调用来提高效率，付出的代价就是内存占用变多
+
+#### 构造函数
+
+```go
+func NewReader(rd io.Reader) *Reader {
+	return NewReaderSize(rd, defaultBufSize)	
+}
+
+func NewWriter(w io.Writer) *Writer {
+	return NewWriterSize(w, defaultBufSize)
+}
+
+// 默认的缓冲区大小defaultBufSize = 4096
+```
+
+#### 使用示例
+
+::: details Reader使用示例
+
+```go
+package main
+
+import (
+	"bufio"
+	"log"
+	"strings"
+)
+
+func main() {
+	// 生成原始Reader
+	var str string
+	for i := 0; i < 170; i++ {
+		str += "中"
+	}
+	r := strings.NewReader(str)
+	log.Printf("原始Reader可读取数据大小: %d\n", len(str))
+
+	// 带缓冲的Reader
+	//reader := bufio.NewReader(f)	// 使用默认缓冲大小
+	reader := bufio.NewReaderSize(r, 1024) // 自定义缓冲大小
+
+	// 读取数据
+	buf := make([]byte, 100)
+	n, err := reader.Read(buf)
+	if err != nil {
+		log.Fatalf("Read error: %s\n", err)
+	}
+	log.Printf("Read %d bytes\n", n)
+
+	// 查看缓冲区信息
+	log.Printf("缓冲区大小: %d bytes\n", reader.Size())
+	log.Printf("当前缓冲区剩余的可读字节数: %d bytes\n", reader.Buffered())
+}
+```
+
+:::
+
+::: details Writer使用示例
+
+```go
+package main
+
+import (
+	"bufio"
+	"log"
+	"os"
+)
+
+func main() {
+	// 带缓冲的Writer
+	//writer := bufio.NewWriter(os.Stdout)
+	writer := bufio.NewWriterSize(os.Stdout, 15)
+
+	// 写入数据，本次总共写入13个字节数据
+	// 若缓冲区大于等于13则写入到缓冲区，屏幕上也不会输出任何信息，因为缓冲区还并没有向真正的io.Writer中写入
+	// 若缓冲区小于13则不写缓冲区直接写到原始的io.Writer中去
+	n, err := writer.Write([]byte("hello world!\n"))
+	if err != nil {
+		log.Fatalf("Write error: %s\n", err)
+	}
+	log.Printf("Write ok: %d bytes\n", n)
+
+	// 缓冲区信息
+	log.Printf("缓冲区大小: %d\n", writer.Size())
+	//_ = writer.Flush()   // 将缓冲区数据写入到io.Writer中
+	//writer.Reset(writer) // 清空缓冲区, 未写入的则丢弃
+	log.Printf("当前缓冲区已写入的字节数: %d\n", writer.Buffered())
+	log.Printf("当前缓冲区未使用的字节数: %d\n", writer.Available())
+	//b := writer.AvailableBuffer() // 返回未使用字节组成的切片, 等同于b := make([]byte, writer.Available())
+}
+```
+
+:::
+
+#### 读写测试
+
+**写测试**
+
+::: details 写缓冲性能测试
+
+```go
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+func WriteBufTest(srcFileName, dstFileName string, buffer bool) {
+	// 定义变量
+	var (
+		total int64
+		err   error
+	)
+	start := time.Now().Unix()
+
+	// 打开src文件
+	reader, err := os.Open(srcFileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+	}
+	defer reader.Close()
+
+	// 打开dst文件
+	writer, err := os.OpenFile(dstFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", dstFileName, err)
+	}
+	defer writer.Close()
+
+	// 是否使用buffer
+	if buffer {
+		// 生成buffer并写入
+		w := bufio.NewWriterSize(writer, 1024*32)
+
+		// 使用io.Copy写入
+		//total, err = io.Copy(w, reader)
+
+		// 手动读取写入
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+
+			_, err = w.Write(buf[:n])
+			if err != nil {
+				log.Fatalf("write error: %s\n", err)
+			}
+			total += int64(n)
+		}
+
+	} else {
+		// 使用io.Copy写入
+		//total, err = io.Copy(writer, reader)
+
+		// 手动读取写入
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			_, err = writer.Write(buf[:n])
+			if err != nil {
+				log.Fatalf("write error: %s\n", err)
+			}
+			total += int64(n)
+		}
+	}
+
+	if err != nil {
+		log.Fatalf("拷贝文件失败: %s\n", err)
+	}
+	delta := time.Now().Unix() - start
+	log.Printf("It takes %d seconds to copy %d bytes for %s\n", delta, total, dstFileName)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_without_buffer.iso", false)
+		wg.Done()
+	}()
+	go func() {
+		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_with_buffer.iso", true)
+		wg.Done()
+	}()
+	wg.Wait()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/27 12:56:39 It takes 23 seconds to copy 4521459712 bytes for D:\iso\write_with_buffer.iso
+2022/04/27 12:56:50 It takes 34 seconds to copy 4521459712 bytes for D:\iso\write_without_buffer.iso
+```
+
+> 💡 说明：
+>
+> 代码中给出了2种读写方式，`Read`/`Write`读写方式 和 `io.Copy`读写方式
+>
+> 从输出结果来看
+>
+> （1）使用`Read`/`Write`读写方式性能有明显提升（1.5倍左右），写缓存起到了很大的作用
+>
+> （2）但如果使用`io.Copy`方式读写文件，会使用`dst.ReadFrom(src)`方式读写，对我们这次测试来说并不准，用不用`bufio`，两者花费的时间几乎一致
+
+**读测试**
+
+::: details 读缓冲性能测试
+
+```go
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+func ReadBufTest(srcFileName string, buffer bool) {
+	// 定义变量
+	var (
+		total int64
+		err   error
+	)
+	start := time.Now().UnixMilli()
+
+	// 打开src文件
+	reader, err := os.Open(srcFileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+	}
+	defer reader.Close()
+
+	// 是否使用buffer
+	if buffer {
+		// 生成buffer并写入
+		reader := bufio.NewReaderSize(reader, 1024*32)
+
+		// 手动读取
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			total += int64(n)
+		}
+
+	} else {
+		// 手动读取
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			total += int64(n)
+		}
+	}
+
+	delta := float64((time.Now().UnixMilli() - start)) / 1000
+	log.Printf("Read %d bytes in %.2f second: %s\n", total, delta, srcFileName)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", false)
+		wg.Done()
+	}()
+	go func() {
+		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", true)
+		wg.Done()
+	}()
+	wg.Wait()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/27 13:20:28 Read 4521459712 bytes in 1.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+2022/04/27 13:20:34 Read 4521459712 bytes in 7.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+```
+
+> 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
 
 
 
