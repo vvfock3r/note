@@ -7002,3 +7002,11 @@ func main() {
 
 
 
+### ioutils包：已被os/io包代替
+
+官方文档：[https://pkg.go.dev/io/ioutil](https://pkg.go.dev/io/ioutil)
+
+从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
+
+
+
