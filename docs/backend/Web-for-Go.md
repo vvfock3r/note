@@ -694,3 +694,142 @@ func main() {
 2022/04/28 17:11:12         
 ```
 
+### Client Jar：Cookie设置与查看
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+func RunServer(addr string) {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		// 服务端设置cookie
+		rand.Seed(time.Now().UnixNano()) // 设置随机数种子
+		cookie1 := &http.Cookie{Name: "uid", Value: strconv.Itoa(rand.Intn(999))}
+		cookie2 := &http.Cookie{Name: "gid", Value: strconv.Itoa(rand.Intn(999))}
+		http.SetCookie(writer, cookie1)
+		http.SetCookie(writer, cookie2)
+
+		// 返回响应
+		_, err := fmt.Fprintf(writer, "hello world!")
+		if err != nil {
+			log.Fatalln(err)
+		}
+	})
+
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func NewClient() *http.Client {
+	// 实例化cookiejar
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 实例化Client
+	// Jar参数：服务端响应设置的Cookie会自动保存，下次客户端请求时会自动带上(若要查看本次请求的Cookie必须在请求发送完成之后，即client.Do方法之后)
+	// 		   客户端也可以不用该参数，而是每次请求时主动添加Cookie。
+	client := &http.Client{
+		Jar: jar,
+	}
+	return client
+}
+
+func SendRequest(client *http.Client, ServerURL string) {
+	// 生成Request对象
+	req, err := http.NewRequest("GET", ServerURL, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 客户端主动设置Cookie
+	rand.Seed(time.Now().UnixNano()) // 设置随机数种子
+	cookie := &http.Cookie{Name: "client", Value: strconv.Itoa(rand.Intn(999))}
+	req.AddCookie(cookie)
+
+	// 发送请求
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 查看客户端携带的Cookie, 要在发送完请求以后才能查看携带的Cookie
+	fmt.Printf("客户端发送请求携带的Cookie: %q\n", req.Cookies())
+
+	// 关闭连接
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	// 输出到控制台
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("服务端响应内容: %s | 服务端设置的Cookie: %q\n", string(data), resp.Cookies())
+
+}
+
+func main() {
+	// 定义变量
+	ServerListenAddr := "127.0.0.1:5000"      //	服务端监听地址
+	ServerURL := "http://" + ServerListenAddr // 客户端访问地址
+
+	// 启动服务端
+	go RunServer(ServerListenAddr)
+
+	// 实例化客户端
+	// 客户端实例化时只需要添加Jar属性，下次
+	client := NewClient()
+
+	// 发送请求
+	SendRequest(client, ServerURL)
+
+	// 查看client.Jar存储的Cookie
+	fmt.Println()
+	fmt.Println(client.Jar.Cookies(&url.URL{
+		Scheme: "http",
+		Host:   "127.0.0.1:5000",
+	}))
+	fmt.Println()
+
+	// 再次发送请求，自动携带Cookie
+	SendRequest(client, ServerURL)
+
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 在我们这个代码中，客户端每次请求时都会都会生成随机cookie（client=xxx），所以两次请求中client值不一样
+# uid和gid是服务端设置的Cookie，通过client.Jar属性来自动管理，下次请求的时候会自动带上
+客户端发送请求携带的Cookie: ["client=352"]
+服务端响应内容: hello world! | 服务端设置的Cookie: ["uid=94" "gid=307"] 
+                                                                        
+[uid=94 gid=307]                                                        
+                                                                        
+客户端发送请求携带的Cookie: ["client=489" "uid=94" "gid=307"]           
+服务端响应内容: hello world! | 服务端设置的Cookie: ["uid=489" "gid=407"]
+```
+
