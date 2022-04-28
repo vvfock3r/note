@@ -44,6 +44,25 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+<html>
+<head>
+        <script>
+                location.replace(location.href.replace("https://","http://"));
+        </script>
+</head>
+<body>
+        <noscript><meta http-equiv="refresh" content="0;url=http://www.baidu.com/"></noscript>
+</body>
+</html>
+```
+
+> 这里的输出结果好像不太对，而且与curl或者其他语言发送HTTP请求的结果也不一致，这个问题可以通过修改请求头中的`User-Agent`来解决
+
+
+
 ::: details 进一步探索
 
 （1）查看`http.Get`源码发现会调用`DefaultClient.Get`，其定义如下
@@ -214,7 +233,7 @@ func SendRequest(ServerURL string) {
 	}
 
 	// 定制Request对象
-	//(1) 下面是Go默认带的请求头,在控制台可以看到覆盖了原先的值（注意：一个使用Add，另一个使用Set）
+	//(1) 下面是Go默认带的请求头,在控制台可以看到覆盖了原先的值（注意：分别使用Add和Set来进行测试）
 	req.Header.Add("Accept-Encoding", "compress")
 	req.Header.Set("User-Agent", "Mozilla/5.0 xxx Chrome/96.0.4664.110 Safari/537.36")
 	//(2)下面是使用Add, 可以看到使用的是追加方式，并且不去重
