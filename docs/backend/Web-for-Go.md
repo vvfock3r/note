@@ -562,6 +562,77 @@ func main() {
 2022/04/28 13:00:01 HTTP Server Response: hello world!
 ```
 
+### Client Transport：设置代理
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+)
+
+func main() {
+	// 实例化Client(不加代理)
+	//client := &http.Client{}
+
+	// 实例化Client(添加代理)
+	ProxyScheme := "http"                    // 代理协议
+	ProxyHostAndPort := "192.168.0.102:7890" // 代理服务器地址和端口,请注意这里是否需要修改
+	t := http.DefaultTransport.(*http.Transport)
+	t.Proxy = http.ProxyURL(&url.URL{Scheme: ProxyScheme, Host: ProxyHostAndPort})
+	client := &http.Client{
+		Transport: t,
+		Timeout:   time.Second * 15,
+	}
+
+	// 生成request对象, https://api.ip.sb/ip能以文本格式输出我们当前的IP,可以用这个网站来检测我们的代理是否生效
+	req, err := http.NewRequest("GET", "https://api.ip.sb/ip", nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 修改User-Agent，不修改的话会报403错误
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
+
+	// 发送请求
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 关闭连接
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	// 输出到控制台
+	if _, err = io.Copy(os.Stdout, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 未设置代理时输出
+36.143.45.59
+
+# 设置代理后输出
+87.249.128.47
+```
+
+:::
+
 ### Client CheckRedirect: 重定向策略
 
 通过`Client.Do`方法追踪到默认重定向策略函数，即最多允许10次重定向
