@@ -84,6 +84,7 @@ module.exports = {
                         text: 'Go',
                         children: [
                             {text: 'Go核心语法', link: '/backend/Go'},
+                            {text: 'Go Web开发', link: '/backend/Web-for-Go'},
                         ]
                     },
                 ]
