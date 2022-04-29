@@ -564,6 +564,8 @@ func main() {
 
 ### Client Transport：设置代理
 
+先确保不加代理的时候能正常输出当前IP，然后再切换到代理模式，验证代理是否生效
+
 ::: details 点击查看完整代码
 
 ```go
@@ -621,6 +623,8 @@ func main() {
 }
 ```
 
+:::
+
 输出结果
 
 ```bash
@@ -629,6 +633,143 @@ func main() {
 
 # 设置代理后输出
 87.249.128.47
+```
+
+### Client Transport：添加Basic Auth认证
+
+* 方式一：直接调用`request.SetBasicAuth("root", "123456")`
+* 方式二：在Transport Proxy中注入`request.SetBasicAuth("root", "123456")`
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+)
+
+// 请求处理函数
+func index(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "hello world!")
+}
+
+// Base64解密
+func BasicAuthDecodeString(auth string) (plaintext string, err error) {
+	authSlice := strings.Split(auth, " ")
+	if len(authSlice) != 2 || authSlice[0] != "Basic" {
+		return "", errors.New("Basic auth format error")
+	}
+	p, err := base64.StdEncoding.DecodeString(authSlice[1])
+	return string(p), err
+}
+
+// 用户验证
+func BasicAuthVerifyUser(plaintext string) bool {
+	users := []string{"root:123456", "admin:654321"}
+	for _, v := range users {
+		if v == plaintext {
+			return true
+		}
+	}
+	return false
+}
+
+// BasicAuth装饰器
+func BasicAuth(handler http.Handler) http.Handler {
+	// 返回一个新的handler
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 获取Basic Auth认证凭证
+		auth := r.Header.Get("Authorization") //获取Basic base64加密后的字段
+
+		// 验证失败
+		plaintext, err := BasicAuthDecodeString(auth)
+		if err != nil {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+err.Error()+`"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// 用户名密码验证失败
+		if !BasicAuthVerifyUser(plaintext) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="用户名或密码错误"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// 验证通过,调用原始handler方法
+		handler.ServeHTTP(w, r)
+	})
+}
+
+func RunServer() {
+	addr := "127.0.0.1:80"
+	http.Handle("/", BasicAuth(http.HandlerFunc(index)))
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func SendRequest() {
+	// 方式二：使用Transport Proxy
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Proxy = func(request *http.Request) (*url.URL, error) {
+		request.SetBasicAuth("root", "123456")
+		return request.URL, nil
+	}
+
+	// 实例化客户端
+	client := &http.Client{
+		Timeout:   time.Second * 5, // 设置每次发送请求超时时间，包含建立连接、重定向、读取正文等整个请求流程时间
+		Transport: t,
+	}
+
+	// 创建Request对象
+	req, err := http.NewRequest("GET", "http://127.0.0.1", nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 方式一：添加Baisc Auth认证
+	//req.SetBasicAuth("root", "123456")
+
+	// 发送GET请求
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("请求超时: ", err)
+	}
+
+	// 关闭连接
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+	// 输出到控制台
+	if _, err = io.Copy(os.Stdout, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	// 启动服务端
+	go RunServer()
+
+	// 发送请求
+	time.Sleep(time.Second)
+	SendRequest()
+}
+
 ```
 
 :::
