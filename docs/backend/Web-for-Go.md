@@ -6,7 +6,7 @@ C:\Users\Administrator>go version
 go version go1.18 windows/amd64
 ```
 
-## net/http Client
+## net/http之Client
 
 官方文档：[https://pkg.go.dev/net](https://pkg.go.dev/net)
 
@@ -474,7 +474,7 @@ func NewClient() *http.Client {
 
 func SendRequest(client *http.Client, url string, number int) {
 	// ------------------- 这里是核心代码 ----------------------
-	// 生成client trace context
+	// 生成client trace
 	clientTrace := &httptrace.ClientTrace{
 		GotConn: func(GotConnInfo httptrace.GotConnInfo) {
 			reused := strconv.FormatBool(GotConnInfo.Reused)   // 连接复用
@@ -1044,4 +1044,162 @@ func main() {
 客户端发送请求携带的Cookie: ["client=489" "uid=94" "gid=307"]           
 服务端响应内容: hello world! | 服务端设置的Cookie: ["uid=489" "gid=407"]
 ```
+
+## net/http/httptrace：HTTP请求跟踪
+
+官方文档：[https://pkg.go.dev/net/http/httptrace](https://pkg.go.dev/net/http/httptrace)
+
+
+
+### 仿httpstat
+
+下面的代码是仿[httpstat](https://github.com/davecheney/httpstat) 写的一个精简版本，重在学习
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"github.com/fatih/color"
+	"io"
+	"log"
+	"net/http"
+	"net/http/httptrace"
+	"strings"
+	"time"
+)
+
+func main() {
+	// 定义计时变量
+	var (
+		dnsStartTime, dnsDoneTime           time.Time
+		tcpStartTime, tcpDoneTime           time.Time
+		tlsStartTime, tlsDoneTime           time.Time
+		httpConnStartTime, httpConnDoneTime time.Time
+		httpFirstRespByte                   time.Time
+	)
+
+	// 定义输出模板
+	const httpsTemplate = `` +
+		`  DNS Lookup   TCP Connection   TLS Handshake   Server Processing   Content Transfer` + "\n" +
+		`[%s  |     %s  |    %s  |        %s  |       %s  ]` + "\n" +
+		`            |                |               |                   |                  |` + "\n" +
+		`   namelookup:%s      |               |                   |                  |` + "\n" +
+		`                       connect:%s     |                   |                  |` + "\n" +
+		`                                   pretransfer:%s         |                  |` + "\n" +
+		`                                                     starttransfer:%s        |` + "\n" +
+		`                                                                               total:%s` + "\n"
+
+	// 创建Client Trace对象
+	trace := &httptrace.ClientTrace{
+		// DNS解析计时
+		DNSStart: func(info httptrace.DNSStartInfo) {
+			dnsStartTime = time.Now()
+		},
+		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+			dnsDoneTime = time.Now()
+		},
+		// TCP3次握手计时
+		ConnectStart: func(network, addr string) {
+			tcpStartTime = time.Now()
+		},
+		ConnectDone: func(network, addr string, err error) {
+			tcpDoneTime = time.Now()
+			fmt.Printf("\n%s%s\n", color.GreenString("Connected to "), color.CyanString(addr))
+		},
+		// TLS握手计时
+		TLSHandshakeStart: func() {
+			tlsStartTime = time.Now()
+		},
+		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+			tlsDoneTime = time.Now()
+		},
+		// HTTP/HTTPS建立连接后调用
+		GotConn: func(info httptrace.GotConnInfo) {
+			httpConnStartTime = time.Now()
+		},
+		// 获取服务端响应头第一个字节后调用
+		GotFirstResponseByte: func() {
+			httpFirstRespByte = time.Now()
+		},
+	}
+
+	// 创建Client Trace Context
+	traCtx := httptrace.WithClientTrace(context.Background(), trace)
+
+	// 生成Request对象，上面所创建的trace Context都是为了创建Request
+	req, err := http.NewRequestWithContext(traCtx, "GET", "https://yu-jinhui.com", nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 实例化Client，偷个懒直接用默认的客户端
+	client := http.DefaultClient
+	client.Timeout = time.Second * 5 // 设置超时时间
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse // 拒绝重定向
+	}
+
+	// 发送请求
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 读取响应头
+	fmt.Printf("\n%s/%s\n", color.GreenString("HTTPS"), color.CyanString("%d.%d %s", resp.ProtoMajor, resp.ProtoMinor, resp.Status))
+	for k, v := range resp.Header {
+		s := strings.Join(v, ",")
+		fmt.Printf("%s: %s\n", k, color.CyanString("%s", s))
+	}
+
+	// 丢弃响应
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf(color.CyanString("\n%s\n", "Body discarded"))
+
+	// 关闭连接(放回连接池中)
+	if err := resp.Body.Close(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 连接断开时间
+	httpConnDoneTime = time.Now()
+
+	// 输出内容
+	fmta := func(d time.Duration) string {
+		return color.CyanString("%7dms", int(d/time.Millisecond))
+	}
+
+	fmt.Println()
+	fmt.Printf(
+		httpsTemplate,
+		// 第一行
+		fmta(dnsDoneTime.Sub(dnsStartTime)),
+		fmta(tcpDoneTime.Sub(tcpStartTime)),
+		fmta(tlsDoneTime.Sub(tlsStartTime)),
+		fmta(httpFirstRespByte.Sub(httpConnStartTime)),
+		fmta(httpConnDoneTime.Sub(httpFirstRespByte)),
+		// 第二行
+		fmta(dnsDoneTime.Sub(dnsStartTime)),
+		fmta(tcpDoneTime.Sub(dnsStartTime)),
+		fmta(httpConnStartTime.Sub(dnsStartTime)),
+		fmta(httpFirstRespByte.Sub(dnsStartTime)),
+		fmta(httpConnDoneTime.Sub(dnsStartTime)),
+	)
+}
+```
+
+:::
+
+输出结果
+
+![image-20220429211410766](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220429211410766.png)
+
+
 
