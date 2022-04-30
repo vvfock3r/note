@@ -1045,6 +1045,191 @@ func main() {
 服务端响应内容: hello world! | 服务端设置的Cookie: ["uid=489" "gid=407"]
 ```
 
+### 💊 Groutine数量问题
+
+只是简单发送一个`GET`请求，关闭连接后发现：
+
+（1）为什么`Goroutine`数量是3？
+
+（2）为什么会多出来2个？
+
+（3）多出来的2个是干嘛的？
+
+（4）换一个网站测试，发一次请求，发现`Goroutine`又变成2了，为什么？
+
+::: details 问题1验证：Goroutine数量是3
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 实例化Client	
+	client := &http.Client{}
+
+	// 发送GET请求
+	resp, err := client.Get("https://www.baidu.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 输出到控制台
+	if _, err = io.Copy(io.Discard, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 关闭连接
+	err = resp.Body.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 查看goroutine数量
+	for {
+		time.Sleep(time.Second)
+		log.Println(runtime.NumGoroutine())
+	}
+}
+
+// 输出结果：3
+```
+
+:::
+
+::: details 问题2猜想并验证-方式1：关闭连接后并没有真正销毁而是放入到连接池中了，通过调整最大空闲连接数来验证
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 实例化Client
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = -1 // (HTTP长连接)最大空闲连接数，0代表不限制，设置为-1，即不允许有空闲连接
+	client := &http.Client{Transport: t}
+
+	// 发送GET请求
+	resp, err := client.Get("https://www.baidu.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 输出到控制台
+	if _, err = io.Copy(io.Discard, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 关闭连接
+	err = resp.Body.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 查看goroutine数量
+	for {
+		time.Sleep(time.Second)
+		log.Println(runtime.NumGoroutine())
+	}
+}
+
+// 输出结果：1
+```
+
+:::
+
+::: details 问题2猜想并验证-方式2：通过向不同主机发请求，让连接池中的连接得不到复用，验证1个请求对应2个Groutine的想法对不对
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 实例化Client
+	client := &http.Client{}
+
+	// 简单封装一下
+	sendRequest := func(url string) {
+		// 发送GET请求
+		resp, err := client.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// 输出到控制台
+		if _, err = io.Copy(io.Discard, resp.Body); err != nil {
+			log.Fatalln(err)
+		}
+
+		// 关闭连接
+		err = resp.Body.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	// 发送请求
+	// 向两个不同的主机发送请求，连接得不到复用，每个请求创建2个goroutine，所以当发送2次请求应该总共有5个goroutine
+	sendRequest("https://www.baidu.com")
+	sendRequest("https://www.qq.com")
+	//sendRequest("https://www.163.com")
+
+	// 查看goroutine数量
+	for {
+		time.Sleep(time.Second)
+		log.Println(runtime.NumGoroutine())
+	}
+}
+
+// 输出结果：5
+```
+
+:::
+
+::: details 问题3猜想<span style="color: red; font-weight: bold;">未验证</span>：1个Groutine用于读，1个Groutine用于写（求大佬指点迷津）
+
+:::
+
+::: details 问题4猜想并验证：该网站使用的是HTTP/2协议，HTTP/1.1是半双工，HTTP/2和WebSocket一样是全双工的，读和写可以在一个Goroutine中完成
+
+这里使用httpstat来查看http协议，当然也可以使用其他工具，比如浏览器
+
+![image-20220430104420307](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220430104420307.png)
+
+> 注意事项：
+>
+> （1）curl默认是不支持HTTP/2协议的，除非重新编译，所以用curl测试的话会降级到HTTP/1.1
+>
+> ![image-20220430104801284](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220430104801284.png)
+>
+> （2）HTTP/2响应头中并没有看到`Keep-Alive`，这是因为HTTP/2协议规定的，它删除了很多字段，比如`Keep-Alive`、`Proxy-Connection`等
+>
+> ​          参考RFC 7540：[https://www.rfc-editor.org/rfc/rfc7540.html#section-8.1.2.2](https://www.rfc-editor.org/rfc/rfc7540.html#section-8.1.2.2)
+
+:::
+
+
+
 ## net/http/httptrace：HTTP请求跟踪
 
 官方文档：[https://pkg.go.dev/net/http/httptrace](https://pkg.go.dev/net/http/httptrace)
