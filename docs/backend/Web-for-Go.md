@@ -1228,6 +1228,252 @@ func main() {
 
 :::
 
+### 💊 Groutine泄漏之Transport
+
+先上结论
+
+```go
+// Transports should be reused instead of created as needed.
+// Transports应该被重用，而不是一旦需要就创建
+
+// Transports are safe for concurrent use by multiple goroutines.
+// Transports线程安全
+```
+
+代码演示
+
+::: details 复现Transport引起的Goroutine泄漏
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"runtime"
+	"sync"
+	"time"
+)
+
+func sendRequest(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// 实例化客户端
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       30 * time.Second,	// 调整为30,方便测试
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+
+	// 发送GET请求
+	resp, err := client.Get("https://www.baidu.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 关闭连接
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	// 丢弃响应
+	if _, err = io.Copy(io.Discard, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	// 定义变量
+	wg := &sync.WaitGroup{}
+
+	// 发送多个请求
+	for i := 0; i < 300; i++ {
+		wg.Add(1)
+		go sendRequest(wg)
+	}
+
+	// 等待goroutine运行结束
+	wg.Wait()
+
+	// 查看goroutine数量
+	for {
+		n := runtime.NumGoroutine()
+		log.Println(n)
+		if n == 1 {
+			break
+		}
+		time.Sleep(time.Second * 1)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# (1)最后一个Goroutine运行完成后，立即查看Goroutine数量得到601
+# 300 * 2 +1 = 601
+#     300：300个请求
+#       2: 对HTTP/1.1网站说1个请求对应2个goroutine
+#       1: 主goroutine
+# (2) 后面Groutine为什么又少了呢？
+#     看一下时间差，差了30秒左右，再看一下代码 IdleConnTimeout: 30 * time.Second, 正好可以对应上，原因是空闲连接超时被干掉了
+# (3) 之前介绍过有这样一个参数，DefaultMaxIdleConnsPerHost=2，这意味着空闲连接中的100个连接只有两个连接分配给该主机，300个连接和这个参数不是冲突了吗？
+#     其实并没有冲突，因为每个Transport都是全新的，对他来说只有1个连接
+2022/04/30 15:43:31 601
+2022/04/30 15:43:32 601
+2022/04/30 15:43:33 601
+2022/04/30 15:43:34 601
+2022/04/30 15:43:35 601
+2022/04/30 15:43:36 601
+2022/04/30 15:43:37 601
+2022/04/30 15:43:38 601
+2022/04/30 15:43:39 601
+2022/04/30 15:43:40 601
+2022/04/30 15:43:41 601
+2022/04/30 15:43:43 601
+2022/04/30 15:43:44 601
+2022/04/30 15:43:45 601
+2022/04/30 15:43:46 601
+2022/04/30 15:43:47 601
+2022/04/30 15:43:48 601
+2022/04/30 15:43:49 385
+2022/04/30 15:43:50 292
+2022/04/30 15:43:51 209
+2022/04/30 15:43:52 209
+2022/04/30 15:43:53 209
+2022/04/30 15:43:54 170
+2022/04/30 15:43:55 59
+2022/04/30 15:43:56 59
+2022/04/30 15:43:57 59
+2022/04/30 15:43:58 59
+2022/04/30 15:43:59 59
+2022/04/30 15:44:00 59
+2022/04/30 15:44:01 59
+2022/04/30 15:44:02 1
+```
+
+::: details 修复Transport引起的Goroutine泄漏
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"runtime"
+	"sync"
+	"time"
+)
+
+func sendRequest(wg *sync.WaitGroup, client *http.Client) {
+	defer wg.Done()
+	// 发送GET请求
+	resp, err := client.Get("https://www.baidu.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 关闭连接
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	// 丢弃响应
+	if _, err = io.Copy(io.Discard, resp.Body); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	// 定义变量
+	wg := &sync.WaitGroup{}
+
+	// 实例化客户端
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       30 * time.Second,	// 调整为30,方便测试
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+
+	// 发送多个请求
+	for i := 0; i < 300; i++ {
+		wg.Add(1)
+		go sendRequest(wg, client)
+	}
+
+	// 等待goroutine运行结束
+	wg.Wait()
+
+	// 查看goroutine数量
+	for {
+		n := runtime.NumGoroutine()
+		log.Println(n)
+		if n == 1 {
+			break
+		}
+		time.Sleep(time.Second * 1)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/30 16:00:25 461
+2022/04/30 16:00:28 353
+2022/04/30 16:00:29 227
+2022/04/30 16:00:30 223
+2022/04/30 16:00:31 73
+2022/04/30 16:00:32 57
+2022/04/30 16:00:33 57
+2022/04/30 16:00:34 57
+2022/04/30 16:00:35 47
+2022/04/30 16:00:36 9
+2022/04/30 16:00:37 7
+2022/04/30 16:00:38 7
+2022/04/30 16:00:39 5	# 实际上到这里已经结束，连接池中保留了2个空闲连接
+2022/04/30 16:00:40 5
+2022/04/30 16:00:41 5
+2022/04/30 16:00:42 5
+2022/04/30 16:00:43 5
+2022/04/30 16:00:44 5
+2022/04/30 16:00:45 5
+2022/04/30 16:00:46 5
+2022/04/30 16:00:47 5
+2022/04/30 16:00:48 5
+2022/04/30 16:00:49 5
+2022/04/30 16:00:50 5
+2022/04/30 16:00:51 5
+2022/04/30 16:00:52 5
+2022/04/30 16:00:53 5
+2022/04/30 16:00:54 5
+2022/04/30 16:00:56 1
+```
+
+
+
 
 
 ## net/http/httptrace：HTTP请求跟踪
