@@ -8,7 +8,7 @@ go version go1.18 windows/amd64
 
 ## net/http之Client
 
-官方文档：[https://pkg.go.dev/net](https://pkg.go.dev/net)
+官方文档：[https://pkg.go.dev/net/http](https://pkg.go.dev/net/http)
 
 ### 基础示例
 
@@ -1482,7 +1482,7 @@ func main() {
 
 
 
-### 仿httpstat
+### 精简版httpstat
 
 下面的代码是仿[httpstat](https://github.com/davecheney/httpstat) 写的一个精简版本，重在学习
 
@@ -1632,5 +1632,302 @@ func main() {
 
 ![image-20220429211410766](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220429211410766.png)
 
+## net/http之Server
 
+官方文档：[https://pkg.go.dev/net/http](https://pkg.go.dev/net/http)
+
+### 基础示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 注册路由
+	http.HandleFunc("/", indexHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+```
+
+客户端访问测试
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1
+Hello, world!
+```
+
+::: details 进一步探索
+
+（1）查看`http.HandleFunc`源码，发现这与`http.Get`是一个套路
+
+```go
+// (1) 真正使用的是DefaultServeMux的HandleFunc方法
+// HandleFunc registers the handler function for the given pattern
+// in the DefaultServeMux.
+// The documentation for ServeMux explains how patterns are matched.
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	DefaultServeMux.HandleFunc(pattern, handler)
+}
+
+// -------------------------------------------------------------------------
+// (2) DefaultServeMux是ServeMux指针
+// DefaultServeMux is the default ServeMux used by Serve.
+var DefaultServeMux = &defaultServeMux
+
+var defaultServeMux ServeMux
+
+// -------------------------------------------------------------------------
+// (3) ServeMux是一个结构体
+
+// ServeMux is an HTTP request multiplexer.
+// It matches the URL of each incoming request against a list of registered
+// patterns and calls the handler for the pattern that
+// most closely matches the URL.
+// ServeMux是一个请求多路复用器,后面的意思是维护【请求URL】与【处理函数Handler】之间的映射
+type ServeMux struct {
+	mu    sync.RWMutex
+	m     map[string]muxEntry
+	es    []muxEntry // slice of entries sorted from longest to shortest.
+	hosts bool       // whether any patterns contain hostnames
+}
+
+// -------------------------------------------------------------------------
+// (4) ListenAndServe默认会调用DefaultServeMux，若我们想使用自定义的ServeMux，handler参数需要改一下
+
+// ListenAndServe listens on the TCP network address addr and then calls
+// Serve with handler to handle requests on incoming connections.
+// Accepted connections are configured to enable TCP keep-alives.
+//
+// The handler is typically nil, in which case the DefaultServeMux is used.
+// 如果handler为nil的话，使用DefaultServeMux
+
+// ListenAndServe always returns a non-nil error.
+// ListenAndServe总是返回非nil的错误
+func ListenAndServe(addr string, handler Handler) error {
+	server := &Server{Addr: addr, Handler: handler}
+	return server.ListenAndServe()
+}
+```
+
+（2）我们可以使用自定义的`ServeMux`来代替`DefaultServeMux`
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由
+	mux.HandleFunc("/", indexHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+### 理解Handler
+
+`net/http`包中到处都是`Handler`，理解`Handler`是非常重要的
+
+**（1）`http.Handler`和`http.HandlerFunc`**
+
+```go
+// 注释部分挑重要的翻译一下
+// (1) http.Handler就是用来处理Request请求的并返回响应
+// (2) http.Handler不应该修改Request相关数据
+// 总结：Handler就是定义了一个ServeHTTP方法的接口，ServeHTTP用来处理Request并返回响应
+type Handler interface {
+	ServeHTTP(ResponseWriter, *Request)
+}
+
+// -----------------------------------------------------------
+// (1) HandlerFunc是一个自定义类型，是一个函数类型，它的值就是一个函数
+// (2) HandlerFunc函数实现了Handler接口
+// (3) 像HandlerFunc这样的我们一般称为接口型函数
+type HandlerFunc func(ResponseWriter, *Request)		// 主要的作用是：类型转换，将函数类型转为HandlerFunc类型（注意并不会改变值）
+
+// ServeHTTP calls f(w, r).
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {	// HandlerFunc类型实现了Handler接口，ServeHTTP会调用包装后的函数
+	f(w, r)
+}
+
+// 这里不是太容易理解
+// (1) 其实就是有一个原始函数，经过自定义类型包装一下，原始函数类型发生改变，新类型的函数我们就暂且叫他包装函数，用以区分
+// (2) 我们自定义的类型实现了Handler接口，所以包装函数也自动实现了Handler接口
+// (3) ServeHTTP方法会调用我们的包装函数
+```
+
+如果还是不太理解，可以看一下如下代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+// 定义一个很普通的函数Add
+func Add(x, y int) int {
+	return x + y
+}
+
+// 自定义接口
+type Handler interface {
+	ServeHTTP(x, y int) int
+}
+
+// 自定义类型
+type HandlerFunc func(int, int) int
+
+// 给自定义类型绑定一个方法
+func (h HandlerFunc) ServeHTTP(x, y int) int {
+	return h(x, y)
+}
+
+func main() {
+	// (1) 查看Add函数的类型
+	fmt.Printf("%T\n", Add) // func(int, int) int
+
+	// (2) 改变Add函数类型
+	Add2 := HandlerFunc(Add)     // 注意这里并不是函数调用，而是类型转换
+	fmt.Printf("%T\n", Add2)    // main.HandlerFunc; 函数Add还是原来的Add,只不过它的类型已经变成HandlerFunc类型了
+	fmt.Println(Add2(100, 200)) // 300; 调用都是没有问题的,值没有变,变得是类型, 因为HandlerFunc类型实现了Handler接口,所以Add2自动实现了Handler接口
+
+	// (3) 声明接口类型变量,并给他赋值
+	var Add3 Handler                          // Add3为接口类型
+	Add3 = Add2                               // Add2实现了该接口,所以可以赋值
+	fmt.Printf("%T\n", Add3)                  // main.HandlerFunc
+	fmt.Println(Add3.(HandlerFunc)(150, 350)) // 500, Add3是接口，断言得到值类型,然后就可以正常调用
+	fmt.Println(Add3.ServeHTTP(999, 1))       // 调用ServeHTTP方法也是可以的
+}
+```
+
+:::
+
+**（2）`http.Handle`和`http.HandleFunc`**
+
+* 这两个和`DefaultServeMux`是深度绑定的
+* 注意这几个函数单词拼写，一个是`ler`一个是`le`
+
+```go
+// Handle registers the handler for the given pattern
+// in the DefaultServeMux.
+// The documentation for ServeMux explains how patterns are matched.
+// 总结：传入Handler接口类型，给DefaultServeMux增加路由与Handler映射（Handle源码含义）
+func Handle(pattern string, handler Handler) {
+    DefaultServeMux.Handle(pattern, handler)
+}
+
+
+// -----------------------------------------------------------------------------
+// HandleFunc registers the handler function for the given pattern
+// in the DefaultServeMux.
+// The documentation for ServeMux explains how patterns are matched.
+// 总结：传入一个函数，自动转为Handler接口类型，并给DefaultServeMux增加路由与Handler映射（Handle源码含义）
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	DefaultServeMux.HandleFunc(pattern, handler)
+}
+
+// HandleFunc registers the handler function for the given pattern.
+func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request)) { // 自定义mux时可以用这个函数
+	if handler == nil {
+		panic("http: nil handler")
+	}
+	mux.Handle(pattern, HandlerFunc(handler))	// 这个HandlerFunc是通用的，并没有和DefaultServeMux绑定，注意单词拼写是ler不是le
+}
+
+// -----------------------------------------------------------------------------
+// 总结：
+// (1) 上面两个函数都是在操作DefaultServeMux，我们如果我们使用自定义的ServeMux时候，是不需要使用这俩方法的
+// (2) 上面两个函数都是干同一件事，就是给DefaultServeMux增加一条路由与Handler的映射关系，不同的是传入的参数不同
+```
+
+（4）简单应用：注册路由的两种方式
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由-方式1
+	mux.HandleFunc("/", indexHandler)
+	// 我们可以看一下HandleFunc源码,其内部会自动将indexHandler类型转变为HandlerFunc类型，并调用Handle方法
+	//func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	//	if handler == nil {
+	//		panic("http: nil handler")
+	//	}
+	//	mux.Handle(pattern, HandlerFunc(handler))
+	//}
+
+	// 注册路由-方式2
+	// 我们也可以自己进行类型转换，然后直接传递一个Handler类型的值进去
+	h := http.HandlerFunc(indexHandler) // indexHandler不能为nil，否则会报错
+	mux.Handle("/test", h)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+### ServeMux
 
