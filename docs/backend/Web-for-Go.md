@@ -1765,7 +1765,7 @@ func main() {
 
 `net/http`包中到处都是`Handler`，理解`Handler`是非常重要的
 
-**（1）`http.Handler`和`http.HandlerFunc`**
+#### `http.Handler`和`http.HandlerFunc`
 
 ```go
 // 注释部分挑重要的翻译一下
@@ -1842,7 +1842,7 @@ func main() {
 
 :::
 
-**（2）`http.Handle`和`http.HandleFunc`**
+#### `http.Handle`和`http.HandleFunc`
 
 * 这两个和`DefaultServeMux`是深度绑定的
 * 注意这几个函数单词拼写，一个是`ler`一个是`le`
@@ -1880,7 +1880,7 @@ func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Re
 // (2) 上面两个函数都是干同一件事，就是给DefaultServeMux增加一条路由与Handler的映射关系，不同的是传入的参数不同
 ```
 
-（4）简单应用：注册路由的两种方式
+#### 注册路由的两种方式
 
 ::: details 点击查看完整代码
 
@@ -1920,6 +1920,191 @@ func main() {
 	// 我们也可以自己进行类型转换，然后直接传递一个Handler类型的值进去
 	h := http.HandlerFunc(indexHandler) // indexHandler不能为nil，否则会报错
 	mux.Handle("/test", h)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+#### Basic Auth认证之HandleFunc装饰器
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strings"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+// Base64解密
+func BasicAuthDecodeString(auth string) (plaintext string, err error) {
+	authSlice := strings.Split(auth, " ")
+	if len(authSlice) != 2 || authSlice[0] != "Basic" {
+		return "", errors.New("Basic auth format error")
+	}
+	p, err := base64.StdEncoding.DecodeString(authSlice[1])
+	return string(p), err
+}
+
+// 用户验证
+func BasicAuthVerifyUser(plaintext string) bool {
+	users := []string{"root:123456", "admin:654321"}
+	for _, v := range users {
+		if v == plaintext {
+			return true
+		}
+	}
+	return false
+}
+
+// BasicAuth装饰器
+func BasicAuth(handler func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+	// 这一段判断是从原始的HandleFunc中提取出来的，是为了与不加装饰器一致的行为
+	// 如果传入了nil，在启动阶段就会报错的行为
+	if handler == nil {
+		panic("http: nil handler")
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 获取Basic Auth认证凭证
+		auth := r.Header.Get("Authorization") //获取Basic base64加密后的字段
+
+		// 验证失败
+		plaintext, err := BasicAuthDecodeString(auth)
+		if err != nil {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+err.Error()+`"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// 用户名密码验证失败
+		if !BasicAuthVerifyUser(plaintext) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="用户名或密码错误"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// 验证通过
+		handler(w, r)
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由
+	mux.HandleFunc("/", BasicAuth(indexHandler))
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+#### Basic Auth认证之Handle装饰器
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strings"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+// Base64解密
+func BasicAuthDecodeString(auth string) (plaintext string, err error) {
+	authSlice := strings.Split(auth, " ")
+	if len(authSlice) != 2 || authSlice[0] != "Basic" {
+		return "", errors.New("Basic auth format error")
+	}
+	p, err := base64.StdEncoding.DecodeString(authSlice[1])
+	return string(p), err
+}
+
+// 用户验证
+func BasicAuthVerifyUser(plaintext string) bool {
+	users := []string{"root:123456", "admin:654321"}
+	for _, v := range users {
+		if v == plaintext {
+			return true
+		}
+	}
+	return false
+}
+
+// BasicAuth装饰器
+func BasicAuth(handler func(http.ResponseWriter, *http.Request)) http.Handler {
+	// 这一段判断是从原始的HandleFunc中提取出来的，是为了与不加装饰器一致的行为
+	// 如果传入了nil，在启动阶段就会报错的行为
+	if handler == nil {
+		panic("http: nil handler")
+	}
+
+	// 返回一个handler
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 获取Basic Auth认证凭证
+		auth := r.Header.Get("Authorization") //获取Basic base64加密后的字段
+
+		// 验证失败
+		plaintext, err := BasicAuthDecodeString(auth)
+		if err != nil {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+err.Error()+`"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// 用户名密码验证失败
+		if !BasicAuthVerifyUser(plaintext) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="用户名或密码错误"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// 验证通过,调用原始handler方法
+		handler(w, r)
+	})
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由 - handler封装
+	mux.Handle("/", BasicAuth(indexHandler))
 
 	// 启动服务
 	fmt.Println("* Running on http://" + addr)
