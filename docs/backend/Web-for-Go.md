@@ -2116,3 +2116,298 @@ func main() {
 
 ### ServeMux
 
+#### 结构体定义
+
+ServeMux主要用来存储路由与Handler之间的映射关系
+
+```go
+type ServeMux struct {
+	mu    sync.RWMutex			// 读写锁
+	m     map[string]muxEntry	// map中存储路由与Handler
+	es    []muxEntry // slice of entries sorted from longest to shortest.
+    				 // 路由从长到短排序，这个字段和路由匹配有关系，后面再说
+	hosts bool       // whether any patterns contain hostnames // 模式是否包含主机名，比如/abc是不包含主机名的，test.com/abc是包含主机名的
+}
+
+type muxEntry struct {	// 主要存储Handler，并且又加上了路由，用于方便后续操作
+	h       Handler
+	pattern string
+}
+```
+
+#### 路由注册逻辑
+
+当我们调用`mux.HandleFunc`或`mux.Handle`进行路由注册的时候，最终调用的都是`Handle`函数
+
+::: details 点击查看完整代码
+
+```go
+// Handle registers the handler for the given pattern.
+// If a handler already exists for pattern, Handle panics.
+func (mux *ServeMux) Handle(pattern string, handler Handler) {
+    // 加写锁
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+    // 传入的参数不允许为空
+	if pattern == "" {
+		panic("http: invalid pattern")
+	}
+	if handler == nil {
+		panic("http: nil handler")
+	}
+    
+    // 路由若已经注册，则会报错
+	if _, exist := mux.m[pattern]; exist {
+		panic("http: multiple registrations for " + pattern)
+	}
+
+    // 字典为空则初始化
+	if mux.m == nil {
+		mux.m = make(map[string]muxEntry)
+	}
+    
+    // 生成条目并添加到字典中
+	e := muxEntry{h: handler, pattern: pattern}
+	mux.m[pattern] = e
+    
+    // 如果模式最后一个字符是/，即/login/、/user/这种路由的情况下
+    // 将元素有序的插入到切片中，如何有序插入，看appendSorted源码
+	if pattern[len(pattern)-1] == '/' {
+		mux.es = appendSorted(mux.es, e)
+	}
+
+    // 如果模式第一个字符不是/，那么就代表模式包含主机名，设置hosts属性为true,否则为false(bool类型零值)
+	if pattern[0] != '/' {
+		mux.hosts = true
+	}
+    
+    // 如果路由不是以/结尾的话，是不会插入到es切片中的，这就比较有意思了，具体有啥用，后面路由匹配再说，这里先了解注册规则
+}
+
+// ------------------------------------------------------------------
+func appendSorted(es []muxEntry, e muxEntry) []muxEntry {
+    // 返回切片中比【新追加元素的长度】小的最小的索引，如果这个看不太懂，可以看一下下面关于sort.Search部分的讲解
+	n := len(es)
+	i := sort.Search(n, func(i int) bool {
+		return len(es[i].pattern) < len(e.pattern)
+	})
+    
+    // 如果没有找到，则会切片末尾追加元素
+	if i == n {
+		return append(es, e)
+	}
+    
+    // 若找到了，意味着需要在切片中间，准备来说就是索引为i的地方追加元素
+	es = append(es, muxEntry{}) // 在末尾追加一个空元素，占位和若切片需要扩容则尽早扩容
+	copy(es[i+1:], es[i:])      // 把索引i及后面的都向后移动一位
+	es[i] = e					// 索引i赋值
+	return es					// 返回切片
+}
+
+// ------------------------------------------------------------------
+// 示例1
+func main() {	
+	// 使用二分查找，输出序列中值小于300的最小的索引号
+	a := []int{500, 400, 300, 200, 100}
+	b := sort.Search(len(a), func(i int) bool {
+		return a[i] < 300
+	})
+	fmt.Println(b)
+}
+
+// 示例2
+func main() {
+	a := []string{
+		"/a/b/c/d/e/",
+		"/a/b/c/d/",
+		"/a/b/",
+		"/a/",
+	}
+	item := "/a/b/c/"
+	b := sort.Search(len(a), func(i int) bool {
+		return len(a[i]) < len(item)
+	})
+	fmt.Println(b)
+}
+```
+
+:::
+
+**总结**
+
+进行路由注册时分为两种情况：
+
+一、路由以`/`结尾的：
+
+（1）将路由与Handler映射添加到`ServeMux.m`字典中
+
+（2）将`Entry`有序插入到`ServeMux.es`切片中，注意这里是有序插入，按照路由字符串的长度从长至短排序
+
+二、路由以不以`/`结尾的：
+
+（1）将路由与Handler映射添加到`ServeMux.m`字典中
+
+#### 路由匹配规则
+
+```go
+// Find a handler on a handler map given a path string.
+// Most-specific (longest) pattern wins.
+func (mux *ServeMux) match(path string) (h Handler, pattern string) {
+	// Check for exact match first.
+    // 首先检查字典的是否匹配，匹配到直接返回
+    // 这里是精确匹配，很容易理解，注册的时候是什么就匹配什么
+	v, ok := mux.m[path]
+	if ok {
+		return v.h, v.pattern
+	}
+    
+	// Check for longest valid match.  mux.es contains all patterns
+	// that end in / sorted from longest to shortest.
+    // 若上面没有匹配到，则与mux.es中存储的所有以尾斜杠的进行匹配，它是从长到短存储的，最新匹配到就返回
+
+    // 若注册的路由有下面几条：
+    // /a/b/c/
+    // /a/b/
+    // 那么：
+    // (1) 访问/a/b/d的时候，会优先匹配到/a/b/，所以就会访问/a/b/
+    // (2) 访问/a/b的时候，其实是不能访问到上面任意一条路由的，因为前缀并不匹配
+    //     如果我想访问/a/b的时候也能访问到/a/b/，那该怎么弄呢？别着急，下面我们来测试一下
+	for _, e := range mux.es {
+		if strings.HasPrefix(path, e.pattern) {
+			return e.h, e.pattern
+		}
+	}
+	return nil, ""
+}
+```
+
+服务端代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func abHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "注册为/a/b/")
+}
+
+func abcHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "注册为/a/b/c/")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由，注册的时候是不用管注册顺序问题的，内部会自动排序写入
+	mux.HandleFunc("/a/b/", abHandler)
+	mux.HandleFunc("/a/b/c/", abcHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+路由匹配测试
+
+```bash
+# 注册什么就访问什么(尾斜杠保持一致)，符合预期
+C:\Users\Administrator>curl http://127.0.0.1/a/b/
+注册为/a/b/
+C:\Users\Administrator>curl http://127.0.0.1/a/b/c/
+注册为/a/b/c/
+
+# 访问/a/b/d/
+# 不管带不带尾斜杠，它只能匹配到前缀为/a/b/的路由，所以会输出"注册为/a/b/"
+C:\Users\Administrator>curl http://127.0.0.1/a/b/d
+注册为/a/b/
+C:\Users\Administrator>curl http://127.0.0.1/a/b/d/
+注册为/a/b/
+
+# 访问/a/b/c/d
+# ServeMux.es是按照从长到短存储的，所以会优先匹配到/a/b/c/
+C:\Users\Administrator>curl http://127.0.0.1/a/b/c/d
+注册为/a/b/c/
+
+# 关键的来了 -----------------------------------------------------------------
+# 访问/a/b会有什么结果呢？按道理来说，精确匹配是匹配不到的，按前缀匹配也是匹配不到的，应该返回404,是这样吗？
+C:\Users\Administrator>curl http://127.0.0.1/a/b
+<a href="/a/b/">Moved Permanently</a>.				# 发生重定向了
+
+C:\Users\Administrator>curl http://127.0.0.1/a/b -I # 看一下响应头详情
+HTTP/1.1 301 Moved Permanently						# 301永久重定向
+Content-Type: text/html; charset=utf-8
+Location: /a/b/										# 让我们重定向到/a/b/,重定向后就属于精确匹配了
+Date: Mon, 02 May 2022 08:14:06 GMT
+
+# 如果是在浏览器中访问，浏览器会自动处理重定向，使用curl的话只需要添加-L参数，会自动访问重定向的地址
+# 所以又看见熟悉的/a/b/了
+C:\Users\Administrator>curl http://127.0.0.1/a/b -L
+注册为/a/b/
+```
+
+**注册路由时应该带不带尾斜杠呢？**
+
+（1）如果不带尾斜杠的话只能精确匹配，即注册`/a/b`访问`/a/b/`会返回`404`，这样不太友好，
+
+如果浏览器有缓存的话(自动重定向到`/a/b/`)，必须要清空缓存才能访问到`/a/b`
+
+（2）如果带尾斜杠的话，即注册`/a/b/`访问`/a/b`会发生`301`重定向
+
+* 浏览器端使用友好
+
+* 写代码/脚本的时候注意允许重定向或直接写带尾斜杠的`URL`
+
+* 访问`/a/b/d`也会访问到`/a/b/`，这一点需要特别注意，如果不想要这个功能的话，粗暴的解决办法是直接将标准库net/http中的代码注释掉
+
+  ```go
+  func (mux *ServeMux) match(path string) (h Handler, pattern string) {
+  	fmt.Println(path)
+  
+  	// Check for exact match first.
+  	v, ok := mux.m[path]
+  	if ok {
+  		return v.h, v.pattern
+  	}
+      
+  	// Check for longest valid match.  mux.es contains all patterns
+  	// that end in / sorted from longest to shortest.
+      // 下面这一段代码注释掉
+  	//for _, e := range mux.es {
+  	//	if strings.HasPrefix(path, e.pattern) {
+  	//		return e.h, e.pattern
+  	//	}
+  	//}
+  
+  	return nil, ""
+  }
+  ```
+
+  
+
+
+
+
+
+
+
+
+
+
+
