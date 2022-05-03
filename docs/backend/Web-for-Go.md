@@ -2248,7 +2248,7 @@ func main() {
 
 （1）将路由与Handler映射添加到`ServeMux.m`字典中
 
-#### 路由匹配规则
+#### 路由匹配1：精确匹配和前缀匹配
 
 ```go
 // Find a handler on a handler map given a path string.
@@ -2334,14 +2334,14 @@ C:\Users\Administrator>curl http://127.0.0.1/a/b/c/
 注册为/a/b/c/
 
 # 访问/a/b/d/
-# 不管带不带尾斜杠，它只能匹配到前缀为/a/b/的路由，所以会输出"注册为/a/b/"
+# 它只能匹配到前缀为/a/b/的路由，所以会输出"注册为/a/b/"
 C:\Users\Administrator>curl http://127.0.0.1/a/b/d
 注册为/a/b/
 C:\Users\Administrator>curl http://127.0.0.1/a/b/d/
 注册为/a/b/
 
 # 访问/a/b/c/d
-# ServeMux.es是按照从长到短存储的，所以会优先匹配到/a/b/c/
+# ServeMux.es是按照从长到短存储路由的，所以会优先匹配到/a/b/c/
 C:\Users\Administrator>curl http://127.0.0.1/a/b/c/d
 注册为/a/b/c/
 
@@ -2362,19 +2362,150 @@ C:\Users\Administrator>curl http://127.0.0.1/a/b -L
 注册为/a/b/
 ```
 
-**注册路由时应该带不带尾斜杠呢？**
+#### 路由匹配2：重定向规则
 
-（1）如果不带尾斜杠的话只能精确匹配，即注册`/a/b`访问`/a/b/`会返回`404`，这样不太友好，
+```go
+// redirectToPathSlash determines if the given path needs appending "/" to it.
+// redirectToPathSlash函数用于确认是否要给路由添加尾斜杠/
 
-如果浏览器有缓存的话(自动重定向到`/a/b/`)，必须要清空缓存才能访问到`/a/b`
+// This occurs when a handler for path + "/" was already registered, but
+// not for path itself. If the path needs appending to, it creates a new
+// URL, setting the path to u.Path + "/" and returning true to indicate so.
+// 什么时候应该发生重定向呢？
+// 就是带尾斜杠的路由已经注册了，但是不带尾斜杠的路由并没有注册，也就是说/a/b/注册了，但是/a/b没有注册的情况下
+// 这个逻辑在另一个函数shouldRedirectRLocked中
+func (mux *ServeMux) redirectToPathSlash(host, path string, u *url.URL) (*url.URL, bool) {
+	mux.mu.RLock()
+	shouldRedirect := mux.shouldRedirectRLocked(host, path)
+	mux.mu.RUnlock()
+	if !shouldRedirect {
+		return u, false
+	}
+	path = path + "/"
+	u = &url.URL{Path: path, RawQuery: u.RawQuery}
+	return u, true
+}
 
-（2）如果带尾斜杠的话，即注册`/a/b/`访问`/a/b`会发生`301`重定向
+// ---------------------------------------------------------------------------------------
+// shouldRedirectRLocked reports whether the given path and host should be redirected to
+// path+"/". This should happen if a handler is registered for path+"/" but
+// not path -- see comments at ServeMux.
+func (mux *ServeMux) shouldRedirectRLocked(host, path string) bool {
+	// 路由字符串，包含不带主机名的和带主机名的
+    p := []string{path, host + path}
 
-* 浏览器端使用友好
+    // 如果该路由已经注册了，则返回false，代表不应该重定向
+	for _, c := range p {
+		if _, exist := mux.m[c]; exist {
+			return false
+		}
+	}
 
-* 写代码/脚本的时候注意允许重定向或直接写带尾斜杠的`URL`
+    // 路由为空直接返回false
+	n := len(path)
+	if n == 0 {
+		return false
+	}
+    // 构造出一个带尾斜杠的路由，如果存在，
+    // 如果原路由最后一个字符是/，则返回false，否则返回true
+	for _, c := range p {
+		if _, exist := mux.m[c+"/"]; exist {
+			return path[n-1] != '/'
+		}
+	}
 
-* 访问`/a/b/d`也会访问到`/a/b/`，这一点需要特别注意，如果不想要这个功能的话，粗暴的解决办法是直接将标准库net/http中的代码注释掉
+    // 默认返回false
+	return false
+}
+```
+
+总结
+
+（1）就是说`/a/b/`注册了，但是`/a/b`没有注册的情况下就会发生重定向
+
+（2）如果不想让它重定向，也有办法，就是把`/a/b`也注册一遍
+
+#### 路由匹配3：带主机名的路由
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func orgLoginHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "orgLoginHandler")
+}
+
+func comLoginHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "comLoginHandler")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由（带主机名）
+	mux.HandleFunc("test.org/login/", orgLoginHandler)
+	mux.HandleFunc("test.com/login/", comLoginHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
+```
+
+:::
+
+测试
+
+```bash
+# 访问127.0.0.1,报错404
+C:\Users\Administrator>curl http://127.0.0.1/login/
+404 page not found
+
+# 访问带主机名的路由
+# 提前修改好好hosts文件
+# 127.0.0.1       	test.org
+# 127.0.0.1       	test.com
+C:\Users\Administrator>curl http://test.org/login/
+orgLoginHandler
+C:\Users\Administrator>curl http://test.com/login/
+comLoginHandler
+
+# 访问不带尾斜杠的路由，发生重定向
+C:\Users\Administrator>curl http://test.com/login
+<a href="/login/">Moved Permanently</a>.
+C:\Users\Administrator>curl http://test.com/login -L
+comLoginHandler
+```
+
+#### 路由匹配4：总结
+
+注册路由时应该带不带尾斜杠呢？
+
+（1）如果不带尾斜杠的话只能精确匹配，即注册`/a/b`访问`/a/b/`会返回`404`，这样不太友好
+
+（2）如果带尾斜杠的话，即注册`/a/b/`访问`/a/b`时：
+
+* 重定向问题
+
+  * 默认会触发`301`重定向，如果不想重定向，可以把`/a/b`也注册一遍
+
+  * 写代码/脚本的时候注意允许重定向或直接写带尾斜杠的`URL`，比如`curl -L`
+
+
+* 访问`/a/b/d`也会访问到`/a/b/`，这一点需要特别注意，如果不想要这个功能的话，粗暴的解决办法是直接将标准库`net/http`中的代码注释掉
 
   ```go
   func (mux *ServeMux) match(path string) (h Handler, pattern string) {
@@ -2399,13 +2530,179 @@ C:\Users\Administrator>curl http://127.0.0.1/a/b -L
   }
   ```
 
-  
+
+### Server
+
+#### 自定义Server
+
+查看`http.ListenAndServe`源码
+
+```go
+// ListenAndServe listens on the TCP network address addr and then calls
+// Serve with handler to handle requests on incoming connections.
+// Accepted connections are configured to enable TCP keep-alives.
+//
+// The handler is typically nil, in which case the DefaultServeMux is used.
+//
+// ListenAndServe always returns a non-nil error.
+func ListenAndServe(addr string, handler Handler) error {
+	server := &Server{Addr: addr, Handler: handler}
+	return server.ListenAndServe()
+}
+```
+
+所以我们也可以使用自己的Server
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化请求多路复用器
+	mux := http.NewServeMux()
+
+	// 注册路由
+	mux.HandleFunc("/", indexHandler)
+
+	// 实例化Server
+	server := &http.Server{Addr: addr, Handler: mux}
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(server.ListenAndServe())
+}
+```
+
+:::
+
+#### Server超时配置
+
+| 参数                | 说明                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| `ReadTimeout`       | 服务端读取客户端请求超时时间，包含请求头和请求体；0代表永不超时 |
+| `ReadHeaderTimeout` | 服务端读取客户端请求超时时间，，包含请求头；0代表永不超时    |
+| `WriteTimeout`      | 服务端响应超时时间，即`Handler`超时时间，如果发生超时，则什么也不返回；0代表永不超时 |
+| `IdleTimeout`       | 连接池中空闲连接超时时间，如果没有设置会使用`ReadTimeout`的值，如果`ReadTimeout`也没有设置，则代表永不超时 |
+
+关于超时问题，这里有一篇文章很好：[https://segmentfault.com/a/1190000023635278](https://segmentfault.com/a/1190000023635278)
 
 
 
+#### Server优雅关闭
 
+::: details 点击查看完整代码
 
+```go
+package main
 
+import (
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+// Handler
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received a request")
+	time.Sleep(time.Second * 8) // 模式处理一个长时间的请求
+	io.WriteString(w, "Welcome to Go!\n")
+}
+
+// 信号监听
+func SignalEvent(server *http.Server) {
+	// 注册信号
+	interrupt := make(chan os.Signal)
+	reload := make(chan os.Signal)
+
+    // 退出信号
+	signal.Notify(
+		interrupt,
+		syscall.SIGINT,  // kill -2 || Ctrl+C
+		syscall.SIGQUIT, // kill -3 || Ctrl+\
+		syscall.SIGTERM, // kill -15
+	)
+    
+    // 重载配置
+	signal.Notify(reload, syscall.SIGHUP) // kill -1
+
+	// 监听信号
+	for {
+		select {		
+		case <-interrupt:
+			Shutdown(server, time.Second*10)		
+		case <-reload:
+			Reload(server)
+		}
+	}
+}
+
+// 优雅关闭
+func Shutdown(server *http.Server, timeout time.Duration) {
+	fmt.Println()
+	log.Println("Waiting for the remaining connections to finish...")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	err := server.Shutdown(ctx)
+	if err != nil {
+		log.Println("HTTP Server graceful shutdown failed: " + err.Error())
+		log.Println("HTTP Server forced shutdown successfully")
+	} else {
+		log.Println("HTTP Server gracefully shutdown successfully")
+	}
+	os.Exit(0)
+}
+
+// 重载配置
+func Reload(server *http.Server) {
+	log.Println("Reload")
+	server.WriteTimeout = time.Second * 10
+}
+
+func main() {
+	// 初始化Server
+	addr := "127.0.0.1:80"
+	mux := http.NewServeMux()                        // 实例化请求多路复用器
+	mux.HandleFunc("/", indexHandler)                // 注册路由
+	server := &http.Server{Addr: addr, Handler: mux} // 创建Server
+
+	// 启动Server
+	go func() {
+		fmt.Println("* Running on http://" + addr)
+		log.Println("Current PID: ", os.Getpid())
+		err := server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	// 监听Server信号
+	SignalEvent(server)
+}
+```
+
+:::
 
 
 
