@@ -190,7 +190,7 @@ func NewRequest(method, url string, body io.Reader) (*Request, error) {
 
 :::
 
-### Request: 修改请求头
+### 修改请求头
 
 ::: details 点击查看完整代码
 
@@ -296,7 +296,9 @@ Foo            : []string{"Bar1", "Bar1", "Bar2"}
 hello world!
 ```
 
-### Client Timeout：基础超时控制
+### Client
+
+#### 基础超时控制
 
 默认的`DefaultClient`是没有设置超时时间的，我们可以自定义超时时间，包含建立连接、重定向、读取正文等整个请求流程时间
 
@@ -375,7 +377,7 @@ hello world!
 
 
 
-### Client Transport：更精细的超时控制
+#### 更精细的超时控制
 
 DefaultTransport介绍
 
@@ -427,7 +429,7 @@ type Transport struct {
 const DefaultMaxIdleConnsPerHost = 2			// 默认为2，这意味着空闲连接中的100个连接只有两个连接分配给该主机；这个值比较小，可以改大一些
 ```
 
-### Client Transport：连接复用测试
+#### 连接复用测试
 
 ::: details 点击查看完整代码
 
@@ -562,7 +564,7 @@ func main() {
 2022/04/28 13:00:01 HTTP Server Response: hello world!
 ```
 
-### Client Transport：设置代理
+#### 设置代理
 
 先确保不加代理的时候能正常输出当前IP，然后再切换到代理模式，验证代理是否生效
 
@@ -635,7 +637,7 @@ func main() {
 87.249.128.47
 ```
 
-### Client Transport：添加Basic Auth认证
+#### 添加Basic Auth认证
 
 * 方式一：直接调用`request.SetBasicAuth("root", "123456")`
 * 方式二：在Transport Proxy中注入`request.SetBasicAuth("root", "123456")`
@@ -774,7 +776,7 @@ func main() {
 
 :::
 
-### Client CheckRedirect: 重定向策略
+#### 重定向策略
 
 通过`Client.Do`方法追踪到默认重定向策略函数，即最多允许10次重定向
 
@@ -906,7 +908,7 @@ func main() {
 2022/04/28 17:11:12         
 ```
 
-### Client Jar：Cookie设置与查看
+#### Cookie设置与查看
 
 ::: details 点击查看完整代码
 
@@ -1045,7 +1047,7 @@ func main() {
 服务端响应内容: hello world! | 服务端设置的Cookie: ["uid=489" "gid=407"]
 ```
 
-### 💊 Groutine数量问题
+### Groutine数量问题
 
 只是简单发送一个`GET`请求，关闭连接后发现：
 
@@ -1228,7 +1230,7 @@ func main() {
 
 :::
 
-### 💊 Groutine泄漏之Transport
+### Groutine泄漏之Transport
 
 先上结论
 
@@ -1476,7 +1478,7 @@ func main() {
 
 
 
-## net/http/httptrace：HTTP请求跟踪
+## net/http/httptrace：请求跟踪
 
 官方文档：[https://pkg.go.dev/net/http/httptrace](https://pkg.go.dev/net/http/httptrace)
 
@@ -1631,6 +1633,8 @@ func main() {
 输出结果
 
 ![image-20220429211410766](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220429211410766.png)
+
+## 
 
 ## net/http之Server
 
@@ -2704,7 +2708,7 @@ func main() {
 
 :::
 
-
+#### 启用HTTPS
 
 
 
