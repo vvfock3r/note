@@ -2708,7 +2708,329 @@ func main() {
 
 :::
 
-#### 启用HTTPS
+## 
+
+## Gin
+
+官网：[https://gin-gonic.com/](https://gin-gonic.com/)
+
+Github：[https://github.com/gin-gonic/gin](https://github.com/gin-gonic/gin)
+
+文档：
+
+* [https://gin-gonic.com/zh-cn/docs/](https://gin-gonic.com/zh-cn/docs/)
+* [https://pkg.go.dev/github.com/gin-gonic/gin](https://pkg.go.dev/github.com/gin-gonic/gin)
+
+
+
+### 基础示例
+
+#### 安装Gin
+
+```bash
+go get -u github.com/gin-gonic/gin
+```
+
+#### 基础示例
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello Gin!\n")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+#### r.Run(addr)
+
+```go
+func (engine *Engine) Run(addr ...string) (err error) {	// addr是可以不用传的
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+	}
+
+	address := resolveAddress(addr)	// 看一下addr处理逻辑
+	debugPrint("Listening and serving HTTP on %s\n", address)
+    // 可以看到，内部其实是调用了net/http的ListenAndServe
+    // 这里的engine就是我们上面gin.Default()的值r，它实现了http.Handler接口
+	err = http.ListenAndServe(address, engine)
+	return
+}
+
+// --------------------------------------------------------------------------------------------
+func resolveAddress(addr []string) string {
+	switch len(addr) {
+	case 0: 
+		// 如果没有传addr参数的话，尝试使用环境变量PORT的值
+		if port := os.Getenv("PORT"); port != "" {
+			debugPrint("Environment variable PORT=\"%s\"", port)
+			return ":" + port
+		}
+        // 若没有找到环境变量PORT，则默认使用:8080
+		debugPrint("Environment variable PORT is undefined. Using port :8080 by default")
+		return ":8080"
+	case 1:
+        // 如果传了addr参数，则默认返回
+		return addr[0]
+	default:
+		panic("too many parameters")
+	}
+}
+// --------------------------------------------------------------------------------------------
+// 根据以上信息，我们在启动Server的时候也可以使用http.ListenAndServe
+// 启动Gin Server
+log.Fatalln(http.ListenAndServe(addr, r))
+```
+
+#### gin.Default()
+
+```go
+func Default() *Engine {
+	debugPrintWARNINGDefault()
+	engine := New()
+    engine.Use(Logger(), Recovery())	// 这里使用了两个中间件，Logger()和Recovery(),现在先不关心，往后看
+	return engine
+}
+
+// ---------------------------------------------------------------------------------
+// ServeHTTP conforms to the http.Handler interface.
+func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+    // 往池子里取出一个Context
+    // engine.pool就是sync.Pool，临时内存池
+	c := engine.pool.Get().(*Context)
+
+    // Context对象初始化
+	c.writermem.reset(w)			
+	c.Request = req
+	c.reset()
+
+    // 匹配URL并调用注册的Handler进行处理
+	engine.handleHTTPRequest(c)
+
+    // 处理完成后放回池子
+	engine.pool.Put(c)
+}
+
+// ---------------------------------------------------------------------------------
+func (engine *Engine) handleHTTPRequest(c *Context) {
+	httpMethod := c.Request.Method	// 请求方法
+	rPath := c.Request.URL.Path		// 请求Path
+	unescape := false
+	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+		rPath = c.Request.URL.RawPath
+		unescape = engine.UnescapePathValues
+	}
+
+	if engine.RemoveExtraSlash {
+		rPath = cleanPath(rPath)
+	}
+
+	// Find root of the tree for the given HTTP method
+    // 从给出的HTTP方法找到root节点
+    
+    // 路由树，具体信息后面看
+	t := engine.trees						
+    
+    // 使用for循环遍历,这里的for循环使用是一个小技巧
+	for i, tl := 0, len(t); i < tl; i++ {	
+		if t[i].method != httpMethod {
+			continue
+		}
+		root := t[i].root
+		// Find route in tree
+		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
+		if value.params != nil {
+			c.Params = *value.params
+		}
+		if value.handlers != nil {
+			c.handlers = value.handlers
+			c.fullPath = value.fullPath
+			c.Next()
+			c.writermem.WriteHeaderNow()
+			return
+		}
+        // ...
+        
+        
+// ---------------------------------------------------------------------------------
+// for循环讨巧技巧
+        
+package main
+
+import "fmt"
+
+func main() {
+	// 很多时候我们会这样遍历
+	nodes := []string{"hello", "world", "!"}
+	n := len(nodes)
+	for i := 0; i < n; i++ {
+		fmt.Println(nodes[i])
+	}
+	fmt.Println(n) // 遍历完成后n还可以正常使用，说明对象还没有被销毁，还在占用内存
+
+	// 讨巧的技能
+	// (1) 少写了一行获取切片长度
+	for i, n := 0, len(nodes); i < n; i++ {
+		fmt.Println(nodes[i])
+	}
+	//fmt.Println(n)	// （2）n已经不能使用了，内存已释放
+	// 当外部不需要切片长度的时候，可以使用这个技巧
+}   
+        
+// ---------------------------------------------------------------------------------
+type Engine struct {
+    // ...
+    pool             sync.Pool
+    trees            methodTrees   // 看一下tress是啥
+    // ...    
+}
+        
+var _ IRouter = &Engine{}	       // 这里又是另外一个小技巧，实例化一下，但是又什么都不做，目的在于
+        						   // 在编译阶段就确保Engine实现了IRouter接口
+        						   //	type IRouter interface {
+								   //		IRoutes
+								   //		Group(string, ...HandlerFunc) *RouterGroup
+								   //	}
+        
+type methodTrees []methodTree	// tress是一个切片 
+
+type methodTree struct {
+	method string
+	root   *node
+}
+
+type node struct {
+	path      string
+	indices   string
+	wildChild bool
+	nType     nodeType
+	priority  uint32
+	children  []*node // child nodes, at most 1 :param style node at the end of the array
+	handlers  HandlersChain
+	fullPath  string
+}
+        
+func New() *Engine {
+	debugPrintWARNINGNew()
+	engine := &Engine{
+		RouterGroup: RouterGroup{
+			Handlers: nil,
+			basePath: "/",
+			root:     true,
+		},
+		FuncMap:                template.FuncMap{},
+		RedirectTrailingSlash:  true,
+		RedirectFixedPath:      false,
+		HandleMethodNotAllowed: false,
+		ForwardedByClientIP:    true,
+		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
+		TrustedPlatform:        defaultPlatform,
+		UseRawPath:             false,
+		RemoveExtraSlash:       false,
+		UnescapePathValues:     true,
+		MaxMultipartMemory:     defaultMultipartMemory,
+        // 容量为9，代表9个HTTP方法，包含GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
+		trees:                  make(methodTrees, 0, 9),	
+		delims:                 render.Delims{Left: "{{", Right: "}}"},
+		secureJSONPrefix:       "while(1);",
+		trustedProxies:         []string{"0.0.0.0/0"},
+		trustedCIDRs:           defaultTrustedCIDRs,
+	}
+	engine.RouterGroup.engine = engine
+	engine.pool.New = func() interface{} {
+		return engine.allocateContext()
+	}
+	return engine
+}
+
+// ---------------------------------------------------------------------------------
+// 改写一下代码，不使用gin.Default()，使用自己New()的引擎
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
+
+	// 注册路由
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello Gin!\n")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(http.ListenAndServe(addr, r))
+}
+
+```
+
+### 路由源码
+
+#### 路由结构体
+
+```go
+type Engine struct {
+	RouterGroup
+    // ...
+}
+
+// RouterGroup is used internally to configure router, a RouterGroup is associated with
+// a prefix and an array of handlers (middleware).
+type RouterGroup struct {
+	Handlers HandlersChain
+	basePath string
+	engine   *Engine
+	root     bool
+}
+
+// Engine和RouterGroup类似于相互嵌套的结构
+```
+
+
+
+#### 路由注册逻辑
+
+我们查看一下`r.GET`源码
+
+```go
+// GET is a shortcut for router.Handle("GET", path, handle).
+func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodGet, relativePath, handlers)
+}
+```
+
+
+
+
 
 
 
