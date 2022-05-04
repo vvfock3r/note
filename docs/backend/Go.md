@@ -2770,13 +2770,17 @@ package main
 
 import "fmt"
 
+type User struct {
+	Basic // Basic Basic的简写形式,但与直接写Basic Basic有区别
+}
+
 type Basic struct {
 	Name string
 	Age  int
 }
 
-type User struct {
-	Basic // Basic: Basic的简写形式
+func (b *Basic) GetName() string {
+	return b.Name
 }
 
 func main() {
@@ -2787,7 +2791,8 @@ func main() {
 		},
 	}
 
-	fmt.Printf("%#v\n", u) // main.User{Basic:main.Basic{Name:"July", Age:18}}
+	fmt.Printf("%#v\n", u)   // main.User{Basic:main.Basic{Name:"July", Age:18}}
+	fmt.Println(u.GetName()) // July, User结构体实例可以直接使用Basic结构体的方法,如果是非简写形式则不可以直接调用
 }
 ```
 
