@@ -3748,16 +3748,17 @@ func main() {
 
 	// 实例化Gin路由引擎
 	r := gin.Default()
-    
-    // 默认为ture,设置为False可以关闭自动重定向
+
+	// 默认为ture,设置为False可以关闭自动重定向（全局设置）
 	//r.RedirectTrailingSlash = false
-    
-    // 默认为false, 设置为true如果匹配不到将会尝试修复path，比如/FOO和/..//Foo将会被重定向到/foo(/foo存在的情况下)
-	//r.RedirectFixedPath = true      
+
+	// 默认为false, 设置为true如果匹配不到将会尝试修复path，比如/FOO和/..//Foo将会被重定向到/foo(/foo存在的情况下)
+	//r.RedirectFixedPath = true
 
 	// 注册路由
 	r.GET("/index", func(c *gin.Context) {
 		c.String(http.StatusOK, "Index\n")
+		//c.Redirect(301, "/login/") // 函数内部使用重定向
 	})
 	r.GET("/login/", func(c *gin.Context) {
 		c.String(http.StatusOK, "Login\n")
@@ -3779,12 +3780,19 @@ Index
 C:\Users\Administrator>curl http://127.0.0.1/login/
 Login
 
-# 自动重定向
+# 无论注册时带不带尾斜杠，访问时都可以自动重定向
 C:\Users\Administrator>curl http://127.0.0.1/index/
 <a href="/index">Moved Permanently</a>.
 C:\Users\Administrator>curl http://127.0.0.1/index/ -L
 Index
+C:\Users\Administrator>curl http://127.0.0.1/login -L
+Login
 
+# 并不会像net/http那样，会进行前缀匹配
+C:\Users\Administrator>curl http://127.0.0.1/login/a/b/c
+404 page not found
+
+# --------------------------------------------------------------
 # 使用curl -I查看响应头,状态码居然是404
 C:\Users\Administrator>curl http://127.0.0.1/index/ -I
 HTTP/1.1 404 Not Found
@@ -3808,5 +3816,441 @@ curl 7.79.1 (Windows) libcurl/7.79.1 Schannel
 Release-Date: 2021-09-22
 Protocols: dict file ftp ftps http https imap imaps pop3 pop3s smtp smtps telnet tftp
 Features: AsynchDNS HSTS IPv6 Kerberos Largefile NTLM SPNEGO SSL SSPI UnixSockets
+```
+
+### 参数解析
+
+#### Content-Type
+
+**说明**
+
+`Content-Type`写入在HTTP请求头或响应头中，用于告知接收方资源类型
+
+* 接收方可以是服务端（客户端发送HTTP请求设置`Content-Type`），也可以是客户端（服务端返回HTTP响应设置`Content-Type`）
+
+* `Content-Type`参数并不是必须要设置的
+
+语法格式如下：
+
+```html
+Content-Type: type/subtype [; charset] [; boundary]
+```
+
+* type/subtype：由类型与子类型两个字符串中间用`'/'`分隔而组成。不允许空格存在。
+* charset：字符编码标准
+* 对于多部分实体，boundary 是必需的，其包括来自一组字符的1到70个字符，已知通过电子邮件网关是非常健壮的，而不是以空白结尾。它用于封装消息的多个部分的边界
+
+
+
+**Content-Type类型举例**
+
+| 类型                              | 说明                                                         | Content-Type典型示例                                         |
+| --------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `text`<br />（文本类型）          | 表明文件是普通文本，理论上是人类可读                         | `text/plain`<br />`text/html`<br />`text/css`<br />`text/javascript` |
+| `image`<br />（图片类型）         | 表明是某种图像。不包括视频，<br />但是动态图（比如动态gif）也使用image类型 | `image/gif`<br />`image/png`<br />`image/jpeg`<br />`image/bmp`<br />`image/webp`<br />`image/x-icon`<br />`image/vnd.microsoft.icon` |
+| `audio`<br />（音频类型）         | 表明是某种音频文件                                           | `audio/midi` <br />`audio/mpeg`<br />`audio/webm`<br />`audio/ogg`<br />`audio/wav` |
+| `video`<br />（视频类型）         | 表明是某种视频文件                                           | `video/webm`<br />`video/ogg`                                |
+| `application`<br />（二进制类型） | 表明是某种二进制数据                                         | `  applicationx-www-form-urlencoded`<br />`application/json`<br />`application/octet-stream`<br />`application/pdf` |
+| `Multipart`<br />（文件类型）     | 表示细分领域的文件类型的种类，经常对应不同的 MIME 类型。<br />这是复合文件的一种表现方式 | `multipart/form-data`<br />`multipart/byteranges`            |
+
+参考自：[https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
+
+
+
+#### 路径参数
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由 - 路径参数
+	r.GET("/user/:id", func(c *gin.Context) {
+		url := c.Request.URL
+		id := c.Param("id")
+		c.String(http.StatusOK, fmt.Sprintf("URL: %s, userId: %s\n", url, id))
+	})
+
+	r.GET("/article/*id", func(c *gin.Context) {
+		url := c.Request.URL
+		id := c.Param("id")
+		c.String(http.StatusOK, fmt.Sprintf("URL: %s, articleId: %s\n", url, id))
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# :测试
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/user		# 必须传递参数
+404 page not found
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/		# 必须传递参数
+404 page not found
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/1		# 数据类型可以是多种类型
+URL: /user/1, userId: 1
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/abc	# 数据类型可以是多种类型
+URL: /user/abc, userId: abc
+C:\Users\Administrator>curl http://127.0.0.1/user/1/2			# 不支持多级
+404 page not found
+
+# *测试
+C:\Users\Administrator>curl http://127.0.0.1/article			# 重定向
+<a href="/article/">Moved Permanently</a>.
+C:\Users\Administrator>curl http://127.0.0.1/article/			# 可以不传参数
+URL: /article/, articleId: /
+C:\Users\Administrator>curl http://127.0.0.1/article/1			# 传一个参数
+URL: /article/1, articleId: /1
+C:\Users\Administrator>curl http://127.0.0.1/article/abc/def	# 多级参数
+URL: /article/abc/def, articleId: /abc/def
+```
+
+#### 查询字符串
+
+| 方法                                                | 说明                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| `Query(key string) string`                          | 获取key的值，若获取不到返回空字符串，若传递多个则只获取第一个 |
+| `QueryArray(key string) []string`                   | 类似`Query`，可以获取多个值                                  |
+| `DefaultQuery(key, defaultValue string) string`     | 类似`Query`，可以自定义默认值                                |
+| `QueryMap(key string) map[string]string`            | 获取key的值，输入为`map`，返回为`map`                        |
+| `GetQuery(key string) (string, bool)`               | 类似`Query`，返回两个值，ok代表是否获取到值                  |
+| `GetQueryArray(key string) ([]string, bool)`        | 类似`QueryArray`，返回两个值，ok代表是否获取到值             |
+| `GetQueryMap(key string) (map[string]string, bool)` | 类似`QueryMap`，返回两个值，ok代表是否获取到值               |
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由 - 路径参数
+	r.GET("/", func(c *gin.Context) {
+		msg := fmt.Sprintf("%#v\n", c.QueryMap("map"))
+		c.String(http.StatusOK, msg)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator>curl "http://127.0.0.1/?map\[id\]=abc&map\[name\]=bob"
+map[string]string{"id":"abc", "name":"bob"}
+```
+
+#### 表单解析
+
+| 方法                                                   | 说明                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| `PostForm(key string) string`                          | 解析表单，若获取不到返回空字符串，若获取到多个则只返回第一个 |
+| `PostFormArray(key string) []string`                   | 类似`PostForm`，可以获取多个值                               |
+| `PostFormMap(key string) map[string]string`            | 类似`PostForm`，输入为`map`，返回为`map`                     |
+| `GetPostForm(key string) (string, bool)`               | 类似`PostForm`，返回两个值，ok代表是否获取到值               |
+| `GetPostFormArray(key string) ([]string, bool)`        | 类似`PostFormArray`，返回两个值，ok代表是否获取到值          |
+| `GetPostFormMap(key string) (map[string]string, bool)` | 类似`PostFormMap`，返回两个值，ok代表是否获取到值            |
+| `DefaultPostForm(key, defaultValue string) string`     | 类似`PostForm`，可以设置默认值                               |
+
+::: details 提交表单示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "192.168.0.105:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.POST("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 解析表单数据
+		username := c.PostForm("username")
+		password := c.PostForm("password")
+
+		// 返回响应
+		msg := fmt.Sprintf("Content-Type: %q\nPostForm: username: %q, password: %q\n", contentType, username, password)
+		c.String(http.StatusOK, msg)
+	})
+	
+	r.GET("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 解析表单数据
+		username := c.PostForm("username")
+		password := c.PostForm("password")
+
+		// 返回响应
+		msg := fmt.Sprintf("Content-Type: %q\nPostForm: username: %q, password: %q\n", contentType, username, password)
+		c.String(http.StatusOK, msg)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+# -------------先使用POST方法测试------------------------------------------------------
+# 什么都不传，服务端接收到空字符串
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST
+Content-Type: ""
+PostForm: username: "", password: ""
+
+# 服务端响应头的Content-Type为【text/plain; charset=utf-8】
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST -I
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Fri, 06 May 2022 05:52:49 GMT
+Content-Length: 54
+
+# ⭐使用-d参数提交数据，curl会自动设置Content-Type为application/x-www-form-urlencoded
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国"
+Content-Type: "application/x-www-form-urlencoded"
+PostForm: username: "root", password: "123456中国"
+
+# 给curl设置一个错误的Content-Type,可以看到服务端获取不到我们提交的数据了
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国" -H "Content-Type:abc"
+Content-Type: "abc"
+PostForm: username: "", password: ""
+
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国" -H "Content-Type:application/json"
+Content-Type: "application/json"
+PostForm: username: "", password: ""
+
+# ⭐使用-f参数提交表单，curl会自动设置Content-Type为multipart/form-data
+[root@localhost ~]# curl http://192.168.0.105/ -XPOST --form username=root --form password=中国你好
+Content-Type: "multipart/form-data; boundary=----------------------------cb1776d3bb87"
+PostForm: username: "root", password: "中国你好"
+
+# -------------再使用GET方法测试------------------------------------------------------
+[root@localhost ~]# curl http://192.168.0.105/ -XGET -d "username=root&password=123456中国"
+Content-Type: "application/x-www-form-urlencoded"
+PostForm: username: "", password: ""
+
+[root@localhost ~]# curl http://192.168.0.105/ -XGET --form username=root --form password=中国你好
+Content-Type: "multipart/form-data; boundary=----------------------------cd010eead867"
+PostForm: username: "root", password: "中国你好"
+```
+
+:::
+
+::: details HTML中的form标签默认使用application/x-www-form-urlencoded
+
+```go
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form action="http://192.168.0.105/" method="post">
+    <!-- 默认enctype的值为application/x-www-form-urlencoded -->
+    <!--<form action="http://192.168.0.105/" method="post" enctype="application/x-www-form-urlencoded">-->
+    <label>
+        <span>用户名</span>
+        <input type="text" name="username" placeholder="请输入您的用户名" autocomplete="off" autofocus>
+    </label>
+    <label>
+        <span>密码</span>
+        <input type="password" name="password" placeholder="请输入您的密码" autocomplete="off">
+    </label>
+    <input type="submit" value="登录">
+</form>
+</body>
+</html>
+```
+
+:::
+
+#### 单文件上传
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "192.168.0.105:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 参数调整
+	//r.MaxMultipartMemory默认内存限制为32MB，意思是当读取的文件大小超过这个值就会进行刷盘
+	//可以通过以下方法来设置
+	//r.MaxMultipartMemory = 64 << 20 // 64 MB
+
+	// 注册路由
+	r.POST("/upload/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+		fmt.Println("Content-Type: ", contentType)
+
+		// 读取文件
+		f, err := c.FormFile("logo")
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("请求错误: %s\n", err.Error()))
+            return
+		}
+
+		// 保存文件,如果文件已经存在则会覆盖
+		err = c.SaveUploadedFile(f, f.Filename)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("服务器保存文件失败: %s\n", err.Error()))
+            return
+		}
+
+		// 返回响应
+		msg := fmt.Sprintf("Content-Type: %s\n文件上传成功\n", contentType)
+		c.String(http.StatusOK, msg)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[root@localhost ~]# curl http://192.168.0.105/upload/ -F "logo=@anaconda-ks.cfg" -XPOST
+Content-Type: multipart/form-data; boundary=----------------------------0338377c72ec
+文件上传成功
+```
+
+#### 多个文件上传
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "192.168.0.105:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 参数调整
+	//r.MaxMultipartMemory默认内存限制为32MB，意思是当读取的文件大小超过这个值就会进行刷盘
+	//可以通过以下方法来设置
+	//r.MaxMultipartMemory = 64 << 20 // 64 MB
+
+	// 注册路由
+	r.POST("/upload/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 读取文件列表
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("请求错误: %s\n", err.Error()))
+			return
+		}
+		files := form.File["files"] // 返回一个切片 []*FileHeader
+		if len(files) <= 0 {
+			c.String(http.StatusBadRequest, fmt.Sprintf("未上传任何文件或未指定标识符files\n"))
+			return
+		}
+
+		// 保存文件,如果文件已经存在则会覆盖
+		for _, file := range files {
+			err := c.SaveUploadedFile(file, file.Filename)
+			if err != nil {
+				c.String(http.StatusBadRequest, fmt.Sprintf("服务器保存文件失败: %s\n", err.Error()))
+				return
+			}
+		}
+
+		// 返回响应
+		msg := fmt.Sprintf("Content-Type: %s\n文件上传成功\n", contentType)
+		c.String(http.StatusOK, msg)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[root@localhost ~]# curl http://192.168.0.105/upload/ -F "files=@anaconda-ks.cfg" --form "files=@1.txt"  -XPOST
+Content-Type: multipart/form-data; boundary=----------------------------a3bb45431558
+文件上传成功
 ```
 
