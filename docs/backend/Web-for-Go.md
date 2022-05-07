@@ -4116,6 +4116,346 @@ PostForm: username: "root", password: "中国你好"
 
 :::
 
+#### 参数绑定
+
+::: details GET查询字符串参数绑定和【第一次使用参数绑定注意事项】
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+// 第一次使用参数绑定注意事项：
+// (1) 结构体字段必须可导出(首字母大写)
+// (2) 绑定时必须用结构体指针(因为要给外部变量赋值嘛)
+
+// 查询字符串参数绑定
+// (3) form可选，如果不写，传递参数时必须与结构体名字一致
+// (4) Content-Type有没有都无所谓
+
+type User struct {
+	Username string `form:"username"`
+	Password string `form:"password"`
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.GET("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 参数绑定
+		var user User
+		err := c.ShouldBind(&user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+
+		// 返回响应
+		c.JSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Username":     user.Username,
+			"Password":     user.Password,
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+![image-20220507134109116](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507134109116.png)
+
+:::
+
+::: details POST表单参数绑定
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+// Post表单参数绑定注意事项
+// (1) form可选，如果不写，传递参数时必须与结构体名字一致
+// (2) Content-Type为【application/x-www-form-urlencoded】或【multipart/form-data;boundary=xx】都可以
+
+type User struct {
+	Username string `form:"username"`
+	Password string `form:"password"`
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.POST("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 参数绑定
+		var user User
+		err := c.ShouldBind(&user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+
+		// 返回响应
+		c.JSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Username":     user.Username,
+			"Password":     user.Password,
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+![image-20220507133521628](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507133521628.png)
+
+![image-20220507133540059](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507133540059.png)
+
+:::
+
+::: details POST JSON参数绑定
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+// POST JSON参数绑定注意事项：
+// (1) 结构体Tag中json可选，如果不写，传递参数时必须与结构体名字一致
+// (2) Content-Type必须设置成application/json
+
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.POST("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 参数绑定
+		var user User
+		err := c.ShouldBind(&user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+
+		// 返回响应
+		c.JSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Username":     user.Username,
+			"Password":     user.Password,
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+![image-20220507134825424](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507134825424.png)
+
+:::
+
+::: details 多次参数绑定问题
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"log"
+	"net/http"
+)
+
+// 多次参数绑定注意事项：
+// 问题描述：
+// 		对于部分格式数据(JSON, XML, MsgPack, ProtoBuf)，使用ShouldBind多次绑定会出错,原因是c.Request.Body不可以重用，第二次读取就会出现EOF
+//      对于其他格式（Query, Form, FormPost, FormMultipart）则可以多次调用c.ShouldBind()
+// 解决办法：
+// 		使用ShouldBindBodyWith绑定
+
+type User struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.POST("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 参数绑定
+		var user User
+		var user1 User
+		//if err := c.ShouldBind(&user); err != nil {
+		if err := c.ShouldBindBodyWith(&user, binding.JSON); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+		//if err := c.ShouldBind(&user1); err != nil {
+		if err := c.ShouldBindBodyWith(&user1, binding.JSON); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+
+		// 返回响应
+		c.JSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Username":     user.Username,
+			"Password":     user.Password,
+			"Username1":    user1.Username,
+			"Password1":    user1.Password,
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+#### 参数绑定后校验
+
+`gin`参数校验使用的是`validator`库，因此具体的校验规则可以去下面的文档中查找
+
+Github：[https://github.com/go-playground/validator](https://github.com/go-playground/validator)
+
+文档：[https://pkg.go.dev/github.com/go-playground/validator](https://pkg.go.dev/github.com/go-playground/validator)
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+// 参数校验都卸载binding后面，常见的规则有：
+// 		required  必选参数
+//		omitempty 可选参数
+//		max/min/le/lt/ge/gt/eq/ne
+
+type User struct {
+	Id       int    `json:"id" binding:"omitempty"`
+	Username string `json:"username" binding:"required,min=1,max=20"`
+	Password string `json:"password" binding:"required,min=8,max=20"` // 设置字符串长度最低是8
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.POST("/", func(c *gin.Context) {
+		// 获取Content-Type
+		contentType := c.GetHeader("Content-Type")
+
+		// 参数绑定
+		var user User
+		err := c.ShouldBind(&user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Content-Type": contentType,
+				"Message":      "请求参数错误" + err.Error(),
+			})
+			return
+		}
+
+		// 返回响应
+		c.JSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Id":           user.Id,
+			"Username":     user.Username,
+			"Password":     user.Password,
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+![image-20220507144553806](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507144553806.png)
+
+
+
+
+
+### 文件上传下载
+
 #### 单文件上传
 
 ::: details 点击查看完整代码
@@ -4253,4 +4593,47 @@ func main() {
 Content-Type: multipart/form-data; boundary=----------------------------a3bb45431558
 文件上传成功
 ```
+
+#### 文件下载
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	
+	// 指定单个文件下载
+	// 访问 http://127.0.0.1/go.mod/ 会下载当前目录下的 go.mod文件
+	r.StaticFile("/go.mod", "./go.mod")
+
+	// 指定多个文件下载
+	// 访问 http://127.0.0.1/download/go.mod会下载当前目录下的go.mod文件
+	// 访问 http://127.0.0.1/download/会报404错误
+	r.Static("/download/", "./")
+
+	// 静态文件服务器
+	// 访问 http://127.0.0.1/download2/go.mod会下载go.mod文件
+	// 访问 http://127.0.0.1/download2/会展示出当前目录下有哪些文件，点击可以下载（同样也可以打开子目录）
+	r.StaticFS("/download2", http.Dir("./"))
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
 
