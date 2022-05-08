@@ -21,40 +21,7 @@
 
 #### 前置要求
 
-* 在部署过程中需要去海外下载镜像，所以需要主机能够科学上网，如果需要帮助，可以私信我
-
-* 如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址，`CentOS`系统可参考如下步骤：
-
-  ```bash
-  # vi /etc/sysconfig/network-scripts/ifcfg-ens33
-  TYPE="Ethernet"
-  PROXY_METHOD="none"
-  BROWSER_ONLY="no"
-  BOOTPROTO="static"		# 设置为静态IP
-  DEFROUTE="yes"
-  IPV4_FAILURE_FATAL="no"
-  IPV6INIT="yes"
-  IPV6_AUTOCONF="yes"
-  IPV6_DEFROUTE="yes"
-  IPV6_FAILURE_FATAL="no"
-  IPV6_ADDR_GEN_MODE="stable-privacy"
-  NAME="ens33"
-  UUID="068dc849-6e8c-4bed-b2de-2fe66c424521"
-  DEVICE="ens33"
-  ONBOOT="yes"			# 开启自启
-  IPADDR=192.168.48.140	# IP，根据实际情况修改
-  NETMASK=255.255.255.0	# 子网掩码
-  GATEWAY=192.168.48.2	# 默认网关，根据实际情况修改
-  DNS1=114.114.114.114    # DNS1
-  DNS2=8.8.8.8            # DNS2
-  
-  # 重启网络
-  systemctl restart network.service
-  
-  # 测试网络
-  ping -c 4 www.baidu.com
-  ```
-
+* 在部署过程中需要去海外下载镜像，需要主机能够科学上网
 * 支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上
 
 
@@ -86,6 +53,40 @@ yum update -y && reboot
 ```
 
 
+
+#### 设置静态内网IP（可选）
+
+如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址
+
+```bash
+# vi /etc/sysconfig/network-scripts/ifcfg-ens33
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO="static"		# 设置为静态IP
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="yes"
+IPV6_AUTOCONF="yes"
+IPV6_DEFROUTE="yes"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="ens33"
+UUID="068dc849-6e8c-4bed-b2de-2fe66c424521"
+DEVICE="ens33"
+ONBOOT="yes"			# 开启自启
+IPADDR=192.168.48.140	# IP，根据实际情况修改
+NETMASK=255.255.255.0	# 子网掩码
+GATEWAY=192.168.48.2	# 默认网关，根据实际情况修改
+DNS1=114.114.114.114    # DNS1
+DNS2=8.8.8.8            # DNS2
+
+# 重启网络
+systemctl restart network.service
+
+# 测试网络
+ping -c 4 www.baidu.com
+```
 
 #### 系统初始化
 
