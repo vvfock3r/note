@@ -3731,7 +3731,7 @@ C:\Users\Administrator\Desktop>curl   http://127.0.0.1/api/v1/login
 
 #### 尾斜杠和重定向
 
-::: details 点击查看完整代码
+::: details RedirectTrailingSlash和RedirectFixedPath
 
 ```go
 package main
@@ -3757,8 +3757,7 @@ func main() {
 
 	// 注册路由
 	r.GET("/index", func(c *gin.Context) {
-		c.String(http.StatusOK, "Index\n")
-		//c.Redirect(301, "/login/") // 函数内部使用重定向
+		c.String(http.StatusOK, "Index\n")		
 	})
 	r.GET("/login/", func(c *gin.Context) {
 		c.String(http.StatusOK, "Login\n")
@@ -3788,35 +3787,93 @@ Index
 C:\Users\Administrator>curl http://127.0.0.1/login -L
 Login
 
+# 查看响应头
+C:\Users\Administrator>curl http://127.0.0.1/login -i # windows下使用-i
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8
+Location: /login/
+Date: Sun, 08 May 2022 10:31:39 GMT
+Content-Length: 42
+
+<a href="/login/">Moved Permanently</a>.
+
 # 并不会像net/http那样，会进行前缀匹配
 C:\Users\Administrator>curl http://127.0.0.1/login/a/b/c
 404 page not found
-
-# --------------------------------------------------------------
-# 使用curl -I查看响应头,状态码居然是404
-C:\Users\Administrator>curl http://127.0.0.1/index/ -I
-HTTP/1.1 404 Not Found
-Content-Type: text/plain
-Date: Thu, 05 May 2022 01:47:51 GMT
-Content-Length: 18
-
-# 使用curl -i看响应头，状态码正常（在浏览器和httpstat中查看也都是301状态码）
-C:\Users\Administrator>curl http://127.0.0.1/index/ -i
-HTTP/1.1 301 Moved Permanently		
-Content-Type: text/html; charset=utf-8
-Location: /index
-Date: Thu, 05 May 2022 01:53:31 GMT
-Content-Length: 41
-
-<a href="/index">Moved Permanently</a>.
-
-# 难道和curl版本有关系？
-C:\Users\Administrator>curl --version
-curl 7.79.1 (Windows) libcurl/7.79.1 Schannel
-Release-Date: 2021-09-22
-Protocols: dict file ftp ftps http https imap imaps pop3 pop3s smtp smtps telnet tftp
-Features: AsynchDNS HSTS IPv6 Kerberos Largefile NTLM SPNEGO SSL SSPI UnixSockets
 ```
+
+::: details HTTP重定向
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.GET("/index", func(c *gin.Context) {
+		// HTTP重定向（如果在Chrome等浏览器下访问地址栏会变为/login/）
+		c.Redirect(http.StatusMovedPermanently, "/login/")
+	})
+	r.GET("/login/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Login\n")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+::: details 路由内重定向
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.GET("/index", func(c *gin.Context) {
+		// 路由内重定向（如果在Chrome等浏览器下访问地址栏不会发生变化）
+		c.Request.URL.Path = "/login/"
+		r.HandleContext(c)
+	})
+	r.GET("/login/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Login\n")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+![image-20220508183700833](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220508183700833.png)
+
+
 
 ### 参数解析
 
@@ -4636,4 +4693,415 @@ func main() {
 ```
 
 :::
+
+### 中间件
+
+#### 中间件格式要求
+
+```go
+func Default() *Engine {
+	debugPrintWARNINGDefault()
+	engine := New()
+	engine.Use(Logger(), Recovery())	// 默认使用了两个中间件
+	return engine
+}
+
+// 看一下Use参数要求
+func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
+	engine.RouterGroup.Use(middleware...)
+	engine.rebuild404Handlers()
+	engine.rebuild405Handlers()
+	return engine
+}
+
+type HandlerFunc func(*Context)
+```
+
+说明
+
+* 只要符合`func(*Context)`函数定义，就可以是一个中间件
+* 在中间件中调用`c.Next()`，可以穿透中间件，执行后面的逻辑，后面逻辑的执行完成后`c.Next()`函数执行结束，继续执行中间件内容
+* 在中间件中调用`c.Abort()`，可以阻止穿透中间件
+
+#### 中间件使用示例
+
+::: details 注册全局中间件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"time"
+)
+
+// 计算每次请求花费时间中间件
+func RequestCostMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 开始计时
+		start := time.Now()
+		fmt.Println(start)
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+
+		// 结束计时(单位毫秒)
+		timedelta := time.Since(start).Milliseconds()
+
+		// 输出结果
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 中间件使用方式一: 注册全局中间件,对所有路由有效
+	r.Use(RequestCostMiddleware())
+
+	// 注册路由
+	r.GET("/", func(c *gin.Context) {
+		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+::: details 注册单个路由中间件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"time"
+)
+
+// 计算每次请求花费时间中间件
+func RequestCostMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 开始计时
+		start := time.Now()
+		fmt.Println(start)
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+
+		// 结束计时(单位毫秒)
+		timedelta := time.Since(start).Milliseconds()
+
+		// 输出结果
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	// 注册单个路由中间件
+	r.GET("/", RequestCostMiddleware(), func(c *gin.Context) {
+		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+::: details 注册路由组内全局中间件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"time"
+)
+
+// 计算每次请求花费时间中间件
+func RequestCostMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 开始计时
+		start := time.Now()
+		fmt.Println(start)
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+
+		// 结束计时(单位毫秒)
+		timedelta := time.Since(start).Milliseconds()
+
+		// 输出结果
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由组
+	apiV1 := r.Group("/api/v1")
+
+	// 路由组内注册全局中间件,仅对路由内的所有路由生效
+	apiV1.Use(RequestCostMiddleware())
+
+	apiV1.GET("/", RequestCostMiddleware(), func(c *gin.Context) {
+		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+#### 多个中间件执行顺序问题
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func MyMiddleware(name string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fmt.Printf("中间件%s开始执行\n", name)
+		c.Next() // 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		fmt.Printf("中间件%s结束执行\n", name)
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册全局中间件
+	r.Use(
+		MyMiddleware("m1"),
+		MyMiddleware("m2"),
+		MyMiddleware("m3"),
+	)
+
+	// 注册路由组
+	r.GET("/", MyMiddleware("m4"), func(c *gin.Context) {
+		fmt.Println("Handler开始执行")
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+		fmt.Println("Handler结束执行")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 可以看到，与我们注册的顺序保持一致
+# 注意：全局中间件注册要在路由注册之前，否则不会执行到
+中间件m1开始执行
+中间件m2开始执行
+中间件m3开始执行
+中间件m4开始执行
+Handler开始执行
+Handler结束执行
+中间件m4结束执行
+中间件m3结束执行
+中间件m2结束执行
+中间件m1结束执行
+```
+
+#### 跨中间件传值
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func M1Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 设置值
+		c.Set("m1", "m1 value")
+
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+	}
+}
+
+func M2Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 设置值
+		c.Set("m2", make([]int, 3))
+
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册全局中间件
+	r.Use(
+		M1Middleware(),
+		M2Middleware(),
+	)
+
+	// 注册路由组
+	r.GET("/", func(c *gin.Context) {
+		m1, ok := c.Get("m1")
+		if ok {
+			fmt.Printf("拿到M1中间件的值: %#v\n", m1)
+		}
+
+		m2, ok := c.Get("m2")
+		if ok {
+			fmt.Printf("拿到M2中间件的值: %#v\n", m2)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+拿到M1中间件的值: "m1 value"
+拿到M2中间件的值: []int{0, 0, 0}
+```
+
+#### 中间件或Handler开启Goroutine情况下
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"sync"
+)
+
+func Change(c *gin.Context, wg *sync.WaitGroup) {
+	c.Request.Method = http.MethodPost
+	wg.Done()
+}
+
+func M1Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 当需要开启一个Goroutine时应该使用c.Copy()，而不是直接修改原始对象
+		wg := new(sync.WaitGroup)
+		wg.Add(1)
+		//go Change(c, wg)
+		go Change(c.Copy(), wg) // 应该使用c.Copy
+		wg.Wait()
+
+		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
+	}
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册全局中间件
+	r.Use(M1Middleware())
+
+	// 注册路由组
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"Method":  c.Request.Method,
+			"Message": "Hello Gin!",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+:::
+
+#### 中间件收集列表
+
+内置中间件：
+
+* `gin.BasicAuth()`、`gin.BasicAuthForRealm()`
+
+第三方中间件：
+
+* 官方收集：[https://github.com/gin-gonic/contrib](https://github.com/gin-gonic/contrib)
 
