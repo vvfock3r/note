@@ -62,7 +62,7 @@ export default {
                     orient: 'vertical',
 
                     // 位置调整
-                    right: '5%',
+                    right: '3%',
                     top: 'middle',
 
                     // 注意：这里不支持HTML代码,可以使用\n换行
@@ -143,8 +143,8 @@ export default {
         align-items: center;
 
         .section {
-            width: 500px;
-            height: 400px;
+            width: 600px;
+            height: 500px;
             border: 1px solid #ccc;
             border-radius: 15px;
         }
