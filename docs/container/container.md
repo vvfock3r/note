@@ -106,7 +106,7 @@ dockerfile是包含若干命令的文本文件，可以通过这些命令创建�
 
 CentOS安装文档：[https://docs.docker.com/engine/install/centos/](https://docs.docker.com/engine/install/centos/)
 
-::: details 点击查看完整代码
+::: details 点击查看详情
 
 ```bash
 # 卸载老版本(如果有)
@@ -319,3 +319,329 @@ See 'docker run --help'.
 10
 ```
 
+#### Dockerrfile(1)：简介和常用命令
+
+Dockerrfile是一个文本文件，记录了构建镜像的所有步骤
+
+
+
+**缓存特性**
+
+Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层，docker会缓存已有的镜像层，当某一层发生变化，其上面的所有层都会失效，也就是说当我们改变Dockerfile中指令的执行顺序，或者修改指令，都会使上面的镜像层缓存失效
+
+
+
+**Dockerfile常用指令**
+
+| 指令       | 说明                                                         |
+| ---------- | ------------------------------------------------------------ |
+| FROM       | 指定基础镜像                                                 |
+| MATAINER   | 设置镜像作者，可以是任意字符串                               |
+| ENV        | 设置环境变量                                                 |
+| WORKDIR    | 为后面的COPY、ADD、RUN、CMD、ENTRYPOINT等设置工作目录        |
+| COPY       | 将文件复制到镜像                                             |
+| ADD        | 将文件复制到镜像，如果文件是归档文件（tar/zip/tgz等）会自动解压 |
+| EXPOSE     | 显式地指定容器中的进程会监听某个端口<br />（1）并不会直接将端口自动和宿主机某个端口建立映射关系<br />（2）如果docker run指定-P参数（自动映射）会将所有暴露的端口随机映射到宿主机的高阶端口<br />（3）如果docker run 指定了--net=host（宿主机模式），容器中 EXPOSE 指令暴露的端口会直接使用宿主机对应的端口 |
+| VOLUME     | 将文件或目录声明为volume                                     |
+| RUN        | 在容器中运行指定的命令，通常用于安装应用和软件包             |
+| ENTRYPOINT | 设置容器启动时运行的命令<br />（1）可以有多个ENTRYPOINT命令但只有最后一个生效<br />（2）CMD或docker run之后的参数会被当做参数传递给ENTRYPOINT |
+| CMD        | 容器启动时运行指定的命令<br />（1）可以有多个CMD命令但只有最后一个生效<br />（2）CMD命令可以被docker run之后的参数替换 |
+
+
+
+#### Dockerrfile(2)：RUN、CMD、ENTRYPOINT差异
+
+
+
+
+
+#### Dockerrfile(3)：Go项目实战
+
+（1）创建Go项目
+
+::: details 点击查看详情
+
+```bash
+[root@localhost ~]# mkdir webserver
+[root@localhost ~]# cd webserver
+[root@localhost webserver]# go mod init webserver
+go: creating new go.mod: module webserver
+
+[root@localhost webserver]# cat server.go
+package main
+
+import (
+        "fmt"
+        "io"
+        "log"
+        "net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+        io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+        // 监听地址
+        addr := "0.0.0.0:80"
+
+        // 注册路由
+        http.HandleFunc("/", indexHandler)
+
+        // 启动服务
+        fmt.Println("* Running on http://" + addr)
+        log.Fatal(http.ListenAndServe(addr, nil))
+}
+```
+
+:::
+
+（2）编写Dockerfile
+
+::: details 点击查看详情
+
+```bash
+[root@localhost webserver]# cat Dockerfile
+FROM golang:1.18
+MAINTAINER VVFock3r
+WORKDIR /
+COPY server.go .
+RUN go build -o server server.go
+EXPOSE 80
+CMD ["./server"]
+```
+
+:::
+
+（3）构建镜像
+
+::: details 点击查看详情
+
+```bash
+[root@localhost webserver]# docker build -t server:v1 .
+Sending build context to Docker daemon  4.096kB
+Step 1/6 : FROM golang:1.18
+1.18: Pulling from library/golang
+6aefca2dc61d: Pull complete 
+967757d56527: Pull complete 
+c357e2c68cb3: Pull complete 
+c766e27afb21: Pull complete 
+d6a8ea6bd5f8: Pull complete 
+886d528c0894: Pull complete 
+ad84389257db: Pull complete 
+Digest: sha256:aa0c16158472cfa9122ea7c54f3933ad79d1e860f216540750ed440bcce841c7
+Status: Downloaded newer image for golang:1.18
+ ---> 65b2f1fa535f
+Step 2/6 : MAINTAINER VVFock3r
+ ---> Running in fb57751c56ef
+Removing intermediate container fb57751c56ef
+ ---> 4c0e15145939
+Step 3/6 : WORKDIR /
+ ---> Running in 3ecd4a2870f5
+Removing intermediate container 3ecd4a2870f5
+ ---> 9dcc78ced4ad
+Step 4/6 : COPY server.go .
+ ---> 34f5e234c295
+Step 5/6 : RUN go build -o server server.go
+ ---> Running in 8db00c31bc37
+Removing intermediate container 8db00c31bc37
+ ---> 58736ed6175c
+Step 6/6 : CMD ["./server"]
+ ---> Running in e58aa4c9f890
+Removing intermediate container e58aa4c9f890
+ ---> 5117b956c216
+Successfully built 5117b956c216
+Successfully tagged server:v1
+
+[root@localhost webserver]# docker image ls 
+REPOSITORY   TAG          IMAGE ID       CREATED              SIZE
+server       v1           f4c28a054488   About a minute ago   970MB		# 比原始镜像多了几M
+golang       1.18         65b2f1fa535f   9 hours ago          964MB
+```
+
+:::
+
+（4）启动容器试一下
+
+::: details 点击查看详情
+
+```bash
+# 启动容器
+[root@localhost webserver]# docker container run -itd -P --name server1 server:v1
+b4b2c3f81fa96738b7300ee17a83c7c4803702c0038fd9020380e3bb5b05b759
+
+# 查看宿主机映射的端口
+[root@localhost webserver]# docker container ps
+CONTAINER ID   IMAGE       COMMAND      CREATED          STATUS          PORTS                                     NAMES
+b4b2c3f81fa9   server:v1   "./server"   12 seconds ago   Up 10 seconds   0.0.0.0:49160->80/tcp, :::49160->80/tcp   server1
+
+# 访问宿主机端口
+[root@localhost webserver]# curl http://127.0.0.1:49160
+Hello, world!
+```
+
+:::
+
+（5）镜像大小第一次优化：先编译Go项目，然后将编译好的二进制拷贝到容器中
+
+::: details 点击查看详情
+
+```bash
+# 关闭CGO_ENABLED
+# 原理：
+#   (1) Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，CGO_ENABLED参数控制是否启用CGO
+#   (2) alpine镜像不包含C链接库，所以当我们启用CGO时同时又使用alpine镜像时，程序会报错not found
+[root@localhost webserver]# go env CGO_ENABLED				# 先查看一下CGO_ENABLED这个变量
+1															# 1代表开启
+[root@localhost webserver]# go env -w CGO_ENABLED=0			# 关闭
+[root@localhost webserver]# go build -o server server.go 	# 打包
+[root@localhost webserver]# ls -lh server					# 看一下大小
+-rwxr-xr-x. 1 root root 6.0M May 11 15:08 server			# 6M
+
+# 修改Dockerfile
+[root@localhost webserver]# cat Dockerfile
+FROM alpine:3.15.4
+MAINTAINER VVFock3r
+WORKDIR /
+COPY server .
+EXPOSE 80
+CMD ["./server"]
+
+# 重新构建镜像
+[root@localhost webserver]# docker build -t server:v2 .
+Sending build context to Docker daemon  6.241MB
+Step 1/6 : FROM alpine:3.15.4
+3.15.4: Pulling from library/alpine
+df9b9388f04a: Pull complete 
+Digest: sha256:4edbd2beb5f78b1014028f4fbb99f3237d9561100b6881aabbf5acce2c4f9454
+Status: Downloaded newer image for alpine:3.15.4
+ ---> 0ac33e5f5afa
+Step 2/6 : MAINTAINER VVFock3r
+ ---> Running in d7a9ef482595
+Removing intermediate container d7a9ef482595
+ ---> aa47686fe08c
+Step 3/6 : WORKDIR /
+ ---> Running in b3399ac114c8
+Removing intermediate container b3399ac114c8
+ ---> 0b16c287b5e2
+Step 4/6 : COPY server .
+ ---> 453e503273fd
+Step 5/6 : EXPOSE 80
+ ---> Running in af5e153a1d41
+Removing intermediate container af5e153a1d41
+ ---> 6b7a8f1c22aa
+Step 6/6 : CMD ["./server"]
+ ---> Running in a37a4e6c84de
+Removing intermediate container a37a4e6c84de
+ ---> 523d460fc716
+Successfully built 523d460fc716
+Successfully tagged server:v2
+
+# 查看镜像大小
+[root@localhost webserver]# docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+server       v2        523d460fc716   21 seconds ago   11.8MB	# 不到12M,小了太多了(偷笑zzz)
+server       v1        86114e9e8c94   3 minutes ago    970MB
+golang       1.18      65b2f1fa535f   9 hours ago      964MB
+alpine       3.15.4    0ac33e5f5afa   5 weeks ago      5.57MB
+
+# 启动容器测一下
+[root@localhost webserver]# docker run -itd -P --name server2 server:v2
+
+[root@localhost webserver]# docker ps
+CONTAINER ID   IMAGE       COMMAND      CREATED         STATUS         PORTS                                     NAMES
+89c5596ec80c   server:v2   "./server"   3 seconds ago   Up 3 seconds   0.0.0.0:49161->80/tcp, :::49161->80/tcp   server2
+b4b2c3f81fa9   server:v1   "./server"   3 minutes ago   Up 3 minutes   0.0.0.0:49160->80/tcp, :::49160->80/tcp   server1
+
+[root@localhost webserver]# curl http://127.0.0.1:49161
+Hello, world!
+
+# 删除宿主机编译出来的二进制文件
+[root@localhost webserver]# rm -vf server
+removed 'server'
+```
+
+:::
+
+（6）镜像大小第二次优化：使用容器镜像的多阶段构建
+
+::: details 点击查看详情
+
+```bash
+# 修改Dockerfile
+[root@localhost webserver]# cat Dockerfile
+# 用于程序编译
+FROM golang:1.18.2-alpine3.15 as builder
+WORKDIR /build
+COPY . .
+RUN go build -o server server.go
+
+# 用于程序运行
+FROM alpine:3.15.4
+MAINTAINER VVFock3r
+WORKDIR /
+COPY --from=builder /build/server .
+EXPOSE 80
+CMD ["./server"]
+
+# 构建镜像
+[root@localhost webserver]# docker build -t server:v3 .
+Sending build context to Docker daemon  4.096kB
+Step 1/10 : FROM golang:1.18.2-alpine3.15 as builder
+ ---> 04a96eefde03
+Step 2/10 : WORKDIR /build
+ ---> Using cache
+ ---> f8278f940644
+Step 3/10 : COPY . .
+ ---> 64b46b7ef7c6
+Step 4/10 : RUN go build -o server server.go
+ ---> Running in 6566bc10f3ad
+Removing intermediate container 6566bc10f3ad
+ ---> 4b196dce6953
+Step 5/10 : FROM alpine:3.15.4
+ ---> 0ac33e5f5afa
+Step 6/10 : MAINTAINER VVFock3r
+ ---> Using cache
+ ---> aa47686fe08c
+Step 7/10 : WORKDIR /
+ ---> Using cache
+ ---> 0b16c287b5e2
+Step 8/10 : COPY --from=builder /build/server .
+ ---> Using cache
+ ---> aef7aafb227f
+Step 9/10 : EXPOSE 80
+ ---> Running in 4f4e2181aae4
+Removing intermediate container 4f4e2181aae4
+ ---> 47d2bc51d9b0
+Step 10/10 : CMD ["./server"]
+ ---> Running in 7dbea4b80753
+Removing intermediate container 7dbea4b80753
+ ---> 24f2f7c399db
+Successfully built 24f2f7c399db
+Successfully tagged server:v3
+
+# 查看镜像大小
+[root@localhost webserver]# docker image ls
+REPOSITORY   TAG                 IMAGE ID       CREATED              SIZE
+server       v3                  24f2f7c399db   18 seconds ago       11.9MB		# 和v2大小几乎一致
+server       v2                  523d460fc716   12 minutes ago       11.8MB
+server       v1                  86114e9e8c94   15 minutes ago       970MB
+golang       1.18.2-alpine3.15   04a96eefde03   10 hours ago         328MB
+golang       1.18                65b2f1fa535f   10 hours ago         964MB
+alpine       3.15.4              0ac33e5f5afa   5 weeks ago          5.57MB
+
+# 启动容器测一下
+[root@localhost webserver]# docker run -itd -P --name server3 server:v3
+
+[root@localhost webserver]# docker container ps
+CONTAINER ID   IMAGE       COMMAND      CREATED          STATUS          PORTS                                     NAMES
+10f33df3efc1   server:v3   "./server"   5 seconds ago    Up 4 seconds    0.0.0.0:49162->80/tcp, :::49162->80/tcp   server3
+89c5596ec80c   server:v2   "./server"   13 minutes ago   Up 13 minutes   0.0.0.0:49161->80/tcp, :::49161->80/tcp   server2
+b4b2c3f81fa9   server:v1   "./server"   16 minutes ago   Up 16 minutes   0.0.0.0:49160->80/tcp, :::49160->80/tcp   server1
+
+[root@localhost webserver]# curl http://127.0.0.1:49162
+Hello, world!
+```
+
+:::

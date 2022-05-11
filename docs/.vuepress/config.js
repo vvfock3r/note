@@ -93,6 +93,12 @@ module.exports = {
             {
                 text: '容器',
                 children: [
+					{
+                        text: '容器基础',
+                        children: [
+                            {text: '容器核心技术', link: '/container/container'},
+                        ]
+                    },
                     {
                         text: '容器编排工具',
                         children: [
