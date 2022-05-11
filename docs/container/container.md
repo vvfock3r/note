@@ -319,7 +319,7 @@ See 'docker run --help'.
 10
 ```
 
-#### Dockerrfile(1)：简介和常用命令
+#### Dockerfile(1)：简介和常用指令
 
 Dockerrfile是一个文本文件，记录了构建镜像的所有步骤
 
@@ -344,18 +344,245 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 | EXPOSE     | 显式地指定容器中的进程会监听某个端口<br />（1）并不会直接将端口自动和宿主机某个端口建立映射关系<br />（2）如果docker run指定-P参数（自动映射）会将所有暴露的端口随机映射到宿主机的高阶端口<br />（3）如果docker run 指定了--net=host（宿主机模式），容器中 EXPOSE 指令暴露的端口会直接使用宿主机对应的端口 |
 | VOLUME     | 将文件或目录声明为volume                                     |
 | RUN        | 在容器中运行指定的命令，通常用于安装应用和软件包             |
-| ENTRYPOINT | 设置容器启动时运行的命令<br />（1）可以有多个ENTRYPOINT命令但只有最后一个生效<br />（2）CMD或docker run之后的参数会被当做参数传递给ENTRYPOINT |
-| CMD        | 容器启动时运行指定的命令<br />（1）可以有多个CMD命令但只有最后一个生效<br />（2）CMD命令可以被docker run之后的参数替换 |
+| ENTRYPOINT | 设置容器启动时运行的命令<br />（2）CMD或之后的参数会被当做参数传递给ENTRYPOINT |
+| CMD        | 设置容器启动时运行的命令<br />（2）CMD命令可以被docker run之后的参数替换 |
 
 
 
-#### Dockerrfile(2)：RUN、CMD、ENTRYPOINT差异
+#### Dockerfile(2)：CMD和ENTRYPOINT的异同
 
+**相同点**
 
+* 可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
 
+* 都支持Exec和Shell格式语法，以CMD指令举例
 
+  ```bash
+  # Exec格式
+  CMD [可执行程序, 参数1, 参数2, 参数N...]
+  
+  # Shell格式
+  CMD 可执行程序 参数1 参数2 参数N...
+  ```
 
-#### Dockerrfile(3)：Go项目实战
+* `docker container run`时可以覆盖镜像中的`CMD`或`ENTRYPOINT`命令
+
+**不同点**
+
+* `docker container run`时覆盖镜像中的`CMD`或`ENTRYPOINT`命令时的语法不一样
+
+* CMD额外支持一种格式，`CMD [参数1, 参数2]`，此时可以为ENTRYPOINT指定提供参数（注意：ENTRYPOINT必须使用Exec格式）
+
+  一般我们用作容器启动的默认参数，当用户想替换默认参数时就等同于替换CMD中的参数
+
+**测试**
+
+::: details 相同点测试1：可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
+
+```bash
+# 先看一下Dockerfile
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+RUN yum -y update
+CMD echo "Hello World!"
+CMD for i in `seq 5`; do echo $i; sleep 1; done
+
+# 构建镜像（命令输出省略）
+[root@localhost ~]# docker build -t centos:demo .
+
+# 启动容器
+# 可以看到Hello World!并没有输出出来
+[root@localhost ~]# docker container run --rm centos:demo
+1
+2
+3
+4
+5
+
+# 将Dockerfile中的CMD替换为ENTRYPOINT测试一下，发现效果是一样的
+```
+
+:::
+
+::: details 相同点测试2：都支持Exec和Shell格式语法
+
+```bash
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+RUN yum -y update
+# Exec语法
+CMD ["ls", "-l"]
+# Shell语法
+# CMD ls -l
+
+# 构建镜像（命令输出省略）
+[root@localhost ~]# docker build -t centos:demo .
+
+# 启动容器（命令输出省略）
+[root@localhost ~]# docker container run --rm centos:demo
+
+# 使用CMD不同格式、ENTRYPOINT不同格式重复测试，发现效果是一样的
+```
+
+:::
+
+::: details 不同点测试1：`docker container run`时覆盖镜像中的`CMD`或`ENTRYPOINT`命令时的语法不一样
+
+先看一下`docker container run`的语法格式
+
+![image-20220511175138893](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220511175138893.png)
+
+![image-20220511175249716](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220511175249716.png)
+
+开始我们的测试
+
+```bash
+# 覆盖镜像中CMD指令的语法
+# ---------------------------------------------------------------------------------------------
+# 先看一下Dockerfile
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+RUN yum -y update
+CMD for i in `seq 5`; do echo $i; sleep 1; done
+
+# 构建镜像（命令输出省略）
+[root@localhost ~]# docker build -t centos:demo .
+
+# 启动容器（命令输出省略）
+[root@localhost ~]# docker container run --rm centos:demo	    # 使用默认参数启动容器
+[root@localhost ~]# docker container run --rm centos:demo ls -l # 使用自定义的命令和参数启动容器
+# ---------------------------------------------------------------------------------------------
+
+# 覆盖镜像中ENTRYPOINT指令的语法
+# 将上面Dockerfile中CMD替换为ENTRYPOINT，重新构建镜像，然后继续下一步
+[root@localhost ~]# docker container run --rm centos:demo						# 使用默认参数启动容器
+[root@localhost ~]# docker container run --rm --entrypoint ls centos:demo		# 替换默认的ENTRYPOINT
+
+# 如果我们想给ENTRYPOINT加一个参数，可能会这样写，但是报错了
+[root@localhost ~]# docker container run --rm --entrypoint ls -l centos:demo	
+"docker container run" requires at least 1 argument.
+See 'docker container run --help'.
+
+Usage:  docker container run [OPTIONS] IMAGE [COMMAND] [ARG...]
+
+Run a command in a new container
+# 解决办法是参数通过CMD形式传递
+[root@localhost ~]# docker container run --rm --entrypoint ls  centos:demo -l -h -a --color=auto
+total 12K
+drwxr-xr-x.   1 root root   6 May 11 10:02 .
+drwxr-xr-x.   1 root root   6 May 11 10:02 ..
+-rwxr-xr-x.   1 root root   0 May 11 10:02 .dockerenv
+-rw-r--r--.   1 root root 12K Nov 13  2020 anaconda-post.log
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 bin -> usr/bin
+drwxr-xr-x.   5 root root 340 May 11 10:02 dev
+drwxr-xr-x.   1 root root  66 May 11 10:02 etc
+drwxr-xr-x.   2 root root   6 Apr 11  2018 home
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 lib -> usr/lib
+lrwxrwxrwx.   1 root root   9 Nov 13  2020 lib64 -> usr/lib64
+drwxr-xr-x.   2 root root   6 Apr 11  2018 media
+drwxr-xr-x.   2 root root   6 Apr 11  2018 mnt
+drwxr-xr-x.   2 root root   6 Apr 11  2018 opt
+dr-xr-xr-x. 221 root root   0 May 11 10:02 proc
+dr-xr-x---.   2 root root 114 Nov 13  2020 root
+drwxr-xr-x.   1 root root  19 May 11 09:22 run
+lrwxrwxrwx.   1 root root   8 Nov 13  2020 sbin -> usr/sbin
+drwxr-xr-x.   2 root root   6 Apr 11  2018 srv
+dr-xr-xr-x.  13 root root   0 May 11 05:51 sys
+drwxrwxrwt.   1 root root   6 May 11 09:22 tmp
+drwxr-xr-x.   1 root root  96 Nov 13  2020 usr
+drwxr-xr-x.   1 root root  78 Nov 13  2020 var
+```
+
+:::
+
+::: details 不同点测试2：CMD可以为ENTRYPOINT指定提供默认参数（ENTRYPOINT必须使用Exec格式）
+
+```bash
+# 查看Dockerfile
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+RUN yum -y update
+ENTRYPOINT ["ls"]
+CMD ["-l", "-h"]
+
+# 构建镜像（命令输出省略）
+[root@localhost ~]# docker build -t centos:demo .
+
+# 启动容器
+[root@localhost ~]# docker container run -it --rm centos:demo
+total 12K
+-rw-r--r--.   1 root root 12K Nov 13  2020 anaconda-post.log
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 bin -> usr/bin
+drwxr-xr-x.   5 root root 360 May 11 10:09 dev
+drwxr-xr-x.   1 root root  66 May 11 10:09 etc
+drwxr-xr-x.   2 root root   6 Apr 11  2018 home
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 lib -> usr/lib
+lrwxrwxrwx.   1 root root   9 Nov 13  2020 lib64 -> usr/lib64
+drwxr-xr-x.   2 root root   6 Apr 11  2018 media
+drwxr-xr-x.   2 root root   6 Apr 11  2018 mnt
+drwxr-xr-x.   2 root root   6 Apr 11  2018 opt
+dr-xr-xr-x. 219 root root   0 May 11 10:09 proc
+dr-xr-x---.   2 root root 114 Nov 13  2020 root
+drwxr-xr-x.   1 root root  19 May 11 09:22 run
+lrwxrwxrwx.   1 root root   8 Nov 13  2020 sbin -> usr/sbin
+drwxr-xr-x.   2 root root   6 Apr 11  2018 srv
+dr-xr-xr-x.  13 root root   0 May 11 05:51 sys
+drwxrwxrwt.   1 root root   6 May 11 09:22 tmp
+drwxr-xr-x.   1 root root  96 Nov 13  2020 usr
+drwxr-xr-x.   1 root root  78 Nov 13  2020 var
+
+# ---------------------------------------------------------------------------------------------
+# 现在我们将 ENTRYPOINT ["ls"]替换为 ENTRYPOINT ls，来验证Shell格式是否可以
+
+# 修改Dockerfile（省略）
+# 构建镜像（命令输出省略）
+
+# 启动容器，可以看到CMD中的参数并没有生效
+[root@localhost ~]# docker container run -it --rm centos:demo
+anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
+bin                etc  lib   media  opt  root  sbin  sys  usr
+
+# 我们使用命令行覆盖CMD指令呢，也没有生效
+[root@localhost ~]# docker container run -it --rm centos:demo -l -h 
+anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
+bin                etc  lib   media  opt  root  sbin  sys  usr
+
+# 我们再覆盖一下ENTRYPOINT呢，可以看到生效了（意料之中）
+[root@localhost ~]# docker container run --entrypoint ls -it --rm centos:demo -l -h 
+total 12K
+-rw-r--r--.   1 root root 12K Nov 13  2020 anaconda-post.log
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 bin -> usr/bin
+drwxr-xr-x.   5 root root 360 May 11 10:12 dev
+drwxr-xr-x.   1 root root  66 May 11 10:12 etc
+drwxr-xr-x.   2 root root   6 Apr 11  2018 home
+lrwxrwxrwx.   1 root root   7 Nov 13  2020 lib -> usr/lib
+lrwxrwxrwx.   1 root root   9 Nov 13  2020 lib64 -> usr/lib64
+drwxr-xr-x.   2 root root   6 Apr 11  2018 media
+drwxr-xr-x.   2 root root   6 Apr 11  2018 mnt
+drwxr-xr-x.   2 root root   6 Apr 11  2018 opt
+dr-xr-xr-x. 219 root root   0 May 11 10:12 proc
+dr-xr-x---.   2 root root 114 Nov 13  2020 root
+drwxr-xr-x.   1 root root  19 May 11 09:22 run
+lrwxrwxrwx.   1 root root   8 Nov 13  2020 sbin -> usr/sbin
+drwxr-xr-x.   2 root root   6 Apr 11  2018 srv
+dr-xr-xr-x.  13 root root   0 May 11 05:51 sys
+drwxrwxrwt.   1 root root   6 May 11 09:22 tmp
+drwxr-xr-x.   1 root root  96 Nov 13  2020 usr
+drwxr-xr-x.   1 root root  78 Nov 13  2020 var
+[root@localhost ~]# 
+```
+
+:::
+
+#### Dockerfile(3)：Go项目实战
 
 （1）创建Go项目
 
@@ -483,7 +710,7 @@ Hello, world!
 
 :::
 
-（5）镜像大小第一次优化：先编译Go项目，然后将编译好的二进制拷贝到容器中
+（5）镜像大小第一次优化：先编译Go项目，然后将编译好的二进制拷贝到镜像中
 
 ::: details 点击查看详情
 
@@ -564,7 +791,7 @@ removed 'server'
 
 :::
 
-（6）镜像大小第二次优化：使用容器镜像的多阶段构建
+（6）镜像大小第二次优化：使用镜像多阶段构建（推荐）
 
 ::: details 点击查看详情
 
