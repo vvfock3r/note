@@ -162,6 +162,218 @@ sudo docker run hello-world
 
 :::
 
+### 基础操作
+
+#### 运行容器
+
+::: details 运行容器示例
+
+```bash
+# 语法
+[root@localhost ~]# docker container run --help | head -5
+Usage:  docker container run [OPTIONS] IMAGE [COMMAND] [ARG...]
+Run a command in a new container
+
+# 运行一个容器
+[root@localhost ~]# docker container run centos:7
+
+# 状态为Exited(0)，意思是容器正常运行完后就退出了，容器运行的命令是/bin/bash
+[root@localhost ~]# docker container ps -a
+CONTAINER ID   IMAGE      COMMAND       CREATED          STATUS                      PORTS     NAMES
+e94332164c56   centos:7   "/bin/bash"   41 seconds ago   Exited (0) 41 seconds ago             vigilant_sanderson
+
+# 怎么能让它不退出呢？
+```
+
+:::
+
+::: details 容器不退出方式一：前台进程
+
+```bash
+# 方式一：
+# 容器本质就是一个进程，进程执行完毕自然就退出了，所以容器也自然就退出了，不让容器退出的办法之一就是启动一个不会退出的进程，
+# 比如像nginx等服务就是想办法让他在前台运行不退出
+# 在这里我们使用一个自定义的命令替换掉/bin/bash
+[root@localhost ~]# docker container run centos:7 sleep 100
+
+# 另外开一个终端查看容器信息
+[root@localhost ~]# docker container ps 
+CONTAINER ID   IMAGE      COMMAND       CREATED          STATUS         PORTS     NAMES
+2c2af2267d37   centos:7   "sleep 100"   10 seconds ago   Up 8 seconds             recursing_ride
+# ---------------------------------------------------------------------------------------------------
+# 如果说容器里我们运行一个nginx，那么就像这样
+[root@localhost ~]# docker container run nginx:1.21.6
+/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+/docker-entrypoint.sh: Configuration complete; ready for start up
+2022/05/12 05:48:15 [notice] 1#1: using the "epoll" event method
+2022/05/12 05:48:15 [notice] 1#1: nginx/1.21.6
+2022/05/12 05:48:15 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6) 
+2022/05/12 05:48:15 [notice] 1#1: OS: Linux 3.10.0-693.el7.x86_64
+2022/05/12 05:48:15 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 65536:65536
+2022/05/12 05:48:15 [notice] 1#1: start worker processes
+2022/05/12 05:48:15 [notice] 1#1: start worker process 31
+2022/05/12 05:48:15 [notice] 1#1: start worker process 32
+2022/05/12 05:48:15 [notice] 1#1: start worker process 33
+2022/05/12 05:48:15 [notice] 1#1: start worker process 34
+
+# 另外开一个终端查看容器信息
+# nginx -g 'daemon off;'就是nginx在前台运行的命令
+[root@localhost ~]# docker container ps --no-trunc
+CONTAINER ID                                                       IMAGE          COMMAND                                          CREATED              STATUS              PORTS     NAMES
+864381465f51c5b88eb4c11ec78d0cf10593ea8a5f56795698fe5686129cab22   nginx:1.21.6   "/docker-entrypoint.sh nginx -g 'daemon off;'"   34 seconds ago       Up 34 seconds       80/tcp    brave_wilbur
+```
+
+:::
+
+::: details 容器不退出方式二：开启标准输入hang住容器
+
+```bash
+# 方式二：
+# 使用docker container run -i选项，开启标准输入功能，这会hang住容器，让容器不退出
+#（注意不是任何程序都支持输入功能，比如/bin/bash和cat是支持的，ls就不支持）
+
+# /bin/bash开启输入功能，支持
+[root@localhost ~]# docker container run -i centos:7 
+ls -l			# 这里可以输入命令
+total 12
+-rw-r--r--.   1 root root 12114 Nov 13  2020 anaconda-post.log
+lrwxrwxrwx.   1 root root     7 Nov 13  2020 bin -> usr/bin
+drwxr-xr-x.   5 root root   340 May 12 05:16 dev
+drwxr-xr-x.   1 root root    66 May 12 05:16 etc
+drwxr-xr-x.   2 root root     6 Apr 11  2018 home
+lrwxrwxrwx.   1 root root     7 Nov 13  2020 lib -> usr/lib
+lrwxrwxrwx.   1 root root     9 Nov 13  2020 lib64 -> usr/lib64
+drwxr-xr-x.   2 root root     6 Apr 11  2018 media
+drwxr-xr-x.   2 root root     6 Apr 11  2018 mnt
+drwxr-xr-x.   2 root root     6 Apr 11  2018 opt
+dr-xr-xr-x. 204 root root     0 May 12 05:16 proc
+dr-xr-x---.   2 root root   114 Nov 13  2020 root
+drwxr-xr-x.  11 root root   148 Nov 13  2020 run
+lrwxrwxrwx.   1 root root     8 Nov 13  2020 sbin -> usr/sbin
+drwxr-xr-x.   2 root root     6 Apr 11  2018 srv
+dr-xr-xr-x.  13 root root     0 May 12 00:33 sys
+drwxrwxrwt.   7 root root   132 Nov 13  2020 tmp
+drwxr-xr-x.  13 root root   155 Nov 13  2020 usr
+drwxr-xr-x.  18 root root   238 Nov 13  2020 var
+pwd			# 这里可以输入命令
+/
+
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE      COMMAND       CREATED         STATUS         PORTS     NAMES
+529a4f7bd34a   centos:7   "/bin/bash"   4 seconds ago   Up 4 seconds             dreamy_euler
+
+# cat开启输入功能，支持
+[root@localhost ~]# docker container run -i centos:7 cat
+hello		# 我输入的
+hello
+world!		# 我输入的
+world!
+
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE      COMMAND   CREATED          STATUS          PORTS     NAMES
+58704e3b1ad7   centos:7   "cat"     27 seconds ago   Up 26 seconds             thirsty_sammet
+
+# ls开启输入功能，不支持
+[root@localhost ~]# docker container run -i centos:7 ls
+anaconda-post.log
+bin
+dev
+etc
+home
+lib
+lib64
+media
+mnt
+opt
+proc
+root
+run
+sbin
+srv
+sys
+tmp
+usr
+var
+```
+
+:::
+
+::: details 容器不退出辅助命令
+
+```bash
+# 优化1：添加-t参数，意思是为我们分配一个伪终端tty,通常-it这两个参数一起用
+[root@localhost ~]# docker container run -it centos:7
+[root@ed41df8e2e3b /]# hostname
+ed41df8e2e3b
+
+# 优化2：使用-d参数，意思是以后台方式运行容器并返回容器的ID
+[root@localhost ~]# docker container run -itd centos:7		# -it用来hang住容器
+d06b76d850c934bfe02785bbd52045694b238f6d40677d1f8eebf7738c07e718
+
+[root@localhost ~]# docker container run -d nginx:1.21.6	# nginx镜像不需要hang住容器，所以可以不用加-it
+00b757bf7358ea24b7b17a0f775f3aadb29d268f531d7a87c373747a07cbb3e3
+```
+
+:::
+
+#### 设置名称
+
+```bash
+# 默认Docker会随机分配名称给新创建的，这时候我们可以手动指定一个名称
+# 好处是以后操作容器时可以使用我们指定的名称，更加方便，而不是使用Container ID或随机名称
+[root@localhost ~]# docker container run -itd --name mycentos centos:7
+c873d90fc350e4218779addc24be5309948010058e397bfd2b4f3845f114d237
+
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE      COMMAND       CREATED              STATUS              PORTS     NAMES
+c873d90fc350   centos:7   "/bin/bash"   About a minute ago   Up About a minute             mycentos # 我们指定的名称
+
+# 给容器内的centos系统设置一个主机名，并运行hostname命令（替换默认的/bin/bash）
+[root@localhost ~]# docker container run -it --name webserver --hostname node1 centos:7 hostname
+node1
+```
+
+#### 进入容器
+
+```bash
+# exec子命令：在容器中运行指定的命令，在这里我们执行的命令是sh，并添加-it，hang住容器
+# 就等同于变相的进入了容器
+[root@localhost ~]# docker container run -itd centos:7 
+7f8576596e250e160f991e38852f9350a12fc244a52563a2a39ef968f375e799
+[root@localhost ~]# docker exec -it 7f8576 sh
+sh-4.2# ps aux
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root          1  0.2  0.0  11828  1652 pts/0    Ss+  06:12   0:00 /bin/bash		# 这是hang住容器的那个进程
+root         14  0.3  0.0  11824  1656 pts/1    Ss   06:12   0:00 sh			# 这是我们新开的进程sh
+root         20  0.0  0.0  51732  1700 pts/1    R+   06:12   0:00 ps aux		# 刚才执行的命令
+sh-4.2# 
+
+# attach子命令：直接进入启动容器的终端，不会启动新的进程
+[root@localhost ~]# docker attach 7f8576
+[root@7f8576596e25 /]# ps aux
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root          1  0.1  0.0  11828  1880 pts/0    Ss   06:17   0:00 /bin/bash		# 直接进入到这个终端中
+root         15  0.0  0.0  51732  1704 pts/0    R+   06:17   0:00 ps aux
+# 这时候如果我们使用Ctrl+D或exit命令退出，会导致容器退出
+[root@6dc924686c87 /]#
+```
+
+#### 重启策略
+
+文档：[https://docs.docker.com/engine/reference/run/#restart-policies---restart](https://docs.docker.com/engine/reference/run/#restart-policies---restart)
+
+
+
+
+
+
+
 ### Docker镜像
 
 #### 修改镜像源
@@ -319,9 +531,11 @@ See 'docker run --help'.
 10
 ```
 
-#### Dockerfile(1)：简介和常用指令
+#### Dockerfile(1):简介和常用指令
 
 Dockerrfile是一个文本文件，记录了构建镜像的所有步骤
+
+文档：[https://docs.docker.com/engine/reference/builder/](https://docs.docker.com/engine/reference/builder/)
 
 
 
@@ -349,13 +563,15 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 
 
 
-#### Dockerfile(2)：CMD和ENTRYPOINT的异同
+#### Dockerfile(2):CMD和ENTRYPOINT
 
 **相同点**
 
 * 可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
 
-* 都支持Exec和Shell格式语法，以CMD指令举例
+* 都支持Exec和Shell语法格式
+
+  ::: details 以CMD指令举例Exec和Shell格式
 
   ```bash
   # Exec格式
@@ -364,6 +580,8 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
   # Shell格式
   CMD 可执行程序 参数1 参数2 参数N...
   ```
+
+  :::
 
 * `docker container run`时可以覆盖镜像中的`CMD`或`ENTRYPOINT`命令
 
@@ -582,7 +800,7 @@ drwxr-xr-x.   1 root root  78 Nov 13  2020 var
 
 :::
 
-#### Dockerfile(3)：Go项目实战
+#### Dockerfile(3):多阶段构建优化Go项目
 
 （1）创建Go项目
 
