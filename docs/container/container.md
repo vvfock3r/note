@@ -102,7 +102,9 @@ dockerfile是包含若干命令的文本文件，可以通过这些命令创建�
 
 官网：[https://www.docker.com/](https://www.docker.com/)
 
-### 安装
+### 基础操作
+
+#### 安装
 
 CentOS安装文档：[https://docs.docker.com/engine/install/centos/](https://docs.docker.com/engine/install/centos/)
 
@@ -161,8 +163,6 @@ sudo docker run hello-world
 ```
 
 :::
-
-### 基础操作
 
 #### 运行容器
 
@@ -368,9 +368,231 @@ root         15  0.0  0.0  51732  1704 pts/0    R+   06:17   0:00 ps aux
 
 文档：[https://docs.docker.com/engine/reference/run/#restart-policies---restart](https://docs.docker.com/engine/reference/run/#restart-policies---restart)
 
+`docker container run`创建容器时可以指定容器的重启策略，意思是当容器关闭时是否自动重启
+
+**重启策略**
+
+| 策略                     | 说明                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| no                       | 不自动重启（默认策略）                                       |
+| always                   | 退出码不为0时自动重启；<br />当重启docker daemon后若容器为停止状态则会自动重启容器 |
+| unless-stopped           | 退出码不为0时自动重启；<br />当重启docker daemon后若容器为停止状态不会自动重启容器 |
+| on-failure[:max-retries] | 退出码不为0时自动重启；max-retries是可选参数，最多重启次数   |
+
+**退出状态码**
+
+| 状态码     | 说明                           |
+| ---------- | ------------------------------ |
+| 0          | 容器正常退出                   |
+| 125        | Docker daemon进程错误          |
+| 126        | 容器启动后要执行的命令无法调用 |
+| 127        | 容器启动后要执行的命令无法找到 |
+| 其他状态码 | 容器启动后执行的命令退出码     |
+
+<span style="color: red; font-weight: bold;">重要提示：</span>
+
+* <span style="color: red; font-weight: bold;">当退出码为0时，任何重启策略都不会重启容器</span>
+* <span style="color: red; font-weight: bold;">`docker container stop`关闭的容器退出码为0</span>
 
 
 
+::: details  查看容器的重启策略信息
+
+```bash
+# 随便启动一个容器
+[root@localhost ~]# docker container run --name demo centos:7 echo $(date +"%F")
+2022-05-12
+
+# 查看状态
+[root@localhost ~]# docker container inspect demo | grep -A 13 State
+        "State": {
+            "Status": "exited",		# 容器状态
+            "Running": false,		# 是否正在运行
+            "Paused": false,		
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 0,
+            "ExitCode": 0,			# 退出码
+            "Error": "",
+            "StartedAt": "2022-05-12T07:44:42.871097747Z",	# 容器开始运行时间
+            "FinishedAt": "2022-05-12T07:44:42.882166096Z"	# 容器结束运行时间
+        },
+        "Image": "sha256:eeb6ee3f44bd0b5103bb561b4c16bcb82328cfe5809ab675bb17ab3a16c517c9",
+[root@localhost ~]# docker container inspect demo -f "{{ .State.Status }}"	# 想看某一个值的话可以使用Go模板语法
+exited
+
+# 查看重启次数
+[root@localhost ~]# docker container inspect demo -f "{{ .RestartCount }}"
+0
+```
+
+:::
+
+::: details always重启策略
+
+```bash
+# 启动一个容器
+[root@localhost ~]# docker container run --name webserver -P -d --restart=always nginx:1.21.6
+
+# 查看容器
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+6d463a44eedc   nginx:1.21.6   "/docker-entrypoint.…"   4 seconds ago   Up 3 seconds   0.0.0.0:49153->80/tcp, :::49153->80/tcp   webserver
+
+# -----------------------------------------------------------------------------------------------
+
+# 停止容器
+[root@localhost ~]# docker container stop webserver
+webserver
+
+# 查看是否自动重启了：没有自动重启
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+# 查看退出码
+# 使用docker container stop停止的容器，退出码为0，即使设置always也不会自动重启
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.ExitCode }}"
+0
+
+# 重启一下Docker Engine
+[root@localhost ~]# systemctl restart docker.service
+
+# 查看容器，自动重启了
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS          PORTS                                     NAMES
+6d463a44eedc   nginx:1.21.6   "/docker-entrypoint.…"   3 minutes ago   Up 13 seconds   0.0.0.0:49153->80/tcp, :::49153->80/tcp   webserver
+
+# 查看重启次数
+[root@localhost ~]# docker container inspect webserver -f "{{ .RestartCount }}"
+0
+
+# -----------------------------------------------------------------------------------------------
+
+# 手动kill掉
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.Pid }}"
+35940
+[root@localhost ~]# kill -15 35940
+
+# 查看容器，自动重启了
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+6d463a44eedc   nginx:1.21.6   "/docker-entrypoint.…"   5 minutes ago   Up 3 seconds   0.0.0.0:49154->80/tcp, :::49154->80/tcp   webserver
+
+# 查看重启次数
+[root@localhost ~]# docker container inspect webserver -f "{{ .RestartCount }}"
+1
+# 检查Pid
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.Pid }}"
+36630
+```
+
+:::
+
+::: details unless-stopped重启策略
+
+```bash
+# 启动一个容器
+[root@localhost ~]# docker container run --name webserver -P -d --restart=unless-stopped nginx:1.21.6
+
+# 查看容器
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+cd6c29a9928c   nginx:1.21.6   "/docker-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:49155->80/tcp, :::49155->80/tcp   webserver
+
+# -----------------------------------------------------------------------------------------------
+
+# 停止容器
+[root@localhost ~]# docker container stop webserver
+webserver
+
+# 查看是否自动重启了：没有自动重启
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+# 查看退出码
+# 使用docker container stop停止的容器，退出码为0，即使设置always也不会自动重启
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.ExitCode }}"
+0
+
+# 重启一下Docker Engine
+[root@localhost ~]# systemctl restart docker.service
+
+# 查看容器，没有自动重启
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS          PORTS                                     NAMES
+
+# 查看重启次数
+[root@localhost ~]# docker container inspect webserver -f "{{ .RestartCount }}"
+0
+# -----------------------------------------------------------------------------------------------
+# 把容器起起来
+[root@localhost ~]# docker container start webserver
+webserver
+
+# 手动kill掉
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.Pid }}"
+37428
+[root@localhost ~]# kill -15 37428
+
+# 查看容器，自动重启了
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                     NAMES
+458b89dd302e   nginx:1.21.6   "/docker-entrypoint.…"   2 minutes ago   Up 3 seconds   0.0.0.0:49154->80/tcp, :::49154->80/tcp   webserver
+
+# 查看重启次数
+[root@localhost ~]# docker container inspect webserver -f "{{ .RestartCount }}"
+1
+# 检查Pid
+[root@localhost ~]# docker container inspect webserver -f "{{ .State.Pid }}"
+37591
+```
+
+:::
+
+::: detai 其他：构建一个自由控制退出码的镜像
+
+```bash
+# Dockerfile
+# 可以通过docker container run的时候传参覆盖CMD指令来控制容器退出码
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+
+RUN echo "#!/bin/bash" > exit.sh && \
+    echo "exit \$1"   >> exit.sh && \
+    chmod 755 exit.sh
+
+ENTRYPOINT ["./exit.sh"]
+CMD ["0"]
+
+# 构建镜像 centos:demo
+[root@localhost ~]# docker build -t centos:demo .
+Sending build context to Docker daemon     16MB
+Step 1/6 : FROM centos:7
+ ---> eeb6ee3f44bd
+Step 2/6 : MAINTAINER VVFock3r
+ ---> Using cache
+ ---> f7cea628e420
+Step 3/6 : WORKDIR /
+ ---> Using cache
+ ---> 07f0b2f933b5
+Step 4/6 : RUN echo "#!/bin/bash" > exit.sh &&     echo "exit \$1"   >> exit.sh &&     chmod 755 exit.sh
+ ---> Using cache
+ ---> 7ba25d2264cc
+Step 5/6 : ENTRYPOINT ["./exit.sh"]
+ ---> Using cache
+ ---> b2385bbe65e4
+Step 6/6 : CMD ["0"]
+ ---> Using cache
+ ---> 268bb0cf0753
+Successfully built 268bb0cf0753
+Successfully tagged centos:demo
+
+# 创建容器
+[root@localhost ~]# docker container run --name demo -d --restart=always centos:demo 99 # 设置退出码为99
+```
+
+:::
 
 
 
