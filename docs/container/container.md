@@ -392,7 +392,7 @@ root         15  0.0  0.0  51732  1704 pts/0    R+   06:17   0:00 ps aux
 <span style="color: red; font-weight: bold;">重要提示：</span>
 
 * <span style="color: red; font-weight: bold;">当退出码为0时，任何重启策略都不会重启容器</span>
-* <span style="color: red; font-weight: bold;">`docker container stop`关闭的容器退出码为0</span>
+* <span style="color: red; font-weight: bold;">docker container stop关闭的容器退出码为0</span>
 
 
 
@@ -548,7 +548,7 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 
 :::
 
-::: detai 其他：构建一个自由控制退出码的镜像
+::: details  其他：构建一个自由控制退出码的镜像
 
 ```bash
 # Dockerfile
