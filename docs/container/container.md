@@ -594,7 +594,28 @@ Successfully tagged centos:demo
 
 :::
 
+#### 自动删除
 
+我们可以控制容器退出后自动删除，注意与`--restart`选项互斥
+
+```bash
+# 启动3个容器
+[root@localhost ~]# docker run -itd --rm --name demo1 centos:7
+[root@localhost ~]# docker run -itd --rm --name demo2 centos:7
+[root@localhost ~]# docker run -itd --rm --name demo3 centos:7 ls
+
+# 停止第一个容器（退出码为0）
+[root@localhost ~]# docker container stop demo1
+
+# 停止第二个容器（退出码不为0）
+[root@localhost ~]# kill -9 `docker container inspect demo2 -f "{{ .State.Pid }}"`
+
+# 第三个容器运行完成，自动会被删除
+
+# 查看容器（已全部被删除）
+[root@localhost ~]# docker container ps -a
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
 
 ### Docker镜像
 
@@ -1312,3 +1333,219 @@ Hello, world!
 ```
 
 :::
+
+### Docker存储
+
+#### 持久化方式1：`bind mounts`
+
+文档：[https://docs.docker.com/storage/bind-mounts/](https://docs.docker.com/storage/bind-mounts/)
+
+`bind mounts`方式就是将宿主机上的目录映射到容器中，其特点是以宿主机目录为准，
+
+若宿主机目录为空而容器目录不为空，那么容器目录将被清空（与宿主机保持一致）
+
+`bind mounts`有两种使用方式：
+
+<br />
+
+（1）`-v`选项
+
+语法：`docker container run`时使用 `-v "宿主机目录:容器目录[:读写模式]"`
+
+选项：
+
+* rw：读写模式（默认）
+* ro：容器只读模式
+
+<br />
+
+（2）`--mount`选项
+
+语法：`docker container run`时使用 `--mount type=bind,src=宿主机目录,dst=容器目录[,读写模式][,bind-propagation=rprivate] `
+
+选项：
+
+* `type=bind`是固定的，还支持其他的值，但就不属于`bind mounts`的内容了
+* `src`也可以写做`source`
+* `dst`也可以写作`target`、`destination`
+* 读写模式：默认为读写，如果值为readonly则容器内只读
+* `bind-propagation`一般用不到，先不讲
+
+<br />
+
+（3）`-v`和`--mount`的不同点
+
+在映射时如果本地目录不存在，`-v`选项会自动创建本地目录，`--mount`选项则会报错
+
+<br />
+
+示例
+
+::: details (1) 基础示例 -v选项
+
+```bash
+# 启动一个容器，将本地目录html映射到容器/usr/share/nginx/html中
+# (1) 如果本地目录不存在则自动创建
+# (2) 如果容器中的目录原本是有内容的也会被删除，要与本地目录保持一致的数据
+[root@localhost ~]# docker container run --name webserver -p 8000:80 -d -v /root/html:/usr/share/nginx/html  nginx:1.21.6
+
+# 创建首页文件
+[root@localhost ~]# echo 'hello world!' > /root/html/index.html
+
+# 查看容器
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                   NAMES
+cb1416a20f8e   nginx:1.21.6   "/docker-entrypoint.…"   7 seconds ago   Up 6 seconds   0.0.0.0:8000->80/tcp, :::8000->80/tcp   webserver
+
+# 访问测试
+[root@localhost ~]# curl http://127.0.0.1:8000/
+hello world!
+
+# 查看容器详情
+[root@localhost ~]# docker container inspect webserver  | grep -i -A 10 Mounts 
+        "Mounts": [
+            {
+                "Type": "bind",								# 类型
+                "Source": "/root/html",						# 宿主机目录
+                "Destination": "/usr/share/nginx/html",		# 容器目录
+                "Mode": "",									# 模式
+                "RW": true,									# 是否支持读写
+                "Propagation": "rprivate"					# 传播方式
+            }
+        ],
+        "Config": {
+```
+
+:::
+
+::: details (2) 基础示例 --mount选项
+
+```bash
+# 创建容器
+[root@localhost ~]# docker container run --name webserver -p 8000:80 -d --mount type=bind,src=/root/html,dst=/usr/share/nginx/html  nginx:1.21.6
+
+# 查看容器
+[root@localhost ~]# docker container ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED              STATUS              PORTS                                   NAMES
+0aa307c705af   nginx:1.21.6   "/docker-entrypoint.…"   About a minute ago   Up About a minute   0.0.0.0:8000->80/tcp, :::8000->80/tcp   webserver
+
+# 创建首页文件
+[root@localhost ~]# echo 'hello world!' > /root/html/index.html
+
+# 访问测试
+[root@localhost ~]# curl http://127.0.0.1:8000/
+hello world!
+
+# 查看容器详情
+[root@localhost ~]# docker container inspect webserver  | grep -i -A 10 Mounts
+            "Mounts": [
+                {
+                    "Type": "bind",
+                    "Source": "/root/html",
+                    "Target": "/usr/share/nginx/html"
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+--
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/root/html",
+                "Destination": "/usr/share/nginx/html",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+```
+
+:::
+
+::: details (3)映射多个目录 -v选项
+
+```bash
+# 目标：我们将nginx的配置文件目录和数据目录全部映射出来
+
+# ---------------------------------------------------------------------------------------------------------
+# 准备工作
+# 先启动一个nginx，将容器中的目录拷贝至本地，然后再进行映射（不然直接映射的话，本地又没有文件，会导致容器映射的目录会被清空，进而导致容器启动失败）
+[root@localhost ~]# docker container run --name webserver -d nginx:1.21.6
+
+# 拷贝文件到本地目录
+[root@localhost ~]# mkdir -p nginx/etc/
+[root@localhost ~]# mkdir -p nginx/usr/share/
+[root@localhost ~]# docker container cp webserver:/etc/nginx/ ./nginx/etc/
+[root@localhost ~]# docker container cp webserver:/usr/share/nginx/ ./nginx/usr/share/
+
+# 删除容器
+docker container rm -f webserver
+
+# ---------------------------------------------------------------------------------------------------------
+# 创建新的容器
+[root@localhost ~]# docker container run --name webserver -p 8000:80 -d -v /root/nginx/etc/nginx/:/etc/nginx/ -v /root/nginx/usr/share/nginx/:/usr/share/nginx/ nginx:1.21.6
+
+# 访问测试
+[root@localhost conf.d]# curl http://127.0.0.1:8000/
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
+:::
+
+::: details (4) 映射目录为只读模式 -v选项
+
+```bash
+# 创建容器
+[root@localhost ~]# docker container run --name webserver -P -d -v /root/readonly:/tmp/readonly:ro nginx:1.21.6
+
+# 在容器内创建文件
+[root@localhost ~]# docker container exec -it webserver touch /tmp/readonly/a.txt
+touch: cannot touch '/tmp/readonly/a.txt': Read-only file system
+```
+
+:::
+
+::: details (5) -v和--mount的不同
+
+```bash
+# -v选项
+[root@localhost ~]# docker container run -P -d -v /tmp/a11:/tmp/a11 nginx:1.21.6
+[root@localhost ~]# ls -ld /tmp/a11/
+drwxr-xr-x. 2 root root 6 May 14 16:04 /tmp/a11/
+
+# --mount选项
+[root@localhost ~]# docker container run -P -d --mount type=bind,src=/tmp/b11,dst=/tmp/c11 nginx:1.21.6
+docker: Error response from daemon: invalid mount config for type "bind": bind source path does not exist: /tmp/b11.
+See 'docker run --help'.
+```
+
+:::
+
+#### 持久化方式2：`volumes`
+
+文档：[https://docs.docker.com/storage/volumes/](https://docs.docker.com/storage/volumes/)
