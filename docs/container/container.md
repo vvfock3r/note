@@ -1650,3 +1650,151 @@ drwxr-xr-x. 2 root root 40 May 19 16:01 html
 
 :::
 
+::: details （3）Dockerfile中的VOLUME指令
+
+```bash
+# Dockerfile中的VOLUME指令与EXPOSE类似，在构建镜像时并不会自动创建VOLUME，而是作为一个显示声明
+# 当我们创建容器时
+# (1) 没有使用-v或--mount时会自动创建匿名卷
+# (2) 使用—v或--mount时，目录不一致也会自动创建匿名卷，此时就相当于指定了多个卷
+
+# ---------------------------------------------------------------------------------------------------------
+# 匿名卷的使用
+
+# 先查看一下的当前的情况
+[root@localhost ~]# docker image ls
+REPOSITORY                     TAG                 IMAGE ID       CREATED         SIZE
+centos                         7                   eeb6ee3f44bd   8 months ago    204MB
+nginx                          1.21.6              7425d3a7c478   8 days ago      142MB
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+
+# 查看Dockerfile
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+VOLUME ["/data"]
+CMD ["/bin/bash"]
+
+# 构建镜像
+[root@localhost ~]# docker build -t centos:main .
+Sending build context to Docker daemon  16.02MB
+Step 1/5 : FROM centos:7
+ ---> eeb6ee3f44bd
+Step 2/5 : MAINTAINER VVFock3r
+ ---> Using cache
+ ---> f7cea628e420
+Step 3/5 : WORKDIR /
+ ---> Using cache
+ ---> 07f0b2f933b5
+Step 4/5 : VOLUME ["/data"]
+ ---> Using cache
+ ---> 73570684b51d
+Step 5/5 : CMD ["/bin/bash"]
+ ---> Using cache
+ ---> 48ab01d4fcec
+Successfully built 48ab01d4fcec
+Successfully tagged centos:main
+# 再查看一下VOLUME
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+
+# 启动容器，不进行持久化
+[root@localhost ~]# docker container run -d --name main centos:main
+
+# 再查看一下VOLUME，发现已经自动创建了一个匿名卷，即自动进行了持久化
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c
+
+[root@localhost ~]# docker volume inspect 807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c
+[
+    {
+        "CreatedAt": "2022-05-19T19:50:03+08:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c/_data",
+        "Name": "807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+# 查看一下容器信息
+[root@localhost ~]# docker container inspect main | grep -i mounts -A 13
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c",
+                "Source": "/var/lib/docker/volumes/807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c/_data",
+                "Destination": "/data",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "783eaeaeb92a",
+# ---------------------------------------------------------------------------------------------------------
+# 再启动一个容器，发现匿名卷又增加了一个
+[root@localhost ~]# docker container run -d --name main2 centos:main
+
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     0f6d8c19f62874b7e5f39653c36a67de5bbdc22f4ef516fbe00bef0d554ba05b
+local     807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c
+
+# ---------------------------------------------------------------------------------------------------------
+# 使用-v可以覆盖Dockerfile中的VOLUME指令
+
+# 启动一个容器，指定使用卷mydata（不存在时会自动创建）
+[root@localhost ~]# docker container run -d --name main3 -v mydata:/data/ centos:main
+
+# 查看卷
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     0f6d8c19f62874b7e5f39653c36a67de5bbdc22f4ef516fbe00bef0d554ba05b
+local     807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c
+local     mydata # 这个是自动创建的，匿名卷也没有增加，说明dockerfile中的VOLUME指令并没有生效
+
+# ---------------------------------------------------------------------------------------------------------
+# 使用-v时，当持久化容器的目录不一致时，不会进行覆盖
+[root@localhost ~]# docker container run -d --name main4 -v mypkg:/pkg/ centos:main # /pkg/与镜像中的/data/不一致，两个卷都会创建
+
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     0f6d8c19f62874b7e5f39653c36a67de5bbdc22f4ef516fbe00bef0d554ba05b	
+local     650d74ab0215307f165e07ff39bae4dfb10b6d32561cddec65c28dff207ffda4	# 自动创建的，用于持久化/data/
+local     807798b92c720098345fb3d9629571bbb67c43d1712248ae45038722cca70a7c
+local     mydata
+local     mypkg	# 自动创建的，用于持久化/pkg/
+
+
+# 看一下容器持久化详情
+[root@localhost ~]# docker container inspect main4 | grep -i mounts -A 20
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "mypkg",
+                "Source": "/var/lib/docker/volumes/mypkg/_data",
+                "Destination": "/pkg",
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "650d74ab0215307f165e07ff39bae4dfb10b6d32561cddec65c28dff207ffda4",
+                "Source": "/var/lib/docker/volumes/650d74ab0215307f165e07ff39bae4dfb10b6d32561cddec65c28dff207ffda4/_data",
+                "Destination": "/data",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+```
+
+:::
