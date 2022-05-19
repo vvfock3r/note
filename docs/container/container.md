@@ -1798,3 +1798,67 @@ local     mypkg	# 自动创建的，用于持久化/pkg/
 ```
 
 :::
+
+#### 内存文件系统：tmpfs mounts
+
+文档：[https://docs.docker.com/storage/tmpfs/](https://docs.docker.com/storage/tmpfs/)
+
+容器的数据会放到宿主机内存中，当容器重启后数据清空
+
+::: details tmpfs mounts基础操作
+
+```bash
+# 启动一个容器，容器的/data目录数据存在于宿主机内存中
+[root@localhost ~]# docker container run --name mycentos -itd --mount type=tmpfs,dst=/data centos:7 /bin/bash
+99d0d321bd5ffa05bddc4e4e54b22695a6376f47d85a7ed86be05e57c897f5e4
+
+# 查看卷，并没有创建
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+
+# 查看容器存储
+[root@localhost ~]# docker container inspect mycentos | grep -i mounts -A 13
+            "Mounts": [
+                {
+                    "Type": "tmpfs",
+                    "Target": "/data"
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+--
+        "Mounts": [
+            {
+                "Type": "tmpfs",
+                "Source": "",
+                "Destination": "/data",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "99d0d321bd5f",
+            "Domainname": "",
+            "User": "",
+            
+# 在容器/data中写点数据
+[root@localhost ~]# docker container exec -it mycentos /bin/bash
+[root@99d0d321bd5f /]# cd /data
+[root@99d0d321bd5f data]# seq 100 > 1.txt
+[root@99d0d321bd5f data]# exit
+
+# 重启容器，检查数据已经不存在了
+[root@localhost ~]# docker container restart mycentos
+[root@localhost ~]# docker container exec -it mycentos /bin/bash
+[root@99d0d321bd5f /]# ls /data/
+[root@99d0d321bd5f /]# 
+```
+
+:::
