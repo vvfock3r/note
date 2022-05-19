@@ -1549,3 +1549,104 @@ See 'docker run --help'.
 #### 持久化方式2：`volumes`
 
 文档：[https://docs.docker.com/storage/volumes/](https://docs.docker.com/storage/volumes/)
+
+`volumes`是更为推荐的持久化方式，与`bind mounts`相比具有更好的移植性
+
+volume的使用方式与`bind mounts`很类似，详情可以看上方文档
+
+<br />
+
+`volume`特点：
+
+* 如果卷不存在会自动创建
+* 如果是空卷则容器目录会填充卷的内容（这一方面与`bind mounts`完全不一样）
+
+<br />
+
+::: details （1）docker volume命令
+
+```bash
+# 查看卷
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+
+# 创建卷
+[root@localhost ~]# docker volume create webserver
+webserver
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     webserver
+
+# 查看卷详情
+[root@localhost ~]# docker volume inspect webserver
+[
+    {
+        "CreatedAt": "2022-05-19T15:48:06+08:00",
+        "Driver": "local",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/volumes/webserver/_data",
+        "Name": "webserver",
+        "Options": {},
+        "Scope": "local"
+    }
+]
+```
+
+:::
+
+::: details （2）容器使用volume（使用-v选项举例）
+
+```bash
+# 使用一个已经存在的卷
+[root@localhost ~]# docker container run --name webserver -v webserver:/usr/share/nginx/ -d nginx:1.21.6
+
+# 查看容器信息
+[root@localhost ~]# docker container inspect webserver | grep -i Mounts -A 13
+        "Mounts": [
+            {
+                "Type": "volume",		# 类型为Volumn
+                "Name": "webserver",	# Volumn名称
+                "Source": "/var/lib/docker/volumes/webserver/_data",	# 对应的本地文件系统路径
+                "Destination": "/usr/share/nginx/",		# 对应的容器目录
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "90f3864f6b67",
+
+# ---------------------------------------------------------------------------------------------------------
+# 当卷不存在时docker会为我们自动创建            
+[root@localhost ~]# docker run --name webserver1 -v webserver1:/usr/share/nginx/ -d nginx:1.21.6 # 卷webserver1并不存在
+[root@localhost ~]# docker container inspect webserver1 | grep -i Mounts -A 13
+        "Mounts": [
+            {
+                "Type": "volume",		# 这里依旧是volume
+                "Name": "webserver1",
+                "Source": "/var/lib/docker/volumes/webserver1/_data",
+                "Destination": "/usr/share/nginx/",
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "862e24c37fc7",
+[root@localhost ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     webserver
+local     webserver1		# 这里是自动创建的volume
+
+# ---------------------------------------------------------------------------------------------------------
+# volume数据为空，容器内有数据，则会将容器的数据拷贝至volume，这一点与bind mounts完全不一样。
+[root@localhost html]# cd /var/lib/docker/volumes/webserver/_data
+[root@localhost _data]# ll
+total 0
+drwxr-xr-x. 2 root root 40 May 19 16:01 html
+```
+
+:::
+
