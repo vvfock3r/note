@@ -1862,3 +1862,69 @@ DRIVER    VOLUME NAME
 ```
 
 :::
+
+### Docker网络
+
+#### （1）none网络
+
+文档：[https://docs.docker.com/network/none/](https://docs.docker.com/network/none/)
+
+none类型的网络只有一个回环接口lo，没有办法联网，封闭的网络能很好的保证容器的安全性
+
+::: details 点击查看详情
+
+```bash
+# Dockerfile,主要是安装一下ifconfig和ip命令
+[root@localhost ~]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+RUN yum -y install net-tools iproute
+CMD ["/bin/bash"]
+
+
+# 构建镜像
+[root@localhost ~]# docker build -t centos:main .
+Sending build context to Docker daemon  16.85MB
+Step 1/5 : FROM centos:7
+ ---> eeb6ee3f44bd
+Step 2/5 : MAINTAINER VVFock3r
+ ---> Using cache
+ ---> f7cea628e420
+Step 3/5 : WORKDIR /
+ ---> Using cache
+ ---> 07f0b2f933b5
+Step 4/5 : RUN yum -y install net-tools iproute
+ ---> Using cache
+ ---> 04ea039270fd
+Step 5/5 : CMD ["/bin/bash"]
+ ---> Using cache
+ ---> 4d1a2435a642
+Successfully built 4d1a2435a642
+Successfully tagged centos:main
+
+# 启动容器
+[root@localhost ~]# docker container run --name demo -itd --network=none centos:main
+
+# 在容器中查看网络接口
+[root@localhost ~]# docker container exec -it demo ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+
+
+# 查看容器网络模式
+[root@localhost ~]# docker container inspect demo | grep -i network
+            "NetworkMode": "none",		# 网络模式为none类型
+        "NetworkSettings": {
+            "Networks": {
+                    "NetworkID": "e05e046464f3b65349d7895ca9d365f03e5bf261a5e1e30ede561b80f8d2010e",
+```
+
+:::
+
+#### （2）host网络
+
+文档：[https://docs.docker.com/network/host/](https://docs.docker.com/network/host/)
+
