@@ -1809,8 +1809,7 @@ local     mypkg	# 自动创建的，用于持久化/pkg/
 
 ```bash
 # 启动一个容器，容器的/data目录数据存在于宿主机内存中
-[root@localhost ~]# docker container run --name mycentos -itd --mount type=tmpfs,dst=/data centos:7 /bin/bash
-99d0d321bd5ffa05bddc4e4e54b22695a6376f47d85a7ed86be05e57c897f5e4
+[root@localhost ~]# docker container run --name mycentos -itd --mount type=tmpfs,dst=/data centos:7
 
 # 查看卷，并没有创建
 [root@localhost ~]# docker volume ls
@@ -1865,6 +1864,17 @@ DRIVER    VOLUME NAME
 
 ### Docker网络
 
+#### Docker自带的3种网络
+
+```bash
+# 通过如下命令可以查看Docker自带的3种基本网络，但实际上我们可用的并不仅仅是这3种，后面会一一介绍
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+aece42e0e44c   bridge    bridge    local
+db9a2c63802b   host      host      local
+e05e046464f3   none      null      local
+```
+
 #### （1）none网络
 
 文档：[https://docs.docker.com/network/none/](https://docs.docker.com/network/none/)
@@ -1874,52 +1884,22 @@ none类型的网络只有一个回环接口lo，没有办法联网，封闭的�
 ::: details 点击查看详情
 
 ```bash
-# Dockerfile,主要是安装一下ifconfig和ip命令
-[root@localhost ~]# cat Dockerfile 
-FROM centos:7
-MAINTAINER VVFock3r
-WORKDIR /
-RUN yum -y install net-tools iproute
-CMD ["/bin/bash"]
-
-
-# 构建镜像
-[root@localhost ~]# docker build -t centos:main .
-Sending build context to Docker daemon  16.85MB
-Step 1/5 : FROM centos:7
- ---> eeb6ee3f44bd
-Step 2/5 : MAINTAINER VVFock3r
- ---> Using cache
- ---> f7cea628e420
-Step 3/5 : WORKDIR /
- ---> Using cache
- ---> 07f0b2f933b5
-Step 4/5 : RUN yum -y install net-tools iproute
- ---> Using cache
- ---> 04ea039270fd
-Step 5/5 : CMD ["/bin/bash"]
- ---> Using cache
- ---> 4d1a2435a642
-Successfully built 4d1a2435a642
-Successfully tagged centos:main
-
-# 启动容器
-[root@localhost ~]# docker container run --name demo -itd --network=none centos:main
-
-# 在容器中查看网络接口
-[root@localhost ~]# docker container exec -it demo ip a
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-
+# 启动容器,设置网络类型为none
+[root@localhost ~]# docker container run --name demo -itd --network=none busybox:1.34
 
 # 查看容器网络模式
 [root@localhost ~]# docker container inspect demo | grep -i network
-            "NetworkMode": "none",		# 网络模式为none类型
+            "NetworkMode": "none", # 网络模式为none类型
         "NetworkSettings": {
             "Networks": {
-                    "NetworkID": "e05e046464f3b65349d7895ca9d365f03e5bf261a5e1e30ede561b80f8d2010e",
+                    "NetworkID": "e05e046464f3b65349d7895ca9d365f03e5bf261a5e1e30ede561b80f8d2010e",                    
+                    
+# 在容器中查看网络接口
+[root@localhost ~]# docker container exec -it demo ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
 ```
 
 :::
@@ -1927,4 +1907,520 @@ Successfully tagged centos:main
 #### （2）host网络
 
 文档：[https://docs.docker.com/network/host/](https://docs.docker.com/network/host/)
+
+host类型的网络和和宿主机共用一个`Network Namespace`，即<span style="color: red; font-weight: bold;">容器和宿主机的IP和端口等是共用的</span>
+
+::: details 点击查看详情
+
+```bash
+# 启动容器,设置网络类型为host
+[root@localhost ~]# docker run --name demo -itd --network host busybox:1.34
+
+# 查看容器网络模式
+[root@localhost ~]# docker container inspect demo | grep -i network
+            "NetworkMode": "host",
+        "NetworkSettings": {
+            "Networks": {
+                    "NetworkID": "db9a2c63802b71ff7c22f7c789415c0dc06f111de9db4e07c4ce13a45d47eea6",
+                    
+# 在容器中查看网络接口，和宿主机输出一致
+[root@localhost ~]# docker container exec -it demo ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast qlen 1000
+    link/ether 00:0c:29:9b:05:4a brd ff:ff:ff:ff:ff:ff
+    inet 192.168.48.133/24 brd 192.168.48.255 scope global dynamic ens33
+       valid_lft 1010sec preferred_lft 1010sec
+    inet6 fe80::10b3:d204:8d1d:93f7/64 scope link 
+       valid_lft forever preferred_lft forever
+3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue 
+    link/ether 02:42:c2:e3:1b:d5 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:c2ff:fee3:1bd5/64 scope link 
+       valid_lft forever preferred_lft forever
+
+# ------------------------------------------------------------------------------------------------------------------
+# 在宿主机监听一个端口，然后进入容器继续监听此端口，发现端口已经被占用了
+
+# 宿主机监听10000端口
+[root@localhost ~]# nc -l -v -p 10000
+Ncat: Version 7.50 ( https://nmap.org/ncat )
+Ncat: Listening on :::10000
+Ncat: Listening on 0.0.0.0:10000
+
+# 进入容器，也监听10000端口，发现端口被占用
+[root@localhost ~]# docker container exec -it demo nc -l -v -p 10000
+nc: bind: Address already in use
+```
+
+:::
+
+#### （3）container网络
+
+我们在启动容器时候，可以指定共享已存在的容器的网络
+
+::: details container网络
+
+```bash
+# 启动一个容器
+[root@localhost ~]# docker container run --name demo1 -itd busybox:1.34
+
+# 再启动一个容器，通过--network container:demo1参数，指定共享demo1容器的网络
+[root@localhost ~]# docker container run --name demo2 -itd --network container:demo1 busybox:1.34
+
+# 分别查看两个容器的IP，发现是一样的
+[root@localhost ~]# docker container exec -it demo1 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+30: eth0@if31: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0  # IP：172.17.0.2/16
+       valid_lft forever preferred_lft forever
+
+[root@localhost ~]# docker container exec -it demo2 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+30: eth0@if31: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0	 # IP：172.17.0.2/16
+       valid_lft forever preferred_lft forever
+```
+
+:::
+
+
+
+#### （4-1）默认bridge网络
+
+文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
+
+Docker进程启动时，会在主机上创建一个名为`docker0`的虚拟网桥，此主机上启动的Docker容器会连接到这个虚拟网桥上。
+虚拟网桥的工作方式和物理交换机类似，这样主机上的所有容器就通过交换机连在了一个二层网络中
+
+<br />
+
+`bridge`是创建容器时docker默认网络
+
+<br />
+
+创建容器bridge网络的流程
+
+1. 在宿主机上创建一对虚拟网卡veth pair设备
+
+2. Docker将veth pair设备的一端放在新创建的容器中，并命名为eth0；
+
+   Docker将另一端放在主机中，以veth*这样类似的名字命名，并将这个网络设备加入到docker0网桥中
+
+3. 从`docker0`子网中分配一个IP给容器使用，并设置docker0的IP地址为容器的默认网关
+
+
+
+::: details 相关命令简介
+
+```bash
+# yum install -y bridge-utils
+
+# 查看docker自带的3种网络
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+e47d2b8de53b   bridge    bridge    local
+db9a2c63802b   host      host      local
+e05e046464f3   none      null      local
+
+# 查看网桥详情（包含子网和链接的容器等）
+[root@localhost ~]# docker network inspect bridge
+		# 子网信息
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",	# 子网地址
+                    "Gateway": "172.17.0.1"		# 默认网关
+                }
+            ]
+        },
+        
+        # 链接的容器
+        "Containers": {            
+        },
+        
+
+# 查看系统上的网桥列表
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+docker0         8000.024259017b71       no
+
+# 在宿主机上和容器种查看veth设备
+使用ifconfig、ip a或ip link list等命令
+```
+
+:::
+
+::: details （0）准备工作：创建两个容器，分别使用默认网络和指定bridge网络
+
+```bash
+# 创建两个容器，一个使用默认的网络，一个指定使用bridge
+[root@localhost ~]# docker run -itd --name demo1 busybox:1.34
+[root@localhost ~]# docker run -itd --name demo2 --network bridge busybox:1.34
+```
+
+:::
+
+::: details （1）docker中的网桥和Linux上的网桥对应关系（未找到依据）
+
+```bash
+# （未找到依据）
+```
+
+:::
+
+::: details （2）查看默认网桥（未找到明显依据）
+
+```bash
+# 没有找到明显的依据，只能检查一下有没有显示配置默认网桥是啥来判断
+[root@localhost ~]# cat /etc/docker/daemon.json
+{
+   "registry-mirrors": [
+        "https://6xumug9e.mirror.aliyuncs.com"
+  ]
+}
+```
+
+:::
+
+::: details （3）网桥和容器的对应关系
+
+```bash
+# Linux角度来看，的docker0网桥下包含2对veth设置
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+docker0         8000.024259017b71       no              veth2df3118
+                                                        vethd035852
+# Docker角度来看，的默认网桥bridge下包含2个容器
+[root@localhost ~]# docker network inspect bridge | grep -i containers -A 15
+        "Containers": {
+            "6f54d26719d9e45e3a157998607994c29f09ec20a316d1d93ecc700d2fc45065": {
+                "Name": "demo1",	# 容器名
+                "EndpointID": "9d431e06472f77fed976acb927be1d38540fe25d114ee4e7daca7f15d527bd65",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            },
+            "be042630a0f8755c713aa29faaa74f7321246b5fd9e9cd96ce7d3a10c011238d": {
+                "Name": "demo2",	# 容器名
+                "EndpointID": "828bb4005aea51445d236b23a7c13df2cf900d551debb2ae1f4f32a15b9ba0d6",
+                "MacAddress": "02:42:ac:11:00:03",
+                "IPv4Address": "172.17.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+        
+# 从容器角度来看所使用的网桥
+[root@localhost ~]# docker container inspect demo1 | grep -i network
+			# 默认网桥，一般来说默认是bridge，但也可以手动指定默认网桥，所以这里并不能说明一定是bridge，还需要检查默认网桥具体是啥
+            "NetworkMode": "default",
+        "NetworkSettings": {
+            "Networks": {
+                    "NetworkID": "e47d2b8de53b2f7f989125a7f7362d15c4185189a6ef91900f8b08311a9676c0",
+[root@localhost ~]# docker container inspect demo2 | grep -i network
+            "NetworkMode": "bridge",	# 名为bridge的网桥
+        "NetworkSettings": {
+            "Networks": {
+                    "NetworkID": "e47d2b8de53b2f7f989125a7f7362d15c4185189a6ef91900f8b08311a9676c0",
+```
+
+:::
+
+::: details （4）宿主机上的veth pair设备和容器中的veth pair设备对应关系
+
+```bash
+# 在宿主机上查看veth设备
+[root@localhost ~]# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:9b:05:4a brd ff:ff:ff:ff:ff:ff
+    inet 192.168.48.133/24 brd 192.168.48.255 scope global dynamic ens33
+       valid_lft 1167sec preferred_lft 1167sec
+    inet6 fe80::10b3:d204:8d1d:93f7/64 scope link 
+       valid_lft forever preferred_lft forever
+3: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP 
+    link/ether 02:42:59:01:7b:71 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:59ff:fe01:7b71/64 scope link 
+       valid_lft forever preferred_lft forever
+
+9: veth8041554@if8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP # 这里9和8是一对veth pair设备
+    link/ether 12:ca:18:5f:16:66 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::10ca:18ff:fe5f:1666/64 scope link 
+       valid_lft forever preferred_lft forever
+
+11: veth2df3118@if10: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP# 这里11和10是一对veth pair设备
+    link/ether aa:3a:c5:72:77:81 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::a83a:c5ff:fe72:7781/64 scope link 
+       valid_lft forever preferred_lft forever
+        
+# 在容器中查看veth设备
+[root@localhost ~]# docker container exec -it demo1 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+8: eth0@if9: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 	# 8和9是一对veth pair设备，正好可以对应上
+    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+
+[root@localhost ~]# docker container exec -it demo2 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+10: eth0@if11: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 	# 10和11是一对veth pair设备，正好可以对应上
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+
+:::
+
+#### （4-2）自定义bridge网络
+
+文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
+
+默认的网桥（bridge）并不推荐在生产环境中使用，因为存在一些技术缺陷，更好的方式是使用用户自定义bridge网络
+
+::: details （1）创建自定义bridge网络
+
+```bash
+# 从Docker角度，看一下当前的网络
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+e47d2b8de53b   bridge    bridge    local
+db9a2c63802b   host      host      local
+e05e046464f3   none      null      local
+
+# 从Linux角度，看一下当前的网络
+[root@localhost ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+docker0         8000.024259017b71       no
+
+[root@localhost ~]# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:9b:05:4a brd ff:ff:ff:ff:ff:ff
+    inet 192.168.48.133/24 brd 192.168.48.255 scope global dynamic ens33
+       valid_lft 1446sec preferred_lft 1446sec
+    inet6 fe80::10b3:d204:8d1d:93f7/64 scope link 
+       valid_lft forever preferred_lft forever
+3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN 
+    link/ether 02:42:59:01:7b:71 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:59ff:fe01:7b71/64 scope link 
+       valid_lft forever preferred_lft forever
+
+# 创建一个自定义的网络，网络驱动为bridge，子网172.20.0.0/16，默认网关172.20.0.1
+[root@localhost ~]# docker network create --driver bridge --subnet 172.20.0.0/16 --gateway 172.20.0.1 bridge2
+
+# 从Docker角度，看一下当前的网络,发现多了一个
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+e47d2b8de53b   bridge    bridge    local
+8f855e175a4a   bridge2   bridge    local	# 我们自定义的bridge网络，名字叫做bridge2
+db9a2c63802b   host      host      local
+e05e046464f3   none      null      local
+
+# 从Linux角度，看一下当前的网络
+[root@localhost ~]# brctl show
+bridge name     	bridge id               STP enabled     interfaces
+br-4ead021696e6     8000.02422504f2ac       no		# 我们自定义的bridge网络，在Linux层面名字叫做br-4ead021696e6
+docker0         	8000.024259017b71       no
+
+[root@localhost ~]# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:9b:05:4a brd ff:ff:ff:ff:ff:ff
+    inet 192.168.48.133/24 brd 192.168.48.255 scope global dynamic ens33
+       valid_lft 1192sec preferred_lft 1192sec
+    inet6 fe80::10b3:d204:8d1d:93f7/64 scope link 
+       valid_lft forever preferred_lft forever
+3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN 
+    link/ether 02:42:59:01:7b:71 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:59ff:fe01:7b71/64 scope link 
+       valid_lft forever preferred_lft forever
+23: br-4ead021696e6: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN 	# 我们自定义的bridge网络
+    link/ether 02:42:25:04:f2:ac brd ff:ff:ff:ff:ff:ff
+    inet 172.20.0.1/16 brd 172.20.255.255 scope global br-4ead021696e6
+       valid_lft forever preferred_lft forever
+
+
+# 查看bridge2详情
+[root@localhost ~]# docker network inspect bridge2
+[
+    {
+        "Name": "bridge2",
+        "Id": "4ead021696e67558a4d89ee6dd1cdc0fdf96a4558a604eaaf276591fcb8951a0",
+        "Created": "2022-05-21T14:18:15.033409735+08:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.20.0.0/16",
+                    "Gateway": "172.20.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {},
+        "Options": {},
+        "Labels": {}
+    }
+]
+```
+
+:::
+
+::: details （2）使用自定义bridge网络
+
+```bash
+# 创建容器，使用自定义的bridge网络：bridge2
+[root@localhost ~]# docker container run --name demo -itd --network bridge2 busybox:1.34
+
+# 查看IP和默认网关
+[root@localhost ~]# docker container exec -it demo ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+26: eth0@if27: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:14:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.20.0.2/16 brd 172.20.255.255 scope global eth0		# IP：172.20.0.2
+       valid_lft forever preferred_lft forever
+[root@localhost ~]# docker container exec -it demo route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.20.0.1      0.0.0.0         UG    0      0        0 eth0	# 默认网关：172.20.0.1
+172.20.0.0      0.0.0.0         255.255.0.0     U     0      0        0 eth0
+```
+
+:::
+
+#### （4-3）自定义bridge与默认的区别
+
+文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
+
+::: details （1）自定义bridge网络支持DNS通信（容器名称），而默认bridge不支持
+
+```bash
+# ----------------------------------------------------------------------------------
+# 默认bridge不可以使用容器名称来进行通信
+
+# 启动2个容器，使用默认bridge
+[root@localhost ~]# docker container run --name demo1 -itd busybox:1.34
+[root@localhost ~]# docker container run --name demo2 -itd busybox:1.34
+
+# 查看他们的IP
+# 也可以使用其他方式查看IP，道理是一样的，比如：docker container exec -it demo2 ip a
+[root@localhost ~]# docker container inspect demo1 -f "{{ .NetworkSettings.IPAddress }}"  
+172.17.0.2
+[root@localhost ~]# docker container inspect demo2 -f "{{ .NetworkSettings.IPAddress }}"
+172.17.0.3
+
+# 使用IP通信，没问题
+[root@localhost ~]# docker container exec -it demo1 ping -c 3 172.17.0.3
+PING 172.17.0.3 (172.17.0.3): 56 data bytes
+64 bytes from 172.17.0.3: seq=0 ttl=64 time=0.210 ms
+64 bytes from 172.17.0.3: seq=1 ttl=64 time=0.072 ms
+64 bytes from 172.17.0.3: seq=2 ttl=64 time=0.090 ms
+--- 172.17.0.3 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.072/0.124/0.210 ms
+
+[root@localhost ~]# docker container exec -it demo2 ping -c 3 172.17.0.2
+PING 172.17.0.2 (172.17.0.2): 56 data bytes
+64 bytes from 172.17.0.2: seq=0 ttl=64 time=0.156 ms
+64 bytes from 172.17.0.2: seq=1 ttl=64 time=0.075 ms
+64 bytes from 172.17.0.2: seq=2 ttl=64 time=0.123 ms
+--- 172.17.0.2 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.075/0.118/0.156 ms
+
+# 使用容器名通信，网络不同
+[root@localhost ~]# docker container exec -it demo1 ping -c 3 demo2
+ping: bad address 'demo2'
+[root@localhost ~]# docker container exec -it demo2 ping -c 3 demo1
+ping: bad address 'demo1'
+
+# ----------------------------------------------------------------------------------
+# 自定义bridge可以使用容器名称来进行通信
+
+# 启动2个容器，指定使用自定义bridge网络，bridge2我们之前已经创建过了
+[root@localhost ~]# docker container run --name demo3 -itd --network bridge2 busybox:1.34
+[root@localhost ~]# docker container run --name demo4 -itd --network bridge2 busybox:1.34
+
+# 查看他们的IP，注意这里查看的地方变化了
+[root@localhost ~]# docker container inspect demo3 -f "{{ .NetworkSettings.Networks.bridge2.IPAddress }}"  
+172.20.0.2
+[root@localhost ~]# docker container inspect demo4 -f "{{ .NetworkSettings.Networks.bridge2.IPAddress }}"  
+172.20.0.3
+
+# 通过容器名来测试连通性
+[root@localhost ~]# docker container exec -it demo3 ping -c 3 demo4
+PING demo4 (172.20.0.3): 56 data bytes
+64 bytes from 172.20.0.3: seq=0 ttl=64 time=0.058 ms
+64 bytes from 172.20.0.3: seq=1 ttl=64 time=0.068 ms
+64 bytes from 172.20.0.3: seq=2 ttl=64 time=0.083 ms
+--- demo4 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.058/0.069/0.083 ms
+
+[root@localhost ~]# docker container exec -it demo4 ping -c 3 demo3
+PING demo3 (172.20.0.2): 56 data bytes
+64 bytes from 172.20.0.2: seq=0 ttl=64 time=0.073 ms
+64 bytes from 172.20.0.2: seq=1 ttl=64 time=0.085 ms
+64 bytes from 172.20.0.2: seq=2 ttl=64 time=0.069 ms
+--- demo3 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.069/0.075/0.085 ms
+```
+
+:::
 
