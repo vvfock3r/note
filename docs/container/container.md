@@ -2008,7 +2008,7 @@ Docker进程启动时，会在主机上创建一个名为`docker0`的虚拟网�
 
 <br />
 
-`bridge`是创建容器时docker默认网络
+`bridge`是创建容器时docker默认网络，相同bridge下的容器可以互相通信，不同bridge下的容器不能通信
 
 <br />
 
@@ -2022,7 +2022,7 @@ Docker进程启动时，会在主机上创建一个名为`docker0`的虚拟网�
 
 3. 从`docker0`子网中分配一个IP给容器使用，并设置docker0的IP地址为容器的默认网关
 
-
+<br />
 
 ::: details 相关命令简介
 
@@ -2076,15 +2076,22 @@ docker0         8000.024259017b71       no
 
 :::
 
-::: details （1）docker中的网桥和Linux上的网桥对应关系（未找到依据）
+::: details （1）docker中的网桥和Linux上的网桥对应关系
 
 ```bash
-# （未找到依据）
+# Linux上的bridge列表
+[root@localhost ~]# brctl show
+bridge name     		bridge id               STP enabled     interfaces
+docker0         		8000.0242dad030cf       no
+
+# Docker中的bridge，对应Linux bridge的docker0
+[root@localhost ~]# docker network inspect bridge | grep bridge.name
+            "com.docker.network.bridge.name": "docker0",
 ```
 
 :::
 
-::: details （2）查看默认网桥（未找到明显依据）
+::: details （2）查看默认网桥
 
 ```bash
 # 没有找到明显的依据，只能检查一下有没有显示配置默认网桥是啥来判断
@@ -2241,6 +2248,7 @@ docker0         8000.024259017b71       no
        valid_lft forever preferred_lft forever
 
 # 创建一个自定义的网络，网络驱动为bridge，子网172.20.0.0/16，默认网关172.20.0.1
+# Linux网桥名字默认是br-xx，如果想要指定的话添加参数 -o com.docker.network.bridge.name=自定义Linux网桥名
 [root@localhost ~]# docker network create --driver bridge --subnet 172.20.0.0/16 --gateway 172.20.0.1 bridge2
 
 # 从Docker角度，看一下当前的网络,发现多了一个
@@ -2347,7 +2355,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 
 文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
 
-::: details （1）自定义bridge网络支持DNS通信（容器名称），而默认bridge不支持
+::: details （1）自定义bridge网络支持DNS通信（容器名称或网络别名），而默认bridge不支持
 
 ```bash
 # ----------------------------------------------------------------------------------
@@ -2390,11 +2398,11 @@ ping: bad address 'demo2'
 ping: bad address 'demo1'
 
 # ----------------------------------------------------------------------------------
-# 自定义bridge可以使用容器名称来进行通信
+# 自定义bridge可以使用容器名称或网络别名来进行通信
 
 # 启动2个容器，指定使用自定义bridge网络，bridge2我们之前已经创建过了
-[root@localhost ~]# docker container run --name demo3 -itd --network bridge2 busybox:1.34
-[root@localhost ~]# docker container run --name demo4 -itd --network bridge2 busybox:1.34
+[root@localhost ~]# docker container run --name demo3 -itd --network bridge2 --network-alias demo33 busybox:1.34
+[root@localhost ~]# docker container run --name demo4 -itd --network bridge2 --network-alias demo44 busybox:1.34
 
 # 查看他们的IP，注意这里查看的地方变化了
 [root@localhost ~]# docker container inspect demo3 -f "{{ .NetworkSettings.Networks.bridge2.IPAddress }}"  
@@ -2420,7 +2428,219 @@ PING demo3 (172.20.0.2): 56 data bytes
 --- demo3 ping statistics ---
 3 packets transmitted, 3 packets received, 0% packet loss
 round-trip min/avg/max = 0.069/0.075/0.085 ms
+
+# 通过网络别名来测试连通性
+[root@localhost ~]# docker container exec -it demo3 ping -c 3 demo44
+PING demo44 (172.20.0.3): 56 data bytes
+64 bytes from 172.20.0.3: seq=0 ttl=64 time=0.072 ms
+64 bytes from 172.20.0.3: seq=1 ttl=64 time=0.071 ms
+64 bytes from 172.20.0.3: seq=2 ttl=64 time=0.067 ms
+--- demo44 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.067/0.070/0.072 ms
+
+[root@localhost ~]# docker container exec -it demo4 ping -c 3 demo33
+PING demo33 (172.20.0.2): 56 data bytes
+64 bytes from 172.20.0.2: seq=0 ttl=64 time=0.075 ms
+64 bytes from 172.20.0.2: seq=1 ttl=64 time=0.071 ms
+64 bytes from 172.20.0.2: seq=2 ttl=64 time=0.069 ms
+--- demo33 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.069/0.071/0.075 ms
 ```
 
 :::
+
+::: details （2）自定义bridge网络支持设置容器静态IP，而默认bridge不支持
+
+```bash
+# 查看默认网桥bridge和自定义网桥bridge2的网段
+[root@localhost ~]# docker network inspect bridge | grep -i Subnet
+                    "Subnet": "172.17.0.0/16",
+[root@localhost ~]# docker network inspect bridge2 | grep -i Subnet
+                    "Subnet": "172.20.0.0/16",
+
+# -----------------------------------------------------------------------------------------------------------
+# 默认网桥指定静态IP
+# （1）指定network为bridge时直接报错
+[root@localhost ~]# docker container run --name demo1 --network bridge --ip 172.17.0.100 -itd busybox:1.34
+9acc8de3a1586afbe6ccaf794f1c0361250c0c0e298f24a586e6d3e1a19717e9
+docker: Error response from daemon: user specified IP address is supported on user defined networks only.
+
+# （2）不指定时不会报错，但是并没有分配我们指定的静态IP
+[root@localhost ~]# docker container run --name demo1 --ip 172.17.0.100 -itd busybox:1.34
+a0805b036165408cbdeabbfaa21b110df42cf994df2e19b9d3b03fe922352596
+
+[root@localhost ~]# docker container inspect demo1 -f "{{ .NetworkSettings.Networks.bridge.IPAddress }}"
+172.17.0.2
+
+# -----------------------------------------------------------------------------------------------------------
+# 自定义网桥指定静态IP
+[root@localhost ~]# docker container run --name demo2 --network bridge2 --ip 172.20.0.100 -itd busybox:1.34
+1f76c49de62a70d664d73608541689d4ad75d746f9a59e8415386e258435a7b9
+
+[root@localhost ~]# docker container inspect demo2 -f "{{ .NetworkSettings.Networks.bridge2.IPAddress }}"
+172.20.0.100
+```
+
+:::
+
+#### （4-4）不同bridge下的容器互通
+
+::: details 不同bridge下的容器互通
+
+```bash
+# 创建两个容器，分别属于不同的网桥
+[root@localhost ~]# docker container run --name demo1 --network bridge  -itd busybox:1.34
+[root@localhost ~]# docker container run --name demo2 --network bridge2 -itd busybox:1.34
+
+# 查看两个容器的IP
+[root@localhost ~]# docker container inspect demo1 -f "{{ .NetworkSettings.Networks.bridge.IPAddress }}"
+172.17.0.2
+[root@localhost ~]# docker container inspect demo2 -f "{{ .NetworkSettings.Networks.bridge2.IPAddress }}"
+172.20.0.2
+
+# 不同的bridge下的容器是不能通信的
+[root@localhost ~]# docker container exec demo1 ping -c 3 172.20.0.2
+PING 172.20.0.2 (172.20.0.2): 56 data bytes
+--- 172.20.0.2 ping statistics ---
+3 packets transmitted, 0 packets received, 100% packet loss
+
+# 将demo2加入到demo1所在的网桥中，新的网桥会给demo2分配一个新的IP
+[root@localhost ~]# docker network connect bridge demo2
+
+# 查看demo2的网络信息
+[root@localhost ~]# docker container inspect demo2 -f "{{ json .NetworkSettings.Networks }}" | jq
+{
+  "bridge": {
+    "IPAMConfig": {},
+    "Links": null,
+    "Aliases": [],
+    "NetworkID": "cc4b3794a3f6c4a5a13e4230f10569e3d9c4056774f6e0eb77384b95a8a95fdf",
+    "EndpointID": "879bd066516d7436eec9a978c350d71146795594c34916cf5d66bd9df51f78c9",
+    "Gateway": "172.17.0.1",
+    "IPAddress": "172.17.0.3",		# bridge网桥分配的IP
+    "IPPrefixLen": 16,
+    "IPv6Gateway": "",
+    "GlobalIPv6Address": "",
+    "GlobalIPv6PrefixLen": 0,
+    "MacAddress": "02:42:ac:11:00:03",
+    "DriverOpts": {}
+  },
+  "bridge2": {
+    "IPAMConfig": null,
+    "Links": null,
+    "Aliases": [
+      "2e7375c5c76a"
+    ],
+    "NetworkID": "4ead021696e67558a4d89ee6dd1cdc0fdf96a4558a604eaaf276591fcb8951a0",
+    "EndpointID": "ee6cd43fb03ac3118cfe787a7ae8eb74166b1c4133829cb54d3d5c47310dfde3",
+    "Gateway": "172.20.0.1",
+    "IPAddress": "172.20.0.2",
+    "IPPrefixLen": 16,
+    "IPv6Gateway": "",
+    "GlobalIPv6Address": "",
+    "GlobalIPv6PrefixLen": 0,
+    "MacAddress": "02:42:ac:14:00:02",
+    "DriverOpts": null
+  }
+}
+
+# 通信测试
+[root@localhost ~]# docker container exec demo1 ping -c 3 172.17.0.3
+PING 172.17.0.3 (172.17.0.3): 56 data bytes
+64 bytes from 172.17.0.3: seq=0 ttl=64 time=0.087 ms
+64 bytes from 172.17.0.3: seq=1 ttl=64 time=0.081 ms
+64 bytes from 172.17.0.3: seq=2 ttl=64 time=0.114 ms
+--- 172.17.0.3 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.081/0.094/0.114 ms
+
+# 查看demo2容器，本质就是分配了两块网卡
+[root@localhost ~]# docker container exec demo2 ip a 
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+26: eth0@if27: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:14:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.20.0.2/16 brd 172.20.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+28: eth1@if29: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth1
+       valid_lft forever preferred_lft forever
+```
+
+:::
+
+#### （4-5）修改默认的bridge
+
+文档：[https://docs.docker.com/network/bridge/#configure-the-default-bridge-network](https://docs.docker.com/network/bridge/#configure-the-default-bridge-network)
+
+需要说明的是：
+
+（1）从docker角度看默认的网桥是`bridge`，从Linux角度看默认的网桥是`docker0`，他俩是一个东西
+
+（2）假设我们有两个网桥`docker0`和`docker1`，我们想让docker1作为默认网桥，这是不可以的，默认的网桥必须是`docker0`，原因是：
+
+* `bridge`是不允许删除的
+
+  ```bash
+  [root@localhost ~]# docker network rm bridge
+  Error response from daemon: bridge is a pre-defined network and cannot be removed
+  ```
+
+* `bridge`对应的Linux网桥是`docker0`
+
+  ```bash
+  [root@localhost ~]# docker network inspect bridge | grep bridge.name
+              "com.docker.network.bridge.name": "docker0",
+  ```
+
+* `docker0`是可以被删除的，但是在启动docker的时候会重新创建`docker0`
+
+  ::: details 点击查看详情
+
+  ```bash
+  # 删除docker0网桥
+  [root@localhost ~]# ip link set dev docker0 down
+  [root@localhost ~]# brctl delbr docker0
+  
+  # 查看网桥列表
+  [root@localhost ~]# brctl show
+  bridge name     bridge id               STP enabled     interfaces
+  
+  # 查看docker bridge网桥（没有变化）
+  [root@localhost ~]# docker network ls
+  NETWORK ID     NAME      DRIVER    SCOPE
+  70cd27ddf376   bridge    bridge    local
+  db9a2c63802b   host      host      local
+  e05e046464f3   none      null      local
+  
+  # 创建容器会失败（底层网桥都没了）
+  [root@localhost ~]# docker run --rm -itd centos:7
+  5d5bb734fa70390564b43764b22c0348a66ec9c7252ab3fff24338ee550b989f
+  docker: Error response from daemon: failed to create endpoint pedantic_poitras on network bridge: adding interface veth954f245 to bridge docker0 failed: could not find bridge docker0: route ip+net: no such network interface.
+  
+  # 重启Docker
+  [root@localhost ~]# systemctl restart docker.service
+  
+  # 查看Linux网桥
+  [root@localhost ~]# brctl show
+  bridge name     bridge id               STP enabled     interfaces
+  docker0         8000.02426f6d6288       no
+  
+  # 创建容器没问题
+  [root@localhost ~]# docker run --rm -itd centos:7
+  284d036ab36a1ec02da91f11dda590ae72c5fabfd35cb2ecb1d792109ab02e3e
+  ```
+
+  :::
+
+（3）我们修改默认网桥，其实是对`docker0`做一些配置，比如定义子网等
+
+
+
+
 
