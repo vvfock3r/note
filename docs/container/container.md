@@ -1862,6 +1862,25 @@ DRIVER    VOLUME NAME
 
 :::
 
+### Docker资源限制
+
+文档：[https://docs.docker.com/config/containers/resource_constraints/](https://docs.docker.com/config/containers/resource_constraints/)
+
+默认Docker是不限制容器所使用的内存、CPU等资源
+
+#### 内存限制
+
+| 选项                  | 单位               | 说明                                                         |
+| --------------------- | ------------------ | ------------------------------------------------------------ |
+| `-m` or `--memory`    | `b`, `k`, `m`, `g` | 容器可以使用的最大内存<br />如果设置此选项，则允许的最小值为6m（6 MB），也就是说，必须将该值设置为至少6 MB |
+| `--memory-swap`       |                    | 容器可以使用的最大交换分区                                   |
+| `--memory-swappiness` |                    | 当物理内存剩余N时就开始使用交换分区，可设置范围在0到100之间， 单位百分比<br />不设置此值则默认使用系统设置的值,一般为30（当剩余物理内存小于30%时开始使用交换分区） |
+| `--oom-kill-disable`  |                    | 禁用OOM Killer                                               |
+
+
+
+
+
 ### Docker网络
 
 #### Docker自带的3种网络
