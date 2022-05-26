@@ -1870,14 +1870,20 @@ DRIVER    VOLUME NAME
 
 #### 内存限制
 
-| 选项                  | 单位               | 说明                                                         |
-| --------------------- | ------------------ | ------------------------------------------------------------ |
-| `-m` or `--memory`    | `b`, `k`, `m`, `g` | 容器可以使用的最大内存<br />如果设置此选项，则允许的最小值为6m（6 MB），也就是说，必须将该值设置为至少6 MB |
-| `--memory-swap`       |                    | 容器可以使用的最大交换分区                                   |
-| `--memory-swappiness` |                    | 当物理内存剩余N时就开始使用交换分区，可设置范围在0到100之间， 单位百分比<br />不设置此值则默认使用系统设置的值,一般为30（当剩余物理内存小于30%时开始使用交换分区） |
-| `--oom-kill-disable`  |                    | 禁用OOM Killer                                               |
+| 选项                  | 说明                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| `-m` or `--memory`    | 容器可以使用的最大内存<br />如果设置此选项，则允许的最小值为6m（6 MB），也就是说，必须将该值设置为至少6 MB |
+| `--memory-swap`       | 容器可以使用的最大交换分区                                   |
+| `--memory-swappiness` | 当物理内存剩余N时就开始使用交换分区，可设置范围在0到100之间， 单位百分比<br />不设置此值则默认使用系统设置的值,一般为30（当剩余物理内存小于30%时开始使用交换分区） |
+| `--oom-kill-disable`  | 禁用OOM Killer                                               |
 
+#### CPU限制
 
+| 选项            | 说明                                   |
+| --------------- | -------------------------------------- |
+| `--cpus`        | 可使用的CPU核心数                      |
+| `--cpuset-cpus` | 限制容器使用特定的CPU核心，比如0-3,1等 |
+| `--cpu-shares`  | CPU共享（相对权重）                    |
 
 
 
@@ -2661,5 +2667,61 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 
 
+::: details 修改子网和默认网关
 
+```bash
+# 修改daemon.json文件
+[root@localhost _data]# vim /etc/docker/daemon.json 
+{
+   "registry-mirrors": [
+        "https://6xumug9e.mirror.aliyuncs.com"
+  ],						# 这里使用逗号分隔多个字段
+ "bip": "192.168.1.1/24"    # 注意json文件末尾不能有逗号
+}
+
+# 重启docker
+[root@localhost ~]# systemctl restart docker.service
+
+# 查看默认网桥bridge的子网
+[root@localhost ~]# docker network inspect bridge
+[
+    {
+        "Name": "bridge",
+        "Id": "27388f5b5aafb240f1c0a84f4017eae04a96de8af5416e8fd912e8be54866cdb",
+        "Created": "2022-05-26T15:03:20.113023733+08:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "192.168.1.0/24",		# 子网已经修改
+                    "Gateway": "192.168.1.1"		# 默认网关也修改了
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {},
+        "Options": {
+            "com.docker.network.bridge.default_bridge": "true",
+            "com.docker.network.bridge.enable_icc": "true",
+            "com.docker.network.bridge.enable_ip_masquerade": "true",
+            "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+            "com.docker.network.bridge.name": "docker0",
+            "com.docker.network.driver.mtu": "1500"
+        },
+        "Labels": {}
+    }
+]
+```
+
+:::
 
