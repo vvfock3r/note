@@ -1565,7 +1565,7 @@ func main() {
 	traCtx := httptrace.WithClientTrace(context.Background(), trace)
 
 	// 生成Request对象，上面所创建的trace Context都是为了创建Request
-	req, err := http.NewRequestWithContext(traCtx, "GET", "https://yu-jinhui.com", nil)
+	req, err := http.NewRequestWithContext(traCtx, "GET", "https://jinhui.dev", nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
