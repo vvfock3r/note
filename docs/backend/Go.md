@@ -787,6 +787,37 @@ PASS
 ok      learn   0.956s
 ```
 
+### 交叉编译
+
+交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
+
+对于`go`来说主要控制3个变量：
+
+* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
+* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
+* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
+
+```bash
+# Windows下编译Linux和Mac64位可执行程序
+SET CGO_ENABLED=0
+SET GOOS=linux
+SET GOARCH=amd64
+go build .
+
+SET CGO_ENABLED=0
+SET GOOS=darwin
+SET GOARCH=amd64
+go build .
+
+# Mac下编译Linux和Windows64位可执行程序
+CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+
+# Linux下编译Mac和Windows 64位可执行程序
+CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+```
+
 ## 
 
 ## 数据类型
