@@ -1,6 +1,18 @@
-## 环境设置
+## 文档
 
-### 环境设置
+官网：[https://golang.google.cn/](https://golang.google.cn/)
+
+安装文档：[https://golang.google.cn/doc/install](https://golang.google.cn/doc/install)
+
+Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd/go/)
+
+
+
+
+
+## 项目管理
+
+### 环境变量
 
 **查看/设置环境变量**
 
@@ -17,13 +29,15 @@ go help env					# 查看env命令帮助
 | 环境变量      | 说明                                                         | 设置命令                                      |
 | ------------- | ------------------------------------------------------------ | --------------------------------------------- |
 | `GOROOT`      | Go的安装目录                                                 | 一般不用自己设置                              |
-| `GOPATH`      | 代表Go的工作区，可以是一个目录，也可以是多个目录，使用逗号分隔?<br />官方说明文档：https://github.com/golang/go/wiki/GOPATH | 可以不用改，如果要修改到系统环境变量中修改    |
-| `GO111MODULE` | Go 1.11版本增加的模块管理机制，建议开启                      | `go env -w GO111MODULE=on`                    |
-| `GOPROXY`     | 代理地址<br />默认：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
+| `GOPATH`      | 代表Go的工作区，可以是一个目录，也可以是多个目录，使用逗号分隔?<br />官方说明文档：https://github.com/golang/go/wiki/GOPATH | `go env -w GOPATH=/usr/local/gopath`          |
+| `GO111MODULE` | Go 1.11版本增加的模块管理机制，强烈建议开启                  | `go env -w GO111MODULE=on`                    |
+| `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
 
+更多环境变量：https://golang.google.cn/cmd/go/#hdr-Environment_variables 或`go help environment` 
 
+### 单文件应用
 
-### 示例程序
+`main.go`
 
 ```go
 package main
@@ -35,9 +49,13 @@ func main() {
 }
 ```
 
-说明
+说明：
 
-- `package`声明我自己的包名；`import` 导入其他包；`func `声明函数
+- `package`声明我自己的包名
+
+- `import` 导入其他包，这里`fmt`是内置的一个包
+
+- `func `声明函数
 
 - 程序执行的入口必须是`main`包和`main`方法，文件名任意
 
@@ -51,6 +69,224 @@ func main() {
   # (2) 编译并运行
   go run main.go
   ```
+
+问题：我要导入一个第三方包会报错，比如使用gin来启动一个HTTP Server，这是怎么回事呢？
+
+`main.go`
+
+```bash
+[root@localhost ~]# cat main.go 
+package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "log"
+        "net/http"
+)
+
+func main() {
+        // 监听地址
+        addr := "127.0.0.1:80"
+
+        // 实例化Gin路由引擎
+        r := gin.Default()
+
+        // 注册路由
+        r.GET("/", func(c *gin.Context) {
+                c.String(http.StatusOK, "Hello Gin!\n")
+        })
+
+        // 启动Gin Server
+        log.Fatalln(r.Run(addr))
+}
+
+[root@localhost ~]# go run main.go   # 在当前目录及父目录没有找到go.mod文件
+main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mod file not found in current directory or any parent directory; see 'go help modules'
+```
+
+我们将在`Go Modules`来解决这个问题
+
+### Go Modules
+
+文档：[https://go.dev/ref/mod](https://go.dev/ref/mod)
+
+从`Go1.11`开始，官方推出Go module作为包管理工具
+
+
+
+#### 开启Go Module
+
+`GO111MODULE`变量控制是否启用go modules，他有3个值：
+
+* `on`：开启go module
+* `off`：关闭go module
+* `auto`：根据项目配置自动选择使用`go module`还是`go path`
+
+```bash
+# 不管开启没开启，都重新开启一遍
+C:\Users\Administrator\Desktop\Notes>go env -w GO111MODULE=on
+C:\Users\Administrator\Desktop\Notes>go env GO111MODULE
+on
+```
+
+
+
+#### 初始化项目：`go mod init`
+
+文档：[https://go.dev/ref/mod#go-mod-init](https://go.dev/ref/mod#go-mod-init)
+
+**基础使用**
+
+```bash
+# 先创建我们的项目目录demo
+[root@localhost ~]# mkdir demo
+[root@localhost ~]# cd demo/
+
+# 然后初始化项目
+[root@localhost demo]# go mod init demo
+go: creating new go.mod: module demo
+
+# 看一下都做了什么事：生成了一个文件go.mod
+[root@localhost demo]# ll
+total 4
+-rw-r--r-- 1 root root 21 May 30 19:27 go.mod
+
+# 看看这个文件内容
+[root@localhost demo]# cat go.mod 
+module demo		# 模块名
+
+go 1.18			# go版本
+```
+
+**我们来看几个go明星项目的module名是如何写的**
+
+| Github地址                               | Module Name                               |
+| ---------------------------------------- | ----------------------------------------- |
+| https://github.com/containerd/containerd | `module github.com/containerd/containerd` |
+| https://github.com/gin-gonic/gin         | `module github.com/gin-gonic/gin`         |
+| https://github.com/pingcap/tidb          | `module github.com/pingcap/tidb`          |
+
+仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？，先不管他，后面再说
+
+**继续使用gin**
+
+```bash
+[root@localhost demo]# ls -l
+total 8
+-rw-r--r-- 1 root root  21 May 30 19:49 go.mod
+-rw-r--r-- 1 root root 327 May 30 19:17 main.go
+[root@localhost demo]# cat main.go
+package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "log"
+        "net/http"
+)
+
+func main() {
+        // 监听地址
+        addr := "127.0.0.1:80"
+
+        // 实例化Gin路由引擎
+        r := gin.Default()
+
+        // 注册路由
+        r.GET("/", func(c *gin.Context) {
+                c.String(http.StatusOK, "Hello Gin!\n")
+        })
+
+        // 启动Gin Server
+        log.Fatalln(r.Run(addr))
+}
+[root@localhost demo]# go run main.go		# 这次报错不一样了，让我们使用go get下载gin
+main.go:4:2: no required module provides package github.com/gin-gonic/gin; to add it:
+        go get github.com/gin-gonic/gin
+```
+
+
+
+#### 下载第三方包：`go get`
+
+文档：[https://go.dev/ref/mod#go-get](https://go.dev/ref/mod#go-get)
+
+::: details 基础用法
+
+```bash
+# 下载
+[root@localhost demo]# go get github.com/gin-gonic/gin
+go: added github.com/gin-contrib/sse v0.1.0
+go: added github.com/gin-gonic/gin v1.8.0
+go: added github.com/go-playground/locales v0.14.0
+go: added github.com/go-playground/universal-translator v0.18.0
+go: added github.com/go-playground/validator/v10 v10.10.0
+go: added github.com/goccy/go-json v0.9.7
+go: added github.com/json-iterator/go v1.1.12
+go: added github.com/leodido/go-urn v1.2.1
+go: added github.com/mattn/go-isatty v0.0.14
+go: added github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421
+go: added github.com/modern-go/reflect2 v1.0.2
+go: added github.com/pelletier/go-toml/v2 v2.0.1
+go: added github.com/ugorji/go/codec v1.2.7
+go: added golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+go: added golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+go: added golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
+go: added golang.org/x/text v0.3.6
+go: added google.golang.org/protobuf v1.28.0
+go: added gopkg.in/yaml.v2 v2.4.0
+
+# 查看go.mod, 将gin及其依赖的包都写入到go.mod文件中了
+[root@localhost demo]# cat go.mod
+module demo
+
+go 1.18
+
+# require里面代表依赖的包
+require (
+        github.com/gin-contrib/sse v0.1.0 // indirect
+        github.com/gin-gonic/gin v1.8.0 // indirect
+        github.com/go-playground/locales v0.14.0 // indirect
+        github.com/go-playground/universal-translator v0.18.0 // indirect
+        github.com/go-playground/validator/v10 v10.10.0 // indirect
+        github.com/goccy/go-json v0.9.7 // indirect
+        github.com/json-iterator/go v1.1.12 // indirect
+        github.com/leodido/go-urn v1.2.1 // indirect
+        github.com/mattn/go-isatty v0.0.14 // indirect
+        github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+        github.com/modern-go/reflect2 v1.0.2 // indirect
+        github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+        github.com/ugorji/go/codec v1.2.7 // indirect
+        golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+        golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+        golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+        golang.org/x/text v0.3.6 // indirect
+        google.golang.org/protobuf v1.28.0 // indirect
+        gopkg.in/yaml.v2 v2.4.0 // indirect
+)
+
+# 我们下载的包在GOPATH目录下
+[root@localhost demo]# go env GOPATH
+/usr/local/gopath
+[root@localhost demo]# ls -l /usr/local/gopath/pkg/mod/
+total 20
+drwxr-xr-x 3 root root 4096 May 30 20:26 cache
+drwxr-xr-x 9 root root 4096 May 30 20:26 github.com
+drwxr-xr-x 3 root root 4096 May 30 20:26 golang.org
+drwxr-xr-x 3 root root 4096 May 30 20:26 google.golang.org
+drwxr-xr-x 3 root root 4096 May 30 20:26 gopkg.in
+
+# 还会生成一个go.sum文件，此文件不需要我们管理，先不做深入研究
+[root@localhost demo]# ls -lh go.sum 
+-rw-r--r-- 1 root root 9.1K May 30 20:32 go.sum
+```
+
+:::
+
+::: details 安装最新版本和指定版本
+
+:::
+
+
 
 
 
@@ -7045,17 +7281,3 @@ func main() {
 从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
 
 
-
-**待更新**
-
-反射
-
-unsafe
-
-GMP
-
-性能分析
-
-Goroutine泄漏案例
-
-网络编程
