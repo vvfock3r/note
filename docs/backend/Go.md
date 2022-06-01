@@ -502,7 +502,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 解决办法：使用`go get github.com/vvfock3r/test@提交ID`来进行更新（提交ID并不一定是完整的ID），可以在下图中这个位置找到最新提交ID
 
-![image-20220601140958608](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220601140958608.png)
+![image-20220601140958608](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220601140958608.png)
 
 :::
 
