@@ -31,7 +31,8 @@ go help env					# 查看env命令帮助
 | `GOROOT`      | Go的安装目录                                                 | 一般不用自己设置                              |
 | `GOPATH`      | 代表Go的工作区，可以是一个目录，也可以是多个目录，使用逗号分隔?<br />官方说明文档：https://github.com/golang/go/wiki/GOPATH | `go env -w GOPATH=/usr/local/gopath`          |
 | `GO111MODULE` | Go 1.11版本增加的模块管理机制，强烈建议开启                  | `go env -w GO111MODULE=on`                    |
-| `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
+| `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认值：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
+| `GOSUMDB`     | 用来校验下载的包的安全性，一般情况下不需要修改<br />默认值：`sum.golang.org`<br />关闭：`off` | `go env -w GOSUMDB=off`                       |
 
 更多环境变量：https://golang.google.cn/cmd/go/#hdr-Environment_variables 或`go help environment` 
 
@@ -414,9 +415,9 @@ The commands are:
 Use "go help mod <command>" for more information about a command.
 ```
 
-#### （6）发布公共模块到GitHub
+#### （6）发布公共模块到GitHub🎉
 
-::: details (1) 先跑通一个最简单的发布流程
+::: details （1）先跑通一个最简单的发布流程
 
 ① 首先在Github上新建一个仓库test
 
@@ -491,14 +492,16 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details (2) 更新第三方包延迟问题
+::: details （2）更新第三方包延迟问题
 
 描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
 
-结果：无论如何更新都不会更新到新的代码，测试过的方法有：
+结果：第三方包刚刚更新的代码，我们无法立马拉取到新代码，测试过的方法有：
 
 * 使用`go get -u github.com/vvfock3r/test`更新，无效
 * 删除`go.mod`和本地`GOPATH`下的`test`模块相关的任何东西，然后使用`go get`重新下载，无效
+
+原因是：我们`go get`下载包并不是直接从`github.com`下载的，而是通过`GOPROXY`指定的镜像站下载的（通过`go get -x`可以看到），而镜像站存在一定延迟从而导致不能马上下载最新包
 
 解决办法：使用`go get github.com/vvfock3r/test@提交ID`来进行更新（提交ID并不一定是完整的ID），可以在下图中这个位置找到最新提交ID
 
@@ -506,7 +509,34 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
+::: details （3）指定第三方包的版本
 
+如果我想让用户使用`go get github.com/vvfock3r/test@v1.0.0`这样的方式来安装指定版本，该如何做呢？
+
+这里的`v1.0.0`，就是仓库的`Tag`名称，但是有几点注意事项：
+
+* Tag名称必须是类似`v1.0.0`这种规则，如果是`v1.0`这样是拉取不到对应版本的
+
+  ```bash
+  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v1.0
+  go: github.com/vvfock3r/test@v1.0: no matching versions for query "v1.0"
+  ```
+
+* 对于`v2.0.0`及以上版本，我们如果直接使用`go get github.com/vvfock3r/test@v2.0.0`会报错
+
+  ```bash
+  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v2.0.0
+  go: github.com/vvfock3r/test@v2.0.0: invalid version: module contains a go.mod file, so module path must match major version ("github.com/vvfock3r/test/v2")
+  
+  # 原因也给出来了：模块路径必须包含主版本号
+  ```
+
+  这个时候我们有两种解决方案：
+
+  * 永远不升级到`v2.x.x`，使用v1的版本比如`v1.0.0`、`v1.0.1`、`v1.0.2`
+  * 升级到`v2.x.x`，需要在项目根目录下创建一个`v2`的目录，代表这是一个全新的版本
+
+:::
 
 
 
