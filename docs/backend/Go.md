@@ -371,7 +371,7 @@ require (
 * 可以在全局使用`go install`，不会维护go.mod和go.sum文件
 * 使用`go install github.com/xxx/@版本`,必须加上版本，如果是最新版则是`latest`
 * 其原理是：
-  * 下载第三方包到GOPATH/pkg
+  * 下载第三方包到`GOPATH/pkg`
   * 然后编译（入口是`main`包的`main`方法）
   * 将可执行文件放在`GOPATH/bin`目录下
 * 可以使用`go install`的第三方包，一般都有一个`main`包和`main`方法
@@ -413,6 +413,98 @@ The commands are:
 
 Use "go help mod <command>" for more information about a command.
 ```
+
+#### （6）发布公共模块到GitHub
+
+::: details (1) 先跑通一个最简单的发布流程
+
+① 首先在Github上新建一个仓库test
+
+② 其次克隆代码，使用go mod初始化，要求module name必须是绝对路径（`github.com/用户名/项目名`）
+
+```bash
+# 克隆
+git clone https://github.com/vvfock3r/test.git
+
+# 初始化Go模块
+go mod init github.com/vvfock3r/test
+```
+
+③ 提交代码到test仓库
+
+```bash
+# 新建一个文件utils.go
+package test
+
+func Add(x, y int) int {
+	return x + y
+}
+
+# 提交
+git add *
+git commit -m "test"
+git push -u origin main
+```
+
+④ 使用GoLand新建一个Go项目demo，进行测试
+
+```bash
+# 添加依赖包
+C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test 
+go: downloading github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34
+
+# 编写main.go
+package main
+
+import (
+	"fmt"
+	"github.com/vvfock3r/test"
+)
+
+func main() {
+	fmt.Println(test.Add(1, 2))
+}
+
+# 测试执行
+C:\Users\Administrator\GolandProjects\demo>go run .      
+3
+
+# 查看go.mod
+module demo
+
+go 1.18
+
+require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
+```
+
+总结几个关键点：
+
+（1）第三方模块的模块名：应使用`github.com/用户名/项目名`
+
+（2）第三方模块的版本：若无版本，Go自动添加一个版本`v0.0.0-时间-提交ID`
+
+* `v0.0.0`是固定的
+* 时间格式`年月日时分秒`
+* 提交ID长度`12`位
+
+从上面可以看出，一次提交可以认为是一个版本
+
+:::
+
+::: details (2) 更新第三方包延迟问题
+
+描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
+
+结果：无论如何更新都不会更新到新的代码，测试过的方法有：
+
+* 使用`go get -u github.com/vvfock3r/test`更新，无效
+* 删除`go.mod`和本地`GOPATH`下的`test`模块相关的任何东西，然后使用`go get`重新下载，无效
+
+解决办法：使用`go get github.com/vvfock3r/test@提交ID`来进行更新（提交ID并不一定是完整的ID），可以在下图中这个位置找到最新提交ID
+
+![image-20220601140958608](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220601140958608.png)
+
+:::
 
 
 
