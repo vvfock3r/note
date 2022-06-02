@@ -216,6 +216,7 @@ main.go:4:2: no required module provides package github.com/gin-gonic/gin; to ad
 * 必须在项目目录(含有go.mod的目录)使用`go get`，无法在全局目录使用
 * `go get`用来管理第三方包版本问题，会自动维护go.mod和go.sum文件
 * `go get`下载的包放在GOPATH/pkg目录内
+* 若不指定版本号只能更新到`v1.x.x`最新版，若第三方包没有版本号（Tag）则会更新到最后一次提交的代码
 
 
 
@@ -294,7 +295,7 @@ drwxr-xr-x 3 root root 4096 May 30 20:26 gopkg.in
 ::: details 安装最新版、安装指定版、移除版本、升级依赖
 
 ```bash
-# 安装最新版本，以下两种方法都可以
+# 安装最新版本，以下两种方法都可以，这会下载最新的tag版本
 [root@localhost demo]# go get github.com/gin-gonic/gin
 [root@localhost demo]# go get github.com/gin-gonic/gin@latest
 
@@ -533,8 +534,37 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
   这个时候我们有两种解决方案：
 
-  * 永远不升级到`v2.x.x`，使用v1的版本比如`v1.0.0`、`v1.0.1`、`v1.0.2`
+  * 永远不升级到`v2.x.x`，一直使用v1的版本比如`v1.0.0`、`v1.0.1`、`@v1.999.999`
   * 升级到`v2.x.x`，需要在项目根目录下创建一个`v2`的目录，代表这是一个全新的版本
+
+* 其他：Github上新打的Tag可以直接在命令行使用`go get `下载，没有GOPROXY缓存的问题（指定版本为`latest`除外）
+
+:::
+
+::: details （4）replace简介
+
+replace可以让我们对包进行替换，可以达到这样的效果：导入的是`a`包，但实际使用的是`b`包
+
+使用replace可以直接修改go.mod文件，也可以使用`go mod edit -replace`命令（推荐）
+
+语法
+
+```bash
+# 语法
+# go mod edit -replace 旧地址=新地址
+
+# 示例：将v1.1.2替换为v1.1.1版本，也就是降低了一个版本
+go mod edit -replace github.com/vvfock3r/test@v1.1.2=github.com/vvfock3r/test@v1.1.1
+
+# 查看一下go.mod文件
+module demo
+go 1.18
+require github.com/vvfock3r/test v1.1.2
+replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# replace
+
+# 说明
+虽然go.mod中require是v1.1.2版本，但实际上在使用v1.1.1版本
+```
 
 :::
 
