@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="generator" content="VuePress 2.0.0-beta.46">
+    <style>
+      :root {
+        --c-bg: #fff;
+      }
+      html.dark {
+        --c-bg: #22272e;
+      }
+      html, body {
+        background-color: var(--c-bg);
+      }
+    </style>
+    <script>
+      const userMode = localStorage.getItem('vuepress-color-scheme');
+			const systemDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+			if (userMode === 'dark' || (userMode !== 'light' && systemDarkMode)) {
+				document.documentElement.classList.toggle('dark', true);
+			}
+    </script>
+    <title>note</title><meta name="description" content="打怪升级之旅~">
+    <link rel="modulepreload" href="/assets/app.8347a01d.js"><link rel="modulepreload" href="/assets/kubespray.html.07385805.js"><link rel="modulepreload" href="/assets/kubespray.html.90c74a2e.js"><link rel="prefetch" href="/assets/index.html.4ac7edf5.js"><link rel="prefetch" href="/assets/double-pointer.html.4506dc5f.js"><link rel="prefetch" href="/assets/Go.html.aa3dd5ff.js"><link rel="prefetch" href="/assets/Python.html.158dfc2f.js"><link rel="prefetch" href="/assets/Web-for-Go.html.286f81db.js"><link rel="prefetch" href="/assets/container.html.f3b8a00a.js"><link rel="prefetch" href="/assets/CSS.html.88376f10.js"><link rel="prefetch" href="/assets/Echarts.html.23f6be67.js"><link rel="prefetch" href="/assets/JavaScript.html.94cd05a7.js"><link rel="prefetch" href="/assets/Vue.html.442bd77b.js"><link rel="prefetch" href="/assets/VuePress.html.f460c07a.js"><link rel="prefetch" href="/assets/浏览器原生绘图.html.3daa08cc.js"><link rel="prefetch" href="/assets/Bash.html.b82dfd98.js"><link rel="prefetch" href="/assets/404.html.93146c89.js"><link rel="prefetch" href="/assets/index.html.4228deb5.js"><link rel="prefetch" href="/assets/double-pointer.html.44d7feee.js"><link rel="prefetch" href="/assets/Go.html.fccaaba3.js"><link rel="prefetch" href="/assets/Python.html.e1d8aaf1.js"><link rel="prefetch" href="/assets/Web-for-Go.html.77bfcade.js"><link rel="prefetch" href="/assets/container.html.6b2297ca.js"><link rel="prefetch" href="/assets/CSS.html.cfe0eaba.js"><link rel="prefetch" href="/assets/Echarts.html.2becf048.js"><link rel="prefetch" href="/assets/JavaScript.html.cdf37f05.js"><link rel="prefetch" href="/assets/Vue.html.06b42507.js"><link rel="prefetch" href="/assets/VuePress.html.f2ad32ff.js"><link rel="prefetch" href="/assets/浏览器原生绘图.html.8865a64f.js"><link rel="prefetch" href="/assets/Bash.html.4dbcc991.js"><link rel="prefetch" href="/assets/404.html.44c5ffec.js"><link rel="prefetch" href="/assets/404.85ae2861.js"><link rel="prefetch" href="/assets/Layout.a81f8cb3.js"><link rel="prefetch" href="/assets/Home.c9fdb934.js">
+    <link rel="stylesheet" href="/assets/style.3c0c178b.css">
+  </head>
+  <body>
+    <div id="app"><!--[--><div class="theme-container"><!--[--><header class="navbar"><div class="toggle-sidebar-button" title="toggle sidebar" aria-expanded="false" role="button" tabindex="0"><div class="icon" aria-hidden="true"><span></span><span></span><span></span></div></div><span><a href="/" class=""><!----><span class="site-name">note</span></a></span><div class="navbar-items-wrapper" style=""><!--[--><!--]--><nav class="navbar-items can-hide"><!--[--><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="运维"><span class="title">运维</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="运维"><span class="title">运维</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Linux基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/ops/Bash" class="" aria-label="Bash"><!--[--><!--]--> Bash <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="前端"><span class="title">前端</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="前端"><span class="title">前端</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>前端基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/css" class="" aria-label="CSS"><!--[--><!--]--> CSS <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/frontend/javascript" class="" aria-label="JavaScript"><!--[--><!--]--> JavaScript <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>工程化</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/vue" class="" aria-label="Vue"><!--[--><!--]--> Vue <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>可视化</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/浏览器原生绘图.html" class="" aria-label="浏览器原生绘图"><!--[--><!--]--> 浏览器原生绘图 <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/frontend/echarts" class="" aria-label="Apache Echarts"><!--[--><!--]--> Apache Echarts <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="后端"><span class="title">后端</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="后端"><span class="title">后端</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Python</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/backend/Python" class="" aria-label="Python核心语法"><!--[--><!--]--> Python核心语法 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Go</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/backend/Go" class="" aria-label="Go核心语法"><!--[--><!--]--> Go核心语法 <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/backend/Web-for-Go" class="" aria-label="Go Web开发"><!--[--><!--]--> Go Web开发 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="容器"><span class="title">容器</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="容器"><span class="title">容器</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>容器基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/container/container" class="" aria-label="容器核心技术"><!--[--><!--]--> 容器核心技术 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>容器编排工具</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/container/kubespray" class="router-link-active" aria-label="使用kubespray部署k8s"><!--[--><!--]--> 使用kubespray部署k8s <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="算法"><span class="title">算法</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="算法"><span class="title">算法</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>通用算法</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/algorithm/double-pointer" class="" aria-label="双指针"><!--[--><!--]--> 双指针 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><a class="external-link" href="https://github.com/VVFock3r/Notes" rel="noopener noreferrer" target="_blank" aria-label="Github"><!--[--><!--]--> Github <span><svg class="external-link-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg><span class="external-link-icon-sr-only">open in new window</span></span><!--[--><!--]--></a></div><!--]--></nav><!--[--><!--]--><button class="toggle-dark-button" title="toggle dark mode"><svg style="" class="icon" focusable="false" viewBox="0 0 32 32"><path d="M16 12.005a4 4 0 1 1-4 4a4.005 4.005 0 0 1 4-4m0-2a6 6 0 1 0 6 6a6 6 0 0 0-6-6z" fill="currentColor"></path><path d="M5.394 6.813l1.414-1.415l3.506 3.506L8.9 10.318z" fill="currentColor"></path><path d="M2 15.005h5v2H2z" fill="currentColor"></path><path d="M5.394 25.197L8.9 21.691l1.414 1.415l-3.506 3.505z" fill="currentColor"></path><path d="M15 25.005h2v5h-2z" fill="currentColor"></path><path d="M21.687 23.106l1.414-1.415l3.506 3.506l-1.414 1.414z" fill="currentColor"></path><path d="M25 15.005h5v2h-5z" fill="currentColor"></path><path d="M21.687 8.904l3.506-3.506l1.414 1.415l-3.506 3.505z" fill="currentColor"></path><path d="M15 2.005h2v5h-2z" fill="currentColor"></path></svg><svg style="display:none;" class="icon" focusable="false" viewBox="0 0 32 32"><path d="M13.502 5.414a15.075 15.075 0 0 0 11.594 18.194a11.113 11.113 0 0 1-7.975 3.39c-.138 0-.278.005-.418 0a11.094 11.094 0 0 1-3.2-21.584M14.98 3a1.002 1.002 0 0 0-.175.016a13.096 13.096 0 0 0 1.825 25.981c.164.006.328 0 .49 0a13.072 13.072 0 0 0 10.703-5.555a1.01 1.01 0 0 0-.783-1.565A13.08 13.08 0 0 1 15.89 4.38A1.015 1.015 0 0 0 14.98 3z" fill="currentColor"></path></svg></button><!----></div></header><!--]--><div class="sidebar-mask"></div><!--[--><aside class="sidebar"><nav class="navbar-items"><!--[--><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="运维"><span class="title">运维</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="运维"><span class="title">运维</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Linux基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/ops/Bash" class="" aria-label="Bash"><!--[--><!--]--> Bash <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="前端"><span class="title">前端</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="前端"><span class="title">前端</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>前端基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/css" class="" aria-label="CSS"><!--[--><!--]--> CSS <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/frontend/javascript" class="" aria-label="JavaScript"><!--[--><!--]--> JavaScript <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>工程化</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/vue" class="" aria-label="Vue"><!--[--><!--]--> Vue <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>可视化</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/frontend/浏览器原生绘图.html" class="" aria-label="浏览器原生绘图"><!--[--><!--]--> 浏览器原生绘图 <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/frontend/echarts" class="" aria-label="Apache Echarts"><!--[--><!--]--> Apache Echarts <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="后端"><span class="title">后端</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="后端"><span class="title">后端</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Python</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/backend/Python" class="" aria-label="Python核心语法"><!--[--><!--]--> Python核心语法 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>Go</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/backend/Go" class="" aria-label="Go核心语法"><!--[--><!--]--> Go核心语法 <!--[--><!--]--></a></li><li class="navbar-dropdown-subitem"><a href="/backend/Web-for-Go" class="" aria-label="Go Web开发"><!--[--><!--]--> Go Web开发 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="容器"><span class="title">容器</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="容器"><span class="title">容器</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>容器基础</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/container/container" class="" aria-label="容器核心技术"><!--[--><!--]--> 容器核心技术 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>容器编排工具</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/container/kubespray" class="router-link-active" aria-label="使用kubespray部署k8s"><!--[--><!--]--> 使用kubespray部署k8s <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><div class="navbar-dropdown-wrapper"><button class="navbar-dropdown-title" type="button" aria-label="算法"><span class="title">算法</span><span class="arrow down"></span></button><button class="navbar-dropdown-title-mobile" type="button" aria-label="算法"><span class="title">算法</span><span class="right arrow"></span></button><ul style="display:none;" class="navbar-dropdown"><!--[--><li class="navbar-dropdown-item"><!--[--><h4 class="navbar-dropdown-subtitle"><span>通用算法</span></h4><ul class="navbar-dropdown-subitem-wrapper"><!--[--><li class="navbar-dropdown-subitem"><a href="/algorithm/double-pointer" class="" aria-label="双指针"><!--[--><!--]--> 双指针 <!--[--><!--]--></a></li><!--]--></ul><!--]--></li><!--]--></ul></div></div><div class="navbar-item"><a class="external-link" href="https://github.com/VVFock3r/Notes" rel="noopener noreferrer" target="_blank" aria-label="Github"><!--[--><!--]--> Github <span><svg class="external-link-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg><span class="external-link-icon-sr-only">open in new window</span></span><!--[--><!--]--></a></div><!--]--></nav><!--[--><!--]--><ul class="sidebar-items"><!--[--><li><p tabindex="0" class="sidebar-item sidebar-heading"> <!----></p><ul style="" class="sidebar-item-children"><!--[--><li><a aria-current="page" href="/container/kubespray.html#kubernetes" class="router-link-active router-link-exact-active sidebar-item" aria-label="Kubernetes"><!--[--><!--]--> Kubernetes <!--[--><!--]--></a><ul style="" class="sidebar-item-children"><!--[--><li><a aria-current="page" href="/container/kubespray.html#生产环境部署方式" class="router-link-active router-link-exact-active sidebar-item" aria-label="生产环境部署方式"><!--[--><!--]--> 生产环境部署方式 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#使用kubespray部署生产集群" class="router-link-active router-link-exact-active sidebar-item" aria-label="使用kubespray部署生产集群"><!--[--><!--]--> 使用kubespray部署生产集群 <!--[--><!--]--></a><ul style="" class="sidebar-item-children"><!--[--><li><a aria-current="page" href="/container/kubespray.html#前置要求" class="router-link-active router-link-exact-active sidebar-item" aria-label="前置要求"><!--[--><!--]--> 前置要求 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#节点规划" class="router-link-active router-link-exact-active sidebar-item" aria-label="节点规划"><!--[--><!--]--> 节点规划 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#更新系统" class="router-link-active router-link-exact-active sidebar-item" aria-label="更新系统"><!--[--><!--]--> 更新系统 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#设置静态内网ip-可选" class="router-link-active router-link-exact-active sidebar-item" aria-label="设置静态内网IP（可选）"><!--[--><!--]--> 设置静态内网IP（可选） <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#系统初始化" class="router-link-active router-link-exact-active sidebar-item" aria-label="系统初始化"><!--[--><!--]--> 系统初始化 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#配置ansible主控节点" class="router-link-active router-link-exact-active sidebar-item" aria-label="配置Ansible主控节点"><!--[--><!--]--> 配置Ansible主控节点 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#节点个性化配置" class="router-link-active router-link-exact-active sidebar-item" aria-label="节点个性化配置"><!--[--><!--]--> 节点个性化配置 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#部署kubernetes集群" class="router-link-active router-link-exact-active sidebar-item" aria-label="部署Kubernetes集群"><!--[--><!--]--> 部署Kubernetes集群 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#检查集群状态" class="router-link-active router-link-exact-active sidebar-item" aria-label="检查集群状态"><!--[--><!--]--> 检查集群状态 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#清理代理设置" class="router-link-active router-link-exact-active sidebar-item" aria-label="清理代理设置"><!--[--><!--]--> 清理代理设置 <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#访问dashboard" class="router-link-active router-link-exact-active sidebar-item" aria-label="访问dashboard"><!--[--><!--]--> 访问dashboard <!--[--><!--]--></a><!----></li><li><a aria-current="page" href="/container/kubespray.html#faq" class="router-link-active router-link-exact-active sidebar-item" aria-label="FAQ"><!--[--><!--]--> FAQ <!--[--><!--]--></a><!----></li><!--]--></ul></li><!--]--></ul></li><!--]--></ul></li><!--]--></ul><!--[--><!--]--></aside><!--]--><!--[--><main class="page"><!--[--><!--]--><div class="theme-default-content"><!--[--><!--]--><div><h2 id="kubernetes" tabindex="-1"><a class="header-anchor" href="#kubernetes" aria-hidden="true">#</a> Kubernetes</h2><p>官网：<a href="https://kubernetes.io/" target="_blank" rel="noopener noreferrer">https://kubernetes.io/<span><svg class="external-link-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg><span class="external-link-icon-sr-only">open in new window</span></span></a></p><h3 id="生产环境部署方式" tabindex="-1"><a class="header-anchor" href="#生产环境部署方式" aria-hidden="true">#</a> 生产环境部署方式</h3><p>文档：<a href="https://kubernetes.io/docs/setup/production-environment/tools/" target="_blank" rel="noopener noreferrer">https://kubernetes.io/docs/setup/production-environment/tools/<span><svg class="external-link-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewbox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg><span class="external-link-icon-sr-only">open in new window</span></span></a></p><table><thead><tr><th>部署方式</th><th>复杂性</th><th>灵活性</th><th>描述</th></tr></thead><tbody><tr><td>Kubespray</td><td>简单</td><td>自定义</td><td>基于<code>kubeadm</code>和<code>Ansible</code>来部署</td></tr><tr><td>kubeadm</td><td>适中</td><td>自定义</td><td>Kubeadm 是一个快捷搭建kubernetes(k8s)的安装工具</td></tr><tr><td>二进制部署</td><td>复杂</td><td>灵活</td><td>二进制部署</td></tr><tr><td>kops</td><td>未知</td><td>未知</td><td>在AWS上安装Kubernetes群集，本文档不考虑这种方式</td></tr></tbody></table><h3 id="使用kubespray部署生产集群" tabindex="-1"><a class="header-anchor" href="#使用kubespray部署生产集群" aria-hidden="true">#</a> 使用kubespray部署生产集群</h3><h4 id="前置要求" tabindex="-1"><a class="header-anchor" href="#前置要求" aria-hidden="true">#</a> 前置要求</h4><ul><li>在部署过程中需要去海外下载镜像，需要主机能够科学上网</li><li>支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上</li></ul><h4 id="节点规划" tabindex="-1"><a class="header-anchor" href="#节点规划" aria-hidden="true">#</a> 节点规划</h4><p>本次安装节点规划，在安装前可以动态调整</p><table><thead><tr><th>主机名</th><th>功能</th><th>操作系统</th><th>内存</th><th>CPU</th><th>静态IP</th></tr></thead><tbody><tr><td>node0</td><td>Master节点， Etcd节点</td><td>Centos 7.9</td><td>4G</td><td>2核</td><td>192.168.48.140</td></tr><tr><td>node1</td><td>Master节点，Etcd节点，Node节点</td><td>Centos 7.9</td><td>4G</td><td>2核</td><td>192.168.48.141</td></tr><tr><td>node2</td><td>Node节点， Etcd节点</td><td>Centos 7.9</td><td>4G</td><td>2核</td><td>192.168.48.142</td></tr></tbody></table><blockquote><p>根据以上信息安装操作系统，安装完成后不需要做任何操作</p></blockquote><h4 id="更新系统" tabindex="-1"><a class="header-anchor" href="#更新系统" aria-hidden="true">#</a> 更新系统</h4><div class="language-bash ext-sh"><pre class="language-bash"><code>yum update -y <span class="token operator">&amp;&amp;</span> <span class="token function">reboot</span>
+
+<span class="token comment"># 更新前系统版本: cat /etc/redhat-release </span>
+<span class="token comment"># CentOS Linux release 7.4.1708 (Core)</span>
+
+<span class="token comment"># 更新后系统版本: cat /etc/redhat-release </span>
+<span class="token comment"># CentOS Linux release 7.9.2009 (Core)</span>
+</code></pre></div><h4 id="设置静态内网ip-可选" tabindex="-1"><a class="header-anchor" href="#设置静态内网ip-可选" aria-hidden="true">#</a> 设置静态内网IP（可选）</h4><p>如果使用<code>VMware Workstation</code>等在本地部署，需要保证使用静态内网IP地址</p><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># vi /etc/sysconfig/network-scripts/ifcfg-ens33</span>
+<span class="token assign-left variable">TYPE</span><span class="token operator">=</span><span class="token string">&quot;Ethernet&quot;</span>
+<span class="token assign-left variable">PROXY_METHOD</span><span class="token operator">=</span><span class="token string">&quot;none&quot;</span>
+<span class="token assign-left variable">BROWSER_ONLY</span><span class="token operator">=</span><span class="token string">&quot;no&quot;</span>
+<span class="token assign-left variable">BOOTPROTO</span><span class="token operator">=</span><span class="token string">&quot;static&quot;</span>		<span class="token comment"># 设置为静态IP</span>
+<span class="token assign-left variable">DEFROUTE</span><span class="token operator">=</span><span class="token string">&quot;yes&quot;</span>
+<span class="token assign-left variable">IPV4_FAILURE_FATAL</span><span class="token operator">=</span><span class="token string">&quot;no&quot;</span>
+<span class="token assign-left variable">IPV6INIT</span><span class="token operator">=</span><span class="token string">&quot;yes&quot;</span>
+<span class="token assign-left variable">IPV6_AUTOCONF</span><span class="token operator">=</span><span class="token string">&quot;yes&quot;</span>
+<span class="token assign-left variable">IPV6_DEFROUTE</span><span class="token operator">=</span><span class="token string">&quot;yes&quot;</span>
+<span class="token assign-left variable">IPV6_FAILURE_FATAL</span><span class="token operator">=</span><span class="token string">&quot;no&quot;</span>
+<span class="token assign-left variable">IPV6_ADDR_GEN_MODE</span><span class="token operator">=</span><span class="token string">&quot;stable-privacy&quot;</span>
+<span class="token assign-left variable">NAME</span><span class="token operator">=</span><span class="token string">&quot;ens33&quot;</span>
+<span class="token assign-left variable">UUID</span><span class="token operator">=</span><span class="token string">&quot;068dc849-6e8c-4bed-b2de-2fe66c424521&quot;</span>
+<span class="token assign-left variable">DEVICE</span><span class="token operator">=</span><span class="token string">&quot;ens33&quot;</span>
+<span class="token assign-left variable">ONBOOT</span><span class="token operator">=</span><span class="token string">&quot;yes&quot;</span>			<span class="token comment"># 开启自启</span>
+<span class="token assign-left variable">IPADDR</span><span class="token operator">=</span><span class="token number">192.168</span>.48.140	<span class="token comment"># IP，根据实际情况修改</span>
+<span class="token assign-left variable">NETMASK</span><span class="token operator">=</span><span class="token number">255.255</span>.255.0	<span class="token comment"># 子网掩码</span>
+<span class="token assign-left variable">GATEWAY</span><span class="token operator">=</span><span class="token number">192.168</span>.48.2	<span class="token comment"># 默认网关，根据实际情况修改</span>
+<span class="token assign-left variable">DNS1</span><span class="token operator">=</span><span class="token number">114.114</span>.114.114    <span class="token comment"># DNS1</span>
+<span class="token assign-left variable">DNS2</span><span class="token operator">=</span><span class="token number">8.8</span>.8.8            <span class="token comment"># DNS2</span>
+
+<span class="token comment"># 重启网络</span>
+systemctl restart network.service
+
+<span class="token comment"># 测试网络</span>
+<span class="token function">ping</span> -c <span class="token number">4</span> www.baidu.com
+</code></pre></div><h4 id="系统初始化" tabindex="-1"><a class="header-anchor" href="#系统初始化" aria-hidden="true">#</a> 系统初始化</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 修改主机名</span>
+hostnamectl set-hostname node0
+hostnamectl set-hostname node1
+hostnamectl set-hostname node2
+
+<span class="token comment"># 关闭selinux</span>
+setenforce <span class="token number">0</span>
+<span class="token function">sed</span> -ri <span class="token string">&#39;s/(^SELINUX=)(.*)/\1disabled/&#39;</span> /etc/selinux/config
+
+<span class="token comment"># 关闭防火墙</span>
+systemctl stop firewalld <span class="token operator">&amp;&amp;</span> systemctl disable firewalld
+
+<span class="token comment"># 设置iptables规则</span>
+iptables -F <span class="token operator">&amp;&amp;</span> iptables -X <span class="token operator">&amp;&amp;</span> iptables -F -t nat <span class="token operator">&amp;&amp;</span> iptables -X -t nat <span class="token operator">&amp;&amp;</span> iptables -P FORWARD ACCEPT
+
+<span class="token comment"># 关闭swap</span>
+swapoff -a <span class="token operator">&amp;&amp;</span> <span class="token function">vi</span> /etc/fstab
+<span class="token function">free</span> -m <span class="token operator">&amp;&amp;</span> <span class="token function">cat</span> /etc/fstab
+
+<span class="token comment"># K8S参数设置</span>
+<span class="token function">cat</span> <span class="token operator">&gt;</span> /etc/sysctl.d/kubernetes.conf <span class="token operator">&lt;&lt;</span><span class="token string">EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+EOF</span>
+<span class="token comment"># 使配置生效</span>
+sysctl -p /etc/sysctl.d/kubernetes.conf
+
+<span class="token comment"># 时间同步</span>
+yum <span class="token function">install</span> ntpdate -y
+ntpdate time.windows.com
+
+<span class="token comment"># 移除docker相关软件包（可选）</span>
+yum remove -y docker* <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -vf /etc/docker/daemon.json
+</code></pre></div><h4 id="配置ansible主控节点" tabindex="-1"><a class="header-anchor" href="#配置ansible主控节点" aria-hidden="true">#</a> 配置Ansible主控节点</h4><p>Ansible主控节点部署在哪里都可以，只要能控制K8s Node节点即可</p><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 生成keygen（执行ssh-keygen，一路回车下去）</span>
+ssh-keygen
+
+<span class="token comment"># 配置SSH免密登录</span>
+ssh-copy-id root@192.168.48.140
+ssh-copy-id root@192.168.48.141
+ssh-copy-id root@192.168.48.142
+
+<span class="token comment"># 验证免密登录</span>
+<span class="token function">ssh</span> root@192.168.48.140  <span class="token string">&quot;hostname&quot;</span>
+<span class="token function">ssh</span> root@192.168.48.141  <span class="token string">&quot;hostname&quot;</span>
+<span class="token function">ssh</span> root@192.168.48.142  <span class="token string">&quot;hostname&quot;</span>
+
+<span class="token comment"># 安装基础软件</span>
+yum <span class="token function">install</span> epel-release python3 <span class="token function">git</span> <span class="token function">wget</span> -y
+
+<span class="token comment"># 升级pip到最新版(可选,推荐)</span>
+pip3 <span class="token function">install</span> --upgrade pip -i https://mirrors.aliyun.com/pypi/simple
+
+<span class="token comment"># 下载kubespray源码</span>
+<span class="token comment"># 若因网络下载失败，可以使用我们准备好的代理（科学上网），wget -c后面添加 -e &quot;http_proxy=http://192.168.5.103:7890&quot;</span>
+<span class="token function">wget</span> -c https://github.com/kubernetes-sigs/kubespray/archive/v2.15.0.tar.gz 
+<span class="token function">tar</span> zxf v2.15.0.tar.gz <span class="token operator">&amp;&amp;</span> <span class="token builtin class-name">cd</span> kubespray-2.15.0 <span class="token operator">&amp;&amp;</span> <span class="token function">cat</span> requirements.txt
+pip3 <span class="token function">install</span> -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple
+
+<span class="token comment"># 生成项目配置</span>
+<span class="token function">cp</span> -rpf inventory/sample inventory/mycluster
+
+<span class="token comment"># 使用真实的hostname（否则会自动把你的hostname改成node1/node2...这种哦）</span>
+<span class="token builtin class-name">export</span> <span class="token assign-left variable">USE_REAL_HOSTNAME</span><span class="token operator">=</span>true
+
+<span class="token comment"># 指定配置文件位置</span>
+<span class="token builtin class-name">export</span> <span class="token assign-left variable">CONFIG_FILE</span><span class="token operator">=</span>inventory/mycluster/hosts.yaml
+
+<span class="token comment"># 定义ip列表（你的服务器内网ip地址列表，3台及以上，前两台默认为master节点）</span>
+<span class="token builtin class-name">declare</span> -a <span class="token assign-left variable">IPS</span><span class="token operator">=</span><span class="token punctuation">(</span>
+  <span class="token number">192.168</span>.48.140
+  <span class="token number">192.168</span>.48.141
+  <span class="token number">192.168</span>.48.142
+<span class="token punctuation">)</span>
+
+<span class="token comment"># 生成配置文件</span>
+python3 contrib/inventory_builder/inventory.py <span class="token variable">${IPS<span class="token punctuation">[</span>@<span class="token punctuation">]</span>}</span>
+DEBUG: Adding group all
+DEBUG: Adding group kube-master
+DEBUG: Adding group kube-node
+DEBUG: Adding group etcd
+DEBUG: Adding group k8s-cluster
+DEBUG: Adding group calico-rr
+DEBUG: adding <span class="token function">host</span> node0 to group all
+DEBUG: adding <span class="token function">host</span> node1 to group all
+DEBUG: adding <span class="token function">host</span> node2 to group all
+DEBUG: adding <span class="token function">host</span> node0 to group etcd
+DEBUG: adding <span class="token function">host</span> node1 to group etcd
+DEBUG: adding <span class="token function">host</span> node2 to group etcd
+DEBUG: adding <span class="token function">host</span> node0 to group kube-master
+DEBUG: adding <span class="token function">host</span> node1 to group kube-master
+DEBUG: adding <span class="token function">host</span> node0 to group kube-node
+DEBUG: adding <span class="token function">host</span> node1 to group kube-node
+DEBUG: adding <span class="token function">host</span> node2 to group kube-node
+</code></pre></div><h4 id="节点个性化配置" tabindex="-1"><a class="header-anchor" href="#节点个性化配置" aria-hidden="true">#</a> 节点个性化配置</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 定制化配置文件</span>
+<span class="token comment"># 1. 节点组织配置（这里可以调整每个节点的角色）</span>
+<span class="token function">vi</span> inventory/mycluster/hosts.yaml
+all:
+  hosts:
+    node0:
+      ansible_host: <span class="token number">192.168</span>.48.140
+      ip: <span class="token number">192.168</span>.48.140
+      access_ip: <span class="token number">192.168</span>.48.140
+    node1:
+      ansible_host: <span class="token number">192.168</span>.48.141
+      ip: <span class="token number">192.168</span>.48.141
+      access_ip: <span class="token number">192.168</span>.48.141
+    node2:
+      ansible_host: <span class="token number">192.168</span>.48.142
+      ip: <span class="token number">192.168</span>.48.142
+      access_ip: <span class="token number">192.168</span>.48.142
+  children:
+    kube-master:
+      hosts:
+        node0:
+        node1:
+    kube-node:
+      hosts:
+        node0:
+        node1:
+        node2:
+    etcd:
+      hosts:
+        node0:
+        node1:
+        node2:
+    k8s-cluster:
+      children:
+        kube-master:
+        kube-node:
+    calico-rr:
+      hosts: <span class="token punctuation">{</span><span class="token punctuation">}</span>
+      
+<span class="token comment"># 2. containerd配置（教程使用containerd作为容器引擎）</span>
+<span class="token function">vi</span> inventory/mycluster/group_vars/all/containerd.yml
+
+<span class="token comment"># 3. 全局配置（可以在这配置http(s)代理实现外网访问）</span>
+<span class="token function">vi</span> inventory/mycluster/group_vars/all/all.yml
+http_proxy: <span class="token string">&quot;http://192.168.5.103:7890&quot;</span>     <span class="token comment"># 配置代理</span>
+https_proxy: <span class="token string">&quot;http://192.168.5.103:7890&quot;</span>    <span class="token comment"># 配置代理</span>
+
+
+<span class="token comment"># 4. k8s集群配置（包括设置容器运行时、svc网段、pod网段等）</span>
+<span class="token function">vi</span> inventory/mycluster/group_vars/k8s-cluster/k8s-cluster.yml
+kube_version: v1.19.7                  <span class="token comment"># K8S版本信息，无需修改（也不要随意修改）</span>
+kube_service_addresses: <span class="token number">10.200</span>.0.0/16  <span class="token comment"># 默认为10.233.0.0/18，修改为10.200.0.0/16</span>
+kube_pods_subnet: <span class="token number">10.233</span>.0.0/16        <span class="token comment"># 默认10.233.64.0/18，修改为10.233.0.0/16</span>
+container_manager: containerd	       <span class="token comment"># 配置容器引擎，默认是docker,修改为containerd</span>
+
+<span class="token comment"># 5. 修改etcd部署类型为host（默认是docker）</span>
+<span class="token function">vi</span> inventory/mycluster/group_vars/etcd.yml
+etcd_deployment_type: <span class="token function">host</span>      <span class="token comment"># 配置etcd部署方式，默认是docker，如果使用containerd的话，必须使用宿主机部署，即host</span>
+
+<span class="token comment"># 6. 附加组件（ingress、dashboard等）</span>
+<span class="token function">vi</span> inventory/mycluster/group_vars/k8s-cluster/addons.yml
+dashboard_enabled: <span class="token boolean">true</span>			<span class="token comment"># 修改为true</span>
+ingress_nginx_enabled: <span class="token boolean">true</span>		<span class="token comment"># 修改为true</span>
+metrics_server_enabled: <span class="token boolean">true</span>    <span class="token comment"># 修改为true</span>
+</code></pre></div><h4 id="部署kubernetes集群" tabindex="-1"><a class="header-anchor" href="#部署kubernetes集群" aria-hidden="true">#</a> 部署Kubernetes集群</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 使用tmux(可选)</span>
+yum <span class="token function">install</span> tmux -y
+tmux new -s k8s_install
+
+<span class="token comment"># 部署Kubernetes集群（这一步执行的时间可能会很长，这里我使用time命令来统计一下时长）</span>
+<span class="token function">time</span> ansible-playbook -i inventory/mycluster/hosts.yaml  -b cluster.yml <span class="token comment"># 如果想查看详细信息，添加-vvvv</span>
+
+real    25m49.126s
+user    14m56.884s
+sys     4m50.167s
+</code></pre></div><blockquote><p>安装步骤执行时长并不稳定，根据系统配置、网络质量而不同，快则半小时，慢则几个小时</p></blockquote><h4 id="检查集群状态" tabindex="-1"><a class="header-anchor" href="#检查集群状态" aria-hidden="true">#</a> 检查集群状态</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 查看节点状态(Master节点执行)</span>
+kubectl get <span class="token function">node</span>
+NAME    STATUS   ROLES    AGE   VERSION
+node0   Ready    master   25h   v1.19.7
+node1   Ready    master   25h   v1.19.7
+node2   Ready    <span class="token operator">&lt;</span>none<span class="token operator">&gt;</span>   24h   v1.19.7
+
+<span class="token comment"># 查看Master节点组件状态(Master节点执行)</span>
+kubectl get cs
+Warning: v1 ComponentStatus is deprecated <span class="token keyword">in</span> v1.19+
+NAME                 STATUS    MESSAGE             ERROR
+scheduler            Healthy   ok                  
+controller-manager   Healthy   ok                  
+etcd-2               Healthy   <span class="token punctuation">{</span><span class="token string">&quot;health&quot;</span><span class="token builtin class-name">:</span><span class="token string">&quot;true&quot;</span><span class="token punctuation">}</span>   
+etcd-1               Healthy   <span class="token punctuation">{</span><span class="token string">&quot;health&quot;</span><span class="token builtin class-name">:</span><span class="token string">&quot;true&quot;</span><span class="token punctuation">}</span>   
+etcd-0               Healthy   <span class="token punctuation">{</span><span class="token string">&quot;health&quot;</span><span class="token builtin class-name">:</span><span class="token string">&quot;true&quot;</span><span class="token punctuation">}</span>
+
+<span class="token comment"># 查看Pod状态</span>
+kubectl get pods -A
+</code></pre></div><h4 id="清理代理设置" tabindex="-1"><a class="header-anchor" href="#清理代理设置" aria-hidden="true">#</a> 清理代理设置</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 清理Containerd HTTP代理</span>
+<span class="token function">rm</span> -vf /etc/systemd/system/containerd.service.d/http-proxy.conf
+systemctl daemon-reload
+systemctl restart containerd
+
+<span class="token comment"># 清理Yum HTTP代理(把grep出来的代理配置手动删除即可)</span>
+<span class="token function">grep</span> <span class="token number">7890</span> -r /etc/yum*
+</code></pre></div><h4 id="访问dashboard" tabindex="-1"><a class="header-anchor" href="#访问dashboard" aria-hidden="true">#</a> 访问dashboard</h4><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 创建service</span>
+<span class="token function">cat</span> <span class="token operator">&gt;</span> dashboard-svc.yaml <span class="token operator">&lt;&lt;</span><span class="token string">EOF
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: dashboard
+  labels:
+    app: dashboard
+spec:
+  type: NodePort
+  selector:
+    k8s-app: kubernetes-dashboard
+  ports:
+  - name: https
+    nodePort: 30000
+    port: 443
+    targetPort: 8443
+EOF</span>
+
+kubectl apply -f dashboard-svc.yaml
+
+<span class="token comment"># 访问dashboard</span>
+为了集群安全，从 <span class="token number">1.7</span> 开始，dashboard 只允许通过 https 访问，我们使用nodeport的方式暴露服务，可以使用 https://NodeIP:NodePort 地址访问 
+关于自定义证书 默认dashboard的证书是自动生成的，肯定是非安全的证书，如果大家有域名和对应的安全证书可以自己替换掉。使用安全的域名方式访问dashboard。 
+在dashboard-all.yaml中增加dashboard启动参数，可以指定证书文件，其中证书文件是通过secret注进来的。
+- –tls-cert-file
+- dashboard.cer
+- –tls-key-file
+- dashboard.key
+
+<span class="token comment"># 创建service account</span>
+kubectl create sa dashboard-admin -n kube-system
+
+<span class="token comment"># 创建角色绑定关系</span>
+kubectl create clusterrolebinding dashboard-admin --clusterrole<span class="token operator">=</span>cluster-admin --serviceaccount<span class="token operator">=</span>kube-system:dashboard-admin
+
+<span class="token comment"># 查看dashboard-admin的secret名字</span>
+<span class="token assign-left variable">ADMIN_SECRET</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>kubectl get secrets -n kube-system <span class="token operator">|</span> <span class="token function">grep</span> dashboard-admin <span class="token operator">|</span> <span class="token function">awk</span> <span class="token string">&#39;{print $1}&#39;</span><span class="token variable">)</span></span>
+
+<span class="token comment"># 打印secret的token</span>
+kubectl describe secret -n kube-system <span class="token variable">${ADMIN_SECRET}</span> <span class="token operator">|</span> <span class="token function">grep</span> -E <span class="token string">&#39;^token&#39;</span> <span class="token operator">|</span> <span class="token function">awk</span> <span class="token string">&#39;{print $2}&#39;</span>
+
+<span class="token comment"># 浏览器访问</span>
+https://192.168.48.100:30000/
+</code></pre></div><h4 id="faq" tabindex="-1"><a class="header-anchor" href="#faq" aria-hidden="true">#</a> FAQ</h4><p><strong>下载文件出错</strong></p><p><img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211229101545405.png" alt="image-20211229101545405"></p><blockquote><p>下载文件出错，从以下方面排查</p><ul><li>检查本地网络、代理服务器是否正常</li><li>检查配置是否写错 <ul><li>比如将代理服务器的<code>http://</code>误写成了<code>https://</code></li><li>比如将代理服务器的<code>http://</code>误写成<code>http:/</code></li></ul></li></ul></blockquote><p><strong>scheduler和controller-manager组件状态为Unhealthy</strong></p><div class="language-bash ext-sh"><pre class="language-bash"><code><span class="token comment"># 修复Unhealthy(在所有Master上操作)</span>
+<span class="token function">vi</span> /etc/kubernetes/manifests/kube-controller-manager.yaml
+    <span class="token comment"># - --port=0    # 将这一行注释掉</span>
+<span class="token function">vi</span> /etc/kubernetes/manifests/kube-scheduler.yaml
+    <span class="token comment"># - --port=0    # 将这一行注释掉</span>
+
+<span class="token comment"># 重启kubelet</span>
+systemctl restart kubelet
+</code></pre></div></div><!--[--><!--]--></div><footer class="page-meta"><!----><div class="meta-item last-updated"><span class="meta-item-label">Last Updated: </span><!----></div><div class="meta-item contributors"><span class="meta-item-label">Contributors: </span><span class="meta-item-info"><!--[--><!--[--><span class="contributor" title="email: 1265921100@qq.com">yujinhui</span><!----><!--]--><!--]--></span></div></footer><!----><!--[--><!--]--></main><!--]--></div><!----><!--]--></div>
+    <script type="module" src="/assets/app.8347a01d.js" defer></script>
+  </body>
+</html>
