@@ -1,4 +1,0 @@
----
-sidebar: off
----
-<Home />
