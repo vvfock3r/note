@@ -1,8 +1,6 @@
 # 简介
 
-基于VuePress v2搭建的个人笔记静态站点
-
-VuePress官网：[https://v2.vuepress.vuejs.org/zh/](https://v2.vuepress.vuejs.org/zh/)
+基于[VuePress v2](https://v2.vuepress.vuejs.org/zh/)搭建的个人笔记静态站点
 
 
 
