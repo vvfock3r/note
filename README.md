@@ -30,4 +30,4 @@
 
 
 
-VuePress配置说明参考：https://jinhui.dev/frontend/VuePress.html
+VuePress配置说明参考：[https://jinhui.dev/frontend/VuePress.html](https://jinhui.dev/frontend/VuePress.html)
