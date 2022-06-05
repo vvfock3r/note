@@ -50,7 +50,7 @@ info Initializing VuePress and preparing data...
 
 * 支持`HTTPS(默认)`和`HTTP`访问
 * 支持`HTTP 2(默认)`和`HTTP 1.1`协议
-* 所以依赖全部打包到镜像方便管理和迁移
+* 所有依赖全部打包到镜像方便管理和迁移
 
 ```bash
 # (1)下载源码
