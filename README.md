@@ -1,6 +1,6 @@
 # 简介
 
-基于[VuePress v2](https://v2.vuepress.vuejs.org/zh/)搭建的个人笔记静态站点，在线预览：https://jinhui.dev
+基于 [VuePress v2](https://v2.vuepress.vuejs.org/zh/) 搭建的个人笔记静态站点，在线预览：https://jinhui.dev
 
 
 
