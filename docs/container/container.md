@@ -2725,3 +2725,42 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 :::
 
+## 
+
+## Docker Compose
+
+文档：[https://docs.docker.com/compose/](https://docs.docker.com/compose/)
+
+Github：[https://github.com/docker/compose](https://github.com/docker/compose)
+
+<br />
+
+Compose是一个用于定义和运行多容器Docker应用程序的工具，v1版本使用Python编写，v2版本使用Go编写
+
+使用Compose分为三个步骤：
+
+1. 定义`Dockerfile`文件
+2. 定义`docker-compose.yml`文件
+3. 运行`docker compose up`
+
+### 安装
+
+文档：[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+
+```bash
+# 安装方式1：yum安装（依赖docker-ce仓库）
+[root@localhost ~]# yum install docker-compose-plugin
+
+[root@localhost ~]# rpm -ql docker-compose-plugin
+/usr/libexec/docker/cli-plugins/docker-compose		# 这个是二进制命令，建议放到PATH变量中；其他的都是一些不重要的文件
+/usr/share/doc/docker-compose-plugin
+/usr/share/doc/docker-compose-plugin/LICENSE
+/usr/share/doc/docker-compose-plugin/MAINTAINERS
+/usr/share/doc/docker-compose-plugin/NOTICE
+/usr/share/doc/docker-compose-plugin/README.md
+/usr/share/licenses/docker-compose-plugin
+/usr/share/licenses/docker-compose-plugin/LICENSE
+/usr/share/licenses/docker-compose-plugin/NOTICE
+
+# 安装方式2：直接下载二进制
+```
