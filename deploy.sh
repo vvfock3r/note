@@ -9,7 +9,7 @@ git pull
 # 构建镜像
 for i in `seq 5`
 do
-    docker image build -t nginx:webserver --cpus 1.0 --memory 2g . && break
+    docker image build -t nginx:webserver --cpu-period=100000 --cpu-quota=100000 --memory 2g . && break
 done
 
 # 若容器存在则删除
