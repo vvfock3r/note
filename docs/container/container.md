@@ -2735,9 +2735,18 @@ Github：[https://github.com/docker/compose](https://github.com/docker/compose)
 
 <br />
 
-Compose是一个用于定义和运行多容器Docker应用程序的工具，v1版本使用Python编写，v2版本使用Go编写
+Compose是一个用于定义和运行多容器Docker应用程序的工具
 
-使用Compose分为三个步骤：
+
+
+**版本问题**
+
+* v1版本使用Python编写，v2版本使用Go编写
+* 在v1中`docker-compose`是一个独立的命令，而在v2中`docker-compose`作为`docker`的一个插件，使用`docker compose`来执行命令
+
+
+
+**使用Compose分为三个步骤**
 
 1. 定义`Dockerfile`文件
 2. 定义`docker-compose.yml`文件
@@ -2750,9 +2759,8 @@ Compose是一个用于定义和运行多容器Docker应用程序的工具，v1�
 ```bash
 # 安装方式1：yum安装（依赖docker-ce仓库）
 [root@localhost ~]# yum install docker-compose-plugin
-
 [root@localhost ~]# rpm -ql docker-compose-plugin
-/usr/libexec/docker/cli-plugins/docker-compose		# 这个是二进制命令，建议放到PATH变量中；其他的都是一些不重要的文件
+/usr/libexec/docker/cli-plugins/docker-compose		# 这个是二进制命令插件，其他的都是一些不重要的文件
 /usr/share/doc/docker-compose-plugin
 /usr/share/doc/docker-compose-plugin/LICENSE
 /usr/share/doc/docker-compose-plugin/MAINTAINERS
@@ -2761,6 +2769,29 @@ Compose是一个用于定义和运行多容器Docker应用程序的工具，v1�
 /usr/share/licenses/docker-compose-plugin
 /usr/share/licenses/docker-compose-plugin/LICENSE
 /usr/share/licenses/docker-compose-plugin/NOTICE
+[root@localhost ~]# docker compose version
+Docker Compose version v2.5.0
 
 # 安装方式2：直接下载二进制
+[root@localhost ~]# curl -SL https://github.com/docker/compose/releases/download/v2.6.0/docker-compose-linux-x86_64 -o /usr/libexec/docker/cli-plugins/docker-compose
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 24.7M  100 24.7M    0     0  5401k      0  0:00:04  0:00:04 --:--:-- 6701k
+[root@localhost ~]# chmod 755 /usr/libexec/docker/cli-plugins/docker-compose
+[root@localhost ~]# docker compose version
+Docker Compose version v2.6.0
+
+# -------------------------------------------------------------------------------------------------------------------
+# 若以后要卸载的话可以利用此命令输出安装目录，然后直接删掉二进制文件即可
+[root@localhost ~]# docker info --format '{{range .ClientInfo.Plugins}}{{if eq .Name "compose"}}{{.Path}}{{end}}{{end}}'
+/usr/libexec/docker/cli-plugins/docker-compose
 ```
+
+> 若`/usr/libexec/docker/cli-plugins/`不存在，可尝试其他目录：
+>
+> /usr/lib/docker/cli-plugins
+>
+> /usr/local/lib/docker/cli-plugins
+>
+> /usr/local/libexec/docker/cli-plugins
