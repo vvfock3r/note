@@ -23,8 +23,8 @@ yarn install v1.22.17
 [1/4] Resolving packages...
 [2/4] Fetching packages...
 [3/4] Linking dependencies...
-warning "vuepress > vuepress-vite@2.0.0-beta.46" has unmet peer dependency "@vuepress/client@^2.0.0-beta.42".
-warning "vuepress > vuepress-vite@2.0.0-beta.46" has unmet peer dependency "vue@^3.2.35".
+warning "vuepress >vuepress-vite@2.0.0-beta.46" has unmet peer dependency "@vuepress/client@^2.0.0-beta.42".
+warning "vuepress >vuepress-vite@2.0.0-beta.46" has unmet peer dependency "vue@^3.2.35".
 [4/4] Building fresh packages...
 Done in 2.05s.
 
@@ -46,7 +46,7 @@ info Initializing VuePress and preparing data...
 
 # 容器部署
 
-使用容器正式部署一个个人博客静态站点，特点：
+使用容器正式部署一个个人笔记静态站点
 
 * 支持`HTTPS(默认)`和`HTTP`访问
 * 支持`HTTP 2(默认)`和`HTTP 1.1`协议
@@ -58,7 +58,7 @@ info Initializing VuePress and preparing data...
 [root@localhost ~]# git clone --depth 1 https://github.com/vvfock3r/note.git
 [root@localhost ~]# cd note
 
-# (2) 构建镜像
+# (2) 构建镜像并启动容器
 [root@localhost note]# docker image build -t nginx:webserver --memory 2g .
 
 # (3) 启动容器
