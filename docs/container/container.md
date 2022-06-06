@@ -2742,7 +2742,7 @@ Compose是一个用于定义和运行多容器Docker应用程序的工具
 **版本问题**
 
 * v1版本使用Python编写，v2版本使用Go编写
-* 在v1中`docker-compose`是一个独立的命令，而在v2中`docker-compose`作为`docker`的一个插件，使用`docker compose`来执行命令
+* 在v1中`docker-compose`是一个独立的命令，而在v2中`docker-compose`作为`docker cli`的一个插件，使用`docker compose`来执行命令
 
 
 
@@ -2795,3 +2795,199 @@ Docker Compose version v2.6.0
 > /usr/local/lib/docker/cli-plugins
 >
 > /usr/local/libexec/docker/cli-plugins
+
+
+
+### 示例
+
+文档：[https://docs.docker.com/compose/gettingstarted/](https://docs.docker.com/compose/gettingstarted/)
+
+根据官方文档写一个Demo
+
+::: details （1）编写Python Web应用并生成Dockerfile
+
+```bash
+# (1) 创建compose目录
+mkdir composetest
+cd composetest
+
+# (2) 编写一个Python Web App
+[root@localhost composetest]# cat > app.py <<- EOF
+import time
+
+import redis
+from flask import Flask
+
+app = Flask(__name__)
+cache = redis.Redis(host='redis', port=6379)
+
+def get_hit_count():
+    retries = 5
+    while True:
+        try:
+            return cache.incr('hits')
+        except redis.exceptions.ConnectionError as exc:
+            if retries == 0:
+                raise exc
+            retries -= 1
+            time.sleep(0.5)
+
+@app.route('/')
+def hello():
+    count = get_hit_count()
+    return 'Hello World! I have been seen {} times.\n'.format(count)
+EOF
+
+# (3) 生成Python依赖文件requirements.txt
+cat > requirements.txt <<- EOF
+flask
+redis
+EOF
+
+# (4)编写Dockerfile
+[root@localhost composetest]# cat > Dockerfile <<- EOF
+# syntax=docker/dockerfile:1
+FROM python:3.7-alpine
+WORKDIR /code
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+RUN apk add --no-cache gcc musl-dev linux-headers
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+EXPOSE 5000
+COPY . .
+CMD ["flask", "run"]
+EOF
+```
+
+:::
+
+::: details （2）编写docker-compose.yml
+
+```bash
+[root@localhost composetest]# cat > docker-compose.yml <<- EOF
+version: "3.9"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:5000"
+  redis:
+    image: "redis:alpine"
+EOF
+```
+
+:::
+
+::: details （3）创建并启动容器、测试
+
+```bash
+# 创建并启动容器（如果需要后台运行的话添加-d）
+[root@localhost composetest]# docker compose up
+```
+
+![image-20220606074717146](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606074717146.png)
+
+```bash
+# 访问测试
+[root@localhost composetest]# curl http://127.0.0.1:8000
+Hello World! I have been seen 1 times.
+[root@localhost composetest]# curl http://127.0.0.1:8000
+Hello World! I have been seen 2 times.
+[root@localhost composetest]# curl http://127.0.0.1:8000
+Hello World! I have been seen 3 times.
+```
+
+::: details （4）看看docker compose都做了什么
+
+① 创建自定义bridge网络
+
+```bash
+# 创建了一个自定义bridge网络
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME                  DRIVER    SCOPE
+19913bc6a47d   bridge                bridge    local
+84555a6bf36d   composetest_default   bridge    local	# 新创建的
+23966f1794db   host                  host      local
+7c080397ed19   none                  null      local
+
+[root@localhost ~]# docker network inspect composetest_default
+[
+    {
+        "Name": "composetest_default",
+        "Id": "84555a6bf36d86e18388a5483ea6fbdad7934e931bac911b8897db46f3e0f316",
+        "Created": "2022-06-06T07:45:57.113466348+08:00",
+        "Scope": "local",
+        "Driver": "bridge",		# 驱动为bridge
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.22.0.0/16",
+                    "Gateway": "172.22.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "42752a49fe75bd0468ecfa18a69acda981633a4e619f15381950751cb46f73d6": {
+                "Name": "composetest-web-1",
+                "EndpointID": "6dac42eb32ccb547254b6e371f776ad9172866b08d17f7ab19257d8f37d9fc98",
+                "MacAddress": "02:42:ac:16:00:03",
+                "IPv4Address": "172.22.0.3/16",
+                "IPv6Address": ""
+            },
+            "b96e72d8d02e657f754fad40b5cdf4f5b11c06b4ad9851e119cdd99d9ca58204": {
+                "Name": "composetest-redis-1",
+                "EndpointID": "885d0dc3bc55881e854410c631c4e0a5cb76ad7add2ecea9b36f81009b3e09b2",
+                "MacAddress": "02:42:ac:16:00:02",
+                "IPv4Address": "172.22.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {
+            "com.docker.compose.network": "default",
+            "com.docker.compose.project": "composetest",
+            "com.docker.compose.version": "2.5.0"
+        }
+    }
+]
+```
+
+
+
+② 创建对应的容器
+
+![image-20220606075707139](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606075707139.png)
+
+
+
+③ 容器通信方式
+
+看一下我们的Python代码，`cache = redis.Redis(host='redis', port=6379)`，我们发现：
+
+* 很显然这是通过内置的`DNS`来通信的
+
+* 使用的自定义的`bridge`网络，满足使用`DNS`通信要求
+
+* `redis`与容器名称并不一致，怀疑是通过网络别名来通信，来验证一下
+
+  ![image-20220606080914974](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606080914974.png)
+
+  ![image-20220606081942898](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606081942898.png)
+
+  ![image-20220606082226087](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606082226087.png)
+
+:::
+
+https://docs.docker.com/compose/compose-file/compose-versioning/
+
