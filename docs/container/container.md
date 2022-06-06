@@ -3003,10 +3003,100 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 ### Compose file
 
-#### （1）version
+::: details （1）先写一个最简单的Demo
 
-文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
+```bash
+# 创建一个项目demo
+[root@localhost ~]# mkdir demo
+[root@localhost ~]# cd demo/
 
-![image-20220606140256302](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606140256302.png)
+# 创建docker-compose.yml
+[root@localhost demo]# cat > docker-compose.yml <<- EOF
+version: "3"
+services:        
+  web:
+    image: nginx:1.21.3
+  mysql:
+    image: mysql:8.0.29
+  redis:
+    image: redis:7.0.0
+EOF
 
-![image-20220606154813158](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606154813158.png)
+# 创建并启动容器
+[root@localhost demo]# docker compose up -d
+[+] Running 4/4
+ ⠿ Network demo_default    Created					0.1s
+ ⠿ Container demo-web-1    Started					0.6s                                                                         
+ ⠿ Container demo-mysql-1  Started					0.7s                                                                         
+ ⠿ Container demo-redis-1  Started					0.8s
+```
+
+`Version`字段文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
+
+service：每一个`service`可以简单理解成对一个容器的封装，在上面我们有`web`、`mysql`、`redis`3个service，即3个容器
+
+image：指定镜像及版本
+
+```bash
+# 通过ls查看所有项目的基本信息，在这里我们只有一个项目叫做demo（ls命令不需要使用到docker-compose.yml配置文件，在任意路径运行都可以）
+[root@localhost demo]# docker compose ls 
+NAME                STATUS              CONFIG FILES
+demo                running(2)          /root/demo/docker-compose.yml
+
+# 通过-a选项列出更详细的信息，可以看到有一个容器退出了
+[root@localhost demo]# docker compose ls -a
+NAME                STATUS                  CONFIG FILES
+demo                exited(1), running(2)   /root/demo/docker-compose.yml
+
+# 通过ps子命令查看当前项目都有哪些容器
+[root@localhost demo]# docker compose ps 
+NAME                COMMAND                  SERVICE             STATUS              PORTS
+demo-mysql-1        "docker-entrypoint.s…"   mysql               exited (1)          
+demo-redis-1        "docker-entrypoint.s…"   redis               running             6379/tcp
+demo-web-1          "/docker-entrypoint.…"   web                 running             80/tcp
+
+# logs子命令查看日志，可以看到MySQL退出的原因是：容器需要指定3个变量中的任意一个
+[root@localhost demo]# docker compose logs
+demo-mysql-1  | 2022-06-06 08:46:07+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
+demo-mysql-1  | 2022-06-06 08:46:07+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+demo-mysql-1  | 2022-06-06 08:46:07+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
+demo-mysql-1  | 2022-06-06 08:46:07+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+demo-mysql-1  |     You need to specify one of the following:
+demo-mysql-1  |     - MYSQL_ROOT_PASSWORD
+demo-mysql-1  |     - MYSQL_ALLOW_EMPTY_PASSWORD
+demo-mysql-1  |     - MYSQL_RANDOM_ROOT_PASSWORD
+demo-redis-1  | 1:C 06 Jun 2022 08:46:07.605 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+demo-redis-1  | 1:C 06 Jun 2022 08:46:07.605 # Redis version=7.0.0, bits=64, commit=00000000, modified=0, pid=1, just started
+demo-redis-1  | 1:C 06 Jun 2022 08:46:07.605 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.606 * monotonic clock: POSIX clock_gettime
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.606 * Running mode=standalone, port=6379.
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.606 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.606 # Server initialized
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.606 # WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.607 * The AOF directory appendonlydir doesn't exist
+demo-redis-1  | 1:M 06 Jun 2022 08:46:07.607 * Ready to accept connections
+demo-web-1    | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+demo-web-1    | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+demo-web-1    | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+demo-web-1    | 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: using the "epoll" event method
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: nginx/1.21.3
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: built by gcc 8.3.0 (Debian 8.3.0-6) 
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: OS: Linux 4.18.0-348.7.1.el8_5.x86_64
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: start worker processes
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: start worker process 30
+demo-web-1    | 2022/06/06 08:46:07 [notice] 1#1: start worker process 31
+demo-web-1    | 10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+demo-web-1    | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+demo-web-1    | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+demo-web-1    | /docker-entrypoint.sh: Configuration complete; ready for start up
+```
+
+:::
+
+::: details （2）指定环境变量
+
+文档：[https://docs.docker.com/compose/environment-variables/](https://docs.docker.com/compose/environment-variables/)
+
+:::
