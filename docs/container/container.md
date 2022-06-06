@@ -2987,11 +2987,26 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 | ------------------------------- | ------------------------------------------------------------ |
 | `docker compose up [-d]`        | 创建并启动容器                                               |
 | `docker compose down [-v]`      | 停止并删除容器和删除网桥，默认不会删除匿名或命名数据卷（除非使用`-v`参数） |
-| `docker compose ls [-a]`        | 查看运行的`Compose`项目                                      |
+|                                 |                                                              |
+| `docker compose create`         | 创建容器                                                     |
+| `docker compose start`          | 启动容器                                                     |
+| `docker compose stop`           | 停止容器                                                     |
+| `docker compose restart`        | 重启容器                                                     |
+| `docker compose rm`             | 删除已经停止的容器                                           |
+|                                 |                                                              |
+| `docker compose ls [-a]`        | 查看当前`Compose`项目信息                                    |
+| `docker compose ps`             | 查看当前`Compose`项目所运行的容器                            |
+| `docker compose logs`           | 查看所有容器的日志                                           |
+|                                 |                                                              |
 | `docker compose -f compose文件` | 指定`compose`文件（默认会使用当前目录内的`docker-compose.yml`）<br />若找不到`compose`文件会报错`no configuration file provided: not found`<br />并不是所有的命令都需要用这个文件，比如up/down需要用，ls/version等就不需要用这个文件 |
 | `docker compose -p 项目名`      | 指定项目名（默认为目录名），项目名会作为诸如**网桥名称、容器名称等的一部分** |
 
+### Compose file
 
+#### （1）version
 
-https://docs.docker.com/compose/compose-file/compose-versioning/
+文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
 
+![image-20220606140256302](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606140256302.png)
+
+![image-20220606154813158](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606154813158.png)
