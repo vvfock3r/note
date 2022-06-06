@@ -2118,27 +2118,19 @@ docker0         		8000.0242dad030cf       no
 
 ::: details （2）查看默认网桥
 
-```bash
-# 没有找到明显的依据，只能检查一下有没有显示配置默认网桥是啥来判断
-[root@localhost ~]# cat /etc/docker/daemon.json
-{
-   "registry-mirrors": [
-        "https://6xumug9e.mirror.aliyuncs.com"
-  ]
-}
-```
+默认网桥就是`bridge`，也就是`docker0`，详情请看**【修改默认的bridge】**章节
 
 :::
 
 ::: details （3）网桥和容器的对应关系
 
 ```bash
-# Linux角度来看，的docker0网桥下包含2对veth设置
+# Linux角度来看，docker0网桥下包含2对veth设置
 [root@localhost ~]# brctl show
 bridge name     bridge id               STP enabled     interfaces
 docker0         8000.024259017b71       no              veth2df3118
                                                         vethd035852
-# Docker角度来看，的默认网桥bridge下包含2个容器
+# Docker角度来看，默认网桥bridge下包含2个容器
 [root@localhost ~]# docker network inspect bridge | grep -i containers -A 15
         "Containers": {
             "6f54d26719d9e45e3a157998607994c29f09ec20a316d1d93ecc700d2fc45065": {
@@ -2159,7 +2151,7 @@ docker0         8000.024259017b71       no              veth2df3118
         
 # 从容器角度来看所使用的网桥
 [root@localhost ~]# docker container inspect demo1 | grep -i network
-			# 默认网桥，一般来说默认是bridge，但也可以手动指定默认网桥，所以这里并不能说明一定是bridge，还需要检查默认网桥具体是啥
+			# 默认网桥，就是bridge
             "NetworkMode": "default",
         "NetworkSettings": {
             "Networks": {
@@ -2808,8 +2800,8 @@ Docker Compose version v2.6.0
 
 ```bash
 # (1) 创建compose目录
-mkdir composetest
-cd composetest
+[root@localhost ~]# mkdir composetest
+[root@localhost ~]# cd composetest
 
 # (2) 编写一个Python Web App
 [root@localhost composetest]# cat > app.py <<- EOF
@@ -2898,6 +2890,8 @@ Hello World! I have been seen 2 times.
 Hello World! I have been seen 3 times.
 ```
 
+:::
+
 ::: details （4）看看docker compose都做了什么
 
 ① 创建自定义bridge网络
@@ -2963,13 +2957,9 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 ]
 ```
 
-
-
 ② 创建对应的容器
 
 ![image-20220606075707139](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606075707139.png)
-
-
 
 ③ 容器通信方式
 
