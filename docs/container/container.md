@@ -2744,7 +2744,7 @@ Compose是一个用于定义和运行多容器Docker应用程序的工具
 2. 定义`docker-compose.yml`文件
 3. 运行`docker compose up`
 
-### 安装
+### Compose 安装
 
 文档：[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
@@ -2790,7 +2790,7 @@ Docker Compose version v2.6.0
 
 
 
-### 示例
+### Compose 示例
 
 文档：[https://docs.docker.com/compose/gettingstarted/](https://docs.docker.com/compose/gettingstarted/)
 
@@ -2961,6 +2961,8 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 ![image-20220606075707139](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606075707139.png)
 
+
+
 ③ 容器通信方式
 
 看一下我们的Python代码，`cache = redis.Redis(host='redis', port=6379)`，我们发现：
@@ -2978,6 +2980,18 @@ NETWORK ID     NAME                  DRIVER    SCOPE
   ![image-20220606082226087](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606082226087.png)
 
 :::
+
+### Compose 常用命令
+
+| 命令                            | 说明                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| `docker compose up [-d]`        | 创建并启动容器                                               |
+| `docker compose down [-v]`      | 停止并删除容器和删除网桥，默认不会删除匿名或命名数据卷（除非使用`-v`参数） |
+| `docker compose ls [-a]`        | 查看运行的`Compose`项目                                      |
+| `docker compose -f compose文件` | 指定`compose`文件（默认会使用当前目录内的`docker-compose.yml`）<br />若找不到`compose`文件会报错`no configuration file provided: not found`<br />并不是所有的命令都需要用这个文件，比如up/down需要用，ls/version等就不需要用这个文件 |
+| `docker compose -p 项目名`      | 指定项目名（默认为目录名），项目名会作为诸如**网桥名称、容器名称等的一部分** |
+
+
 
 https://docs.docker.com/compose/compose-file/compose-versioning/
 
