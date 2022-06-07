@@ -2987,21 +2987,23 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 | ------------------------------- | ------------------------------------------------------------ |
 | `docker compose up [-d]`        | 创建并启动容器                                               |
 | `docker compose down [-v]`      | 停止并删除容器和删除网桥，默认不会删除匿名或命名数据卷（除非使用`-v`参数） |
-|                                 |                                                              |
+| `-------------------------`     | `----------------------------------------------------------------` |
 | `docker compose create`         | 创建容器                                                     |
 | `docker compose start`          | 启动容器                                                     |
 | `docker compose stop`           | 停止容器                                                     |
 | `docker compose restart`        | 重启容器                                                     |
 | `docker compose rm`             | 删除已经停止的容器                                           |
-|                                 |                                                              |
+| `-------------------------`     | `----------------------------------------------------------------` |
 | `docker compose ls [-a]`        | 查看当前`Compose`项目信息                                    |
 | `docker compose ps`             | 查看当前`Compose`项目所运行的容器                            |
 | `docker compose logs`           | 查看所有容器的日志                                           |
-|                                 |                                                              |
+| `-------------------------`     | `----------------------------------------------------------------` |
 | `docker compose -f compose文件` | 指定`compose`文件（默认会使用当前目录内的`docker-compose.yml`）<br />若找不到`compose`文件会报错`no configuration file provided: not found`<br />并不是所有的命令都需要用这个文件，比如up/down需要用，ls/version等就不需要用这个文件 |
 | `docker compose -p 项目名`      | 指定项目名（默认为目录名），项目名会作为诸如**网桥名称、容器名称等的一部分** |
 
 ### Compose file
+
+文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/](https://docs.docker.com/compose/compose-file/compose-file-v3/)
 
 #### （1）编写一个简单的Demo
 
@@ -3319,6 +3321,89 @@ Threads: 2  Questions: 22  Slow queries: 0  Opens: 135  Flush tables: 3  Open ta
 [root@localhost demo]# docker container exec -it demo-mysql-1 sh 
 # echo ${MYSQL_ROOT_PASSWORD}
 qaz.123=
+```
+
+:::
+
+#### （4）build 构建镜像
+
+文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#build](https://docs.docker.com/compose/compose-file/compose-file-v3/#build)
+
+我们可以通过`image`来指定一个镜像启动容器，也可以通过`build`来构建一个镜像并启动容器
+
+::: details （1）自动构建镜像示例
+
+```bash
+[root@localhost demo]# cat Dockerfile
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+CMD while [ true ]; do echo $(date +"%Y-%m-%d %H:%M:%S"); sleep 1; done
+
+[root@localhost demo]# cat docker-compose.yml
+version: "3"
+services:        
+  server:
+    build: .
+
+[root@localhost demo]# docker compose up
+[+] Running 2/2
+ ⠿ Network demo_default     Created					0.1s
+ ⠿ Container demo-server-1  Created					0.1s
+Attaching to demo-server-1
+demo-server-1  | 2022-06-07 09:56:27
+demo-server-1  | 2022-06-07 09:56:28
+demo-server-1  | 2022-06-07 09:56:29
+
+# ---------------------------------------------------------------
+# 看一下生成的镜像，项目名_service名:latest（省略无关的输出）
+[root@localhost demo]# docker image ls
+REPOSITORY    TAG             IMAGE ID       CREATED          SIZE
+demo_server   latest          c5913ee10173   8 months ago     204MB
+
+# 看一下镜像详情
+[root@localhost demo]# docker image inspect demo_server | grep -i -A 3 CMD
+            "Cmd": null,
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "",
+--
+            "Cmd": [
+                "/bin/sh",
+                "-c",
+                "while [ true ]; do echo $(date +\"%Y-%m-%d %H:%M:%S\"); sleep 1; done"
+```
+
+:::
+
+::: details （2）修改Dockerfile，因为默认情况下，镜像名和Tag没有变动，所以依旧是老的镜像，新修改的Dockerfile并没有生效
+
+```bash
+# 将Dockerfile中sleep 1改为2
+[root@localhost demo]# cat Dockerfile 
+FROM centos:7
+MAINTAINER VVFock3r
+WORKDIR /
+CMD while [ true ]; do echo $(date +"%Y-%m-%d %H:%M:%S"); sleep 2; done
+
+# 删除容器（看输出镜像并没有删除）
+root@localhost demo]# docker compose down
+[+] Running 2/0
+ ⠿ Container demo-server-1  Removed      0.0s                                                                                  
+ ⠿ Network demo_default     Removed		0.0s
+ 
+# 此时再重新启动，可以看到还是老的镜像
+[root@localhost demo]# docker compose up
+[+] Running 2/2
+ ⠿ Network demo_default     Created					0.1s                                                                         
+ ⠿ Container demo-server-1  Created					0.1s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-07 10:09:41
+demo-server-1  | 2022-06-07 10:09:42
+demo-server-1  | 2022-06-07 10:09:43
+
+# ---------------------------------------------------------------
+# 解决办法1：删除容器的同时删除镜像
 ```
 
 :::
