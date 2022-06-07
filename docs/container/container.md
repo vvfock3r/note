@@ -3003,7 +3003,15 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 ### Compose file
 
-::: details （1）先写一个最简单的Demo
+#### （1）编写一个简单的Demo
+
+`Version`字段文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
+
+`service`：每一个`service`可以简单理解成对一个容器的封装，在上面我们有`web`、`mysql`、`redis`3个service，即3个容器
+
+`image`：指定镜像及版本
+
+::: details 先写一个最简单的Demo
 
 ```bash
 # 创建一个项目demo
@@ -3029,16 +3037,8 @@ EOF
  ⠿ Container demo-web-1    Started					0.6s                                                                         
  ⠿ Container demo-mysql-1  Started					0.7s                                                                         
  ⠿ Container demo-redis-1  Started					0.8s
-```
-
-`Version`字段文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
-
-service：每一个`service`可以简单理解成对一个容器的封装，在上面我们有`web`、`mysql`、`redis`3个service，即3个容器
-
-image：指定镜像及版本
-
-```bash
-# 通过ls查看所有项目的基本信息，在这里我们只有一个项目叫做demo（ls命令不需要使用到docker-compose.yml配置文件，在任意路径运行都可以）
+ 
+ # 通过ls查看所有项目的基本信息，在这里我们只有一个项目叫做demo（ls命令不需要使用到docker-compose.yml配置文件，在任意路径运行都可以）
 [root@localhost demo]# docker compose ls 
 NAME                STATUS              CONFIG FILES
 demo                running(2)          /root/demo/docker-compose.yml
@@ -3095,8 +3095,230 @@ demo-web-1    | /docker-entrypoint.sh: Configuration complete; ready for start u
 
 :::
 
-::: details （2）指定环境变量
+#### （2）convert/config 查看当前配置
+
+::: details convert/config 查看当前配置
+
+```bash
+# 下面两个输出是一样的
+[root@localhost demo]# docker compose config --help
+
+Usage:  docker compose convert SERVICES
+
+Converts the compose file to platform's canonical format
+
+Aliases:
+  convert, config		# convert和config是一样的命令
+
+Options:
+      --format string           Format the output. Values: [yaml | json] (default "yaml")
+      --hash string             Print the service config hash, one per line.
+      --images                  Print the image names, one per line.
+      --no-interpolate          Don't interpolate environment variables.
+      --no-normalize            Don't normalize compose model.
+  -o, --output string           Save to file (default to stdout)
+      --profiles                Print the profile names, one per line.
+  -q, --quiet                   Only validate the configuration, don't print anything.
+      --resolve-image-digests   Pin image tags to digests.
+      --services                Print the service names, one per line.
+      --volumes                 Print the volume names, one per line.
+      
+[root@localhost demo]# docker compose config
+name: demo
+services:
+  mysql:
+    image: mysql:8.0.29
+    networks:
+      default: null
+  redis:
+    image: redis:7.0.0
+    networks:
+      default: null
+  web:
+    image: nginx:1.21.3
+    networks:
+      default: null
+networks:
+  default:
+    name: demo_default
+```
+
+:::
+
+#### （3）指定环境变量
 
 文档：[https://docs.docker.com/compose/environment-variables/](https://docs.docker.com/compose/environment-variables/)
+
+环境变量可以分为两类：
+
+* 一类是给`docker compose`工具使用的
+* 另一类是给容器使用的，只在容器内生效
+
+::: details （1）Compose环境变量：使用.env文件
+
+默认情况下会使用`.env`文件，如果是其他的文件名可以通过`docker compose --env-file .env.dev`来指定文件
+
+```bash
+# 查看docker-compose.yml文件
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  web:
+    image: nginx:${NginxVersion}
+  mysql:
+    image: mysql:8.0.29
+  redis:
+    image: redis:7.0.0
+
+# 启动会报错，NginxVersion变量未设置
+[root@localhost demo]# docker compose up
+WARN[0000] The "NginxVersion" variable is not set. Defaulting to a blank string. 
+Error response from daemon: no such image: nginx:: invalid reference format
+
+# 设置.env文件
+[root@localhost demo]# cat > .env <<- EOF
+NginxVersion=1.21.6
+EOF
+
+# 再次启动
+[root@localhost demo]# docker compose up -d
+[+] Running 3/3
+ ⠿ Container demo-redis-1  Started					0.6s                                                                        
+ ⠿ Container demo-web-1    Started					0.6s                                                                        
+ ⠿ Container demo-mysql-1  Started					0.6s
+ 
+# 查看镜像版本
+[root@localhost demo]# docker container inspect demo-web-1 | grep -i image
+        "Image": "sha256:fa5269854a5e615e51a72b17ad3fd1e01268f278a6684c8ed3c5f0cdce3f230b",
+            "Image": "nginx:1.21.6",
+                "com.docker.compose.image": "sha256:fa5269854a5e615e51a72b17ad3fd1e01268f278a6684c8ed3c5f0cdce3f230b",  
+```
+
+:::
+
+::: details （2）Compose环境变量：使用Shell环境变量（优先级比env文件高）
+
+```bash
+# 先看一下当前的情况，因为有.env文件存在，所以启动没问题
+[root@localhost demo]# ls -la
+total 16
+drwxr-xr-x   2 root root 4096 Jun  7 16:12 .
+dr-xr-x---. 12 root root 4096 Jun  7 16:07 ..
+-rw-r--r--   1 root root  136 Jun  7 15:51 docker-compose.yml
+-rw-r--r--   1 root root   20 Jun  7 16:09 .env
+
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  web:
+    image: nginx:${NginxVersion}
+  mysql:
+    image: mysql:8.0.29
+  redis:
+    image: redis:7.0.0
+
+[root@localhost demo]# cat .env 
+NginxVersion=1.21.6
+
+# 这时可以设置Shell环境变量，优先级比.env文件要高
+[root@localhost demo]# export NginxVersion=1.21.5
+
+# 启动
+[root@localhost demo]# docker compose up -d
+[+] Running 7/7
+ ⠿ web Pulled
+   ⠿ a2abf6c4d29d Pull complete 					3.7s
+   ⠿ a9edb18cadd1 Pull complete 					1.8s
+   ⠿ 589b7251471a Pull complete						2.5s
+   ⠿ 186b1aaa4aa6 Pull complete						2.6s
+   ⠿ b4df32aa5a72 Pull complete 					2.7s
+   ⠿ a0bcbecc962e Pull complete						2.8s
+[+] Running 4/4
+ ⠿ Network demo_default    Created					0.1s
+ ⠿ Container demo-mysql-1  Started    				0.9s                                                                         
+ ⠿ Container demo-redis-1  Started      			0.9s                                                                        
+ ⠿ Container demo-web-1    Started        			0.8s                                                                         
+ 
+# 查看镜像版本 
+[root@localhost demo]# docker container inspect demo-web-1 | grep -i image
+        "Image": "sha256:605c77e624ddb75e6110f997c58876baa13f8754486b461117934b24a9dc3a85",
+            "Image": "nginx:1.21.5",
+
+# 后续测试
+# 即使显示指定变量文件，docker compose --env-file .env up -d，也没有Shell环境变量优先级高
+```
+
+:::
+
+::: details （3）容器环境变量：使用environment（解决MySQL启动失败的问题）
+
+若要传递变量给容器使用，需要使用`environment`
+
+```bash
+# 看一下docker-compose.yml文件，给mysql容器定义了一个变量 MYSQL_ROOT_PASSWORD
+[root@localhost demo]# cat docker-compose.yml
+version: "3"
+services:        
+  web:
+    image: nginx:1.21.6
+  mysql:
+    image: mysql:8.0.29
+    environment:
+        MYSQL_ROOT_PASSWORD: "qaz.123="
+  redis:
+    image: redis:7.0.0
+
+# 启动
+[root@localhost demo]# docker compose up -d
+[+] Running 4/4
+ ⠿ Network demo_default    Created				0.1s                                                                             
+ ⠿ Container demo-mysql-1  Started           	0.7s                                                                             
+ ⠿ Container demo-redis-1  Started             	0.7s                                                                             
+ ⠿ Container demo-web-1    Started            	0.8s                                                                             
+ 
+# mysql容器不再退出了
+[root@localhost demo]# docker compose ps
+NAME                COMMAND                  SERVICE             STATUS              PORTS
+demo-mysql-1        "docker-entrypoint.s…"   mysql               running             33060/tcp
+demo-redis-1        "docker-entrypoint.s…"   redis               running             6379/tcp
+demo-web-1          "/docker-entrypoint.…"   web                 running             80/tcp
+
+# 看一下mysql容器的ip
+[root@localhost demo]# docker container inspect demo-mysql-1 | grep -i IPAddress
+            "SecondaryIPAddresses": null,
+            "IPAddress": "",
+                    "IPAddress": "172.18.0.3",
+
+# 连一下
+[root@localhost demo]# mysql -h172.18.0.3 -P3306 -uroot -p"qaz.123=" -e "status;"
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--------------
+mysql  Ver 14.14 Distrib 5.7.38, for Linux (x86_64) using  EditLine wrapper
+
+Connection id:          15
+Current database:
+Current user:           root@172.18.0.1
+SSL:                    Cipher in use is ECDHE-RSA-AES128-GCM-SHA256
+Current pager:          stdout
+Using outfile:          ''
+Using delimiter:        ;
+Server version:         8.0.29 MySQL Community Server - GPL
+Protocol version:       10
+Connection:             172.18.0.3 via TCP/IP
+Server characterset:    utf8mb4
+Db     characterset:    utf8mb4
+Client characterset:    utf8mb3
+Conn.  characterset:    utf8mb3
+TCP port:               3306
+Uptime:                 36 min 20 sec
+
+Threads: 2  Questions: 22  Slow queries: 0  Opens: 135  Flush tables: 3  Open tables: 54  Queries per second avg: 0.010
+--------------
+
+# 进到容器里看一下变量
+[root@localhost demo]# docker container exec -it demo-mysql-1 sh 
+# echo ${MYSQL_ROOT_PASSWORD}
+qaz.123=
+```
 
 :::
