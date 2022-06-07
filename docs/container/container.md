@@ -3327,7 +3327,9 @@ qaz.123=
 
 #### （4）build 构建镜像
 
-文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#build](https://docs.docker.com/compose/compose-file/compose-file-v3/#build)
+文档1：[https://docs.docker.com/compose/compose-file/compose-file-v3/#build](https://docs.docker.com/compose/compose-file/compose-file-v3/#build)
+
+文档2：[https://docs.docker.com/compose/compose-file/build/](https://docs.docker.com/compose/compose-file/build/)
 
 我们可以通过`image`来指定一个镜像启动容器，也可以通过`build`来构建一个镜像并启动容器
 
@@ -3404,6 +3406,123 @@ demo-server-1  | 2022-06-07 10:09:43
 
 # ---------------------------------------------------------------
 # 解决办法1：删除容器的同时删除镜像
+# docker compose down --rmi <local | all>
+#   local：移除service所依赖的镜像（没有自定义tag的那种，不包括image指定的镜像，因为并没有自定义tag）
+#   all: 移除service所依赖的镜像（所有镜像，包括使用image指定的镜像）
+[root@localhost demo]# docker compose down --rmi local
+
+# 解决办法2：给新构建的镜像指定一个名字和tag，每次都要修改一下docker-compose.yml，使用不同的名字或tag
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    build: .
+    image: demo_server:v2
+    
+# 解决办法3: 每次启动前先手动构建镜像（若镜像存在也会重新构建）
+[root@localhost demo]# docker compose build && docker compose up
 ```
 
 :::
+
+#### （5）指定容器名称
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  web:
+    image: nginx:1.21.6
+    container_name: my_web
+  mysql:
+    image: mysql:8.0.29
+    environment:
+        MYSQL_ROOT_PASSWORD: "qaz.123="    
+    container_name: my_mysql
+  redis:
+    image: redis:7.0.0
+
+[root@localhost demo]# docker compose up -d
+[+] Running 4/4
+ ⠿ Network demo_default    Created					0.1s                                                                         
+ ⠿ Container my_web        Started					0.7s  # 自定义容器名称
+ ⠿ Container my_mysql      Started					0.8s  # 自定义容器名称
+ ⠿ Container demo-redis-1  Started					0.8s  # 默认容器名称
+```
+
+#### （6）指定重启策略
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  web:
+    image: nginx:1.21.6
+    restart: always
+  mysql:
+    image: mysql:8.0.29
+    environment:
+        MYSQL_ROOT_PASSWORD: "qaz.123="
+    restart: always
+  redis:
+    image: redis:7.0.0
+
+[root@localhost demo]# docker container inspect demo-mysql-1 | grep -i -A 3 RestartPolicy
+            "RestartPolicy": {
+                "Name": "always",
+                "MaximumRetryCount": 0
+            },
+[root@localhost demo]# docker container inspect demo-redis-1 | grep -i -A 3 RestartPolicy
+            "RestartPolicy": {
+                "Name": "",
+                "MaximumRetryCount": 0
+            },
+```
+
+#### （7）指定端口映射
+
+```bash
+# MySQL容器3306端口映射到宿主机3307端口
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  web:
+    image: nginx:1.21.6
+  mysql:
+    image: mysql:8.0.29
+    environment:
+        MYSQL_ROOT_PASSWORD: "qaz.123="
+    ports:
+      - '3307:3306'
+  redis:
+    image: redis:7.0.0
+
+# 连接测试
+[root@localhost demo]# mysql -h127.0.0.1 -uroot -P3307 -pqaz.123= -e "status"
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--------------
+mysql  Ver 14.14 Distrib 5.7.38, for Linux (x86_64) using  EditLine wrapper
+
+Connection id:          9
+Current database:
+Current user:           root@192.168.128.1
+SSL:                    Cipher in use is ECDHE-RSA-AES128-GCM-SHA256
+Current pager:          stdout
+Using outfile:          ''
+Using delimiter:        ;
+Server version:         8.0.29 MySQL Community Server - GPL
+Protocol version:       10
+Connection:             127.0.0.1 via TCP/IP
+Server characterset:    utf8mb4
+Db     characterset:    utf8mb4
+Client characterset:    utf8mb3
+Conn.  characterset:    utf8mb3
+TCP port:               3307
+Uptime:                 19 sec
+
+Threads: 2  Questions: 10  Slow queries: 0  Opens: 117  Flush tables: 3  Open tables: 36  Queries per second avg: 0.526
+--------------
+```
+
+
+
