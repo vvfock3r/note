@@ -3013,8 +3013,6 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 `image`：指定镜像及版本
 
-::: details 先写一个最简单的Demo
-
 ```bash
 # 创建一个项目demo
 [root@localhost ~]# mkdir demo
@@ -3095,11 +3093,9 @@ demo-web-1    | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-wo
 demo-web-1    | /docker-entrypoint.sh: Configuration complete; ready for start up
 ```
 
-:::
+
 
 #### （2）convert/config 查看当前配置
-
-::: details convert/config 查看当前配置
 
 ```bash
 # 下面两个输出是一样的
@@ -3144,8 +3140,6 @@ networks:
   default:
     name: demo_default
 ```
-
-:::
 
 #### （3）指定环境变量
 
