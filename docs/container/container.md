@@ -3433,12 +3433,12 @@ version: "3"
 services:        
   web:
     image: nginx:1.21.6
-    container_name: my_web
+    container_name: my_web  # 自定义容器名称
   mysql:
     image: mysql:8.0.29
     environment:
         MYSQL_ROOT_PASSWORD: "qaz.123="    
-    container_name: my_mysql
+    container_name: my_mysql  # 自定义容器名称
   redis:
     image: redis:7.0.0
 
@@ -3467,6 +3467,13 @@ services:
   redis:
     image: redis:7.0.0
 
+[root@localhost demo]# docker compose up -d
+[+] Running 4/4
+ ⠿ Network demo_default    Created					0.1s                                                                         
+ ⠿ Container demo-redis-1  Started					0.7s                                                                         
+ ⠿ Container demo-web-1    Started					0.5s                                                                         
+ ⠿ Container demo-mysql-1  Started					0.6s 
+ 
 [root@localhost demo]# docker container inspect demo-mysql-1 | grep -i -A 3 RestartPolicy
             "RestartPolicy": {
                 "Name": "always",
@@ -3523,6 +3530,5 @@ Uptime:                 19 sec
 Threads: 2  Questions: 10  Slow queries: 0  Opens: 117  Flush tables: 3  Open tables: 36  Queries per second avg: 0.526
 --------------
 ```
-
 
 
