@@ -3446,6 +3446,8 @@ services:
 
 #### （06）指定重启策略
 
+文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#restart](https://docs.docker.com/compose/compose-file/compose-file-v3/#restart)
+
 ```bash
 [root@localhost demo]# cat docker-compose.yml 
 version: "3"
@@ -3911,9 +3913,86 @@ server_1  | 2022-06-08 06:18:23
 [root@localhost ~]# docker container exec -it demo_server_1 bash
 [root@77a8be2674fe /]# cat /dev/urandom | gzip -9 >/dev/null
 
-# 新开一个终端，用于监视容器资源消耗
+# 新开一个终端，用于监视容器资源消耗，并没有限制住CPU
 [root@localhost ~]# docker stats
 CONTAINER ID   NAME            CPU %     MEM USAGE / LIMIT   MEM %     NET I/O          BLOCK I/O         PIDS
 77a8be2674fe   demo_server_1   156.10%   2.031MiB / 500MiB   0.41%     0B / 0B          0B / 0B           5
+
+# 查看容器Cgroup参数，并没有设置到值
+[root@localhost ~]# docker container inspect demo_server_1 | grep -i cpu
+            "CpuShares": 0,
+            "NanoCpus": 0,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "CpuCount": 0,
+            "CpuPercent": 0,
 ```
+
+#### （12）服务依赖关系
+
+文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on](https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on)
+
+`depends_on`用于表示服务之间的依赖关系，依赖关系会有如下行为：
+
+* `docker compose up`会按依赖顺序启动服务
+* `docker compose up <service>`会自动包含服务的依赖项
+* `docker compose stop`会按依赖关系顺序停止服务
+
+注意：比如ApiServer启动依赖于MySQL，这会先启动MySQL再启动ApiServer，但并不是等MySQL启动完成后再启动ApiServer，而仅仅是启动顺序不同而已
+
+如果要解决这个问题，最好的方式是在程序内实现自动重试，其次是编写脚本判断服务就绪然后再启动依赖的服务
+
+::: details depends_on基础示例
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3.9"
+services:
+  server1:
+    image: centos:7
+    container_name: server1
+    command: sh -c "for i in `seq 5`; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    depends_on:
+      - server2
+
+  server2:
+    image: centos:7
+    container_name: server2
+    command: sh -c "for i in `seq 5`; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+
+# 启动，可以看到server2先输出了内容，但仅凭这个并不准确说明启动顺序
+[root@localhost demo]# docker compose up
+[+] Running 3/3
+ ⠿ Network demo_default  Created					0.1s                                                                         
+ ⠿ Container server2     Created					0.1s                                                                         
+ ⠿ Container server1     Created					0.0s                                                                         
+Attaching to server1, server2
+server2  | 2022-06-08 23:19:16
+server1  | 2022-06-08 23:19:16
+server2  | 2022-06-08 23:19:17
+server1  | 2022-06-08 23:19:17
+server2  | 2022-06-08 23:19:18
+server1  | 2022-06-08 23:19:18
+server2  | 2022-06-08 23:19:19
+server1  | 2022-06-08 23:19:19
+server2  | 2022-06-08 23:19:20
+server1  | 2022-06-08 23:19:20
+server2 exited with code 0
+server1 exited with code 0
+
+# 查看容器创建时间，可以看到server2创建的比server1要早
+[root@localhost demo]# docker inspect server1 | grep -i create
+        "Created": "2022-06-08T23:19:16.05362163Z",
+                "org.opencontainers.image.created": "2020-11-13 00:00:00+00:00",
+[root@localhost demo]# 
+[root@localhost demo]# docker inspect server2 | grep -i create
+        "Created": "2022-06-08T23:19:15.96630301Z",
+                "org.opencontainers.image.created": "2020-11-13 00:00:00+00:00",
+```
+
+:::
 
