@@ -1849,13 +1849,13 @@ https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Rest
 
 **原型链的终点**
 
-<img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210909085736088.png" alt="image-20210909085736088" style="zoom:50%;" /><img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210909090127954.png" alt="image-20210909090127954" style="zoom:50%;" />
+<img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210909085736088.png" alt="image-20210909085736088" style="zoom:50%;" /><img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210909090127954.png" alt="image-20210909090127954" style="zoom:50%;" />
 
 
 
 #### **通过原型链实现继承**
 
-<img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210909090717358.png" alt="image-20210909090717358" style="zoom:50%;" />
+<img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210909090717358.png" alt="image-20210909090717358" style="zoom:50%;" />
 
 ```javascript
 <script>
@@ -2847,7 +2847,7 @@ Dom（Document Object Model，文档对象模型）是JavaScript操作HTML文档
 
 Dom会将HTML文档表现为节点树
 
-![image-20211009163551954](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211009163551954.png)
+![image-20211009163551954](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211009163551954.png)
 
 
 
@@ -2958,7 +2958,7 @@ document对象访问元素节点常用方法
 
 ### 节点关系
 
-![image-20211009180225277](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211009180225277.png)
+![image-20211009180225277](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211009180225277.png)
 
 | 关系           | 考虑所有节点      | 只考虑元素节点           |
 | -------------- | ----------------- | ------------------------ |
@@ -3166,7 +3166,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211012111427036](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211012111427036.png)
+![image-20211012111427036](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211012111427036.png)
 
 
 
@@ -3241,7 +3241,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211012113816953](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211012113816953.png)
+![image-20211012113816953](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211012113816953.png)
 
 ### 节点删除和克隆
 
@@ -3311,7 +3311,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211012114547365](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211012114547365.png)
+![image-20211012114547365](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211012114547365.png)
 
 
 
@@ -3694,7 +3694,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211012161843590](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211012161843590.png)
+![image-20211012161843590](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211012161843590.png)
 
 `form`重置与提交示例
 
@@ -3901,7 +3901,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 
 点击`box3`盒子，然后查看输出
 
-![image-20211013104423422](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211013104423422.png)
+![image-20211013104423422](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211013104423422.png)
 
 
 
@@ -4007,7 +4007,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211013164054123](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211013164054123.png)
+![image-20211013164054123](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211013164054123.png)
 
 #### 测试3：设置两个或多个同名事件
 
@@ -4118,7 +4118,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211013164556150](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211013164556150.png)
+![image-20211013164556150](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211013164556150.png)
 
 
 
@@ -4231,7 +4231,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211014085209144](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211014085209144.png)
+![image-20211014085209144](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211014085209144.png)
 
 **分析**
 
@@ -4345,7 +4345,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 
 #### 原理
 
-<img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018115458802.png" alt="image-20211018115458802" style="zoom:50%;" />
+<img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211018115458802.png" alt="image-20211018115458802" style="zoom:50%;" />
 
 元素本身(上面例子中是li元素)并没有监听事件，而是通过事件冒泡机制，在父元素上(上面例子是ul)添加事件监听，
 
@@ -4415,7 +4415,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![image-20211018164035140](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018164035140.png)
+![image-20211018164035140](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211018164035140.png)
 
 ### 定时器和延时器
 
@@ -4436,7 +4436,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </script>
 ```
 
-![image-20211018194617382](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018194617382.png)
+![image-20211018194617382](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211018194617382.png)
 
 #### 取消定时器和延时器
 
@@ -4462,7 +4462,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </script>
 ```
 
-![image-20211018195042454](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018195042454.png)
+![image-20211018195042454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211018195042454.png)
 
 #### 异步特性
 
@@ -4496,7 +4496,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 
 
 
-![image-20211018195345536](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211018195345536.png)
+![image-20211018195345536](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211018195345536.png)
 
 ### 防抖
 
@@ -4568,7 +4568,7 @@ oBox.style.fontSize = '32px';                    // 注意单位
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E6%9C%AA%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E6%9C%AA%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
 
 防抖的原理：
 
@@ -4603,7 +4603,7 @@ window.addEventListener('input', test(240));
 </script>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E9%98%B2%E6%8A%96%E5%8A%A8%E7%94%BB.gif)
 
 > 延迟器的毫秒数根据实际情况调整
 
@@ -4643,7 +4643,7 @@ window.addEventListener('mousemove', test());
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E6%9C%AA%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E6%9C%AA%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
 
 节流的原理：
 
@@ -4677,7 +4677,7 @@ window.addEventListener('mousemove', test(1000))
 </script>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E8%8A%82%E6%B5%81%E5%8A%A8%E7%94%BB.gif)
 
 ## BOM
 
@@ -4792,7 +4792,7 @@ window对象是当前JS脚本运行所处的窗口，而这个窗口包含DOM结
 </html>
 ```
 
-![image-20211019093025941](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211019093025941.png)
+![image-20211019093025941](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211019093025941.png)
 
 #### 窗口事件
 
@@ -4870,7 +4870,7 @@ window对象是当前JS脚本运行所处的窗口，而这个窗口包含DOM结
 
 
 
-<img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211019150052132.png" alt="image-20211019150052132" style="zoom:50%;" />
+<img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211019150052132.png" alt="image-20211019150052132" style="zoom:50%;" />
 
 
 
@@ -5328,7 +5328,7 @@ JavaScript的另一个特点是“非阻塞”，这就涉及到了`event loop`�
 
 * 运行结果
 
-  ![image-20211208212721268](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211208212721268.png)
+  ![image-20211208212721268](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211208212721268.png)
 
 
 
@@ -5428,7 +5428,7 @@ if __name__ == '__main__':
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/f4cLWjbf.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/f4cLWjbf.gif)
 
 
 
@@ -5537,7 +5537,7 @@ if __name__ == '__main__':
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/f3cLWjbf.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/f3cLWjbf.gif)
 
 
 

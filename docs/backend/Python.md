@@ -714,7 +714,7 @@ for name, years in zip(msg1, msg2):
 
 输出结果
 
-![image-20220405164801876](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220405164801876.png)
+![image-20220405164801876](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220405164801876.png)
 
 **（4）字符串常用方法**
 
@@ -891,7 +891,7 @@ print(dir(a))
 
 **引用计数模型**
 
-![698051107556314373](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/698051107556314373.png)
+![698051107556314373](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/698051107556314373.png)
 
 代码示例
 
@@ -2237,7 +2237,7 @@ for i in range(5):
     t.start()
 ```
 
-![image-20220330204518155](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220330204518155.png)
+![image-20220330204518155](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220330204518155.png)
 
 （2）`queue`是线程安全的，但是下面的代码是线程不安全的
 

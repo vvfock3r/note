@@ -54,15 +54,15 @@ npm run serve
 >
 > ①使用`IDE`打开项目
 >
-> ![image-20210829221158729](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210829221158729.png)
+> ![image-20210829221158729](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221158729.png)
 >
 > ②配置IDE
 >
-> ![image-20210829221330506](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210829221330506.png)
+> ![image-20210829221330506](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221330506.png)
 >
 > ③启动项目
 >
-> ![image-20210829221527567](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210829221527567.png)
+> ![image-20210829221527567](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221527567.png)
 
 
 
@@ -235,7 +235,7 @@ export default {
 </style>
 ```
 
-![image-20210830223256448](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210830223256448.png)
+![image-20210830223256448](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210830223256448.png)
 
 
 
@@ -1304,7 +1304,7 @@ export default {
 
 [https://v3.cn.vuejs.org/guide/instance.html#生命周期图示](https://v3.cn.vuejs.org/guide/instance.html#生命周期图示)
 
-![实例的生命周期](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/lifecycle.svg)
+![实例的生命周期](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/lifecycle.svg)
 
 
 

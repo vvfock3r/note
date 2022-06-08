@@ -305,7 +305,7 @@ print(t1([0, 0, 0, 1, 1, 1]))
 
 ### 双指针法流两次遍历动画演示
 
-![283_1.gif](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/9669b4ffb158eaeeee6f0cd66a70f24411575edab1ab8a037c4c9084b1c743f5-283_1.gif)
+![283_1.gif](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/9669b4ffb158eaeeee6f0cd66a70f24411575edab1ab8a037c4c9084b1c743f5-283_1.gif)
 
 
 
@@ -379,7 +379,7 @@ print(t1([0, 0, 0, 1, 1, 1]))
 
 ### 双指针法一次遍历动画演示
 
-![36d1ac5d689101cbf9947465e94753c626eab7fcb736ae2175f5d87ebc85fdf0-283_2](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/36d1ac5d689101cbf9947465e94753c626eab7fcb736ae2175f5d87ebc85fdf0-283_2.gif)
+![36d1ac5d689101cbf9947465e94753c626eab7fcb736ae2175f5d87ebc85fdf0-283_2](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/36d1ac5d689101cbf9947465e94753c626eab7fcb736ae2175f5d87ebc85fdf0-283_2.gif)
 
 
 
@@ -683,7 +683,7 @@ class Solution:
 
 
 
-![image-20210629223117200](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20210629223117200.png)
+![image-20210629223117200](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210629223117200.png)
 
 **示例1**
 

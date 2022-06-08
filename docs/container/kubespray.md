@@ -379,7 +379,7 @@ https://192.168.48.100:30000/
 
 **下载文件出错**
 
-![image-20211229101545405](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211229101545405.png)
+![image-20211229101545405](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211229101545405.png)
 
 > 下载文件出错，从以下方面排查
 >

@@ -61,7 +61,7 @@ chart.setOption({
 </html>
 ```
 
-![image-20211127220405848](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211127220405848.png)
+![image-20211127220405848](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211127220405848.png)
 
 ### 组件
 
@@ -71,11 +71,11 @@ chart.setOption({
 
 `Echarts`中除了绘图之外的其他部分，都可以抽象为**组件**，比如说标题、直角坐标系x轴、直角坐标系y轴等等，如下图
 
-![image-20211127222514806](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211127222514806.png)
+![image-20211127222514806](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211127222514806.png)
 
 
 
-![image-20211127222910817](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211127222910817.png)
+![image-20211127222910817](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211127222910817.png)
 
 
 
@@ -158,7 +158,7 @@ chart.setOption({
 
 :::
 
-![image-20211128140752858](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128140752858.png)
+![image-20211128140752858](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128140752858.png)
 
 #### 组件 - 系列简介
 
@@ -174,7 +174,7 @@ chart.setOption({
 
 参考下图：
 
-![image-20211128194633870](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128194633870.png)
+![image-20211128194633870](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128194633870.png)
 
 
 
@@ -190,9 +190,9 @@ chart.setOption({
 
 > 当然，一个图表中也可以存在多个不同类型的系列，比如柱状图和折线图2个系列组成一个图表
 
-![image-20211128201039944](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128201039944.png)
+![image-20211128201039944](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128201039944.png)
 
-![image-20211128201555807](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128201555807.png)
+![image-20211128201555807](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128201555807.png)
 
 
 
@@ -381,7 +381,7 @@ chart.setOption({
 
 :::
 
-![image-20211128160412701](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128160412701.png)
+![image-20211128160412701](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128160412701.png)
 
 
 
@@ -503,7 +503,7 @@ chart.setOption({
 
 :::
 
-![image-20211128190227557](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128190227557.png)
+![image-20211128190227557](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128190227557.png)
 
 #### 组件 - 提示框
 
@@ -593,9 +593,9 @@ chart.setOption({
 
 :::
 
-![image-20211128212706694](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212706694.png)
+![image-20211128212706694](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128212706694.png)
 
-![image-20211128212905392](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128212905392.png)
+![image-20211128212905392](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128212905392.png)
 
 #### 组件 - 图例
 
@@ -709,9 +709,9 @@ chart.setOption({
 
 :::
 
-![image-20211128215351897](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215351897.png)![image-20211128215534945](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215534945.png)
+![image-20211128215351897](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128215351897.png)![image-20211128215534945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128215534945.png)
 
-![image-20211128215717266](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211128215717266.png)
+![image-20211128215717266](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211128215717266.png)
 
 
 
@@ -804,7 +804,7 @@ chart.setOption({
 
 :::
 
-![image-20211129225254096](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129225254096.png)
+![image-20211129225254096](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211129225254096.png)
 
 
 
@@ -901,7 +901,7 @@ chart.setOption({
 
 :::
 
-![image-20211129215801320](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129215801320.png)
+![image-20211129215801320](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211129215801320.png)
 
 **背景颜色调整示例**
 
@@ -982,7 +982,7 @@ chart.setOption({
 
 :::
 
-![image-20211129221217335](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129221217335.png)
+![image-20211129221217335](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211129221217335.png)
 
 
 
@@ -1058,7 +1058,7 @@ chart.setOption({
 
 :::
 
-![image-20211129222757068](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211129222757068.png)
+![image-20211129222757068](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211129222757068.png)
 
 > X轴和Y轴中的虚线就是坐标轴指示器
 
@@ -1283,7 +1283,7 @@ chart2.setOption({
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/echarts-line1.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/echarts-line1.gif)
 
 
 
@@ -1412,7 +1412,7 @@ chart2.setOption({
 
 :::
 
-![image-20211203222328425](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211203222328425.png)
+![image-20211203222328425](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211203222328425.png)
 
 
 
@@ -1843,7 +1843,7 @@ chart6.setOption({
 
 :::
 
-![image-20211204180301819](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204180301819.png)
+![image-20211204180301819](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211204180301819.png)
 
 #### 地图
 
@@ -2190,7 +2190,7 @@ chart4.setOption({
 
 :::
 
-![image-20211211013327301](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211211013327301.png)
+![image-20211211013327301](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211211013327301.png)
 
 
 
@@ -2602,7 +2602,7 @@ chart3.setOption({
 
 :::
 
-![image-20211204184203145](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204184203145.png)
+![image-20211204184203145](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211204184203145.png)
 
 
 
@@ -2612,7 +2612,7 @@ chart3.setOption({
 
 **第一步：先选择一个合适的主题，并拷贝到剪贴板**
 
-![image-20211204184625176](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204184625176.png)
+![image-20211204184625176](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211204184625176.png)
 
 
 
@@ -3541,7 +3541,7 @@ chart4.setOption({
 
 :::
 
-![image-20211204185432778](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204185432778.png)
+![image-20211204185432778](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211204185432778.png)
 
 #### 切换渲染方式
 
@@ -3687,7 +3687,7 @@ chart2.setOption({
 
 :::
 
-![image-20211204221413843](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211204221413843.png)
+![image-20211204221413843](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211204221413843.png)
 
 
 
@@ -3799,7 +3799,7 @@ window.onresize = function () {
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gxLWjbc.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/8gxLWjbc.gif)
 
 
 
@@ -3898,7 +3898,7 @@ setTimeout(() => {
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gxLWjbd.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/8gxLWjbd.gif)
 
 
 
@@ -4031,7 +4031,7 @@ setInterval(() => {
 
 :::
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/8gcLWjbf.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/8gcLWjbf.gif)
 
 
 
@@ -4124,7 +4124,7 @@ make_snapshot(snapshot, bar_chart().render(), "bar.png", is_remove_html=True)
 
 执行完成，将得到下面一张图片
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/bar.png)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/bar.png)
 
 **常见问题**
 
@@ -4169,7 +4169,7 @@ make_snapshot(snapshot, bar_chart().render(), "bar.png", is_remove_html=True)
 
   这是因为没有正常加载`echarts.min.js`文件，导致执行JS代码时报错：`ReferenceError`，类似于下面这种报错
 
-  ![]()![ReferenceError](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ReferenceError.png)
+  ![]()![ReferenceError](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/ReferenceError.png)
 
   解决办法原理：将`pyecharts`包中`glob.py`文件中`echarts.min.js`的地址替换为本地地址
 

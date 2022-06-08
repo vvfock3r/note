@@ -9,9 +9,9 @@
 | class选择器 | `.<class>` | 匹配指定class名称的标签，如果标签有多个class且多个class样式有冲突，<br />以css文件中最后一个定义的class生效 |
 | id选择器    | `#<id>`    | 匹配指定id名称的标签，id需要保证在页面中是唯一的，<br />如果写了多个相同的id，那么也都会生效，但是这是不合规范的 |
 
-![demo](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/demo.png)
+![demo](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/demo.png)
 
-![image-20211030164237966](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211030164237966.png)
+![image-20211030164237966](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211030164237966.png)
 
 
 
@@ -111,7 +111,7 @@
 </html>
 ```
 
-![image-20211031114207786](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031114207786.png)
+![image-20211031114207786](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031114207786.png)
 
 ### 状态伪类选择器
 
@@ -188,7 +188,7 @@
 </html>
 ```
 
-![image-20211031124500241](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031124500241.png)
+![image-20211031124500241](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031124500241.png)
 
 **测试2：匹配第n个和最后n个**
 
@@ -238,7 +238,7 @@
 </html>
 ```
 
-![image-20211031125006472](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031125006472.png)
+![image-20211031125006472](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031125006472.png)
 
 **测试3：奇数匹配/偶数匹配/每隔n个匹配**
 
@@ -292,7 +292,7 @@
 </html>
 ```
 
-![image-20211031131242354](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031131242354.png)
+![image-20211031131242354](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031131242354.png)
 
 ### 属性选择器
 
@@ -362,7 +362,7 @@
 </html>
 ```
 
-![image-20211031161601594](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031161601594.png)
+![image-20211031161601594](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031161601594.png)
 
 
 
@@ -425,7 +425,7 @@
 </html>
 ```
 
-![image-20211031160623869](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031160623869.png)
+![image-20211031160623869](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031160623869.png)
 
 
 
@@ -485,7 +485,7 @@
 </html>
 ```
 
-![image-20211031162716899](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031162716899.png)
+![image-20211031162716899](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031162716899.png)
 
 ### 提升选择器权重
 
@@ -526,7 +526,7 @@
 </html>
 ```
 
-![image-20211031163946558](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031163946558.png)
+![image-20211031163946558](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031163946558.png)
 
 
 
@@ -540,7 +540,7 @@
 
 所有的HTML标签都可以看成是矩形盒子，由`width`、`height`、`padding`、`border`组成
 
-![image-20211031173501044](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031173501044.png)
+![image-20211031173501044](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031173501044.png)
 
 ### 盒子宽度和高度计算方法
 
@@ -578,7 +578,7 @@
 </html>
 ```
 
-![image-20211031180113495](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031180113495.png)
+![image-20211031180113495](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031180113495.png)
 
 计算方法
 
@@ -595,7 +595,7 @@
 
 将上面的代码改为`box-sizing: border-box;`，然后查看浏览器中盒子宽高
 
-![image-20211031174836073](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031174836073.png)
+![image-20211031174836073](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031174836073.png)
 
 这时候的计算方法就变成了
 
@@ -640,11 +640,11 @@
 </html>
 ```
 
-![image-20211031181553709](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031181553709.png)
+![image-20211031181553709](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031181553709.png)
 
-![image-20211031181606663](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031181606663.png)
+![image-20211031181606663](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031181606663.png)
 
-![image-20211031181625082](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031181625082.png)
+![image-20211031181625082](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031181625082.png)
 
 > 分析：不是说没有内部元素，，宽高为0吗？怎么div是1152px的宽？怎么ul除了是1152px宽，还有左padding是40px？
 >
@@ -711,7 +711,7 @@
 
 * **margin简介**
 
-![image-20211031203627021](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031203627021.png)
+![image-20211031203627021](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031203627021.png)
 
 `margin`的使用方式和`padding`一样，也有四个值，分别代表上右下左（顺时针方向）；
 
@@ -748,7 +748,7 @@
 </html>
 ```
 
-![image-20211031204051322](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031204051322.png)
+![image-20211031204051322](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031204051322.png)
 
 > 如果要使盒子垂直居中，不能使用`margin: auto 0;`，而是需要用其他方式实现，比如绝对定位、flex布局等
 
@@ -804,7 +804,7 @@
 
   
 
-![image-20211031204909456](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031204909456.png)
+![image-20211031204909456](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031204909456.png)
 
 
 
@@ -899,7 +899,7 @@
 </html>
 ```
 
-![image-20211031211141812](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031211141812.png)
+![image-20211031211141812](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031211141812.png)
 
 ### 测试1：让盒子浮动
 
@@ -947,11 +947,11 @@
 </html>
 ```
 
-![image-20211031211339139](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031211339139.png)
+![image-20211031211339139](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031211339139.png)
 
 如果是右浮动的话，效果如下：
 
-![image-20211031211434130](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031211434130.png)
+![image-20211031211434130](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031211434130.png)
 
 > 这里用的知识点：
 >
@@ -1010,7 +1010,7 @@
 </html>
 ```
 
-![image-20211031212700107](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211031212700107.png)
+![image-20211031212700107](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031212700107.png)
 
 > 这里用的知识点：
 >
@@ -1171,7 +1171,7 @@
 </html>
 ```
 
-![image-20211103212840158](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211103212840158.png)
+![image-20211103212840158](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103212840158.png)
 
 ### 测试2：绝对定位演示
 
@@ -1186,7 +1186,7 @@
         }
 ```
 
-![image-20211103215200172](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211103215200172.png)
+![image-20211103215200172](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103215200172.png)
 
 ### 测试3：绝对定位水平垂直居中
 
@@ -1250,7 +1250,7 @@
 >
 > 后面有专门章节讲解水平垂直居中方案
 
-![image-20211103221009935](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211103221009935.png)
+![image-20211103221009935](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103221009935.png)
 
 ### 测试4：绝对定位-轮播图压盖效果
 
@@ -1358,7 +1358,7 @@
 </html>
 ```
 
-![image-20211106141136470](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211106141136470.png)
+![image-20211106141136470](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211106141136470.png)
 
 ### 测试5：固定定位-楼层导航特效
 
@@ -1618,7 +1618,7 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211106141136470](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%8A%A8%E7%94%BB23.gif)
+![image-20211106141136470](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%8A%A8%E7%94%BB23.gif)
 
 
 
@@ -1670,9 +1670,9 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211108172924551](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ZWsG8gjk6zTBdGPK.png)
+![image-20211108172924551](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/ZWsG8gjk6zTBdGPK.png)
 
-![image-20211108173144694](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/FWsG8gjk6zTBdGPA.png)
+![image-20211108173144694](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/FWsG8gjk6zTBdGPA.png)
 
 
 
@@ -1818,7 +1818,7 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211107122404711](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211107122404711.png)
+![image-20211107122404711](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211107122404711.png)
 
 > 水平垂直居中使用`flex`布局，相比较使用使用定位布局，不再需要关心子元素有多高有多宽（margin-xx），推荐这种写法
 
@@ -1975,7 +1975,7 @@ floorBox.addEventListener("click", (e) => {
 
 > 字体图标下载地址：https://www.iconfont.cn/ （教程自己在官网找一下）
 
-![image-20211107123638175](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211107123638175.png)
+![image-20211107123638175](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211107123638175.png)
 
 
 
@@ -2030,7 +2030,7 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211108222443722](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222443722.png)
+![image-20211108222443722](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222443722.png)
 
 
 
@@ -2066,7 +2066,7 @@ floorBox.addEventListener("click", (e) => {
 
 
 
-![image-20211108220129891](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220129891.png)
+![image-20211108220129891](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220129891.png)
 
 #### 测试2：只旋转图片
 
@@ -2089,7 +2089,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108220549546](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220549546.png)
+![image-20211108220549546](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220549546.png)
 
 #### 测试3：盒子顺时针转，图片逆时针转
 
@@ -2114,7 +2114,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108220854953](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108220854953.png)
+![image-20211108220854953](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220854953.png)
 
 #### 测试4：以盒子左上角为旋转点旋转45度
 
@@ -2140,7 +2140,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108221332997](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108221332997.png)
+![image-20211108221332997](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108221332997.png)
 
 ### 缩放变形
 
@@ -2173,7 +2173,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108222559382](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222559382.png)
+![image-20211108222559382](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222559382.png)
 
 #### 测试2：将盒子缩放至原来的二分之一
 
@@ -2198,7 +2198,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108222822196](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108222822196.png)
+![image-20211108222822196](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222822196.png)
 
 ### 斜切变形
 
@@ -2229,7 +2229,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108223528671](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108223528671.png)
+![image-20211108223528671](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108223528671.png)
 
 ### 位移变形
 
@@ -2260,7 +2260,7 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108224227593](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211108224227593.png)
+![image-20211108224227593](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108224227593.png)
 
 ### `3D`旋转
 
@@ -2322,7 +2322,7 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211108224227593](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/3d%E6%97%8B%E8%BD%AC%E6%B5%8B%E8%AF%95.gif)
+![image-20211108224227593](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/3d%E6%97%8B%E8%BD%AC%E6%B5%8B%E8%AF%95.gif)
 
 ## 过渡
 
@@ -2621,7 +2621,7 @@ transition: width       1s      linear        0s;
         <h3>实战1：渐变提示</h3>
         <div class="example">
             <div class="box7">
-                <img src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/eKAPy0nvMuGsUJaT.jpg" alt="">
+                <img src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/eKAPy0nvMuGsUJaT.jpg" alt="">
                 <div>鸟巢国家体育场</div>
             </div>
         </div>
@@ -2631,9 +2631,9 @@ transition: width       1s      linear        0s;
         <h3>实战2：翻页效果</h3>
         <div class="example">
             <div class="box8">
-                <img class="cat" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/SKk151Hi5WDjnbNE.jpg"
+                <img class="cat" src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/SKk151Hi5WDjnbNE.jpg"
                      alt="">
-                <img class="dog" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/ac2eOfdt8KH0AEEU.jpg"
+                <img class="dog" src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/ac2eOfdt8KH0AEEU.jpg"
                      alt="">
             </div>
         </div>
@@ -2652,7 +2652,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
 
 
 
@@ -2791,7 +2791,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%85%83%E7%B4%A0%E9%9A%90%E8%97%8F%E4%B8%8E%E6%98%BE%E7%A4%BA%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C%E8%AF%B4%E6%98%8E.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%85%83%E7%B4%A0%E9%9A%90%E8%97%8F%E4%B8%8E%E6%98%BE%E7%A4%BA%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C%E8%AF%B4%E6%98%8E.gif)
 
 
 
@@ -3102,8 +3102,8 @@ transition: width       1s      linear        0s;
         <h3>实战1：发光的灯泡</h3>
         <div class="example">
             <div class="box4">
-                <img class="bulb" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/dengpao.png" alt="">
-                <img class="light" src="https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/guang.png" alt="">
+                <img class="bulb" src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/dengpao.png" alt="">
+                <img class="light" src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com/guang.png" alt="">
             </div>
         </div>
     </div>
@@ -3121,7 +3121,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%8A%A8%E7%94%BB%E5%AD%A6%E4%B9%A0.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%8A%A8%E7%94%BB%E5%AD%A6%E4%B9%A0.gif)
 
 
 
@@ -3152,7 +3152,7 @@ transition: width       1s      linear        0s;
 >
 > * 缩放比例是否是100%（也就是不缩放），下图这个值
 >
->   ![image-20211114162808016](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114162808016.png)
+>   ![image-20211114162808016](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114162808016.png)
 >
 > * 浏览器本身会有一些缓存或Bug啥的，多刷新、重启几次就好了
 >
@@ -3176,7 +3176,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![image-20211114152633423](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114152633423.png)
+![image-20211114152633423](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114152633423.png)
 
 我们随便写一个页面，可以没有任何内容，以手机模式查看，可以看到`html`标签占据的宽度为`980px`，这个大小就是<span style="color: red;">默认的视口宽度</span>，
 
@@ -3219,7 +3219,7 @@ transition: width       1s      linear        0s;
 
 
 
-![image-20211114155251727](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114155251727.png)
+![image-20211114155251727](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114155251727.png)
 
 可以看到，同一张网页在PC和移动端显示，盒子显示的都是`200 * 200px`，但是大小看起来完全不一样，按照我们的设想，
 
@@ -3238,7 +3238,7 @@ transition: width       1s      linear        0s;
 
 设置移动端视口为`414px`，让我们改一下视口宽度，再看一下效果
 
-![image-20211114160408824](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114160408824.png)
+![image-20211114160408824](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114160408824.png)
 
 > 可以看到，盒子大小是一致的了
 
@@ -3265,7 +3265,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![image-20211114162011771](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211114162011771.png)
+![image-20211114162011771](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114162011771.png)
 
 
 
@@ -3380,7 +3380,7 @@ transition: width       1s      linear        0s;
 
 下面这些划分我们就成为断点，文档地址：https://getbootstrap.com/docs/5.1/layout/breakpoints/
 
-![image-20211115210507671](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211115210507671.png)
+![image-20211115210507671](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211115210507671.png)
 
 **示例**
 
@@ -3502,7 +3502,7 @@ transition: width       1s      linear        0s;
 
 
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/%E5%AA%92%E4%BD%93%E6%9F%A5%E8%AF%A2.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%AA%92%E4%BD%93%E6%9F%A5%E8%AF%A2.gif)
 
 ### 移动端常用单位
 
@@ -3567,7 +3567,7 @@ transition: width       1s      linear        0s;
 
 
 
-![image-20211115221120865](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20211115221120865.png)
+![image-20211115221120865](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211115221120865.png)
 
 
 
@@ -3639,7 +3639,7 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/CSS-Var.gif)
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/CSS-Var.gif)
 
 
 

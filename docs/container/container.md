@@ -693,7 +693,7 @@ docker.io/library/nginx:latest
 
 还可以通过第三方工具`dive`来查看更具体一些的信息，Github：[https://github.com/wagoodman/dive](https://github.com/wagoodman/dive)
 
-![image-20220510152343911](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220510152343911.png)
+![image-20220510152343911](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220510152343911.png)
 
 #### 镜像导出和导入
 
@@ -895,9 +895,9 @@ CMD ["ls", "-l"]
 
 先看一下`docker container run`的语法格式
 
-![image-20220511175138893](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220511175138893.png)
+![image-20220511175138893](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220511175138893.png)
 
-![image-20220511175249716](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220511175249716.png)
+![image-20220511175249716](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220511175249716.png)
 
 开始我们的测试
 
@@ -2878,7 +2878,7 @@ EOF
 [root@localhost composetest]# docker compose up
 ```
 
-![image-20220606074717146](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606074717146.png)
+![image-20220606074717146](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220606074717146.png)
 
 ```bash
 # 访问测试
@@ -2959,7 +2959,7 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 ② 创建对应的容器
 
-![image-20220606075707139](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606075707139.png)
+![image-20220606075707139](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220606075707139.png)
 
 
 
@@ -2973,11 +2973,11 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 * `redis`与容器名称并不一致，怀疑是通过网络别名来通信，来验证一下
 
-  ![image-20220606080914974](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606080914974.png)
+  ![image-20220606080914974](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220606080914974.png)
 
-  ![image-20220606081942898](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606081942898.png)
+  ![image-20220606081942898](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220606081942898.png)
 
-  ![image-20220606082226087](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220606082226087.png)
+  ![image-20220606082226087](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220606082226087.png)
 
 :::
 

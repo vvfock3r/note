@@ -1216,13 +1216,13 @@ func main() {
 
 这里使用httpstat来查看http协议，当然也可以使用其他工具，比如浏览器
 
-![image-20220430104420307](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220430104420307.png)
+![image-20220430104420307](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220430104420307.png)
 
 > 注意事项：
 >
 > （1）curl默认是不支持HTTP/2协议的，除非重新编译，所以用curl测试的话会降级到HTTP/1.1
 >
-> ![image-20220430104801284](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220430104801284.png)
+> ![image-20220430104801284](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220430104801284.png)
 >
 > （2）HTTP/2响应头中并没有看到`Keep-Alive`，这是因为HTTP/2协议规定的，它删除了很多字段，比如`Keep-Alive`、`Proxy-Connection`等
 >
@@ -1632,7 +1632,7 @@ func main() {
 
 输出结果
 
-![image-20220429211410766](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220429211410766.png)
+![image-20220429211410766](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220429211410766.png)
 
 ## 
 
@@ -3005,7 +3005,7 @@ gin框架使用的是定制版本的[httprouter](https://github.com/julienschmid
 
 下图为一个基数树示例：
 
-![radix_tree](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/radix_tree.png)
+![radix_tree](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/radix_tree.png)
 
 假设有以下路由注册信息
 
@@ -3319,7 +3319,7 @@ walk:
 
 翻译成动画大概是这样的流程：
 
-![addroute](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/addroute.gif)
+![addroute](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/addroute.gif)
 
 ::: details 点击查看完整代码
 
@@ -3871,7 +3871,7 @@ func main() {
 
 :::
 
-![image-20220508183700833](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220508183700833.png)
+![image-20220508183700833](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220508183700833.png)
 
 
 
@@ -4235,7 +4235,7 @@ func main() {
 }
 ```
 
-![image-20220507134109116](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507134109116.png)
+![image-20220507134109116](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507134109116.png)
 
 :::
 
@@ -4295,9 +4295,9 @@ func main() {
 }
 ```
 
-![image-20220507133521628](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507133521628.png)
+![image-20220507133521628](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507133521628.png)
 
-![image-20220507133540059](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507133540059.png)
+![image-20220507133540059](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507133540059.png)
 
 :::
 
@@ -4357,7 +4357,7 @@ func main() {
 }
 ```
 
-![image-20220507134825424](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507134825424.png)
+![image-20220507134825424](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507134825424.png)
 
 :::
 
@@ -4505,7 +4505,7 @@ func main() {
 
 输出结果
 
-![image-20220507144553806](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20220507144553806.png)
+![image-20220507144553806](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507144553806.png)
 
 
 
