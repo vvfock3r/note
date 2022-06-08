@@ -3545,7 +3545,7 @@ demo-server-1  | 2022-06-07 23:28:40
 demo-server-1  | 2022-06-07 23:28:41
 ```
 
-#### （9）指定网络配置
+#### （9）✨网络配置
 
 文档：[https://docs.docker.com/compose/compose-file/#networks-top-level-element](https://docs.docker.com/compose/compose-file/#networks-top-level-element)
 
@@ -3816,3 +3816,104 @@ rtt min/avg/max/mdev = 42.123/42.190/42.219/0.209 ms
 ```
 
 :::
+
+#### （10）✨持久化配置
+
+文档：[https://docs.docker.com/compose/compose-file/#volumes-top-level-element](https://docs.docker.com/compose/compose-file/#volumes-top-level-element)
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    # 将容器/data1映射到data1卷，/data2映射到data2卷
+    volumes:
+      - data1:/data1
+      - data2:/data2
+
+# volumes字段用于定义卷，data1是有名字的，data2是匿名的
+volumes:
+  data1:
+    name: data1
+  data2:
+  
+# 启动
+[root@localhost demo]# docker compose up 
+[+] Running 4/4
+ ⠿ Network demo_default     Created					0.1s                                                                         
+ ⠿ Volume "data1"           Created					0.0s                                                                         
+ ⠿ Volume "demo_data2"      Created					0.0s                                                                         
+ ⠿ Container demo-server-1  Created					0.1s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-08 00:37:00
+demo-server-1  | 2022-06-08 00:37:01
+
+# 查看卷
+[root@localhost demo]# docker volume ls
+DRIVER    VOLUME NAME
+local     data1
+local     demo_data2
+
+# 查看卷详情
+[root@localhost demo]# docker volume inspect data1
+[
+    {
+        "CreatedAt": "2022-06-08T08:37:00+08:00",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.compose.project": "demo",
+            "com.docker.compose.version": "2.5.0",
+            "com.docker.compose.volume": "data1"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/data1/_data",
+        "Name": "data1",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+```
+
+#### （11）资源限制（未解决）
+
+文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#resources](https://docs.docker.com/compose/compose-file/compose-file-v3/#resources)
+
+问题描述：对内存的限制生效，对CPU的限制不生效
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3.9"
+services:
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 200M
+
+# 启动（--compatibility 以向后兼容性方式启动）
+[root@localhost demo]# docker compose --compatibility up
+[+] Running 2/2
+ ⠿ Network demo_default     Created					0.1s                                                                         
+ ⠿ Container demo_server_1  Created					0.1s                                                                         
+Attaching to server_1
+server_1  | 2022-06-08 06:18:21
+server_1  | 2022-06-08 06:18:22
+server_1  | 2022-06-08 06:18:23
+
+# 新开一个终端，用于模拟消耗CPU
+[root@localhost ~]# docker container exec -it demo_server_1 bash
+[root@77a8be2674fe /]# cat /dev/urandom | gzip -9 >/dev/null
+
+# 新开一个终端，用于监视容器资源消耗
+[root@localhost ~]# docker stats
+CONTAINER ID   NAME            CPU %     MEM USAGE / LIMIT   MEM %     NET I/O          BLOCK I/O         PIDS
+77a8be2674fe   demo_server_1   156.10%   2.031MiB / 500MiB   0.41%     0B / 0B          0B / 0B           5
+```
+
