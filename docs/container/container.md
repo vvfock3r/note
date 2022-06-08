@@ -3525,4 +3525,294 @@ Threads: 2  Questions: 10  Slow queries: 0  Opens: 117  Flush tables: 3  Open ta
 --------------
 ```
 
+#### （8）覆盖Dockerfile CMD指令
 
+文档：[https://docs.docker.com/compose/compose-file/#command](https://docs.docker.com/compose/compose-file/#command)
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+[root@localhost demo]# docker compose up
+[+] Running 1/0
+ ⠿ Container demo-server-1  Created					0.0s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-07 23:28:39
+demo-server-1  | 2022-06-07 23:28:40
+demo-server-1  | 2022-06-07 23:28:41
+```
+
+#### （9）指定网络配置
+
+文档：[https://docs.docker.com/compose/compose-file/#networks-top-level-element](https://docs.docker.com/compose/compose-file/#networks-top-level-element)
+
+::: details (1) 基础配置
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    # networks指定网络, 可以指定多个
+    networks:
+      - mynet1
+      - mynet2
+
+# networks字段用于配置网络, 这里的意思是: 定义两个网桥mynet1和mynet2
+networks:
+  mynet1:
+  mynet2:
+
+[root@localhost demo]# docker compose up
+[+] Running 3/3
+ ⠿ Network demo_mynet1      Created					0.1s                                                                         
+ ⠿ Network demo_mynet2      Created					0.1s                                                                         
+ ⠿ Container demo-server-1  Created					0.1s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-07 23:45:29
+demo-server-1  | 2022-06-07 23:45:30
+demo-server-1  | 2022-06-07 23:45:31
+demo-server-1  | 2022-06-07 23:45:32
+demo-server-1  | 2022-06-07 23:45:33
+demo-server-1  | 2022-06-07 23:45:34
+demo-server-1  | 2022-06-07 23:45:35
+# ----------------------------------------------------------------------------------------
+# 查看网桥，发现多了2个
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME          DRIVER    SCOPE
+19913bc6a47d   bridge        bridge    local
+306e0d885afa   demo_mynet1   bridge    local
+161f1c81b416   demo_mynet2   bridge    local
+23966f1794db   host          host      local
+7c080397ed19   none          null      local
+
+# 查看容器所属网络
+[root@localhost ~]# docker container inspect demo-server-1 | sed -n "/Networks/, $"p
+            "Networks": {
+                "demo_mynet1": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "demo-server-1",
+                        "server",
+                        "28e838d4c57d"
+                    ],
+                    "NetworkID": "b53d7bc6fb8cde3a829a288772a47d6e43a0e03406563d0f2b027f95b60ed4e7",
+                    "EndpointID": "d9ad37dafa79c583a00ad5aa26a1191e60a245809fba9ca37af890b7699cd92c",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:13:00:02",
+                    "DriverOpts": null
+                },
+                "demo_mynet2": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "demo-server-1",
+                        "server",
+                        "28e838d4c57d"
+                    ],
+                    "NetworkID": "3a58974c7b413b0891cac1d2f84802e68ac609de78da1197bc3af3895a824991",
+                    "EndpointID": "30f5ba375cf5a0b6a482049c4723c04524f86aa759a5ec9856a853e06658c44c",
+                    "Gateway": "172.20.0.1",
+                    "IPAddress": "172.20.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:14:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+
+# 查看容器的IP
+[root@localhost ~]# docker container exec -it demo-server-1 bash -c "yum -y install net-tools iproute && ip a"
+Loaded plugins: fastestmirror, ovl
+Loading mirror speeds from cached hostfile
+ * base: mirrors.aliyun.com
+ * extras: centos.nethub.com.hk
+ * updates: centos.nethub.com.hk
+Package net-tools-2.0-0.25.20131004git.el7.x86_64 already installed and latest version
+Package iproute-4.11.0-30.el7.x86_64 already installed and latest version
+Nothing to do
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+630: eth0@if631: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:13:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.19.0.2/16 brd 172.19.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+632: eth1@if633: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:14:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.20.0.2/16 brd 172.20.255.255 scope global eth1
+       valid_lft forever preferred_lft forever
+```
+
+:::
+
+::: details (2) 指定为外部网络，则Compose不会主动创建该网络
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    networks:
+      - mynet1
+      - mynet2
+
+networks:
+  mynet1:
+  mynet2: 
+    # 定义为外部网络，compose不会主动创建，若找不到mynet2网桥则会报错
+    external: true
+
+# 因为该网桥尚未创建，所以启动时报错未找到
+[root@localhost demo]# docker compose up
+[+] Running 1/0
+ ⠿ Network demo_mynet1  Created					0.1s                                                                             
+network mynet2 declared as external, but could not be found
+
+# 手动创建一个bridge类型网桥
+[root@localhost ~]# docker network create \
+--driver bridge \
+--subnet 172.20.0.0/16 \
+--gateway 172.20.0.1 \
+-o com.docker.network.bridge.name=mynet2 \
+mynet2 
+
+# 再次启动
+[root@localhost demo]# docker compose up
+[+] Running 1/0
+ ⠿ Container demo-server-1  Created					0.1s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-07 23:58:52
+demo-server-1  | 2022-06-07 23:58:53
+demo-server-1  | 2022-06-07 23:58:54
+demo-server-1  | 2022-06-07 23:58:55
+demo-server-1  | 2022-06-07 23:58:56
+
+# 查看docker网桥
+[root@localhost ~]# docker network ls
+NETWORK ID     NAME          DRIVER    SCOPE
+19913bc6a47d   bridge        bridge    local
+d8af7b39a350   demo_mynet1   bridge    local
+23966f1794db   host          host      local
+428d68213519   mynet2        bridge    local
+7c080397ed19   none          null      local
+
+# 查看Linux网桥
+[root@localhost ~]# brctl show
+bridge name     		bridge id               STP enabled     interfaces
+br-d8af7b39a350         8000.024241276bec       no              veth6b34cd4
+docker0         		8000.0242ba5aab45       no              vethb6dc559
+mynet2          		8000.024246ff67a9       no              vethba4ec17
+```
+
+:::
+
+::: details (3) 指定网桥名字
+
+```bash
+[root@localhost demo]# cat docker-compose.yml 
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    networks:
+      - mynet1
+      - mynet2
+
+networks:
+  mynet1:
+  mynet2: 
+    name: mynet2
+
+[root@localhost demo]# docker compose up
+[+] Running 3/3
+ ⠿ Network demo_mynet1      Created					0.1s                                                                         
+ ⠿ Network mynet2           Created					0.1s # 这里不再是默认的名字，而是mynet2
+ ⠿ Container demo-server-1  Created					0.1s                                                                         
+Attaching to demo-server-1
+demo-server-1  | 2022-06-08 00:02:35
+demo-server-1  | 2022-06-08 00:02:36
+demo-server-1  | 2022-06-08 00:02:37
+
+[root@localhost demo]# docker network ls
+NETWORK ID     NAME          DRIVER    SCOPE
+19913bc6a47d   bridge        bridge    local
+91d9722ab1df   demo_mynet1   bridge    local
+23966f1794db   host          host      local
+7523cf9d05bf   mynet2        bridge    local
+7c080397ed19   none          null      local
+```
+
+:::
+
+::: details (4) 指定子网和默认网关
+
+```bash
+[root@localhost demo]# cat docker-compose.yml
+version: "3"
+services:        
+  server:
+    image: centos:7
+    command: sh -c "while [ true ]; do echo $$(date +'%Y-%m-%d %H:%M:%S'); sleep 1; done"
+    networks:      
+      - mynet2
+
+networks:
+  mynet1:
+    name: mynet1          
+  mynet2: 
+    name: mynet2
+    # 自定义ipam配置
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16    # 子网
+          ip_range: 172.28.5.0/24  # 限制容器IP范围
+          gateway: 172.28.5.254    # 默认网关
+
+# ----------------------------------------------------------------------------------------
+# 上面的可能会有点啰嗦，一个最简单的定义如下
+    # 自定义ipam配置
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.10.0/24    # 子网，默认网关会使用172.28.10.1
+
+[root@localhost ~]# docker container exec -it demo-server-1 bash -c "route -n"
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.28.10.1     0.0.0.0         UG    0      0        0 eth0
+172.28.10.0     0.0.0.0         255.255.255.0   U     0      0        0 eth0
+
+[root@localhost ~]# docker container exec -it demo-server-1 bash -c "ping baidu.com -c 4"
+PING baidu.com (220.181.38.148) 56(84) bytes of data.
+64 bytes from 220.181.38.148 (220.181.38.148): icmp_seq=1 ttl=48 time=42.2 ms
+64 bytes from 220.181.38.148 (220.181.38.148): icmp_seq=2 ttl=48 time=42.1 ms
+64 bytes from 220.181.38.148 (220.181.38.148): icmp_seq=3 ttl=48 time=42.2 ms
+64 bytes from 220.181.38.148 (220.181.38.148): icmp_seq=4 ttl=48 time=42.2 ms
+--- baidu.com ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 42.123/42.190/42.219/0.209 ms
+```
+
+:::
