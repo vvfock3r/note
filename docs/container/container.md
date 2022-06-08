@@ -3005,7 +3005,7 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/](https://docs.docker.com/compose/compose-file/compose-file-v3/)
 
-#### （1）编写一个简单的Demo
+#### （01）编写一个简单的Demo
 
 `Version`字段文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
 
@@ -3095,7 +3095,7 @@ demo-web-1    | /docker-entrypoint.sh: Configuration complete; ready for start u
 
 
 
-#### （2）convert/config 查看当前配置
+#### （02）convert/config 查看当前配置
 
 ```bash
 # 下面两个输出是一样的
@@ -3141,7 +3141,7 @@ networks:
     name: demo_default
 ```
 
-#### （3）指定环境变量
+#### （03）指定环境变量
 
 文档：[https://docs.docker.com/compose/environment-variables/](https://docs.docker.com/compose/environment-variables/)
 
@@ -3319,7 +3319,7 @@ qaz.123=
 
 :::
 
-#### （4）build 构建镜像
+#### （04）build 构建镜像
 
 文档1：[https://docs.docker.com/compose/compose-file/compose-file-v3/#build](https://docs.docker.com/compose/compose-file/compose-file-v3/#build)
 
@@ -3419,7 +3419,7 @@ services:
 
 :::
 
-#### （5）指定容器名称
+#### （05）指定容器名称
 
 ```bash
 [root@localhost demo]# cat docker-compose.yml 
@@ -3444,7 +3444,7 @@ services:
  ⠿ Container demo-redis-1  Started					0.8s  # 默认容器名称
 ```
 
-#### （6）指定重启策略
+#### （06）指定重启策略
 
 ```bash
 [root@localhost demo]# cat docker-compose.yml 
@@ -3480,7 +3480,7 @@ services:
             },
 ```
 
-#### （7）指定端口映射
+#### （07）指定端口映射
 
 ```bash
 # MySQL容器3306端口映射到宿主机3307端口
@@ -3525,7 +3525,7 @@ Threads: 2  Questions: 10  Slow queries: 0  Opens: 117  Flush tables: 3  Open ta
 --------------
 ```
 
-#### （8）覆盖Dockerfile CMD指令
+#### （08）覆盖Dockerfile CMD指令
 
 文档：[https://docs.docker.com/compose/compose-file/#command](https://docs.docker.com/compose/compose-file/#command)
 
@@ -3545,7 +3545,7 @@ demo-server-1  | 2022-06-07 23:28:40
 demo-server-1  | 2022-06-07 23:28:41
 ```
 
-#### （9）✨网络配置
+#### （09）✨网络配置
 
 文档：[https://docs.docker.com/compose/compose-file/#networks-top-level-element](https://docs.docker.com/compose/compose-file/#networks-top-level-element)
 
