@@ -78,7 +78,8 @@ const navbar = [
             {
                 text: '容器编排工具',
                 children: [
-                    {text: '使用kubespray部署Kubernetes', link: '/container/kubespray'},
+                    {text: 'Docker Compose', link: '/container/docker-compose'},
+                    {text: 'Kubernetes：使用kubespray部署', link: '/container/kubespray'},
                 ]
             },
         ]
