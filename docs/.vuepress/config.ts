@@ -75,6 +75,12 @@ const navbar = [
                     {text: '容器核心技术', link: '/container/container'},
                 ]
             },
+			{
+                text: '容器仓库',
+                children: [
+                    {text: 'Harbor', link: '/container/harbor'},
+                ]
+            },
             {
                 text: '容器编排工具',
                 children: [
