@@ -67,6 +67,31 @@ Docker Compose version v2.6.0
 >
 > /usr/local/libexec/docker/cli-plugins
 
+### 软链接到全局
+
+有些服务（比如Harbor）可能会调用`docker-compose`命令，而我们并没有将其放到PATH变量中，这可能会有些问题，解决方法有很多，这里仅展示一种
+
+```bash
+# 查看docker-compose路径
+[root@localhost harbor]# docker info --format '{{range .ClientInfo.Plugins}}{{if eq .Name "compose"}}{{.Path}}{{end}}{{end}}'
+/usr/libexec/docker/cli-plugins/docker-compose
+
+# 查看docker命令位置
+[root@localhost harbor]# which docker
+/usr/bin/docker
+
+# 将docker-compose命令放到和docker同一个目录内
+[root@localhost harbor]# ln -s /usr/libexec/docker/cli-plugins/docker-compose /usr/bin/
+
+# 查看版本
+[root@localhost harbor]# docker compose version
+Docker Compose version v2.5.0
+[root@localhost harbor]# docker-compose version
+Docker Compose version v2.5.0
+[root@localhost harbor]# ls -lh `which docker-compose `
+lrwxrwxrwx 1 root root 46 Jun 10 10:12 /usr/bin/docker-compose -> /usr/libexec/docker/cli-plugins/docker-compose
+```
+
 
 
 ### Compose 示例
