@@ -28,7 +28,7 @@ Harbor支持在线安装和离线安装（区别是镜像是如何下载的）
 
 ## 安装方式1：Docker Compose
 
-### 配置清单
+### （1）配置清单
 
 | 资源             | 版本                                   |
 | ---------------- | -------------------------------------- |
@@ -42,9 +42,7 @@ Harbor支持在线安装和离线安装（区别是镜像是如何下载的）
 
 > 依据配置清单设置好对应的资源
 
-### 安装Harbor
-
-### （1）下载离线安装包并校验
+### （2）下载离线安装包并校验
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/download-installer/](https://goharbor.io/docs/2.5.0/install-config/download-installer/)
 
@@ -80,7 +78,7 @@ total 634M
 
 :::
 
-### （2）生成并修改配置文件
+### （3）生成并修改配置文件
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/configure-yml-file/](https://goharbor.io/docs/2.5.0/install-config/configure-yml-file/)
 
@@ -169,7 +167,7 @@ data_volume: /data
 
 :::
 
-### （3）执行prepare
+### （4）执行prepare
 
 prepare脚本会拉取镜像`goharbor/prepare:v2.5.1`，启动容器并生成了一堆配置文件和`docker-compose.yml`
 
@@ -224,7 +222,7 @@ drwxr-xr-x 3 root root        20 Jun 10 14:26 common				# 新生成的，用于�
 
 :::
 
-### （4）执行install.sh
+### （5）执行install.sh
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/run-installer-script/](https://goharbor.io/docs/2.5.0/install-config/run-installer-script/)
 
@@ -437,7 +435,7 @@ harbor.jinhui.dev
 
 
 
-### （5）访问Web页面
+### （6）访问Web页面
 
 ① 先进行域名解析，修改本地`hosts`文件或去域名厂商那里解析
 
@@ -449,7 +447,7 @@ harbor.jinhui.dev
 
 ![image-20220610133746505](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220610133746505.png)
 
-### （6）配置Docker信任HTTP协议仓库并登录
+### （7）Docker信任HTTP协议仓库并登录
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/run-installer-script/#connect-http](https://goharbor.io/docs/2.5.0/install-config/run-installer-script/#connect-http)
 
@@ -500,7 +498,7 @@ Login Succeeded
 
 :::
 
-### （7）Harbor镜像仓库推送和拉取测试
+### （8）Harbor镜像仓库推送和拉取测试
 
 Harbor镜像仓库已经很贴心的为我们提供了推送命令，如下图所示
 
