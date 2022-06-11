@@ -2,6 +2,8 @@
 
 ## 简介
 
+### 官网
+
 Harbor 是由 VMware 公司中国团队为企业用户设计的 Registry server 开源项目，包括了权限管理 (RBAC)、LDAP、审计、管理界面、自我注册、HA 等企业必需的功能，同时针对中国用户的特点，设计镜像复制和中文支持等功能。
 
 官方网站：[https://goharbor.io/](https://goharbor.io/)
@@ -10,7 +12,7 @@ Github：[https://github.com/goharbor/harbor](https://github.com/goharbor/harbor
 
 
 
-## 安装说明
+### 安装说明
 
 **安装要求**
 
@@ -23,6 +25,19 @@ Harbor安装对于硬件（内存/CPU大小等）、软件（依赖的软件最�
 Harbor支持在线安装和离线安装（区别是镜像是如何下载的）
 
 
+
+### 组件说明
+
+| 组件                | 说明               |
+| ------------------- | ------------------ |
+| `harbor-core`       | 配置管理中心       |
+| `harbor-db`         | `PostgreSQL`数据库 |
+| `harbor-jobservice` | 负责镜像复制       |
+| `harbor-log`        | 记录操作日志       |
+| `harbor-portal`     | Web管理页面和API   |
+| `nginx`             | 前端代理           |
+| `redis`             | 会话               |
+| `registryctl`       | 镜像存储           |
 
 
 
