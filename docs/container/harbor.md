@@ -536,9 +536,7 @@ harbor.jinhui.dev/library/busybox:1.34
 
 
 
-## 配置
-
-### 开启HTTPS
+### （9）开启HTTPS
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/configure-https/](https://goharbor.io/docs/2.5.0/install-config/configure-https/)
 
