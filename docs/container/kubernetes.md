@@ -437,5 +437,185 @@ pod-resources   500m         0Mi
 
 :::
 
-### 注入变量
+### 变量注入
 
+文档1：[https://kubernetes.io/zh-cn/docs/tasks/inject-data-application/](https://kubernetes.io/zh-cn/docs/tasks/inject-data-application/)
+
+文档2：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#envvar-v1-core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#envvar-v1-core)
+
+![image-20220613081846919](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220613081846919.png)
+
+![image-20220613081904820](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220613081904820.png)
+
+::: details 直接定义变量、Pod字段作为变量值、Container字段作为变量值
+
+```bash
+# 创建yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-env
+  labels:
+    app: pod-env
+spec:
+  containers:
+  - name: pod-env
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"    
+    env:
+      # 直接定义变量
+      - name: myName
+        value: "My name is vvfock3r"
+
+      # Pod字段作为变量值
+      - name: myNode 
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
+
+      # Container字段作为变量值
+      - name: myMemoryLimit
+        valueFrom:
+          resourceFieldRef:
+            containerName: pod-env
+            resource: limits.memory
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/pod-env created
+
+# 检查变量
+[root@node0 k8s]# kubectl exec -it pod-env -- sh
+/ # echo ${myName}
+My name is vvfock3r
+/ # echo ${myNode}
+node2
+/ # echo ${myMemoryLimit}
+67108864
+```
+
+:::
+
+> 并不是支持所有的Pod字段/Container字段作为变量值
+
+### 重启策略
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy)
+
+默认值是`Always`
+
+每次重启之间是有延迟的且时间不等，最长5分钟
+
+::: details 点击查看详情
+
+```bash
+# 创建yaml文件
+[root@node0 k8s]# vim demo.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c']
+    # 将每次启动时间写入持久化目录中
+    args:
+      - echo $(date +"%Y-%m-%d %H:%M:%S") >> /data/start.log &&
+        exit 1
+    volumeMounts:
+      - name: data
+        mountPath: /data
+
+  # 数据持久化到宿主机目录
+  volumes:
+    - name: data
+      hostPath:
+        path: /data
+        type: Directory
+
+  # 指定Node节点，确保每次都调度到同一台机器
+  nodeName: node2
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/pod-env created
+
+# 登录到node2机器，查看/data/start.log文件
+# 可以看到，每次启动时间是有延迟的
+[root@node2 ~]# cat -n /data/start.log 
+     1  2022-06-13 03:01:20
+     2  2022-06-13 03:01:20
+     3  2022-06-13 03:01:34
+     4  2022-06-13 03:02:05
+     5  2022-06-13 03:02:51
+     6  2022-06-13 03:04:18
+```
+
+:::
+
+### 容器探针
+
+文档1：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#container-probes](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#container-probes)
+
+文档2：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+
+| 检查类型                               | 说明                                   | 若不提供该字段的默认值 | 若提供该字段                                     | 若检查失败执行的动作                                         |
+| -------------------------------------- | -------------------------------------- | ---------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| **存活检查<br />（`livenessProbe`）**  | 检查容器是否正在运行                   | `Success`              | - - -                                            | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| **就绪检查<br />（`readinessProbe`）** | 检查容器是否准备好<br />为请求提供服务 | `Success`              | 初始状态为`Failure`                              | 检查失败会从service endpoints中删除该IP，<br />检查成功则会把IP加进去 |
+| **启动检查<br />（`startupProbe`）**   | 检查容器是否已经启动                   | `Success`              | 所有其他探针都会被禁用，<br />直到此探针成功为止 | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+
+::: details 点击查看详情
+
+```bash
+# 创建yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'touch /tmp/healthy && echo The app is running! && sleep 10 && rm -vf /tmp/healthy && sleep 3600']
+    # 存活检查
+    livenessProbe:
+      exec:
+        command:
+          - cat
+          - /tmp/healthy
+      initialDelaySeconds: 5      # 在执行第一次探测前等待5秒钟
+      periodSeconds: 5            # 以后每隔5秒探测一次,默认值是10
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 在容器运行10秒以后存活检查将失败，此时默认会重启重启
+[root@node0 k8s]# kubectl describe pod demo
+Events:
+  Type     Reason     Age               From               Message
+  ----     ------     ----              ----               -------
+  Normal   Scheduled  34s               default-scheduler  Successfully assigned default/demo to node2
+  Normal   Pulled     33s               kubelet            Container image "busybox:1.28" already present on machine
+  Normal   Created    33s               kubelet            Created container demo
+  Normal   Started    33s               kubelet            Started container demo
+  Warning  Unhealthy  9s (x3 over 19s)  kubelet            Liveness probe failed: cat: can't open '/tmp/healthy': No such file or directory
+  Normal   Killing    9s                kubelet            Container demo failed liveness probe, will be restarted
+```
+
+:::
