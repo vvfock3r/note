@@ -619,3 +619,74 @@ Events:
 ```
 
 :::
+
+### 调度策略
+
+文档总览：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/)
+
+`kube-scheduler`是默认的调度器，对每一个新创建的`Pod`或者是未被调度的`Pod`，`kube-scheduler`会选择一个最优的 Node 去运行这个`Pod`
+
+#### 标签匹配 - nodeSelector
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+
+nodeSelector会根据标签匹配合适的节点来调度Pod
+
+::: details 点击查看详情
+
+```bash
+# 查看所有的节点
+[root@node0 k8s]# kubectl get nodes
+NAME    STATUS   ROLES                  AGE   VERSION
+node0   Ready    control-plane,master   41h   v1.23.7
+node1   Ready    control-plane,master   41h   v1.23.7
+node2   Ready    <none>                 41h   v1.23.7
+
+# 查看所有的节点的标签
+[root@node0 k8s]# kubectl get nodes --show-labels
+NAME    STATUS   ROLES                  AGE   VERSION   LABELS
+node0   Ready    control-plane,master   41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node0,kubernetes.io/os=linux,node-role.kubernetes.io/control-plane=,node-role.kubernetes.io/master=,node.kubernetes.io/exclude-from-external-load-balancers=
+node1   Ready    control-plane,master   41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node1,kubernetes.io/os=linux,node-role.kubernetes.io/control-plane=,node-role.kubernetes.io/master=,node.kubernetes.io/exclude-from-external-load-balancers=
+node2   Ready    <none>                 41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node2,kubernetes.io/os=linux
+
+# 给node0和node1打一个标签
+[root@node0 k8s]# kubectl label node node1 diskType=ssd
+node/node1 labeled
+
+# 如果想删除标签，那么使用 <标签名->
+[root@node0 k8s]# kubectl label node node1 diskType-
+node/node0 unlabeled
+
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  nodeSelector:
+    diskType: ssd             # 选择diskType=ssd标签的节点
+    kubernetes.io/os: linux   # 选择系统为linux标签的节点
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          4s    10.233.154.17   node1   <none>           <none>
+```
+
+:::
+
+#### 节点亲和性 - affinity.nodeAffinity
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
