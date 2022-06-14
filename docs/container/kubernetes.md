@@ -690,3 +690,165 @@ demo   1/1     Running   0          4s    10.233.154.17   node1   <none>        
 #### 节点亲和性 - affinity.nodeAffinity
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+
+`requiredDuringSchedulingIgnoredDuringExecution`：调度器只有在规则被满足的时候才能执行调度
+
+`preferredDuringSchedulingIgnoredDuringExecution`：调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod
+
+```bash
+# 先给3个节点分别打上标签,后面要用到
+[root@node0 k8s]# kubectl label node node0 nodeName=node0
+[root@node0 k8s]# kubectl label node node1 nodeName=node1
+[root@node0 k8s]# kubectl label node node2 nodeName=node2
+```
+
+::: details （一）requiredDuringSchedulingIgnoredDuringExecution 基础示例
+
+这是一个基础示例，只要节点同时满足以下两个条件即可被调度，不满足不调度
+
+* 系统为linux
+* 节点含有标签diskType=ssd
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+              - linux
+            - key: diskType
+              operator: In
+              values:
+              - ssd
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          1s    10.233.154.22   node1   <none>           <none>
+```
+
+:::
+
+::: details 若包含多个nodeSelectorTerms则只有最后一个生效，覆盖的关系
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node0
+
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node2
+
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          98s   10.233.154.23   node1   <none>           <none>
+```
+
+:::
+
+::: details 同一nodeSelectorTerms下若包含多个matchExpressions只要满足一个即可被调度，或的关系
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          # 第一个matchExpressions可以被满足，第二个matchExpressions肯定不会被满足
+          # 以此来说明:
+          #   (1) 多个matchExpressions之间不是【覆盖】的关系
+          #   (2) 多个matchExpressions之间不是【且】的关系
+          #   (3) 多个matchExpressions之间是【或】的关系        
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node0
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node999
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          4s    10.233.30.24   node0   <none>           <none>
+```
+
+:::
