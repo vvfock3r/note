@@ -2,6 +2,8 @@
 
 官方文档：[https://kubernetes.io/zh-cn/docs/home/](https://kubernetes.io/zh-cn/docs/home/)
 
+API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/)
+
 
 
 ## 核心组件
@@ -1121,3 +1123,202 @@ demo   1/1     Running   0          5s    10.233.154.25   node1   <none>        
 ```
 
 :::
+
+::: details （二）preferredDuringSchedulingIgnoredDuringExecution基础示例
+
+`preferredDuringSchedulingIgnoredDuringExecution`写法与`requiredDuringSchedulingIgnoredDuringExecution`类似，这里给出一个基础示例
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      # 软限制
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          # 指定一个肯定不会存在的key和值
+          - key: a-nonexistent-key
+            operator: In
+            values:
+            - any-value
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          25s   10.233.44.67   node2   <none>           <none>
+```
+
+:::
+
+::: details （三）matchExpressions和matchFields匹配时的不同
+
+`matchExpressions`用于标签匹配，`matchFields`用于字段匹配（或称为属性匹配），参考如下官方资料
+
+文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#nodeselectorterm-v1-core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#nodeselectorterm-v1-core)
+
+![image-20220614145526005](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220614145526005.png)
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          # 匹配字段metadata.name是node1的node
+          - matchFields:
+            - key: metadata.name
+              operator: In
+              values:
+              - node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          4s    10.233.154.26   node1   <none>           <none>
+```
+
+:::
+
+<br />
+
+#### 直接指定Node - nodeName
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename)
+
+使用`nodeName`后调度器会忽略该Pod，而指定节点上的`kubelet `会尝试将 Pod 放到该节点上
+
+使用 `nodeName` 规则的优先级会高于使用 `nodeSelector` 或亲和性与非亲和性的规则
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+
+  nodeName: node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          2s    10.233.154.27   node1   <none>           <none>
+```
+
+#### 污点和容忍度策略
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
+污点（Taint）：给某个节点打污点，是为了避免Pod调度到该节点上
+
+容忍度（Toleration）：给Pod配置容忍度，允许Pod调度到含有特定污点的节点上
+
+::: details  污点（Taint）基础操作
+
+```bash
+# 给node2节点打一个污点
+# 解释：
+#   （1）a=b是一个键值对，写啥都可以
+#   （2）最后一个字段含义
+#       NoSchedule         一定不能被调度到该节点上
+#       PreferNoSchedule   尽量不要调度到这个节点
+#       NoExecute          不仅不会调度，还会驱逐Node上已有的Pod
+[root@node0 k8s]# kubectl taint node node2 a=b:NoSchedule
+
+# 查看node2节点的污点
+[root@node0 k8s]# kubectl describe node node2 | grep -i taint
+Taints:             a=b:NoSchedule
+
+# 删除污点
+[root@node0 k8s]# kubectl taint node node2 a:NoSchedule-
+```
+
+:::
+
+::: details  污点演示
+
+```bash
+# ------------------------------------------------------------------------------------
+# 准备工作
+
+# 查看所有的Node节点的污点
+[root@node0 k8s]# kubectl describe nodes | grep Taints
+Taints:             <none>
+Taints:             <none>
+Taints:             <none>
+
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# ---------------------------------------------------------------------------------
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          47s   10.233.44.68   node2   <none>           <none>
+```
+
+:::
+
