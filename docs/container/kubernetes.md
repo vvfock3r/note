@@ -37,6 +37,8 @@ Pod是K8S最小的部署单元，是一组容器的集合
 
 同一Pod中的容器共享网络名称空间和存储资源
 
+<br />
+
 ### 创建Pod
 
 ::: details 点击查看详情
@@ -64,6 +66,8 @@ pod/pod-1 created
 ```
 
 :::
+
+<br />
 
 ### 查看Pod
 
@@ -364,7 +368,7 @@ Events:
 
 :::
 
-
+<br />
 
 ### 删除Pod
 
@@ -381,6 +385,8 @@ pod "mypod" deleted
 ```
 
 :::
+
+<br />
 
 ### 资源限制
 
@@ -436,6 +442,8 @@ pod-resources   500m         0Mi
 ```
 
 :::
+
+<br />
 
 ### 变量注入
 
@@ -504,6 +512,8 @@ node2
 
 > 并不是支持所有的Pod字段/Container字段作为变量值
 
+<br />
+
 ### 重启策略
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy)
@@ -563,17 +573,19 @@ pod/pod-env created
 
 :::
 
+<br />
+
 ### 容器探针
 
 文档1：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#container-probes](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#container-probes)
 
 文档2：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
 
-| 检查类型                               | 说明                                   | 若不提供该字段的默认值 | 若提供该字段                                     | 若检查失败执行的动作                                         |
-| -------------------------------------- | -------------------------------------- | ---------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
-| **存活检查<br />（`livenessProbe`）**  | 检查容器是否正在运行                   | `Success`              | - - -                                            | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
-| **就绪检查<br />（`readinessProbe`）** | 检查容器是否准备好<br />为请求提供服务 | `Success`              | 初始状态为`Failure`                              | 检查失败会从service endpoints中删除该IP，<br />检查成功则会把IP加进去 |
-| **启动检查<br />（`startupProbe`）**   | 检查容器是否已经启动                   | `Success`              | 所有其他探针都会被禁用，<br />直到此探针成功为止 | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| 检查类型                               | 说明                                   | 若不提供该字段的默认值 | 若提供该字段                               | 若检查失败执行的动作                                         |
+| -------------------------------------- | -------------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| **存活检查<br />（`livenessProbe`）**  | 检查容器是否正在运行                   | `Success`              | - - -                                      | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| **就绪检查<br />（`readinessProbe`）** | 检查容器是否准备好<br />为请求提供服务 | `Success`              | 初始状态为`Failure`                        | 检查失败会从service endpoints中删除该IP，检查成功则会把IP加进去 |
+| **启动检查<br />（`startupProbe`）**   | 检查容器是否已经启动                   | `Success`              | 所有其他探针都会被禁用，直到此探针成功为止 | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
 
 ::: details 点击查看详情
 
@@ -620,11 +632,15 @@ Events:
 
 :::
 
+<br />
+
 ### 调度策略
 
 文档总览：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/)
 
 `kube-scheduler`是默认的调度器，对每一个新创建的`Pod`或者是未被调度的`Pod`，`kube-scheduler`会选择一个最优的 Node 去运行这个`Pod`
+
+<br />
 
 #### 标签匹配 - nodeSelector
 
@@ -687,6 +703,8 @@ demo   1/1     Running   0          4s    10.233.154.17   node1   <none>        
 
 :::
 
+<br />
+
 #### 节点亲和性 - affinity.nodeAffinity
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
@@ -709,7 +727,7 @@ demo   1/1     Running   0          4s    10.233.154.17   node1   <none>        
 * 系统为linux
 * 节点含有标签diskType=ssd
 
-```bash
+```yaml
 # 生成yaml文件
 [root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
@@ -752,7 +770,7 @@ demo   1/1     Running   0          1s    10.233.154.22   node1   <none>        
 
 ::: details 若包含多个nodeSelectorTerms则只有最后一个生效，覆盖的关系
 
-```bash
+```yaml
 # 生成yaml文件
 [root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
@@ -806,7 +824,7 @@ demo   1/1     Running   0          98s   10.233.154.23   node1   <none>        
 
 ::: details 同一nodeSelectorTerms下若包含多个matchExpressions只要满足一个即可被调度，或的关系
 
-```bash
+```yaml
 # 生成yaml文件
 [root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
@@ -827,7 +845,7 @@ spec:
           # 第一个matchExpressions可以被满足，第二个matchExpressions肯定不会被满足
           # 以此来说明:
           #   (1) 多个matchExpressions之间不是【覆盖】的关系
-          #   (2) 多个matchExpressions之间不是【且】的关系
+          #   (2) 多个matchExpressions之间不是【与】的关系
           #   (3) 多个matchExpressions之间是【或】的关系        
           - matchExpressions:
             - key: nodeName
@@ -849,6 +867,257 @@ pod/demo created
 [root@node0 k8s]# kubectl get pods -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
 demo   1/1     Running   0          4s    10.233.30.24   node0   <none>           <none>
+```
+
+:::
+
+::: details 同一matchExpressions下若包含多个key需要全部满足才可被调度，与的关系
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node0
+            - key: kubernetes.io/os
+              operator: In
+              values:
+              - linux
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          5s    10.233.30.25   node0   <none>           <none>
+```
+
+:::
+
+::: details key、operator、values之间的关系
+
+`operator`支持`In`、`NotIn`、`Exists`、`DoesNotExist`、`Gt` 和 `Lt` 作为操作符
+
+`In`：满足一个条件即可调度，或的关系
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: In
+              values:
+              - node0
+              - node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          3s    10.233.30.26   node0   <none>           <none>
+```
+
+`NotIn`：全部不满足才会调度，与的关系
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: NotIn
+              values:
+              - node0
+              - node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          6s    10.233.44.63   node2   <none>           <none>
+```
+
+`Exists`：标签存在即可被调度，不支持`values`字段
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: Exists
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+            - key: node-role.kubernetes.io/master
+              operator: Exists
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          81s   10.233.30.27   node0   <none>           <none>
+```
+
+`DoesNotExist`：标签不存在才会被调度，不支持`values`字段
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nodeName
+              operator: Exists
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+            - key: node-role.kubernetes.io/master
+              operator: DoesNotExist
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          4s    10.233.44.65   node2   <none>           <none>
+```
+
+`Gt`：标签值大于所指定的值才会被调度
+
+`Lt`：标签值小于所指定的值才会被调度
+
+```yaml
+# 给节点打个标签
+[root@node0 k8s]# kubectl label node node0 weight=1
+[root@node0 k8s]# kubectl label node node1 weight=2
+[root@node0 k8s]# kubectl label node node2 weight=3
+
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: weight
+              operator: Gt
+              values:
+              - "1"   # 这里必须写字符串类型，不能写数字类型
+            - key: weight
+              operator: Lt
+              values:
+              - "3"  # 这里必须写字符串类型，不能写数字类型
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          5s    10.233.154.25   node1   <none>           <none>
 ```
 
 :::
