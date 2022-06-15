@@ -56,7 +56,7 @@ node2   Ready    <none>                 3d13h   v1.23.7
 
 * Pod是K8S最小的部署单元，是一组容器的集合
 
-* 同一Pod中的容器共享网络名称空间和存储资源
+* 同一Pod中的容器共享**网络**和**存储**资源
 * 同一Pod中的容器总是部署在同一个Node上
 
 
@@ -1411,5 +1411,125 @@ Tolerations:                 op=Exists
 
 :::
 
+<br />
+
 ### 多个容器
 
+<br />
+
+#### 共享网络和存储示例
+
+::: details  共享网络演示（无须做任何配置就支持）
+
+```bash
+# 生成yaml文件,Pod包含多个容器
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - name: demo1
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  - name: demo2
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod，READY下面是2/2
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   2/2     Running   0          12s   10.233.44.83   node2   <none>           <none>
+
+# 在node2节点上查看容器
+[root@node2 ~]# crictl ps
+CONTAINER           IMAGE               CREATED              STATE      NAME     ATTEMPT POD ID
+dbf33c853a860       8c811b4aec35f       About a minute ago   Running    demo2    0       8b92e2da21dbc
+ac0bd7d433c67       8c811b4aec35f       About a minute ago   Running    demo1    0       8b92e2da21dbc
+
+# 在demo1中监听80端口
+[root@node0 k8s]# kubectl exec demo -c demo1 -it -- sh
+/ # nc -lvp 80
+listening on [::]:80 ...
+
+# 在demo2中访问80端口
+[root@node0 k8s]# kubectl exec demo -c demo2 -it -- sh
+/ # telnet 127.0.0.1 80
+
+# demo1中已经能看到连接了
+/ # nc -lvp 80
+listening on [::]:80 ...
+connect to [::ffff:127.0.0.1]:80 from [::ffff:127.0.0.1]:58970 ([::ffff:127.0.0.1]:58970)
+```
+
+:::
+
+::: details  共享存储演示（需要配合**卷**一起使用）
+
+```bash
+# 生成yaml文件,Pod包含多个容器
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - name: demo1
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+    volumeMounts:
+      - name: data
+        mountPath: /data
+  - name: demo2
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+    volumeMounts:
+      - name: data
+        mountPath: /data
+
+  volumes:
+    - name: data
+      # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
+      emptyDir: {}
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod，READY下面是2/2
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   2/2     Running   0          6s    10.233.44.84   node2   <none>           <none>
+
+# 在demo1中写入数据/data/test.log
+[root@node0 k8s]# kubectl exec demo -c demo1 -it -- sh
+/ # seq 10 > /data/test.log
+
+# 在demo2中查看数据
+[root@node0 k8s]# kubectl exec demo -c demo2 -it -- sh
+/ # ls -l /data
+total 4
+-rw-r--r--    1 root     root            21 Jun 15 01:31 test.log
+
+/ # cat /data/test.log
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
+:::
