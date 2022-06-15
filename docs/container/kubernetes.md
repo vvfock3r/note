@@ -1359,7 +1359,7 @@ demo   1/1     Terminating   0          2m56s   10.233.44.72   node2   <none>   
 
 :::
 
-::: details  容忍度演示
+::: details  容忍度演示：Tolerations
 
 ```bash
 # 当前节点中只有node2是含有污点的，驱逐Pod
