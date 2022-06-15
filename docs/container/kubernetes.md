@@ -29,15 +29,48 @@ API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23
 
 
 
+## 演示版本
+
+```bash
+[root@node0 ~]# kubectl get node
+NAME    STATUS   ROLES                  AGE     VERSION
+node0   Ready    control-plane,master   3d13h   v1.23.7
+node1   Ready    control-plane,master   3d13h   v1.23.7
+node2   Ready    <none>                 3d13h   v1.23.7
+
+# 两个Master同时也是Node节点
+# 容器运行时使用Containerd
+```
+
+
+
 ## Pod
 
 文档1：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/)
 
 文档2：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/)
 
-Pod是K8S最小的部署单元，是一组容器的集合
 
-同一Pod中的容器共享网络名称空间和存储资源
+
+**Pod特性：**
+
+* Pod是K8S最小的部署单元，是一组容器的集合
+
+* 同一Pod中的容器共享网络名称空间和存储资源
+* 同一Pod中的容器总是部署在同一个Node上
+
+
+
+**Pod UID**
+
+Kubernetes集群的整个生命周期中创建的每个对象都有一个不同的`uid`，Pod也不例外，可以通过如下命令来查看
+
+```bash
+[root@node0 k8s]# kubectl get pod demo -o json | grep -i uid
+        "uid": "05b1bc5d-379a-45cf-b2d6-77642b08bcb1"
+```
+
+
 
 <br />
 
@@ -1252,6 +1285,8 @@ NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE
 demo   1/1     Running   0          2s    10.233.154.27   node1   <none>           <none>
 ```
 
+<br />
+
 #### 污点和容忍度策略
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/)
@@ -1260,7 +1295,7 @@ demo   1/1     Running   0          2s    10.233.154.27   node1   <none>        
 
 容忍度（Toleration）：给Pod配置容忍度，允许Pod调度到含有特定污点的节点上
 
-::: details  污点（Taint）基础操作
+**污点基础操作**
 
 ```bash
 # 给node2节点打一个污点
@@ -1280,14 +1315,9 @@ Taints:             a=b:NoSchedule
 [root@node0 k8s]# kubectl taint node node2 a:NoSchedule-
 ```
 
-:::
-
-::: details  污点演示
+::: details  污点演示：NoExecute
 
 ```bash
-# ------------------------------------------------------------------------------------
-# 准备工作
-
 # 查看所有的Node节点的污点
 [root@node0 k8s]# kubectl describe nodes | grep Taints
 Taints:             <none>
@@ -1309,7 +1339,6 @@ spec:
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
-# ---------------------------------------------------------------------------------
 # 创建Pod
 [root@node0 k8s]# kubectl apply -f demo.yml 
 pod/demo created
@@ -1317,8 +1346,70 @@ pod/demo created
 # 查看Pod调度在哪个Node上
 [root@node0 k8s]# kubectl get pods -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          47s   10.233.44.68   node2   <none>           <none>
+demo   1/1     Running   0          2s    10.233.44.72   node2   <none>           <none>
+
+# 对node2节点进行Pod驱逐
+[root@node0 k8s]# kubectl taint node node2 a=b:NoExecute
+
+# 再次查看Pod，已经在销毁中了
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS        RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Terminating   0          2m56s   10.233.44.72   node2   <none>           <none>
 ```
 
 :::
+
+::: details  容忍度演示
+
+```bash
+# 当前节点中只有node2是含有污点的，驱逐Pod
+[root@node0 k8s]# kubectl describe nodes | grep Taints
+Taints:             <none>
+Taints:             <none>
+Taints:             a=b:NoExecute
+
+[root@node0 k8s]# kubectl describe nodes node2 | grep Taints
+Taints:             a=b:NoExecute
+
+# 生成yaml文件，故意分配给node2节点，这将导致一分配就销毁，但是配置了污点容忍，就可以保持Running状态
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+
+  nodeName: node2
+
+  # 配置容忍度
+  tolerations:
+    # key为空表示匹配任意的key
+    - key: ""
+      # 默认值是Equal, 这里设置为Exists
+      operator: "Exists"
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          4m18s   10.233.44.74   node2   <none>           <none>
+
+# 查看Pod配置的容忍度
+[root@node0 k8s]# kubectl describe pod demo | grep -i Tolerations
+Tolerations:                 op=Exists
+```
+
+:::
+
+### 多个容器
 
