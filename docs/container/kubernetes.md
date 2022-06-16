@@ -32,14 +32,36 @@ API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23
 ## 演示版本
 
 ```bash
+# 两个Master同时也是Node节点
+# 容器运行时使用Containerd
 [root@node0 ~]# kubectl get node
 NAME    STATUS   ROLES                  AGE     VERSION
 node0   Ready    control-plane,master   3d13h   v1.23.7
 node1   Ready    control-plane,master   3d13h   v1.23.7
 node2   Ready    <none>                 3d13h   v1.23.7
 
-# 两个Master同时也是Node节点
-# 容器运行时使用Containerd
+# 版本
+[root@node0 ~]# kubectl version -o yaml
+clientVersion:
+  buildDate: "2022-05-24T12:30:55Z"
+  compiler: gc
+  gitCommit: 42c05a547468804b2053ecf60a3bd15560362fc2
+  gitTreeState: clean
+  gitVersion: v1.23.7
+  goVersion: go1.17.10
+  major: "1"
+  minor: "23"
+  platform: linux/amd64
+serverVersion:
+  buildDate: "2022-05-24T12:24:41Z"
+  compiler: gc
+  gitCommit: 42c05a547468804b2053ecf60a3bd15560362fc2
+  gitTreeState: clean
+  gitVersion: v1.23.7
+  goVersion: go1.17.10
+  major: "1"
+  minor: "23"
+  platform: linux/amd64
 ```
 
 
@@ -1591,7 +1613,7 @@ PID   USER     TIME  COMMAND
 
 注意事项：
 
-* Pod 重启会导致Init容器重新执行，所以Init容器的代码应该是幂等的
+* Pod 重启会导致Init容器重新执行，所以Init容器的代码应该是幂等的（即任意多次执行所产生的影响与一次执行的影响相同）
 
 ::: details  点击查看详情
 
@@ -1646,3 +1668,76 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 ```
 
 :::
+
+## 工作负载控制器
+
+<br />
+
+### 简介
+
+工作负载控制器（`Workload`）是K8S的一个抽象概念，用于部署和管理`Pod`，使用标签与Pod关联
+
+工作负载控制器（`Workload`）实现了Pod的运维工作，例如滚动更新、伸缩、副本管理、维护Pod状态等
+
+常用的工作负载控制器
+
+| 工作负载控制器 | 说明                        |
+| -------------- | --------------------------- |
+| Deployment     | 无状态应用部署              |
+| StatefulSet    | 有状态应用部署              |
+| DaemonSet      | 确保所有Node都运行同一个Pod |
+| Job            | 一次性任务                  |
+| Cronjob        | 定时任务                    |
+
+<br />
+
+### Deployment
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/)
+
+#### 基础示例
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1     # API版本
+kind: Deployment        # 类型为 Deployment
+metadata:               # Deployment元数据
+  name: demo            #   Deployment名称
+  namespace: default    #   Deployment所属命名空间
+spec:                   # Deployment定义
+  replicas: 3           #   定义预期的Pod副本数量
+  selector:             #   定义标签选择器
+    matchLabels:        #     用于与指定标签的Pod关联
+      app: web
+
+  template:             # Pod模板
+    metadata:           #   Pod元数据
+      labels:           #     定义Pod标签
+        app: web        #
+    spec:               #   Pod定义
+      containers:
+      - name: web
+        image: nginx:1.21.6
+        command: ['nginx', '-g', 'daemon off;']
+      - name: other
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# 创建Deployment
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+
+# 查看
+[root@node0 k8s]# kubectl get deploy -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                      SELECTOR
+demo   3/3     3            3           25s   web,other    nginx:1.21.6,busybox:1.28   app=web
+
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-c5wbq   2/2     Running   0          32s   10.233.30.47    node0   <none>           <none>
+demo-6b86f546b6-nmdtt   2/2     Running   0          32s   10.233.154.42   node1   <none>           <none>
+demo-6b86f546b6-xz22f   2/2     Running   0          32s   10.233.44.102   node2   <none>           <none>
+```
+
