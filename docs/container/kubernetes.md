@@ -1671,8 +1671,6 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 ## 工作负载控制器
 
-<br />
-
 ### 简介
 
 工作负载控制器（`Workload`）是K8S的一个抽象概念，用于部署和管理`Pod`，使用标签与Pod关联
@@ -1695,7 +1693,11 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/)
 
+<br />
+
 #### 基础示例
+
+::: details  点击查看详情
 
 ```bash
 # 生成yaml文件
@@ -1729,15 +1731,209 @@ EOF
 [root@node0 k8s]# kubectl apply -f demo.yml 
 deployment.apps/demo created
 
-# 查看
-[root@node0 k8s]# kubectl get deploy -o wide
-NAME   READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                      SELECTOR
-demo   3/3     3            3           25s   web,other    nginx:1.21.6,busybox:1.28   app=web
-
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-c5wbq   2/2     Running   0          32s   10.233.30.47    node0   <none>           <none>
-demo-6b86f546b6-nmdtt   2/2     Running   0          32s   10.233.154.42   node1   <none>           <none>
-demo-6b86f546b6-xz22f   2/2     Running   0          32s   10.233.44.102   node2   <none>           <none>
+# 
+[root@node0 ~]# kubectl get pods  --show-labels
+NAME                    READY   STATUS    RESTARTS   AGE   LABELS
+demo-6b86f546b6-5fdxd   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
+demo-6b86f546b6-9qmwm   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
+demo-6b86f546b6-plq7k   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
 ```
+
+:::
+
+1、查看deployments
+
+```bash
+[root@node0 ~]# kubectl get deploy -o wide --show-labels
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                      SELECTOR   LABELS
+demo   3/3     3            3           7m21s   web,other    nginx:1.21.6,busybox:1.28   app=web    <none>
+```
+
+2、查看ReplicaSet
+
+![image-20220617051518147](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220617051518147.png)
+
+> （1）Deployment控制器会自动创建ReplicaSet，命名规则为：`[Deployment名称]-[hash]`
+>
+> （2）Deployment控制器会给ReplicaSet添加`pod-template-hash=[hash]`标签
+
+3、查看Pods
+
+![image-20220617052152945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220617052152945.png)
+
+> （1）ReplicaSet控制器会维护Pod数量，Pod的命名规则为：`[Deployment名称]-[hash]-[随机字符串]`
+>
+> （2）ReplicaSet控制器会给Pod添加上`pod-template-hash=[hash]`标签
+
+<br />
+
+#### ReplicaSet
+
+ReplicaSet控制器会自动维护Pod数量（新建或删除等）
+
+::: details  (1) 通过污点驱逐说明ReplicaSet会自动新建Pod
+
+```bash
+# 看一下当前的Pod
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-5fdxd   2/2     Running   0          43m   10.233.44.108   node2   <none>           <none>
+demo-6b86f546b6-9qmwm   2/2     Running   0          43m   10.233.30.55    node0   <none>           <none>
+demo-6b86f546b6-plq7k   2/2     Running   0          43m   10.233.154.49   node1   <none>           <none>
+
+# 给node2打一个污点，用于驱逐其上的Pod
+[root@node0 ~]# kubectl taint node node2 a=b:NoExecute
+
+# 查看Pod，发现node2上的正在销毁，同时在node1上又启动了一个新Pod，维持Pod数量
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS        RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-5fdxd   2/2     Terminating   0          43m   10.233.44.108   node2   <none>           <none>
+demo-6b86f546b6-9qmwm   2/2     Running       0          43m   10.233.30.55    node0   <none>           <none>
+demo-6b86f546b6-mrccc   2/2     Running       0          2s    10.233.154.50   node1   <none>           <none>
+demo-6b86f546b6-plq7k   2/2     Running       0          43m   10.233.154.49   node1   <none>           <none>
+
+# 等稳定后再查看Pod
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-9qmwm   2/2     Running   0          46m     10.233.30.55    node0   <none>           <none>
+demo-6b86f546b6-mrccc   2/2     Running   0          2m33s   10.233.154.50   node1   <none>           <none>
+demo-6b86f546b6-plq7k   2/2     Running   0          46m     10.233.154.49   node1   <none>           <none>
+
+# 看一下ReplicaSet的日志
+[root@node0 ~]# kubectl get rs
+NAME              DESIRED   CURRENT   READY   AGE
+demo-6b86f546b6   3         3         3       47m
+
+[root@node0 ~]# kubectl describe rs demo-6b86f546b6
+Name:           demo-6b86f546b6
+Namespace:      default
+Selector:       app=web,pod-template-hash=6b86f546b6
+Labels:         app=web
+                pod-template-hash=6b86f546b6
+Annotations:    deployment.kubernetes.io/desired-replicas: 3
+                deployment.kubernetes.io/max-replicas: 4
+                deployment.kubernetes.io/revision: 1
+Controlled By:  Deployment/demo
+Replicas:       3 current / 3 desired
+Pods Status:    3 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  app=web
+           pod-template-hash=6b86f546b6
+  Containers:
+   web:
+    Image:      nginx:1.21.6
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      nginx
+      -g
+      daemon off;
+    Environment:  <none>
+    Mounts:       <none>
+   other:
+    Image:      busybox:1.28
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      sh
+      -c
+      echo The app is running! && sleep 3600
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Events:
+  Type    Reason            Age    From                   Message
+  ----    ------            ----   ----                   -------
+  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-5fdxd
+  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-plq7k
+  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-9qmwm
+  Normal  SuccessfulCreate  4m23s  replicaset-controller  Created pod: demo-6b86f546b6-mrccc  # 新建Pod
+```
+
+:::
+
+::: details  (2) 通过更新Deployment中replicas来控制Pod数量
+
+```bash
+# 看一下当前的Pod
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-9qmwm   2/2     Running   0          53m     10.233.30.55    node0   <none>           <none>
+demo-6b86f546b6-mrccc   2/2     Running   0          9m43s   10.233.154.50   node1   <none>           <none>
+demo-6b86f546b6-plq7k   2/2     Running   0          53m     10.233.154.49   node1   <none>           <none>
+
+# 修改demo.yaml中的replicas为1，并使其生效
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo configured
+
+# 再次查看Pod，可以看到有两个正在销毁
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS        RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-9qmwm   2/2     Running       0          53m     10.233.30.55    node0   <none>           <none>
+demo-6b86f546b6-mrccc   2/2     Terminating   0          9m52s   10.233.154.50   node1   <none>           <none>
+demo-6b86f546b6-plq7k   2/2     Terminating   0          53m     10.233.154.49   node1   <none>           <none>
+
+# 等稳定后再查看Pod
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo-6b86f546b6-9qmwm   2/2     Running   0          56m   10.233.30.55   node0   <none>           <none>
+
+# 看一下ReplicaSet的日志
+[root@node0 ~]# kubectl get rs 
+NAME              DESIRED   CURRENT   READY   AGE
+demo-6b86f546b6   1         1         1       57m
+
+[root@node0 ~]# kubectl describe rs demo-6b86f546b6
+Name:           demo-6b86f546b6
+Namespace:      default
+Selector:       app=web,pod-template-hash=6b86f546b6
+Labels:         app=web
+                pod-template-hash=6b86f546b6
+Annotations:    deployment.kubernetes.io/desired-replicas: 1
+                deployment.kubernetes.io/max-replicas: 2
+                deployment.kubernetes.io/revision: 1
+Controlled By:  Deployment/demo
+Replicas:       1 current / 1 desired
+Pods Status:    1 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  app=web
+           pod-template-hash=6b86f546b6
+  Containers:
+   web:
+    Image:      nginx:1.21.6
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      nginx
+      -g
+      daemon off;
+    Environment:  <none>
+    Mounts:       <none>
+   other:
+    Image:      busybox:1.28
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      sh
+      -c
+      echo The app is running! && sleep 3600
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Events:
+  Type    Reason            Age    From                   Message
+  ----    ------            ----   ----                   -------
+  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-5fdxd
+  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-plq7k
+  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-9qmwm
+  Normal  SuccessfulCreate  13m    replicaset-controller  Created pod: demo-6b86f546b6-mrccc
+  Normal  SuccessfulDelete  3m49s  replicaset-controller  Deleted pod: demo-6b86f546b6-mrccc  # 删除Pod
+  Normal  SuccessfulDelete  3m49s  replicaset-controller  Deleted pod: demo-6b86f546b6-plq7k  # 删除Pod
+```
+
+:::
+
+<br />
+
+#### 滚动更新
 
