@@ -1413,7 +1413,7 @@ Tolerations:                 op=Exists
 
 <br />
 
-### 多个容器
+### 多容器
 
 <br />
 
@@ -1470,7 +1470,7 @@ connect to [::ffff:127.0.0.1]:80 from [::ffff:127.0.0.1]:58970 ([::ffff:127.0.0.
 
 :::
 
-::: details  共享存储演示（需要配合**卷**一起使用）
+::: details  共享存储演示（需要配合【卷】一起使用）
 
 ```bash
 # 生成yaml文件,Pod包含多个容器
@@ -1530,6 +1530,119 @@ total 4
 8
 9
 10
+```
+
+:::
+
+<br />
+
+#### 共享进程命名空间
+
+文档：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/share-process-namespace/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/share-process-namespace/)
+
+::: details  点击查看详情
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  # 共享进程命名空间
+  shareProcessNamespace: true
+  containers:
+  - name: demo1
+    image: busybox:1.28
+    command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
+  - name: demo2
+    image: busybox:1.28
+    command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 进入任意一个容器中查看进程
+[root@node0 k8s]# kubectl exec -it demo -c demo1 -- sh
+/ # ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /pause
+    7 root      0:00 sleep 3600
+   14 root      0:00 sleep 3600
+   21 root      0:00 sh
+   27 root      0:00 ps aux
+```
+
+:::
+
+<br />
+
+#### Init容器
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/init-containers/](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/init-containers/)
+
+特点：
+
+* 先于应用容器运行，且必须运行完成以后才会运行应用容器
+* 可以有多个Init容器，每个Init容器运行完成之后才会运行下一个Init容器
+
+注意事项：
+
+* Pod 重启会导致Init容器重新执行，所以Init容器的代码应该是幂等的
+
+::: details  点击查看详情
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
+
+  initContainers:
+  - name: init1
+    image: busybox:1.28
+    command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` init1 start running && sleep 10"]
+  - name: init2
+    image: busybox:1.28
+    command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` init2 start running && sleep 10"]
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS     RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   0/1     Init:0/2   0          2s    10.233.44.92   node2   <none>           <none>
+
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS     RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   0/1     Init:1/2   0          14s   10.233.44.92   node2   <none>           <none>
+
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS            RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   0/1     PodInitializing   0          23s   10.233.44.92   node2   <none>           <none>
+
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          26s   10.233.44.92   node2   <none>           <none>
+
+# 查看容器日志
+[root@node0 k8s]# kubectl logs demo -c init1 && kubectl logs demo -c init2 && kubectl logs demo -c demo
+2022-06-15 23:16:44 init1 start running
+2022-06-15 23:16:55 init2 start running
+2022-06-15 23:17:06 The app is running!
 ```
 
 :::
