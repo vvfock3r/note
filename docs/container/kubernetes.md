@@ -1730,13 +1730,6 @@ EOF
 # 创建Deployment
 [root@node0 k8s]# kubectl apply -f demo.yml 
 deployment.apps/demo created
-
-# 
-[root@node0 ~]# kubectl get pods  --show-labels
-NAME                    READY   STATUS    RESTARTS   AGE   LABELS
-demo-6b86f546b6-5fdxd   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
-demo-6b86f546b6-9qmwm   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
-demo-6b86f546b6-plq7k   2/2     Running   0          10m   app=web,pod-template-hash=6b86f546b6
 ```
 
 :::
@@ -1936,4 +1929,116 @@ Events:
 <br />
 
 #### 滚动更新
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy)
+
+
+
+**更新策略**
+
+（1）滚动更新（`RollingUpdate`）
+
+更新时会创建一个新的`ReplicaSet`，并将其扩容为1，等待其就绪，然后将旧`ReplicaSet`缩容1；如此循环，直到旧`ReplicaSet`为0后将其删除
+
+这是默认的更新策略
+
+（2）重新创建（`Recreate`）
+
+现有的全部Pods被杀死成功后，才会创建新版本的 Pod
+
+
+
+**滚动更新**
+
+| 字段                                                         | 可选字段 | 默认值          | 说明 |
+| ------------------------------------------------------------ | -------- | --------------- | ---- |
+| 更新策略类型<br />（`.spec.strategy.type`）                  | 是       | `RollingUpdate` |      |
+| 最大不可用<br />（`.spec.strategy.rollingUpdate.maxUnavailable`） | 是       | `25%`           |      |
+| 最大峰值<br />（`.spec.strategy.rollingUpdate.maxSurge`）    | 是       | `25%`           |      |
+| 最短就绪时间<br />（`.spec.minReadySeconds`）                | 是       | 0               |      |
+
+::: details  滚动更新示例
+
+```bash
+# 创建yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  strategy:
+    rollingUpdate:
+      maxSurge: 2    # 设置每次更新2个Pod
+
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.33
+        command: ['sh', '-c', 'sleep 60 && touch /tmp/healthy && echo The app is running! && sleep 3600']
+        readinessProbe:
+          exec:
+            command:
+              - cat
+              - /tmp/healthy
+          initialDelaySeconds: 1
+          periodSeconds: 1
+EOF
+
+# 创建Deployment
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+
+# 查看
+[root@node0 k8s]# kubectl rollout status deploy/demo
+Waiting for deployment "demo" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "demo" rollout to finish: 2 of 3 updated replicas are available...
+deployment "demo" successfully rolled out
+
+[root@node0 k8s]# kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-5b978c7d6d-hvkjp   1/1     Running   0          70s
+demo-5b978c7d6d-svknh   1/1     Running   0          70s
+demo-5b978c7d6d-tsbn4   1/1     Running   0          70s
+
+# 修改busybox镜像版本为1.34，然后更新deployment
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo configured
+
+# 查看Pod,新创建了2个，等待就绪检查成功后会删除2个旧的Pod
+[root@node0 k8s]# kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-5b978c7d6d-hvkjp   1/1     Running   0          2m57s
+demo-5b978c7d6d-svknh   1/1     Running   0          2m57s
+demo-5b978c7d6d-tsbn4   1/1     Running   0          2m57s
+demo-8f99576b9-26g8x    0/1     Running   0          7s
+demo-8f99576b9-r4kbm    0/1     Running   0          7s
+
+[root@node0 k8s]# kubectl rollout status deploy/demo
+Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "demo" rollout to finish: 2 old replicas are pending termination...
+Waiting for deployment "demo" rollout to finish: 1 old replicas are pending termination...
+deployment "demo" successfully rolled out
+
+[root@node0 k8s]# kubectl get pods
+NAME                   READY   STATUS    RESTARTS   AGE
+demo-8f99576b9-26g8x   1/1     Running   0          2m40s
+demo-8f99576b9-r4kbm   1/1     Running   0          2m40s
+demo-8f99576b9-vrfvx   1/1     Running   0          99s
+```
+
+:::
 
