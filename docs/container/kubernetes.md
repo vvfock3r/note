@@ -2050,8 +2050,6 @@ demo-8f99576b9-vrfvx   1/1     Running   0          99s
 
 ### Service
 
-<br />
-
 #### 简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/)
@@ -2394,6 +2392,8 @@ E0611 11:12:15.485961       1 proxier.go:377] "Can't set sysctl, kernel version 
 
 :::
 
+<br />
+
 #### Service DNS通信
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/)
@@ -2622,15 +2622,13 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 ### Ingress
 
-<br />
-
 #### 简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
 
 `Ingress`公开从集群外部到集群内服务的 HTTP 和 HTTPS 路由，而具体实现流量路由则是由`Ingress Controller`负责
 
-
+<br />
 
 #### NGINX Controller
 
