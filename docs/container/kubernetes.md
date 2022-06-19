@@ -1669,6 +1669,8 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 :::
 
+## 
+
 ## 工作负载控制器
 
 ### 简介
@@ -2042,3 +2044,343 @@ demo-8f99576b9-vrfvx   1/1     Running   0          99s
 
 :::
 
+## 
+
+## 对外暴露应用
+
+### Service
+
+<br />
+
+#### 简介
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/)
+
+每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，<span style="color: red; font-weight: bold;">提供统一的访问入口和负载均衡功能</span>
+
+
+
+**Service的三种类型**
+
+| 类型         | 简介                                   | 说明                                                         |
+| ------------ | -------------------------------------- | ------------------------------------------------------------ |
+| ClusterIP    | 集群内部使用（默认类型）               | 分配一个稳定的集群内部IP                                     |
+| NodePort     | 对外暴露应用                           | 分配一个稳定的集群内部IP，并在每个Node节点启用一个端口来暴露服务，使其可以在集群外部访问，<br />端口访问默认为：30000 - 32767 |
+| LoadBalancer | 对外暴露应用（对于公有云环境进行优化） | 与NodePort类似，不同之处在于kubernetes会请求底层云平台（例如阿里云、腾讯云等）上的负载均衡器，将每个Node（NodeIP:NodePort）作为后端添加进去 |
+
+
+
+**Service的实现**
+
+`iptables`和`ipvs`
+
+
+
+**关键字段说明**
+
+| 字段                               | 是否必填 | 可选值和默认值                                            | 说明                     |
+| ---------------------------------- | -------- | --------------------------------------------------------- | ------------------------ |
+| `name`                             | ×        |                                                           | 名称                     |
+| `protocol`                         | ×        | `TCP`（默认）、`UDP`、`SCTP`                              | 协议                     |
+| `port`                             | √        |                                                           | Service端口              |
+| `targetPort`                       | ×        | 默认情况下，`targetPort` 将被设置为与 `port` 字段相同的值 | 容器端口                 |
+| `nodePort`（类型为NodePort时有效） | ×        | 30000-32767（默认端口范围）                               | 集群所有节点对外暴露端口 |
+
+<br />
+
+#### ClusterIP
+
+::: details  点击查看详情
+
+**创建**
+
+```bash
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+spec:
+  selector:
+    app: web         # 通过标签关联Pods
+  type: ClusterIP    # Service类型为ClusterIP，这也是默认值
+  ports:             # 端口字段，固定
+    - name: http     # 定义一个名字,用来说明这是http应用
+      protocol: TCP  # 协议
+      port: 80       # Service端口
+      targetPort: 80 # 容器端口
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml
+deployment.apps/demo created
+service/demo created
+```
+
+**查看**
+
+```bash
+# 查看Service
+[root@node0 k8s]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+demo         ClusterIP   10.200.216.121   <none>        80/TCP    102s    app=web
+kubernetes   ClusterIP   10.200.0.1       <none>        443/TCP   7d13h   <none>
+
+# 查看Service绑定的后端的Pods地址
+[root@node0 k8s]# kubectl get ep
+NAME         ENDPOINTS                                 AGE
+demo         10.233.44.12:80                           3m24s
+kubernetes   192.168.48.128:6443,192.168.48.134:6443   7d13h
+
+# 查看一下Pod IP，验证是不是和Service绑定的一样
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE    IP             NODE    NOMINATED NODE   READINESS GATES
+demo-799f9cf89-kcmmc   1/1     Running   0          6m1s   10.233.44.12   node2   <none>           <none>
+```
+
+**在任意的Node节点都可以访问Service IP**
+
+```bash
+# node0
+[root@node0 k8s]# curl http://10.200.216.121
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+# node1
+[root@node1 ~]# curl http://10.200.216.121
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+# node2
+[root@node2 ~]# curl http://10.200.216.121
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
+:::
+
+<br />
+
+#### NodePort
+
+::: details  点击查看详情
+
+**创建**
+
+```bash
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+spec:
+  selector:
+    app: web         # 通过标签关联Pods
+  type: ClusterIP    # Service类型为ClusterIP，这也是默认值
+  ports:             # 端口字段，固定
+    - name: http     # 定义一个名字,用来说明这是http应用
+      protocol: TCP  # 协议
+      port: 80       # Service端口
+      targetPort: 80 # 容器端口
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml
+deployment.apps/demo created
+service/demo created
+```
+
+**查看Service**
+
+```bash
+# 查看Service
+[root@node0 k8s]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+demo         NodePort    10.200.214.143   <none>        80:31000/TCP   2m10s   app=web
+kubernetes   ClusterIP   10.200.0.1       <none>        443/TCP        7d13h   <none>
+
+# 查看Service绑定的后端的Pods地址
+[root@node0 k8s]# kubectl get ep
+NAME         ENDPOINTS                                 AGE
+demo         10.233.44.13:80                           2m24s
+kubernetes   192.168.48.128:6443,192.168.48.134:6443   7d13h
+
+# 查看一下Pod IP，验证是不是和Service绑定的一样
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+demo-799f9cf89-2kpvx   1/1     Running   0          2m38s   10.233.44.13   node2   <none>           <none>
+```
+
+**在集群外部访问任意Node的NodePort端口**
+
+![image-20220619085519517](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220619085519517.png)
+
+```bash
+[root@node0 k8s]# kubectl logs -f demo-799f9cf89-2kpvx 
+/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+/docker-entrypoint.sh: Configuration complete; ready for start up
+2022/06/19 00:49:58 [notice] 1#1: using the "epoll" event method
+2022/06/19 00:49:58 [notice] 1#1: nginx/1.21.6
+2022/06/19 00:49:58 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6) 
+2022/06/19 00:49:58 [notice] 1#1: OS: Linux 3.10.0-1160.66.1.el7.x86_64
+2022/06/19 00:49:58 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2022/06/19 00:49:58 [notice] 1#1: start worker processes
+2022/06/19 00:49:58 [notice] 1#1: start worker process 31
+2022/06/19 00:49:58 [notice] 1#1: start worker process 32
+10.233.30.0 - - [19/Jun/2022:00:53:32 +0000] "GET / HTTP/1.1" 200 615 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
+2022/06/19 00:53:32 [error] 31#31: *1 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 10.233.30.0, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "192.168.48.128:31000", referrer: "http://192.168.48.128:31000/"
+10.233.30.0 - - [19/Jun/2022:00:53:32 +0000] "GET /favicon.ico HTTP/1.1" 404 555 "http://192.168.48.128:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
+
+
+10.233.30.0 - - [19/Jun/2022:00:54:30 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
+```
+
+**查看监听端口**
+
+```bash
+# 并没有监听31000端口
+[root@node0 k8s]# netstat -atlnpu | grep 31000
+
+# 在本地监听以下31000端口
+[root@node0 k8s]# nc -l -v -p 31000
+Ncat: Version 7.50 ( https://nmap.org/ncat )
+Ncat: Listening on :::31000
+Ncat: Listening on 0.0.0.0:31000
+
+# 再次在浏览器访问，依旧访问的是Nginx，且本地nc命令没有输出任何连接日志
+```
+
+**使用回环接口访问**
+
+```bash
+# 先访问一个肯定不存在的端口，curl命令会立即(小于1秒)返回报错信息
+[root@node0 ~]# curl http://127.0.0.1:31001
+curl: (7) Failed connect to 127.0.0.1:31001; Connection refused
+
+# 当访问31000端口时超时了
+[root@node0 ~]# curl http://127.0.0.1:31000 --connect-timeout 5
+curl: (28) Connection timed out after 5001 milliseconds
+```
+
+**查看所使用的代理模式**
+
+```bash
+[root@node0 k8s]# kubectl logs kube-proxy-znqrr  -n kube-system | grep -Ei 'proxy|proxier|iptables|ipvs'
+I0611 11:12:15.485248       1 server_others.go:269] "Using ipvs Proxier"
+I0611 11:12:15.485275       1 server_others.go:271] "Creating dualStackProxier for ipvs"
+E0611 11:12:15.485477       1 proxier.go:377] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
+E0611 11:12:15.485961       1 proxier.go:377] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
+```
+
+:::
