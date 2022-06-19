@@ -27,7 +27,7 @@ API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23
 | `kube-proxy`                    | 网络代理，在集群中每个节点（node)上运行，负责集群内部或外部的网络会话与 Pod 进行网络通信 |
 | 容器运行时（Container Runtime） | 比如`Docker`（目前已经不支持）、`Containerd`、`CRI-O`等      |
 
-
+## 
 
 ## 演示版本
 
@@ -2088,6 +2088,15 @@ demo-8f99576b9-vrfvx   1/1     Running   0          99s
 
 <br />
 
+
+
+**Service对外暴露的不足**
+
+* 一个端口只能一个服务使用，端口需要提前规划
+* 只支持4层负载均衡
+
+
+
 #### 类型1：ClusterIP
 
 ::: details  点击查看详情
@@ -2609,3 +2618,24 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 :::
 
+<br />
+
+### Ingress
+
+<br />
+
+#### 简介
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
+
+`Ingress`公开从集群外部到集群内服务的 HTTP 和 HTTPS 路由，而具体实现流量路由则是由`Ingress Controller`负责
+
+
+
+#### NGINX Controller
+
+Kubernetes官方维护的`Ingress NGINX Controller`
+
+* 文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
+
+* Github：[https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx)
