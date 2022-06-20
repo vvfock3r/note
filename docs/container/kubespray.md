@@ -428,7 +428,7 @@ EOF
 
 ## FAQ
 
-### 下载文件出错
+### Download file error
 
 ![image-20211229101545405](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211229101545405.png)
 
@@ -440,11 +440,11 @@ EOF
 >   * 比如将代理服务器的`http://`误写成`http:/`
 >
 
-
+<br />
 
 ### 组件状态为Unhealthy
 
-scheduler和controller-manager组件状态为Unhealthy
+`scheduler`和`controller-manager`组件状态为`Unhealthy`
 
 ```bash
 # 修复Unhealthy(在所有Master上操作)
@@ -457,9 +457,30 @@ scheduler和controller-manager组件状态为Unhealthy
 [root@localhost ~]# systemctl restart kubelet
 ```
 
-### Ansible SSH超时报错
+<br />
 
-报错信息为：Timeout (12s) waiting for privilege escalation prompt
+### SSH超时
+
+**错误描述**
+
+`Ansible`连接报错信息：`Timeout (12s) waiting for privilege escalation prompt`
+
+手动调用`ssh`命令则会一直卡着
+
+**解决办法**
+
+方法1：关闭SSH反向解析（推荐使用）
+
+```bash
+[root@node0 kubespray-2.19.0]# vi /etc/ssh/sshd_config 
+UseDNS no
+
+[root@node0 ~]# systemctl restart sshd.service
+```
+
+
+
+方法2：调整Ansible SSH超时时间
 
 ```bash
 # 调大超时时间

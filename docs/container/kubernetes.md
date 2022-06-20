@@ -2646,15 +2646,23 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 #### 安装
 
+文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+<br />
+
 #### 基础示例
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
-::: detail 点击查看详情
+::: details  点击查看详情
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo1.yml <<- EOF
+[root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2682,30 +2690,32 @@ metadata:
   namespace: default
 spec:
   selector:
-    app: demo         # 通过标签关联Pods
-  type: ClusterIP     # 指定Service类型为NodePort
-  ports:              # 端口字段，固定
-    - name: http      # 定义一个名字,用来说明这是http应用
-      protocol: TCP   # 协议
-      port: 80        # Service端口
-      targetPort: 80  # 容器端口
+    app: demo
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-demo
-spec:  
-  rules:
-    - host: a.com
-      http:
-        paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: demo-svc
-              port:
-                number: 80
+  namespace: default
+spec:
+  #ingressClassName: nginx      # 指定ingress类名，这个写上访问会404，不知道为啥
+  rules:                        # 指定ingress规则
+    - host: a.com               # 定义主机，可选
+      http:                     # 
+        paths:                  # 路径列表
+        - path: /               #   路径
+          pathType: Prefix      #   前缀匹配，区分大小写
+          backend:              #   定义后端
+            service:            #   service
+              name: demo-svc    #     service name
+              port:             #     service port
+                number: 80      #
 EOF
 
 # 创建应用
@@ -2716,24 +2726,26 @@ ingress.networking.k8s.io/ingress-demo created
 
 # 查看Service
 [root@node0 k8s]# kubectl get svc -o wide
-NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE     SELECTOR
-demo-svc     ClusterIP   10.200.238.0   <none>        80/TCP    3m14s   app=demo
-kubernetes   ClusterIP   10.200.0.1     <none>        443/TCP   8d      <none>
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+demo-svc     ClusterIP   10.200.0.180   <none>        80/TCP    11s   app=demo
+kubernetes   ClusterIP   10.200.0.1     <none>        443/TCP   9d    <none>
 
 # 查看Ingress
 [root@node0 k8s]# kubectl get ingress -o wide
 NAME           CLASS    HOSTS   ADDRESS                                        PORTS   AGE
-ingress-demo   <none>   a.com   192.168.48.128,192.168.48.134,192.168.48.135   80      2m37s
+ingress-demo   <none>   a.com   192.168.48.128,192.168.48.134,192.168.48.135   80      53s
 
 # 查看Pod
 [root@node0 k8s]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES
-demo-76f4bb484d-2q7hn   1/1     Running   0          4m10s   10.233.30.9   node2   <none>           <none>
+NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo-59ddb745c4-ltcjs   1/1     Running   0          42s   10.233.44.14   node2   <none>           <none>
 ```
 
 **本地绑定hosts文件**
 
+```bash
 192.168.48.128	a.com
+```
 
 **浏览器访问**
 
