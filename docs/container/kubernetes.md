@@ -2620,9 +2620,7 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 <br />
 
-### Ingress
-
-#### 简介
+### Ingress简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
 
@@ -2630,25 +2628,29 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 <br />
 
-#### NGINX Controller
+### Ingress NGINX Controller
 
-`Kubernetes`官方维护的`Ingress NGINX Controller`（推荐，本文档使用此版本）
+主要有2个开源实现：
+
+（1）`Kubernetes`官方维护的`Ingress NGINX Controller`（推荐，本文档使用此版本）
 
 * 文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
 * Github：[https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx)
 
-Nginx官方维护的`NGINX Ingress Controller`
+（2）Nginx官方维护的`NGINX Ingress Controller`
 
 * 文档：[https://docs.nginx.com/nginx-ingress-controller/](https://docs.nginx.com/nginx-ingress-controller/)
 * Github：[https://github.com/nginxinc/kubernetes-ingress](https://github.com/nginxinc/kubernetes-ingress)
 
 <br />
 
-（1）基础示例
+#### 安装
+
+#### 基础示例
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
-::: details  基础示例
+::: detail 点击查看详情
 
 ```bash
 # 生成yaml文件
