@@ -2632,8 +2632,107 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 #### NGINX Controller
 
-Kubernetes官方维护的`Ingress NGINX Controller`
+`Kubernetes`官方维护的`Ingress NGINX Controller`（推荐，本文档使用此版本）
 
 * 文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
-
 * Github：[https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx)
+
+Nginx官方维护的`NGINX Ingress Controller`
+
+* 文档：[https://docs.nginx.com/nginx-ingress-controller/](https://docs.nginx.com/nginx-ingress-controller/)
+* Github：[https://github.com/nginxinc/kubernetes-ingress](https://github.com/nginxinc/kubernetes-ingress)
+
+<br />
+
+（1）基础示例
+
+文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
+
+::: details  基础示例
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo1.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-svc
+  namespace: default
+spec:
+  selector:
+    app: demo         # 通过标签关联Pods
+  type: ClusterIP     # 指定Service类型为NodePort
+  ports:              # 端口字段，固定
+    - name: http      # 定义一个名字,用来说明这是http应用
+      protocol: TCP   # 协议
+      port: 80        # Service端口
+      targetPort: 80  # 容器端口
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo
+spec:  
+  rules:
+    - host: a.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: demo-svc
+              port:
+                number: 80
+EOF
+
+# 创建应用
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+service/demo-svc created
+ingress.networking.k8s.io/ingress-demo created
+
+# 查看Service
+[root@node0 k8s]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+demo-svc     ClusterIP   10.200.238.0   <none>        80/TCP    3m14s   app=demo
+kubernetes   ClusterIP   10.200.0.1     <none>        443/TCP   8d      <none>
+
+# 查看Ingress
+[root@node0 k8s]# kubectl get ingress -o wide
+NAME           CLASS    HOSTS   ADDRESS                                        PORTS   AGE
+ingress-demo   <none>   a.com   192.168.48.128,192.168.48.134,192.168.48.135   80      2m37s
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES
+demo-76f4bb484d-2q7hn   1/1     Running   0          4m10s   10.233.30.9   node2   <none>           <none>
+```
+
+**本地绑定hosts文件**
+
+192.168.48.128	a.com
+
+**浏览器访问**
+
+![image-20220620164920645](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220620164920645.png):::

@@ -359,12 +359,17 @@ kube-system     nodelocaldns-m2zvj                            1/1     Running   
 
 ```bash
 # 清理Containerd HTTP代理
+[root@localhost ~]# cat /etc/systemd/system/containerd.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=http://192.168.0.100:7890" "HTTPS_PROXY=http://192.168.0.100:7890" "NO_PROXY=192.168.48.128,node0,node0.cluster.local,192.168.48.134,node1,node1.cluster.local,192.168.48.135,node2,node2.cluster.local,127.0.0.1,localhost,10.200.0.0/16,10.233.0.0/16,svc,svc.cluster.local"
+
 [root@localhost ~]# rm -vf /etc/systemd/system/containerd.service.d/http-proxy.conf
 [root@localhost ~]# systemctl daemon-reload
 [root@localhost ~]# systemctl restart containerd
 
 # 清理Yum HTTP代理(把grep出来的代理配置手动删除即可)
 [root@localhost ~]# grep 7890 -r /etc/yum*
+/etc/yum.conf:proxy=http://192.168.0.100:7890
 ```
 
 
