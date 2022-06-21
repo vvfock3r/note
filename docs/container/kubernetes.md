@@ -2936,7 +2936,7 @@ LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVND
 
 ② 创建YAML文件
 
-![image-20220621155809588](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220621155809588.png)
+![image-20220621155809588](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621155809588.png)
 
 > 特别注意：上面base64编码的证书内容之间不能有换行符，否则会有这种报错
 >
@@ -3074,3 +3074,6 @@ Location: https://a.com     # 重定向后新的地址
 三、验证HTTPS
 
 ![image-20220621161135198](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621161135198.png)
+
+
+
