@@ -292,12 +292,12 @@ metrics_server_enabled: true    # 修改为true
 [root@localhost kubespray-2.19.0]# tmux new -s k8s_install
 
 # 部署Kubernetes集群（这一步执行的时间可能会很长，这里我使用time命令来统计一下时长）
-# 如果想查看详细信息，添加-vvvv
+# 如果想查看详细信息或定位出错的task，可以添加-vvvv
 [root@localhost kubespray-2.19.0]# time ansible-playbook -i inventory/mycluster/hosts.yaml  -b cluster.yml
 
-real    25m49.126s
-user    14m56.884s
-sys     4m50.167s
+real    29m43.274s
+user    8m22.444s
+sys     3m51.848s
 ```
 
 > 安装步骤执行时长并不稳定，根据系统配置、网络质量而不同，快则半小时，慢则几个小时
@@ -308,7 +308,7 @@ sys     4m50.167s
 
 ```bash
 # 查看节点状态(Master节点执行)
-[root@localhost kubespray-2.19.0]#  kubectl get node
+[root@localhost kubespray-2.19.0]# kubectl get node
 NAME    STATUS   ROLES                  AGE   VERSION
 node0   Ready    control-plane,master   15m   v1.23.7
 node1   Ready    control-plane,master   14m   v1.23.7
@@ -363,11 +363,11 @@ kube-system     nodelocaldns-m2zvj                            1/1     Running   
 [Service]
 Environment="HTTP_PROXY=http://192.168.0.100:7890" "HTTPS_PROXY=http://192.168.0.100:7890" "NO_PROXY=192.168.48.128,node0,node0.cluster.local,192.168.48.134,node1,node1.cluster.local,192.168.48.135,node2,node2.cluster.local,127.0.0.1,localhost,10.200.0.0/16,10.233.0.0/16,svc,svc.cluster.local"
 
-[root@localhost ~]# rm -vf /etc/systemd/system/containerd.service.d/http-proxy.conf
+[root@localhost ~]# mv /etc/systemd/system/containerd.service.d/http-proxy.conf /etc/systemd/system/containerd.service.d/http-proxy.conf_$(date +"%Y-%m-%d-%H%M%S")
 [root@localhost ~]# systemctl daemon-reload
 [root@localhost ~]# systemctl restart containerd
 
-# 清理Yum HTTP代理(把grep出来的代理配置手动删除即可)
+# 清理Yum HTTP代理(把grep出来的代理配置注释或删除即可)
 [root@localhost ~]# grep 7890 -r /etc/yum*
 /etc/yum.conf:proxy=http://192.168.0.100:7890
 ```
@@ -477,8 +477,6 @@ UseDNS no
 
 [root@node0 ~]# systemctl restart sshd.service
 ```
-
-
 
 方法2：调整Ansible SSH超时时间
 

@@ -2287,13 +2287,14 @@ metadata:
   name: demo
 spec:
   selector:
-    app: web         # 通过标签关联Pods
-  type: ClusterIP    # Service类型为ClusterIP，这也是默认值
-  ports:             # 端口字段，固定
-    - name: http     # 定义一个名字,用来说明这是http应用
-      protocol: TCP  # 协议
-      port: 80       # Service端口
-      targetPort: 80 # 容器端口
+    app: web          # 通过标签关联Pods
+  type: NodePort      # Service类型为NodePort
+  ports:              # 端口字段，固定
+    - name: http      # 定义一个名字,用来说明这是http应用
+      protocol: TCP   # 协议
+      port: 80        # Service端口
+      targetPort: 80  # 容器端口
+      nodePort: 31000 # 指定NodePort
 EOF
 
 # 创建
@@ -2648,8 +2649,134 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
 
+（1）下载YAML文件
+
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml
+[root@localhost k8s]# wget -O ingress-nginx.yml https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+（2）修改YAML文件
+
+```bash
+# 修改配置(1)：修改为DaemonSet部署，这样访问任意一个Node都可以访问到Ingress NGINX
+[root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml  # 搜索出来只有一个
+kind: Deployment
+[root@localhost k8s]# sed -ri 's/Deployment/DaemonSet/g' ingress-nginx.yml
+[root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml
+kind: DaemonSet
+
+# 修改配置(2)：指定nodePort端口，否则若重新创建ingress-nginx会随机分配一个端口
+[root@node0 k8s]# vim ingress-nginx.yml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.2.0
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  externalTrafficPolicy: Local
+  ports:
+  - appProtocol: http
+    name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+    nodePort: 32261         # 添加这行
+  - appProtocol: https
+    name: https
+    port: 443
+    protocol: TCP
+    targetPort: https
+    nodePort: 32262         # 添加这行
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+  type: LoadBalancer
+  
+# 修改配置(3)：使用宿主机网络（若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听）
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.2.0
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  minReadySeconds: 0
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: ingress-nginx
+        app.kubernetes.io/name: ingress-nginx
+    spec:
+      hostNetwork: true          # 添加这一行
+```
+
+（3）部署Ingress NGINX（这一步会去海外下载镜像,请提前下载好镜像或配置`Containerd`代理）
+
+```bash
+[root@localhost k8s]# kubectl apply -f ingress-nginx.yml
+namespace/ingress-nginx unchanged
+serviceaccount/ingress-nginx unchanged
+serviceaccount/ingress-nginx-admission unchanged
+role.rbac.authorization.k8s.io/ingress-nginx unchanged
+role.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+clusterrole.rbac.authorization.k8s.io/ingress-nginx unchanged
+clusterrole.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+rolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
+rolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+configmap/ingress-nginx-controller unchanged
+service/ingress-nginx-controller unchanged
+service/ingress-nginx-controller-admission unchanged
+daemonset.apps/ingress-nginx-controller configured
+job.batch/ingress-nginx-admission-create unchanged
+job.batch/ingress-nginx-admission-patch unchanged
+ingressclass.networking.k8s.io/nginx unchanged
+validatingwebhookconfiguration.admissionregistration.k8s.io/ingress-nginx-admission configured
+```
+
+（4）检查部署情况
+
+```bash
+# 查看Pod状态
+[root@localhost k8s]# kubectl get pods -n ingress-nginx
+NAME                                   READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-kmb95   0/1     Completed   0          19m
+ingress-nginx-admission-patch-jlxg8    0/1     Completed   0          19m
+ingress-nginx-controller-hqwh6         1/1     Running     0          19m
+ingress-nginx-controller-t6lwx         1/1     Running     0          19m
+ingress-nginx-controller-z9ql7         1/1     Running     0          19m
+
+# 查看Ingress NGINX service（如果要访问Ingress的80端口，那么就需要访问任意宿主机的32261端口）
+[root@node0 k8s]# kubectl get svc -n ingress-nginx
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.200.94.22     <pending>     80:32261/TCP,443:32262/TCP   12s
+ingress-nginx-controller-admission   ClusterIP      10.200.196.229   <none>        443/TCP                      12s
+
+# 查看Ingress NGINX Class Name
+[root@node0 k8s]# kubectl get ingressclass -A
+NAME    CONTROLLER             PARAMETERS   AGE
+nginx   k8s.io/ingress-nginx   <none>       26s
 ```
 
 <br />
@@ -2704,7 +2831,7 @@ metadata:
   name: ingress-demo
   namespace: default
 spec:
-  #ingressClassName: nginx      # 指定ingress类名，这个写上访问会404，不知道为啥
+  ingressClassName: nginx      # 指定ingress类名
   rules:                        # 指定ingress规则
     - host: a.com               # 定义主机，可选
       http:                     # 
@@ -2725,20 +2852,20 @@ service/demo-svc created
 ingress.networking.k8s.io/ingress-demo created
 
 # 查看Service
-[root@node0 k8s]# kubectl get svc -o wide
-NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
-demo-svc     ClusterIP   10.200.0.180   <none>        80/TCP    11s   app=demo
-kubernetes   ClusterIP   10.200.0.1     <none>        443/TCP   9d    <none>
+[root@localhost k8s]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE    SELECTOR
+demo-svc     ClusterIP   10.200.159.80   <none>        80/TCP    14m    app=demo
+kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP   100m   <none>
 
 # 查看Ingress
-[root@node0 k8s]# kubectl get ingress -o wide
-NAME           CLASS    HOSTS   ADDRESS                                        PORTS   AGE
-ingress-demo   <none>   a.com   192.168.48.128,192.168.48.134,192.168.48.135   80      53s
+[root@localhost k8s]# kubectl get ingress -o wide
+NAME           CLASS   HOSTS   ADDRESS   PORTS   AGE
+ingress-demo   nginx   a.com             80      14m
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
+[root@localhost k8s]# kubectl get pods -o wide
 NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo-59ddb745c4-ltcjs   1/1     Running   0          42s   10.233.44.14   node2   <none>           <none>
+demo-59ddb745c4-mkkgw   1/1     Running   0          14m   10.233.44.20   node2   <none>           <none>
 ```
 
 **本地绑定hosts文件**
@@ -2747,6 +2874,8 @@ demo-59ddb745c4-ltcjs   1/1     Running   0          42s   10.233.44.14   node2 
 192.168.48.128	a.com
 ```
 
-**浏览器访问**
+**浏览器访问（Ingress Service端口）**
 
-![image-20220620164920645](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220620164920645.png):::
+![image-20220621090229523](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621090229523.png)
+
+:::
