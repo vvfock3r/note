@@ -3059,7 +3059,11 @@ EOF
 
 :::
 
-二、须知：配置完成后，若使用`HTTP`协议则会返回`308`重定向
+二、验证HTTPS
+
+![image-20220621161135198](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621161135198.png)
+
+三、须知：配置完成后，若使用`HTTP`协议则会返回`308`重定向
 
 ```bash
 [root@node0 k8s]# curl http://a.com -I
@@ -3070,10 +3074,6 @@ Content-Length: 164
 Connection: keep-alive
 Location: https://a.com     # 重定向后新的地址
 ```
-
-三、验证HTTPS
-
-![image-20220621161135198](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621161135198.png)
 
 
 
