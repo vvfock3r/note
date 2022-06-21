@@ -2894,6 +2894,8 @@ demo-59ddb745c4-mkkgw   1/1     Running   0          14m   10.233.44.20   node2 
 
 #### HTTPS访问
 
+文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
+
 一、在HTTP能访问的基础上做一些简单的操作即可
 
 ::: details  1、提前申请好证书，这里使用mkcert生成自签证书
