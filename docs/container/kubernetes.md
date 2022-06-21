@@ -2701,7 +2701,9 @@ spec:
     app.kubernetes.io/name: ingress-nginx
   type: LoadBalancer
   
-# 3（可选）、使用宿主机网络（若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听）
+# 3、使用宿主机网络（可选）
+#    若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听
+#    若配置了这一项则可以直接使用域名访问，而不必加上nodePort端口（在本文档是32261或32262），当然加上nodePort端口也是可以的
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -2785,7 +2787,7 @@ nginx   k8s.io/ingress-nginx   <none>       26s
 
 <br />
 
-#### 基础示例
+#### HTTP访问
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
@@ -2878,8 +2880,195 @@ demo-59ddb745c4-mkkgw   1/1     Running   0          14m   10.233.44.20   node2 
 192.168.48.128	a.com
 ```
 
-**浏览器访问（Ingress Service端口）**
+**浏览器访问 Ingress Service NodePort端口**
 
 ![image-20220621090229523](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621090229523.png)
 
+**浏览器访问Ingress Service端口（需Ingress NGINX设置使用宿主机网络）**
+
+![image-20220621152327693](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621152327693.png)
+
 :::
+
+<br />
+
+#### HTTPS访问
+
+一、在HTTP能访问的基础上做一些简单的操作即可
+
+::: details  1、提前申请好证书，这里使用mkcert生成自签证书
+
+```bash
+# 生成自谦证书
+C:\Users\Administrator\Desktop>mkcert a.com
+
+Created a new certificate valid for the following names 📜
+ - "a.com"
+
+The certificate is at "./a.com.pem" and the key at "./a.com-key.pem" ✅
+
+It will expire on 21 September 2024 🗓
+```
+
+:::
+
+::: details  2、创建TLS类型的Secret，用于保存证书 --- 方法1：使用命令行创建TLS类型Secret
+
+```bash
+[root@node0 k8s]# kubectl create secret tls https --cert=a.com.pem --key=a.com-key.pem
+```
+
+:::
+
+::: details  2、创建TLS类型的Secret，用于保存证书 --- 方法2：使用YAML文件创建TLS类型Secret
+
+① 先将证书进行base64编码
+
+```bash
+[root@node0 k8s]# cat a.com.pem | base64 | tr -d "\n" | awk '{print $0}'
+LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVYakNDQXNhZ0F3SUJBZ0lSQVArekg5RzBPMWdyeEJCMXNCRVVEaUl3RFFZSktvWklodmNOQVFFTEJRQXcKZ1pjeEhqQWNCZ05WQkFvVEZXMXJZMlZ5ZENCa1pYWmxiRzl3YldWdWRDQkRRVEUyTURRR0ExVUVDd3d0UkVWVApTMVJQVUMweU1rczRNRlU0WEVGa2JXbHVhWE4wY21GMGIzSkFSRVZUUzFSUFVDMHlNa3M0TUZVNE1UMHdPd1lEClZRUURERFJ0YTJObGNuUWdSRVZUUzFSUFVDMHlNa3M0TUZVNFhFRmtiV2x1YVhOMGNtRjBiM0pBUkVWVFMxUlAKVUMweU1rczRNRlU0TUI0WERUSXlNRFl5TVRBMk5EY3lPRm9YRFRJME1Ea3lNVEEyTkRjeU9Gb3dZVEVuTUNVRwpBMVVFQ2hNZWJXdGpaWEowSUdSbGRtVnNiM0J0Wlc1MElHTmxjblJwWm1sallYUmxNVFl3TkFZRFZRUUxEQzFFClJWTkxWRTlRTFRJeVN6Z3dWVGhjUVdSdGFXNXBjM1J5WVhSdmNrQkVSVk5MVkU5UUxUSXlTemd3VlRnd2dnRWkKTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDZXhRNzBBaWkwY1BvRmswRWVxa2Jhdi9hUwpjclRETEZyT0xoNkpPYUgrNHNmZU1kZFJ0UkRXRFhJTitCNlhvaTRCalNLdE5nVFRPRjlYcmYyOUNZYWsvZG05CndUbXgxaHRQaWx6dkRxTkJXVmNwSGFicExpOERMQWF4bUs0N1FYb2JmSkl5U0FYazllemRTNmQ4Sk1xQ055U0cKSWU0cnhlVTdIM2tuUDhMSE5tTmZMNWNEc1QrdTFSYWVKblVMTzBNUzZqTG5Ga2VGY0tUQk56T3pjR1ZNNWdqcQpzVnpmLzZ6MXJScUdFdDRpNWFJZzdwRUxVVWRxdmxFRFJOOVBpampMTG5oQjlTbGJWKzZ4Q0RvRERxbEx6YXhtCmQxNnVyQ284NURyYUJlMXUzMC8xK3BQakpHOWE2S3RId2NxTmJhY1dUSjRxZnhPbmtEMEE3b1VZYXpQNUFnTUIKQUFHaldqQllNQTRHQTFVZER3RUIvd1FFQXdJRm9EQVRCZ05WSFNVRUREQUtCZ2dyQmdFRkJRY0RBVEFmQmdOVgpIU01FR0RBV2dCVHNsQy9ZTkExQ1QzQXV4UmxNR1QvSWo2eHB3VEFRQmdOVkhSRUVDVEFIZ2dWaExtTnZiVEFOCkJna3Foa2lHOXcwQkFRc0ZBQU9DQVlFQWF2aGpJTGxXSkF6aGdVMUdaKzJZK1ozeXFQdGlUc0NhNGRKWXRCL3MKdURoZjEwTGlxUEtPcEFKWmZ1ZllWM2NYNGU1eDg2NnZTQWFKbDlYbkpvL0VDNXpIc0tOclphSG10Qm9QOE9IOQoyOVJ2WWtOL1pad2tQdEx0T0FCRmNtakM3Y1kvQnJnbDE3WEJzVnFzRFVOdDI4dG9hSEJVTE9lcndtMjNrbFJSCm9naHhRN3RncVJuR1VNb1M1Sm4wR3hGQXBxbXBHN3FrNnpGak9ad0RwUDZ2N2F2Yi9oOGx3NGJtRFJaMDVTaXAKbEdGU3pldXhiU2FGNFNTUFVrUXdYVTI0RmRjODE1WnJoMnBYSE11ZDhGRUd1UVhSbDVGTGNVc3J6YkgraHpUMApKZmJ3cjQxT1RET2RVd09GOHI1dkRtKy9tM1lyTmh4WkVMSnpObjdldXowU3Uwc2gxMEJWYUhuSTV4bU41RXJECmxjN0sxeFRNM1paVkpQUHlDZDgxVnJzM1F2akdpSlN0bVFld2kxc3Z3TjI1dnI4Qlg2MytCTDNYV29rRGJoVFoKbzdCRlc0TDZ2cVJzL3dvWjUyYmVCT1N2MnRLeGlSQnE2dnVJVlREbGdTTzAzbTRPWlFRbEI1V3c4WmZ0V1dScQpWY1E2VTljYUtWSk03Q3JmSEtXZGtPOWUKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+
+[root@node0 k8s]# cat a.com-key.pem | base64 | tr -d "\n" | awk '{print $0}'
+LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRQ2V4UTcwQWlpMGNQb0YKazBFZXFrYmF2L2FTY3JURExGck9MaDZKT2FIKzRzZmVNZGRSdFJEV0RYSU4rQjZYb2k0QmpTS3ROZ1RUT0Y5WApyZjI5Q1lhay9kbTl3VG14MWh0UGlsenZEcU5CV1ZjcEhhYnBMaThETEFheG1LNDdRWG9iZkpJeVNBWGs5ZXpkClM2ZDhKTXFDTnlTR0llNHJ4ZVU3SDNrblA4TEhObU5mTDVjRHNUK3UxUmFlSm5VTE8wTVM2akxuRmtlRmNLVEIKTnpPemNHVk01Z2pxc1Z6Zi82ejFyUnFHRXQ0aTVhSWc3cEVMVVVkcXZsRURSTjlQaWpqTExuaEI5U2xiVis2eApDRG9ERHFsTHpheG1kMTZ1ckNvODVEcmFCZTF1MzAvMStwUGpKRzlhNkt0SHdjcU5iYWNXVEo0cWZ4T25rRDBBCjdvVVlhelA1QWdNQkFBRUNnZ0VBY01SZC9vbWFCNjlHcGJjVlJZYURsTk5MZW5EbVdzbWlKVmMwY1JyeUtHdEMKc2xxTUtJaUdVTUowQTkvN09wQUNSUy9OTldGc3cra0NMdkJ4akZhN3YyeGR2eDBDc1lEMUhPV1ZaR1h0Sm5raQpJeDNnY3paT1JkNTdVcUN5LzN0ZUV5L0RWdHM0OUlxSGxoWXArMDdXVnU1N2pwbUM1S3hHU0Z2dVhTWTRYZXp3CitoYzlnbkx2NldaM2g0ZEFGQjRhZTAxWUNTQk00dUFmRXNSaWlGMFJRbXYrZHBCRkVzTHBHZ2pYNDF3MTNTMzAKMmFOZlZQUEFXaFlIYk5RUFNacnB0QTlwRTUvTHYzSGlBUXVsMC84VUNkNFovckZ6R0xMTmUrV1duSUx3NEtNQgplM3o0ekVDMm9pU3UvSXpRdE5Bd0FjSkg3OUtOZUgrcGZmQ3pQd1g2RVFLQmdRRElERmRpVmZnZkxMNC83OGZ5CmNhODJrTXp0WjdFTW1LVmZub0xIdEVKc2VSMEtHWVk3YURJbUYxYmJYVmhpdTlseHFIcEJFWm5ualJuLzBCS3EKU0sydnVFOG9DdEJGaVpCamtpdWFYdDZXSi9pZkY0dzk4Z3MrVG5hbzNZK3lkODhEbDF0NVhwL2o0SVhPYnR5cApnTmtjY3M4aVpZMkNIT1hVdFNNTzFhN2cvd0tCZ1FETExTTXVERFNkZ09OZzJEZTAyVGk1b1kwMGVwNnVFanI5CndXM1hzdVBUdlhpeDVTd2ZaOG10ZytPZlZqTU0rNkRqMmRkLzZMZGVCNS9kZUhraGNFL0UyYUFWSWNkSjJxTFIKeVYySzhVUS9Xak9VNGVyZ1JMOG9iMmw4bDRBMXpEWHROZ3JPNFFsUVRyNk1KaHlscThJMDRHb01tUXJXaVB6Tgp6OHdvemUvekJ3S0JnRmtiWmpFZktnNTQxNldUSVBVVlBuNkhzVUJ1VjZiTXQ1MEg5aWtPV2lnSEtyQTgvbFduCjYrNmJwc3kvbjRjYk5aZ3krNEhRWFVXT3pHM3VPT0l3eld6Z0pDSXA3dXVLZ3c1WEphVDFiU0JsWFpFLzQvQVQKeUg1UVpQcUM5bWNBaHUyS2xleFNBZFozUkNMWHJ1S3h5Z09xQUNuS0ltWTZpUVZlU2VkcHR5UHhBb0dBTFdidgp4cGw1cEh5cDB2bGVNVzZkSzNZN2JLKytCOTRSQ3FXUDJ6U2hqcTUzYXlGd0k3QjRzK3FXRWdRY01sbUVrWVliCmp2eTlCU2tsQTBPcHBkeElKeEFPb3NwQ2szRmxFd1l4Zmh2K0NUNHA2cW8xWjFwVmNUNjhUdGc0RVUySiszRXAKSnlQSWhnYWl0QVRNUUFWS3g3QWlZcUJNZUxaeDc3Znd3bW1LcGo4Q2dZQUZXU215ckdIdG1Qa1F4SjhRMEViRQpuWnl4aE56bFprc2ZTc2NtNm95OXhYeWFMWllMem0zdWdFSmVkb3cxdkJYdFJtaXJtT0pXTXRzK0ZIeXU2cDhKCjk1OTVLcmxMQ1p4WXJLaXpLc2xaUjV3VDI3aW5xdDF1dlJsb0prOWpudUU0cXdKdDlYSndQQXpoSzRDc3g4S1YKZXVZVU53Zy9GYTA0VWFEMFpYa245dz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+```
+
+② 创建YAML文件
+
+![image-20220621155809588](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220621155809588.png)
+
+> 特别注意：上面base64编码的证书内容之间不能有换行符，否则会有这种报错
+>
+> ```bash
+> [root@node0 k8s]# kubectl apply -f https.yml 
+> error: error parsing https.yml: error converting YAML to JSON: yaml: line 9: could not find expected ':'
+> ```
+
+③ 创建Secret
+
+```bash
+[root@node0 k8s]# kubectl apply -f https.yml 
+secret/https created
+```
+
+:::
+
+::: details  3、Ingress中指定所使用的证书
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo
+  namespace: default
+spec:
+  ingressClassName: nginx       # 指定ingress类名
+  tls:                          # TLS配置
+  - hosts:                      #   定义主机
+      - a.com                   #   
+    secretName: https           # secret name
+  rules:                  
+    - host: a.com        
+      http:             
+        paths:         
+        - path: /     
+          pathType: Prefix
+          backend:       
+            service:    
+              name: demo-svc
+              port:        
+                number: 80
+```
+
+:::
+
+::: details  总结：完成的YAML文件（包含HTTPS证书base64编码）
+
+```bash
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-svc
+  namespace: default
+spec:
+  selector:
+    app: demo
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: https
+  namespace: default
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVYakNDQXNhZ0F3SUJBZ0lSQVArekg5RzBPMWdyeEJCMXNCRVVEaUl3RFFZSktvWklodmNOQVFFTEJRQXcKZ1pjeEhqQWNCZ05WQkFvVEZXMXJZMlZ5ZENCa1pYWmxiRzl3YldWdWRDQkRRVEUyTURRR0ExVUVDd3d0UkVWVApTMVJQVUMweU1rczRNRlU0WEVGa2JXbHVhWE4wY21GMGIzSkFSRVZUUzFSUFVDMHlNa3M0TUZVNE1UMHdPd1lEClZRUURERFJ0YTJObGNuUWdSRVZUUzFSUFVDMHlNa3M0TUZVNFhFRmtiV2x1YVhOMGNtRjBiM0pBUkVWVFMxUlAKVUMweU1rczRNRlU0TUI0WERUSXlNRFl5TVRBMk5EY3lPRm9YRFRJME1Ea3lNVEEyTkRjeU9Gb3dZVEVuTUNVRwpBMVVFQ2hNZWJXdGpaWEowSUdSbGRtVnNiM0J0Wlc1MElHTmxjblJwWm1sallYUmxNVFl3TkFZRFZRUUxEQzFFClJWTkxWRTlRTFRJeVN6Z3dWVGhjUVdSdGFXNXBjM1J5WVhSdmNrQkVSVk5MVkU5UUxUSXlTemd3VlRnd2dnRWkKTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDZXhRNzBBaWkwY1BvRmswRWVxa2Jhdi9hUwpjclRETEZyT0xoNkpPYUgrNHNmZU1kZFJ0UkRXRFhJTitCNlhvaTRCalNLdE5nVFRPRjlYcmYyOUNZYWsvZG05CndUbXgxaHRQaWx6dkRxTkJXVmNwSGFicExpOERMQWF4bUs0N1FYb2JmSkl5U0FYazllemRTNmQ4Sk1xQ055U0cKSWU0cnhlVTdIM2tuUDhMSE5tTmZMNWNEc1QrdTFSYWVKblVMTzBNUzZqTG5Ga2VGY0tUQk56T3pjR1ZNNWdqcQpzVnpmLzZ6MXJScUdFdDRpNWFJZzdwRUxVVWRxdmxFRFJOOVBpampMTG5oQjlTbGJWKzZ4Q0RvRERxbEx6YXhtCmQxNnVyQ284NURyYUJlMXUzMC8xK3BQakpHOWE2S3RId2NxTmJhY1dUSjRxZnhPbmtEMEE3b1VZYXpQNUFnTUIKQUFHaldqQllNQTRHQTFVZER3RUIvd1FFQXdJRm9EQVRCZ05WSFNVRUREQUtCZ2dyQmdFRkJRY0RBVEFmQmdOVgpIU01FR0RBV2dCVHNsQy9ZTkExQ1QzQXV4UmxNR1QvSWo2eHB3VEFRQmdOVkhSRUVDVEFIZ2dWaExtTnZiVEFOCkJna3Foa2lHOXcwQkFRc0ZBQU9DQVlFQWF2aGpJTGxXSkF6aGdVMUdaKzJZK1ozeXFQdGlUc0NhNGRKWXRCL3MKdURoZjEwTGlxUEtPcEFKWmZ1ZllWM2NYNGU1eDg2NnZTQWFKbDlYbkpvL0VDNXpIc0tOclphSG10Qm9QOE9IOQoyOVJ2WWtOL1pad2tQdEx0T0FCRmNtakM3Y1kvQnJnbDE3WEJzVnFzRFVOdDI4dG9hSEJVTE9lcndtMjNrbFJSCm9naHhRN3RncVJuR1VNb1M1Sm4wR3hGQXBxbXBHN3FrNnpGak9ad0RwUDZ2N2F2Yi9oOGx3NGJtRFJaMDVTaXAKbEdGU3pldXhiU2FGNFNTUFVrUXdYVTI0RmRjODE1WnJoMnBYSE11ZDhGRUd1UVhSbDVGTGNVc3J6YkgraHpUMApKZmJ3cjQxT1RET2RVd09GOHI1dkRtKy9tM1lyTmh4WkVMSnpObjdldXowU3Uwc2gxMEJWYUhuSTV4bU41RXJECmxjN0sxeFRNM1paVkpQUHlDZDgxVnJzM1F2akdpSlN0bVFld2kxc3Z3TjI1dnI4Qlg2MytCTDNYV29rRGJoVFoKbzdCRlc0TDZ2cVJzL3dvWjUyYmVCT1N2MnRLeGlSQnE2dnVJVlREbGdTTzAzbTRPWlFRbEI1V3c4WmZ0V1dScQpWY1E2VTljYUtWSk03Q3JmSEtXZGtPOWUKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRQ2V4UTcwQWlpMGNQb0YKazBFZXFrYmF2L2FTY3JURExGck9MaDZKT2FIKzRzZmVNZGRSdFJEV0RYSU4rQjZYb2k0QmpTS3ROZ1RUT0Y5WApyZjI5Q1lhay9kbTl3VG14MWh0UGlsenZEcU5CV1ZjcEhhYnBMaThETEFheG1LNDdRWG9iZkpJeVNBWGs5ZXpkClM2ZDhKTXFDTnlTR0llNHJ4ZVU3SDNrblA4TEhObU5mTDVjRHNUK3UxUmFlSm5VTE8wTVM2akxuRmtlRmNLVEIKTnpPemNHVk01Z2pxc1Z6Zi82ejFyUnFHRXQ0aTVhSWc3cEVMVVVkcXZsRURSTjlQaWpqTExuaEI5U2xiVis2eApDRG9ERHFsTHpheG1kMTZ1ckNvODVEcmFCZTF1MzAvMStwUGpKRzlhNkt0SHdjcU5iYWNXVEo0cWZ4T25rRDBBCjdvVVlhelA1QWdNQkFBRUNnZ0VBY01SZC9vbWFCNjlHcGJjVlJZYURsTk5MZW5EbVdzbWlKVmMwY1JyeUtHdEMKc2xxTUtJaUdVTUowQTkvN09wQUNSUy9OTldGc3cra0NMdkJ4akZhN3YyeGR2eDBDc1lEMUhPV1ZaR1h0Sm5raQpJeDNnY3paT1JkNTdVcUN5LzN0ZUV5L0RWdHM0OUlxSGxoWXArMDdXVnU1N2pwbUM1S3hHU0Z2dVhTWTRYZXp3CitoYzlnbkx2NldaM2g0ZEFGQjRhZTAxWUNTQk00dUFmRXNSaWlGMFJRbXYrZHBCRkVzTHBHZ2pYNDF3MTNTMzAKMmFOZlZQUEFXaFlIYk5RUFNacnB0QTlwRTUvTHYzSGlBUXVsMC84VUNkNFovckZ6R0xMTmUrV1duSUx3NEtNQgplM3o0ekVDMm9pU3UvSXpRdE5Bd0FjSkg3OUtOZUgrcGZmQ3pQd1g2RVFLQmdRRElERmRpVmZnZkxMNC83OGZ5CmNhODJrTXp0WjdFTW1LVmZub0xIdEVKc2VSMEtHWVk3YURJbUYxYmJYVmhpdTlseHFIcEJFWm5ualJuLzBCS3EKU0sydnVFOG9DdEJGaVpCamtpdWFYdDZXSi9pZkY0dzk4Z3MrVG5hbzNZK3lkODhEbDF0NVhwL2o0SVhPYnR5cApnTmtjY3M4aVpZMkNIT1hVdFNNTzFhN2cvd0tCZ1FETExTTXVERFNkZ09OZzJEZTAyVGk1b1kwMGVwNnVFanI5CndXM1hzdVBUdlhpeDVTd2ZaOG10ZytPZlZqTU0rNkRqMmRkLzZMZGVCNS9kZUhraGNFL0UyYUFWSWNkSjJxTFIKeVYySzhVUS9Xak9VNGVyZ1JMOG9iMmw4bDRBMXpEWHROZ3JPNFFsUVRyNk1KaHlscThJMDRHb01tUXJXaVB6Tgp6OHdvemUvekJ3S0JnRmtiWmpFZktnNTQxNldUSVBVVlBuNkhzVUJ1VjZiTXQ1MEg5aWtPV2lnSEtyQTgvbFduCjYrNmJwc3kvbjRjYk5aZ3krNEhRWFVXT3pHM3VPT0l3eld6Z0pDSXA3dXVLZ3c1WEphVDFiU0JsWFpFLzQvQVQKeUg1UVpQcUM5bWNBaHUyS2xleFNBZFozUkNMWHJ1S3h5Z09xQUNuS0ltWTZpUVZlU2VkcHR5UHhBb0dBTFdidgp4cGw1cEh5cDB2bGVNVzZkSzNZN2JLKytCOTRSQ3FXUDJ6U2hqcTUzYXlGd0k3QjRzK3FXRWdRY01sbUVrWVliCmp2eTlCU2tsQTBPcHBkeElKeEFPb3NwQ2szRmxFd1l4Zmh2K0NUNHA2cW8xWjFwVmNUNjhUdGc0RVUySiszRXAKSnlQSWhnYWl0QVRNUUFWS3g3QWlZcUJNZUxaeDc3Znd3bW1LcGo4Q2dZQUZXU215ckdIdG1Qa1F4SjhRMEViRQpuWnl4aE56bFprc2ZTc2NtNm95OXhYeWFMWllMem0zdWdFSmVkb3cxdkJYdFJtaXJtT0pXTXRzK0ZIeXU2cDhKCjk1OTVLcmxMQ1p4WXJLaXpLc2xaUjV3VDI3aW5xdDF1dlJsb0prOWpudUU0cXdKdDlYSndQQXpoSzRDc3g4S1YKZXVZVU53Zy9GYTA0VWFEMFpYa245dz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+type: kubernetes.io/tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo
+  namespace: default
+spec:
+  ingressClassName: nginx       # 指定ingress类名
+  tls:                          # TLS配置
+  - hosts:                      #   定义主机
+      - a.com                   #
+    secretName: https           # secret name，里面存的是HTTPS证书
+  rules:                  
+    - host: a.com        
+      http:             
+        paths:         
+        - path: /     
+          pathType: Prefix
+          backend:       
+            service:    
+              name: demo-svc
+              port:        
+                number: 80
+EOF
+```
+
+:::
+
+二、须知：配置完成后，若使用`HTTP`协议则会返回`308`重定向
+
+```bash
+[root@node0 k8s]# curl http://a.com -I
+HTTP/1.1 308 Permanent Redirect
+Date: Tue, 21 Jun 2022 07:36:14 GMT
+Content-Type: text/html
+Content-Length: 164
+Connection: keep-alive
+Location: https://a.com     # 重定向后新的地址
+```
+
+三、验证HTTPS
+
+![image-20220621161135198](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621161135198.png)
