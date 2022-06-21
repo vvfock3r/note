@@ -2657,15 +2657,17 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 （2）修改YAML文件
 
+::: details 点击查看详情
+
 ```bash
-# 修改配置(1)：修改为DaemonSet部署，这样访问任意一个Node都可以访问到Ingress NGINX
+# 1、修改为DaemonSet部署，这样访问任意一个Node都可以访问到Ingress NGINX
 [root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml  # 搜索出来只有一个
 kind: Deployment
 [root@localhost k8s]# sed -ri 's/Deployment/DaemonSet/g' ingress-nginx.yml
 [root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml
 kind: DaemonSet
 
-# 修改配置(2)：指定nodePort端口，否则若重新创建ingress-nginx会随机分配一个端口
+# 2、指定nodePort端口，否则若重新创建ingress-nginx会随机分配一个端口
 [root@node0 k8s]# vim ingress-nginx.yml
 apiVersion: v1
 kind: Service
@@ -2699,7 +2701,7 @@ spec:
     app.kubernetes.io/name: ingress-nginx
   type: LoadBalancer
   
-# 修改配置(3)：使用宿主机网络（若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听）
+# 3（可选）、使用宿主机网络（若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听）
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -2729,6 +2731,8 @@ spec:
     spec:
       hostNetwork: true          # 添加这一行
 ```
+
+:::
 
 （3）部署Ingress NGINX（这一步会去海外下载镜像,请提前下载好镜像或配置`Containerd`代理）
 
