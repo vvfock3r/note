@@ -36,8 +36,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "${imageName}-${imageTag}.tar"
-          target: "/tmp/"
+          source: ${imageName}-${imageTag}.tar
+          target: /tmp/
 
       # https://github.com/marketplace/actions/ssh-remote-commands
       - name: 服务器导入镜像
