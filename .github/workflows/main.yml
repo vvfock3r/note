@@ -2,6 +2,12 @@
 #    了解 GitHub Action     https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
 #    构建和测试 Node.js     https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
 #    搜索公开的Action       https://github.com/marketplace?type=actions
+#
+# 引用变量注意事项
+#   (1) 通常情况下引用变量方式，比如run指令中
+#         ${var}
+#   (2) 其他情况下的引用变量方式，比如引用secret变量、给action传参等
+#         ${{ env.变量名 }}
 
 name: deploy
 on:                   
@@ -48,7 +54,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            docker image load -i /tmp/${imageName}-${imageTag}.tar
+            docker image load -i /tmp/${{ env.imageName }}-${{ env.imageTag }}.tar
 
       - name: 服务器重启容器
         uses: appleboy/ssh-action@master
@@ -58,8 +64,8 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            docker container inspect ${containerName} &>/dev/null && docker container rm -f ${containerName}
-            docker container run --name ${containerName} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${imageName}:${imageTag}
+            docker container inspect ${{ env.containerName }} &>/dev/null && docker container rm -f ${{ env.containerName }}
+            docker container run --name ${{ env.containerName }} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
 
       - name: 服务器清理资源
         uses: appleboy/ssh-action@master
@@ -69,5 +75,5 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            rm -vf /tmp/${imageName}-${imageTag}.tar
+            rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.tar
             docker image prune -f
