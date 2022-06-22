@@ -1,7 +1,7 @@
 # 相关文档：
-#   了解GitHub Actions：https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
-#    构建和测试 Node.js：https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
-#    搜索公开的Action: https://github.com/marketplace?type=actions
+#    了解 GitHub Action     https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
+#    构建和测试 Node.js     https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
+#    搜索公开的Action       https://github.com/marketplace?type=actions
 
 name: deploy
 on:                   
@@ -11,16 +11,22 @@ on:
     branches: [main]
     
 jobs:
-  build:
-    runs-on: ubuntu-latest
+
+  build:  
+    runs-on: ubuntu-latest    
+    env:
+      imageName: note
+      imageTag: latest      
+      containerName: jinhui.dev
+
     steps:
       - name: 拉取最新代码
         uses: actions/checkout@v3
         
       - name: 打包资源并构建容器镜像
         run: |
-          docker build . --file Dockerfile --tag note:latest
-          docker image save note:latest -o note-latest.tar
+          docker build . --file Dockerfile --tag ${imageName}:${imageTag}
+          docker image save ${imageName}:${imageTag} -o ${imageName}-${imageTag}.tar
 
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
       - name: 拷贝镜像到服务器
@@ -30,7 +36,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "note-latest.tar"
+          source: "${imageName}-${imageTag}.tar"
           target: "/tmp/"
 
       # https://github.com/marketplace/actions/ssh-remote-commands
@@ -41,8 +47,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          script: docker image load -i /tmp/note-latest.tar
-
+          script: docker image load -i /tmp/${imageName}-${imageTag}.tar
 
       - name: 重启容器
         uses: appleboy/ssh-action@master
@@ -52,5 +57,16 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            docker container inspect jinhui.dev &>/dev/null && docker container rm -f jinhui.dev
-            docker container run --name jinhui.dev -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d note:latest
+            docker container inspect ${containerName} &>/dev/null && docker container rm -f ${containerName}
+            docker container run --name ${containerName} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${imageName}:${imageTag}
+
+      - name: 清理资源
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            rm -vf /tmp/${imageName}-${imageTag}.tar
+            docker image prune -f
