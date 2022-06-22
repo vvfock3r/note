@@ -1,6 +1,7 @@
-# 文档连接：
+# 相关文档：
 #   了解GitHub Actions：https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
 #    构建和测试 Node.js：https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
+#    搜索公开的Action: https://github.com/marketplace?type=actions
 
 name: deploy
 on:                   
@@ -16,23 +17,28 @@ jobs:
       - name: 拉取最新代码
         uses: actions/checkout@v3
         
-      - name: 安装Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '14'
+      - name: 构建镜像        
+        run: |
+          docker build . --file Dockerfile --tag note:latest
+          docker image save note:latest -o note-latest.tar
 
-      - name: 安装依赖
-        run: npm install
-       
-      - name: 打包前端资源
-        run: npm run docs:build
-            
-      - name: 同步目录到我的服务器
-        uses: wangyucode/sftp-upload-action@v1.3.3
+      # https://github.com/marketplace/actions/scp-command-to-transfer-files
+      - name: 拷贝镜像到服务器
+        uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.SERVER_IP }}
-          port: "22"
+          host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          localDir: "docs/.vuepress/dist/"
-          remoteDir: "/usr/share/nginx/note/"
+          port: ${{ secrets.PORT }}
+          source: "note-latest.tar"
+          target: "/tmp/"
+
+      # https://github.com/marketplace/actions/ssh-remote-commands
+      - name: 服务器导入镜像
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: docker image load -i /tmp/note-latest.tar
