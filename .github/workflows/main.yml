@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: ${imageName}-${imageTag}.tar
+          source: ${{imageName}}-${{imageTag}}.tar
           target: /tmp/
 
       # https://github.com/marketplace/actions/ssh-remote-commands
@@ -47,7 +47,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          script: docker image load -i /tmp/${imageName}-${imageTag}.tar
+          script: |
+            docker image load -i /tmp/${imageName}-${imageTag}.tar
 
       - name: 服务器重启容器
         uses: appleboy/ssh-action@master
