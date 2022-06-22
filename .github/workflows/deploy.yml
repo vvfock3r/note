@@ -1,0 +1,38 @@
+# 文档连接：
+#   了解GitHub Actions：https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
+#    构建和测试 Node.js：https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: deploy
+on:                   
+  push
+    branches: [main]
+  pull_request:
+    branches: [main]  
+    
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取最新代码
+        uses: actions/checkout@v3
+        
+      - name: 安装Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      - name: 安装依赖
+        run: npm install
+       
+      - name: 打包前端资源
+      - run: npm run docs:build
+            
+      - name: 同步目录到我的服务器
+        uses: wangyucode/sftp-upload-action@v1.3.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          port: "22"
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          localDir: "dist"
+          remoteDir: "/usr/share/nginx/note/"
