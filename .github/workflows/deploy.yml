@@ -34,5 +34,5 @@ jobs:
           port: "22"
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          localDir: "dist"
+          localDir: "docs/.vuepress/dist/"
           remoteDir: "/usr/share/nginx/note/"
