@@ -10,7 +10,7 @@
 #         ${{ env.变量名 }}
 
 name: deploy
-on:                   
+on:
   push:
     branches: [main]
   pull_request:
@@ -26,7 +26,7 @@ jobs:
       containerName: jinhui.dev
 
     steps:
-      - name: 拉取代码
+      - name: 拉取最新代码
         uses: actions/checkout@v3
         
       - name: 构建镜像并导出
