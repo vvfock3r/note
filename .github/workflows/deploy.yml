@@ -25,7 +25,7 @@ jobs:
         run: npm install
        
       - name: 打包前端资源
-      - run: npm run docs:build
+        run: npm run docs:build
             
       - name: 同步目录到我的服务器
         uses: wangyucode/sftp-upload-action@v1.3.3
