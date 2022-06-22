@@ -20,10 +20,10 @@ jobs:
       containerName: jinhui.dev
 
     steps:
-      - name: 拉取最新代码
+      - name: 拉取代码
         uses: actions/checkout@v3
         
-      - name: 打包资源并构建容器镜像
+      - name: 构建镜像并导出
         run: |
           docker build . --file Dockerfile --tag ${imageName}:${imageTag}
           docker image save ${imageName}:${imageTag} -o ${imageName}-${imageTag}.tar
@@ -49,7 +49,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: docker image load -i /tmp/${imageName}-${imageTag}.tar
 
-      - name: 重启容器
+      - name: 服务器重启容器
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -60,7 +60,7 @@ jobs:
             docker container inspect ${containerName} &>/dev/null && docker container rm -f ${containerName}
             docker container run --name ${containerName} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${imageName}:${imageTag}
 
-      - name: 清理资源
+      - name: 服务器清理资源
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
