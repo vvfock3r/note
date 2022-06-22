@@ -11,13 +11,13 @@ on:
     branches: [main]
     
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: 拉取最新代码
         uses: actions/checkout@v3
         
-      - name: 构建镜像        
+      - name: 打包资源并构建容器镜像
         run: |
           docker build . --file Dockerfile --tag note:latest
           docker image save note:latest -o note-latest.tar
@@ -42,3 +42,15 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: docker image load -i /tmp/note-latest.tar
+
+
+      - name: 重启容器
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            docker container inspect jinhui.dev &>/dev/null && docker container rm -f jinhui.dev
+            docker container run --name jinhui.dev -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d note:latest
