@@ -2833,6 +2833,8 @@ disabled_plugins = ["cri"]
 
 ### 客户端命令：ctr
 
+::: details 点击查看详情
+
 ```bash
 # 验证ctr来自于containerd.io包
 [root@ap-hongkang ~]# which ctr
@@ -2893,6 +2895,8 @@ GLOBAL OPTIONS:
    --help, -h                   show help
    --version, -v                print the version
 ```
+
+:::
 
 > 注意事项：
 >
