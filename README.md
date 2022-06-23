@@ -1,4 +1,4 @@
-# Note [![Github Action](https://github.com/vvfock3r/note/workflows/deploy/badge.svg)](https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml) [![VuePress Version](https://img.shields.io/badge/vuepress-2.0.0--beta.46-blue)](https://v2.vuepress.vuejs.org/zh/) ![GitHub repo size](https://img.shields.io/github/repo-size/vvfock3r/note)
+# Note [![Github Action](https://github.com/vvfock3r/note/workflows/build/badge.svg)](https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml) [![VuePress Version](https://img.shields.io/badge/vuepress-2.0.0--beta.46-blue)](https://v2.vuepress.vuejs.org/zh/) ![GitHub repo size](https://img.shields.io/github/repo-size/vvfock3r/note)
 
 基于 [VuePress v2](https://v2.vuepress.vuejs.org/zh/) 搭建的个人笔记静态站点，在线预览：https://jinhui.dev
 
