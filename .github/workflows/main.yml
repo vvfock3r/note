@@ -41,7 +41,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}          
+          key: ${{ secrets.PRIVATEKEY }}
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/
 
@@ -53,7 +53,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}          
+          key: ${{ secrets.PRIVATEKEY }}
           script: |
             docker image load -i /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
 
@@ -64,7 +64,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}          
+          key: ${{ secrets.PRIVATEKEY }}
           script: |
             docker container inspect ${{ env.containerName }} &>/dev/null && docker container rm -f ${{ env.containerName }}
             docker container run --name ${{ env.containerName }} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
@@ -76,7 +76,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}          
+          key: ${{ secrets.PRIVATEKEY }}
           script: |
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
