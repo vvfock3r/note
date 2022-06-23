@@ -11,6 +11,10 @@
 * 仅支持内网访问
 * 使用内置的开发服务器
 
+<details>
+    <summary>点击查看详情</summary>
+    <p>
+
 ```bash
 # (1) 下载源码
 # [root@localhost ~]# git clone --depth 1 git@github.com:vvfock3r/note.git
@@ -41,6 +45,9 @@ info Initializing VuePress and preparing data...
   > Network:  http://172.17.0.1:8080/
 8:20:02 PM [vite] ✨ optimized dependencies changed. reloading
 ```
+
+</p>
+</details>
 
 
 
