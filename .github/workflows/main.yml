@@ -44,8 +44,7 @@ jobs:
           key: ${{ secrets.PRIVATEKEY }}
           use_insecure_cipher: true
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
-          target: /tmp/
-          debug: true
+          target: /tmp/          
 
       # https://github.com/marketplace/actions/ssh-remote-commands
       - name: 服务器导入镜像
