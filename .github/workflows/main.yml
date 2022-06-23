@@ -30,7 +30,7 @@ jobs:
         
       - name: 构建镜像并导出
         run: |
-          docker build . --file Dockerfile --tag ${imageName}:${imageTag}
+          docker image build . --file Dockerfile --tag ${imageName}:${imageTag}
           docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
 
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
@@ -42,6 +42,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.PRIVATEKEY }}
+          use_insecure_cipher: true
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/
 
@@ -53,7 +54,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}
+          key: ${{ secrets.PRIVATEKEY }}          
           script: |
             docker image load -i /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
 
@@ -64,7 +65,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}
+          key: ${{ secrets.PRIVATEKEY }}          
           script: |
             docker container inspect ${{ env.containerName }} &>/dev/null && docker container rm -f ${{ env.containerName }}
             docker container run --name ${{ env.containerName }} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
@@ -76,7 +77,7 @@ jobs:
           port: ${{ secrets.PORT }}
           username: ${{ secrets.USERNAME }}
           #password: ${{ secrets.PASSWORD }}
-          key: ${{ secrets.PRIVATEKEY }}
+          key: ${{ secrets.PRIVATEKEY }}          
           script: |
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
