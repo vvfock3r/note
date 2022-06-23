@@ -4,12 +4,14 @@
 
 
 
-# 本地部署
+## 本地部署
 
 在本地部署一个最小依赖的`VuePress`
 
 * 仅支持内网访问
 * 使用内置的开发服务器
+
+<br />
 
 <details>
     <summary>点击查看详情</summary>
@@ -51,13 +53,17 @@ info Initializing VuePress and preparing data...
 
 
 
-# 容器部署
+## 容器部署
 
 使用容器正式部署一个个人笔记静态站点
 
 * 支持`HTTPS(默认)`和`HTTP`访问
 * 支持`HTTP 2(默认)`和`HTTP 1.1`协议
 * 所有依赖全部打包到镜像方便管理和迁移
+
+<details>
+    <summary>点击查看详情</summary>
+    <p>
 
 ```bash
 # (1)下载源码
@@ -87,8 +93,17 @@ nginx:webserver
 127.0.0.1 jinhui.dev
 ```
 
+</p>
+</details>
+
+### 自动部署
+
+#### Webhook方式
+
+#### Github Action方式
 
 
-# 配置参考
+
+## 配置参考
 
 VuePress配置说明参考：[https://jinhui.dev/frontend/VuePress.html](https://jinhui.dev/frontend/VuePress.html)
