@@ -96,11 +96,24 @@ nginx:webserver
 
 <br />
 
-## 容器部署自动更新
+## 自动发布
 
-### Webhook方式
+### 说明
 
-### Github Action方式
+| 发布方式      | 说明                                                         | 优势                                 | 劣势                                                         |
+| ------------- | ------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
+| Webhook       | （1）首先启动一个公网可访问的Web Server<br />（2）当有代码提交时，Github会给Web Server发送POST请求<br />（3）Server接到请求后执行发布所需要的一系列流程 | 简单                                 | 服务器需要额外开放一个端口；<br />打包等操作会占用服务器资源 |
+| Github Action | 我们只需要编写一个YAML文件在Github所提供的云环境内进行各种操作即可完成发布 | 无额外端口开放；<br />不占用系统资源 | YAML编写略复杂；<br />通常需要开放SSH端口给云环境            |
+
+
+
+### 方法1：Webhook
+
+
+
+### 方法2：Github Action（推荐）
+
+参考：[https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml](https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml)
 
 <br />
 
