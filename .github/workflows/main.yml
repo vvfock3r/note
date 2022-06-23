@@ -7,6 +7,16 @@
 #         ${var}
 #   (2) 其他情况下的引用变量方式，比如引用secret变量、给action传参等
 #         ${{ env.变量名 }}
+#
+#  遇到的问题
+#    使用SSH账号密码登录没有问题，使用密钥登录却总是报错，不知道是用法不对还是有bug
+# 
+#  secrets设置
+#    HOST
+#    PORT
+#    USERNAME
+#    PASSWORD
+
 
 name: deploy
 on:
