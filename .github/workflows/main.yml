@@ -1,7 +1,6 @@
-# 相关文档：
+# 相关文档
 #    了解 GitHub Action     https://docs.github.com/cn/actions/learn-github-actions/understanding-github-actions
-#    构建和测试 Node.js     https://docs.github.com/cn/actions/automating-builds-and-tests/building-and-testing-nodejs
-#    搜索公开的Action       https://github.com/marketplace?type=actions
+#    搜索 GitHub Action     https://github.com/marketplace?type=actions
 #
 # 引用变量注意事项
 #   (1) 通常情况下引用变量方式，比如run指令中
@@ -32,7 +31,7 @@ jobs:
       - name: 构建镜像并导出
         run: |
           docker build . --file Dockerfile --tag ${imageName}:${imageTag}
-          docker image save ${imageName}:${imageTag} -o ${imageName}-${imageTag}.tar
+          docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
 
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
       - name: 拷贝镜像到服务器
@@ -42,7 +41,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: ${{ env.imageName }}-${{ env.imageTag }}.tar
+          source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/
 
       # https://github.com/marketplace/actions/ssh-remote-commands
@@ -54,7 +53,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            docker image load -i /tmp/${{ env.imageName }}-${{ env.imageTag }}.tar
+            docker image load -i /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
 
       - name: 服务器重启容器
         uses: appleboy/ssh-action@master
@@ -75,5 +74,5 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.tar
+            rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
