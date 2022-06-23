@@ -2,7 +2,7 @@
 
 基于 [VuePress v2](https://v2.vuepress.vuejs.org/zh/) 搭建的个人笔记静态站点，在线预览：https://jinhui.dev
 
-
+<br />
 
 ## 本地部署
 
@@ -105,6 +105,8 @@ nginx:webserver
 | Webhook       | （1）首先启动一个公网可访问的Web Server<br />（2）当有代码提交时，Github会给Web Server发送POST请求<br />（3）Server接到请求后执行发布所需要的一系列流程 | 简单                                 | 服务器需要额外开放一个端口；<br />打包等操作会占用服务器资源 |
 | Github Action | 我们只需要编写一个YAML文件在Github所提供的云环境内进行各种操作即可完成发布 | 无额外端口开放；<br />不占用系统资源 | YAML编写略复杂；<br />通常需要开放SSH端口给云环境            |
 
+<br />
+
 ### 方法1：Webhook
 
 <details>
@@ -147,6 +149,8 @@ Github_Secret = "1YbutGiyBDV6hlix"  # 根据实际情况修改
 </p>
 </details>
 
+<br />
+
 ### 方法2：Github Action（推荐）
 
 **编写YAML**
@@ -159,6 +163,6 @@ Github_Secret = "1YbutGiyBDV6hlix"  # 根据实际情况修改
 
 <br />
 
-## VuePress配置参考
+## VuePress配置说明
 
-VuePress配置说明参考：[https://jinhui.dev/frontend/VuePress.html](https://jinhui.dev/frontend/VuePress.html)
+参考：[https://jinhui.dev/frontend/VuePress.html](https://jinhui.dev/frontend/VuePress.html)
