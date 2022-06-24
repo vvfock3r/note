@@ -2795,12 +2795,12 @@ Created symlink /etc/systemd/system/multi-user.target.wants/containerd.service �
 
 # 查看文件
 [root@ap-hongkang cri-containerd-cni]# find . -type f
-./etc/crictl.yaml
+./etc/crictl.yaml                          # crictl的配置文件
 ./etc/systemd/system/containerd.service
 ./etc/cni/net.d/10-containerd-net.conflist
 ./usr/local/sbin/runc
 ./usr/local/bin/containerd
-./usr/local/bin/crictl
+./usr/local/bin/crictl                      # 另一个客户端工具，用于K8S环境的CRI客户端
 ./usr/local/bin/containerd-shim-runc-v2
 ./usr/local/bin/containerd-shim-runc-v1
 ./usr/local/bin/critest
