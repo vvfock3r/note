@@ -3082,9 +3082,9 @@ Location: https://a.com     # 重定向后新的地址
 
 ::: details  （1）Basic Auth 认证
 
-文档1：https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#authentication
+文档1：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#authentication](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#authentication)
 
-文档2：https://kubernetes.github.io/ingress-nginx/examples/auth/basic/
+文档2：[https://kubernetes.github.io/ingress-nginx/examples/auth/basic/](https://kubernetes.github.io/ingress-nginx/examples/auth/basic/)
 
 **（1）先准备密码文件，并进行base64编码**
 
@@ -3192,6 +3192,10 @@ ingress.networking.k8s.io/ingress-demo created
 **（3）访问测试**
 
 ```bash
+# 确认域名已有解析记录
+[root@node0 k8s]# cat /etc/hosts | grep a.com
+192.168.48.134 node1.cluster.local node1 a.com
+
 # 默认返回401
 [root@node0 k8s]# curl -I http://a.com 
 HTTP/1.1 401 Unauthorized
