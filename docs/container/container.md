@@ -2934,7 +2934,7 @@ done: 1.54382982s
 REF                            TYPE                                                      DIGEST                                                                  SIZE     PLATFORMS                                                                                               LABELS 
 docker.io/library/nginx:1.21.6 application/vnd.docker.distribution.manifest.list.v2+json sha256:2bcabc23b45489fb0885d69a06ba1d648aeda973fae7bb981bafbb884165e514 54.1 MiB linux/386,linux/amd64,linux/arm/v5,linux/arm/v7,linux/arm64/v8,linux/mips64le,linux/ppc64le,linux/s390x -  
 
-[root@ap-hongkang ~]# ctr image ls --quiet
+[root@ap-hongkang ~]# ctr image ls -q
 docker.io/library/nginx:1.21.6
 
 # 删除镜像
@@ -2958,21 +2958,79 @@ node         18-alpine3.14   2521d94c290e   2 weeks ago    172MB
 nginx        1.21.6          0e901e68141f   3 weeks ago    142MB
 centos       7               eeb6ee3f44bd   9 months ago   204MB
 
-[root@ap-hongkang ~]# ctr image ls --quiet
+[root@ap-hongkang ~]# ctr image ls -q
 docker.io/library/nginx:1.21.6
 ```
 
 :::
 
-### 命名空间
+### 命名空间（重要）
 
 ```bash
 # 查看命名空间
 [root@ap-hongkang ~]# ctr ns ls
 NAME    LABELS 
-default         # 默认的命名空间
+default         # 默认的命名空间，若不指定命名空间，则所有操作都在这个命名空间下
 moby            # 这个是Docker Engine的命名空间，如果将Docker服务关闭，此命名空间消失，服务起来命名空间又会出来
 ```
 
 ### 容器管理
 
+::: details （1）基础操作
+
+```bash
+# 创建容器
+# ctr run 等同于 ctr container create + ctr task start
+[root@ap-hongkang ~]# ctr run -d docker.io/library/nginx:1.21.6 mynginx
+[root@ap-hongkang ~]# ctr run -d -t docker.io/library/centos:7 mycentos
+
+# 查看容器
+[root@ap-hongkang ~]# ctr container ls
+CONTAINER    IMAGE                             RUNTIME                  
+mycentos     docker.io/library/centos:7        io.containerd.runc.v2    
+mynginx      docker.io/library/nginx:1.21.6    io.containerd.runc.v2
+
+# 查看tasks
+[root@ap-hongkang ~]# ctr tasks ls
+TASK        PID       STATUS    
+mynginx     484904    RUNNING
+mycentos    484998    RUNNING
+
+# 进入容器 - exec
+[root@ap-hongkang ~]# ctr tasks exec -t --exec-id mycentos mycentos bash
+[root@ap-hongkang /]# ps aux
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.1  11844  2940 pts/0    Ss+  01:39   0:00 /bin/bash
+root         111  0.0  0.1  11844  2992 pts/1    Ss   01:58   0:00 bash
+root         125  0.0  0.1  51748  3452 pts/1    R+   01:58   0:00 ps aux
+
+[root@ap-hongkang ~]# ctr tasks exec --exec-id mycentos mycentos ps aux
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.1  11844  2940 pts/0    Ss+  01:39   0:00 /bin/bash
+root         126  0.0  0.1  51748  3456 ?        Rs   02:22   0:00 ps aux
+
+# 进入容器 - attach
+[root@ap-hongkang ~]# ctr tasks attach mycentos
+
+# 删除容器（先删除task再删除容器）
+[root@ap-hongkang ~]# ctr tasks rm -f mycentos
+[root@ap-hongkang ~]# ctr container rm mycentos
+```
+
+:::
+
+::: details （2）查看Docker容器
+
+```bash
+# 使用docker命令，查看一下当前运行的容器有哪些
+[root@ap-hongkang ~]# docker container ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED        STATUS        PORTS                                      NAMES
+c96e6cc931a6   note:latest   "/docker-entrypoint.…"   17 hours ago   Up 17 hours   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp   jinhui.dev
+
+# 使用ctr，查看moby命名空间的容器，和docker输出ID一致
+[root@ap-hongkang ~]# ctr -n moby container ls
+CONTAINER                                                           IMAGE    RUNTIME                  
+c96e6cc931a6b92f3bd4dfc0adc955dc44d10293a5e8894d51d3aa18a9b7cf2f    -        io.containerd.runc.v2 
+```
+
+:::
