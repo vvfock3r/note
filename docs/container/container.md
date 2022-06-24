@@ -2727,7 +2727,7 @@ Github：[https://github.com/containerd/containerd](https://github.com/container
 
 
 
-### 安装
+### 包管理器安装
 
 文档：[https://github.com/containerd/containerd/blob/main/docs/getting-started.md](https://github.com/containerd/containerd/blob/main/docs/getting-started.md)
 
@@ -2772,6 +2772,67 @@ Github：[https://github.com/containerd/containerd](https://github.com/container
 [root@ap-hongkang ~]# systemctl enable containerd
 Created symlink /etc/systemd/system/multi-user.target.wants/containerd.service → /usr/lib/systemd/system/containerd.service.
 ```
+
+### 二进制安装
+
+下载地址：[https://github.com/containerd/containerd/releases](https://github.com/containerd/containerd/releases)
+
+二进制包分为两种：
+
+* `containerd-xx`：这种包和我们使用包管理器安装的一样
+* `cri-containerd-xx`：这种包包含更多的内容，比如`crictl`客户端命令等
+
+![image-20220624105724502](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220624105724502.png)
+
+```bash
+# 下载包
+[root@ap-hongkang ~]# wget -c https://github.com/containerd/containerd/releases/download/v1.6.6/cri-containerd-cni-1.6.6-linux-amd64.tar.gz
+
+# 解压
+[root@ap-hongkang ~]# mkdir cri-containerd-cni
+[root@ap-hongkang ~]# tar zxf cri-containerd-cni-1.6.6-linux-amd64.tar.gz -C ./cri-containerd-cni/
+[root@ap-hongkang ~]# cd ./cri-containerd-cni/
+
+# 查看文件
+[root@ap-hongkang cri-containerd-cni]# find . -type f
+./etc/crictl.yaml
+./etc/systemd/system/containerd.service
+./etc/cni/net.d/10-containerd-net.conflist
+./usr/local/sbin/runc
+./usr/local/bin/containerd
+./usr/local/bin/crictl
+./usr/local/bin/containerd-shim-runc-v2
+./usr/local/bin/containerd-shim-runc-v1
+./usr/local/bin/critest
+./usr/local/bin/containerd-shim
+./usr/local/bin/ctd-decoder
+./usr/local/bin/ctr
+./usr/local/bin/containerd-stress
+./opt/containerd/cluster/version
+./opt/containerd/cluster/gce/env
+./opt/containerd/cluster/gce/cloud-init/master.yaml
+./opt/containerd/cluster/gce/cloud-init/node.yaml
+./opt/containerd/cluster/gce/cni.template
+./opt/containerd/cluster/gce/configure.sh
+./opt/cni/bin/bridge
+./opt/cni/bin/host-local
+./opt/cni/bin/bandwidth
+./opt/cni/bin/host-device
+./opt/cni/bin/macvlan
+./opt/cni/bin/portmap
+./opt/cni/bin/sbr
+./opt/cni/bin/dhcp
+./opt/cni/bin/firewall
+./opt/cni/bin/loopback
+./opt/cni/bin/ipvlan
+./opt/cni/bin/vlan
+./opt/cni/bin/vrf
+./opt/cni/bin/tuning
+./opt/cni/bin/static
+./opt/cni/bin/ptp
+```
+
+
 
 ### 配置文件
 
