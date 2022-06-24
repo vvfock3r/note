@@ -2631,23 +2631,20 @@ round-trip min/avg/max = 0.075/0.088/0.102 ms
 
 ### Ingress NGINX Controller
 
-主要有2个开源实现：
+主要有2个开源实现
 
-（1）`Kubernetes`官方维护的`Ingress NGINX Controller`（推荐，本文档使用此版本）
-
-* 文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
-* Github：[https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx)
-
-（2）Nginx官方维护的`NGINX Ingress Controller`
-
-* 文档：[https://docs.nginx.com/nginx-ingress-controller/](https://docs.nginx.com/nginx-ingress-controller/)
-* Github：[https://github.com/nginxinc/kubernetes-ingress](https://github.com/nginxinc/kubernetes-ingress)
+| 实现                                                     | 文档                                                         | Github                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `Kubernetes`官方维护的`Ingress NGINX Controller`（推荐） | [https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/) | [https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx) |
+| Nginx官方维护的`NGINX Ingress Controller`                | [https://docs.nginx.com/nginx-ingress-controller/](https://docs.nginx.com/nginx-ingress-controller/) | [https://github.com/nginxinc/kubernetes-ingress](https://github.com/nginxinc/kubernetes-ingress) |
 
 <br />
 
 #### 安装
 
-文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
+版本支持：[https://github.com/kubernetes/ingress-nginx#support-versions-table](https://github.com/kubernetes/ingress-nginx#support-versions-table)
+
+部署文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
 
 （1）下载YAML文件
 
@@ -3075,5 +3072,165 @@ Connection: keep-alive
 Location: https://a.com     # 重定向后新的地址
 ```
 
+<br />
+
+#### 个性化配置
+
+文档：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/)
 
 
+
+::: details  （1）Basic Auth 认证
+
+文档1：https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#authentication
+
+文档2：https://kubernetes.github.io/ingress-nginx/examples/auth/basic/
+
+**（1）先准备密码文件，并进行base64编码**
+
+```bash
+# 创建密码文件
+[root@node0 k8s]# touch basic-auth.txt
+
+# 使用htpasswd添加用户到密码文件
+[root@node0 k8s]# htpasswd basic-auth.txt admin    # 添加第一个用户，密码admin123
+[root@node0 k8s]# htpasswd basic-auth.txt root     # 添加第二个用户，密码root123
+
+# 查看一下文件
+[root@node0 k8s]# cat basic-auth.txt
+admin:$apr1$ZIRZeV/i$3/aYk.LQDVWwtM6YMLIRl/
+root:$apr1$iSc..JDp$uN5izoBG4XCTTVC19mSCS0
+
+# base64编码
+[root@node0 k8s]# cat basic-auth.txt | base64 | tr -d "\n" | awk '{print $0}'
+YWRtaW46JGFwcjEkWklSWmVWL2kkMy9hWWsuTFFEVld3dE02WU1MSVJsLwpyb290OiRhcHIxJGlTYy4uSkRwJHVONWl6b0JHNFhDVFRWQzE5bVNDUzAK
+```
+
+**（2）编写YAML**
+
+```bash
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-svc
+  namespace: default
+spec:
+  selector:
+    app: demo
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# 创建Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth        # secret名称
+  namespace: default
+type: Opaque
+# data.auth是固定的,值是我们上面密码文件base64编码过后的值
+data:
+  auth: YWRtaW46JGFwcjEkWklSWmVWL2kkMy9hWWsuTFFEVld3dE02WU1MSVJsLwpyb290OiRhcHIxJGlTYy4uSkRwJHVONWl6b0JHNFhDVFRWQzE5bVNDUzAK
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic                       # 认证类型
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth                # 认证所用的secret名称，与上面的secret名称要对应
+    nginx.ingress.kubernetes.io/auth-secret-type: auth-file            # 认证所用的secret类型，auth-file是默认值
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required!' # 未认证时的提示消息
+spec:
+  ingressClassName: nginx
+  rules:        
+    - host: a.com
+      http:    
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: demo-svc
+              port:        
+                number: 80
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+service/demo-svc created
+secret/basic-auth created
+ingress.networking.k8s.io/ingress-demo created
+```
+
+**（3）访问测试**
+
+```bash
+# 默认返回401
+[root@node0 k8s]# curl -I http://a.com 
+HTTP/1.1 401 Unauthorized
+Date: Fri, 24 Jun 2022 11:04:55 GMT
+Content-Type: text/html
+Content-Length: 172
+Connection: keep-alive
+WWW-Authenticate: Basic realm="Authentication Required!"
+
+# 输入用户名密码
+[root@node0 k8s]# curl -I http://a.com -u "admin:admin123"
+HTTP/1.1 200 OK
+Date: Fri, 24 Jun 2022 11:05:09 GMT
+Content-Type: text/html
+Content-Length: 615
+Connection: keep-alive
+Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
+ETag: "61f01158-267"
+Accept-Ranges: bytes
+
+# 输入用户名密码
+[root@node0 k8s]# curl -I http://a.com -u "root:root123"
+HTTP/1.1 200 OK
+Date: Fri, 24 Jun 2022 11:05:17 GMT
+Content-Type: text/html
+Content-Length: 615
+Connection: keep-alive
+Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
+ETag: "61f01158-267"
+Accept-Ranges: bytes
+
+# 输错密码
+[root@node0 k8s]# curl -I http://a.com -u "root:abc"
+HTTP/1.1 401 Unauthorized
+Date: Fri, 24 Jun 2022 11:06:00 GMT
+Content-Type: text/html
+Content-Length: 172
+Connection: keep-alive
+WWW-Authenticate: Basic realm="Authentication Required!"
+```
+
+:::
