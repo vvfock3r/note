@@ -2971,7 +2971,7 @@ docker.io/library/nginx:1.21.6
 [root@ap-hongkang ~]# ctr ns ls
 NAME    LABELS 
 default         # 默认的命名空间，若不指定命名空间，则所有操作都在这个命名空间下
-moby            # 这个是Docker Engine的命名空间，如果将Docker服务关闭，此命名空间消失，服务起来命名空间又会出来
+moby            # 这个是Docker Engine的命名空间，如果将Docker服务卸载，此命名空间消失，服务安装上命名空间又会出来
 ```
 
 ### 容器管理
