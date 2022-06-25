@@ -3064,6 +3064,8 @@ EOF
 
 三、须知：配置完成后，若使用`HTTP`协议则会返回`308`重定向
 
+若要改变其行为参考：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect)
+
 ```bash
 [root@node0 k8s]# curl http://a.com -I
 HTTP/1.1 308 Permanent Redirect
