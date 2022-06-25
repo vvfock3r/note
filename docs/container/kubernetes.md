@@ -3245,7 +3245,13 @@ WWW-Authenticate: Basic realm="Authentication Required!"
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet)
 
-PS：带`snippet`字眼的都是用来做自定义配置的
+PS：
+
+* 带`snippet`字眼的都是用来做自定义配置的
+
+* `snippet`依赖`Ingress NGINX Controller`的`ConfigMap`中的`allow-snippet-annotations`（默认为true）
+
+  参考：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#allow-snippet-annotations](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#allow-snippet-annotations)
 
 ```bash
 # 编写YAML文件
