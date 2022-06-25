@@ -3238,3 +3238,118 @@ WWW-Authenticate: Basic realm="Authentication Required!"
 ```
 
 :::
+
+::: details  （2）自定义Server块配置示例：根据User-Agent禁止某些工具访问
+
+文档：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet)
+
+```bash
+# 编写YAML文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.21.6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-svc
+  namespace: default
+spec:
+  selector:
+    app: demo
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/server-snippet: |
+      # 禁止使用curl等工具
+      if ($http_user_agent ~* "curl|wget") {
+        return 403;
+      }
+spec:
+  ingressClassName: nginx
+  rules:        
+    - host: a.com
+      http:    
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: demo-svc
+              port:        
+                number: 80
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+service/demo-svc created
+ingress.networking.k8s.io/ingress-demo created
+
+# 测试1：直接使用curl和wget会返回403
+[root@node0 k8s]#  curl http://a.com -I
+HTTP/1.1 403 Forbidden
+Date: Sat, 25 Jun 2022 03:29:47 GMT
+Content-Type: text/html
+Content-Length: 146
+Connection: keep-alive
+
+[root@node0 k8s]# wget http://a.com 
+--2022-06-25 11:30:14--  http://a.com/
+Resolving a.com (a.com)... 192.168.48.134
+Connecting to a.com (a.com)|192.168.48.134|:80... connected.
+HTTP request sent, awaiting response... 403 Forbidden
+2022-06-25 11:30:14 ERROR 403: Forbidden.
+
+# 修改User-Agent后，可以正常访问
+[root@node0 k8s]# curl http://a.com -I --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+HTTP/1.1 200 OK
+Date: Sat, 25 Jun 2022 03:31:39 GMT
+Content-Type: text/html
+Content-Length: 615
+Connection: keep-alive
+Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
+ETag: "61f01158-267"
+Accept-Ranges: bytes
+
+[root@node0 k8s]# wget http://a.com --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+--2022-06-25 11:31:57--  http://a.com/
+Resolving a.com (a.com)... 192.168.48.134
+Connecting to a.com (a.com)|192.168.48.134|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 615 [text/html]
+Saving to: ‘index.html’
+
+100%[=================================================================>] 615         --.-K/s   in 0s      
+
+2022-06-25 11:31:57 (72.9 MB/s) - ‘index.html’ saved [615/615]
+```
+
+:::
