@@ -27,8 +27,6 @@ API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23
 | `kube-proxy`                    | 网络代理，在集群中每个节点（node)上运行，负责集群内部或外部的网络会话与 Pod 进行网络通信 |
 | 容器运行时（Container Runtime） | 比如`Docker`（目前已经不支持）、`Containerd`、`CRI-O`等      |
 
-## 
-
 ## 演示版本
 
 ```bash
@@ -64,7 +62,7 @@ serverVersion:
   platform: linux/amd64
 ```
 
-
+## 
 
 ## Pod
 
