@@ -3620,3 +3620,82 @@ DEBUG = false
 
 默认情况下`Secret`的数据未加密存储在etcd中，但是我们为`Secret`启用静态加密功能
 
+::: details  （1）创建Secret
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-secret
+  namespace: default
+  annotations:
+    kubernetes.io/description: Secret学习
+
+# Opaque: 用户定义的任意数据, 默认类型
+type: Opaque
+
+
+# ----------------------------------------------------
+# 下面的data和stringdata所实现的效果相同，任选一个即可
+# ----------------------------------------------------
+# data是可选的
+# data中写k-v数据
+# data中的v必须是base64编码
+data:
+  username: YWRtaW4=
+  password: MWYyZDFlMmU2N2Rm
+
+# stringdata是可选的
+# stringdata中写k-v数据
+# stringdata中的v直接写明文
+# stringdata比data优先级高
+#stringData:
+#  username: admin
+#  password: 1f2d1e2e67df
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml
+secret/demo-secret created
+
+# 查看
+[root@node0 k8s]# kubectl get secrets
+NAME                  TYPE                                  DATA   AGE
+default-token-p7d2l   kubernetes.io/service-account-token   3      5d6h
+demo-secret           Opaque                                2      6s
+
+[root@node0 k8s]# kubectl describe secret demo-secret 
+Name:         demo-secret
+Namespace:    default
+Labels:       <none>
+Annotations:  kubernetes.io/description: Secret学习
+
+Type:  Opaque
+
+Data
+====
+password:  12 bytes
+username:  5 bytes
+
+[root@node0 k8s]# kubectl get secret demo-secret -o yaml
+apiVersion: v1
+data:
+  password: MWYyZDFlMmU2N2Rm
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"password":"MWYyZDFlMmU2N2Rm","username":"YWRtaW4="},"kind":"Secret","metadata":{"annotations":{"kubernetes.io/description":"Secret学习"},"name":"demo-secret","namespace":"default"},"type":"Opaque"}
+    kubernetes.io/description: Secret学习
+  creationTimestamp: "2022-06-26T06:10:41Z"
+  name: demo-secret
+  namespace: default
+  resourceVersion: "107901"
+  uid: 67255d95-14ab-4b97-81bf-524f558b48cf
+type: Opaque
+```
+
+:::
