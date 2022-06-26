@@ -565,7 +565,9 @@ node2
 
 :::
 
-> 并不是支持所有的Pod字段/Container字段作为变量值
+> （1）并不是支持所有的Pod字段/Container字段作为变量值
+>
+> （2）还支持使用ConfigMap的值作为变量值，参考【ConfigMap】章节
 
 <br />
 
@@ -3448,3 +3450,173 @@ Request-Id: 58e26b9b04deabb8cf407b71429a34ac   # Request-Id
 ```
 
 :::
+
+## 
+
+## 应用程序配置
+
+### ConfigMap
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/configuration/configmap/](https://kubernetes.io/zh-cn/docs/concepts/configuration/configmap/)
+
+::: details  （1）创建ConfigMap
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+  annotations:
+    kubernetes.io/description: ConfigMap学习
+             
+data:
+  # 类属性键
+  env: prod
+
+  # 类文件键
+  conf.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = false
+# 设置为不可变更，这会导致
+#   (1) 保护应用，不能修改此ConfigMap，只能重新创建
+#   (2) 关闭K8S对此ConfigMap的监视，当ConfigMap数量特别多的时候能显著提升K8S性能
+#immutable: true
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+configmap/demo created
+
+# 查看
+[root@node0 k8s]# kubectl get configmap 
+NAME               DATA   AGE
+demo               2      19s
+demo-configmap     2      6m26s
+kube-root-ca.crt   1      5d1h
+
+[root@node0 k8s]# kubectl describe configmap demo
+Name:         demo
+Namespace:    default
+Labels:       <none>
+Annotations:  kubernetes.io/description: ConfigMap学习
+
+Data
+====
+conf.ini:
+----
+HOST  = 0.0.0.0
+PORT  = 8080
+DEBUG = false
+
+env:
+----
+prod
+
+BinaryData
+====
+
+Events:  <none>
+```
+
+:::
+
+::: details  （2）使用ConfigMap：作为变量注入到容器、作为配置文件挂载到容器中
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-configmap
+  namespace: default
+  annotations:
+    kubernetes.io/description: ConfigMap学习
+             
+data:
+  # 类属性键
+  env: prod
+
+  # 类文件键
+  conf1.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = true
+
+  conf2.ini: |
+    HOST  = 127.0.0.1
+    PORT  = 80
+    DEBUG = false
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+    - name: demo
+      image: busybox:1.28
+      command: ["sleep", "3600"]
+
+      # 通过ConfigMap给容器注入变量
+      env:
+        - name: ENV                     # 变量名, 用于容器内读取，这里故意写成和ConfigMap中的key不一致
+          valueFrom:                    #
+            configMapKeyRef:            # 变量值来自ConfigMap
+              name: demo-configmap      #
+              key: env                  #
+
+      # 将ConfigMap中的值作为文件挂载到容器中
+      volumeMounts:
+      - name: config              # 名称和下面的保持一致
+        mountPath: "/etc/demo/"   # 定义挂载目录
+        readOnly: true
+
+  volumes:
+    - name: config           # 定义名称
+      configMap:             # 指定来自ConfigMap
+        name: demo-configmap # 和ConfigMap名称保持一致                     
+        items:               # 来自 ConfigMap 的一组键，将被创建为文件
+        - key: "conf1.ini"    # 指定key
+          path: "CONF1.ini"   # 定义挂载以后的文件名
+        - key: "conf2.ini"   # 指定key
+          path: "CONF2.ini"  # 定义挂载以后的文件名
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+configmap/demo-configmap created
+pod/demo created
+
+# 进入容器，验证
+[root@node0 k8s]# kubectl exec -it demo -- sh
+/ # echo ${ENV}
+prod
+/ # ls /etc/demo/
+CONF1.ini  CONF2.ini
+/ # cat /etc/demo/CONF1.ini
+HOST  = 0.0.0.0
+PORT  = 8080
+DEBUG = true
+/ # cat /etc/demo/CONF2.ini
+HOST  = 127.0.0.1
+PORT  = 80
+DEBUG = false
+```
+
+:::
+
+<br />
+
+### Secret
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/configuration/secret/](https://kubernetes.io/zh-cn/docs/concepts/configuration/secret/)
+
+`Secret` 类似于ConfigMap，但专门用于保存机密数据
+
+默认情况下`Secret`的数据未加密存储在etcd中，但是我们为`Secret`启用静态加密功能
+
