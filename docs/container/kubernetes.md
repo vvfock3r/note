@@ -3636,6 +3636,8 @@ metadata:
 # Opaque: 用户定义的任意数据, 默认类型
 type: Opaque
 
+# 将Secret标记为不可更改，默认值为false
+#immutable: true
 
 # ----------------------------------------------------
 # 下面的data和stringdata所实现的效果相同，任选一个即可
@@ -3699,3 +3701,114 @@ type: Opaque
 ```
 
 :::
+
+::: details  （2）使用Secret：作为变量注入到容器、作为配置文件挂载到容器中
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-secret
+  namespace: default
+  annotations:
+    kubernetes.io/description: Secret学习
+type: Opaque
+stringData:
+  env: prod
+  username: admin
+  password: qaz.12345
+
+  host.ini: |
+   1.1.1.1
+   2.2.2.2
+   3.3.3.3   
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+    - name: demo
+      image: busybox:1.28
+      command: ["sleep", "3600"]
+
+      # 通过ConfigMap给容器注入变量
+      env:
+        - name: ENV                     # 变量名, 用于容器内读取，这里故意写成和Secret中的key不一致
+          valueFrom:                    #
+            secretKeyRef:               # 变量值来自Secret
+              name: demo-secret         #
+              key: env                  #
+              optional: false           # 此值为默认值；意味着 "mysecret"
+
+      # 将Secret中的值作为文件挂载到容器中(这一段配置和使用ConfigMap一样)
+      volumeMounts:
+
+      - name: config          # 名称和下面的保持一致
+        mountPath: "/etc/demo/config"   # 定义挂载目录
+        readOnly: true
+
+      - name: username            # 名称和下面的保持一致
+        mountPath: "/etc/demo/username"   # 定义挂载目录
+        readOnly: true
+
+  volumes:
+
+    # 将整个secret作为文件挂载
+    - name: config           # 定义名称
+      secret:                    # 指定来自Secret
+        secretName: demo-secret  # 和Secret名称保持一致                     
+        optional: false          # 默认设置，意味着 "demo-secret" 必须已经存在
+
+    # 将secret中某个key作为文件挂载
+    - name: username
+      secret:
+        secretName: demo-secret
+        items:
+        - key: username
+          path: username.ini
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+secret/demo-secret created
+pod/demo created
+
+# 进入容器，验证
+[root@node0 k8s]# kubectl exec -it demo -- sh
+/etc/demo # echo ${ENV}
+prod
+
+/ # cd /etc/demo/
+/etc/demo # ls -lh
+total 0
+drwxrwxrwt    3 root     root         160 Jun 27 03:27 config
+drwxrwxrwt    3 root     root         100 Jun 27 03:27 username
+
+/etc/demo # ls -lh config/
+total 0
+lrwxrwxrwx    1 root     root          10 Jun 27 03:27 env -> ..data/env
+lrwxrwxrwx    1 root     root          15 Jun 27 03:27 host.ini -> ..data/host.ini
+lrwxrwxrwx    1 root     root          15 Jun 27 03:27 password -> ..data/password
+lrwxrwxrwx    1 root     root          15 Jun 27 03:27 username -> ..data/username
+
+/etc/demo # cat config/env | awk '{print $0}'
+prod
+/etc/demo # cat config/host.ini 
+1.1.1.1
+2.2.2.2
+3.3.3.3   
+/etc/demo # cat config/username | awk '{print $0}'
+admin
+/etc/demo # cat config/password | awk '{print $0}'
+qaz.12345
+
+/etc/demo # cat username/username.ini  | awk '{print $0}'
+admin
+```
+
+:::
+
