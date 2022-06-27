@@ -4,6 +4,8 @@
 
 API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/)
 
+Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
+
 
 
 ## 核心组件
@@ -3812,3 +3814,8 @@ admin
 
 :::
 
+## 
+
+## 数据存储
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/)
