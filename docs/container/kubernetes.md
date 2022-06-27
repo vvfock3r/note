@@ -3819,3 +3819,92 @@ admin
 ## 数据存储
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/)
+
+### 数据卷
+
+| 分类 | 卷         | 说明                                                         |
+| ---- | ---------- | ------------------------------------------------------------ |
+| 本地 | `emptyDir` | 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除，那么临时卷也将被删除 |
+|      | `hostPath` | 将Pod所在节点上的文件系统挂载到容器中                        |
+| 网络 | `nfs`      | NFS支持                                                      |
+|      | `cephfs`   | Ceph支持                                                     |
+
+
+
+::: details  （1）emptyDir
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo1
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+      - name: demo2
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+
+      volumes:
+        - name: data
+          # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
+          emptyDir: {}
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo-85846f8b7-4qtv6   2/2     Running   0          23s   10.233.154.30   node1   <none>           <none>
+demo-85846f8b7-brvdl   2/2     Running   0          23s   10.233.44.96    node2   <none>           <none>
+demo-85846f8b7-h7h7n   2/2     Running   0          23s   10.233.30.30    node0   <none>           <none>
+
+# 同一个Pod内测试共享存储
+[root@node0 k8s]# kubectl exec -it demo-85846f8b7-4qtv6 -c demo1 -- sh 
+/ # seq 10 > /data1/1.txt
+[root@node0 k8s]# kubectl exec -it demo-85846f8b7-4qtv6 -c demo2 -- sh 
+/ # cat /data2/1.txt
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+# 不同Pod数据是不共享的
+[root@node0 k8s]# kubectl exec -it demo-85846f8b7-brvdl -c demo2 -- sh 
+/ # ls /data2/
+```
+
+:::
+
+::: details  （2）hostPath
+
+:::
