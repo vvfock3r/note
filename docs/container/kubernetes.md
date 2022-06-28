@@ -3831,7 +3831,7 @@ admin
 
 
 
-::: details  （1）emptyDir
+::: details  （1）emptyDir：须保证在同一个Pod中才能共享数据
 
 ```bash
 # 生成yaml文件
@@ -3905,6 +3905,94 @@ demo-85846f8b7-h7h7n   2/2     Running   0          23s   10.233.30.30    node0 
 
 :::
 
-::: details  （2）hostPath
+::: details  （2）hostPath：需保证在同一个Node节点上的Pod才能共享数据
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo1
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+      - name: demo2
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+
+      volumes:
+        - name: data
+          hostPath:
+            path: /tmp         # 所有宿主机都有/tmp目录
+            type: Directory
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+
+# 查看Pod
+[root@node0 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+demo-7557dc6f66-4gk49   2/2     Running   0          2m47s   10.233.154.36   node1   <none>           <none>
+demo-7557dc6f66-4tvlr   2/2     Running   0          2m47s   10.233.30.38    node0   <none>           <none>
+demo-7557dc6f66-7l9rv   2/2     Running   0          2m47s   10.233.44.102   node2   <none>           <none>
+demo-7557dc6f66-9479q   2/2     Running   0          2m47s   10.233.154.35   node1   <none>           <none>
+demo-7557dc6f66-f67g8   2/2     Running   0          2m47s   10.233.44.101   node2   <none>           <none>
+demo-7557dc6f66-tglgk   2/2     Running   0          2m47s   10.233.30.37    node0   <none>           <none>
+
+# 在Node0节点的容器上写入数据
+[root@node0 ~]# kubectl exec -it demo-7557dc6f66-tglgk -c demo1 -- sh
+/ # seq 3 >/data1/node0-1.txt
+
+# 在同一个Pod不同容器中查看数据
+/ # [root@node0 ~]# kubectl exec -it demo-7557dc6f66-tglgk -c demo2 -- sh
+/ # cat /data2/node0-1.txt 
+1
+2
+3
+
+# 在同一个Node节点上的不同Pod中查看数据
+/ # [root@node0 ~]# kubectl exec -it demo-7557dc6f66-4tvlr -c demo1 -- cat /data1/node0-1.txt
+1
+2
+3
+[root@node0 ~]# kubectl exec -it demo-7557dc6f66-4tvlr -c demo2 -- cat /data2/node0-1.txt
+1
+2
+3
+
+# 在不同的Node节点上看不到数据
+[root@node0 ~]# kubectl exec -it demo-7557dc6f66-4gk49 -c demo1 -- sh
+/ # ls -l /data1/
+total 4
+drwxr-xr-x    5 root     root          4096 Jun 20 23:15 releases
+drwx------    2 root     root             6 Jun 26 02:15 vmware-root_780-2957124724
+drwx------    2 root     root             6 Jun 21 06:23 vmware-root_783-4281646632
+drwx------    2 root     root             6 Jun 20 22:21 vmware-root_785-4282170929
+drwx------    2 root     root             6 Jun 24 02:34 vmware-root_786-2957649005
+drwx------    2 root     root             6 Jun 26 00:27 vmware-root_788-2957517930
+drwx------    2 root     root             6 Jun 25 07:57 vmware-root_790-2965972456
+drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657415
+```
 
 :::
