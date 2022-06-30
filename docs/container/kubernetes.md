@@ -3996,3 +3996,99 @@ drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657
 ```
 
 :::
+
+::: details  （3）nfs
+
+**准备工作**
+
+```bash
+# 这里使用node0作为一个nfs server
+[root@node0 ~]# yum -y install nfs-utils
+[root@node0 ~]# vim /etc/exports
+/data/k8s *(rw,no_root_squash)
+
+[root@node0 ~]# mkdir -p /data/k8s
+[root@node0 ~]# systemctl start nfs
+[root@node0 ~]# systemctl enable nfs
+
+# 所有node都需要安装nfs-utils包
+[root@node1 ~]# yum -y install nfs-utils
+[root@node2 ~]# yum -y install nfs-utils
+```
+
+**测试NFS**
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo1
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+      - name: demo2
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
+
+      volumes:
+        - name: data
+          nfs:
+            server: 192.168.48.128
+            path: /data/k8s
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+deployment.apps/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
+demo-57ff9bdfd7-5m6zj   2/2     Running   0          44s   10.233.44.4    node2   <none>           <none>
+demo-57ff9bdfd7-dlr5s   2/2     Running   0          44s   10.233.44.5    node2   <none>           <none>
+demo-57ff9bdfd7-kl7rp   2/2     Running   0          44s   10.233.30.4    node0   <none>           <none>
+demo-57ff9bdfd7-sm9d2   2/2     Running   0          44s   10.233.30.5    node0   <none>           <none>
+demo-57ff9bdfd7-xvdrm   2/2     Running   0          44s   10.233.154.7   node1   <none>           <none>
+demo-57ff9bdfd7-zkmlr   2/2     Running   0          44s   10.233.154.8   node1   <none>           <none>
+
+# 在node2节点上的容器写入数据
+[root@node0 k8s]# kubectl exec -it demo-57ff9bdfd7-5m6zj -c demo1 -- sh
+/ # seq 3 > /data1/node2
+
+# 在node1上的容器上查看数据
+[root@node0 k8s]# kubectl exec -it demo-57ff9bdfd7-xvdrm -c demo1 -- sh
+/ # ls /data1/
+node2
+/ # cat /data1/node2
+1
+2
+3
+
+# 查看node上的挂载情况
+[root@node1 ~]# mount | grep -i nfs
+192.168.48.128:/data/k8s on /var/lib/kubelet/pods/07f6dfbc-ba37-405e-a5b5-45281b764913/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.134,local_lock=none,addr=192.168.48.128)
+192.168.48.128:/data/k8s on /var/lib/kubelet/pods/35f5d23d-e65c-406f-ac91-ad4adfca060e/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.134,local_lock=none,addr=192.168.48.128)
+```
+
+:::
+
