@@ -4092,3 +4092,17 @@ node2
 
 :::
 
+### 持久卷
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/)
+
+::: details  PV（PersistentVolume）基础操作
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+
+EOF
+```
+
+:::
