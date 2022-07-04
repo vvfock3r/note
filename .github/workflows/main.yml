@@ -51,6 +51,7 @@ jobs:
       - name: 安装Python依赖
         run: |
           pip install -r requirements.txt
+        cache: pip
 
       - name: 添加防火墙白名单
         run: |
