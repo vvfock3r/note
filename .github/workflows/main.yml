@@ -55,13 +55,13 @@ jobs:
       - name: 添加防火墙白名单
         run: |
           python3 scripts/firewall.py add \
-                 --secretId   ${{ secrets.TENCENT_SECRETID }} \
-                 --secretKey  ${{ secrets.TENCENT_SECRETID }} \
-                 --instanceId ${{ secrets.TENCENT_SECRETID }} \
-                 --port       ${{ secrets.PORT }}}            \
-                 --protocol   TCP                             \
-                 --source     dynamic                         \
-                 --action     ACCEPT                          \
+                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
+                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
+                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
+                 --port       ${{ secrets.PORT }}}              \
+                 --protocol   TCP                               \
+                 --source     dynamic                           \
+                 --action     ACCEPT                            \
                  --description "GitHub Action"
           
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
