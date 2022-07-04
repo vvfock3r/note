@@ -122,6 +122,7 @@ jobs:
                  --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
                  --port       ${{ secrets.PORT }}               \
                  --protocol   TCP                               \
-                 --source     dynamic                           \
+                 # 去掉源地址参数，防止本地出口IP变化和减少不必要的查询出口IP请求
+                 #--source     dynamic                          \
                  --action     ACCEPT                            \
                  --description "GitHub Action [Tencent SDK]"
