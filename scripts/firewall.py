@@ -10,7 +10,7 @@ SDK文档：https://cloud.tencent.com/document/product/1207/47578
 import sys
 import json
 import argparse
-from typing import Tuple, Union, Dict
+from typing import Optional, Tuple, Union, Dict
 
 import httpx
 from tencentcloud.common.credential import Credential
@@ -114,6 +114,51 @@ def del_firewall_rule(
         return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
 
+def ls_firewall_rule(
+        cred: Credential,
+        instanceId: str,
+        protocol: Optional[str] = None,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None) -> Tuple[bool, Dict]:
+    try:
+        # 实例化客户端
+        client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
+
+        # 生成请求
+        req = models.DescribeFirewallRulesRequest()
+
+        # 填充请求参数
+        params = {
+            "InstanceId": instanceId,
+            "Limit": 100
+        }
+        req.from_json_string(json.dumps(params))
+
+        # 发送请求
+        resp = client.DescribeFirewallRules(req)
+        resp = json.loads(resp.to_json_string())
+
+        # 筛选
+        if protocol is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Protocol") == protocol, resp["FirewallRuleSet"]))
+        if port is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Port") == port, resp["FirewallRuleSet"]))
+        if source is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("CidrBlock") == source, resp["FirewallRuleSet"]))
+        if action is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Action") == action, resp["FirewallRuleSet"]))
+        if description is not None:
+            resp["FirewallRuleSet"] = list(
+                filter(lambda x: x.get("FirewallRuleDescription") == description, resp["FirewallRuleSet"]))
+
+        return True, resp
+
+    except TencentCloudSDKException as err:
+        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
+
+
 def main():
     # 根命令和子命令
     parser = argparse.ArgumentParser(usage="%(prog)s Command [options]")
@@ -123,6 +168,7 @@ def main():
     )
     addCommand = subparsers.add_parser("add", help="add firewall rule")
     delCommand = subparsers.add_parser("del", help="delete firewall rule")
+    lsCommand = subparsers.add_parser("ls", help="query firewall rule")
 
     # add子命令
     addCommand.description = "Add firewall rule"
@@ -202,6 +248,40 @@ def main():
                             metavar="TXT")
     delCommand.set_defaults(func=del_firewall_rule)
 
+    # ls子命令
+    lsCommand.description = "Query firewall rule"
+    lsCommand.usage = "{} add [options]".format(parser.format_usage().split()[1])
+
+    lsCommand.add_argument("--secretId",
+                           required=True,
+                           help="secret id for tencent cloud lighthouse",
+                           metavar="Id")
+    lsCommand.add_argument("--secretKey",
+                           required=True,
+                           help="secret key for tencent cloud lighthouse",
+                           metavar="Key")
+    lsCommand.add_argument("--instanceId",
+                           required=True,
+                           help="instance id for tencent cloud lighthouse",
+                           metavar="Id")
+    lsCommand.add_argument("--port",
+                           help="port, port1,port2, port1-port3, ALL",
+                           metavar="Port")
+    lsCommand.add_argument("--protocol",
+                           choices=["TCP", "UDP", "ICMP", "ALL"],
+                           help="TCP, UDP, ICMP, ALL (default: %(default)s)",
+                           metavar="Protocol")
+    lsCommand.add_argument("--source",
+                           help="subnet or ip (default: %(default)s)",
+                           metavar="Source")
+    lsCommand.add_argument("--action",
+                           help="ACCEPT, DROP (default: %(default)s)",
+                           metavar="Action")
+    lsCommand.add_argument("--description",
+                           help="description (default: %(default)s)",
+                           metavar="TXT")
+    lsCommand.set_defaults(func=ls_firewall_rule)
+
     # 解析参数
     args = parser.parse_args()
 
@@ -211,7 +291,7 @@ def main():
         sys.exit(1)
 
     # 解析IPv4
-    if args.__dict__["source"] == "dynamic":
+    if args.__dict__.get("source") == "dynamic":
         args.__dict__["source"] = get_internet_ip()
 
     # 创建认证对象
