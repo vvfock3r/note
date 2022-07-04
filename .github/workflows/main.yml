@@ -13,10 +13,14 @@
 #    使用SSH账号密码登录没有问题，使用密钥登录却总是报错，不知道是用法不对还是有bug
 # 
 #  secrets设置
-#    HOST       SSH地址
-#    PORT       SSH端口
-#    USERNAME   SSH用户名
-#    PASSWORD   SSH密码
+#    HOST                 SSH地址
+#    PORT                 SSH端口
+#    USERNAME             SSH用户名
+#    PASSWORD             SSH密码
+#
+#    TENCENT_SECRETID     腾讯云平台Id
+#    TENCENT_SECRETKEY    腾讯云平台Key
+#    TENCENT_INSTANCEID   腾讯云轻量服务器实例ID
 
 
 name: build
@@ -113,16 +117,16 @@ jobs:
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
 
-      - name: 删除防火墙白名单
-        run: |
-          pip install -r requirements.txt
+      # 去掉源地址参数 --source dynamic：
+      #   (1) 防止本地外网出口IP发生变化导致删除白名单失败
+      #   (2) 减少不必要的查询外网出口IP请求
+      - name: 删除防火墙白名单        
+        run: |          
           python3 scripts/firewall.py del \
                  --secretId   ${{ secrets.TENCENT_SECRETID }}   \
                  --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
                  --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
                  --port       ${{ secrets.PORT }}               \
                  --protocol   TCP                               \
-                 # 去掉源地址参数，防止本地出口IP变化和减少不必要的查询出口IP请求
-                 #--source     dynamic                          \
                  --action     ACCEPT                            \
                  --description "GitHub Action [Tencent SDK]"
