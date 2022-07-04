@@ -37,24 +37,6 @@ jobs:
     steps:
       - name: 拉取最新代码
         uses: actions/checkout@v3
-
-      - name: 设置Python环境
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.7
-          
-      - name: 添加防火墙白名单
-        run: |
-          pip install -r requirements.txt
-          python3 scripts/firewall.py add \
-                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
-                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
-                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
-                 --port       ${{ secrets.PORT }}               \
-                 --protocol   TCP                               \
-                 --source     dynamic                           \
-                 --action     ACCEPT                            \
-                 --description "GitHub Action"
                  
       - name: 构建镜像并导出
         run: |
@@ -73,6 +55,24 @@ jobs:
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/          
 
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+          
+      - name: 添加防火墙白名单
+        run: |
+          pip install -r requirements.txt
+          python3 scripts/firewall.py add \
+                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
+                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
+                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
+                 --port       ${{ secrets.PORT }}               \
+                 --protocol   TCP                               \
+                 --source     dynamic                           \
+                 --action     ACCEPT                            \
+                 --description "GitHub Action [Tencent SDK]"
+                 
       # https://github.com/marketplace/actions/ssh-remote-commands
       - name: 服务器导入镜像
         uses: appleboy/ssh-action@master
@@ -108,4 +108,16 @@ jobs:
           script: |
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
-            
+
+      - name: 删除防火墙白名单
+        run: |
+          pip install -r requirements.txt
+          python3 scripts/firewall.py del \
+                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
+                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
+                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
+                 --port       ${{ secrets.PORT }}               \
+                 --protocol   TCP                               \
+                 --source     dynamic                           \
+                 --action     ACCEPT                            \
+                 --description "GitHub Action [Tencent SDK]"
