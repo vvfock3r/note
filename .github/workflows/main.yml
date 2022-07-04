@@ -62,7 +62,7 @@ jobs:
                  --protocol   TCP                               \
                  --source     dynamic                           \
                  --action     ACCEPT                            \
-                 --description "GitHub Action [Tencent SDK]"
+                 --description "GitHub Action [Tencent SDK]"    &&
           python3 scripts/firewall.py ls \
                  --secretId   ${{ secrets.TENCENT_SECRETID }}   \
                  --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
