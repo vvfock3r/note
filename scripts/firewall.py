@@ -19,9 +19,10 @@ from tencentcloud.lighthouse.v20200324 import lighthouse_client, models
 
 
 def get_internet_ip() -> Union[str, None]:
+    '''获取当前外网出口IP'''
+
     tellers = [
         "https://api-ipv4.ip.sb/ip",
-
         # 仅适用于腾讯云平台主机，文档：https://cloud.tencent.com/document/product/213/17940
         # "http://metadata.tencentyun.com/meta-data/public-ipv4",
     ]
@@ -69,47 +70,7 @@ def add_firewall_rule(
         # 发送请求
         resp = client.CreateFirewallRules(req)
 
-        return True, {"requestId": resp.RequestId}
-
-    except TencentCloudSDKException as err:
-        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
-
-
-def del_firewall_rule(
-        cred: Credential,
-        instanceId: str,
-        protocol: str,
-        port: str,
-        source: str,
-        action: str = "ACCEPT",
-        description: str = "[Created by Tencent SDK]") -> Tuple[bool, Dict]:
-    try:
-        # 实例化客户端
-        client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
-
-        # 生成请求
-        req = models.DeleteFirewallRulesRequest()
-
-        # 填充请求参数
-        params = {
-            "InstanceId": instanceId,
-            "FirewallRules": [
-                {
-                    "Protocol": protocol,
-                    "Port": port,
-                    "CidrBlock": source,
-                    "Action": action,
-                    "FirewallRuleDescription": description
-                }
-            ]
-        }
-        req.from_json_string(json.dumps(params))
-
-        # 发送请求
-        resp = client.DeleteFirewallRules(req)
-
-        return True, {"requestId": resp.RequestId}
-
+        return True, {"code": "ok", "message": "Add 1 rules", "requestId": resp.RequestId}
     except TencentCloudSDKException as err:
         return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
@@ -154,7 +115,54 @@ def ls_firewall_rule(
                 filter(lambda x: x.get("FirewallRuleDescription") == description, resp["FirewallRuleSet"]))
 
         return True, resp
+    except TencentCloudSDKException as err:
+        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
+
+# 删除接口和查询接口参数一致
+def del_firewall_rule(
+        cred: Credential,
+        instanceId: str,
+        protocol: Optional[str] = None,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None) -> Tuple[bool, Dict]:
+    # 先执行查询
+    ok, resp = ls_firewall_rule(cred, instanceId, protocol, port, source, action, description)
+
+    # 查询失败直接返回
+    if not ok:
+        return ok, resp
+
+    # 若没有匹配到规则
+    rules_matched = resp["FirewallRuleSet"]
+    if len(rules_matched) == 0:
+        return ok, {
+            "code": "ok",
+            "message": "No rules matched",
+            "requestId": resp["RequestId"]
+        }
+
+    # 再执行删除
+    try:
+        # 实例化客户端
+        client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
+
+        # 生成请求
+        req = models.DeleteFirewallRulesRequest()
+
+        # 填充请求参数
+        params = {
+            "InstanceId": instanceId,
+            "FirewallRules": resp["FirewallRuleSet"]
+        }
+        req.from_json_string(json.dumps(params))
+
+        # 发送请求
+        resp = client.DeleteFirewallRules(req)
+
+        return True, {"code": "ok", "message": "Deleted {} rules".format(len(rules_matched)), "requestId": resp.RequestId}
     except TencentCloudSDKException as err:
         return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
@@ -162,124 +170,121 @@ def ls_firewall_rule(
 def main():
     # 根命令和子命令
     parser = argparse.ArgumentParser(usage="%(prog)s Command [options]")
-    subparsers = parser.add_subparsers(
-        title="management commands",
-        metavar=None  # !
-    )
+    subparsers = parser.add_subparsers(title="management commands", metavar=None)  # 即使设置为空字符串还会占用一行，如何取消占行?
     addCommand = subparsers.add_parser("add", help="add firewall rule")
     delCommand = subparsers.add_parser("del", help="delete firewall rule")
     lsCommand = subparsers.add_parser("ls", help="query firewall rule")
+
+    # 子命令公共参数
+    addCommand.add_argument("--secretId",
+                            required=True,
+                            metavar="Id",
+                            help="secret id for tencent cloud lighthouse")
+    addCommand.add_argument("--secretKey",
+                            required=True,
+                            metavar="Key",
+                            help="secret key for tencent cloud lighthouse")
+    addCommand.add_argument("--instanceId",
+                            required=True,
+                            metavar="Id",
+                            help="instance id for tencent cloud lighthouse")
+    delCommand.add_argument("--secretId",
+                            required=True,
+                            metavar="Id",
+                            help="secret id for tencent cloud lighthouse")
+
+    delCommand.add_argument("--secretKey",
+                            required=True,
+                            metavar="Key",
+                            help="secret key for tencent cloud lighthouse")
+    delCommand.add_argument("--instanceId",
+                            required=True,
+                            metavar="Id",
+                            help="instance id for tencent cloud lighthouse")
+
+    lsCommand.add_argument("--secretId",
+                           required=True,
+                           metavar="Id",
+                           help="secret id for tencent cloud lighthouse")
+    lsCommand.add_argument("--secretKey",
+                           required=True,
+                           metavar="Key",
+                           help="secret key for tencent cloud lighthouse")
+    lsCommand.add_argument("--instanceId",
+                           required=True,
+                           metavar="Id",
+                           help="instance id for tencent cloud lighthouse")
 
     # add子命令
     addCommand.description = "Add firewall rule"
     addCommand.usage = "{} add [options]".format(parser.format_usage().split()[1])
 
-    addCommand.add_argument("--secretId",
-                            required=True,
-                            help="secret id for tencent cloud lighthouse",
-                            metavar="Id")
-    addCommand.add_argument("--secretKey",
-                            required=True,
-                            help="secret key for tencent cloud lighthouse",
-                            metavar="Key")
-    addCommand.add_argument("--instanceId",
-                            required=True,
-                            help="instance id for tencent cloud lighthouse",
-                            metavar="Id")
     addCommand.add_argument("--port",
                             required=True,
-                            help="port, port1,port2, port1-port3, ALL",
-                            metavar="Port")
+                            metavar="Port",
+                            help="port, port1,port2, port1-port3, ALL")
+
     addCommand.add_argument("--protocol",
                             default="TCP",
+                            metavar="Protocol",
                             choices=["TCP", "UDP", "ICMP", "ALL"],
-                            help="TCP, UDP, ICMP, ALL (default: %(default)s)",
-                            metavar="Protocol")
+                            help="TCP, UDP, ICMP, ALL (default: %(default)s)")
     addCommand.add_argument("--source",
                             default="dynamic",
-                            help="subnet or ip (default: %(default)s)",
-                            metavar="Source")
+                            metavar="Source",
+                            help="subnet or ip (default: %(default)s)")
     addCommand.add_argument("--action",
                             default="ACCEPT",
-                            help="ACCEPT, DROP (default: %(default)s)",
-                            metavar="Action")
+                            metavar="Action",
+                            help="ACCEPT, DROP (default: %(default)s)")
     addCommand.add_argument("--description",
-                            default="[Created by Tencent SDK]",
-                            help="description (default: %(default)s)",
-                            metavar="TXT")
+                            default="[Tencent SDK]",
+                            metavar="TXT",
+                            help="description (default: %(default)s)")
     addCommand.set_defaults(func=add_firewall_rule)
 
     # del子命令
     delCommand.description = "Delete firewall rule"
     delCommand.usage = "{} del [options]".format(parser.format_usage().split()[1])
 
-    delCommand.add_argument("--secretId",
-                            required=True,
-                            help="secret id for tencent cloud lighthouse",
-                            metavar="Id")
-    delCommand.add_argument("--secretKey",
-                            required=True,
-                            help="secret key for tencent cloud lighthouse",
-                            metavar="Key")
-    delCommand.add_argument("--instanceId",
-                            required=True,
-                            help="instance id for tencent cloud lighthouse",
-                            metavar="Id")
     delCommand.add_argument("--port",
-                            required=True,
-                            help="port, port1,port2, port1-port3, ALL",
-                            metavar="Port")
+                            metavar="Port",
+                            help="port, port1,port2, port1-port3, ALL")
     delCommand.add_argument("--protocol",
-                            default="TCP",
                             choices=["TCP", "UDP", "ICMP", "ALL"],
-                            help="TCP, UDP, ICMP, ALL (default: %(default)s)",
-                            metavar="Protocol")
+                            metavar="Protocol",
+                            help="TCP, UDP, ICMP, ALL (default: %(default)s)")
     delCommand.add_argument("--source",
-                            default="0.0.0.0/0",
-                            help="subnet or ip (default: %(default)s)",
-                            metavar="Source")
+                            metavar="Source",
+                            help="subnet or ip (default: %(default)s)")
     delCommand.add_argument("--action",
-                            default="ACCEPT",
-                            help="ACCEPT, DROP (default: %(default)s)",
-                            metavar="Action")
-    # description参数并不会起到实际作用，仅仅是为了使del和add保持一致，使用起来更加方便
+                            metavar="Action",
+                            help="ACCEPT, DROP (default: %(default)s)")
     delCommand.add_argument("--description",
-                            help="just for placeholders",
-                            metavar="TXT")
+                            metavar="TXT",
+                            help="description (default: %(default)s)")
     delCommand.set_defaults(func=del_firewall_rule)
 
     # ls子命令
     lsCommand.description = "Query firewall rule"
     lsCommand.usage = "{} add [options]".format(parser.format_usage().split()[1])
 
-    lsCommand.add_argument("--secretId",
-                           required=True,
-                           help="secret id for tencent cloud lighthouse",
-                           metavar="Id")
-    lsCommand.add_argument("--secretKey",
-                           required=True,
-                           help="secret key for tencent cloud lighthouse",
-                           metavar="Key")
-    lsCommand.add_argument("--instanceId",
-                           required=True,
-                           help="instance id for tencent cloud lighthouse",
-                           metavar="Id")
     lsCommand.add_argument("--port",
-                           help="port, port1,port2, port1-port3, ALL",
-                           metavar="Port")
+                           metavar="Port",
+                           help="port, port1,port2, port1-port3, ALL")
     lsCommand.add_argument("--protocol",
                            choices=["TCP", "UDP", "ICMP", "ALL"],
-                           help="TCP, UDP, ICMP, ALL (default: %(default)s)",
-                           metavar="Protocol")
+                           metavar="Protocol",
+                           help="TCP, UDP, ICMP, ALL (default: %(default)s)")
     lsCommand.add_argument("--source",
-                           help="subnet or ip (default: %(default)s)",
-                           metavar="Source")
+                           metavar="Source",
+                           help="subnet or ip (default: %(default)s)")
     lsCommand.add_argument("--action",
-                           help="ACCEPT, DROP (default: %(default)s)",
-                           metavar="Action")
+                           metavar="Action",
+                           help="ACCEPT, DROP (default: %(default)s)")
     lsCommand.add_argument("--description",
-                           help="description (default: %(default)s)",
-                           metavar="TXT")
+                           metavar="TXT",
+                           help="description (default: %(default)s)")
     lsCommand.set_defaults(func=ls_firewall_rule)
 
     # 解析参数
