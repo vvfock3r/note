@@ -12,10 +12,10 @@
 #    使用SSH账号密码登录没有问题，使用密钥登录却总是报错，不知道是用法不对还是有bug
 # 
 #  secrets设置
-#    HOST
-#    PORT
-#    USERNAME
-#    PASSWORD
+#    HOST       SSH地址
+#    PORT       SSH端口
+#    USERNAME   SSH用户名
+#    PASSWORD   SSH密码
 
 
 name: build
@@ -43,6 +43,27 @@ jobs:
           docker image build . --file Dockerfile --tag ${imageName}:${imageTag}
           docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
 
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: 安装Python依赖
+        run: |
+          pip install -r requirements.txt
+
+      - name: 添加防火墙白名单
+        run: |
+          python3 scripts/firewall.py add \
+                 --secretId   ${{ secrets.TENCENT_SECRETID }} \
+                 --secretKey  ${{ secrets.TENCENT_SECRETID }} \
+                 --instanceId ${{ secrets.TENCENT_SECRETID }} \
+                 --port       ${{ secrets.PORT }}}            \
+                 --protocol   TCP                             \
+                 --source     dynamic                         \
+                 --action     ACCEPT                          \
+                 --description "GitHub Action"
+          
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
       - name: 拷贝镜像到服务器
         uses: appleboy/scp-action@master
@@ -91,6 +112,3 @@ jobs:
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
             
-      - name: 测试
-        run: |
-          echo ${{ secrets.PORT }}}
