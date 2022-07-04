@@ -90,3 +90,7 @@ jobs:
           script: |
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
+            
+      - name: 测试
+        run: |
+          echo ${{ secrets.PORT }}}
