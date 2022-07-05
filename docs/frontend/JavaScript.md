@@ -1,3 +1,9 @@
+## 资料
+
+MDN：[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript)
+
+<br />
+
 ## 基础
 
 ### 变量作用域
@@ -2104,6 +2110,8 @@ https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Rest
 
 #### JSON
 
+**基础示例**
+
 ```javascript
 <script>
     // 将JSON格式字符串解析为JS的对象;如果是不合法字符串会报错
@@ -2118,6 +2126,64 @@ https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Functions/Rest
 ```
 
 > 这里有一个很实用的小技巧，将对象转为JSON，再解析为对象，可以实现对象深拷贝的效果
+
+**JSON.stringify详解**
+
+```javascript
+<script>
+    // (1)如果目标对象有toJSON方法，那么这个方法负责哪些数据将被序列化
+    // 下面toJSON方法中直接返回一个字符串也是可以的
+    let obj1 = {
+        x: 1,
+        y: 2,
+        z: 3,
+        toJSON: function () {
+            return {
+                "x": this.x,
+                "Z": this.z
+            }
+        }
+    }
+    console.log("(1) ", JSON.stringify(obj1)) // (1)  {"x":1,"Z":3}
+
+    // (2) undefined、Function、Symbol不是有效的JSON值，在转换过程中将会被忽略（存在于对象中），或者被设置为null（存在于数组中）
+    let obj21 = {
+        x: 1,
+        y: undefined,
+        z: function () {
+            return "hello world!"
+        },
+        m: Symbol("bar")
+    }
+    let obj22 = [1, undefined, Symbol("foo"), function () {
+    }]
+
+    console.log("(2) ", JSON.stringify(obj21))  // (2)  {"x":1}
+    console.log("(2) ", JSON.stringify(obj22))  // (2)  [1,null,null,null]
+
+    // (3) 对于undefined的值，如果我们想让他解析为空字符串，那么可以这么做
+    let obj31 = [{
+        k: 1,
+        v: undefined
+    }]
+    let obj32 = obj31.map((item) => {
+        const v = typeof item.v === 'undefined' ? '' : item.v;
+        return {...item, v}
+    })
+    console.log("(3) ", JSON.stringify(obj31))  // (3)  [{"k":1}]
+    console.log("(3) ", JSON.stringify(obj32))  // (3)  [{"k":1,"v":""}]
+
+    let obj33 = {k: 2, v: undefined}
+    let obj34 = {}
+    for (const [k, v] of Object.entries(obj33)) {
+        obj34[k] = typeof v === 'undefined' ? '' : v
+    }
+    console.log("(3) ", JSON.stringify(obj33))  // (3)  {"k":2}
+    console.log("(3) ", JSON.stringify(obj34))  // (3)  {"k":2,"v":""}
+</script>
+```
+
+> 参考：[https://mp.weixin.qq.com/s/ZOEF18ajwU7H8sE3S54obA](https://mp.weixin.qq.com/s/ZOEF18ajwU7H8sE3S54obA)
 
 
 
