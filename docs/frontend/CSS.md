@@ -2353,6 +2353,8 @@ transition: width       1s      linear        0s;
 
 **过渡效果测试**
 
+::: details 点击查看完整代码
+
 `demo.html`
 
 ```html
@@ -2652,6 +2654,8 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
+:::
+
 ![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
 
 
@@ -2803,6 +2807,8 @@ transition: width       1s      linear        0s;
 
 * 定义动画
 
+  ::: details 点击查看完整代码
+
   ```css
   /* 两帧动画 */
   @keyframes r {  /* @keyframes表示要定义动画，固定写法；r是动画的名字，根据实际情况起名 */
@@ -2837,6 +2843,8 @@ transition: width       1s      linear        0s;
   }
   ```
 
+  :::
+
 * 调用动画
 
   使用`animation`来调用动画，用法与过渡类似
@@ -2849,6 +2857,8 @@ transition: width       1s      linear        0s;
   > 动画执行次数还可以写`infinite`，表示动画一直执行
 
 
+
+::: details 基础示例
 
 `demo.html`
 
@@ -3120,6 +3130,8 @@ transition: width       1s      linear        0s;
 </body>
 </html>
 ```
+
+:::
 
 ![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%8A%A8%E7%94%BB%E5%AD%A6%E4%B9%A0.gif)
 
