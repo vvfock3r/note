@@ -14,7 +14,7 @@ DVWA的具体目标是通过简单明了的界面，来**演练一些最常见�
 
 ```bash
 # 启动容器
-[root@localhost ~]# docker container run --name dvwa -itd -p 8080:80 vulnerables/web-dvwa
+[root@localhost ~]# docker container run --name dvwa -itd -p 8080:80 --restart always vulnerables/web-dvwa
 
 # 查看容器
 [root@localhost ~]# docker container ps
@@ -61,3 +61,75 @@ Zend Engine v3.0.0, Copyright (c) 1998-2017 Zend Technologies
 mysqld  Ver 10.1.26-MariaDB-0+deb9u1 for debian-linux-gnu on x86_64 (Debian 9.1)
 ```
 
+# XSS
+
+## 反射型XSS
+
+::: details DVWA（Low） 反射型XSS示例
+
+![image-20220708063018243](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220708063018243.png)
+
+:::
+
+::: details 使用PHP模拟反射型XSS
+
+`index.php`
+
+```php+HTML
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反射型XSS：PHP基础示例</title>
+</head>
+
+<body>
+    <h1>反射型XSS：PHP基础示例</h1>
+    <div>
+        <div>
+            <!-- HTML表单：GET提交 -->
+            <form name="form-get" action="#" method="get">
+                <p>
+                    What's your name?
+                    <input type="text" name="name" autofocus>
+                    <input type="submit" value="GET 提交">
+                </p>
+            </form>
+
+            <!-- 解析GET方法提交的表单数据 -->
+            <?php
+            if (array_key_exists("name", $_GET) && $_GET['name'] != NULL) {
+                echo '<pre style="color: red;">Hello ' . $_GET['name'] . '</pre>';
+            }
+            ?>
+        </div>
+
+        <div>
+            <!-- HTML表单：POST提交 -->
+            <form name="form-get" action="#" method="post">
+                <p>
+                    What's your name?
+                    <input type="text" name="name">
+                    <input type="submit" value="POST提交">
+                </p>
+            </form>
+
+            <!-- 解析POST方法提交的表单数据 -->
+            <?php
+            if (array_key_exists("name", $_POST) && $_POST['name'] != NULL) {
+                echo '<pre style="color: red;">Hello ' . $_POST['name'] . '</pre>';
+            }
+            ?>
+        </div>
+    </div>
+</body>
+
+</html>
+```
+
+![q4HnuXcU](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//q4HnuXcU.gif)
+
+:::
