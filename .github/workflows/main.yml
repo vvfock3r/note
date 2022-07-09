@@ -11,7 +11,7 @@
 #
 #  遇到的问题
 #    使用SSH账号密码登录没有问题，使用密钥登录却总是报错，不知道是用法不对还是有bug
-# 
+#
 #  secrets设置
 #    HOST                 SSH地址
 #    PORT                 SSH端口
@@ -22,22 +22,20 @@
 #    TENCENT_SECRETKEY    腾讯云平台Key
 #    TENCENT_INSTANCEID   腾讯云轻量服务器实例ID
 
-
 name: build
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-    
-jobs:
 
-  build:  
-    runs-on: ubuntu-latest    
+jobs:
+  build:
+    runs-on: ubuntu-latest
     env:
       imageName: note
-      imageTag: latest      
-      containerName: jinhui.dev      
+      imageTag: latest
+      containerName: jinhui.dev
     steps:
       - name: 拉取最新代码
         uses: actions/checkout@v3
@@ -46,13 +44,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.7
-          cache: 'pip'
+          cache: "pip"
 
-      - name: 安装Python依赖        
+      - name: 安装Python依赖
         run: pip install -r requirements.txt
-      
+
       - name: 添加防火墙白名单
-        run: |          
+        run: |
           python3 scripts/firewall.py add \
                  --secretId   ${{ secrets.TENCENT_SECRETID }}   \
                  --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
@@ -67,7 +65,7 @@ jobs:
         run: |
           docker image build . --file Dockerfile --tag ${imageName}:${imageTag}
           docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
-          
+
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
       - name: 拷贝镜像到服务器
         uses: appleboy/scp-action@master
@@ -79,7 +77,7 @@ jobs:
           #key: ${{ secrets.PRIVATEKEY }}
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/
-                 
+
       # https://github.com/marketplace/actions/ssh-remote-commands
       - name: 服务器导入镜像
         uses: appleboy/ssh-action@master
@@ -119,8 +117,8 @@ jobs:
       # 去掉源地址参数 --source dynamic：
       #   (1) 防止本地外网出口IP发生变化导致删除白名单失败
       #   (2) 减少不必要的查询外网出口IP请求
-      - name: 删除防火墙白名单        
-        run: |          
+      - name: 删除防火墙白名单
+        run: |
           python3 scripts/firewall.py del \
                  --secretId   ${{ secrets.TENCENT_SECRETID }}   \
                  --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
