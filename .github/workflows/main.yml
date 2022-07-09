@@ -37,8 +37,7 @@ jobs:
     env:
       imageName: note
       imageTag: latest      
-      containerName: jinhui.dev
-
+      containerName: jinhui.dev      
     steps:
       - name: 拉取最新代码
         uses: actions/checkout@v3
@@ -62,7 +61,7 @@ jobs:
                  --protocol   TCP                               \
                  --source     dynamic                           \
                  --action     ACCEPT                            \
-                 --description "GitHub Action [Tencent SDK]"
+                 --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
 
       - name: 构建镜像并导出
         run: |
@@ -129,4 +128,4 @@ jobs:
                  --port       ${{ secrets.PORT }}               \
                  --protocol   TCP                               \
                  --action     ACCEPT                            \
-                 --description "GitHub Action [Tencent SDK]"
+                 --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"

@@ -24,7 +24,7 @@ CONTAINER ID   IMAGE                  COMMAND      CREATED          STATUS      
 909d3a465861   vulnerables/web-dvwa   "/main.sh"   22 seconds ago   Up 21 seconds   0.0.0.0:8080->80/tcp, :::8080->80/tcp   dvwa
 
 # 查看资源占用
-[root@localhost ~]# docker stats --no-stream
+[root@localhost ~]# docker container stats --no-stream
 CONTAINER ID   NAME      CPU %     MEM USAGE / LIMIT     MEM %     NET I/O      BLOCK I/O       PIDS
 909d3a465861   dvwa      0.22%     108.8MiB / 1.934GiB   5.49%     1.1kB / 0B   156MB / 234MB   37
 ```
@@ -41,7 +41,7 @@ CONTAINER ID   NAME      CPU %     MEM USAGE / LIMIT     MEM %     NET I/O      
 
 ```bash
 # 系统版本
-[root@localhost ~]# docker exec -it dvwa cat /etc/os-release
+[root@localhost ~]# docker container exec -it dvwa cat /etc/os-release
 PRETTY_NAME="Debian GNU/Linux 9 (stretch)"
 NAME="Debian GNU/Linux"
 VERSION_ID="9"
@@ -52,20 +52,30 @@ SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
 
 # PHP版本
-[root@localhost ~]# docker exec -it dvwa php --version
+[root@localhost ~]# docker container exec -it dvwa php --version
 PHP 7.0.30-0+deb9u1 (cli) (built: Jun 14 2018 13:50:25) ( NTS )
 Copyright (c) 1997-2017 The PHP Group
 Zend Engine v3.0.0, Copyright (c) 1998-2017 Zend Technologies
     with Zend OPcache v7.0.30-0+deb9u1, Copyright (c) 1999-2017, by Zend Technologies
 
 # MySQL版本
-[root@localhost ~]# docker exec -it dvwa mysqld --version
+[root@localhost ~]# docker container exec -it dvwa mysqld --version
 mysqld  Ver 10.1.26-MariaDB-0+deb9u1 for debian-linux-gnu on x86_64 (Debian 9.1)
 ```
+
+### Vulhub
+
+官网：[https://vulhub.org/](https://vulhub.org/)
+
+Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
+
+
 
 ## XSS
 
 ### 反射型XSS
+
+#### DVWA测试
 
 ::: details （1）DVWA Low级别 反射型XSS
 
@@ -310,3 +320,4 @@ echo '参数: ENT_COMPAT：' . htmlspecialchars('" < > \' &', ENT_COMPAT) . "\n"
 
 :::
 
+#### Web框架测试
