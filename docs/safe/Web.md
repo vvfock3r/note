@@ -1,6 +1,6 @@
-# 靶场搭建
+## 靶场搭建
 
-## DVWA
+### DVWA
 
 Github：[https://github.com/digininja/DVWA](https://github.com/digininja/DVWA)
 
@@ -61,11 +61,11 @@ Zend Engine v3.0.0, Copyright (c) 1998-2017 Zend Technologies
 mysqld  Ver 10.1.26-MariaDB-0+deb9u1 for debian-linux-gnu on x86_64 (Debian 9.1)
 ```
 
-# XSS
+## XSS
 
-## 反射型XSS
+### 反射型XSS
 
-::: details DVWA Low级别 反射型XSS
+::: details （1）DVWA Low级别 反射型XSS
 
 Github：[https://github.com/digininja/DVWA/blob/master/vulnerabilities/xss_r/source/low.php](https://github.com/digininja/DVWA/blob/master/vulnerabilities/xss_r/source/low.php)
 
@@ -73,11 +73,11 @@ Github：[https://github.com/digininja/DVWA/blob/master/vulnerabilities/xss_r/so
 
 :::
 
-::: details 使用PHP编写简单的反射型XSS漏洞代码
+::: details （2）使用PHP编写简单的反射型XSS漏洞代码
 
 `index.php`
 
-```php+HTML
+```php
 <!DOCTYPE html>
 <html lang="en">
 
@@ -136,7 +136,7 @@ Github：[https://github.com/digininja/DVWA/blob/master/vulnerabilities/xss_r/so
 
 :::
 
-::: details DVWA Medium级别 反射型XSS
+::: details （3）DVWA Medium级别 反射型XSS
 
 **弹窗测试**
 
@@ -182,7 +182,7 @@ if( array_key_exists( "name", $_GET ) && $_GET[ 'name' ] != NULL ) {
 
 :::
 
-::: details DVWA High级别 反射型XSS
+::: details （4）DVWA High级别 反射型XSS
 
 **查看源码**
 
@@ -214,7 +214,7 @@ if( array_key_exists( "name", $_GET ) && $_GET[ 'name' ] != NULL ) {
 
 :::
 
-::: details DVWA Impossible级别 反射型XSS
+::: details （5）DVWA Impossible级别 反射型XSS
 
 **查看源码**
 
@@ -262,7 +262,7 @@ echo '参数: ENT_COMPAT：' . htmlspecialchars('" < > \' &', ENT_COMPAT) . "\n"
 
 **htmlspecialchars可能引起的XSS攻击**
 
-```php+HTML
+```php
 <!DOCTYPE html>
 <html lang="en">
 
