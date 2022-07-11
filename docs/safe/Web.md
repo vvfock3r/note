@@ -6,10 +6,6 @@
 
 Github：[https://github.com/digininja/DVWA](https://github.com/digininja/DVWA)
 
-Damn Vulnerable Web Application (DVWA)(译注：可以直译为："该死的"不安全Web应用网站)，是一个编码糟糕的、易受攻击的 PHP/MySQL Web应用程序。 它的主要目的是帮助安全专业人员在合法的环境中，测试他们的技能和工具，帮助 Web 开发人员更好地了解如何增强 Web 应用程序的安全性，并帮助学生和教师在受控的课堂环境中，了解 Web 应用程序的安全。
-
-DVWA的具体目标是通过简单明了的界面，来**演练一些最常见的 Web 漏洞**，这些漏洞具有**不同的难度级别**。 请注意，此软件**存在说明和未说明的漏洞**。 这是故意的。 我们鼓励您尝试并发现尽可能多的安全问题
-
 <br />
 
 **（1）使用Docker部署**
@@ -115,7 +111,7 @@ Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
 
 ![image-20220712035901549](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712035901549.png)
 
-![image-20220712035109230](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220712035109230.png)
+![image-20220712035109230](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712035109230.png)
 
 **3、删除证书机构**
 
