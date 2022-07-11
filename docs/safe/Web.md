@@ -69,7 +69,153 @@ mysqld  Ver 10.1.26-MariaDB-0+deb9u1 for debian-linux-gnu on x86_64 (Debian 9.1)
 
 Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
 
+## 
 
+## 浏览器设置
+
+### 代理插件
+
+#### Firefox
+
+> 附加组件在线搜索：[https://addons.mozilla.org/zh-CN/firefox/](https://addons.mozilla.org/zh-CN/firefox/)
+
+（1）安装 `FoxyProxy Standard`：[https://addons.mozilla.org/zh-CN/firefox/addon/foxyproxy-standard/](https://addons.mozilla.org/zh-CN/firefox/addon/foxyproxy-standard/)
+
+（2）配置`FoxyProxy`
+
+![image-20220712031502058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712031502058.png)
+
+![image-20220712031520841](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712031520841.png)
+
+![image-20220712032018021](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712032018021.png)
+
+![image-20220712032158267](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712032158267.png)
+
+### 证书机构
+
+#### Firefox
+
+**1、查看当前已有的证书机构**
+
+浏览器输入`about:certificate`
+
+![image-20220712032809345](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712032809345.png)
+
+**2、导入自签证书机构**
+
+① 打开【隐私与安全】页面：浏览器输入`about:preferences#privacy` 或 设置 --> 隐私与安全
+
+② 翻到最下面，点击【查看证书】
+
+③ 导入
+
+![image-20220712033326184](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712033326184.png)
+
+![image-20220712033614604](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712033614604.png)
+
+![image-20220712035901549](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712035901549.png)
+
+![image-20220712035109230](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220712035109230.png)
+
+**3、删除证书机构**
+
+> 这个必须要吐槽一下：
+>
+> 内置的证书机构那么多，又不提供搜索的功能，找起来太费劲了；Web界面查看证书倒是可以使用`Ctrl+F`搜索，但是TMD又不提供删除功能！！！
+
+![image-20220712035711822](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712035711822.png)
+
+![image-20220712041017524](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712041017524.png)
+
+![image-20220712041051359](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712041051359.png)
+
+
+
+## 
+
+## 安全工具
+
+### xray
+
+官网：[https://docs.xray.cool/](https://docs.xray.cool/)
+
+Github：[https://github.com/chaitin/xray](https://github.com/chaitin/xray)
+
+版本介绍：[https://docs.xray.cool/#/generic/compare](https://docs.xray.cool/#/generic/compare)
+
+`xray`是由 [长亭科技 ](https://www.chaitin.cn/)使用Go语言开发的安全评估工具，源代码不开源，仓库内主要为社区贡献的 poc，每次 `xray `发布将自动打包
+
+
+
+**基于爬⾍模式的扫描**
+
+```bash
+xray webscan --basic-crawler http://example.com --html-output vuln.html
+```
+
+> 更多用法请参考文档
+
+**被动扫描**
+
+（1）`xray`生成证书机构
+
+```bash
+C:\Users\Administrator\Desktop>xray genca
+```
+
+（2）浏览器导入证书机构
+
+> 参考：浏览器设置 - 证书机构
+
+（3）修改`xray`配置文件`config.yaml`（此文件会自动生成）
+
+```yaml
+# 被动代理配置
+# 更多解释见 https://docs.xray.cool/#/configration/mitm
+mitm:
+  ca_cert: ./ca.crt                     
+  ca_key: ./ca.key                      
+  basic_auth:                           
+    username: ""
+    password: ""
+  allow_ip_range: []                    
+  restriction:                     
+    # 默认为[]，意思是会自动扫描所有在浏览器访问过的网站，这通常是不必要的
+    # 把需要扫描的网站加入到这里（推荐）
+    hostname_allowed: [ 127.0.0.1, 192.168.48.133 ]
+```
+
+（4）启动`xray`代理服务器
+
+```bash
+C:\Users\Administrator\Desktop>xray webscan --listen 127.0.0.1:7777 --html-output dvwa-vul.html
+```
+
+![image-20220712042633443](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712042633443.png)
+
+（5）浏览器配置代理服务器地址
+
+> 参考：浏览器设置 - 代理插件
+
+（6）访问百度测试
+
+若出现如下错误，请检查**浏览器证书机构**
+
+![image-20220712043359216](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712043359216.png)
+
+（7）访问DVWA Low级别反射型XSS漏洞
+
+浏览器打开此页面
+
+![image-20220712045935884](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712045935884.png)
+
+观察xray是否扫描到漏洞
+
+![image-20220712050049338](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712050049338.png)
+
+
+
+## 
 
 ## XSS
 
@@ -342,7 +488,7 @@ pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
 
 **关于转义 💊**
 
-<span style="background-color: gray; color: white; padding: 0 5px;">1、为什么Flask（实际上是jinja2）没有开启自动转义？</span>
+<span style="background-color: gray; color: white; padding: 1 5px;">1、为什么Flask（实际上是jinja2）没有开启自动转义？</span>
 
 文档：[https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default](https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default)
 
