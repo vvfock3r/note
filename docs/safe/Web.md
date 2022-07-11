@@ -344,7 +344,7 @@ pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
 
 <span style="background-color: gray; color: white; padding: 0 5px;">1、为什么Flask（实际上是jinja2）没有开启自动转义？</span>
 
-文档：https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default
+文档：[https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default](https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default)
 
 解释： `jinja2`默认关闭了自动转义； `jinja2`也并不是完全不转义，而是使用了一个第三方库`MarkupSafe`来进行转义
 
@@ -366,7 +366,7 @@ pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
 
 `escape`过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.escape](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.escape)
 
-safe过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe)
+`safe`过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe)
 
 `forceescape`过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.forceescape](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.forceescape)
 
