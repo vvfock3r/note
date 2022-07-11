@@ -354,7 +354,7 @@ pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
 
 解释：对 `&`, `<`, `>`, `'`，`"` 5个字符进行转义
 
-3、<span style="background-color: gray; color: white; padding: 0 5px;">3、Jinja2 HTML转义概述</span>
+<span style="background-color: gray; color: white; padding: 0 5px;">3、Jinja2 HTML转义概述</span>
 
 文档：[https://jinja.palletsprojects.com/en/3.1.x/templates/#html-escaping](https://jinja.palletsprojects.com/en/3.1.x/templates/#html-escaping)
 
