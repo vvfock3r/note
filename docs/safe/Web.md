@@ -65,8 +65,6 @@ mysqld  Ver 10.1.26-MariaDB-0+deb9u1 for debian-linux-gnu on x86_64 (Debian 9.1)
 
 Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
 
-## 
-
 ## 浏览器设置
 
 ### 代理插件
@@ -124,10 +122,6 @@ Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
 ![image-20220712041017524](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712041017524.png)
 
 ![image-20220712041051359](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712041051359.png)
-
-
-
-## 
 
 ## 安全工具
 
@@ -208,10 +202,6 @@ C:\Users\Administrator\Desktop>xray webscan --listen 127.0.0.1:7777 --html-outpu
 观察xray是否扫描到漏洞
 
 ![image-20220712050049338](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220712050049338.png)
-
-
-
-## 
 
 ## XSS
 
