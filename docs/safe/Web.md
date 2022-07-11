@@ -374,7 +374,7 @@ pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
 
 **Flask正确使用示例**
 
-::: details 服务端代码 main.py
+::: details 服务端代码 server.py
 
 ```python
 #!/usr/bin/env python
@@ -477,3 +477,43 @@ if __name__ == "__main__":
 :::
 
 ![image-20220711131953064](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220711131953064.png)
+
+**Flask错误使用示例**
+
+<span style="background-color: red; color: white; padding: 0 5px;">1、错误的使用 safe过滤器，导致用户输入的内容没有经过转义直接被浏览器执行</span>
+
+实验步骤：修改`index.html`，将模板中的`{{ name }}`修改为`{{ name | safe }}`
+
+<span style="background-color: red; color: white; padding: 0 5px;">2、将用户输入（没有经过转义）直接使用 markupsafe.Markup转换并交由浏览器执行</span>
+
+实验步骤：修改`server.py`
+
+```python
+from jinja2 import Template
+from markupsafe import Markup  # 添加这行
+
+@app.route('/')
+def index():
+    # 获取查询字符串
+    demo = request.args.get("demo", "1")
+    name = request.args.get("name")
+    name = Markup(name)    # 添加这行
+```
+
+<span style="background-color: red; color: white; padding: 0 5px;">3、并没有使用模板引擎的{{ name }}语法，而是通过Python字符串拼接用户输入的信息，并返回给客户端</span>
+
+实验步骤：修改`server.py`
+
+```python
+    # flask render_template_string 示例
+    if demo == "2":
+        # 因为我们的模板中有大量的{}和%符号，会对我们的实验造成影响，所以这里使用一个新的模板
+        # 通过Python字符串format方法拼接字符串，并未对字符串做任何转义，直接返回给客户端浏览器中，造成XSS攻击
+        tpl = "hello {name}".format(name=name)  # tpl实际的值为：hello <script>alert(2)</script>
+        return render_template_string(tpl)
+```
+
+> 此环境除了产生`XSS`漏洞外，还会产生`SSTI`漏洞，将输入框内容修改`{{ 20 * 30 }}`或`{{ config }}`，可以看到输入被`jinja2`所解释执行
+>
+> ![image-20220711142751842](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220711142751842.png)
+
