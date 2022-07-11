@@ -75,7 +75,7 @@ Github：[https://github.com/vulhub/vulhub](https://github.com/vulhub/vulhub)
 
 ### 反射型XSS
 
-#### DVWA测试
+#### DVWA
 
 ::: details （1）DVWA Low级别 反射型XSS
 
@@ -320,4 +320,160 @@ echo '参数: ENT_COMPAT：' . htmlspecialchars('" < > \' &', ENT_COMPAT) . "\n"
 
 :::
 
-#### Web框架测试
+#### Flask
+
+**版本介绍**
+
+| 名称       | 版本    | 官网                                                         |
+| ---------- | ------- | ------------------------------------------------------------ |
+| Flask      | `2.1.2` | [https://flask.palletsprojects.com/en/2.1.x/](https://flask.palletsprojects.com/en/2.1.x/) |
+| Jinja2     | `3.1.2` | [https://jinja.palletsprojects.com/en/3.1.x/](https://jinja.palletsprojects.com/en/3.1.x/) |
+| MarkupSafe | `2.1.1` | [https://markupsafe.palletsprojects.com/en/2.1.x/](https://markupsafe.palletsprojects.com/en/2.1.x/) |
+
+<br />
+
+**安装Flask**
+
+```bash
+pip install flask==2.1.2  # 这会自动安装上jinja2和MarkupSafe
+```
+
+<br />
+
+**关于转义 💊**
+
+<span style="background-color: gray; color: white; padding: 0 5px;">1、为什么Flask（实际上是jinja2）没有开启自动转义？</span>
+
+文档：https://jinja.palletsprojects.com/en/3.1.x/faq/#why-is-html-escaping-not-the-default
+
+解释： `jinja2`默认关闭了自动转义； `jinja2`也并不是完全不转义，而是使用了一个第三方库`MarkupSafe`来进行转义
+
+<span style="background-color: gray; color: white; padding: 0 5px;">2、MarkupSafe 是如何做转义的？</span>
+
+文档：[https://markupsafe.palletsprojects.com/en/2.1.x/escaping/#markupsafe.escape](https://markupsafe.palletsprojects.com/en/2.1.x/escaping/#markupsafe.escape)
+
+解释：对 `&`, `<`, `>`, `'`，`"` 5个字符进行转义
+
+3、<span style="background-color: gray; color: white; padding: 0 5px;">3、Jinja2 HTML转义概述</span>
+
+文档：[https://jinja.palletsprojects.com/en/3.1.x/templates/#html-escaping](https://jinja.palletsprojects.com/en/3.1.x/templates/#html-escaping)
+
+解释：
+
+① 手动转义可以使用`jinja2`内置的过滤器`escape`（别名为`e`），比如`{{ user.username|e }}`
+
+② 以下情况会取消转义：模板中传入的是`markupsafe.Markup`对象、模板中使用`jinja2`内置的过滤器`safe`
+
+`escape`过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.escape](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.escape)
+
+safe过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.safe)
+
+`forceescape`过滤器：[https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.forceescape](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.forceescape)
+
+<br />
+
+**Flask正确使用示例**
+
+::: details 服务端代码 main.py
+
+```python
+#!/usr/bin/env python
+# --*--coding:utf-8--*--
+
+from flask import Flask, request, render_template, render_template_string
+from jinja2 import Template
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    # 获取查询字符串
+    demo = request.args.get("demo", "1")
+    name = request.args.get("name")
+
+    # 读取模板，demo2和demo3会用到
+    with open("templates/index.html", mode="r", encoding="utf-8") as f:
+        tpl = f.read()
+
+    # flask render_template 示例
+    if demo == "1":
+        return render_template("index.html", name=name)
+
+    # flask render_template_string 示例
+    if demo == "2":
+        return render_template_string(tpl, name=name)
+
+    # jinja2 Template 示例
+    if demo == "3":
+        template = Template(tpl, autoescape=True)  # 这里需要手动转义一下，否则不会有任何转义
+        return template.render(name=name)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080, debug=True)
+```
+
+:::
+
+::: details HTML模板代码 templates/index.html（注意模板需要放到templates目录下）
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        h1,
+        .main {
+            width: 410px;
+            margin: 0 auto;
+        }
+
+        .content {
+            height: 50px;
+            line-height: 50px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<h1>反射型XSS：Flask正确示例</h1>
+<div class="main">
+    <!-- for循环生成3个表单，表单之间使用 demo 字段来区分 -->
+    <!-- for循环文档：https://jinja.palletsprojects.com/en/3.1.x/templates/#for -->
+    {% for i in [1,2,3]%}
+    <div>
+        <!-- HTML表单：GET提交 -->
+        <form name="form-get" action="" method="get">
+            <!-- 隐藏字段，用来区分不同的表单 -->
+            <input type="hidden" name="demo" value="{{ i }}">
+            <!-- 可显示部分 -->
+            <p>
+                What's your name?
+                <input type="text" name="name" value="<script>alert({{ i }})</script>">
+                <input type="submit" value="GET 提交">
+            </p>
+        </form>
+    </div>
+    {% endfor %}
+
+    <!-- 显示提交的内容 -->
+    <div class="content">
+        {% if name%}
+        Hello {{ name }}
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
+```
+
+:::
+
+![image-20220711131953064](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220711131953064.png)
