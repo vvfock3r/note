@@ -57,7 +57,7 @@ jobs:
                  --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
                  --port       ${{ secrets.PORT }}               \
                  --protocol   TCP                               \
-                 --source     0.0.0.0/0                         \
+                 --source     dynamic                           \
                  --action     ACCEPT                            \
                  --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
 
@@ -75,9 +75,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           #key: ${{ secrets.PRIVATEKEY }}
-          timeout: 60s
+          timeout: 600s
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
-          target: /tmp/          
+          target: /tmp/
 
       # https://github.com/marketplace/actions/ssh-remote-commands
       - name: 服务器导入镜像
