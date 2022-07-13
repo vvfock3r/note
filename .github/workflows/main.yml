@@ -57,7 +57,7 @@ jobs:
                  --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
                  --port       ${{ secrets.PORT }}               \
                  --protocol   TCP                               \
-                 --source     dynamic                           \
+                 --source     0.0.0.0/0                         \
                  --action     ACCEPT                            \
                  --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
 
