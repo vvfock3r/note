@@ -45,6 +45,28 @@ def add_firewall_rule(
         source: str,
         action: str = "ACCEPT",
         description: str = "[Created by Tencent SDK]") -> Tuple[bool, Dict]:
+    # 先执行查询,description不计数
+    ok, resp = ls_firewall_rule(cred, instanceId, protocol, port, source, action, None)
+
+    # 查询失败直接返回
+    if not ok:
+        return ok, resp
+
+    # 如果规则已经存在直接返回
+    rules_matched = resp["FirewallRuleSet"]
+    if len(rules_matched) >= 1:
+        return True, {
+            "code": "ok",
+            "message": "防火墙规则 `[('{protocol}', '{port}', '{source}', '{action}')]` 已经存在。".format(
+                protocol=protocol,
+                port=port,
+                source=source,
+                action=action
+            ),
+            "requestId": resp["RequestId"]
+        }
+
+    # 添加规则
     try:
         # 实例化客户端
         client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
