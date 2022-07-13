@@ -75,7 +75,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           #key: ${{ secrets.PRIVATEKEY }}
-          timeout: 60
+          timeout: 60s
           source: ${{ env.imageName }}-${{ env.imageTag }}.gz
           target: /tmp/          
 
