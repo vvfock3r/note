@@ -4355,3 +4355,95 @@ total 0
 :::
 
 #### 存储类
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#class](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#class)
+
+* 存储类其实就是一个标识，是一个字符串，`Kubernetes` 本身并不清楚各种类代表的什么
+* 存储类会影响`PVC`绑定`PV`
+
+::: details  PVC指定一个不存在的存储类，看看会发生什么
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > pvc.yml <<- EOF
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: demo-pv
+spec:
+  capacity:                                 # pv容量
+    storage: 100Gi                          #
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany                           #
+  persistentVolumeReclaimPolicy: Delete     # 回收策略
+  storageClassName: nfs-1                   # 存储类
+  nfs:
+    server: 192.168.48.128                  # NFS地址
+    path: /data/k8s                         # NFS中共享的路径
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-pvc
+  namespace: default
+spec:
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany
+  storageClassName: nfs-2                   # 存储类
+  resources:                                # 资源
+    requests:                               #   需求
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:   # 固定字段
+            claimName: demo-pvc    # 指定PVC名称
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+persistentvolume/demo-pv created
+persistentvolumeclaim/demo-pvc created
+deployment.apps/demo unchanged
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+demo-c846f7545-4kmw7   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
+demo-c846f7545-fg7tx   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
+demo-c846f7545-tps5k   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
+
+# 查看Pod详情
+[root@node0 k8s]# kubectl describe pod demo-c846f7545-4kmw7
+...
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  22s   default-scheduler  0/3 nodes are available: 3 pod has unbound immediate PersistentVolumeClaims.
+```
+
+:::
