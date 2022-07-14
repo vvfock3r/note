@@ -4564,7 +4564,7 @@ NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM           
 demo-pv   100Gi      RWX            Retain           Released   default/demo-pvc   local-storage            72s
 ```
 
-
+:::
 
 ::: details  删除（Delete）策略说明：NFS和local等都不支持Delete策略，故本次测试的并不充分
 
@@ -4679,3 +4679,23 @@ Events:
 
 :::
 
+#### PV动态供给
+
+文档：
+
+* [https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic)
+* [https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs)
+
+NFS外部驱动：
+
+* [https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
+
+::: details  使用kubectl安装nfs subdir外部驱动
+
+```bash
+# 克隆代码
+[root@node0 ~]# git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
+[root@node0 ~]# cd nfs-subdir-external-provisioner/
+```
+
+:::
