@@ -4096,6 +4096,10 @@ node2
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/)
 
+注意：
+
+* PV不区分命名空间，PVC区分命名空间
+
 #### 示例
 
 ::: details 第一步：创建PV（PersistentVolume）
@@ -4706,7 +4710,7 @@ metadata:
   labels:
     app: nfs-client-provisioner
   # replace with namespace where provisioner is deployed
-  namespace: default   # 命名空间，根据实际情况修改
+  namespace: default   # 命名空间，根据实际情况修改，建议修改
 spec:
   replicas: 1
   strategy:
@@ -4875,3 +4879,4 @@ No resources found
 :::
 
 #### 访问模式
+
