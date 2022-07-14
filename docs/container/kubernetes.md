@@ -4243,7 +4243,7 @@ command terminated with exit code 1
 
 :::
 
-#### 类型
+#### PV 类型
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes)
 
@@ -4447,3 +4447,235 @@ Events:
 ```
 
 :::
+
+#### PV 回收策略
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#reclaiming](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#reclaiming)
+
+| 回收策略        | 说明                                                         |
+| --------------- | ------------------------------------------------------------ |
+| 保留（Retain）  | 用户可以手动回收资源（默认回收策略）                         |
+| 删除（Delete）  | 自动删除PV对象                                               |
+| 回收（Recycle） | 回收策略 `Recycle` 已被废弃。取而代之的建议方案是使用动态供应 |
+
+::: details  保留（Retain）策略说明：保留PV，并将PV状态设置为Released
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > pvc.yml <<- EOF
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: demo-pv
+spec:
+  capacity:                                 # pv容量
+    storage: 100Gi                          #
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany                           #
+  persistentVolumeReclaimPolicy: Retain     # 回收策略
+  storageClassName: local-storage           # 存储类
+  local:                                    # 持久卷类型,local代表节点上挂载的本地存储设备
+    path: /data/k8s
+  nodeAffinity:                             # 使用local卷时，你需要设置 PersistentVolume 对象的 nodeAffinity 字段
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/os
+          operator: In
+          values:
+          - linux
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-pvc
+  namespace: default
+spec:
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany
+  storageClassName: local-storage           # 存储类
+  resources:                                # 资源
+    requests:                               #   需求
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:   # 固定字段
+            claimName: demo-pvc    # 指定PVC名称
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+persistentvolume/demo-pv created
+persistentvolumeclaim/demo-pvc created
+deployment.apps/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods
+NAME                   READY   STATUS    RESTARTS   AGE
+demo-c846f7545-fd9kk   1/1     Running   0          20s
+demo-c846f7545-fxm49   1/1     Running   0          20s
+demo-c846f7545-jcsfq   1/1     Running   0          20s
+
+# 删除Deployment
+[root@node0 k8s]# kubectl delete deploy demo
+deployment.apps "demo" deleted
+
+# 查看PVC和PV
+[root@node0 k8s]# kubectl get pvc
+NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   31s
+
+[root@node0 k8s]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
+demo-pv   100Gi      RWX            Retain           Bound    default/demo-pvc   local-storage            34s
+
+# 删除PVC
+[root@node0 k8s]# kubectl delete pvc demo-pvc
+persistentvolumeclaim "demo-pvc" deleted
+
+# 查看PV，状态变为Released(已释放)，由于卷上仍然存在这前一申领人的数据，该卷还不能用于其他申领
+[root@node0 k8s]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM              STORAGECLASS    REASON   AGE
+demo-pv   100Gi      RWX            Retain           Released   default/demo-pvc   local-storage            72s
+```
+
+
+
+::: details  删除（Delete）策略说明：NFS和local等都不支持Delete策略，故本次测试的并不充分
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > pvc.yml <<- EOF
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: demo-pv
+spec:
+  capacity:                                 # pv容量
+    storage: 100Gi                          #
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany                           #
+  persistentVolumeReclaimPolicy: Delete     # 回收策略
+  storageClassName: local-storage           # 存储类
+  nfs:
+    server: 192.168.48.128                  # NFS地址
+    path: /data/k8s                         # NFS中共享的路径
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-pvc
+  namespace: default
+spec:
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany
+  storageClassName: local-storage           # 存储类
+  resources:                                # 资源
+    requests:                               #   需求
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:   # 固定字段
+            claimName: demo-pvc    # 指定PVC名称
+EOF
+
+# 查看Deployment
+root@node0 k8s]# kubectl get deploy
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+demo   3/3     3            3           29s
+
+# 查看PV
+[root@node0 k8s]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
+demo-pv   100Gi      RWX            Delete           Bound    default/demo-pvc   local-storage            31s
+
+# 查看PVC
+[root@node0 k8s]# kubectl get pvc
+NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   33s
+
+# 删除Deployment
+[root@node0 k8s]# kubectl delete deploy demo
+deployment.apps "demo" deleted
+
+# 再次查看PV，没有发生变化
+[root@node0 k8s]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
+demo-pv   100Gi      RWX            Delete           Bound    default/demo-pvc   local-storage            2m48s
+
+# 再次查看PVC，没有发生变化
+[root@node0 k8s]# kubectl get pvc
+NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   2m50s
+
+# 删除PVC
+[root@node0 k8s]# kubectl delete pvc demo-pvc
+persistentvolumeclaim "demo-pvc" deleted
+
+# 查看PV，状态变为Failed
+[root@node0 k8s]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
+demo-pv   100Gi      RWX            Delete           Failed   default/demo-pvc   local-storage            4m17s
+
+# 看一下Failed的详情，没有找到插件来删除PV，也就是说NFS类型的持久卷并不支持Delete回收策略
+# 经测试，本地存储local也不支持Delete回收策略
+[root@node0 k8s]# kubectl describe pv demo-pv
+...
+Events:
+  Type     Reason              Age   From                         Message
+  ----     ------              ----  ----                         -------
+  Warning  VolumeFailedDelete  112s  persistentvolume-controller  error getting deleter volume plugin for volume "demo-pv": no deletable volume plugin matched
+```
+
+:::
+
