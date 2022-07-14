@@ -4462,7 +4462,7 @@ Events:
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -4570,7 +4570,7 @@ demo-pv   100Gi      RWX            Retain           Released   default/demo-pvc
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -4695,7 +4695,183 @@ NFS外部驱动：
 ```bash
 # 克隆代码
 [root@node0 ~]# git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
-[root@node0 ~]# cd nfs-subdir-external-provisioner/
+[root@node0 ~]# cd nfs-subdir-external-provisioner/deploy/
+
+# 修改配置
+[root@node0 deploy]# vim deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-client-provisioner
+  labels:
+    app: nfs-client-provisioner
+  # replace with namespace where provisioner is deployed
+  namespace: default   # 命名空间，根据实际情况修改
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: k8s-sigs.io/nfs-subdir-external-provisioner
+            - name: NFS_SERVER
+              value: 192.168.48.128      # NFS Server地址
+            - name: NFS_PATH 
+              value: /data/k8s           # NFS 路径
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.48.128       # NFS Server地址
+            path: /data/k8s              # NFS 路径
+            
+[root@node0 deploy]# vim class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-client
+provisioner: k8s-sigs.io/nfs-subdir-external-provisioner # or choose another name, must match deployment's env PROVISIONER_NAME'
+parameters:
+  # 回收策略为Delete时，是否将NFS中的文件进行归档
+  # 归档的意思是：在NFS目录中，会将我们的数据目录进行改名，以archived-开头，变相达到删除的目录
+  archiveOnDelete: "false"
+  
+# 创建
+[root@node0 deploy]# kubectl apply -f class.yaml,rbac.yaml,deployment.yaml
+storageclass.storage.k8s.io/nfs-client created
+serviceaccount/nfs-client-provisioner created
+clusterrole.rbac.authorization.k8s.io/nfs-client-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/run-nfs-client-provisioner created
+role.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+rolebinding.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+deployment.apps/nfs-client-provisioner created
+
+# 查看创建的资源
+[root@node0 deploy]# kubectl get sc
+NAME         PROVISIONER                                   RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+nfs-client   k8s-sigs.io/nfs-subdir-external-provisioner   Delete          Immediate           false                  12s
+
+[root@node0 deploy]# kubectl get deploy
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+nfs-client-provisioner   1/1     1            1           2m2s
+
+[root@node0 deploy]# kubectl get pods -o wide
+NAME                                      READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
+nfs-client-provisioner-659556df74-s6wxg   1/1     Running   0          2m13s   10.233.44.27   node2   <none>           <none>
 ```
 
 :::
+
+::: details  使用NFS动态供给：我们不再需要自定义PV，而是由NFS驱动动态创建PV
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-pvc
+  namespace: kube-public                    # 故意将命名空间设置为和NFS外部驱动不一样，看是否会有限制
+spec:
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteMany
+  storageClassName: nfs-client              # 存储类
+  resources:                                # 资源
+    requests:                               #   需求
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: kube-public
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:   # 固定字段
+            claimName: demo-pvc    # 指定PVC名称
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+persistentvolumeclaim/demo-pvc created
+deployment.apps/demo created
+
+# 查看Pod
+[root@node0 k8s]# kubectl get pods -n kube-public -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo-c846f7545-q4wj8   1/1     Running   0          26s   10.233.154.25   node1   <none>           <none>
+demo-c846f7545-qslk7   1/1     Running   0          26s   10.233.44.29    node2   <none>           <none>
+demo-c846f7545-tccdw   1/1     Running   0          26s   10.233.30.34    node0   <none>           <none>
+
+# 查看PV（不区分命名空间的）
+[root@node0 k8s]# kubectl get pv 
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   REASON   AGE
+pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff   5Gi        RWX            Delete           Bound    kube-public/demo-pvc   nfs-client              77s
+
+# 查看PVC（PVC需要区分命名空间）
+[root@node0 k8s]# kubectl get pvc
+No resources found in default namespace.
+
+[root@node0 k8s]# kubectl get pvc -n kube-public
+NAME       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+demo-pvc   Bound    pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff   5Gi        RWX            nfs-client     92s
+
+# 查看NFS目录内容
+[root@node0 k8s]# ls -l /data/k8s
+total 0
+drwxrwxrwx. 2 root root 6 Jul 14 17:41 kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff
+
+[root@node0 k8s]# ls -l /data/k8s/kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff/
+total 0
+
+# 写入点内容
+[root@node0 k8s]# seq 10 > /data/k8s/kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff/a.txt
+
+# 删除Deployment和PVC
+[root@node0 k8s]# kubectl delete -f demo.yml
+persistentvolumeclaim "demo-pvc" deleted
+deployment.apps "demo" deleted
+
+# 检查PV是否删除
+[root@node0 k8s]# kubectl get pv
+No resources found
+
+# 检查NFS中的内容是否删除
+# 因为我们NFS驱动的archiveOnDelete为false，所以这里会真的把数据删除，而不是将目录改名(以archived-开头)
+[root@node0 k8s]# ls /data/k8s/
+```
+
+:::
+
+#### 访问模式
