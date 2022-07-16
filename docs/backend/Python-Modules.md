@@ -1,10 +1,14 @@
-## Awesome Python
+## 参考资料
 
-Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awesome-python)
+* **Awesome Python**
+
+  Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awesome-python)
 
 <br />
 
-## 默认分组
+## 类型分组
+
+### 默认分组
 
 | 分类       | 库名       | 类型   | 应用举例 |
 | ---------- | ---------- | ------ | -------- |
@@ -13,28 +17,37 @@ Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awes
 
 <br />
 
-## 命令行接口
-
-### 概述
+### 命令行
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
-| 分类                           | 库名             | 类型     | 应用举例    |
-| ------------------------------ | ---------------- | -------- | ----------- |
-| 命令行选项、参数和子命令解析器 | `argparse`       | 标准库   | `yum`/`dnf` |
-| 进度条                         | `tqdm`           | 第三方库 |             |
-| 彩色终端                       | `colorama`       | 第三方库 | `ipython`   |
-| 字符图形                       | `asciimatics`    | 第三方库 |             |
-| 字符表格                       | `prettytable`    | 第三方库 |             |
-| 交互式命令行                   | `prompt_toolkit` | 第三方库 | `ipython`   |
+| 分类                           | 库名                             | 类型     | 应用举例    |
+| ------------------------------ | -------------------------------- | -------- | ----------- |
+| 命令行选项、参数和子命令解析器 | <a href="#argparse">argparse</a> | 标准库   | `yum`/`dnf` |
+| 进度条                         | `tqdm`                           | 第三方库 |             |
+| 彩色终端                       | `colorama`                       | 第三方库 | `ipython`   |
+| 字符图形                       | `asciimatics`                    | 第三方库 |             |
+| 字符表格                       | `prettytable`                    | 第三方库 |             |
+| 交互式命令行                   | `prompt_toolkit`                 | 第三方库 | `ipython`   |
 
+<br />
 
+### HTTP协议
 
-### argparse
+| 分类          | 库名            | 类型     | 应用举例 |
+| ------------- | --------------- | -------- | -------- |
+| HTTP客户端    | `httpx`         | 第三方库 |          |
+| URL编码和解码 | `urlib.parse`   | 标准库   |          |
+| HTML渲染      | `jinja2`        | 第三方库 |          |
+| HTML解析      | `beautifulsoup` | 第三方库 |          |
+
+<br />
+
+## argparse
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html](https://docs.python.org/zh-cn/3/library/argparse.html)
 
-#### 基础示例
+### 基础示例
 
 这是一个最基础的例子，我们没有添加任何选项，但是`argparse`会自动为我们添加`-h`和`--help`选项
 
@@ -65,11 +78,11 @@ optional arguments:
 
 <br />
 
-#### 可选参数
+### 可选参数
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#the-add-argument-method](https://docs.python.org/zh-cn/3/library/argparse.html#the-add-argument-method)
 
-####   （1）添加参数并获取值
+#### （1）添加参数并获取值
 
 ::: details 点击查看完整代码
 
@@ -91,7 +104,7 @@ args = parser.parse_args()
 # 获取参数的值
 print(args)  # args是一个Namespace对象
 print(args.__dict__)  # 也可以查看字典属性
-print(args.list)  # 这里的list就是上面--list,如果只有一个短选项，那么这里就需要实用args.l
+print(args.list)  # 这里的list就是上面--list,如果只有一个短选项，那么这里就需要使用args.l
 ```
 
 输出结果
@@ -121,7 +134,7 @@ pro
 
 :::
 
-####   （2）指定参数值显示名称
+#### （2）指定参数值显示名称
 
 ::: details 点击查看完整代码
 
@@ -184,7 +197,7 @@ args = parser.parse_args()
 # 获取参数的值
 print(args)
 print(args.host)
-print(args.ssh_port)    # 这里需要实用dest指定的变量明来访问
+print(args.ssh_port)    # 这里需要使用dest指定的变量明来访问
 ```
 
 输出结果
@@ -196,7 +209,7 @@ usage: main.py [-h] [-H HOST] [-p SSH_PORT]
 optional arguments:                                    
   -h, --help            show this help message and exit
   -H HOST, --host HOST  show something                 
-  -p SSH_PORT, --port SSH_PORT                  # 实用了dest后，可以发现显示名称也变了，可以通过metavar来指定新的显示名称
+  -p SSH_PORT, --port SSH_PORT                  # 使用了dest后，可以发现显示名称也变了，可以通过metavar来指定新的显示名称
                         show something
                         
 (venv) C:\Users\Administrator\Desktop\tutorials>python main.py -H 127.0.0.1 -p 8080
@@ -301,7 +314,7 @@ Namespace(m=200, n='100', x='abcabc')  # 这里abc变成了双份
 
 :::
 
-####   （6）必传类型参数
+#### （6）必传类型参数
 
 ::: details 点击查看完整代码
 
@@ -421,7 +434,7 @@ False
 True
 ```
 
-> 若不想实用True或False作为值，可以将代码改为如下形式：
+> 若不想使用True或False作为值，可以将代码改为如下形式：
 >
 > ```
 > parser.add_argument("-l", "--list", help="show something", action="store_const", const="100")
@@ -667,7 +680,7 @@ main.py: error: argument --car: not allowed with argument --bus
 
 <br />
 
-#### 格式化帮助信息
+### 格式化帮助信息
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#argumentparser-objects](https://docs.python.org/zh-cn/3/library/argparse.html#argumentparser-objects)
 
@@ -699,7 +712,7 @@ print(args)
 ```bash
 (venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
 # => 这一部分对应usage属性
-# 其中main.py为python文件名，这是一个动态值，对应属性prog，在其他地方可以实用%(prog)s来引用，prog的默认值为 os.path.basename(sys.argv[0])
+# 其中main.py为python文件名，这是一个动态值，对应属性prog，在其他地方可以使用%(prog)s来引用，prog的默认值为 os.path.basename(sys.argv[0])
 usage: main.py [-h] [-l LIST]                             
 
 # 这里的空白对应description属性，在后面我们会自定义这一部分
@@ -1132,15 +1145,4 @@ Namespace(list='a', port='80')
 
 <br />
 
-#### 子命令
-
-<br />
-
-# HTTP
-
-| 分类          | 库名            | 类型     | 应用举例 |
-| ------------- | --------------- | -------- | -------- |
-| HTTP客户端    | `httpx`         | 第三方库 |          |
-| URL编码和解码 | `urlib.parse`   | 标准库   |          |
-| HTML渲染      | `jinja2`        | 第三方库 |          |
-| HTML解析      | `beautifulsoup` | 第三方库 |          |
+### 子命令
