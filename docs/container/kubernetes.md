@@ -4369,7 +4369,7 @@ total 0
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node0 k8s]# cat > demo.yml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -4825,6 +4825,7 @@ spec:
         - name: data
           persistentVolumeClaim:   # 固定字段
             claimName: demo-pvc    # 指定PVC名称
+EOF
 
 # 创建
 [root@node0 k8s]# kubectl apply -f demo.yml 
@@ -4880,3 +4881,86 @@ No resources found
 
 #### 访问模式
 
+文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes)
+
+| 访问模式         | 简写形式 | 说明                                                         |
+| ---------------- | -------- | ------------------------------------------------------------ |
+| ReadWriteMany    | RWX      | 卷可以被多个节点以读写方式挂载                               |
+| ReadOnlyMany     | ROX      | 卷可以被多个节点以只读方式挂载                               |
+| ReadWriteOnce    | RWO      | 卷可以被一个节点以读写方式挂载。 ReadWriteOnce 访问模式也允许运行在同一节点上的多个 Pod 访问卷。 |
+| ReadWriteOncePod | RWOP     | 卷可以被单个 Pod 以读写方式挂载。 如果你想确保整个集群中只有一个 Pod 可以读取或写入该 PVC， 请使用ReadWriteOncePod 访问模式。这只支持 CSI 卷以及需要 Kubernetes 1.22 以上版本。 |
+
+注意事项：
+
+* 访问模式会影响`PVC`绑定`PV`
+
+::: details ReadWriteOnce示例
+
+```bash
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: demo-pv
+spec:
+  capacity:                                 # pv容量
+    storage: 100Gi                          #
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteOnce                           #
+  persistentVolumeReclaimPolicy: Retain     # 回收策略
+  storageClassName: local-storage           # 存储类
+  nfs:
+    server: 192.168.48.128                  # NFS地址
+    path: /data/k8s                         # NFS中共享的路径
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: demo-pvc
+  namespace: default
+spec:
+  volumeMode: Filesystem                    # 卷模式
+  accessModes:                              # 访问模式
+  - ReadWriteOnce
+  storageClassName: local-storage           # 存储类
+  resources:                                # 资源
+    requests:                               #   需求
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:           
+        app: demo
+    spec:
+      containers:
+      - name: demo
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+        volumeMounts:
+          - name: data
+            mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:   # 固定字段
+            claimName: demo-pvc    # 指定PVC名称
+EOF
+
+# 创建
+[root@node0 k8s]# kubectl apply -f demo.yml 
+persistentvolumeclaim/demo-pvc created
+deployment.apps/demo created
+```
+
+:::

@@ -19,7 +19,7 @@ export default {
       const data = [
         {name: '运维', value: 1},
         {name: '前端', value: 5},
-        {name: '后端', value: 3},
+        {name: '后端', value: 4},
         {name: '容器', value: 5},
         {name: '安全', value: 1},
         {name: '算法', value: 1},
