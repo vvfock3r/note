@@ -1238,3 +1238,196 @@ Namespace(list='a', port='80')
 <br />
 
 ### 子命令
+
+文档：[https://docs.python.org/zh-cn/3/library/argparse.html#sub-commands](https://docs.python.org/zh-cn/3/library/argparse.html#sub-commands)
+
+#### （1）基础示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+# 添加子解析器
+# (1) title会影响分组, 如果不写会放到【位置参数】分组下
+# (2) parser.add_subparsers不能调用2次，会报错
+subparsers = parser.add_subparsers(title="Management Commands")
+
+# 添加2个子命令
+parser_add = subparsers.add_parser("add", help="add something")
+parser_remove = subparsers.add_parser("remove", help="remove something")
+
+# add子命令添加选项
+parser_add.add_argument("--name", help="container name")
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+# 总帮助文档
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+usage: main.py [-h] {add,remove} ...
+
+optional arguments:
+  -h, --help    show this help message and exit
+
+Management Commands:                # 这一行是上面的title属性的值
+  {add,remove}                      # 这一行是argparse给我们自动添加的, {add,remove}对应的属性为metavar
+    add         add something
+    remove      remove something
+
+# 子命令帮助文档
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add -h
+usage: main.py add [-h] [--name NAME]
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --name NAME  container name
+```
+
+:::
+
+#### （2）添加help和description
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+# 添加子解析器
+# (1) title会影响分组, 如果不写会放到【位置参数】分组下
+# (2) parser.add_subparsers不能调用2次，会报错
+subparsers = parser.add_subparsers(
+    title="Management Commands",
+    help="这里是help信息",
+    description="这里是description信息"
+)
+
+# 添加2个子命令
+parser_add = subparsers.add_parser("add", help="add something")
+parser_remove = subparsers.add_parser("remove", help="remove something")
+
+# add子命令添加选项
+parser_add.add_argument("--name", help="container name")
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+usage: main.py [-h] {add,remove} ...
+
+optional arguments:
+  -h, --help    show this help message and exit
+
+Management Commands:
+  这里是description信息
+
+  {add,remove}  这里是help信息
+    add         add something
+    remove      remove something
+```
+
+:::
+
+#### （3）删除 {add,remove} 那一整行（黑科技）
+
+官方貌似没有提供相关的参数，所以这里需要使用一点黑科技
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+subparsers = parser.add_subparsers(
+    title="Management Commands",
+)
+
+# 添加2个子命令
+parser_add = subparsers.add_parser("add", help="add something")
+parser_remove = subparsers.add_parser("remove", help="remove something")
+
+# add子命令添加选项
+parser_add.add_argument("--name", help="container name")
+
+
+# print(parser._action_groups[2])  # 这个分组就是我们要修改的分组
+# print(parser._get_formatter())   # 默认的格式化类 argparse.HelpFormatter
+
+# 定义一个新的format_help函数
+def format_help():
+    return parser._format_help() \
+        .replace('''{add,remove}\n''', "\r") \
+        .replace("  add  ", "add    ") \
+        .replace("  remove  ", "remove    ")
+
+
+parser._format_help = parser.format_help  # 将旧的format_help函数备份一下
+parser.format_help = format_help  # 使用新的函数代替format_help
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+usage: main.py [-h] {add,remove} ...           
+                                               
+optional arguments:                            
+  -h, --help    show this help message and exit
+                                               
+Management Commands:                           
+  add           add something                  
+  remove        remove something
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add -h 
+usage: main.py add [-h] [--name NAME]         
+                                              
+optional arguments:                           
+  -h, --help   show this help message and exit
+  --name NAME  container name
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add --name demo
+Namespace(name='demo')
+```
+
+:::
+
+#### （4）如何显示多个分组
+
+#### （5）子命令别名
