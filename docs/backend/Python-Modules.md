@@ -1,21 +1,21 @@
-# Awesome Python
+## Awesome Python
 
 Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awesome-python)
 
-# 
+<br />
 
-# 默认分组
+## 默认分组
 
 | 分类       | 库名       | 类型   | 应用举例 |
 | ---------- | ---------- | ------ | -------- |
 | 日期和时间 | `datetime` | 标准库 |          |
 |            | `time`     | 标准库 |          |
 
-# 
+<br />
 
-# 命令行接口
+## 命令行接口
 
-## 概述
+### 概述
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
@@ -30,11 +30,11 @@ Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awes
 
 
 
-## argparse
+### argparse
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html](https://docs.python.org/zh-cn/3/library/argparse.html)
 
-### 基础示例
+#### 基础示例
 
 这是一个最基础的例子，我们没有添加任何选项，但是`argparse`会自动为我们添加`-h`和`--help`选项
 
@@ -65,11 +65,11 @@ optional arguments:
 
 <br />
 
-### 可选参数
+#### 可选参数
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#the-add-argument-method](https://docs.python.org/zh-cn/3/library/argparse.html#the-add-argument-method)
 
-#### （1）添加参数并获取值
+####   （1）添加参数并获取值
 
 ::: details 点击查看完整代码
 
@@ -121,7 +121,7 @@ pro
 
 :::
 
-#### （2）指定参数值显示名称
+####   （2）指定参数值显示名称
 
 ::: details 点击查看完整代码
 
@@ -161,7 +161,7 @@ optional arguments:
 
 :::
 
-#### （3）指定参数变量名称
+####   （3）指定参数变量名称
 
 ::: details 点击查看完整代码
 
@@ -207,7 +207,7 @@ Namespace(host='127.0.0.1', ssh_port='8080')   # 这里可以看到，变量明�
 
 :::
 
-#### （4）指定参数默认值
+####   （4）指定参数默认值
 
 ::: details 点击查看完整代码
 
@@ -253,7 +253,7 @@ Namespace(host='127.0.0.1', list='dev')
 
 :::
 
-#### （5）对参数值进行类型转换
+####   （5）对参数值进行类型转换
 
 ::: details 点击查看完整代码
 
@@ -301,7 +301,7 @@ Namespace(m=200, n='100', x='abcabc')  # 这里abc变成了双份
 
 :::
 
-#### （6）必传类型参数
+####   （6）必传类型参数
 
 ::: details 点击查看完整代码
 
@@ -339,7 +339,7 @@ Namespace(number='100')
 
 :::
 
-#### （7）限制参数可选值
+####   （7）限制参数可选值
 
 ::: details 点击查看完整代码
 
@@ -376,7 +376,7 @@ Namespace(env='prod')
 
 :::
 
-#### （8）布尔类型参数
+####   （8）布尔类型参数
 
 在这个例子中我们将仿写`-h, --help  show this help message and exit`这个选项
 
@@ -429,7 +429,7 @@ True
 
 :::
 
-#### （9）参数值个数的骚操作
+####   （9）参数值个数的骚操作
 
 ::: details 点击查看完整代码
 
@@ -575,7 +575,7 @@ Namespace(m=None, n=None, x=None, y=['1', '2', '3'])
 
 :::
 
-#### （10）参数分组
+####   （10）参数分组
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#argument-groups](https://docs.python.org/zh-cn/3/library/argparse.html#argument-groups)
 
@@ -620,7 +620,7 @@ Namespace(secret_id='abc', secret_key='def')
 
 :::
 
-#### （11）互斥参数
+####   （11）互斥参数
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#mutual-exclusion](https://docs.python.org/zh-cn/3/library/argparse.html#mutual-exclusion)
 
@@ -667,11 +667,11 @@ main.py: error: argument --car: not allowed with argument --bus
 
 <br />
 
-### 格式化帮助信息
+#### 格式化帮助信息
 
 文档：[https://docs.python.org/zh-cn/3/library/argparse.html#argumentparser-objects](https://docs.python.org/zh-cn/3/library/argparse.html#argumentparser-objects)
 
-#### （1）理清帮助信息结构
+####   （1）理清帮助信息结构
 
 ::: details 点击查看完整代码
 
@@ -718,7 +718,7 @@ optional arguments:
 
 :::
 
-#### （2）自定义`usage`
+####   （2）自定义`usage`
 
 默认值：`usage: main.py [-h] [-l LIST]   ` 
 
@@ -763,7 +763,7 @@ optional arguments:
 
 :::
 
-#### （3）自定义`description`和`epilog`
+####   （3）自定义`description`和`epilog`
 
 这里以`description`举例，`epilog`使用方法也是一样的
 
@@ -940,7 +940,7 @@ optional arguments:
 
 :::
 
-::: details （4）同时使用`description`和`epilog`看一下最终效果
+::: details （4）同时使用description和epilog看一下最终效果
 
 ```python
 #!/usr/bin/env python
@@ -1005,7 +1005,9 @@ ENVIRONMENT:
   NO_PROXY      comma-separated list of hosts to exclude from proxy 
 ```
 
-#### （4）修改默认的分组名称
+:::
+
+####   （4）修改默认的分组名称
 
 ::: details 点击查看完整代码
 
@@ -1066,7 +1068,7 @@ General Options:           # 这里可以看到已经被修改了
 
 :::
 
-#### （5）调整参数顺序
+####   （5）调整参数顺序
 
 默认情况下按照代码中添加参数的顺序排序，这可能不太符合我们的意愿
 
@@ -1130,9 +1132,9 @@ Namespace(list='a', port='80')
 
 <br />
 
-### 子命令
+#### 子命令
 
-# 
+<br />
 
 # HTTP
 
