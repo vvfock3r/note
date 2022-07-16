@@ -12,7 +12,7 @@
 
 ### 默认分组
 
-| <div style="width: 25%;">分类</div > | <span style="width: 25%;">库名</span>       | <span style="width: 25%;">类型</span> | <span style="width: 25%;">应用举例</span> |
+| 分类 | 库名     | 类型 | 应用举例 |
 | ---------- | ---------- | ------ | -------- |
 | 日期和时间 | `datetime` | 标准库 |          |
 |            | `time`     | 标准库 |          |
@@ -23,25 +23,25 @@
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
-| <div style="width: 25%;">分类</div > | <span style="width: 25%;">库名</span> | <span style="width: 25%;">类型</span> | <span style="width: 25%;">应用举例</span> |
-| ------------------------------------ | ------------------------------------- | ------------------------------------- | ----------------------------------------- |
-| 命令行选项、参数和子命令解析器       | <a href="#argparse">argparse</a>      | 标准库                                | `yum`/`dnf`                               |
-| 进度条                               | `tqdm`                                | 第三方库                              |                                           |
-| 彩色终端                             | `colorama`                            | 第三方库                              | `ipython`                                 |
-| 字符图形                             | `asciimatics`                         | 第三方库                              |                                           |
-| 字符表格                             | `prettytable`                         | 第三方库                              |                                           |
-| 交互式命令行                         | `prompt_toolkit`                      | 第三方库                              | `ipython`                                 |
+| 分类                           | 库名                             | 类型     | 应用举例    |
+| ------------------------------ | -------------------------------- | -------- | ----------- |
+| 命令行选项、参数和子命令解析器 | <a href="#argparse">argparse</a> | 标准库   | `yum`/`dnf` |
+| 进度条                         | `tqdm`                           | 第三方库 |             |
+| 彩色终端                       | `colorama`                       | 第三方库 | `ipython`   |
+| 字符图形                       | `asciimatics`                    | 第三方库 |             |
+| 字符表格                       | `prettytable`                    | 第三方库 |             |
+| 交互式命令行                   | `prompt_toolkit`                 | 第三方库 | `ipython`   |
 
 <br />
 
 ### HTTP协议
 
-| <div style="width: 25%;">分类</div > | <span style="width: 25%;">库名</span> | <span style="width: 25%;">类型</span> | <span style="width: 25%;">应用举例</span> |
-| ------------------------------------ | ------------------------------------- | ------------------------------------- | ----------------------------------------- |
-| HTTP客户端                           | `httpx`                               | 第三方库                              |                                           |
-| URL编码和解码                        | `urlib.parse`                         | 标准库                                |                                           |
-| HTML渲染                             | `jinja2`                              | 第三方库                              |                                           |
-| HTML解析                             | `beautifulsoup`                       | 第三方库                              |                                           |
+| 分类          | 库名            | 类型     | 应用举例 |
+| ------------- | --------------- | -------- | -------- |
+| HTTP客户端    | `httpx`         | 第三方库 |          |
+| URL编码和解码 | `urlib.parse`   | 标准库   |          |
+| HTML渲染      | `jinja2`        | 第三方库 |          |
+| HTML解析      | `beautifulsoup` | 第三方库 |          |
 
 ## argparse
 
