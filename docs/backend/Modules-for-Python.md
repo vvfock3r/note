@@ -12,10 +12,30 @@
 
 ### 默认分组
 
-| 分类 | 库名     | 类型 | 应用举例 |
-| ---------- | ---------- | ------ | -------- |
-| 日期和时间 | `datetime` | 标准库 |          |
-|            | `time`     | 标准库 |          |
+<table>
+    <thead>
+    <tr>
+        <th>分类</th>
+        <th>库名</th>
+        <th>类型</th>
+        <th>应用举例</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>日期和时间</td>
+        <td>datetime</td>
+        <td>标准库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>time</td>
+        <td>标准库</td>
+        <td></td>
+    </tr>        
+    </tbody>
+</table>
 
 <br />
 
