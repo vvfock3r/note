@@ -54,7 +54,7 @@ const navbar = [
                 text: 'Python',
                 children: [
                     { text: 'Python核心语法', link: '/backend/Python' },
-                    { text: 'Python实用模块', link: '/backend/Python-Modules' },
+                    { text: 'Python实用模块', link: '/backend/Modules-for-Python' },
                 ]
             },
             {

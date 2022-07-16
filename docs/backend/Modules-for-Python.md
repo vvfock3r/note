@@ -1,3 +1,5 @@
+# Python实用模块
+
 ## 参考资料
 
 * **Awesome Python**
@@ -17,7 +19,7 @@
 
 <br />
 
-### 命令行
+### 命令行接口
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
@@ -40,8 +42,6 @@
 | URL编码和解码 | `urlib.parse`   | 标准库   |          |
 | HTML渲染      | `jinja2`        | 第三方库 |          |
 | HTML解析      | `beautifulsoup` | 第三方库 |          |
-
-<br />
 
 ## argparse
 
