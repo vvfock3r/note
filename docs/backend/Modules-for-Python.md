@@ -15,10 +15,10 @@
 <table>
     <thead>
     <tr>
-        <th>分类</th>
-        <th>库名</th>
-        <th>类型</th>
-        <th>应用举例</th>
+        <th style="width: 25%;">分类</th>
+        <th style="width: 25%;">库名</th>
+        <th style="width: 25%;">类型</th>
+        <th style="width: 25%;">应用举例</th>
     </tr>
     </thead>
     <tbody>
@@ -43,25 +43,97 @@
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
-| 分类                           | 库名                             | 类型     | 应用举例    |
-| ------------------------------ | -------------------------------- | -------- | ----------- |
-| 命令行选项、参数和子命令解析器 | <a href="#argparse">argparse</a> | 标准库   | `yum`/`dnf` |
-| 进度条                         | `tqdm`                           | 第三方库 |             |
-| 彩色终端                       | `colorama`                       | 第三方库 | `ipython`   |
-| 字符图形                       | `asciimatics`                    | 第三方库 |             |
-| 字符表格                       | `prettytable`                    | 第三方库 |             |
-| 交互式命令行                   | `prompt_toolkit`                 | 第三方库 | `ipython`   |
+<table>
+    <thead>
+    <tr>
+        <th style="width: 25%;">分类</th>
+        <th style="width: 25%;">库名</th>
+        <th style="width: 25%;">类型</th>
+        <th style="width: 25%;">应用举例</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>命令行选项、参数和子命令解析器</td>
+        <td><a href="#argparse">argparse</a></td>
+        <td>标准库</td>
+        <td>yum/dnf</td>
+    </tr>
+    <tr>
+        <td>进度条</td>
+        <td>tqdm</td>
+        <td>第三方库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>彩色终端</td>
+        <td>colorama</td>
+        <td>第三方库</td>
+        <td>ipython</td>
+    </tr>
+    <tr>
+        <td>字符图形</td>
+        <td>asciimatics</td>
+        <td>第三方库</td>
+        <td>ipython</td>
+    </tr>
+    <tr>
+        <td>字符表格</td>
+        <td>prettytable</td>
+        <td>第三方库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>交互式命令行</td>
+        <td>prompt_toolkit</td>
+        <td>第三方库</td>
+        <td>ipython</td>
+    </tr>
+    </tbody>
+</table>
 
 <br />
 
 ### HTTP协议
 
-| 分类          | 库名            | 类型     | 应用举例 |
-| ------------- | --------------- | -------- | -------- |
-| HTTP客户端    | `httpx`         | 第三方库 |          |
-| URL编码和解码 | `urlib.parse`   | 标准库   |          |
-| HTML渲染      | `jinja2`        | 第三方库 |          |
-| HTML解析      | `beautifulsoup` | 第三方库 |          |
+<table>
+    <thead>
+    <tr>
+        <th style="width: 25%;">分类</th>
+        <th style="width: 25%;">库名</th>
+        <th style="width: 25%;">类型</th>
+        <th style="width: 25%;">应用举例</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>HTTP客户端</td>
+        <td>httpx</td>
+        <td>第三方库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>URL编码和解码</td>
+        <td>urlib.parse</td>
+        <td>标准库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>HTML渲染</td>
+        <td>jinja2</td>
+        <td>第三方库</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>HTML解析</td>
+        <td>beautifulsoup</td>
+        <td>第三方库</td>
+        <td></td>
+    </tr>
+    </tbody>
+</table>
+
+<br />
 
 ## argparse
 
