@@ -1112,68 +1112,7 @@ ENVIRONMENT:
 
 :::
 
-####   （4）修改默认的分组名称
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*-coding:utf-8 -*-
-
-import argparse
-
-# 实例化对象
-parser = argparse.ArgumentParser()
-
-# 查看默认的分组
-print("# => 查看默认分组")
-print(parser._action_groups)
-print(parser._action_groups[0].title)
-print(parser._action_groups[1].title)
-print()
-
-# 修改默认分组
-parser._action_groups[1].title = "General Options"
-print()
-
-# 解析参数
-args = parser.parse_args()
-
-# 获取参数的值
-print(args)
-```
-
-输出结果
-
-```bash
-# 查看
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py   
-# => 查看默认分组
-[<argparse._ArgumentGroup object at 0x000002767993D988>, <argparse._ArgumentGroup object at 0x000002767993AEC8>]
-positional arguments
-optional arguments
-
-
-Namespace()
-
-# 查看帮助信息
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
-# => 查看默认分组
-[<argparse._ArgumentGroup object at 0x0000024E51F1D988>, <argparse._ArgumentGroup object at 0x0000024E51F1AEC8>]
-positional arguments
-optional arguments
-
-
-usage: main.py [-h]
-
-General Options:           # 这里可以看到已经被修改了
-  -h, --help  show this help message and exit
-
-```
-
-:::
-
-####   （5）调整参数顺序
+####   （4）调整参数顺序（黑科技）
 
 默认情况下按照代码中添加参数的顺序排序，这可能不太符合我们的意愿
 
@@ -1234,6 +1173,203 @@ Namespace(list='a', port='80')
 ```
 
 :::
+
+####   （5）修改默认的分组名称（黑科技）
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+# 查看默认的分组
+print("# => 查看默认分组")
+print(parser._action_groups)
+print(parser._action_groups[0].title)
+print(parser._action_groups[1].title)
+print()
+
+# 修改默认分组
+parser._action_groups[1].title = "General Options"
+print()
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+# 查看
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py   
+# => 查看默认分组
+[<argparse._ArgumentGroup object at 0x000002767993D988>, <argparse._ArgumentGroup object at 0x000002767993AEC8>]
+positional arguments
+optional arguments
+
+
+Namespace()
+
+# 查看帮助信息
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+# => 查看默认分组
+[<argparse._ArgumentGroup object at 0x0000024E51F1D988>, <argparse._ArgumentGroup object at 0x0000024E51F1AEC8>]
+positional arguments
+optional arguments
+
+
+usage: main.py [-h]
+
+General Options:           # 这里可以看到已经被修改了
+  -h, --help  show this help message and exit
+
+```
+
+:::
+
+#### （6）总结："终极大法"（黑科技）
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+
+def format_group_order(parser: argparse.ArgumentParser, items: list):
+    """调整组顺序，items数据结构为: [ (组名1,放到哪个索引上), (组名2,放到哪个索引上) ]
+    索引从1开始
+    """
+
+    for group_name, index in items:
+        for _index, group in enumerate(parser._action_groups.copy()):
+            if group.title == group_name:
+                # 删除组并重新添加
+                del parser._action_groups[_index]
+                parser._action_groups.insert(index, group)
+
+
+def format_param_order(parser: argparse.ArgumentParser, items: list):
+    """调整参数顺序，items数据结构为: [ (组名1, 参数1, 放到哪个索引上), (组名2, 参数2, 放到哪个索引上) ]"""
+
+    for group_name, option_name, index in items:
+        # 先找到组
+        for group in parser._action_groups.copy():
+            if group.title == group_name:
+                # 在组内找到参数
+                for _index, action in enumerate(group._group_actions.copy()):
+                    if option_name in action.option_strings:
+                        # 删除参数,并重新添加
+                        del group._group_actions[_index]
+                        group._group_actions.insert(index, action)
+
+
+def format_help_string(parser: argparse.ArgumentParser, items: list):
+    '''使用字符串替换的方式调整输出内容'''
+
+    # 将原始的format_help函数备份一下,后面会用到
+    parser._original_format_help = parser.format_help
+
+    def wrapper():
+        ret = parser._original_format_help()
+        for old, new in items:
+            ret = ret.replace(old, new)
+        return ret
+
+    parser.format_help = wrapper
+
+
+def my_format():
+    # 调整组顺序
+    format_group_order(parser, [("Required Options", 1)])
+
+    # 调整参数顺序
+    format_param_order(parser, [("optional arguments", "--help", 2)])
+
+    # 字符串替换
+    format_help_string(parser, [
+        ("optional arguments", "Optional Options"),
+        ("{add,rm,ls}\n", "\r"),
+        ("  add  ", "add    "),
+        ("  rm  ", "rm    "),
+        ("  ls  ", "ls    "),
+    ])  # 替换帮助文档字符串
+
+    # 子命令替换
+    format_param_order(parser_add, [("optional arguments", "--help", 2)])
+    format_help_string(parser_add, [
+        ("optional arguments", "Optional Options"),
+    ])
+
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+# 添加子命令和分组
+subprocess = parser.add_subparsers(title="Subcommands")
+parser_add = subprocess.add_parser("add", help="add something")  # 添加子命令
+parser_rm = subprocess.add_parser("rm", help="rm something")  # 添加子命令
+parser_ls = subprocess.add_parser("ls", help="ls something")  # 添加子命令
+parser_required = parser.add_argument_group("Required Options")  # 添加分组
+
+# 添加参数,短选项或长选项至少有一个，help参数可选
+parser.add_argument("-v", "--version", help="display the version of %(prog)s and exit", action="store_true")
+parser.add_argument("-q", "--quit", help="quiet (no output)", action="store_true")
+
+parser_add.add_argument("-p", "--port", help="port info")
+parser_required.add_argument("-H", "--host", help="host info")
+
+# 调整显示内容
+my_format()
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+usage: main.py [-h] [-v] [-q] [-H HOST] {add,rm,ls} ...        
+
+Required Options:
+  -H HOST, --host HOST  host info
+
+Optional Options:
+  -v, --version         display the version of main.py and exit
+  -q, --quit            quiet (no output)
+  -h, --help            show this help message and exit        
+
+Subcommands:
+  add                   add something
+  rm                    rm something
+  ls                    ls something
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add -h 
+usage: main.py add [-h] [-p PORT]
+
+Optional Options:
+  -p PORT, --port PORT  port info
+  -h, --help            show this help message and exit
+```
+
+:::
+
+
 
 <br />
 
@@ -1428,6 +1564,50 @@ Namespace(name='demo')
 
 :::
 
-#### （4）如何显示多个分组
+#### （4）子命令别名
 
-#### （5）子命令别名
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+subparsers = parser.add_subparsers(
+    title="Management Commands",
+)
+
+# 添加2个子命令
+parser_add = subparsers.add_parser("add", help="add something", aliases=['a, create'])
+parser_remove = subparsers.add_parser("remove", help="remove something")
+
+# add子命令添加选项
+parser_add.add_argument("--name", help="container name")
+
+# 解析参数
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h    
+usage: main.py [-h] {add,a, create,remove} ...         
+                                                       
+optional arguments:                                    
+  -h, --help            show this help message and exit
+                                                       
+Management Commands:
+  {add,a, create,remove}
+    add (a, create)     add something
+  remove                remove something
+```
+
+:::
