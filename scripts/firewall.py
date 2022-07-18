@@ -38,13 +38,13 @@ def get_internet_ip() -> Union[str, None]:
 
 
 def add_firewall_rule(
-    cred: Credential,
-    instanceId: str,
-    protocol: str,
-    port: Optional[str] = None,
-    source: Optional[str] = None,
-    action: Optional[str] = None,
-    description: Optional[str] = None,
+        cred: Credential,
+        instanceId: str,
+        protocol: str,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None,
 ) -> Tuple[bool, Dict]:
     # 先执行查询,description不计数
     ok, resp = ls_firewall_rule(cred, instanceId, protocol, port, source, action, None)
@@ -104,13 +104,13 @@ def add_firewall_rule(
 
 
 def ls_firewall_rule(
-    cred: Credential,
-    instanceId: str,
-    protocol: str,
-    port: Optional[str] = None,
-    source: Optional[str] = None,
-    action: Optional[str] = None,
-    description: Optional[str] = None,
+        cred: Credential,
+        instanceId: str,
+        protocol: str,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None,
 ) -> Tuple[bool, Dict]:
     try:
         # 实例化客户端
@@ -163,13 +163,13 @@ def ls_firewall_rule(
 
 # 删除接口和查询接口参数一致
 def del_firewall_rule(
-    cred: Credential,
-    instanceId: str,
-    protocol: str,
-    port: Optional[str] = None,
-    source: Optional[str] = None,
-    action: Optional[str] = None,
-    description: Optional[str] = None,
+        cred: Credential,
+        instanceId: str,
+        protocol: str,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None,
 ) -> Tuple[bool, Dict]:
     # 先执行查询
     ok, resp = ls_firewall_rule(
@@ -240,9 +240,9 @@ class Cli:
         self.root_command.add_argument(
             "-v",
             "--version",
-            default=argparse.SUPPRESS,
             help="show the version of %(prog)s and exit",
-            action="store_true",
+            action="version",
+            version=__version__
         )
 
     def add_command_options(self):
@@ -493,10 +493,6 @@ class Cli:
 
         # 取出并删除函数执行所用不到的参数
         quiet = args.__dict__.pop("quiet", False)  # 静默输出
-        version = args.__dict__.pop("version", False)  # 静默输出
-        if version:
-            print(__version__)
-            sys.exit(0)
         func = args.__dict__.pop("func", None)  # 使用self.<command>.set_defaults设置的额外属性
 
         # 未输入任何参数时输出帮助信息
