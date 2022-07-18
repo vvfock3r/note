@@ -770,6 +770,74 @@ main.py: error: argument --car: not allowed with argument --bus
 
 :::
 
+#### （12）Action
+
+内置的Action类：[https://docs.python.org/zh-cn/3/library/argparse.html#action](https://docs.python.org/zh-cn/3/library/argparse.html#action)
+
+自定义Action类：[https://docs.python.org/zh-cn/3/library/argparse.html#action-classes](https://docs.python.org/zh-cn/3/library/argparse.html#action-classes)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import argparse
+
+
+class UpperAction(argparse.Action):
+    # __init__功能：在这里是限制不能使用nargs参数
+    # __init__解释：(1) 这里并没有写全所有参数，而是就仅仅写了用到的参数，其他参数用**kwargs代替
+    #              (2) 因为参数又有默认值，所以前面的参数(option_strings和dest)也就必须写上
+    #              (3) 更新改了required属性
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        kwargs.update({"required": True})
+        super().__init__(option_strings, dest, **kwargs)
+
+    # 这里是重头戏
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values.upper())
+
+
+# 实例化对象
+parser = argparse.ArgumentParser()
+
+# 添加选项
+parser.add_argument("-l", "--list", help="list something", action=UpperAction, required=False)
+
+# 解析
+args = parser.parse_args()
+
+# 获取参数的值
+print(args)
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -h
+usage: main.py [-h] -l LIST                            
+                                                       
+optional arguments:                                    
+  -h, --help            show this help message and exit
+  -l LIST, --list LIST  list something                 
+
+# 不带参数执行,提示-l/--list是必选参数
+# 虽然在代码中设置了required=False，但是在UpperAction中强制改为required=True
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+usage: main.py [-h] -l LIST
+main.py: error: the following arguments are required: -l/--list
+
+# Action效果，对输入进行大写转换
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -l abcdef
+Namespace(list='ABCDEF')
+```
+
+:::
+
 <br />
 
 ### 格式化帮助信息
