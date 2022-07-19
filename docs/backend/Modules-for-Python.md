@@ -1945,11 +1945,14 @@ abcabc
 
 :::
 
-#### （7）限制参数可选值
+#### （7）限制参数可选值/范围
 
-文档：[https://click.palletsprojects.com/en/8.1.x/options/#choice-options](https://click.palletsprojects.com/en/8.1.x/options/#choice-options)
+文档：
 
-::: details 点击查看完整代码
+* [https://click.palletsprojects.com/en/8.1.x/options/#choice-options](https://click.palletsprojects.com/en/8.1.x/options/#choice-options)
+* [https://click.palletsprojects.com/en/8.1.x/options/#range-options](https://click.palletsprojects.com/en/8.1.x/options/#range-options)
+
+::: details 限制可选值 type=click.Choice(["DEBUG", "INFO", "WARNING"])
 
 ```python
 #!/usr/bin/env python
@@ -1994,9 +1997,71 @@ Error: Invalid value for '--debug-level': 'INFO1' is not one of 'DEBUG', 'INFO',
 
 :::
 
+::: details 限制可选范围：click.IntRange和click.FloatRange
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+# clamp=True,若超过边界则将值设置为边界
+@click.option('-m', type=click.IntRange(1, 100), help="This is a test message")
+@click.option('-n', type=click.IntRange(1, 100, clamp=True), help="This is a test message")
+def echo(m, n):
+    click.echo(f"M:{m}\nN:{n}")
+
+
+if __name__ == '__main__':
+    echo()
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                               
+                                                       
+Options:                                               
+  -m INTEGER RANGE  This is a test message  [1<=x<=100]
+  -n INTEGER RANGE  This is a test message  [1<=x<=100]
+  --help            Show this message and exit.
+  
+# 正常传递值，没问题
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 10 -n 20 
+M:10
+N:20
+
+# 传递错误的类型
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 20.1
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Invalid value for '-m': '20.1' is not a valid integer range.
+
+# 超过范围时，m参数会报错,n参数会设置为最临近边界
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 200       
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Invalid value for '-m': 200 is not in the range 1<=x<=100.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -n 200 
+M:None
+N:100
+```
+
+:::
+
 #### （8）布尔类型参数(is_flag=True)
 
-文档：[https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags](https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags)
+文档：
+
+* [https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags](https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags)
+* [https://click.palletsprojects.com/en/8.1.x/options/#optional-value](https://click.palletsprojects.com/en/8.1.x/options/#optional-value)
 
 ::: details is_flag 基础示例
 
@@ -2113,6 +2178,52 @@ False
 
 :::
 
+::: details 同时支持布尔类型和非布尔类型
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-d', '--debug', is_flag=False, flag_value="ABC", default="DEF", help="This is a test message")
+def log(debug):
+    click.echo(f"Debug: {debug}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                  
+                                          
+Options:                                  
+  -d, --debug TEXT  This is a test message
+  --help            Show this message and exit.
+
+# 不带参数时使用default
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Debug: DEF
+
+# 带参数时使用flag_value
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -d
+Debug: ABC
+
+# 带值时直接使用
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -d 100
+Debug: 100
+```
+
+:::
+
+
+
 #### （9）支持类似-vvv这种重复计数
 
 文档：[https://click.palletsprojects.com/en/8.1.x/options/#counting](https://click.palletsprojects.com/en/8.1.x/options/#counting)
@@ -2157,5 +2268,326 @@ Verbosity: 13
 
 :::
 
+#### （10）从环境变量中取值
+
+文档：
+
+* [https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables](https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables)
+* [https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values](https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values)
+
+注意事项：
+
+* 环境变量不区分大小写
+
+::: details 方式1：使用envvar选项指定环境变量名字
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
 
 
+@click.command()
+@click.option('-m', '--memory', envvar="DefaultMemory", required=True, help="This is a test message")
+def log(memory):
+    click.echo(f"Memory: {memory}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                               
+                                                       
+Options:                                               
+  -m, --memory TEXT  This is a test message  [required]
+  --help             Show this message and exit.       
+
+# 不带任何参数执行会报错，因为设置了required
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Missing option '-m' / '--memory'.        
+
+# 设置环境变量（若在Linux环境下则使用export DefaultMemory=1g）
+(venv) C:\Users\Administrator\Desktop\tutorials>set DefaultMemory=1g
+
+# 再次执行，没问题
+# 设置了required说明是必选参数，在本例子中，命令行参数和环境变量中必须设置其中之一才能符合required的要求
+# 在这一点上比内置的argparse要强
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Memory: 1g
+
+# 手动传参，优先级比环境变量高，很符合常理
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 2g
+Memory: 2g
+```
+
+:::
+
+::: details 方式2：使用auto_envvar_prefix添加前缀，自动开启环境变量解析
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-m', '--memory', required=True, help="This is a test message")
+def log(memory):
+    click.echo(f"Memory: {memory}")
+
+
+if __name__ == '__main__':
+    log(auto_envvar_prefix="DEFAULT")
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]
+
+Options:
+  -m, --memory TEXT  This is a test message  [required]
+  --help             Show this message and exit.
+
+
+# 不带任何参数执行会报错，因为设置了required
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Missing option '-m' / '--memory'.
+
+# 设置环境变量，规则是：前缀_大写的选项名
+(venv) C:\Users\Administrator\Desktop\tutorials>set DEFAULT_MEMORY=3g    
+
+# 再次执行，没问题
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py           
+Memory: 3g
+
+# 手动传参
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 4g
+Memory: 4g
+```
+
+:::
+
+#### （11）交互式命令行
+
+文档：
+
+* [https://click.palletsprojects.com/en/8.1.x/options/#prompting](https://click.palletsprojects.com/en/8.1.x/options/#prompting)
+* [https://click.palletsprojects.com/en/8.1.x/options/#password-prompts](https://click.palletsprojects.com/en/8.1.x/options/#password-prompts)
+
+
+
+::: details 使用prompt=True 或 prompt=“提示信息”
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("--username", prompt=True, help="This is a test message")
+def hello(username):
+    click.echo(f"Hello, {username}!")
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                      
+
+Options:
+  --username TEXT  This is a test message     
+  --help           Show this message and exit.
+
+# 带参数执行没问题
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --username bob
+Hello, bob!
+
+# 不带参数时执行，这其中有几个特性需要注意：
+#   (1) 这是一个必须的参数，所以总是会弹出交互式界面，除非设置prompt_required=False(设置required=False不起作用)
+#   (2) 支持退格键
+#   (3) 未输入任何内容按下回车，则会继续让输入
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py               
+Username: jack
+Hello, jack!
+```
+
+:::
+
+::: details 密码输入流程
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True, help="This is a test message")
+def setup(password):
+    click.echo(f"You password: {password}!")
+
+
+if __name__ == '__main__':
+    setup()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Password: 
+Repeat for confirmation:
+Error: The two entered values do not match.
+Password:
+Repeat for confirmation:
+You password: def!
+```
+
+:::
+
+::: details 是否确认操作？- 方式1：需要在函数内判断yes的值
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("--yes", is_flag=True, prompt="Are you sure you want to drop the db?", help="This is a test message")
+def drop(yes):
+    click.echo(f"You answer: {yes}!")
+
+
+if __name__ == '__main__':
+    drop()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --yes
+You answer: True!
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py      
+Are you sure you want to drop the db? [y/N]:   # 回车
+You answer: False!
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]:  # 空格
+You answer: False!                              
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]: f
+Error: invalid input
+Are you sure you want to drop the db? [y/N]: y
+You answer: True!
+```
+
+:::
+
+::: details 是否确认操作？- 方式2：通过回调函数判断yes的值
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+def abort_if_false(ctx, param, value):
+    if not value:
+        ctx.abort()
+
+
+@click.command()
+@click.option(
+    "--yes",
+    is_flag=True,
+    expose_value=False,  # 这个意思是不传递yes变量到下面的函数中去
+    callback=abort_if_false,  # 所以需要有一个回调函数来确认用户输入的是 继续 还是 退出
+    prompt="Are you sure you want to drop the db?",
+    help="This is a test message",
+)
+def drop():
+    click.echo(f"Hello!")
+
+
+if __name__ == "__main__":
+    drop()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]:  # 回车
+Aborted!
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]:  # 空格
+Aborted!
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]: 1
+Error: invalid input
+Are you sure you want to drop the db? [y/N]: n
+Aborted!
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Are you sure you want to drop the db? [y/N]: Y
+Hello!
+```
+
+:::
+
+::: details 是否确认操作？- 方式3：使用内置的装饰器（效果与上面的等同）
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.confirmation_option(prompt='Are you sure you want to drop the db?')
+def drop():
+    click.echo(f"Hello!")
+
+
+if __name__ == "__main__":
+    drop()
+```
+
+:::
+
+### 子命令和组
+
+文档：[https://click.palletsprojects.com/en/8.1.x/commands/](https://click.palletsprojects.com/en/8.1.x/commands/)
