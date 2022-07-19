@@ -2591,3 +2591,75 @@ if __name__ == "__main__":
 ### 子命令和组
 
 文档：[https://click.palletsprojects.com/en/8.1.x/commands/](https://click.palletsprojects.com/en/8.1.x/commands/)
+
+#### （1）基础示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.group()
+def main():
+    click.echo("main")
+
+
+@main.command(help="ls something")
+@click.option("-m", "--memory", help="This is a test message")
+def ls(memory):
+    click.echo(f"ls {memory}")
+
+
+@main.command(help="add something")
+def add():
+    click.echo("add")
+
+
+@main.command(help="remove something")
+def remove():
+    click.echo("remove")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+输出结果
+
+```bash
+# 根命令
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+                                          
+Options:
+  --help  Show this message and exit.
+                                          
+Commands:                                 
+  add     add something                   
+  ls      ls something                    
+  remove  remove something                
+
+# 子命令
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py ls --help 
+main
+Usage: main.py ls [OPTIONS]                     
+                                                
+  ls something                                  
+                                                
+Options:                                        
+  -m, --memory TEXT  This is a test message     
+  --help             Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py ls -m 1g 
+main
+ls 1g
+```
+
+:::
+
+#### （2）传递上下文
+
