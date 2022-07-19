@@ -37,7 +37,7 @@
     <tr>
         <td>命令行界面</td>
         <td><a href="#argparse" style="text-decoration:none;">argparse</a></td>
-        <td><li><code>Python 3.10.5</code></td>        
+        <td><li><code>Python 3.10.5</code></li></td>        
         <td><code>yum</code>/<code>dnf</code></td>
         <td>标准库</td>
     </tr>
