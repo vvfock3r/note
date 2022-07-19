@@ -52,13 +52,13 @@ jobs:
       - name: 添加防火墙白名单
         run: |
           python3 scripts/firewall.py add \
-                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
-                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
-                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
-                 --port       ${{ secrets.PORT }}               \
-                 --protocol   TCP                               \
-                 --source     dynamic                           \
-                 --action     ACCEPT                            \
+                 --secret-id   ${{ secrets.TENCENT_SECRETID }}   \
+                 --secret-key  ${{ secrets.TENCENT_SECRETKEY }}  \
+                 --instance-id ${{ secrets.TENCENT_INSTANCEID }} \
+                 --port       ${{ secrets.PORT }}                \
+                 --protocol   TCP                                \
+                 --source     "current ip"                       \
+                 --action     ACCEPT                             \
                  --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
 
       - name: 构建镜像并导出
@@ -115,16 +115,16 @@ jobs:
             rm -vf /tmp/${{ env.imageName }}-${{ env.imageTag }}.gz
             docker image prune -f
 
-      # 去掉源地址参数 --source dynamic：
+      # 去掉源地址参数 --source "current ip"：
       #   (1) 防止本地外网出口IP发生变化导致删除白名单失败
       #   (2) 减少不必要的查询外网出口IP请求
       - name: 删除防火墙白名单
         run: |
-          python3 scripts/firewall.py del \
-                 --secretId   ${{ secrets.TENCENT_SECRETID }}   \
-                 --secretKey  ${{ secrets.TENCENT_SECRETKEY }}  \
-                 --instanceId ${{ secrets.TENCENT_INSTANCEID }} \
-                 --port       ${{ secrets.PORT }}               \
-                 --protocol   TCP                               \
-                 --action     ACCEPT                            \
+          python3 scripts/firewall.py remove \
+                 --secret-id   ${{ secrets.TENCENT_SECRETID }}   \
+                 --secret-key  ${{ secrets.TENCENT_SECRETKEY }}  \
+                 --instance-id ${{ secrets.TENCENT_INSTANCEID }} \
+                 --port       ${{ secrets.PORT }}                \
+                 --protocol   TCP                                \
+                 --action     ACCEPT                             \
                  --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
