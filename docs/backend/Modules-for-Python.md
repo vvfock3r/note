@@ -2268,123 +2268,7 @@ Verbosity: 13
 
 :::
 
-#### （10）从环境变量中取值
-
-文档：
-
-* [https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables](https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables)
-* [https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values](https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values)
-
-注意事项：
-
-* 环境变量不区分大小写
-
-::: details 方式1：使用envvar选项指定环境变量名字
-
-```python
-#!/usr/bin/env python
-# -*-coding:utf-8 -*-
-
-import click
-
-
-@click.command()
-@click.option('-m', '--memory', envvar="DefaultMemory", required=True, help="This is a test message")
-def log(memory):
-    click.echo(f"Memory: {memory}")
-
-
-if __name__ == '__main__':
-    log()
-```
-
-输出结果
-
-```bash
-# 查看帮助
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
-Usage: main.py [OPTIONS]                               
-                                                       
-Options:                                               
-  -m, --memory TEXT  This is a test message  [required]
-  --help             Show this message and exit.       
-
-# 不带任何参数执行会报错，因为设置了required
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
-Usage: main.py [OPTIONS]      
-Try 'main.py --help' for help.
-
-Error: Missing option '-m' / '--memory'.        
-
-# 设置环境变量（若在Linux环境下则使用export DefaultMemory=1g）
-(venv) C:\Users\Administrator\Desktop\tutorials>set DefaultMemory=1g
-
-# 再次执行，没问题
-# 设置了required说明是必选参数，在本例子中，命令行参数和环境变量中必须设置其中之一才能符合required的要求
-# 在这一点上比内置的argparse要强
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
-Memory: 1g
-
-# 手动传参，优先级比环境变量高，很符合常理
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 2g
-Memory: 2g
-```
-
-:::
-
-::: details 方式2：使用auto_envvar_prefix添加前缀，自动开启环境变量解析
-
-```python
-#!/usr/bin/env python
-# -*-coding:utf-8 -*-
-
-import click
-
-
-@click.command()
-@click.option('-m', '--memory', required=True, help="This is a test message")
-def log(memory):
-    click.echo(f"Memory: {memory}")
-
-
-if __name__ == '__main__':
-    log(auto_envvar_prefix="DEFAULT")
-```
-
-输出结果
-
-```bash
-# 查看帮助
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
-Usage: main.py [OPTIONS]
-
-Options:
-  -m, --memory TEXT  This is a test message  [required]
-  --help             Show this message and exit.
-
-
-# 不带任何参数执行会报错，因为设置了required
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
-Usage: main.py [OPTIONS]      
-Try 'main.py --help' for help.
-
-Error: Missing option '-m' / '--memory'.
-
-# 设置环境变量，规则是：前缀_大写的选项名
-(venv) C:\Users\Administrator\Desktop\tutorials>set DEFAULT_MEMORY=3g    
-
-# 再次执行，没问题
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py           
-Memory: 3g
-
-# 手动传参
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 4g
-Memory: 4g
-```
-
-:::
-
-#### （11）交互式命令行
+#### （10）交互式命令行
 
 文档：
 
@@ -2588,13 +2472,358 @@ if __name__ == "__main__":
 
 :::
 
+#### （11）从环境变量中取值
+
+文档：
+
+* [https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables](https://click.palletsprojects.com/en/8.1.x/options/#values-from-environment-variables)
+* [https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values](https://click.palletsprojects.com/en/8.1.x/options/#multiple-values-from-environment-values)
+
+注意事项：
+
+* 环境变量不区分大小写
+* 优先级比较：命令行参数 >  环境变量
+
+::: details 方式1：使用envvar选项指定环境变量名字
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-m', '--memory', envvar="DefaultMemory", required=True, help="This is a test message")
+def log(memory):
+    click.echo(f"Memory: {memory}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                               
+                                                       
+Options:                                               
+  -m, --memory TEXT  This is a test message  [required]
+  --help             Show this message and exit.       
+
+# 不带任何参数执行会报错，因为设置了required
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Missing option '-m' / '--memory'.        
+
+# 设置环境变量（若在Linux环境下则使用export DefaultMemory=1g）
+(venv) C:\Users\Administrator\Desktop\tutorials>set DefaultMemory=1g
+
+# 再次执行，没问题
+# 设置了required说明是必选参数，在本例子中，命令行参数和环境变量中必须设置其中之一才能符合required的要求
+# 在这一点上比内置的argparse要强
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Memory: 1g
+
+# 手动传参，优先级比环境变量高，很符合常理
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 2g
+Memory: 2g
+```
+
+:::
+
+::: details 方式2：使用auto_envvar_prefix添加前缀，自动开启环境变量解析
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-m', '--memory', required=True, help="This is a test message")
+def log(memory):
+    click.echo(f"Memory: {memory}")
+
+
+if __name__ == '__main__':
+    log(auto_envvar_prefix="DEFAULT")
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]
+
+Options:
+  -m, --memory TEXT  This is a test message  [required]
+  --help             Show this message and exit.
+
+
+# 不带任何参数执行会报错，因为设置了required
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Usage: main.py [OPTIONS]      
+Try 'main.py --help' for help.
+
+Error: Missing option '-m' / '--memory'.
+
+# 设置环境变量，规则是：前缀_大写的选项名
+(venv) C:\Users\Administrator\Desktop\tutorials>set DEFAULT_MEMORY=3g    
+
+# 再次执行，没问题
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py           
+Memory: 3g
+
+# 手动传参
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 4g
+Memory: 4g
+```
+
+:::
+
+#### （11）从配置文件中取值
+
+注意事项：
+
+* 优先级比较：命令行参数 >  配置文件
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import json
+import configparser
+import click
+
+DEFAULT_CFG = "dev.ini"
+
+
+def configure(ctx, param, filename):
+    cfg = configparser.ConfigParser()
+    cfg.read(filename)
+    try:
+        options = dict(cfg["options"])
+    except KeyError:
+        options = {}
+    ctx.default_map = options
+
+
+@click.command()
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(dir_okay=False),  # 指定类型为 路径类型，返回文件名；dir_okay是否允许目录作为值
+    default=DEFAULT_CFG,  # 默认配置文件
+    callback=configure,  # 回调函数
+    is_eager=True,  # 该选项比其他选项优先解析
+    expose_value=False,  # 不传递值到函数中
+    help="Read option defaults from the specified INI file",
+    show_default=True,
+)
+@click.option("--host", required=True)
+@click.option("--port")
+@click.option("--debug")
+def main(**kwargs):
+    print(json.dumps(kwargs, indent=4, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+创建配置文件 `dev.ini`
+
+```ini
+[options]
+HOST = 0.0.0.0
+PORT = 3000
+DEBUG = INFO
+```
+
+创建配置文件 `prod.ini`
+
+```ini
+[options]
+HOST = 127.0.0.1
+PORT = 80
+DEBUG = WARNING
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                                             
+                                                                     
+Options:                                                             
+  -c, --config FILE  Read option defaults from the specified INI file
+                     [default: example.ini]                          
+  --host TEXT        [required]                                      
+  --port TEXT
+  --debug TEXT
+  --help             Show this message and exit.
+
+# 直接运行不会报错，虽然host参数设置了required，但是通过读取默认的配置文件，找到了这个属性，所以不会报错
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py   
+{                     
+    "host": "0.0.0.0",
+    "port": "3000",   
+    "debug": "INFO"   
+}                 
+
+# 若默认的配置文件不存在，那么并不会报错说配置文件未找到
+
+
+# 手动传参
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --host 0.0.0.0
+{
+    "host": "0.0.0.0",
+    "port": "3000",
+    "debug": "INFO"
+}
+
+
+
+# 指定其他配置文件
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini
+{
+    "host": "127.0.0.1",
+    "port": "80",
+    "debug": "WARNING"
+}
+
+
+# 同时指定，这里故意将--host放在最前面，看会不会有问题
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --host 0.0.0.0 -c prod.ini
+{
+    "host": "0.0.0.0",
+    "port": "80",
+    "debug": "WARNING"
+}
+```
+
+:::
+
+#### （12）同时使用命令行、环境变量和配置文件
+
+注意事项：
+
+* 优先级比较：命令行参数 > 环境变量 > 配置文件
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import json
+import configparser
+import click
+
+DEFAULT_CFG = "dev.ini"
+
+
+def configure(ctx, param, filename):
+    cfg = configparser.ConfigParser()
+    cfg.read(filename)
+    try:
+        options = dict(cfg["options"])
+    except KeyError:
+        options = {}
+    ctx.default_map = options
+
+
+@click.command()
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(dir_okay=False),  # 指定类型为 路径类型，返回文件名；dir_okay是否允许目录作为值
+    default=DEFAULT_CFG,  # 默认配置文件
+    callback=configure,  # 回调函数
+    is_eager=True,  # 该选项比其他选项优先解析
+    expose_value=False,  # 不传递值到函数中
+    help="Read option defaults from the specified INI file",
+    show_default=True,
+)
+@click.option("--host", required=True, envvar="HOST") # 这里指定环境变量
+@click.option("--port")
+@click.option("--debug")
+def main(**kwargs):
+    print(json.dumps(kwargs, indent=4, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+创建配置文件`dev.ini`
+
+```ini
+[options]
+HOST = 0.0.0.0
+PORT = 3000
+DEBUG = INFO
+```
+
+创建配置文件 `prod.ini`
+
+```ini
+[options]
+HOST = 127.0.0.1
+PORT = 80
+DEBUG = WARNING
+```
+
+输出结果
+
+```bash
+# 默认情况下，使用了默认的配置文件
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+{
+    "host": "0.0.0.0",
+    "port": "3000",   
+    "debug": "INFO"   
+}
+
+# 设置环境变量后，环境变量优先级高于配置文件
+(venv) C:\Users\Administrator\Desktop\tutorials>set HOST=0.0.0.0
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py   
+{
+    "host": "0.0.0.0",
+    "port": "3000",
+    "debug": "INFO"
+}
+
+# 同时使用配置文件、环境变量、命令行参数，那么命令行参数优先级最高
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini --host 1.1.1.1
+{
+    "host": "1.1.1.1",
+    "port": "80",
+    "debug": "WARNING"
+}
+```
+
+:::
+
+
+
 ### 子命令和组
 
 文档：[https://click.palletsprojects.com/en/8.1.x/commands/](https://click.palletsprojects.com/en/8.1.x/commands/)
 
 #### （1）基础示例
 
-::: details 点击查看完整代码
+::: details 方式一
 
 ```python
 #!/usr/bin/env python
@@ -2661,5 +2890,43 @@ ls 1g
 
 :::
 
-#### （2）传递上下文
+::: details 方式二
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.group()
+def main():
+    click.echo("main")
+
+
+@click.command(help="ls something")
+@click.option("-m", "--memory", help="This is a test message")
+def ls(memory):
+    click.echo(f"ls {memory}")
+
+
+@click.command(help="add something")
+def add():
+    click.echo("add")
+
+
+@click.command(help="remove something")
+def remove():
+    click.echo("remove")
+
+
+main.add_command(ls)
+main.add_command(add)
+main.add_command(remove)
+
+if __name__ == "__main__":
+    main()
+```
+
+:::
 
