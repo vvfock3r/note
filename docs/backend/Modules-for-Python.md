@@ -5,130 +5,83 @@
 * **Awesome Python**
 
   Github：[https://github.com/vinta/awesome-python](https://github.com/vinta/awesome-python)
+  
+* **HelloGitHub**
+
+  Github：[https://github.com/HelloGitHub-Team/Article](https://github.com/HelloGitHub-Team/Article)
 
 <br />
 
-## 类型分组
+## 分组目录
 
-### 默认分组
+### 默认
 
-<table>
-    <thead>
-    <tr>
-        <th style="width: 25%;">分类</th>
-        <th style="width: 25%;">库名</th>
-        <th style="width: 25%;">类型</th>
-        <th style="width: 25%;">应用举例</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>日期和时间</td>
-        <td>datetime</td>
-        <td>标准库</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td></td>
-        <td>time</td>
-        <td>标准库</td>
-        <td></td>
-    </tr>        
-    </tbody>
-</table>
 
 <br />
 
-### 命令行接口
+### 命令行
 
 参考：[https://github.com/vinta/awesome-python#command-line-interface-development](https://github.com/vinta/awesome-python#command-line-interface-development)
 
 <table>
     <thead>
     <tr>
-        <th style="width: 25%;">分类</th>
-        <th style="width: 25%;">库名</th>
-        <th style="width: 25%;">类型</th>
-        <th style="width: 25%;">应用举例</th>
+        <th style="width: 20%;">分类说明</th>
+        <th style="width: 20%;">模块名称</th>
+        <th style="width: 20%;">测试版本</th>
+        <th style="width: 20%;">应用举例</th>
+        <th style="width: 20%;">备注</th>
     </tr>
     </thead>
     <tbody>
     <tr>
-        <td>命令行选项、参数和子命令解析器</td>
-        <td><a href="#argparse">argparse</a></td>
+        <td>命令行界面</td>
+        <td><a href="#argparse" style="text-decoration:none;">argparse</a></td>
+        <td><li><code>Python 3.10.5</code></td>        
+        <td><code>yum</code>/<code>dnf</code></td>
         <td>标准库</td>
-        <td>yum/dnf</td>
     </tr>
+    <tr>
+        <td></td>
+        <td><a href="#click" style="text-decoration:none;">click</a></td>
+        <td><li><code>Python 3.10.5</code></li><li><code>Click 8.1.3</code></li></td>
+        <td><code>flask</code></td>
+        <td>推荐使用</td>
+    </tr>        
     <tr>
         <td>进度条</td>
         <td>tqdm</td>
+        <td></td>
         <td>第三方库</td>
         <td></td>
     </tr>
     <tr>
         <td>彩色终端</td>
         <td>colorama</td>
+        <td></td>
         <td>第三方库</td>
         <td>ipython</td>
     </tr>
     <tr>
         <td>字符图形</td>
         <td>asciimatics</td>
+        <td></td>
         <td>第三方库</td>
         <td>ipython</td>
     </tr>
     <tr>
         <td>字符表格</td>
         <td>prettytable</td>
+        <td></td>
         <td>第三方库</td>
         <td></td>
     </tr>
     <tr>
         <td>交互式命令行</td>
         <td>prompt_toolkit</td>
+        <td></td>
         <td>第三方库</td>
         <td>ipython</td>
-    </tr>
-    </tbody>
-</table>
-
-<br />
-
-### HTTP协议
-
-<table>
-    <thead>
-    <tr>
-        <th style="width: 25%;">分类</th>
-        <th style="width: 25%;">库名</th>
-        <th style="width: 25%;">类型</th>
-        <th style="width: 25%;">应用举例</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>HTTP客户端</td>
-        <td>httpx</td>
-        <td>第三方库</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>URL编码和解码</td>
-        <td>urlib.parse</td>
-        <td>标准库</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>HTML渲染</td>
-        <td>jinja2</td>
-        <td>第三方库</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>HTML解析</td>
-        <td>beautifulsoup</td>
-        <td>第三方库</td>
-        <td></td>
     </tr>
     </tbody>
 </table>
@@ -835,6 +788,12 @@ main.py: error: the following arguments are required: -l/--list
 (venv) C:\Users\Administrator\Desktop\tutorials>python main.py -l abcdef
 Namespace(list='ABCDEF')
 ```
+
+> 在Action中也可以获取其他参数和值，但是有一个前提是：该参数在Action所在参数之前调用，即
+>
+> `python main.py -f a.txt -l abc`，-l所在的Action能获取`a.txt`
+>
+> `python main.py -l abc -f a.txt`，-l所在的Action不能获取`a.txt`，此时可以通过sys.argv来获取
 
 :::
 
@@ -1679,3 +1638,524 @@ Management Commands:
 ```
 
 :::
+
+<br />
+
+## click
+
+文档：[https://click.palletsprojects.com/en/8.1.x/](https://click.palletsprojects.com/en/8.1.x/)
+
+### 安装
+
+```bash
+pip install click==8.1.3
+```
+
+### 选项
+
+#### （1）基础示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", help="This is a test message")
+# 如果有长选项，函数参数需要和长选项名称保持一致，否则需要和短选项保持一致
+# 如果是--memory-request这种带-的长选项选项，那么函数参数需要将-改为_，即memory_request
+def hello(memory):
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]
+
+Options:
+  -m, --memory TEXT  This is a test message
+  --help             Show this message and exit.
+
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 2g 
+2g
+```
+
+:::
+
+#### （2）必选参数 (required=True)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", required=True, help="This is a test message")
+def hello(memory):
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]
+
+Options:
+  -m, --memory TEXT  This is a test message  [required]
+  --help             Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py
+Usage: main.py [OPTIONS]
+Try 'main.py --help' for help.
+
+Error: Missing option '-m' / '--memory'.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 1g
+1g
+```
+
+:::
+
+#### （3）多选项(multiple=True)
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#multiple-options](https://click.palletsprojects.com/en/8.1.x/options/#multiple-options)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", multiple=True, help="This is a test message")
+def hello(memory):
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                        
+                                                
+Options:                                        
+  -m, --memory TEXT  This is a test message     
+  --help             Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 1g -m 2g
+('1g', '2g')
+```
+
+:::
+
+#### （4）多值选项(nargs=2)
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", nargs=2, help="This is a test message")
+def hello(memory):
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                           
+                                                   
+Options:                                           
+  -m, --memory TEXT...  This is a test message     
+  --help                Show this message and exit.
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 1g   
+Error: Option '-m' requires 2 arguments.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 1g 2g
+('1g', '2g')
+```
+
+:::
+
+#### （5）默认值(default)
+
+注意事项：
+
+* 当选项设置了`multiple=True`后，`default`值必须设置成列表结构
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", default="1g", show_default=True, help="This is a test message")
+def hello(memory):
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                                  
+                                                          
+Options:                                                  
+  -m, --memory TEXT  This is a test message  [default: 1g]
+  --help             Show this message and exit. 
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+1g  
+```
+
+:::
+
+#### （6）类型转换(type)
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#tuples-as-multi-value-options](https://click.palletsprojects.com/en/8.1.x/options/#tuples-as-multi-value-options)
+
+注意事项：
+
+* 当设置成类似这样：`type=(str, int)`，这就相当于自动开启了`nargs`，并为每个值进行类型转换
+
+::: details 基础示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option("-m", "--memory", type=int, help="This is a test message")
+def hello(memory):
+    print(type(memory))
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                           
+                                                   
+Options:                                           
+  -m, --memory INTEGER  This is a test message     
+  --help                Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m 1000
+<class 'int'>
+1000
+```
+
+:::
+
+::: details 自定义转换函数
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+def double(x: str):
+    return x * 2
+
+
+@click.command()
+@click.option("-m", "--memory", type=double, help="This is a test message")
+def hello(memory):
+    print(type(memory))
+    click.echo(memory)
+
+
+if __name__ == '__main__':
+    hello()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                          
+                                                  
+Options:                                          
+  -m, --memory DOUBLE  This is a test message     
+  --help               Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -m abc 
+<class 'str'>
+abcabc
+```
+
+:::
+
+#### （7）限制参数可选值
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#choice-options](https://click.palletsprojects.com/en/8.1.x/options/#choice-options)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+import sys
+import click
+
+
+@click.command()
+@click.option('--debug-level', type=click.Choice(["DEBUG", "INFO", "WARNING"]), help="This is a test message")
+def log(debug_level):
+    click.echo(f"Debug Level: {debug_level}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help            
+Usage: main.py [OPTIONS]                                     
+                                                             
+Options:                                                     
+  --debug-level [DEBUG|INFO|WARNING]                         
+                                  This is a test message     
+  --help                          Show this message and exit.
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --debug-level DEBUG
+Debug Level: DEBUG
+
+# 故意输错
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --debug-level INFO1
+Usage: main.py [OPTIONS]
+Try 'main.py --help' for help.
+
+Error: Invalid value for '--debug-level': 'INFO1' is not one of 'DEBUG', 'INFO', 'WARNING'.  
+```
+
+:::
+
+#### （8）布尔类型参数(is_flag=True)
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags](https://click.palletsprojects.com/en/8.1.x/options/#boolean-flags)
+
+::: details is_flag 基础示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-d', '--debug', is_flag=True, help="This is a test message")
+def log(debug):
+    click.echo(f"Debug: {debug}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                  
+                                          
+Options:                                  
+  -d, --debug  This is a test message     
+  --help       Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Debug: False
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -d
+Debug: True
+```
+
+:::
+
+::: details is_flag 使用【自定义值/None】而不是 【True/False】
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command()
+@click.option('-d', '--debug', flag_value="自定义的值", help="This is a test message")
+def log(debug):
+    click.echo(f"Debug: {debug}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                  
+                                          
+Options:                                  
+  -d, --debug  This is a test message     
+  --help       Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py       
+Debug: None
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -d
+Debug: 自定义的值
+```
+
+:::
+
+::: details 使用 / 隐式开启布尔类型参数
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+import sys
+import click
+
+@click.command()
+@click.option('--color/--no-color', default=False, show_default=True, help="This is a test message")
+def info(color):
+    click.echo(color)
+
+
+if __name__ == '__main__':
+    info()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help    
+Usage: main.py [OPTIONS]                                           
+                                                                   
+Options:                                                           
+  --color / --no-color  This is a test message  [default: no-color]
+  --help                Show this message and exit. 
+  
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --color
+True
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --no-color
+False
+```
+
+:::
+
+#### （9）支持类似-vvv这种重复计数
+
+文档：[https://click.palletsprojects.com/en/8.1.x/options/#counting](https://click.palletsprojects.com/en/8.1.x/options/#counting)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+import sys
+import click
+
+
+@click.command()
+@click.option('-v', '--verbose', count=True, help="This is a test message")
+def log(verbose):
+    click.echo(f"Verbosity: {verbose}")
+
+
+if __name__ == '__main__':
+    log()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS]                    
+                                            
+Options:                                    
+  -v, --verbose  This is a test message     
+  --help         Show this message and exit.
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -v    
+Verbosity: 1
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -vvvvvvvvvvvvv
+Verbosity: 13
+```
+
+:::
+
+
+
