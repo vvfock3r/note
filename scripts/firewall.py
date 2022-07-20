@@ -14,40 +14,34 @@ from typing import Optional, Tuple, Union, Dict
 import httpx
 import click
 from tencentcloud.common.credential import Credential
-from tencentcloud.common.exception.tencent_cloud_sdk_exception import (
-    TencentCloudSDKException,
-)
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.lighthouse.v20200324 import lighthouse_client, models
 
 __version__ = "v0.0.1"
 
 
-def get_internet_ip() -> Union[str, None]:
-    """获取当前外网出口IP"""
-
-    urls = ["https://api-ipv4.ip.sb/ip"]
-    headers = {
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
-    }
-    for url in urls:
-        r = httpx.get(url, headers=headers, timeout=30)
-        if r.status_code == 200:
-            return r.text.strip("\n")
-
-    return None
-
-
-def add_firewall_rule(
-        cred: Credential,
-        instance_id: str,
-        protocol: str,
+class FirewallRule:
+    def __init__(
+        self,
+        protocol: Optional[str] = None,
         port: Optional[str] = None,
         source: Optional[str] = None,
         action: Optional[str] = None,
         description: Optional[str] = None,
-) -> Tuple[bool, Dict]:
+    ):
+        self.protocol = protocol
+        self.port = port
+        self.source = source
+        self.action = action
+        self.description = description
+
+
+def add_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询,description不计数
-    ok, resp = ls_firewall_rule(cred, instance_id, protocol, port, source, action, None)
+    rule._description = rule.description
+    rule.description = None
+    ok, resp = ls_firewall_rule(cred, instance_id, rule)
+    rule.description = rule._description
 
     # 查询失败直接返回
     if not ok:
@@ -59,7 +53,10 @@ def add_firewall_rule(
         return True, {
             "code": "ok",
             "message": "防火墙规则 `[('{protocol}', '{port}', '{source}', '{action}')]` 已经存在。".format(
-                protocol=protocol, port=port, source=source, action=action
+                protocol=rule.protocol,
+                port=rule.port,
+                source=rule.source,
+                action=rule.action,
             ),
             "requestId": resp["RequestId"],
         }
@@ -77,11 +74,11 @@ def add_firewall_rule(
             "InstanceId": instance_id,
             "FirewallRules": [
                 {
-                    "Protocol": protocol,
-                    "Port": port,
-                    "CidrBlock": source,
-                    "Action": action,
-                    "FirewallRuleDescription": description,
+                    "Protocol": rule.protocol,
+                    "Port": rule.port,
+                    "CidrBlock": rule.source,
+                    "Action": rule.action,
+                    "FirewallRuleDescription": rule.description,
                 }
             ],
         }
@@ -103,15 +100,7 @@ def add_firewall_rule(
         }
 
 
-def ls_firewall_rule(
-        cred: Credential,
-        instance_id: str,
-        protocol: str,
-        port: Optional[str] = None,
-        source: Optional[str] = None,
-        action: Optional[str] = None,
-        description: Optional[str] = None,
-) -> Tuple[bool, Dict]:
+def ls_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
     try:
         # 实例化客户端
         client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
@@ -128,26 +117,23 @@ def ls_firewall_rule(
         resp = json.loads(resp.to_json_string())
 
         # 筛选
-        if protocol is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(lambda x: x.get("Protocol") == protocol, resp["FirewallRuleSet"])
-            )
-        if port is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(lambda x: x.get("Port") == port, resp["FirewallRuleSet"])
-            )
-        if source is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(lambda x: x.get("CidrBlock") == source, resp["FirewallRuleSet"])
-            )
-        if action is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(lambda x: x.get("Action") == action, resp["FirewallRuleSet"])
-            )
-        if description is not None:
+        if rule.protocol is not None:
             resp["FirewallRuleSet"] = list(
                 filter(
-                    lambda x: x.get("FirewallRuleDescription") == description,
+                    lambda x: x.get("Protocol") == rule.protocol,
+                    resp["FirewallRuleSet"],
+                )
+            )
+        if rule.port is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Port") == rule.port, resp["FirewallRuleSet"]))
+        if rule.source is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("CidrBlock") == rule.source, resp["FirewallRuleSet"]))
+        if rule.action is not None:
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Action") == rule.action, resp["FirewallRuleSet"]))
+        if rule.description is not None:
+            resp["FirewallRuleSet"] = list(
+                filter(
+                    lambda x: x.get("FirewallRuleDescription") == rule.description,
                     resp["FirewallRuleSet"],
                 )
             )
@@ -162,19 +148,9 @@ def ls_firewall_rule(
 
 
 # 删除接口和查询接口参数一致
-def remove_firewall_rule(
-        cred: Credential,
-        instance_id: str,
-        protocol: str,
-        port: Optional[str] = None,
-        source: Optional[str] = None,
-        action: Optional[str] = None,
-        description: Optional[str] = None,
-) -> Tuple[bool, Dict]:
+def remove_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询
-    ok, resp = ls_firewall_rule(
-        cred, instance_id, protocol, port, source, action, description
-    )
+    ok, resp = ls_firewall_rule(cred, instance_id, rule)
 
     # 查询失败直接返回
     if not ok:
@@ -218,14 +194,54 @@ def remove_firewall_rule(
 
 
 class Cli:
-    @click.group(context_settings=dict(help_option_names=['-h', '--help']))
+    @staticmethod
+    def print_version(ctx, param, value):
+        if not value or ctx.resilient_parsing:
+            return
+        click.echo(__version__)
+        ctx.exit()
+
+    @staticmethod
+    def get_current_ip() -> Union[str, None]:
+        """获取当前外网出口IP"""
+
+        urls = ["https://api-ipv4.ip.sb/ip"]
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
+        for url in urls:
+            r = httpx.get(url, headers=headers, timeout=30)
+            if r.status_code == 200:
+                return r.text.strip("\n")
+
+        return None
+
+    @staticmethod
+    def params_package(kwargs) -> dict:
+        # 创建认证信息
+        cred = Credential(kwargs.pop("secret_id"), kwargs.pop("secret_key"))
+        kwargs["cred"] = cred
+
+        # 创建防火墙规则
+        if kwargs["source"] == "current ip":
+            kwargs["source"] = Cli.get_current_ip()
+        rule = FirewallRule(
+            protocol=kwargs.pop("protocol"),
+            port=kwargs.pop("port"),
+            source=kwargs.pop("source"),
+            action=kwargs.pop("action"),
+            description=kwargs.pop("description"),
+        )
+        kwargs["rule"] = rule
+        return kwargs
+
+    @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def parser():
-        '''
+        """
         \b
         Add or remove firewall rules for tencent cloud lighthouse
         Source code: https://github.com/vvfock3r/note/blob/main/scripts/firewall.py
-        '''
+        """
         pass
 
     @parser.command()
@@ -238,25 +254,18 @@ class Cli:
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
     @click.option("--description", help="Description")
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
+    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def ls(**kwargs):
-        '''query firewall rule for tencent cloud lighthouse'''
+        """query firewall rule for tencent cloud lighthouse"""
+
+        # 参数组装
+        kwargs = Cli.params_package(kwargs)
 
         # 删除不能直接传递给函数的key
-        secret_id = kwargs.pop("secret_id")
-        secret_key = kwargs.pop("secret_key")
-        source = kwargs.pop("source")
         quiet = kwargs.pop("quiet")
 
-        # 创建认证信息
-        cred = Credential(secret_id, secret_key)
-        kwargs["cred"] = cred
-
-        # 更新源地址
-        if source == "current ip":
-            kwargs["source"] = get_internet_ip()
-
-        # 添加防火墙规则
+        # 查询防火墙规则
         ok, msg = ls_firewall_rule(**kwargs)
 
         # 静默输出
@@ -276,23 +285,16 @@ class Cli:
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action", default="ACCEPT", show_default=True)
     @click.option("--description", help="Description", default="[Created by Tencent SDK]", show_default=True)
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
+    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def add(**kwargs):
-        '''add firewall rule for tencent cloud lighthouse'''
+        """add firewall rule for tencent cloud lighthouse"""
+
+        # 参数组装
+        kwargs = Cli.params_package(kwargs)
 
         # 删除不能直接传递给函数的key
-        secret_id = kwargs.pop("secret_id")
-        secret_key = kwargs.pop("secret_key")
-        source = kwargs.pop("source")
         quiet = kwargs.pop("quiet")
-
-        # 创建认证信息
-        cred = Credential(secret_id, secret_key)
-        kwargs["cred"] = cred
-
-        # 更新源地址
-        if source == "current ip":
-            kwargs["source"] = get_internet_ip()
 
         # 添加防火墙规则
         ok, msg = add_firewall_rule(**kwargs)
@@ -314,25 +316,18 @@ class Cli:
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
     @click.option("--description", help="Description")
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
+    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def remove(**kwargs):
-        '''remove firewall rule for tencent cloud lighthouse'''
+        """remove firewall rule for tencent cloud lighthouse"""
+
+        # 参数组装
+        kwargs = Cli.params_package(kwargs)
 
         # 删除不能直接传递给函数的key
-        secret_id = kwargs.pop("secret_id")
-        secret_key = kwargs.pop("secret_key")
-        source = kwargs.pop("source")
         quiet = kwargs.pop("quiet")
 
-        # 创建认证信息
-        cred = Credential(secret_id, secret_key)
-        kwargs["cred"] = cred
-
-        # 更新源地址
-        if source == "current ip":
-            kwargs["source"] = get_internet_ip()
-
-        # 添加防火墙规则
+        # 删除防火墙规则
         ok, msg = remove_firewall_rule(**kwargs)
 
         # 静默输出
