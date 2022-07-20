@@ -31,12 +31,12 @@ class Instance:
 
 class LightHouseFirewallRule:
     def __init__(
-            self,
-            protocol: Optional[str] = None,
-            port: Optional[str] = None,
-            source: Optional[str] = None,
-            action: Optional[str] = None,
-            description: Optional[str] = None,
+        self,
+        protocol: Optional[str] = None,
+        port: Optional[str] = None,
+        source: Optional[str] = None,
+        action: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         self.protocol = protocol
         self.port = port
@@ -172,6 +172,7 @@ class Cli:
 
     @staticmethod
     def configure(ctx, param, filename):
+        """读取配置文件"""
         cfg = configparser.ConfigParser()
         cfg.read(filename)
         try:
@@ -211,7 +212,7 @@ class Cli:
         # 实例化Instance对象
         kwargs["instance"] = Instance(id=kwargs.pop("instance_id"), region=kwargs.pop("region"))
 
-        # 创建防火墙规则
+        # 实例化防火墙规则对象
         if kwargs["source"] == "current ip":
             kwargs["source"] = Cli.get_current_ip()
         rule = LightHouseFirewallRule(
@@ -273,7 +274,6 @@ class Cli:
     @staticmethod
     def ls(**kwargs):
         """query firewall rule for tencent cloud lighthouse"""
-
         Cli.request(lighthouse_ls_firewall_rule, kwargs)
 
     @parser.command()
@@ -302,7 +302,6 @@ class Cli:
     @staticmethod
     def add(**kwargs):
         """add firewall rule for tencent cloud lighthouse"""
-
         Cli.request(lighthouse_add_firewall_rule, kwargs)
 
     @parser.command()
@@ -331,7 +330,6 @@ class Cli:
     @staticmethod
     def remove(**kwargs):
         """remove firewall rule for tencent cloud lighthouse"""
-
         Cli.request(lighthouse_remove_firewall_rule, kwargs)
 
 
