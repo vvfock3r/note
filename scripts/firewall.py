@@ -4,11 +4,14 @@
 """
 添加或删除防火墙规则，适用于腾讯云轻量应用服务器
 
-SDK文档：https://cloud.tencent.com/document/product/1207/47578
+腾讯云轻量应用服务器：https://cloud.tencent.com/document/product/1207/47578
+腾讯云云服务器安全组：https://cloud.tencent.com/document/product/215/15804
 """
+
 import copy
 import sys
 import json
+import configparser
 from typing import Optional, Tuple, Union, Dict
 
 import httpx
@@ -20,7 +23,13 @@ from tencentcloud.lighthouse.v20200324 import lighthouse_client, models
 __version__ = "v0.0.1"
 
 
-class FirewallRule:
+class Instance:
+    def __init__(self, id: str, region: str):
+        self.id = id
+        self.region = region
+
+
+class LightHouseFirewallRule:
     def __init__(
             self,
             protocol: Optional[str] = None,
@@ -36,13 +45,7 @@ class FirewallRule:
         self.description = description
 
 
-class Instance:
-    def __init__(self, id: str, region: str):
-        self.id = id
-        self.region = region
-
-
-def ls_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRule) -> Tuple[bool, Dict]:
+def lighthouse_ls_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
     """注意：只能查看100条规则，本函数没有实现分页功能"""
     try:
         # 实例化客户端
@@ -90,11 +93,11 @@ def ls_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRule) -
         }
 
 
-def add_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRule) -> Tuple[bool, Dict]:
+def lighthouse_add_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询,description不计数
     rule2 = copy.deepcopy(rule)
     rule2.description = None
-    ok, resp = ls_firewall_rule(cred, instance, rule2)
+    ok, resp = lighthouse_ls_firewall_rule(cred, instance, rule2)
 
     # 查询失败直接返回
     if not ok:
@@ -153,9 +156,9 @@ def add_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRule) 
         }
 
 
-def remove_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRule) -> Tuple[bool, Dict]:
+def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询
-    ok, resp = ls_firewall_rule(cred, instance, rule)
+    ok, resp = lighthouse_ls_firewall_rule(cred, instance, rule)
 
     # 查询失败直接返回
     if not ok:
@@ -199,6 +202,18 @@ def remove_firewall_rule(cred: Credential, instance: Instance, rule: FirewallRul
 
 
 class Cli:
+    DEFAULT_CFG = "firewall.ini"
+
+    @staticmethod
+    def configure(ctx, param, filename):
+        cfg = configparser.ConfigParser()
+        cfg.read(filename)
+        try:
+            options = dict(cfg["default"])
+        except KeyError:
+            options = {}
+        ctx.default_map = options
+
     @staticmethod
     def print_version(ctx, param, value):
         if not value or ctx.resilient_parsing:
@@ -226,21 +241,15 @@ class Cli:
         """真正的运行逻辑"""
 
         # 实例化认证对象
-        kwargs["cred"] = Credential(
-            secret_id=kwargs.pop("secret_id"),
-            secret_key=kwargs.pop("secret_key")
-        )
+        kwargs["cred"] = Credential(secret_id=kwargs.pop("secret_id"), secret_key=kwargs.pop("secret_key"))
 
         # 实例化Instance对象
-        kwargs["instance"] = Instance(
-            id=kwargs.pop("instance_id"),
-            region=kwargs.pop("region")
-        )
+        kwargs["instance"] = Instance(id=kwargs.pop("instance_id"), region=kwargs.pop("region"))
 
         # 创建防火墙规则
         if kwargs["source"] == "current ip":
             kwargs["source"] = Cli.get_current_ip()
-        rule = FirewallRule(
+        rule = LightHouseFirewallRule(
             protocol=kwargs.pop("protocol"),
             port=kwargs.pop("port"),
             source=kwargs.pop("source"),
@@ -283,13 +292,24 @@ class Cli:
     @click.option("--source", help="CIDR")
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
     @click.option("--description", help="Description")
+    @click.option(
+        "--c",
+        "--config",
+        type=click.Path(dir_okay=False),
+        default=DEFAULT_CFG,
+        show_default=True,
+        callback=configure,
+        is_eager=True,
+        expose_value=False,
+        help="Read option defaults from the specified INI file",
+    )
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
     @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def ls(**kwargs):
         """query firewall rule for tencent cloud lighthouse"""
 
-        Cli.request(ls_firewall_rule, kwargs)
+        Cli.request(lighthouse_ls_firewall_rule, kwargs)
 
     @parser.command()
     @click.option("--secret-id", required=True, help="Secret id")
@@ -301,13 +321,24 @@ class Cli:
     @click.option("--source", help="CIDR", default="current ip", show_default=True)
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action", default="ACCEPT", show_default=True)
     @click.option("--description", help="Description", default="[Created by Tencent SDK]", show_default=True)
+    @click.option(
+        "--c",
+        "--config",
+        type=click.Path(dir_okay=False),
+        default=DEFAULT_CFG,
+        show_default=True,
+        callback=configure,
+        is_eager=True,
+        expose_value=False,
+        help="Read option defaults from the specified INI file",
+    )
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
     @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def add(**kwargs):
         """add firewall rule for tencent cloud lighthouse"""
 
-        Cli.request(add_firewall_rule, kwargs)
+        Cli.request(lighthouse_add_firewall_rule, kwargs)
 
     @parser.command()
     @click.option("--secret-id", required=True, help="Secret id")
@@ -319,13 +350,24 @@ class Cli:
     @click.option("--source", help="CIDR")
     @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
     @click.option("--description", help="Description")
+    @click.option(
+        "--c",
+        "--config",
+        type=click.Path(dir_okay=False),
+        default=DEFAULT_CFG,
+        show_default=True,
+        callback=configure,
+        is_eager=True,
+        expose_value=False,
+        help="Read option defaults from the specified INI file",
+    )
     @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
     @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
     @staticmethod
     def remove(**kwargs):
         """remove firewall rule for tencent cloud lighthouse"""
 
-        Cli.request(remove_firewall_rule, kwargs)
+        Cli.request(lighthouse_remove_firewall_rule, kwargs)
 
 
 if __name__ == "__main__":
