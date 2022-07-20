@@ -6,7 +6,7 @@
 
 SDK文档：https://cloud.tencent.com/document/product/1207/47578
 """
-
+import copy
 import sys
 import json
 from typing import Optional, Tuple, Union, Dict
@@ -38,10 +38,9 @@ class FirewallRule:
 
 def add_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询,description不计数
-    rule._description = rule.description
-    rule.description = None
-    ok, resp = ls_firewall_rule(cred, instance_id, rule)
-    rule.description = rule._description
+    rule2 = copy.deepcopy(rule)
+    rule2.description = None
+    ok, resp = ls_firewall_rule(cred, instance_id, rule2)
 
     # 查询失败直接返回
     if not ok:
@@ -101,6 +100,7 @@ def add_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) ->
 
 
 def ls_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
+    """注意：只能查看100条规则，本函数没有实现分页功能"""
     try:
         # 实例化客户端
         client = lighthouse_client.LighthouseClient(cred, "ap-hongkong")
@@ -116,7 +116,7 @@ def ls_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> 
         resp = client.DescribeFirewallRules(req)
         resp = json.loads(resp.to_json_string())
 
-        # 筛选
+        # SDK不提供筛选功能，所以自己做
         if rule.protocol is not None:
             resp["FirewallRuleSet"] = list(
                 filter(
@@ -147,7 +147,6 @@ def ls_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> 
         }
 
 
-# 删除接口和查询接口参数一致
 def remove_firewall_rule(cred: Credential, instance_id: str, rule: FirewallRule) -> Tuple[bool, Dict]:
     # 先执行查询
     ok, resp = ls_firewall_rule(cred, instance_id, rule)
@@ -215,10 +214,11 @@ class Cli:
         return None
 
     @staticmethod
-    def params_package(kwargs) -> dict:
+    def run(func, kwargs) -> None:
+        """真正的运行逻辑"""
+
         # 创建认证信息
-        cred = Credential(kwargs.pop("secret_id"), kwargs.pop("secret_key"))
-        kwargs["cred"] = cred
+        kwargs["cred"] = Credential(kwargs.pop("secret_id"), kwargs.pop("secret_key"))
 
         # 创建防火墙规则
         if kwargs["source"] == "current ip":
@@ -231,7 +231,19 @@ class Cli:
             description=kwargs.pop("description"),
         )
         kwargs["rule"] = rule
-        return kwargs
+
+        # 删除不能直接传递给函数的key
+        quiet = kwargs.pop("quiet")
+
+        # 查询/添加/删除防火墙规则
+        ok, msg = func(**kwargs)
+
+        # 静默输出
+        if not quiet:
+            print(json.dumps(msg, ensure_ascii=False, indent=4))
+
+        # 退出程序
+        sys.exit(0 if ok else 1)
 
     @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
     @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
@@ -259,21 +271,7 @@ class Cli:
     def ls(**kwargs):
         """query firewall rule for tencent cloud lighthouse"""
 
-        # 参数组装
-        kwargs = Cli.params_package(kwargs)
-
-        # 删除不能直接传递给函数的key
-        quiet = kwargs.pop("quiet")
-
-        # 查询防火墙规则
-        ok, msg = ls_firewall_rule(**kwargs)
-
-        # 静默输出
-        if not quiet:
-            print(json.dumps(msg, ensure_ascii=False, indent=4))
-
-        # 退出程序
-        sys.exit(0 if ok else 1)
+        Cli.run(ls_firewall_rule, kwargs)
 
     @parser.command()
     @click.option("--secret-id", required=True, help="Secret id")
@@ -290,21 +288,7 @@ class Cli:
     def add(**kwargs):
         """add firewall rule for tencent cloud lighthouse"""
 
-        # 参数组装
-        kwargs = Cli.params_package(kwargs)
-
-        # 删除不能直接传递给函数的key
-        quiet = kwargs.pop("quiet")
-
-        # 添加防火墙规则
-        ok, msg = add_firewall_rule(**kwargs)
-
-        # 静默输出
-        if not quiet:
-            print(json.dumps(msg, ensure_ascii=False, indent=4))
-
-        # 退出程序
-        sys.exit(0 if ok else 1)
+        Cli.run(add_firewall_rule, kwargs)
 
     @parser.command()
     @click.option("--secret-id", required=True, help="Secret id")
@@ -321,21 +305,7 @@ class Cli:
     def remove(**kwargs):
         """remove firewall rule for tencent cloud lighthouse"""
 
-        # 参数组装
-        kwargs = Cli.params_package(kwargs)
-
-        # 删除不能直接传递给函数的key
-        quiet = kwargs.pop("quiet")
-
-        # 删除防火墙规则
-        ok, msg = remove_firewall_rule(**kwargs)
-
-        # 静默输出
-        if not quiet:
-            print(json.dumps(msg, ensure_ascii=False, indent=4))
-
-        # 退出程序
-        sys.exit(0 if ok else 1)
+        Cli.run(remove_firewall_rule, kwargs)
 
 
 if __name__ == "__main__":
