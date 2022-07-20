@@ -234,20 +234,20 @@ class Options:
         return click.option("--port", help="Port, supported, - and ALL")
 
     @staticmethod
-    def protocol(default=None):
-        return click.option("--protocol", help="TCP, UDP, ICMP, ALL", default=default)
+    def protocol(default=None, show_default=None):
+        return click.option("--protocol", help="TCP, UDP, ICMP, ALL", default=default, show_default=show_default)
 
     @staticmethod
-    def source(default=None, callback=None):
-        return click.option("--source", help="CIDR", default=default, callback=callback)
+    def source(default=None, callback=None, show_default=None):
+        return click.option("--source", help="CIDR", default=default, callback=callback, show_default=show_default)
 
     @staticmethod
-    def action(default=None):
-        return click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), default=default, help="Action")
+    def action(default=None, show_default=None):
+        return click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), default=default, help="Action", show_default=show_default)
 
     @staticmethod
-    def description(default=None):
-        return click.option("--description", help="Description", default=default)
+    def description(default=None, show_default=None):
+        return click.option("--description", help="Description", default=default, show_default=show_default)
 
     @staticmethod
     def config(default, callback, help):
@@ -396,10 +396,10 @@ class Cli:
     @parser.command()
     @Options.load_options(
         *DEFAULT_OPTIONS[:5],
-        Options.protocol(default="TCP"),
-        Options.source(default="current ip", callback=get_current_ip),
-        Options.action(default="ACCEPT"),
-        Options.description(default="[Created by Tencent SDK]"),
+        Options.protocol(default="TCP", show_default=True),
+        Options.source(default="current ip", callback=get_current_ip, show_default=True),
+        Options.action(default="ACCEPT", show_default=True),
+        Options.description(default="[Created by Tencent SDK]", show_default=True),
         *DEFAULT_OPTIONS[9:],
     )
     def add(**kwargs):
