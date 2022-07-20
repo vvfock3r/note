@@ -318,6 +318,7 @@ class Cli:
                     r = httpx.get(url, headers=headers, timeout=10)
                     if r.status_code == 200:
                         return r.text.strip("\n")
+        return value
 
     # 默认配置文件和默认选项
     DEFAULT_CFG = "firewall.ini"
@@ -333,7 +334,7 @@ class Cli:
         Options.description(),
         Options.config(default=DEFAULT_CFG, callback=load_config, help="Read option defaults from the specified INI file"),
         Options.quiet(),
-        Options.version(print_version),
+        Options.version(callback=print_version),
     ]
 
     # 业务执行流程，核心函数
@@ -348,8 +349,6 @@ class Cli:
         kwargs["instance"] = Instance(id=kwargs.pop("instance_id"), region=kwargs.pop("region"))
 
         # 实例化防火墙规则对象
-        # if kwargs["source"] == "current ip":
-        #     kwargs["source"] = Cli.get_current_ip()
         rule = LightHouseFirewallRule(
             protocol=kwargs.pop("protocol"),
             port=kwargs.pop("port"),
@@ -374,7 +373,7 @@ class Cli:
 
     # 根命令
     @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-    @Options.load_options(Options.version(print_version))
+    @Options.load_options(Options.version(callback=print_version))
     @staticmethod
     def parser():
         """
