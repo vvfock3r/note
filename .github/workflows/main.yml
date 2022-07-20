@@ -55,6 +55,7 @@ jobs:
                  --secret-id   ${{ secrets.TENCENT_SECRETID }}   \
                  --secret-key  ${{ secrets.TENCENT_SECRETKEY }}  \
                  --instance-id ${{ secrets.TENCENT_INSTANCEID }} \
+                 --region     ap-hongkong                        \
                  --port       ${{ secrets.PORT }}                \
                  --protocol   TCP                                \
                  --source     "current ip"                       \
@@ -124,6 +125,7 @@ jobs:
                  --secret-id   ${{ secrets.TENCENT_SECRETID }}   \
                  --secret-key  ${{ secrets.TENCENT_SECRETKEY }}  \
                  --instance-id ${{ secrets.TENCENT_INSTANCEID }} \
+                 --region     ap-hongkong                        \
                  --port       ${{ secrets.PORT }}                \
                  --protocol   TCP                                \
                  --action     ACCEPT                             \
