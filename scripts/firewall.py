@@ -64,12 +64,7 @@ def lighthouse_ls_firewall_rule(cred: Credential, instance: Instance, rule: Ligh
 
         # SDK不提供筛选功能，所以自己做
         if rule.protocol is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(
-                    lambda x: x.get("Protocol") == rule.protocol,
-                    resp["FirewallRuleSet"],
-                )
-            )
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Protocol") == rule.protocol, resp["FirewallRuleSet"]))
         if rule.port is not None:
             resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Port") == rule.port, resp["FirewallRuleSet"]))
         if rule.source is not None:
@@ -77,20 +72,11 @@ def lighthouse_ls_firewall_rule(cred: Credential, instance: Instance, rule: Ligh
         if rule.action is not None:
             resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Action") == rule.action, resp["FirewallRuleSet"]))
         if rule.description is not None:
-            resp["FirewallRuleSet"] = list(
-                filter(
-                    lambda x: x.get("FirewallRuleDescription") == rule.description,
-                    resp["FirewallRuleSet"],
-                )
-            )
+            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("FirewallRuleDescription") == rule.description, resp["FirewallRuleSet"]))
 
         return True, resp
     except TencentCloudSDKException as err:
-        return False, {
-            "code": err.code,
-            "message": err.message,
-            "requestId": err.requestId,
-        }
+        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
 
 def lighthouse_add_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
@@ -143,17 +129,9 @@ def lighthouse_add_firewall_rule(cred: Credential, instance: Instance, rule: Lig
         # 发送请求
         resp = client.CreateFirewallRules(req)
 
-        return True, {
-            "code": "ok",
-            "message": "Add 1 rules",
-            "requestId": resp.RequestId,
-        }
+        return True, {"code": "ok", "message": "Add 1 rules", "requestId": resp.RequestId}
     except TencentCloudSDKException as err:
-        return False, {
-            "code": err.code,
-            "message": err.message,
-            "requestId": err.requestId,
-        }
+        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
 
 def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
@@ -167,11 +145,7 @@ def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: 
     # 若没有匹配到规则
     rules_matched = resp["FirewallRuleSet"]
     if len(rules_matched) == 0:
-        return ok, {
-            "code": "ok",
-            "message": "No rules matched",
-            "requestId": resp["RequestId"],
-        }
+        return ok, {"code": "ok", "message": "No rules matched", "requestId": resp["RequestId"]}
 
     # 再执行删除
     try:
@@ -188,17 +162,9 @@ def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: 
         # 发送请求
         resp = client.DeleteFirewallRules(req)
 
-        return True, {
-            "code": "ok",
-            "message": "Deleted {} rules".format(len(rules_matched)),
-            "requestId": resp.RequestId,
-        }
+        return True, {"code": "ok", "message": "Deleted {} rules".format(len(rules_matched)), "requestId": resp.RequestId}
     except TencentCloudSDKException as err:
-        return False, {
-            "code": err.code,
-            "message": err.message,
-            "requestId": err.requestId,
-        }
+        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
 
 
 class Cli:
@@ -226,8 +192,7 @@ class Cli:
         """获取当前外网出口IP"""
 
         urls = ["https://api-ipv4.ip.sb/ip"]
-        headers = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
+        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
         for url in urls:
             for i in range(3):
                 r = httpx.get(url, headers=headers, timeout=10)
