@@ -1378,6 +1378,276 @@ if __name__ == "__main__":
 
 :::
 
+#### （2）子命令嵌套
+
+::: details 方式一
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.group()
+def main():
+    '''main group'''
+    click.echo("main")
+
+
+@main.group()
+def ls():
+    '''ls group'''
+    click.echo("ls")
+
+
+@ls.command()
+@click.option("-m", "--memory", help="This is a test message")
+def cvm(memory):
+    '''cvm command'''
+    click.echo(f"ls cvm {memory}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+输出结果
+
+```bash
+# 帮助文档
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help    
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+                                          
+  main group                              
+                                          
+Options:                                  
+  --help  Show this message and exit.     
+                                          
+Commands:                                 
+  ls  ls group                            
+
+# 子命令帮助文档
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py ls --help 
+main
+Usage: main.py ls [OPTIONS] COMMAND [ARGS]...
+                                             
+  ls group                                   
+                                             
+Options:                                     
+  --help  Show this message and exit.        
+
+Commands:
+  cvm  cvm command
+
+# 执行命令
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py ls cvm   
+main
+ls
+ls cvm None
+```
+
+:::
+
+::: details 方式二
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.group()
+def main():
+    '''main group'''
+    click.echo("main")
+
+
+@click.group()
+def ls():
+    '''ls group'''
+    click.echo("ls")
+
+
+@click.command()
+@click.option("-m", "--memory", help="This is a test message")
+def cvm(memory):
+    '''cvm command'''
+    click.echo(f"ls cvm {memory}")
+
+
+main.add_command(ls)
+ls.add_command(cvm)
+
+if __name__ == "__main__":
+    main()
+
+```
+
+:::
+
+#### （3）子命令共享选项 ✨
+
+假如我们有多个子命令：
+
+* 每个子命令都有一些相同的选项 和 各自独有的选项
+* 每个子命令相同的选项可能有一些细微的区别，比如说帮助信息并不一样
+
+如果每个子命令都定义一遍，略显繁琐且容易出错
+
+<br />
+
+第一种解决方案：写一个装饰器，里面定义好所有的公共选项，通过给装饰器传参以区分差别
+
+第二种解决方案：写一个装饰器，作用是加载装饰器参数中的所有选项，这需要我们提前定义好所有的选项，而选项是一个函数，以区分细微差异
+
+第二种方式更加灵活，推荐使用
+
+<br />
+
+::: details 方案一
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+def common_options(secret_id_help, secret_key_help):
+    def wrapper(func):
+        # 注意在帮助文档中显示的顺序，与这里加载顺序是相反的
+        func = click.option("--secret-key", required=True, help=secret_key_help)(func)
+        func = click.option("--secret-id", required=True, help=secret_id_help)(func)
+        return func
+
+    return wrapper
+
+
+@click.group()
+def main(): pass
+
+
+@main.command()
+@common_options("secret id from add", "secret key from add")
+@click.option("--add-only", help="add only")
+def add(secret_id, secret_key, add_only):
+    '''add something'''
+    click.echo(f"add {secret_id}:{secret_key}:{add_only}")
+
+
+@main.command()
+@common_options("secret id from remove", "secret key from remove")
+@click.option("--remove-only", help="remove only")
+def remove(secret_id, secret_key, remove_only):
+    '''remove something'''
+    click.echo(f"remove {secret_id}:{secret_key}:{remove_only}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+输出结果
+
+```bash
+# 查看帮助
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add     add something
+  remove  remove something
+
+# add子命令
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add --help 
+Usage: main.py add [OPTIONS]
+                            
+  add something             
+                            
+Options:                    
+  --secret-id TEXT   secret id from add  [required]
+  --secret-key TEXT  secret key from add  [required]
+  --add-only TEXT    add only
+  --help             Show this message and exit.
+  
+# remove子命令
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py remove --help 
+Usage: main.py remove [OPTIONS]
+
+  remove something
+
+Options:
+  --secret-id TEXT    secret id from remove  [required]
+  --secret-key TEXT   secret key from remove  [required]
+  --remove-only TEXT  remove only
+  --help              Show this message and exit.
+
+# 正常使用
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py add --secret-id 1 --secret-key 2 --add-only 3       
+add 1:2:3
+
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py remove --secret-id 1 --secret-key 2 --remove-only 3
+remove 1:2:3
+```
+
+:::
+
+::: details 方案二（推荐使用，更加灵活且自动调整了选项顺序）
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+def load_options(*options):
+    def wrapper(func):
+        for option in reversed(options):
+            func = option(func)
+        return func
+
+    return wrapper
+
+
+# 公共选项
+secret_id_option = lambda x: click.option("--secret-id", required=True, help="secret id from {}".format(x))
+secret_key_option = lambda x: click.option("--secret-key", required=True, help="secret key from {}".format(x))
+
+
+@click.group()
+def main(): pass
+
+
+@main.command()
+@load_options(secret_id_option("add"), secret_key_option("key"))
+@click.option("--add-only", help="add only")
+def add(secret_id, secret_key, add_only):
+    '''add something'''
+    click.echo(f"add {secret_id}:{secret_key}:{add_only}")
+
+
+@main.command()
+@load_options(secret_id_option("remove"), secret_key_option("remove"))
+@click.option("--remove-only", help="remove only")
+def remove(secret_id, secret_key, remove_only):
+    '''remove something'''
+    click.echo(f"remove {secret_id}:{secret_key}:{remove_only}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+:::
+
+
+
 ### 实用函数举例
 
 
