@@ -1162,7 +1162,7 @@ Options:
 
 :::
 
-#### （12）同时使用命令行、环境变量和配置文件
+#### （12）从多方面位置取值 ✨
 
 注意事项：
 
@@ -1377,4 +1377,36 @@ if __name__ == "__main__":
 ```
 
 :::
+
+### 实用函数举例
+
+
+
+### 定制帮助信息
+
+文档：[https://click.palletsprojects.com/en/8.1.x/documentation/#preventing-rewrapping](https://click.palletsprojects.com/en/8.1.x/documentation/#preventing-rewrapping)
+
+* 在文档字符串中，`\b`后面的字符串可以按原样显示，`\f`可以截断后面的信息（即不显示）
+
+* 可以通过如下代码添加`-h, --help`支持
+
+  ```python
+  CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+  
+  @click.command(context_settings=CONTEXT_SETTINGS)
+  def cli():
+      pass
+  ```
+
+  输出结果
+
+  ```bash
+  $ cli -h
+  Usage: cli [OPTIONS]
+  
+  Options:
+    -h, --help  Show this message and exit.
+  ```
+
+
 
