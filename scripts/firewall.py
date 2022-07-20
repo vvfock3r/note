@@ -17,7 +17,9 @@ from typing import Optional, Tuple, Union, Dict
 import httpx
 import click
 from tencentcloud.common.credential import Credential
-from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import (
+    TencentCloudSDKException,
+)
 from tencentcloud.lighthouse.v20200324 import lighthouse_client, models
 
 __version__ = "v0.0.1"
@@ -31,12 +33,12 @@ class Instance:
 
 class LightHouseFirewallRule:
     def __init__(
-        self,
-        protocol: Optional[str] = None,
-        port: Optional[str] = None,
-        source: Optional[str] = None,
-        action: Optional[str] = None,
-        description: Optional[str] = None,
+            self,
+            protocol: Optional[str] = None,
+            port: Optional[str] = None,
+            source: Optional[str] = None,
+            action: Optional[str] = None,
+            description: Optional[str] = None,
     ):
         self.protocol = protocol
         self.port = port
@@ -64,7 +66,12 @@ def lighthouse_ls_firewall_rule(cred: Credential, instance: Instance, rule: Ligh
 
         # SDK不提供筛选功能，所以自己做
         if rule.protocol is not None:
-            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Protocol") == rule.protocol, resp["FirewallRuleSet"]))
+            resp["FirewallRuleSet"] = list(
+                filter(
+                    lambda x: x.get("Protocol") == rule.protocol,
+                    resp["FirewallRuleSet"],
+                )
+            )
         if rule.port is not None:
             resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Port") == rule.port, resp["FirewallRuleSet"]))
         if rule.source is not None:
@@ -72,11 +79,20 @@ def lighthouse_ls_firewall_rule(cred: Credential, instance: Instance, rule: Ligh
         if rule.action is not None:
             resp["FirewallRuleSet"] = list(filter(lambda x: x.get("Action") == rule.action, resp["FirewallRuleSet"]))
         if rule.description is not None:
-            resp["FirewallRuleSet"] = list(filter(lambda x: x.get("FirewallRuleDescription") == rule.description, resp["FirewallRuleSet"]))
+            resp["FirewallRuleSet"] = list(
+                filter(
+                    lambda x: x.get("FirewallRuleDescription") == rule.description,
+                    resp["FirewallRuleSet"],
+                )
+            )
 
         return True, resp
     except TencentCloudSDKException as err:
-        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
+        return False, {
+            "code": err.code,
+            "message": err.message,
+            "requestId": err.requestId,
+        }
 
 
 def lighthouse_add_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
@@ -129,9 +145,17 @@ def lighthouse_add_firewall_rule(cred: Credential, instance: Instance, rule: Lig
         # 发送请求
         resp = client.CreateFirewallRules(req)
 
-        return True, {"code": "ok", "message": "Add 1 rules", "requestId": resp.RequestId}
+        return True, {
+            "code": "ok",
+            "message": "Add 1 rules",
+            "requestId": resp.RequestId,
+        }
     except TencentCloudSDKException as err:
-        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
+        return False, {
+            "code": err.code,
+            "message": err.message,
+            "requestId": err.requestId,
+        }
 
 
 def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: LightHouseFirewallRule) -> Tuple[bool, Dict]:
@@ -145,7 +169,11 @@ def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: 
     # 若没有匹配到规则
     rules_matched = resp["FirewallRuleSet"]
     if len(rules_matched) == 0:
-        return ok, {"code": "ok", "message": "No rules matched", "requestId": resp["RequestId"]}
+        return ok, {
+            "code": "ok",
+            "message": "No rules matched",
+            "requestId": resp["RequestId"],
+        }
 
     # 再执行删除
     try:
@@ -162,16 +190,105 @@ def lighthouse_remove_firewall_rule(cred: Credential, instance: Instance, rule: 
         # 发送请求
         resp = client.DeleteFirewallRules(req)
 
-        return True, {"code": "ok", "message": "Deleted {} rules".format(len(rules_matched)), "requestId": resp.RequestId}
+        return True, {
+            "code": "ok",
+            "message": "Deleted {} rules".format(len(rules_matched)),
+            "requestId": resp.RequestId,
+        }
     except TencentCloudSDKException as err:
-        return False, {"code": err.code, "message": err.message, "requestId": err.requestId}
+        return False, {
+            "code": err.code,
+            "message": err.message,
+            "requestId": err.requestId,
+        }
+
+
+class Options:
+    @staticmethod
+    def load_options(*options):
+        def wrapper(func):
+            for option in reversed(options):
+                func = option(func)
+            return func
+
+        return wrapper
+
+    @staticmethod
+    def secret_id():
+        return click.option("--secret-id", required=True, help="Secret id")
+
+    @staticmethod
+    def secret_key():
+        return click.option("--secret-key", required=True, help="Secret key")
+
+    @staticmethod
+    def instance_id():
+        return click.option("--instance-id", required=True, help="Instance id")
+
+    @staticmethod
+    def region():
+        return click.option("--region", required=True, help="Region, eg: ap-hongkong")
+
+    @staticmethod
+    def port():
+        return click.option("--port", help="Port, supported, - and ALL")
+
+    @staticmethod
+    def protocol(default=None):
+        return click.option("--protocol", help="TCP, UDP, ICMP, ALL", default=default)
+
+    @staticmethod
+    def source(default=None, callback=None):
+        return click.option("--source", help="CIDR", default=default, callback=callback)
+
+    @staticmethod
+    def action(default=None):
+        return click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), default=default, help="Action")
+
+    @staticmethod
+    def description(default=None):
+        return click.option("--description", help="Description", default=default)
+
+    @staticmethod
+    def config(default, callback, help):
+        return click.option(
+            "--c",
+            "--config",
+            type=click.Path(dir_okay=False),
+            default=default,
+            show_default=True,
+            callback=callback,
+            is_eager=True,
+            expose_value=False,
+            help=help,
+        )
+
+    @staticmethod
+    def quiet():
+        return click.option(
+            "-q",
+            "--quiet",
+            help="Do not print response messages",
+            is_flag=True,
+            default=False,
+        )
+
+    @staticmethod
+    def version(callback):
+        return click.option(
+            "-v",
+            "--version",
+            is_flag=True,
+            expose_value=False,
+            callback=callback,
+            help="Show the version and exit",
+        )
 
 
 class Cli:
-    DEFAULT_CFG = "firewall.ini"
-
+    # 选项的回调函数
     @staticmethod
-    def configure(ctx, param, filename):
+    def load_config(ctx, param, filename):
         """读取配置文件"""
         cfg = configparser.ConfigParser()
         cfg.read(filename)
@@ -189,21 +306,39 @@ class Cli:
         ctx.exit()
 
     @staticmethod
-    def get_current_ip() -> Union[str, None]:
+    def get_current_ip(ctx, param, value) -> Union[str, None]:
         """获取当前外网出口IP"""
 
-        urls = ["https://api-ipv4.ip.sb/ip"]
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
-        for url in urls:
-            for i in range(3):
-                r = httpx.get(url, headers=headers, timeout=10)
-                if r.status_code == 200:
-                    return r.text.strip("\n")
+        if value == "current ip":
+            urls = ["https://api-ipv4.ip.sb/ip"]
+            headers = {
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
+            for url in urls:
+                for i in range(3):
+                    r = httpx.get(url, headers=headers, timeout=10)
+                    if r.status_code == 200:
+                        return r.text.strip("\n")
 
-        return None
+    # 默认配置文件和默认选项
+    DEFAULT_CFG = "firewall.ini"
+    DEFAULT_OPTIONS = [
+        Options.secret_id(),
+        Options.secret_key(),
+        Options.instance_id(),
+        Options.region(),
+        Options.port(),
+        Options.protocol(),
+        Options.source(callback=get_current_ip),
+        Options.action(),
+        Options.description(),
+        Options.config(default=DEFAULT_CFG, callback=load_config, help="Read option defaults from the specified INI file"),
+        Options.quiet(),
+        Options.version(print_version),
+    ]
 
+    # 业务执行流程，核心函数
     @staticmethod
-    def request(func, kwargs) -> None:
+    def do(func, kwargs) -> None:
         """真正的运行逻辑"""
 
         # 实例化认证对象
@@ -213,8 +348,8 @@ class Cli:
         kwargs["instance"] = Instance(id=kwargs.pop("instance_id"), region=kwargs.pop("region"))
 
         # 实例化防火墙规则对象
-        if kwargs["source"] == "current ip":
-            kwargs["source"] = Cli.get_current_ip()
+        # if kwargs["source"] == "current ip":
+        #     kwargs["source"] = Cli.get_current_ip()
         rule = LightHouseFirewallRule(
             protocol=kwargs.pop("protocol"),
             port=kwargs.pop("port"),
@@ -237,8 +372,9 @@ class Cli:
         # 退出程序
         sys.exit(0 if ok else 1)
 
+    # 根命令
     @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
+    @Options.load_options(Options.version(print_version))
     @staticmethod
     def parser():
         """
@@ -248,89 +384,36 @@ class Cli:
         """
         pass
 
-    @parser.command()
-    @click.option("--secret-id", required=True, help="Secret id")
-    @click.option("--secret-key", required=True, help="Secret key")
-    @click.option("--instance-id", required=True, help="Instance id")
-    @click.option("--region", required=True, help="Region, eg: ap-hongkong")
-    @click.option("--port", help="Port, supported, - and ALL")
-    @click.option("--protocol", help="TCP, UDP, ICMP, ALL")
-    @click.option("--source", help="CIDR")
-    @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
-    @click.option("--description", help="Description")
-    @click.option(
-        "--c",
-        "--config",
-        type=click.Path(dir_okay=False),
-        default=DEFAULT_CFG,
-        show_default=True,
-        callback=configure,
-        is_eager=True,
-        expose_value=False,
-        help="Read option defaults from the specified INI file",
-    )
-    @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
-    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
+    # 子命令
     @staticmethod
+    @parser.command()
+    @Options.load_options(*DEFAULT_OPTIONS)
     def ls(**kwargs):
         """query firewall rule for tencent cloud lighthouse"""
-        Cli.request(lighthouse_ls_firewall_rule, kwargs)
+        Cli.do(lighthouse_ls_firewall_rule, kwargs)
 
-    @parser.command()
-    @click.option("--secret-id", required=True, help="Secret id")
-    @click.option("--secret-key", required=True, help="Secret key")
-    @click.option("--instance-id", required=True, help="Instance id")
-    @click.option("--region", required=True, help="Region, eg: ap-hongkong")
-    @click.option("--port", required=True, help="Port, supported, - and ALL")
-    @click.option("--protocol", help="TCP, UDP, ICMP, ALL", default="TCP", show_default=True)
-    @click.option("--source", help="CIDR", default="current ip", show_default=True)
-    @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action", default="ACCEPT", show_default=True)
-    @click.option("--description", help="Description", default="[Created by Tencent SDK]", show_default=True)
-    @click.option(
-        "--c",
-        "--config",
-        type=click.Path(dir_okay=False),
-        default=DEFAULT_CFG,
-        show_default=True,
-        callback=configure,
-        is_eager=True,
-        expose_value=False,
-        help="Read option defaults from the specified INI file",
-    )
-    @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
-    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
+    # 子命令
     @staticmethod
+    @parser.command()
+    @Options.load_options(
+        *DEFAULT_OPTIONS[:5],
+        Options.protocol(default="TCP"),
+        Options.source(default="current ip", callback=get_current_ip),
+        Options.action(default="ACCEPT"),
+        Options.description(default="[Created by Tencent SDK]"),
+        *DEFAULT_OPTIONS[9:],
+    )
     def add(**kwargs):
         """add firewall rule for tencent cloud lighthouse"""
-        Cli.request(lighthouse_add_firewall_rule, kwargs)
+        Cli.do(lighthouse_add_firewall_rule, kwargs)
 
-    @parser.command()
-    @click.option("--secret-id", required=True, help="Secret id")
-    @click.option("--secret-key", required=True, help="Secret key")
-    @click.option("--instance-id", required=True, help="Instance id")
-    @click.option("--region", required=True, help="Region, eg: ap-hongkong")
-    @click.option("--port", help="Port, supported, - and ALL")
-    @click.option("--protocol", help="TCP, UDP, ICMP, ALL")
-    @click.option("--source", help="CIDR")
-    @click.option("--action", type=click.Choice(["ACCEPT", "DROP"]), help="Action")
-    @click.option("--description", help="Description")
-    @click.option(
-        "--c",
-        "--config",
-        type=click.Path(dir_okay=False),
-        default=DEFAULT_CFG,
-        show_default=True,
-        callback=configure,
-        is_eager=True,
-        expose_value=False,
-        help="Read option defaults from the specified INI file",
-    )
-    @click.option("-q", "--quiet", help="Do not print response messages", is_flag=True, default=False)
-    @click.option("-v", "--version", is_flag=True, expose_value=False, callback=print_version, help="Show the version and exit")
+    # 子命令
     @staticmethod
+    @parser.command()
+    @Options.load_options(*DEFAULT_OPTIONS)
     def remove(**kwargs):
         """remove firewall rule for tencent cloud lighthouse"""
-        Cli.request(lighthouse_remove_firewall_rule, kwargs)
+        Cli.do(lighthouse_remove_firewall_rule, kwargs)
 
 
 if __name__ == "__main__":
