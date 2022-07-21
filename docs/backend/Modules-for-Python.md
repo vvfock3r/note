@@ -1650,6 +1650,75 @@ if __name__ == "__main__":
 
 ### 实用函数举例
 
+#### click.echo：代替print函数
+
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#printing-to-stdout](https://click.palletsprojects.com/en/8.1.x/utils/#printing-to-stdout)
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+# echo的各种选项
+click.echo("hello world 1")
+click.echo("hello world 2", nl=False)  # 是否输出换行符，类似于print("", end="\n")
+click.echo()
+click.echo("hello world 3", err=True)  # 输出到stderr而不是默认的stdout
+click.echo(click.style("hello world 4", fg="red"), color=True)  # 强制显示或不显示颜色
+
+# 处理二进制数据
+print(b'\xe4\xbd\xa0\xe5\xa5\xbd')  # print原样输出
+click.echo(b'\xe4\xbd\xa0\xe5\xa5\xbd')  # 自动解码，输出 你好
+```
+
+输出结果
+
+![image-20220721091121806](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721091121806.png)
+
+#### click.secho：输出ANSI颜色
+
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#ansi-colors](https://click.palletsprojects.com/en/8.1.x/utils/#ansi-colors)
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+# 输出带有ANSI颜色的字符串，可以使用click.echo，但使用略显繁琐
+click.echo(click.style("Hello World!", fg="green"))
+
+# 此时可以直接使用secho, 可以理解成style echo
+# 颜色支持rgb模式和字符串模式等
+click.secho("普通模式             : This is a test message")
+click.secho("背景色               : This is a test message", bg="green")  # background color
+click.secho("前景色               : This is a test message", fg="red")  # foreground color
+click.secho("加粗模式             : This is a test message", bold=True)  # bold mode
+click.secho("暗淡模式             : This is a test message", dim=True)  # dim mode
+click.secho("下划线               : This is a test message", underline=True)  # underline
+click.secho("闪烁                 : This is a test message", blink=True)  # blink
+click.secho("颠倒                 : This is a test message", reverse=True)  # reverse
+click.secho("末尾重置样式         : This is a test message", reset=False)  # 默认为True,改为False，样式将继续影响后面的输出
+click.secho()
+click.secho("以下样式在Linux下测试并没有达到预期的效果,不知道为啥")
+click.secho("倾斜                 : This is a test message", italic=True)
+click.secho("上划线               : This is a test message", overline=True)
+click.secho("删除线               : This is a test message", strikethrough=True)
+```
+
+输出结果
+
+> Linux上并没有完全支持所有属性，而Windows上就更差了
+
+![image-20220721102933855](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721102933855.png)
+
+![image-20220721103057768](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721103057768.png)
+
+#### click.echo_via_pager：分页支持
+
+
+
 
 
 ### 定制帮助信息
