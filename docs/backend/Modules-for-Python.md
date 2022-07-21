@@ -1243,19 +1243,27 @@ DEBUG = WARNING
     "debug": "INFO"   
 }
 
-# 设置环境变量后，环境变量优先级高于配置文件
-(venv) C:\Users\Administrator\Desktop\tutorials>set HOST=0.0.0.0
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py   
+# 指定配置文件
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini
 {
-    "host": "0.0.0.0",
-    "port": "3000",
-    "debug": "INFO"
+    "host": "127.0.0.1",
+    "port": "80",
+    "debug": "WARNING"
+}
+
+# 设置环境变量后，环境变量优先级高于配置文件
+(venv) C:\Users\Administrator\Desktop\tutorials>set HOST=1.1.1.1
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini  
+{
+    "host": "127.0.0.1",
+    "port": "80",
+    "debug": "WARNING"
 }
 
 # 同时使用配置文件、环境变量、命令行参数，那么命令行参数优先级最高
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini --host 1.1.1.1
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py -c prod.ini --host 2.2.2.2
 {
-    "host": "1.1.1.1",
+    "host": "2.2.2.2",
     "port": "80",
     "debug": "WARNING"
 }
@@ -1271,7 +1279,7 @@ DEBUG = WARNING
 
 #### （1）基础示例
 
-::: details 方式一
+::: details 方式一：全部使用装饰器来写，心智负担比较大，尤其是一个复杂的命令行程序
 
 ```python
 #!/usr/bin/env python
@@ -1285,18 +1293,18 @@ def main():
     click.echo("main")
 
 
-@main.command(help="ls something")
+@main.command(help="ls something")        # 注意这里使用main.command 而不是cilck.command
 @click.option("-m", "--memory", help="This is a test message")
 def ls(memory):
     click.echo(f"ls {memory}")
 
 
-@main.command(help="add something")
+@main.command(help="add something")       # 注意这里使用main.command 而不是cilck.command
 def add():
     click.echo("add")
 
-
-@main.command(help="remove something")
+ 
+@main.command(help="remove something")    # 注意这里使用main.command 而不是cilck.command
 def remove():
     click.echo("remove")
 
@@ -1338,7 +1346,7 @@ ls 1g
 
 :::
 
-::: details 方式二
+::: details 方式二：装饰器全部以click开头，并手动添加子命令到组中
 
 ```python
 #!/usr/bin/env python
@@ -1378,9 +1386,11 @@ if __name__ == "__main__":
 
 :::
 
-#### （2）子命令嵌套
+#### （2）子命令嵌套的各种写法 ✨
 
-::: details 方式一
+文档：[https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands](https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands)
+
+::: details 方式一：全部使用装饰器来写，心智负担比较大，尤其是一个复杂的命令行程序
 
 ```python
 #!/usr/bin/env python
@@ -1449,7 +1459,7 @@ ls cvm None
 
 :::
 
-::: details 方式二
+::: details 方式二：装饰器全部以click开头，并手动添加子命令到组中
 
 ```python
 #!/usr/bin/env python
@@ -1482,10 +1492,165 @@ ls.add_command(cvm)
 
 if __name__ == "__main__":
     main()
-
 ```
 
 :::
+
+::: details 方式三：使用非装饰器定义组
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command(help="index1 help")
+def index1(): pass
+
+
+@click.command(help="index2 help")
+def index2(): pass
+
+
+# 定义两个组
+cli1 = click.Group()
+cli2 = click.Group()
+
+# 组内添加子命令
+cli1.add_command(index1)
+cli2.add_command(index2)
+
+# 合并两个组内的子命令
+cli = click.CommandCollection(sources=[cli1, cli2])
+
+if __name__ == "__main__":
+    cli()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  index1  index1 help
+  index2  index2 help
+```
+
+:::
+
+::: details 方式四：灵活定义嵌套关系 ✨
+
+> 如果有复杂的需求，可以将组定义改成装饰器形式
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+
+@click.command(help="index1 help")
+def index1(): pass
+
+
+@click.command(help="index2 help")
+def index2(): pass
+
+
+def example1():
+    '''
+    1级子命令，子命令平级关系
+    Commands:
+        index1  index1 help
+        index2  index2 help
+    '''
+    # 定义两个组
+    cli1 = click.Group()
+    cli2 = click.Group()
+
+    # 组内添加子命令
+    cli1.add_command(index1)
+    cli2.add_command(index2)
+
+    # 合并两个组内的子命令
+    cli = click.CommandCollection(sources=[cli1, cli2])
+
+    cli()
+
+
+def example2():
+    '''
+    2级子命令，平级关系
+    Commands:
+        cli1  cli1 help
+        cli2  cli2 help
+
+    cli1下面有index1子命令，cli2下面有index2子命令
+    '''
+    # 定义一个主组
+    cli = click.Group()
+
+    # 定义两个组, 这里需要定义名字属性，也可以在下面的cli.add_command中定义名字
+    cli1 = click.Group(name="cli1", help="cli1 help")
+    cli2 = click.Group(name="cli2", help="cli2 help")
+
+    # 组内添加子命令
+    cli1.add_command(index1)
+    cli2.add_command(index2)
+
+    # 组嵌套
+    cli.add_command(cli1)
+    cli.add_command(cli2)
+    cli()
+
+
+def example3():
+    '''
+    2级子命令，嵌套关系
+
+    根命令:
+        Commands:
+            cli1  cli1 help
+
+    cli1下面：
+        Commands:
+          cli2    cli2 help
+          index1  index1 help
+    '''
+    # 定义一个主组
+    cli = click.Group()
+
+    # 定义两个组, 这里需要定义名字属性，也可以在下面的cli.add_command中定义名字
+    cli1 = click.Group(name="cli1", help="cli1 help")
+    cli2 = click.Group(name="cli2", help="cli2 help")
+
+    # 组内添加子命令
+    cli1.add_command(index1)
+    cli2.add_command(index2)
+
+    # 组嵌套
+    cli.add_command(cli1)  # cli1子命令
+    cli1.add_command(cli2)  # cli1 cli2 顺子命令
+    cli()
+
+
+if __name__ == "__main__":
+    # example1()
+    # example2()
+    example3()
+```
+
+
+
+:::
+
+
 
 #### （3）子命令共享选项 ✨
 
@@ -1642,51 +1807,6 @@ def remove(secret_id, secret_key, remove_only):
 
 if __name__ == "__main__":
     main()
-```
-
-:::
-
-#### （4）合并多个子命令
-
-文档：[https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands](https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands)
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*-coding:utf-8 -*-
-
-import click
-
-cli1 = click.Group()
-cli2 = click.Group()
-
-
-@cli1.command(help="index1 help")
-def index1(): pass
-
-
-@cli2.command(help="index2 help")
-def index2(): pass
-
-# 合并多个组
-cli = click.CommandCollection(sources=[cli1, cli2])
-
-cli()
-```
-
-输出结果
-
-```bash
-(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
-Usage: main.py [OPTIONS] COMMAND [ARGS]...
-                                          
-Options:                                  
-  --help  Show this message and exit.     
-                                          
-Commands:                                 
-  index1  index1 help                     
-  index2  index2 help        
 ```
 
 :::
