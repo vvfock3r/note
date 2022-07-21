@@ -20,8 +20,6 @@
 
 ### 命令行
 
-**命令行界面** 
-
 <table>
     <thead>
     <tr>
@@ -45,47 +43,23 @@
         <td><a href="https://jinhui.dev/backend/learned/Python-argparse.html" style="text-decoration:none;">argparse</a></td>
         <td><li><code>Python 3.10.5</code></li></td>
         <td><code>yum</code>/<code>dnf</code></td>
-        <td>原生不支持从环境变量、配置文件取值</td>
+        <td>不推荐使用，原因是原生不支持从环境变量、配置文件取值</td>
     </tr>
     <tr>
-        <td>进度条</td>
-        <td>tqdm</td>
+        <td>命令行富文本</td>
+        <td><a href="#rich" style="text-decoration:none;">rich</a></td>
+        <td><li><code>Python 3.10.5</code></li><li><code>Rich 12.5.1</code></li></td>
         <td></td>
-        <td>第三方库</td>
         <td></td>
-    </tr>
-    <tr>
-        <td>彩色终端</td>
-        <td>colorama</td>
-        <td></td>
-        <td>第三方库</td>
-        <td>Ipython</td>
-    </tr>
-    <tr>
-        <td>字符图形</td>
-        <td>asciimatics</td>
-        <td></td>
-        <td>第三方库</td>
-        <td>Ipython</td>
-    </tr>
-    <tr>
-        <td>字符表格</td>
-        <td>prettytable</td>
-        <td></td>
-        <td>第三方库</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>交互式命令行</td>
-        <td>prompt_toolkit</td>
-        <td></td>
-        <td>第三方库</td>
-        <td>Ipython</td>
     </tr>
     </tbody>
 </table>
 
 <br />
+
+
+
+
 
 ## click
 
@@ -1991,5 +1965,68 @@ click.edit(
     -h, --help  Show this message and exit.
   ```
 
+<br />
 
+## rich
 
+文档：[https://rich.readthedocs.io/en/latest/introduction.html](https://rich.readthedocs.io/en/latest/introduction.html)
+
+Github：[https://github.com/Textualize/rich](https://github.com/Textualize/rich)
+
+### 安装
+
+```bash
+pip install rich==12.5.1
+```
+
+### Console
+
+文档：[https://rich.readthedocs.io/en/latest/console.html](https://rich.readthedocs.io/en/latest/console.html)
+
+#### 基础示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+console.print(locals())
+
+# 上面的代码等同于
+# from rich import print
+# print(locals())
+```
+
+![image-20220721184521622](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721184521622.png)
+
+> 💡  如果在Pycharm中调试的话，需要在 `Terminal` 中执行代码
+
+**Console实例基本属性**
+
+| 属性           | 默认值 | 说明                                                         |
+| -------------- | ------ | ------------------------------------------------------------ |
+| `size`         | ---    | 当前终端的尺寸（如果调整窗口大小可能会改变）                 |
+| `encoding`     | ---    | 通常是`utf-8`                                                |
+| `is_terminal`  | ---    | `Console`实例是否正在写入终端<br />（1）在REPL环境中执行会显示为`True`<br />（2）在Pycharm非`Terminal`执行代码代码会显示为`False`<br />（3）在`Ansible`等中执行会显示为False |
+| `color_system` | `auto` | 颜色系统，默认会自动检测，设置为`None`可以禁用颜色系统       |
+
+#### 几种输出方法
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+
+console.print([1, 2, 3])  # 添加当前时间和文件信息
+console.print_json('[false, true, null, "foo"]')  # 输出JSON信息
+console.log([1, 2, 3])  # 添加当前时间
+console.out(locals())  # 只是上色
+console.rule("第一章")  # 输出带有可选标题的水平线
+```
+
+![image-20220721191729939](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721191729939.png)
