@@ -1650,6 +1650,8 @@ if __name__ == "__main__":
 
 ### 实用函数举例
 
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#utilities](https://click.palletsprojects.com/en/8.1.x/utils/#utilities)
+
 #### click.echo：代替print函数
 
 文档：[https://click.palletsprojects.com/en/8.1.x/utils/#printing-to-stdout](https://click.palletsprojects.com/en/8.1.x/utils/#printing-to-stdout)
@@ -1717,9 +1719,88 @@ click.secho("删除线               : This is a test message", strikethrough=Tr
 
 #### click.echo_via_pager：分页支持
 
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#pager-support](https://click.palletsprojects.com/en/8.1.x/utils/#pager-support)
 
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
 
+import click
 
+click.echo_via_pager("\n".join(f"Line {idx}" for idx in range(200)))
+```
+
+输出结果
+
+> 回车：读取下一行
+>
+> 空格：翻一下页面
+>
+> q：退出
+>
+> 往上翻页好像是不支持，不知道咋做
+
+![image-20220721105235439](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721105235439.png)
+
+#### click.clear()：清屏
+
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#screen-clearing](https://click.palletsprojects.com/en/8.1.x/utils/#screen-clearing)
+
+```
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+click.clear()
+```
+
+#### click.getchar()：读取终端单字符
+
+文档：[https://click.palletsprojects.com/en/8.1.x/utils/#getting-characters-from-terminal](https://click.palletsprojects.com/en/8.1.x/utils/#getting-characters-from-terminal)
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+click.echo('Continue? [y/n] ', nl=False)
+c = click.getchar()  # 键盘输入任意字符即触发下一步操作，不需要按回车
+click.echo()
+if c == 'y':
+    click.echo('We will go on')
+elif c == 'n':
+    click.echo('Abort!')
+else:
+    click.echo('Invalid input :(')
+```
+
+#### click.pause()：按任意键继续
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+click.pause()  # 默认会输出Press any key to continue...，并暂停，可自定义文本信息
+print("Hello World!")
+```
+
+#### click.edit()：使用编辑器打开文件
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+click.edit(
+    filename=r'C:\Users\Administrator\Desktop\dev.ini',  # 指定要打开的文件，用默认的编辑器打开
+    editor=r'D:\software\Notepad++\notepad++.exe',  # 指定弄notepad++打开，
+)
+```
 
 ### 定制帮助信息
 
