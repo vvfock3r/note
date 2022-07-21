@@ -1646,7 +1646,50 @@ if __name__ == "__main__":
 
 :::
 
+#### （4）合并多个子命令
 
+文档：[https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands](https://click.palletsprojects.com/en/8.1.x/commands/#merging-multi-commands)
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import click
+
+cli1 = click.Group()
+cli2 = click.Group()
+
+
+@cli1.command(help="index1 help")
+def index1(): pass
+
+
+@cli2.command(help="index2 help")
+def index2(): pass
+
+# 合并多个组
+cli = click.CommandCollection(sources=[cli1, cli2])
+
+cli()
+```
+
+输出结果
+
+```bash
+(venv) C:\Users\Administrator\Desktop\tutorials>python main.py --help
+Usage: main.py [OPTIONS] COMMAND [ARGS]...
+                                          
+Options:                                  
+  --help  Show this message and exit.     
+                                          
+Commands:                                 
+  index1  index1 help                     
+  index2  index2 help        
+```
+
+:::
 
 ### 实用函数举例
 
