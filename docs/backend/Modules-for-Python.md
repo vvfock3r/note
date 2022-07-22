@@ -2345,11 +2345,11 @@ console.print("[bold green]Covid deleted successfully")
 
 ![pscpskebxvgi](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//pscpskebxvgi.gif)
 
-### Console Protocol
+#### Console Protocol
 
 文档：[https://rich.readthedocs.io/en/latest/protocol.html](https://rich.readthedocs.io/en/latest/protocol.html)
 
-::: details （1）__rich__类似于python内置的__repr__或__str__，返回 Rich 知道如何呈现的对象，比如str、Text、Table等
+::: details （1）__rich__类似于python内置的__repr__或__str__，适用于返回单个对象
 
 ```python
 #!/usr/bin/env python
@@ -2389,12 +2389,77 @@ console.print(user2)
 
 :::
 
-::: details （2）__rich_console__
+::: details （2）__rich_console__：适用于返回多个对象（返回生成器）
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+from dataclasses import dataclass
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
+
+
+@dataclass
+class Student:
+    id: int
+    name: str
+    age: int
+
+
+class Team:
+    def __init__(self):
+        self.students = []
+
+    def add(self, student: Student):
+        '''添加成员'''
+        self.students.append(student)
+        return self
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        # Table实例化
+        student_table = Table(title="班级表")
+
+        # 添加列
+        student_table.add_column("ID")
+        student_table.add_column("Name")
+        student_table.add_column("Age")
+
+        # 遍历所有学生，添加行
+        for student in self.students:
+            # ID标蓝
+            id = f"[#87ceeb]{student.id}[/#87ceeb]"
+
+            # 若年龄大于等于19岁，则输出标红
+            if student.age >= 19:
+                age = f"[red]{student.age}[/red]"
+            else:
+                age = str(student.age)
+
+            student_table.add_row(id, student.name, age)
+
+        # 返回生成器
+        yield student_table
+
+
+user1 = Student(1, "bob", 19)
+user2 = Student(2, "jack", 20)
+user3 = Student(3, "alien", 18)
+
+team = Team().add(user1).add(user2).add(user3)
+
+console = Console()
+
+console.print(team)  # 这将返回一张可以任意自定义的表格
+```
+
+![image-20220722174954347](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722174954347.png)
 
 :::
 
 
 
-### 表格
+### 表格对象
 
 文档：[https://rich.readthedocs.io/en/latest/tables.html](https://rich.readthedocs.io/en/latest/tables.html)
