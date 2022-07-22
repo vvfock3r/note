@@ -2012,7 +2012,7 @@ console.print(locals())
 | `is_terminal`  | ---    | `Console`实例是否正在写入终端<br />（1）在REPL环境中执行会显示为`True`<br />（2）在Pycharm非`Terminal`执行代码代码会显示为`False`<br />（3）在`Ansible`等中执行会显示为False |
 | `color_system` | `auto` | 颜色系统，默认会自动检测，设置为`None`可以禁用颜色系统       |
 
-#### 几种输出方法
+#### 输出方法
 
 ```python
 #!/usr/bin/env python
@@ -2024,9 +2024,218 @@ console = Console()
 
 console.print([1, 2, 3])  # 添加当前时间和文件信息
 console.print_json('[false, true, null, "foo"]')  # 输出JSON信息
-console.log([1, 2, 3])  # 添加当前时间
+console.log([1, 2, 3])  # 添加当前时间和文件信息
 console.out(locals())  # 只是上色
 console.rule("第一章")  # 输出带有可选标题的水平线
 ```
 
 ![image-20220721191729939](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721191729939.png)
+
+#### 文本样式 ✨
+
+文档：[https://rich.readthedocs.io/en/latest/style.html](https://rich.readthedocs.io/en/latest/style.html)
+
+##### 一 、基础设置
+
+::: details （1）前景色（字体颜色）和背景色
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+
+# 定义前景色(字体颜色)
+print("[1] ", end="")
+console.print("Hello World!", style="magenta")  # 使用单词定义颜色, default使用默认的颜色
+print("[2] ", end="")
+console.print("Hello World!", style="color(5)")  # 使用颜色数字定义颜色
+print("[3] ", end="")
+console.print("Hello World!", style="#af00ff")  # 使用CSS 16进制定义颜色
+print("[4] ", end="")
+console.print("Hello World!", style="rgb(175,0,255)")  # 使用CSS rgb定义颜色，注意不支持rgba
+
+# 定义背景色，语法：<前景色 on 背景色>
+# 背景色与前景色用法一致
+print("[5] ", end="")
+console.print("Hello World!", style="default on rgb(255,0,0)")  # 单独把背景色设置为大红色
+print("[6] ", end="")
+console.print("Hello World!", style="default on default")  # 前景色和背景色都使用默认颜色
+
+# 单独对某一部分设置颜色
+print("[7] ", end="")
+console.print("[magenta]Hello[/magenta] World!")  # 使用[颜色]字符串[/颜色],可以单独对某一部分设置颜色
+print("[8] ", end="")
+console.print("[default]Hello[/default] World!", style="magenta")  # 这种类似于排除哪些不设置样式
+```
+
+![image-20220722093146701](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722093146701.png)
+
+:::
+
+::: details （2）样式属性
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+
+# 样式
+print("[1] 加粗: ", end="")
+console.print("Hello World!", style="bold")  # 或者写做 b
+# console.print("[bold]Hello World![/bold]") # 也可以使用这样写法
+
+print("[2] 闪烁: ", end="")
+console.print("Hello World!", style="blink")  # Win10 CMD不支持
+
+print("[3] 前景色和背景色颠倒: ", end="")
+console.print("Hello World!", style="reverse")  # 或者写做 r
+
+print("[4] 下划线: ", end="")
+console.print("Hello World!", style="underline")  # 或者写做 u
+
+# 样式可以通过在属性前面加上单词"not"来否定。如果样式重叠，这可用于关闭样式，注意：颜色并不支持加not
+print("[5] not用法: ", end="")
+console.print("[not bold]Hello [/not bold] World!", style="bold")
+```
+
+![image-20220722095403473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722095403473.png)
+
+:::
+
+::: details （3）完全禁用颜色和样式
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console1 = Console(color_system="auto") # auto为默认值，也可以不写
+console2 = Console(color_system=None)  # 禁用颜色和样式
+
+console1.print("Hello World!", style="red underline")
+console2.print("Hello World!", style="red underline")
+```
+
+![image-20220722101030430](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722101030430.png)
+
+:::
+
+::: details （4）颜色和样式用法的一点区别：default和not的区别
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+
+# 部分字符串不使用颜色的话，应该使用 default，不能使用 not
+print("[1] 正确设置部分字符串不使用颜色: ", end="")
+console.print("[default]Hello[/default] World!", style="red")
+
+print("[2] 错误设置部分字符串不使用颜色: ", end="")
+console.print("[not red]Hello[/not red] World!", style="red")
+
+console.rule("我是分割线")
+
+# 部分字符串不使用样式的话，应该使用 not，不能使用 default
+print("[1] 正确设置部分字符串不使用样式: ", end="")
+console.print("[not underline]Hello [/not underline]World!", style="underline")
+
+print("[2] 错误设置部分字符串不使用样式: ", end="")
+console.print("[default]Hello [/default]World!", style="underline")
+```
+
+![image-20220722102415263](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722102415263.png)
+
+:::
+
+::: details （5）将带样式的字符串转为普通字符串
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from io import StringIO
+from rich.console import Console
+
+# 这是带样式的字符串
+str_with_style = ""
+for i in range(1, 1000):
+    str_with_style += f"[{i}] [bold red]Hello[/] 世界!\n"
+
+# 写入到内存型文件中
+console = Console(file=StringIO())  # 实例化Console对象, 指定输出到 内存型文件中，而不是默认的sys.stdout
+console.print(str_with_style)  # 输出到文件中
+
+# 全部读取，大文本请注意内存消耗
+# console.file.seek(0, 0)
+# print(console.file.read())
+
+# 按行读取
+# console.file.seek(0, 0)  # 若要读取，必须先将文件指针移动到文件开头
+# for line in console.file:  # 按行读取字符串
+#     print(line, end="")
+
+# 按字符读取
+console.file.seek(0, 0)  # 若要读取，必须先将文件指针移动到文件开头
+buffer = 1024
+while True:
+    str_data = console.file.read(buffer)  # 按字符读取，注意不是字节,若要按字节读使用 BytesIO
+    if len(str_data) <= 0:
+        break
+    print(str_data, end="")
+```
+
+![image-20220722123739676](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722123739676.png)
+
+:::
+
+##### 二 、使用Style类
+
+
+
+#### 状态动画
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+from time import sleep
+from rich.console import Console
+
+console = Console()
+with console.status("[magenta]Covid detector booting up") as status:
+    sleep(1)
+    console.log("Importing advanced AI")
+    sleep(1)
+    console.log("Advanced Covid AI Ready")
+    sleep(1)
+    status.update(status="[bold blue] Scanning for Covid", spinner="earth")
+    sleep(1)
+    console.log("Found 10,000,000,000 copies of Covid32.exe")
+    sleep(1)
+    status.update(
+        status="[bold red]Moving Covid32.exe to Trash",
+        spinner="bouncingBall",
+        spinner_style="yellow",
+    )
+    sleep(1)
+console.print("[bold green]Covid deleted successfully")
+```
+
+:::
+
+![pscpskebxvgi](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//pscpskebxvgi.gif)
+
