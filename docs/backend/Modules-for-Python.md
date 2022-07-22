@@ -1973,6 +1973,8 @@ click.edit(
 
 Github：[https://github.com/Textualize/rich](https://github.com/Textualize/rich)
 
+> 💡  如果在Pycharm中调试的话，需要在 `Terminal` 中执行代码
+
 ### 安装
 
 ```bash
@@ -1983,7 +1985,9 @@ pip install rich==12.5.1
 
 文档：[https://rich.readthedocs.io/en/latest/console.html](https://rich.readthedocs.io/en/latest/console.html)
 
-#### 基础示例
+#### 高亮显示
+
+::: details 默认会高亮显示
 
 ```python
 #!/usr/bin/env python
@@ -2001,7 +2005,31 @@ console.print(locals())
 
 ![image-20220721184521622](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220721184521622.png)
 
-> 💡  如果在Pycharm中调试的话，需要在 `Terminal` 中执行代码
+:::
+
+::: details 关闭高亮显示
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+
+console = Console()
+
+# highlight默认为None，即具体值从Console类继承,如果想统一设置，可以改为 Console(highlight=False)
+console.print(locals(), highlight=False)
+
+# 请注意下面的代码print中设置highlight值不管用，不知道是不是bug
+# console = Console(highlight=False)
+# console.print(locals(), highlight=True)
+```
+
+![image-20220722131419242](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722131419242.png)
+
+:::
+
+
 
 **Console实例基本属性**
 
@@ -2035,7 +2063,7 @@ console.rule("第一章")  # 输出带有可选标题的水平线
 
 文档：[https://rich.readthedocs.io/en/latest/style.html](https://rich.readthedocs.io/en/latest/style.html)
 
-##### 一 、基础设置
+##### 一 、基础使用
 
 ::: details （1）前景色（字体颜色）和背景色
 
@@ -2201,7 +2229,27 @@ while True:
 
 ##### 二 、使用Style类
 
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
 
+from rich.console import Console
+from rich.style import Style
+
+# 统一定义样式
+DEFAULT_STYLE = Style()
+HIGHTLIGHT_STYLE = Style(color="yellow", bold=True)
+
+# 实例化控制台实例
+console = Console()
+
+# 输出
+console.print("默认输出       : ", "Started Session 8125 of user root.", style=DEFAULT_STYLE, highlight=False)
+console.print("自定义样式+高亮: ", "Started Session 8125 of user root.", style=HIGHTLIGHT_STYLE)
+console.print("覆盖自定义样式 : ", "Started Session 8125 of user root.", style=HIGHTLIGHT_STYLE + Style(color="magenta", underline=True))
+```
+
+![image-20220722133201943](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722133201943.png)
 
 #### 状态动画
 
