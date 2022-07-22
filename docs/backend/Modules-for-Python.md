@@ -2015,9 +2015,8 @@ console.print(locals())
 
 from rich.console import Console
 
-console = Console()
-
 # highlight默认为None，即具体值从Console类继承,如果想统一设置，可以改为 Console(highlight=False)
+console = Console()
 console.print(locals(), highlight=False)
 
 # 请注意下面的代码print中设置highlight值不管用，不知道是不是bug
@@ -2229,7 +2228,7 @@ while True:
 
 :::
 
-##### 二 、使用Style类
+##### 二 、使用样式类
 
 文档：[https://rich.readthedocs.io/en/latest/style.html#style-class](https://rich.readthedocs.io/en/latest/style.html#style-class)
 
@@ -2255,7 +2254,7 @@ console.print("覆盖自定义样式 : ", "Started Session 8125 of user root.", 
 
 ![image-20220722133201943](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722133201943.png)
 
-##### 三、使用主题（Themes）
+##### 三、使用主题类
 
 文档：[https://rich.readthedocs.io/en/latest/style.html#style-themes](https://rich.readthedocs.io/en/latest/style.html#style-themes)
 
