@@ -2345,3 +2345,56 @@ console.print("[bold green]Covid deleted successfully")
 
 ![pscpskebxvgi](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//pscpskebxvgi.gif)
 
+### Console Protocol
+
+文档：[https://rich.readthedocs.io/en/latest/protocol.html](https://rich.readthedocs.io/en/latest/protocol.html)
+
+::: details （1）__rich__类似于python内置的__repr__或__str__，返回 Rich 知道如何呈现的对象，比如str、Text、Table等
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+from dataclasses import dataclass
+
+
+@dataclass
+class Student1:
+    id: int
+    name: str
+    age: int
+
+
+@dataclass
+class Student2:
+    id: int
+    name: str
+    age: int
+
+    def __rich__(self) -> str:
+        return f"[magenta]{self.__class__.__name__}[/magenta]" \
+               f"([cyan]id={self.id}, name=\'{self.name}\', age={self.age}[/cyan])"
+
+
+user1 = Student1(100, "bob1", 20)
+user2 = Student2(200, "bob2", 21)
+
+console = Console(highlight=False)
+console.print(user1)
+console.print(user2)
+```
+
+![image-20220722161700672](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722161700672.png)
+
+:::
+
+::: details （2）__rich_console__
+
+:::
+
+
+
+### 表格
+
+文档：[https://rich.readthedocs.io/en/latest/tables.html](https://rich.readthedocs.io/en/latest/tables.html)
