@@ -2065,6 +2065,8 @@ console.rule("第一章")  # 输出带有可选标题的水平线
 
 ##### 一 、基础使用
 
+文档：[https://rich.readthedocs.io/en/latest/style.html#defining-styles](https://rich.readthedocs.io/en/latest/style.html#defining-styles)
+
 ::: details （1）前景色（字体颜色）和背景色
 
 ```python
@@ -2229,6 +2231,8 @@ while True:
 
 ##### 二 、使用Style类
 
+文档：[https://rich.readthedocs.io/en/latest/style.html#style-class](https://rich.readthedocs.io/en/latest/style.html#style-class)
+
 ```python
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
@@ -2252,6 +2256,8 @@ console.print("覆盖自定义样式 : ", "Started Session 8125 of user root.", 
 ![image-20220722133201943](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722133201943.png)
 
 ##### 三、使用主题（Themes）
+
+文档：[https://rich.readthedocs.io/en/latest/style.html#style-themes](https://rich.readthedocs.io/en/latest/style.html#style-themes)
 
 ```python
 #!/usr/bin/env python
