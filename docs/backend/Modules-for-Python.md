@@ -16,6 +16,27 @@
 
 ### 默认
 
+<table>
+    <thead>
+    <tr>
+        <th style="width: 15%;">分类说明</th>
+        <th style="width: 15%;">模块名称</th>
+        <th style="width: 15%;">测试版本</th>
+        <th style="width: 15%;">应用举例</th>
+        <th style="width: 40%;">备注</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>日志记录</td>
+        <td><a href="#loguru" style="text-decoration:none;">loguru</a></td>
+        <td><li><code>Python 3.10.5</code></li><li><code>Loguru 0.6.0</code></li></td>
+        <td></td>
+        <td>懒人神器</td>
+    </tr>
+    </tbody>
+</table>
+
 <br />
 
 ### 命令行
@@ -2287,6 +2308,8 @@ console.print("[warning]Started Session 8125 of user root.[/warning]", highlight
 
 
 #### 状态动画
+
+
 
 ::: details 点击查看完整代码
 
