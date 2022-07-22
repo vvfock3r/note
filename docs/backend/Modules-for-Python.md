@@ -2251,6 +2251,36 @@ console.print("覆盖自定义样式 : ", "Started Session 8125 of user root.", 
 
 ![image-20220722133201943](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722133201943.png)
 
+##### 三、使用主题（Themes）
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from rich.console import Console
+from rich.style import Style
+from rich.theme import Theme
+
+custom_theme = Theme({
+    "warning": Style(color="yellow"),
+    "error": Style(color="red", bold=True)
+})
+
+# 实例化控制台实例
+console = Console(theme=custom_theme)
+
+# 输出
+console.print("Invalid configuration value: failovermethod=priority in /etc/yum.repos.d/CentOS-Epel.repo", style="error")
+console.print("Invalid configuration value: failovermethod=priority in /etc/yum.repos.d/CentOS-Epel.repo", style="error", highlight=False)
+
+console.print("[warning]Started Session 8125 of user root.[/warning]")
+console.print("[warning]Started Session 8125 of user root.[/warning]", highlight=False)
+```
+
+![image-20220722134404058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722134404058.png)
+
+
+
 #### 状态动画
 
 ::: details 点击查看完整代码
