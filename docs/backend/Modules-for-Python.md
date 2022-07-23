@@ -2095,7 +2095,9 @@ logger.critical("That's it, beautiful and simple logging!")
 
 :::
 
-### 输出到文件中
+### 输出日志到文件中
+
+文档：[https://loguru.readthedocs.io/en/stable/overview.html#easier-file-logging-with-rotation-retention-compression](https://loguru.readthedocs.io/en/stable/overview.html#easier-file-logging-with-rotation-retention-compression)
 
 ```python
 #!/usr/bin/env python
