@@ -2610,7 +2610,7 @@ console.print(team)  # 这将返回一张可以任意自定义的表格
 
 
 
-### 表格对象
+### 表格
 
 文档：[https://rich.readthedocs.io/en/latest/tables.html](https://rich.readthedocs.io/en/latest/tables.html)
 
@@ -2723,3 +2723,94 @@ console.print(table)
 
 :::
 
+### 进度条
+
+::: details （1）使用track函数自动为一个可迭代对象处理添加进度条
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import time
+from rich.progress import track
+from rich.style import Style
+
+# transient=True用于运行完成后删除进度条
+# disable 可用于关闭显示进度条
+# style 用于定义样式
+# complete_style 用于部分完成的样式
+# finished_style 用于全部完成后的样式
+for i in track(
+        sequence=range(10),
+        description="Processing...",
+        transient=False,
+        disable=False,
+        #style=Style(color="green"),
+        #complete_style=Style(color="blue"),
+        #finished_style=Style(color="black"),
+):
+    time.sleep(1)
+```
+
+![qfswkjigesyv](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//qfswkjigesyv.gif)
+
+:::
+
+::: details （2）使用默认的Progress类添加进度条
+
+文档：[https://rich.readthedocs.io/en/latest/progress.html#columns](https://rich.readthedocs.io/en/latest/progress.html#columns)
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import time
+from rich.progress import Progress
+
+with Progress() as progress:
+    task = progress.add_task("[red]Downloading...", total=200)  # 添加一个任务，总数是100，进度条可以有多个任务
+    while not progress.finished:  # 检查进度条是否完成
+        progress.update(task, advance=20)  # 给任务进度加20，实际上等于加了10%
+        time.sleep(1)
+```
+
+![qnfgtuvlgyyy](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//qnfgtuvlgyyy.gif)
+
+Progress()类默认的参数等同于
+
+```python
+Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(),
+    TaskProgressColumn(),
+    TimeRemainingColumn(),
+)
+```
+
+:::
+
+::: details （3）使用自定义的Progress类添加进度条：时间自增
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import time
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn
+
+# 修改时间列，这会自增时间，而不是使用默认的自减时间)
+with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn()
+) as progress:
+    task = progress.add_task("[red]Downloading...", total=200)  # 添加一个任务，总数是100，进度条可以有多个任务
+    while not progress.finished:  # 检查进度条是否完成
+        progress.update(task, advance=20)  # 给任务进度加20，实际上等于加了10%
+        time.sleep(1)
+```
+
+
+
+:::
