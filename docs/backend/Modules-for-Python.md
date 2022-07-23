@@ -2097,11 +2097,38 @@ logger.critical("That's it, beautiful and simple logging!")
 
 ### 输出到文件中
 
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from loguru import logger
+
+# 添加自定义handler
+logger.add("{time:YYYY-MM-DD}.log")  # 每天一个新日志文件
+# logger.add("test.log", rotation="50 MB")  # 日志文件达到50M后进行切割，将会产生类似 test.2022-07-23_18-23-56_144044.log 很多这样的文件
+# logger.add("test.log", rotation="12:00")  # 每天中午12点创建一个新文件
+# logger.add("test.log", retention="10 days") # 历史文件保留10天
+# logger.add("test.log", compression="zip")  # 开启压缩
+
+# 此时有两个handler，一个输出到stderr, 另一个输出到文件中
+print(logger)
+
+logger.trace("That's it, beautiful and simple logging!")
+logger.debug("That's it, beautiful and simple logging!")
+logger.info("That's it, beautiful and simple logging!")
+logger.success("That's it, beautiful and simple logging!")
+logger.warning("That's it, beautiful and simple logging!")
+logger.error("That's it, beautiful and simple logging!")
+logger.critical("That's it, beautiful and simple logging!")
+```
+
+![image-20220723181407320](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723181407320.png)
 
 
 
+注意：Pycharm中日志文件显示颜色需要安装`ideolog`插件，并且额外配置上`DEBUG`、`SUCCESS`、`CRITICAL`等颜色模式
 
-
+![image-20220723181709053](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723181709053.png)
 
 <br />
 
