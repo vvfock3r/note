@@ -2725,6 +2725,8 @@ console.print(table)
 
 ### 进度条
 
+文档：[https://rich.readthedocs.io/en/latest/progress.html](https://rich.readthedocs.io/en/latest/progress.html)
+
 ::: details （1）使用track函数自动为一个可迭代对象处理添加进度条
 
 ```python
@@ -2776,7 +2778,7 @@ with Progress() as progress:
 
 ![qnfgtuvlgyyy](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//qnfgtuvlgyyy.gif)
 
-Progress()类默认的参数等同于
+Progress()类默认的参数可以通过`Progress.get_default_columns()`来获取，等同于
 
 ```python
 Progress(
@@ -2811,6 +2813,6 @@ with Progress(
         time.sleep(1)
 ```
 
-
+![dcpxuxytxpts](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//dcpxuxytxpts.gif)
 
 :::
