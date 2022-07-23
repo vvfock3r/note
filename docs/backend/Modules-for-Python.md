@@ -1994,6 +1994,115 @@ click.edit(
 
 Github：[https://github.com/Delgan/loguru](https://github.com/Delgan/loguru)
 
+### 安装
+
+```bash
+pip install loguru==0.6.0
+```
+
+### 基础示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from loguru import logger
+
+print(logger)
+
+logger.trace("That's it, beautiful and simple logging!")
+logger.debug("That's it, beautiful and simple logging!")
+logger.info("That's it, beautiful and simple logging!")
+logger.success("That's it, beautiful and simple logging!")
+logger.warning("That's it, beautiful and simple logging!")
+logger.error("That's it, beautiful and simple logging!")
+logger.critical("That's it, beautiful and simple logging!")
+```
+
+![image-20220723134903824](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723134903824.png)
+
+::: tip
+从上图我们可以发现：
+
+* logger 日志级别是 `10`
+* logger 输出日志到`stderr`
+* logger 输出的日志是带颜色
+* `trace`和`success`级别在Python内置的日志模块logging中是没有见过的，`trace`级别比当前logger级别低，所以没有输出出来
+
+:::
+
+### 日志级别
+
+`loguru`日志级别：[https://loguru.readthedocs.io/en/stable/api/logger.html#levels](https://loguru.readthedocs.io/en/stable/api/logger.html#levels)
+
+`logging`日志级别：[https://docs.python.org/zh-cn/3/library/logging.html#logging-levels](https://docs.python.org/zh-cn/3/library/logging.html#logging-levels)
+
+说明：
+
+* logger默认日志级别是10，即`DEBUG`级别
+
+::: details 方式一：通过添加新的handler来设置日志级别
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+import logging
+import sys
+
+from loguru import logger
+
+# 删除默认的hander
+logger.remove()
+
+# 添加自定义handler, 日志级别为WARNING
+# 返回一个数字代表handler id，可以调用logger.remove(handler_id)单独删除某一个handler；如果后面用不到可以不接收此变量
+handler_id = logger.add(sys.stderr, level="WARNING")
+
+# WARNING以下的级别日志都不会输出出来
+logger.trace("That's it, beautiful and simple logging!")
+logger.debug("That's it, beautiful and simple logging!")
+logger.info("That's it, beautiful and simple logging!")
+logger.success("That's it, beautiful and simple logging!")
+logger.warning("That's it, beautiful and simple logging!")
+logger.error("That's it, beautiful and simple logging!")
+logger.critical("That's it, beautiful and simple logging!")
+```
+
+![image-20220723141307207](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723141307207.png)
+
+:::
+
+::: details 方式二：通过设置环境变量来修改日志级别
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from loguru import logger
+
+# 在Windows上设置环境变量  set LOGURU_LEVEL=WARNING
+# WARNING以下的级别日志都不会输出出来
+logger.trace("That's it, beautiful and simple logging!")
+logger.debug("That's it, beautiful and simple logging!")
+logger.info("That's it, beautiful and simple logging!")
+logger.success("That's it, beautiful and simple logging!")
+logger.warning("That's it, beautiful and simple logging!")
+logger.error("That's it, beautiful and simple logging!")
+logger.critical("That's it, beautiful and simple logging!")
+```
+
+![image-20220723144906131](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723144906131.png)
+
+:::
+
+
+
+
+
+
+
+
+
 <br />
 
 ## rich
