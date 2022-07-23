@@ -2475,3 +2475,113 @@ console.print(team)  # 这将返回一张可以任意自定义的表格
 ### 表格对象
 
 文档：[https://rich.readthedocs.io/en/latest/tables.html](https://rich.readthedocs.io/en/latest/tables.html)
+
+::: details 基础使用
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+from rich.console import Console
+from rich.table import Table
+from rich.box import ASCII
+from rich.style import Style
+
+# 实例化Table对象
+table = Table(
+    # 设置标题
+    title="这里是标题",
+    caption="这一行信息显示在表格下方",
+
+    # 设置标题样式
+    title_style=Style(bold=True, italic=False, color="blue"),
+    header_style=Style(color="rgb(255,135,0)"),
+    caption_style=Style(italic=True),
+
+    # 默认自动调整宽度，这里可以设置表格固定宽度
+    min_width=100,
+    width=100,
+
+    # 设置表格边框样式， 可以通过 python -m rich.box 查看所有边框
+    box=ASCII,
+)
+
+# 添加列
+table.add_column("Released", justify="right", style="#87ceeb")
+table.add_column("Title", style="magenta")
+# overflow 设置内容超出边框长度时如何处理，默认值是ellipsis（显示...），fold可以完全显示
+table.add_column("Box Office", justify="right", style="green", overflow="fold")
+
+# 添加行
+table.add_row("Dec 20, 2019", "Star Wars: The Rise of Skywalker", "$952,110,690111111111111111111111111111111111111111111111111111111111111111112")
+table.add_row("May 25, 2018", "Solo: A Star Wars Story", "$393,151,347")
+table.add_row("Dec 15, 2017", "Star Wars Ep. V111: The Last Jedi", "$1,332,539,889")
+table.add_row("Dec 16, 2016", "Rogue One: A Star Wars Story", "$1,332,439,889")
+
+console = Console()
+console.print(table)
+```
+
+![image-20220723104227911](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723104227911.png)
+
+:::
+
+::: details 将/etc/passwd文件以表格形式输出
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+
+from rich.console import Console
+from rich.table import Table
+from rich.box import ASCII
+from rich.style import Style
+
+# 实例化Table对象
+table = Table(
+    # 设置标题
+    title="/etc/passwd",
+    # 设置标题样式
+    title_style=Style(bold=True),
+    header_style=Style(color="#87ceeb"),
+    # 默认自动调整宽度，这里可以设置表格固定宽度
+    min_width=100,
+    # 设置表格边框样式， 可以通过 python -m rich.box 查看所有边框
+    box=ASCII,
+)
+
+# 添加列
+table.add_column("用户名")
+table.add_column("密码")
+table.add_column("Uid")
+table.add_column("Gid")
+table.add_column("描述信息", no_wrap=True)
+table.add_column("家目录")
+table.add_column("登录Shell")
+
+# 读取文件
+with open("/etc/passwd", "r") as f:
+    users = f.readlines()
+
+# 添加列
+for user in users:
+    # 分割列
+    line = list(map(lambda x: x.strip(), user.split(":")))
+
+    # shell为/bin/bash时标红
+    if line[-1] in ["/bin/bash"]:
+        line[-1] = f"[red bold]{line[-1]}[/red bold]"
+
+    # 添加列
+    table.add_row(*line)
+
+console = Console()
+console.print(table)
+```
+
+![image-20220723111231889](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220723111231889.png)
+
+:::
+
