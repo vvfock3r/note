@@ -2041,7 +2041,7 @@ logger.critical("That's it, beautiful and simple logging!")
 
 * logger默认日志级别是10，即`DEBUG`级别
 
-::: details 方式一：通过添加新的handler来设置日志级别
+::: details 方式一：通过添加新的handler来设置日志级别（推荐）
 
 ```python
 #!/usr/bin/env python
@@ -2095,7 +2095,7 @@ logger.critical("That's it, beautiful and simple logging!")
 
 :::
 
-
+### 输出到文件中
 
 
 
