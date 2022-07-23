@@ -1988,6 +1988,14 @@ click.edit(
 
 <br />
 
+## loguru
+
+文档：[https://loguru.readthedocs.io/en/stable/](https://loguru.readthedocs.io/en/stable/)
+
+Github：[https://github.com/Delgan/loguru](https://github.com/Delgan/loguru)
+
+<br />
+
 ## rich
 
 文档：[https://rich.readthedocs.io/en/latest/introduction.html](https://rich.readthedocs.io/en/latest/introduction.html)
@@ -2007,6 +2015,8 @@ pip install rich==12.5.1
 文档：[https://rich.readthedocs.io/en/latest/console.html](https://rich.readthedocs.io/en/latest/console.html)
 
 #### 高亮显示
+
+文档：[https://rich.readthedocs.io/en/latest/highlighting.html](https://rich.readthedocs.io/en/latest/highlighting.html)
 
 ::: details 默认会高亮显示
 
@@ -2036,13 +2046,15 @@ console.print(locals())
 
 from rich.console import Console
 
-# highlight默认为None，即具体值从Console类继承,如果想统一设置，可以改为 Console(highlight=False)
-console = Console()
-console.print(locals(), highlight=False)
+# console.print函数的highlight属性默认为None，None代表是否高亮会从Console类的highlight属性继承
 
-# 请注意下面的代码print中设置highlight值不管用，不知道是不是bug
-# console = Console(highlight=False)
-# console.print(locals(), highlight=True)
+# 方式一
+console = Console()                       # 默认highlight=True
+console.print(locals(), highlight=False)  # 手动设置为False
+
+# 方式二
+# console = Console(highlight=False)      # 设置Console全局为False
+# console.print(locals())                 # 如果还想开启高亮，那么在这里设置highlight=True
 ```
 
 ![image-20220722131419242](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220722131419242.png)
