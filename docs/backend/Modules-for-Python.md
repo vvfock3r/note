@@ -75,6 +75,18 @@
     </tr>
     </tbody>
 </table>
+<div></div>
+
+::: tip 相似模块
+
+* 命令行界面：[typer](https://github.com/tiangolo/typer)（FastAPI）、[fire](https://github.com/google/python-fire)（Google）、[docopt](https://github.com/docopt/docopt)
+* 命令行进度条：[tqdm](https://github.com/tqdm/tqdm)、[alive-progress](https://github.com/rsalmei/alive-progress)
+* 命令行状态动画：[halo](https://github.com/manrajgrover/halo)、[yaspin](https://github.com/pavdmyt/yaspin)
+* 命令行表格：[prettytable](https://github.com/jazzband/prettytable)
+* 交互式命令行：[python-prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
+* ASCII字符：[asciimatics](https://github.com/peterbrittain/asciimatics)
+
+:::
 
 <br />
 
