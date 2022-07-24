@@ -77,7 +77,7 @@
 </table>
 <div></div>
 
-::: tip 相似模块
+::: tip 相似模块收集
 
 * 命令行界面：[typer](https://github.com/tiangolo/typer)（FastAPI）、[fire](https://github.com/google/python-fire)（Google）、[docopt](https://github.com/docopt/docopt)
 * 命令行进度条：[tqdm](https://github.com/tqdm/tqdm)、[alive-progress](https://github.com/rsalmei/alive-progress)
