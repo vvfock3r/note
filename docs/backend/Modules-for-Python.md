@@ -36,6 +36,65 @@
     </tr>
     </tbody>
 </table>
+<br />
+
+### 系统相关
+
+<table>
+    <thead>
+    <tr>
+        <th style="width: 15%;">分类说明</th>
+        <th style="width: 15%;">模块名称</th>
+        <th style="width: 15%;">测试版本</th>
+        <th style="width: 15%;">应用举例</th>
+        <th style="width: 40%;">备注</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>必备模块</td>
+        <td>os</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>sys</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>系统类型</td>
+        <td>platform</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>信号处理</td>
+        <td>signal</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>IP地址</td>
+        <td>ipaddress</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
+    <tr>
+        <td>系统信息</td>
+        <td>psutil</td>
+        <td><li><code>Python 3.10.5</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
+    </tbody>
+</table>
 
 <br />
 
