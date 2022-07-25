@@ -5572,5 +5572,176 @@ class B(A):
 b = B()
 ```
 
+## 
+
+## 七、类型注解
+
+文档：[https://docs.python.org/zh-cn/3/library/typing.html](https://docs.python.org/zh-cn/3/library/typing.html)
+
+### 泛型类型
+
+文档：[https://docs.python.org/zh-cn/3/library/typing.html#corresponding-to-built-in-types](https://docs.python.org/zh-cn/3/library/typing.html#corresponding-to-built-in-types)
+
+| 泛型版本           | 内置类型                    | 说明                           |
+| ------------------ | --------------------------- | ------------------------------ |
+| `typing.Dict`      | dict                        |                                |
+| `typing.List`      | list                        |                                |
+| `typing.Set`       | set                         |                                |
+| `typing.FrozenSet` | frozenset                   |                                |
+| `typing.Sequence`  | `collections.abc.Sequence`  | 序列类型，像list,tuple等都可以 |
+| `typing.Coroutine` | `collections.abc.Coroutine` | 携程                           |
+
+::: details typing.Sequence示例
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from typing import Sequence
 
 
+def demo(arg: Sequence[int]) -> None:
+    ...
+
+
+# 正确示例
+demo(())
+demo([1, 2, "a"])
+demo({})
+demo("a")
+
+# 错误示例
+demo(1)
+```
+
+:::
+
+### 特殊类型
+
+文档：https://docs.python.org/zh-cn/3/library/typing.html#special-typing-primitives
+
+#### `typing.Any`
+
+不受限的特殊类型，不支持 `[]`
+
+#### `typing.Tuple`
+
+元组类型
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from typing import Tuple
+
+
+def demo1():
+    # 二项元组
+    def test(x: Tuple[int, str]):
+        print(x)
+
+    # 正确示例
+    test((1, "2"))
+
+    # 错误示例
+    test((1, 2))
+    test((1, [2]))
+
+
+def demo2():
+    # 空元组
+    def test(x: Tuple[()]):
+        print(x)
+
+    test(())  # 正确示例
+    test((1))  # 错误示例
+
+
+def demo3():
+    def test(x: Tuple[int, ...]):
+        print(x)
+
+    test((1, 2, 3, 4))  # 正确示例
+    test((1, 2, "3"))  # 错误示例
+
+
+demo1()
+demo2()
+demo3()
+```
+
+:::
+
+#### `typing.Union`
+
+联合类型
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from typing import Union
+
+
+def demo1():
+    def test(x: Union[int, float, str]):  # 可以简写成 x: int | float | str,推荐这种简写形式
+        print(x)
+
+    # 正确示例
+    test(1)
+    test("2")
+    test(1.1)
+
+    # 错误示例
+    test([1])
+    test((1,))
+
+
+demo1()
+```
+
+:::
+
+#### `typing.Optional`
+
+可选类型。注意，可选类型与含默认值的可选参数不同。含默认值的可选参数不需要在类型注解上添加 `Optional` 限定符，因为它仅是可选的
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from typing import Optional
+
+
+def foo(arg: int = 0) -> None:
+    ...
+    
+def foo1(arg: Optional[int] = None) -> None:
+    ...
+
+
+# 也可以改成下面这种形式，并且推荐这种形式
+def foo2(arg: int | None = None) -> None:
+    ...
+
+
+foo1()
+foo1(1)
+foo1("a")
+
+foo2()
+foo2(1)
+foo2("a")
+```
+
+:::
+
+#### `typing.Callable`
+
+可调用类型，`Callable[[int], str]` 是把（int）转为 str 的函数
