@@ -2205,6 +2205,22 @@ logger.critical("That's it, beautiful and simple logging!")
 
 <br />
 
+## os
+
+文档：[https://docs.python.org/zh-cn/3/library/os.html](https://docs.python.org/zh-cn/3/library/os.html)
+
+### 文件和目录
+
+| 分类     | 函数                                                         | 说明                                                       |
+| -------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| 目录查看 | `os.getcwd()`                                                | 返回表示当前工作目录的字符串                               |
+|          | `os.getcwdb()`                                               | 返回表示当前工作目录的字节串 (bytestring)                  |
+|          | `os.listdir(path='.')`                                       | 列举单层目录或文件                                         |
+|          | `os.walk(top, topdown=True, onerror=None, followlinks=False)` | 递归目录，返回一个生成器（dir，dir内的目录， dir内的文件） |
+| 目录创建 |                                                              |                                                            |
+
+
+
 ## rich
 
 文档：[https://rich.readthedocs.io/en/latest/introduction.html](https://rich.readthedocs.io/en/latest/introduction.html)
