@@ -2217,7 +2217,32 @@ logger.critical("That's it, beautiful and simple logging!")
 |          | `os.getcwdb()`                                               | 返回表示当前工作目录的字节串 (bytestring)                  |
 |          | `os.listdir(path='.')`                                       | 列举单层目录或文件                                         |
 |          | `os.walk(top, topdown=True, onerror=None, followlinks=False)` | 递归目录，返回一个生成器（dir，dir内的目录， dir内的文件） |
-| 目录创建 |                                                              |                                                            |
+| 目录创建 | `os.mkdir(path, mode=0o777, *, dir_fd=None)`                 | 创建单层目录                                               |
+|          | `os.makedirs(name, mode=0o777, exist_ok=False)`              | 创建多层目录                                               |
+| 目录删除 | `os.rmdir(path, *, dir_fd=None)`                             | 删除空目录                                                 |
+|          | `os.removedirs(name)`                                        | 删除多层空目录                                             |
+| 文件删除 | `os.remove(path, *, dir_fd=None)`                            | 删除文件                                                   |
+| 改名操作 | `os.rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None)`   | 文件或目录重命名                                           |
+
+### 系统相关
+
+| 分类     | 函数                            | 说明                                            |
+| -------- | ------------------------------- | ----------------------------------------------- |
+| 环境变量 | `os.getenv(key, default=None)`  | 获取环境变量的值                                |
+|          | `os.getenvb(key, default=None)` | 获取环境变量的值（key , default和结果都是字节） |
+|          | `os.unsetenv(key)`              | 取消设置（删除）名为 *key* 的环境变量           |
+
+### 进程相关
+
+| 分类         | 函数                 | 说明                                 |
+| ------------ | -------------------- | ------------------------------------ |
+| 执行系统命令 | `os.system(command)` |                                      |
+| 进程ID       | `os.getpid()`        | 返回当前进程ID                       |
+|              | `os.getppid()`       | 返回父进程ID                         |
+| 子进程       | `os.fork()`          | Fork 出一个子进程                    |
+| 信号         | `os.kill(pid, sig)`  | 将信号sig发送至进程pid               |
+| 用户信息     | `os.getuid()`        | 返回当前进程的真实用户ID             |
+|              | `os.getlogin()`      | 返回通过控制终端进程进行登录的用户名 |
 
 
 
