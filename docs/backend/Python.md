@@ -5589,7 +5589,7 @@ b = B()
 | `typing.Set`       | set                         |                                |
 | `typing.FrozenSet` | frozenset                   |                                |
 | `typing.Sequence`  | `collections.abc.Sequence`  | 序列类型，像list,tuple等都可以 |
-| `typing.Coroutine` | `collections.abc.Coroutine` | 携程                           |
+| `typing.Coroutine` | `collections.abc.Coroutine` | 协程                           |
 
 ::: details typing.Sequence示例
 
@@ -5618,7 +5618,7 @@ demo(1)
 
 ### 特殊类型
 
-文档：https://docs.python.org/zh-cn/3/library/typing.html#special-typing-primitives
+文档：[https://docs.python.org/zh-cn/3/library/typing.html#special-typing-primitives](https://docs.python.org/zh-cn/3/library/typing.html#special-typing-primitives)
 
 #### `typing.Any`
 
