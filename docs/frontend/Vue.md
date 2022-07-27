@@ -10,7 +10,7 @@ sidebar: auto
 
 
 
-安装文档：https://v3.cn.vuejs.org/guide/installation.html
+安装文档：[https://v3.cn.vuejs.org/guide/installation.html](https://v3.cn.vuejs.org/guide/installation.html)
 
 `Vue`安装方式有很多种，最简单的就是直接在HTML中使用script引入`CDN`中的`vue.js`文件，但是这并不利于构建大型应用，
 
@@ -20,9 +20,15 @@ sidebar: auto
 
 ## 搭建`vue`工程环境
 
-```bash
-# 先安装nodejs，推荐最新稳定版，官网：https://nodejs.org/en/
+### vue-cli
 
+:::tip 
+
+先安装`nodejs`，推荐最新稳定版，官网：https://nodejs.org/en/
+
+:::
+
+```bash
 # 配置npm源
 npm install -g nrm
 nrm ls
