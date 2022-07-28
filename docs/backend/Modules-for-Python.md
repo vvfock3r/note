@@ -3069,3 +3069,31 @@ finally:
 :::
 
 ![image-20220728211201118](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220728211201118.png)
+
+### IO
+
+:::tip
+
+以下这些函数都属于文件对象，所以他们都有`read`、`write`、`seek`等方法
+
+:::
+
+| 分类         | 函数         | 说明         |
+| ------------ | ------------ | ------------ |
+| 标准输入     | `sys.stdin`  | 标准输入     |
+| 标准输出     | `sys.stdout` | 标准输出     |
+| 标准错误输出 | `sys.stderr` | 标准错误输出 |
+
+::: details print函数可以使用sys.stdout.write来改写
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import sys
+
+print("Hello World!")
+sys.stdout.write("Hello World!\n")
+```
+
+:::
