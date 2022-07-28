@@ -2245,7 +2245,7 @@ logger.critical("That's it, beautiful and simple logging!")
 | 用户信息     | `os.getuid()`        | 返回当前进程的真实用户ID                                     |
 |              | `os.getlogin()`      | 返回通过控制终端进程进行登录的用户名                         |
 
-::: details 使用os.fork编写Linux守护进程
+::: details 使用os.fork编写守护进程（该函数仅支持Linux系统）
 
 ```python
 #!/usr/bin/env python
@@ -2985,3 +2985,80 @@ with Progress(
 ![dcpxuxytxpts](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//dcpxuxytxpts.gif)
 
 :::
+
+## sys
+
+文档：[https://docs.python.org/zh-cn/3/library/sys.html](https://docs.python.org/zh-cn/3/library/sys.html)
+
+| 分类           | 函数               | 说明                                                         |
+| -------------- | ------------------ | ------------------------------------------------------------ |
+| 查看Python版本 | `sys.version`      | 一个包含 Python 解释器版本号加编译版本号以及所用编译器等额外信息的字符串 |
+|                | `sys.version_info` | 一个包含版本号五部分的元组                                   |
+| 退出程序       | `sys.exit([arg])`  | 引发一个 [`SystemExit`](https://docs.python.org/zh-cn/3/library/exceptions.html#SystemExit) 异常，表示打算退出解释器 |
+
+::: details 判断Python版本
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import sys
+from loguru import logger
+
+logger.info(sys.version)
+logger.info(sys.version_info)
+
+# 判断Python版本
+if sys.version_info[:3] < (3, 10, 6):
+    logger.error("您当前的Python版本({})小于3.10.6, 请先升级Python再执行脚本".format('.'.join([str(x) for x in sys.version_info[:3]])))
+```
+
+:::
+
+![image-20220728205515454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220728205515454.png)
+
+::: details 捕捉sys.exit异常
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import sys
+from loguru import logger
+
+except_err = None
+
+try:
+    sys.exit(1)
+except BaseException as err:
+    logger.success(f"BaseException 拦截成功: {err}")
+    except_err = True
+finally:
+    if not except_err:
+        logger.error(f"BaseException 拦截失败")
+    except_err = None
+
+try:
+    sys.exit(1)
+except SystemExit as err:
+    logger.success(f"SystemExit 拦截成功: {err}")
+    except_err = True
+finally:
+    if not except_err:
+        logger.error(f"SystemExit 拦截失败")
+    except_err = None
+
+try:
+    sys.exit(1)
+except Exception as err:
+    logger.success(f"Exception 拦截成功: {err}")
+    except_err = True
+finally:
+    if not except_err:
+        logger.error(f"Exception 拦截失败")
+    except_err = None
+```
+
+:::
+
+![image-20220728211201118](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220728211201118.png)
