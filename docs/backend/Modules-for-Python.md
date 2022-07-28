@@ -3092,8 +3092,30 @@ finally:
 
 import sys
 
+# 以下是等价的
 print("Hello World!")
 sys.stdout.write("Hello World!\n")
+
+# 以下是等价的
+print("Hello World!", end="")
+sys.stdout.write("Hello World!")
 ```
 
 :::
+
+::: details （1）IO 缓冲初探
+
+:::
+
+::: details （2）默认的行缓冲方式
+
+:::
+
+::: details （3）全缓冲模式
+
+:::
+
+::: details （4）禁用缓冲的方法
+
+:::
+
