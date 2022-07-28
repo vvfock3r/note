@@ -2990,11 +2990,12 @@ with Progress(
 
 文档：[https://docs.python.org/zh-cn/3/library/sys.html](https://docs.python.org/zh-cn/3/library/sys.html)
 
+### Python版本
+
 | 分类           | 函数               | 说明                                                         |
 | -------------- | ------------------ | ------------------------------------------------------------ |
 | 查看Python版本 | `sys.version`      | 一个包含 Python 解释器版本号加编译版本号以及所用编译器等额外信息的字符串 |
 |                | `sys.version_info` | 一个包含版本号五部分的元组                                   |
-| 退出程序       | `sys.exit([arg])`  | 引发一个 [`SystemExit`](https://docs.python.org/zh-cn/3/library/exceptions.html#SystemExit) 异常，表示打算退出解释器 |
 
 ::: details 判断Python版本
 
@@ -3016,6 +3017,12 @@ if sys.version_info[:3] < (3, 10, 6):
 :::
 
 ![image-20220728205515454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220728205515454.png)
+
+### 退出程序
+
+| 分类     | 函数              | 说明                                                         |
+| -------- | ----------------- | ------------------------------------------------------------ |
+| 退出程序 | `sys.exit([arg])` | 引发一个 [`SystemExit`](https://docs.python.org/zh-cn/3/library/exceptions.html#SystemExit) 异常，表示打算退出解释器 |
 
 ::: details 捕捉sys.exit异常
 
