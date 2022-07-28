@@ -53,7 +53,7 @@
     <tbody>
     <tr>
         <td>必备模块</td>
-        <td>os</td>
+        <td><a href="#os" style="text-decoration:none;">os</a></td>
         <td><li><code>Python 3.10.5</code></li></td>
         <td></td>
         <td></td>
@@ -95,6 +95,7 @@
     </tr>        
     </tbody>
 </table>
+
 
 <br />
 
@@ -2234,15 +2235,70 @@ logger.critical("That's it, beautiful and simple logging!")
 
 ### 进程相关
 
-| 分类         | 函数                 | 说明                                 |
-| ------------ | -------------------- | ------------------------------------ |
-| 执行系统命令 | `os.system(command)` |                                      |
-| 进程ID       | `os.getpid()`        | 返回当前进程ID                       |
-|              | `os.getppid()`       | 返回父进程ID                         |
-| 子进程       | `os.fork()`          | Fork 出一个子进程                    |
-| 信号         | `os.kill(pid, sig)`  | 将信号sig发送至进程pid               |
-| 用户信息     | `os.getuid()`        | 返回当前进程的真实用户ID             |
-|              | `os.getlogin()`      | 返回通过控制终端进程进行登录的用户名 |
+| 分类         | 函数                 | 说明                                                         |
+| ------------ | -------------------- | ------------------------------------------------------------ |
+| 执行系统命令 | `os.system(command)` |                                                              |
+| 进程ID       | `os.getpid()`        | 返回当前进程ID                                               |
+|              | `os.getppid()`       | 返回父进程ID                                                 |
+| 创建子进程   | `os.fork()`          | 创建子进程，返回一个pid；在子进程内pid为0，在父进程内pid为子进程的pid （该函数只对Linux有效） |
+| 信号         | `os.kill(pid, sig)`  | 当父进程执行完成退出后，子进程便会被pid为1的进程接管将信号sig发送至进程pid |
+| 用户信息     | `os.getuid()`        | 返回当前进程的真实用户ID                                     |
+|              | `os.getlogin()`      | 返回通过控制终端进程进行登录的用户名                         |
+
+::: details 使用os.fork编写Linux守护进程
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import os
+import time
+from typing import Callable, Union
+from loguru import logger
+
+
+def daemon(fun: Callable, *args, **kwargs) -> Union[Exception, None]:
+    # fork子进程
+    try:
+        pid = os.fork()
+    except Exception as err:
+        return err
+
+    # 子进程内执行代码
+    if pid == 0:
+        fun(*args, **kwargs)
+
+    # 父进程退出，子进程自动变为守护进程,隐式 return None
+
+
+def worker():
+    logger.success(f"我是子进程, 我已经成功运行起来了")
+    logger.info(f"子进程的Pid是: {os.getpid()}")
+    logger.info(f"父进程的Pid是: {os.getppid()}")
+    logger.success(f"现在我要休眠2秒钟，等待父进程退出，我就变为守护进程啦~")
+    time.sleep(2)
+
+    print()
+    logger.info(f"父进程的Pid是: {os.getppid()}")
+    logger.success(f"你可以使用 pstree -p | sed -n '1, /{os.getpid()}/'p 来验证我已经变为守护进程了")
+    logger.success(f"我将在1小时后自动退出")
+    time.sleep(3600)
+
+
+def main():
+    err = daemon(worker)
+    if err:
+        logger.critical(f"os.fork error: {err}")
+        return
+
+
+if __name__ == '__main__':
+    main()
+```
+
+:::
+
+![xvsuzvfycvdb](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//xvsuzvfycvdb.gif)
 
 
 
