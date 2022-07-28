@@ -2271,10 +2271,11 @@ def daemon(fun: Callable, *args, **kwargs) -> Union[Exception, None]:
     # 父进程退出，子进程自动变为守护进程,隐式 return None
 
 
-def worker():
+def worker() -> None:
     logger.success(f"我是子进程, 我已经成功运行起来了")
     logger.info(f"子进程的Pid是: {os.getpid()}")
     logger.info(f"父进程的Pid是: {os.getppid()}")
+    # 父进程退出，子进程交由init进程管理，也就变为守护进程了
     logger.success(f"现在我要休眠2秒钟，等待父进程退出，我就变为守护进程啦~")
     time.sleep(2)
 
@@ -2285,7 +2286,7 @@ def worker():
     time.sleep(3600)
 
 
-def main():
+def main() -> None:
     err = daemon(worker)
     if err:
         logger.critical(f"os.fork error: {err}")
