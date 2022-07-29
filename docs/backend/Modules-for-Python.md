@@ -1,4 +1,4 @@
-# Python实用模块
+Python实用模块
 
 ## 参考资料
 
@@ -3105,7 +3105,58 @@ sys.stdout.write("Hello World!")
 
 ::: details （1）IO 缓冲初探
 
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+import sys
+import time
+from datetime import datetime
+
+
+def now():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def print_demo():
+    print(f"{now()} Hello  ", end="")
+    time.sleep(2)
+    print(f"{now()} World  ", end="")
+
+
+def sys_stdout_demo():
+    sys.stdout.write(f"{now()} Hello  ")
+    time.sleep(2)
+    sys.stdout.write(f"{now()} World  ")
+
+
+def sys_stderr_demo():
+    sys.stderr.write(f"{now()} Hello  ")
+    time.sleep(2)
+    sys.stderr.write(f"{now()} World  ")
+
+
+if __name__ == '__main__':
+    print_demo()
+    print()
+    sys_stdout_demo()
+    print()
+    sys_stderr_demo()
+```
+
 :::
+
+::: tip
+
+我们的本意是先输出"Hello"，然后等2秒在输出"World"，但是测试发现：
+
+<span style="color: red;">Hello和World是同时输出出来的，但是他们的时间却并不一样，这是怎么回事呢？</span>
+
+<span style="color: green;">因为有缓冲区的存在呀，不管是`print`、`sys.stdout`还是`sys.stderr`，他们写入的内容首先会放到缓冲区，等达到一定的条件再从缓冲区拿出来显示在屏幕上</span>
+
+:::
+
+![qkgiemvkghws](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//qkgiemvkghws.gif)
 
 ::: details （2）默认的行缓冲方式
 
@@ -3118,4 +3169,6 @@ sys.stdout.write("Hello World!")
 ::: details （4）禁用缓冲的方法
 
 :::
+
+
 
