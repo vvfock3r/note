@@ -3158,15 +3158,107 @@ if __name__ == '__main__':
 
 ![qkgiemvkghws](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//qkgiemvkghws.gif)
 
-::: details （2）默认的行缓冲方式
+::: details （2）缓冲方式1：命令行执行脚本通常是行缓冲方式，即缓冲区满了或者遇到换行符就会刷新缓冲区
+
+为了能让它实时输出，我们可以有几种办法：
+
+* 给内容增加上换行符"\n"，这样写入到缓冲区以后遇到换行符，马上就刷新缓冲区了，就输出到屏幕了
+
+  ```python
+  #!/usr/bin/env python
+  # -*-coding:utf-8 -*-
+  
+  import sys
+  import time
+  from datetime import datetime
+  
+  
+  def now():
+      return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  
+  
+  def print_demo():
+      print(f"{now()} Hello  ")
+      time.sleep(2)
+      print(f"{now()} World  ")
+  
+  
+  def sys_stdout_demo():
+      sys.stdout.write(f"{now()} Hello  \n")
+      time.sleep(2)
+      sys.stdout.write(f"{now()} World  \n")
+  
+  
+  def sys_stderr_demo():
+      sys.stderr.write(f"{now()} Hello  \n")
+      time.sleep(2)
+      sys.stderr.write(f"{now()} World  \n")
+  
+  
+  if __name__ == '__main__':
+      print_demo()
+      print()
+      sys_stdout_demo()
+      print()
+      sys_stderr_demo()
+  ```
+
+* 手动刷新缓冲区
+
+  ```python
+  #!/usr/bin/env python
+  # -*-coding:utf-8 -*-
+  
+  import sys
+  import time
+  from datetime import datetime
+  
+  
+  def now():
+      return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  
+  
+  def print_demo():
+      print(f"{now()} Hello  ", end="")
+      sys.stdout.flush()  # 手动刷新缓冲区
+      time.sleep(2)
+      print(f"{now()} World  ", end="")
+      sys.stdout.flush()
+  
+  
+  def sys_stdout_demo():
+      sys.stdout.write(f"{now()} Hello  ")
+      sys.stdout.flush() # 手动刷新缓冲区
+      time.sleep(2)
+      sys.stdout.write(f"{now()} World  ")
+      sys.stdout.flush()
+  
+  
+  def sys_stderr_demo():
+      sys.stderr.write(f"{now()} Hello  ")
+      sys.stderr.flush() # 手动刷新缓冲区
+      time.sleep(2)
+      sys.stderr.write(f"{now()} World  ")
+      sys.stderr.flush()
+  
+  
+  if __name__ == '__main__':
+      print_demo()
+      print()
+      sys_stdout_demo()
+      print()
+      sys_stderr_demo()
+  ```
 
 :::
 
-::: details （3）全缓冲模式
+![njthjmloemun](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//njthjmloemun.gif)
+
+::: details （3）缓冲方式2：全缓冲模式
 
 :::
 
-::: details （4）禁用缓冲的方法
+::: details （4）缓冲方式3：无缓冲模式
 
 :::
 
