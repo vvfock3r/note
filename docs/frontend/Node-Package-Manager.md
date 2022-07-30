@@ -86,14 +86,14 @@ https://registry.npmmirror.com/
 
 常用参数：
 
-| 参数                                   | 参数                                                         |
+| 参数                                   | 说明                                                       |
 | -------------------------------------- | ------------------------------------------------------------ |
-| `--global` | `-g` | 全局安装                  |
-| `--save-prod` | `-P` | `--save` | `-S` | 作为项目依赖安装 |
-| `--save-dev` | `-D` | 作为开发依赖安装           |
-| `--no-save`                            | 仅安装，不修改`package.json`                                 |
+| <pre>`--global` | `-g`</pre> | 安装到全局（默认会安装到`当前目录/node_modules`） |
+| <pre>`--save-prod` | `-P` | `--save` | `-S`</pre> | 作为项目依赖安装，写入包名到`package.json`中的`dependencies`区域（这是默认选项） |
+| <pre>`--save-dev` | `-D`</pre> | 作为开发依赖安装，写入包名到`package.json`中的`devDependencies`区域中 |
+| <pre>`--no-save`</pre>                 | 仅安装，不修改`package.json`                                 |
 
-升级NPM：
+升级NPM：	
 
 ```bash
 # 升级npm版本
