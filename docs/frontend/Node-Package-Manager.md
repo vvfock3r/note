@@ -1,3 +1,5 @@
+# NodeJS包管理器
+
 ## npm
 
 CLI文档：[https://docs.npmjs.com/cli/v8/commands/npm](https://docs.npmjs.com/cli/v8/commands/npm)
@@ -143,5 +145,19 @@ C:\Users\Administrator\AppData\Roaming\npm
 <br />
 
 ## yarn
+
+yarn v1文档：[https://classic.yarnpkg.com/en/docs/](https://classic.yarnpkg.com/en/docs/)
+
+### 安装yarn
+
+```bash
+C:\Users\Administrator\Desktop>npm install yarn -g
+npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead.
+
+C:\Users\Administrator\Desktop>yarn --version
+1.22.19
+```
+
+
 
 ## pnpm（推荐）
