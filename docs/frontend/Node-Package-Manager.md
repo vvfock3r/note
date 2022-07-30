@@ -189,3 +189,30 @@ C:\Users\Administrator\Desktop\demo>pnpm --version
 ```
 
 <br />
+
+### pnpm init - 项目初始化
+
+文档：[https://pnpm.io/zh/cli/init](https://pnpm.io/zh/cli/init)
+
+```bash
+C:\Users\Administrator\Desktop\demo>pnpm init
+Wrote to C:\Users\Administrator\Desktop\demo\package.json
+
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+```
+
+<br />
+
+### pnpm add \<pkg\> - 安装包
+
