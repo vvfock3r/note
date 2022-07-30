@@ -148,7 +148,9 @@ C:\Users\Administrator\AppData\Roaming\npm
 
 yarn v1文档：[https://classic.yarnpkg.com/en/docs/](https://classic.yarnpkg.com/en/docs/)
 
-### 安装yarn
+<br />
+
+### yarn安装
 
 ```bash
 C:\Users\Administrator\Desktop>npm install yarn -g
@@ -158,6 +160,32 @@ C:\Users\Administrator\Desktop>yarn --version
 1.22.19
 ```
 
+<br />
 
+### yarn用法
+
+文档：[https://classic.yarnpkg.com/en/docs/usage](https://classic.yarnpkg.com/en/docs/usage)
+
+<br />
 
 ## pnpm（推荐）
+
+官网：[https://pnpm.io/zh/](https://pnpm.io/zh/)
+
+<br />
+
+### 安装
+
+文档：[https://pnpm.io/zh/installation](https://pnpm.io/zh/installation)
+
+```bash
+C:\Users\Administrator\Desktop\demo>npm install pnpm -g
+npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead.
+
+changed 1 package in 2s
+
+C:\Users\Administrator\Desktop\demo>pnpm --version
+7.7.0
+```
+
+<br />
