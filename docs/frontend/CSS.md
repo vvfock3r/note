@@ -296,15 +296,15 @@
 
 ### 属性选择器
 
-| 举例                 | 说明                                           |
-| -------------------- | ---------------------------------------------- |
-| `div[class]`         | 匹配有class属性的div                           |
-| `div[class="item"]`  | 匹配有class属性的div，并且class的值等于"title" |
-| `div[class^="item"]` | 匹配class属性以item开头的标签                  |
-| `div[class$="item"]` | 匹配class属性以item结尾的标签                  |
-| `div[class*=item]`   | 匹配class属性含有item的标签                    |
-| `div[class~=item]`   | 匹配class属性中有空格隔开的item的标签          |
-| `div[class|=item]`   | 匹配class属性中以item-开头的标签               |
+| 举例                           | 说明                                           |
+| ------------------------------ | ---------------------------------------------- |
+| `div[class]`                   | 匹配有class属性的div                           |
+| `div[class="item"]`            | 匹配有class属性的div，并且class的值等于"title" |
+| `div[class^="item"]`           | 匹配class属性以item开头的标签                  |
+| `div[class$="item"]`           | 匹配class属性以item结尾的标签                  |
+| `div[class*=item]`             | 匹配class属性含有item的标签                    |
+| `div[class~=item]`             | 匹配class属性中有空格隔开的item的标签          |
+| <code>div[class\|=item]</code> | 匹配class属性中以item-开头的标签               |
 
 
 
