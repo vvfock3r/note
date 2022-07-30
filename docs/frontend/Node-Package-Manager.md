@@ -88,9 +88,9 @@ https://registry.npmmirror.com/
 
 | 参数                                   | 说明                                                       |
 | -------------------------------------- | ------------------------------------------------------------ |
-| `--global`  or `-g` | 安装到全局（默认会安装到`当前目录/node_modules`） |
-| `--save-prod` or `-P` or `--save` or `-S` | 作为项目依赖安装，写入包名到`package.json`中的`dependencies`区域（这是默认选项） |
-| `--save-dev` or `-D` | 作为开发依赖安装，写入包名到`package.json`中的`devDependencies`区域中 |
+| `--global`  丨`-g` | 安装到全局（默认会安装到`当前目录/node_modules`） |
+| `--save-prod` 丨`-P` 丨`--save` 丨`-S` | 作为项目依赖安装，写入包名到`package.json`中的`dependencies`区域（这是默认选项） |
+| `--save-dev` 丨`-D` | 作为开发依赖安装，写入包名到`package.json`中的`devDependencies`区域中 |
 | `--no-save`                 | 仅安装，不修改`package.json`                                 |
 
 升级NPM：	
