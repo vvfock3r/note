@@ -4,6 +4,8 @@ CLI文档：[https://docs.npmjs.com/cli/v8/commands/npm](https://docs.npmjs.com/
 
 `npm`是nodejs内置的包管理器，类似于Python的pip，文档所使用的版本为`8.15.1`
 
+<br />
+
 ### npm init - 项目初始化
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-init](https://docs.npmjs.com/cli/v8/commands/npm-init)
@@ -36,6 +38,8 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json:
   "license": "ISC"
 }
 ```
+
+<br />
 
 ### npm config - 管理npm配置文件
 
@@ -72,7 +76,7 @@ npm WARN config global `--global`, `--local` are deprecated. Use `--location=glo
 https://registry.npmmirror.com/
 ```
 
-
+<br />
 
 ### npm install - 安装包/升级NPM
 
@@ -107,13 +111,15 @@ npm install husky --save-dev
 npm install echarts --save
 ```
 
+<br />
+
 ### npm uninstall - 卸载包
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-uninstall](https://docs.npmjs.com/cli/v8/commands/npm-uninstall)
 
 别名：`unlink`, `remove`, `rm`, `r`, `un`
 
-
+<br />
 
 ### npm ls - 查看包
 
@@ -134,10 +140,8 @@ C:\Users\Administrator\AppData\Roaming\npm
 `-- yarn@1.22.17
 ```
 
-
-
-
+<br />
 
 ## yarn
 
-## pnpm
+## pnpm（推荐）
