@@ -216,3 +216,17 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json
 
 ### pnpm add \<pkg\> - 安装包
 
+文档：[https://pnpm.io/zh/cli/add](https://pnpm.io/zh/cli/add)
+
+| 命令              | 说明                                              |
+| ----------------- | ------------------------------------------------- |
+| `pnpm add sax`    | 保存到 `dependencies`                             |
+| `pnpm add -D sax` | 保存到 `devDependencies`                          |
+| `pnpm add -g sax` | 安装到全局（默认会安装到`当前目录/node_modules`） |
+
+<br />
+
+### pnpm install - 安装项目所有依赖
+
+文档：[https://pnpm.io/zh/cli/install](https://pnpm.io/zh/cli/install)
+
