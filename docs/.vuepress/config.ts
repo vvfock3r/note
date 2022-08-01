@@ -32,9 +32,10 @@ const navbar = [
 
             {
                 text: '工程化',
-                children: [
+                children: [				    
                     { text: 'Vue', link: '/frontend/vue' },
 					{ text: 'Node包管理器', link: '/frontend/Node-Package-Manager' },
+					{ text: 'TypeScript核心语法', link: '/frontend/TypeScript' },
                 ]
             },
 
