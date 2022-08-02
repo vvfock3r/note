@@ -596,15 +596,13 @@ console.log(demo.sayDemo());
 
 ## 配置文件
 
+文档：[https://www.typescriptlang.org/docs/handbook/tsconfig-json.html](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
+
 ### 注意事项
 
 ::: warning
 
-（1）生成编译配置文件，这会生成一个`tsconfig.json`的文件
-
-```bash
-C:\Users\Administrator\WebstormProjects\typescript_learn> tsc --init
-```
+（1）使用`tsc --init`生成编译配置文件，这会生成一个`tsconfig.json`的文件
 
 （2）使用`tsc demo.ts`这样并不会使用`tsconfig.json`
 
@@ -614,5 +612,14 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> tsc --init
 
 :::
 
+### 指定/排除编译哪些文件
 
+文档：[https://www.typescriptlang.org/tsconfig#root-fields](https://www.typescriptlang.org/tsconfig#root-fields)
+
+* `files`：指定要编译哪些文件，需要把文件名都写到里面
+* `include`：指定要编译哪些文件，支持通配符
+  * `*`匹配零个或多个字符（不包括目录分隔符）
+  * `?`匹配任何一个字符（不包括目录分隔符）
+  * `**/`匹配任何嵌套到任何级别的目录
+* `exclude`：排除由`include`匹配的文件，对`files`匹配到的文件并不会排除
 
