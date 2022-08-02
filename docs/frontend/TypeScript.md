@@ -74,7 +74,7 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> ts-node demo.ts
 
 <br />
 
-## 基础
+## 类型注解
 
 ### 函数常用类型注解
 
@@ -591,6 +591,28 @@ const demo = new Demo1();
 console.log(demo.sayHello());
 console.log(demo.sayDemo());
 ```
+
+
+
+## 配置文件
+
+### 注意事项
+
+::: warning
+
+（1）生成编译配置文件，这会生成一个`tsconfig.json`的文件
+
+```bash
+C:\Users\Administrator\WebstormProjects\typescript_learn> tsc --init
+```
+
+（2）使用`tsc demo.ts`这样并不会使用`tsconfig.json`
+
+（3）使用`tsc`编译整个项目会使用`tsconfig.json`（所有的子目录的`.ts`文件都会被编译）
+
+可以通过`removeComments": true`（删除注释）来测试生成的js文件是否使用了`tsconfig.json`
+
+:::
 
 
 
