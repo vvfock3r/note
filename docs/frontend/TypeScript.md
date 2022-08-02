@@ -612,7 +612,9 @@ console.log(demo.sayDemo());
 
 :::
 
-### 指定/排除编译哪些文件
+### 根字段
+
+#### 指定/排除编译哪些文件
 
 文档：[https://www.typescriptlang.org/tsconfig#root-fields](https://www.typescriptlang.org/tsconfig#root-fields)
 
@@ -623,3 +625,26 @@ console.log(demo.sayDemo());
   * `**/`匹配任何嵌套到任何级别的目录
 * `exclude`：排除由`include`匹配的文件，对`files`匹配到的文件并不会排除
 
+### compilerOptions
+
+#### Type Checking（类型检查）
+
+:::tip
+
+推荐使用默认配置，开启最严格的模式
+
+:::
+
+![image-20220802171403813](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802171403813.png)
+
+以`noImplicitAny`举例
+
+严格模式下，不允许使用隐式`any`
+
+![image-20220802172137810](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172137810.png)
+
+允许使用隐式`any`
+
+![image-20220802172338817](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172338817.png)
+
+![image-20220802172405248](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172405248.png)
