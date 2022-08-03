@@ -705,6 +705,51 @@ online
 deleted
 ```
 
+### 函数泛型
+
+（1）基本使用
+
+```typescript
+function add(first: number | string, second: number | string): string {
+    return `${first}${second}`
+}
+
+// 下面几种调用方式都是可以的
+console.log(add(1, 2))
+console.log(add('1', '2'))
+console.log(add(1, '2'))    // number和string可以混合传参
+
+// ----------------------------------------------------------------------------------
+
+// 如果我只允许传递number或string这种单一的类型，该如何操作呢?
+// 使用泛型, T指任何类型,T可以是任何字符
+function add1<T>(first: T, second: T) {
+    return `${first}${second}`
+}
+
+console.log(add1<number>(1, 2))         // 指定传入的类型是number
+console.log(add1<string>('1', '2'))     // 指定传入的类型是string
+console.log(add1('1', '2'))             // 也可以不指定类型，让ts根据第一个参数自动推断
+// console.log(add1('1', 2))            // 混合参数不被允许，会报错
+```
+
+（2）使用数组
+
+```typescript
+// 定义数组 - 方式1
+function add2<T>(params: T[]) {
+    return `${params}`
+}
+
+// 定义数组 - 方式2
+function add3<T>(params: Array<T>) {
+    return `${params}`
+}
+
+console.log(add2([1, 2, 3]))
+console.log(add3([1, 2, 3]))
+```
+
 
 
 <br />
