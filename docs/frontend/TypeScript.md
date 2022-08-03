@@ -134,7 +134,7 @@ const func2: (str: string) => number = (str) => {
 console.log(func2('4'));
 ```
 
-### 可能为多种类型的注解
+### 联合类型注解
 
 ```typescript
 // age可能为number类型，也可能为string类型
@@ -605,6 +605,62 @@ const demo = new Demo1();
 console.log(demo.sayHello());
 console.log(demo.sayDemo());
 ```
+
+<br />
+
+## 类型保护
+
+### 引出问题
+
+![image-20220803130425882](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803130425882.png)
+
+### 解决问题
+
+```typescript
+// 鸟
+interface Bird {
+    fly: boolean;   // 是否会飞
+    sing: () => {};  // 鸟叫
+}
+
+// 狗
+interface Dog {
+    fly: boolean;   // 是否会飞
+    bark: () => {}; // 狗叫
+}
+
+// 使用断言进行类型保护
+function trainAnimal1(animal: Bird | Dog): void {
+    // 通过公共属性不同的值，将对象断言为某一种类型
+    if (animal.fly) {
+        (animal as Bird).sing();
+    } else {
+        (animal as Dog).bark();
+    }
+}
+
+// 使用in进行类型保护
+function trainAnimal2(animal: Bird | Dog): void {
+    if ('sing' in animal) {
+        animal.sing();
+    } else {
+        animal.bark();
+    }
+}
+
+// 使用typeof语法进行类型保护
+function add1(first: number | string, second: number | string): number | string {
+    if (typeof first === 'string' || typeof second === 'string') {
+        return `${first}${second}`
+    } else {
+        return first + second;
+    }
+}
+```
+
+### 枚举类型
+
+
 
 <br />
 
