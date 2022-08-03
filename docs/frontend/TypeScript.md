@@ -608,13 +608,15 @@ console.log(demo.sayDemo());
 
 <br />
 
-## 类型保护
+## 进阶
 
-### 引出问题
+### 类型保护
+
+先来看一下问题
 
 ![image-20220803130425882](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803130425882.png)
 
-### 解决问题
+解决问题的几种方式
 
 ```typescript
 // 鸟
@@ -659,6 +661,49 @@ function add1(first: number | string, second: number | string): number | string 
 ```
 
 ### 枚举类型
+
+```typescript
+// 值默认从0开始，依次递增
+// 如果手动指定了值，比如 OFFLINE = 1，那么ONLINE就为2，也是依次递增的规律
+enum Status {
+    OFFLINE,
+    ONLINE,
+    DELETED,
+}
+
+function getStatus(status: number | Status): string {
+    let result = '';
+    switch (status) {
+        case Status.OFFLINE:
+            result = 'offline';
+            break
+        case Status.ONLINE:
+            result = 'online';
+            break
+        case Status.DELETED:
+            result = 'deleted';
+            break
+        default:
+            result = 'unknow';
+    }
+    return result;
+}
+
+console.log(getStatus(Status.ONLINE));
+console.log(getStatus(0));
+console.log(getStatus(1));
+console.log(getStatus(2));
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\WebstormProjects\typescript_learn>ts-node demo.ts
+online
+offline
+online 
+deleted
+```
 
 
 
