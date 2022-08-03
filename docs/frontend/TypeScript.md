@@ -870,7 +870,7 @@ console.log(data.getItem(0));
   </html>
   ```
 
-* 使用`tsc -w`开启实时编译
+* 使用`tsc -w`开启实时编译，方便我们每次修改完TS代码后不需要手动编译
 
 * 浏览器访问`index.html`页面
 
@@ -910,6 +910,8 @@ console.log(data.getItem(0));
 * 再次在浏览器中访问
 
   ![image-20220803185303097](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803185303097.png)
+
+#### （3）
 
 <br />
 
