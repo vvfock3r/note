@@ -72,6 +72,20 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> ts-node demo.ts
 3
 ```
 
+### 注意IDE Warning告警
+
+看下面一段代码，没有明显的问题，使用tsc编译不会报错，代码也可以正常运行，一切看起来那么美好
+
+![image-20220803114251062](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803114251062.png)
+
+但是，我们将视线拉长就发现问题了
+
+![image-20220803114820912](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803114820912.png)
+
+然后我们使用一下这个变量，发现提醒已经消失了
+
+![image-20220803114906175](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803114906175.png)
+
 <br />
 
 ## 类型注解
@@ -592,7 +606,7 @@ console.log(demo.sayHello());
 console.log(demo.sayDemo());
 ```
 
-
+<br />
 
 ## 配置文件
 
@@ -609,6 +623,8 @@ console.log(demo.sayDemo());
 （3）使用`tsc`编译整个项目会使用`tsconfig.json`（所有的子目录的`.ts`文件都会被编译）
 
 可以通过`removeComments": true`（删除注释）来测试生成的js文件是否使用了`tsconfig.json`
+
+（4）使用`ts-node demo.ts`会使用`tsconfig.json`（`ts-node`是第三方命令，所以这里就管他了，只需要知道会使用配置文件即可）
 
 :::
 
@@ -637,14 +653,70 @@ console.log(demo.sayDemo());
 
 ![image-20220802171403813](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802171403813.png)
 
-以`noImplicitAny`举例
-
-严格模式下，不允许使用隐式`any`
+以`noImplicitAny`举例，严格模式下，不允许使用隐式`any`
 
 ![image-20220802172137810](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172137810.png)
 
-允许使用隐式`any`
+修改配置，允许使用隐式`any`，代码就不会报错了
 
 ![image-20220802172338817](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172338817.png)
 
 ![image-20220802172405248](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220802172405248.png)
+
+#### 指定TS源码根目录和打包输出目录
+
+文档：
+
+* [https://www.typescriptlang.org/tsconfig#rootDir](https://www.typescriptlang.org/tsconfig#rootDir)
+* [https://www.typescriptlang.org/tsconfig#outDir](https://www.typescriptlang.org/tsconfig#outDir)
+
+解释：
+
+* `Modules.rootDir`：指定TS源码根目录，默认为`"./"`
+* `Emit.outDir`：指定编译后的输出目录，会根据源码目录结构进行输出
+
+修改以上两个参数如下：
+
+```json
+"rootDir": "./src",
+"outDir": "./build",
+```
+
+我们的代码结构如下，ts文件中随便写点内容即可
+
+![image-20220803110643570](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803110643570.png)
+
+执行`tsc`编译，会多出一个`build`目录，代码结构和我们的`src`保持一致
+
+![image-20220803110755805](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803110755805.png)
+
+
+
+#### JavaScript Support（编译JS代码）
+
+（1）`allowJs`：允许对JavaScript代码进行编译
+
+首先先修改以下两个参数，否则输出文件会覆盖输入文件，从而导致编译报错
+
+```json
+"rootDir": "./src",   // 这个实际上不用改也可以
+"outDir": "./build",  // 主要是改这个
+```
+
+编写`src/demo.js`
+
+```javascript
+export const name = "jack";
+```
+
+执行`tsc`编译，报错了
+
+![image-20220803112024927](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803112024927.png)
+
+将`"allowJs": true `注释打开，再次执行`tsc`编译，可以看到已经可以正常编译了
+
+![image-20220803112236629](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803112236629.png)
+
+（2）`checkJs`：允许对JavaScript代码进行类型检查，直接上效果图
+
+![image-20220803112629326](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803112629326.png)
