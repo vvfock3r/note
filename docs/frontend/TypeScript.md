@@ -86,6 +86,10 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> ts-node demo.ts
 
 ![image-20220803114906175](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803114906175.png)
 
+### TSC实时编译
+
+使用`tsc -w`命令
+
 <br />
 
 ## 类型注解
@@ -795,7 +799,117 @@ const data = new DataManager([1, 2, 3]);
 console.log(data.getItem(0));
 ```
 
+### 命名空间
 
+#### （1）环境搭建
+
+在一个空目录下，按如下步骤执行
+
+* 创建`src`目录，用于存放ts源代码
+
+* 创建`dist`，用于存放ts编译后的js文件
+
+* 使用 `tsc --init` 创建 `tsconfig.json`配置文件，并修改如下参数
+
+  ```
+  "rootDir": "./src",
+  "outDir": "./dist",
+  ```
+
+* 编写TS代码：`src/page.ts`
+
+  ```typescript
+  class Header {
+      constructor() {
+          const elem = document.createElement('div');
+          elem.innerText = 'This is Header';
+          document.body.appendChild(elem);
+      }
+  }
+  
+  class Content {
+      constructor() {
+          const elem = document.createElement('div');
+          elem.innerText = 'This is content';
+          document.body.appendChild(elem);
+      }
+  }
+  
+  class Footer {
+      constructor() {
+          const elem = document.createElement('div');
+          elem.innerText = 'This is footer';
+          document.body.appendChild(elem);
+      }
+  }
+  
+  class Page {
+      constructor() {
+          new Header();
+          new Content();
+          new Footer();
+      }
+  }
+  ```
+
+* 编写HTML代码：`index.html`
+
+  ```html
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <title>Title</title>
+      <script src="./dist/page.js"></script>
+  </head>
+  <body>
+  <script>
+      new Page();
+  </script>
+  </body>
+  </html>
+  ```
+
+* 使用`tsc -w`开启实时编译
+
+* 浏览器访问`index.html`页面
+
+  ![image-20220803184629866](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803184629866.png)
+
+#### （2）使用namespace进行对象隔离
+
+* 修改`page.ts`
+
+  ```typescript
+  namespace Home {
+      // 1、将page.ts中原来的代码都拷贝在这里，也就是使用namespace Home包裹一下
+      
+      // 2、将class Page改为export class Page，意思是将Page对象暴露出去
+  }    
+  ```
+
+* 修改`index.html`
+
+  ```html
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <title>Title</title>
+      <script src="./dist/page.js"></script>
+  </head>
+  <body>
+  <script>
+      <!-- 这里修改为Home.page -->
+      new Home.Page();
+  </script>
+  </body>
+  </html>
+  ```
+
+* 再次在浏览器中访问
+
+  ![image-20220803185303097](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803185303097.png)
 
 <br />
 
