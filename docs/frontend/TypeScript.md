@@ -750,6 +750,51 @@ console.log(add2([1, 2, 3]))
 console.log(add3([1, 2, 3]))
 ```
 
+### 类中泛型
+
+（1）使用`extends`约束泛型必须含有某个属性或方法
+
+```typescript
+interface Item {
+    name: string
+}
+
+// T类型要求必须实现Item接口
+class DataManager<T extends Item> {
+    constructor(private data: T[]) {
+    }
+
+    getItemName(index: number): string {
+        return this.data[index].name;
+    }
+}
+
+const data = new DataManager([
+    {
+        name: "jack",
+    }
+]);
+
+console.log(data.getItemName(0));
+```
+
+（2）限制泛型仅可以在某几个类型中使用
+
+```typescript
+// T类型要求必须实现Item接口
+class DataManager<T extends number | string> {
+    constructor(private data: T[]) {
+    }
+
+    getItem(index: number): T {
+        return this.data[index];
+    }
+}
+
+const data = new DataManager([1, 2, 3]);
+console.log(data.getItem(0));
+```
+
 
 
 <br />
