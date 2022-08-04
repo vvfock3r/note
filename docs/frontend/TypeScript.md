@@ -90,11 +90,11 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> ts-node demo.ts
 
 使用`tsc -w`命令
 
-<br />
+## 
 
-## 类型注解
+## 语法
 
-### 函数常用类型注解
+### 函数类型注解
 
 ```typescript
 // 普通类型注解
@@ -365,7 +365,7 @@ const bob = new Person("bob");
 console.log(bob);
 ```
 
-### 类
+### 类中使用类型注解
 
 #### （1）配置修改
 
@@ -610,10 +610,6 @@ console.log(demo.sayHello());
 console.log(demo.sayDemo());
 ```
 
-<br />
-
-## 进阶
-
 ### 类型保护
 
 先来看一下问题
@@ -709,7 +705,7 @@ online
 deleted
 ```
 
-### 函数泛型
+### 函数使用泛型
 
 （1）基本使用
 
@@ -754,7 +750,7 @@ console.log(add2([1, 2, 3]))
 console.log(add3([1, 2, 3]))
 ```
 
-### 类中泛型
+### 类中使用泛型
 
 #### （1）`extends`约束
 
@@ -1022,7 +1018,9 @@ console.log(bob.getAttr('name1'));     // 不会报错
 
   4、在浏览器中查看效果
 
-### 类型定义文件（.d.ts）
+## 
+
+## 类型定义文件（.d.ts）
 
 #### 自己编写
 
@@ -1070,9 +1068,9 @@ declare function $(params: () => void): void;
 npm i --save-dev @types/jquery
 ```
 
-<br />
+## 
 
-## 配置文件
+## 配置文件（tsconfig.json）
 
 文档：[https://www.typescriptlang.org/docs/handbook/tsconfig-json.html](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
 
