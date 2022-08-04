@@ -756,7 +756,9 @@ console.log(add3([1, 2, 3]))
 
 ### 类中泛型
 
-（1）使用`extends`约束泛型必须含有某个属性或方法
+#### （1）`extends`约束
+
+使用`extends`约束泛型必须含有某个属性或方法
 
 ```typescript
 interface Item {
@@ -782,7 +784,9 @@ const data = new DataManager([
 console.log(data.getItemName(0));
 ```
 
-（2）限制泛型仅可以在某几个类型中使用
+#### （2）`extends` 限制
+
+限制泛型仅可以在某几个类型中使用
 
 ```typescript
 // T类型要求必须实现Item接口
@@ -799,9 +803,51 @@ const data = new DataManager([1, 2, 3]);
 console.log(data.getItem(0));
 ```
 
+#### （3）`keyof` 语法
+
+```typescript
+interface Person {
+    name: string,
+    age: number,
+    sex: string,
+}
+
+class Teacher {
+    constructor(private person: Person) {
+    }
+
+    // 有问题的代码,问题所在:
+    // (1) 代码中写死了属性，不易维护
+    // (2) 函数返回值类型包含undefined类型，而这并不是我想要的，如果传入的字符串不合规范，我想让其直接在编译阶段报错
+    getAttr(attr: string) {
+        if (attr === 'name' || attr === 'age' || attr === 'sex') {
+            return this.person[attr];
+        }
+    }
+
+    // 使用泛型重写，推荐
+    // (1) keyof会遍历Person
+    getAttr2<T extends keyof Person>(attr: T): Person[T] {
+        return this.person[attr];
+    }
+}
+
+const bob = new Teacher({
+    name: 'bob',
+    age: 20,
+    sex: 'man',
+})
+
+console.log(bob.getAttr('name'));
+console.log(bob.getAttr2('name'));
+
+console.log(bob.getAttr('name1'));     // 不会报错
+// console.log(bob.getAttr2('name1')); // 会报错
+```
+
 ### 命名空间
 
-#### （1）环境搭建
+（1）环境搭建
 
 在一个空目录下，按如下步骤执行
 
@@ -876,7 +922,7 @@ console.log(data.getItem(0));
 
   ![image-20220803184629866](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803184629866.png)
 
-#### （2）使用namespace进行对象隔离
+（2）使用namespace进行对象隔离
 
 * 修改`page.ts`
 
@@ -911,7 +957,7 @@ console.log(data.getItem(0));
 
   ![image-20220803185303097](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803185303097.png)
 
-#### （3）namespace之间互相引用
+（3）namespace之间互相引用
 
 * 创建`src/components.ts`文件，内容如下
 
@@ -975,6 +1021,54 @@ console.log(data.getItem(0));
   ```
 
   4、在浏览器中查看效果
+
+### 类型定义文件（.d.ts）
+
+#### 自己编写
+
+> 使用命名空间所搭建的环境继续操作
+
+（1）`index.html`引入一个js文件
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    <script src="./dist/page.js"></script>
+</head>
+<body>
+</body>
+</html>
+```
+
+（2）编写`src/page.ts`，标红了但是 依旧可以正常编译
+
+![image-20220804091731595](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220804091731595.png)
+
+（3）使用`tsc -w`实时编译，并在浏览器查看效果
+
+（4）编写类型定义文件：`src/jquery.d.ts`
+
+```typescript
+// 定义全局变量
+// declare var $: (params: () => void) => void;
+
+// 定义全局函数
+declare function $(params: () => void): void;
+```
+
+![image-20220804091938299](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220804091938299.png)
+
+#### 使用别人提供好的
+
+模块名语法：`@types/模块名`
+
+```bash
+npm i --save-dev @types/jquery
+```
 
 <br />
 
