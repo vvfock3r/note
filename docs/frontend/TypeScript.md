@@ -1028,6 +1028,8 @@ console.log(bob.getAttr('name1'));     // 不会报错
 
 （1）`index.html`引入一个js文件
 
+> CDN文档：[https://www.bootcdn.cn/jquery](https://www.bootcdn.cn/jquery)
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
