@@ -911,7 +911,70 @@ console.log(data.getItem(0));
 
   ![image-20220803185303097](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220803185303097.png)
 
-#### （3）
+#### （3）namespace之间互相引用
+
+* 创建`src/components.ts`文件，内容如下
+
+  ```typescript
+  // 创建一个新的命名空间，并将内容导出
+  namespace Components {
+      export class Header {
+          constructor() {
+              const elem = document.createElement('div');
+              elem.innerText = 'This is Header';
+              document.body.appendChild(elem);
+          }
+      }
+  
+      export class Content {
+          constructor() {
+              const elem = document.createElement('div');
+              elem.innerText = 'This is content';
+              document.body.appendChild(elem);
+          }
+      }
+  
+      export class Footer {
+          constructor() {
+              const elem = document.createElement('div');
+              elem.innerText = 'This is footer';
+              document.body.appendChild(elem);
+          }
+      }
+  }
+  ```
+
+* 修改`src/page.ts`
+
+  ```typescript
+  namespace Home {
+      export class Page {
+          constructor() {
+              new Components.Header();
+              new Components.Content();
+              new Components.Footer();
+          }
+      }
+  }
+  ```
+
+* 这个时候需要修改`index.html`文件，引入`components.js`，但是这样很麻烦，我想让ts编译到一个文件中去，该如何操作呢?
+
+  1、修改`tsconfig.json`
+
+  ```json
+  "outFile": "./dist/page.js",
+  ```
+
+  2、此时tsc编译会报错，因为 `Only 'amd' and 'system' modules are supported alongside --outFile`
+
+  3、修改`tsconfig.json`
+
+  ```json
+  "module": "amd",
+  ```
+
+  4、在浏览器中查看效果
 
 <br />
 
