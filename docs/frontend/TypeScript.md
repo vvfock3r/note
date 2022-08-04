@@ -4,7 +4,7 @@
 
 Github：[https://github.com/Microsoft/TypeScript](https://github.com/Microsoft/TypeScript)
 
-## 搭建开发环境
+## 一、搭建开发环境
 
 ### 安装Nodejs
 
@@ -92,7 +92,7 @@ C:\Users\Administrator\WebstormProjects\typescript_learn> ts-node demo.ts
 
 ## 
 
-## 语法
+## 二、语法
 
 ### 函数类型注解
 
@@ -1020,7 +1020,7 @@ console.log(bob.getAttr('name1'));     // 不会报错
 
 ## 
 
-## 类型定义文件（.d.ts）
+## 三、类型定义文件（.d.ts）
 
 #### 自己编写
 
@@ -1070,7 +1070,7 @@ npm i --save-dev @types/jquery
 
 ## 
 
-## 配置文件（tsconfig.json）
+## 四、配置文件（tsconfig.json）
 
 文档：[https://www.typescriptlang.org/docs/handbook/tsconfig-json.html](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
 
