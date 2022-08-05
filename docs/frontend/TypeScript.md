@@ -1018,9 +1018,77 @@ console.log(bob.getAttr('name1'));     // 不会报错
 
   4、在浏览器中查看效果
 
-### 装饰器
+### 给类添加装饰器
 
+```typescript
+// 装饰器：给类增加一个getName方法,返回值是 name
+function setName1(name: string): Function {
+    return function (constructor: any): void {
+        console.log("decorator running...");
+        constructor.prototype.getName = () => {
+            return name;
+        }
+    }
+}
 
+// 定义一个类
+@setName1("我的名字叫demo1")
+class Demo1 {
+}
+
+// 装饰器并不是在new Demo()的时候运行，而是在定义 Demo 的时候就运行了；
+// 下面的注释不管打开与否，装饰器函数都只运行一次
+const test1 = new Demo1();
+const test2 = new Demo1();
+console.log((test1 as any).getName());
+console.log((test2 as any).getName());
+
+// -------------------------------------------------------------------------
+// 使用泛型改写
+function setName2(name: string): Function {
+    return function <T extends new (...args: any[]) => any>(constructor: T) {
+        return class extends constructor {
+            getName() {
+                return name;
+            }
+        }
+    }
+}
+
+@setName2("我的名字叫demo2")
+class Demo2 {
+
+}
+
+const test3 = new Demo2();
+const test4 = new Demo2();
+console.log((test3 as any).getName());
+console.log((test4 as any).getName());
+
+// -------------------------------------------------------------------------
+// 调用时不使用 (xx as any).getName()
+const Demo3 = setName2("我的名字叫demo3")(
+    class {
+    }
+)
+const test5 = new Demo3();
+const test6 = new Demo3();
+console.log(test5.getName());
+console.log(test6.getName());
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\WebstormProjects\typescript_learn>ts-node demo.ts
+decorator running...
+我的名字叫demo1
+我的名字叫demo1
+我的名字叫demo2
+我的名字叫demo2
+我的名字叫demo3
+我的名字叫demo3
+```
 
 ## 
 
