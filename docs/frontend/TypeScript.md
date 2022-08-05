@@ -1095,6 +1095,43 @@ decorator running...
 
 ### （2）类方法装饰器
 
+文档：[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty)
+
+```typescript
+// 装饰器
+// 普通方法：target 对应 类的prototype
+// 静态方法：target 对应 类的构造函数
+function decorator(target: any, key: string, descriptor: PropertyDescriptor) {
+    console.log(target, key);
+
+    // 禁止在外部修改方法，默认为false
+    // descriptor.writable = false;
+
+    // 替换原始函数
+    descriptor.value = () => {
+        return "abc";
+    }
+}
+
+class Demo {
+    constructor(public name: string) {
+        this.name = name;
+    }
+
+    @decorator
+    getName() {
+        return this.name;
+    }
+}
+
+
+const bob = new Demo("bob");
+// bob.getName = () => {
+//     return "def";
+// }
+console.log(bob.getName());
+```
+
 
 
 ## 
