@@ -1018,7 +1018,9 @@ console.log(bob.getAttr('name1'));     // 不会报错
 
   4、在浏览器中查看效果
 
-### 给类添加装饰器
+### 装饰器
+
+### （1）类装饰器
 
 ```typescript
 // 装饰器：给类增加一个getName方法,返回值是 name
@@ -1043,6 +1045,7 @@ const test2 = new Demo1();
 console.log((test1 as any).getName());
 console.log((test2 as any).getName());
 
+// 如果有多个装饰器，那么离类最近的装饰器先执行
 // -------------------------------------------------------------------------
 // 使用泛型改写
 function setName2(name: string): Function {
@@ -1089,6 +1092,10 @@ decorator running...
 我的名字叫demo3
 我的名字叫demo3
 ```
+
+### （2）类方法装饰器
+
+
 
 ## 
 
