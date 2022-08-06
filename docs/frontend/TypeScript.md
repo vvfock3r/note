@@ -490,7 +490,7 @@ const jack = new Teacher(28);
 console.log(jack.getName());
 ```
 
-#### （3）get、set
+#### （3）访问器：get、set
 
 :::tip
 
@@ -1131,6 +1131,157 @@ const bob = new Demo("bob");
 // }
 console.log(bob.getName());
 ```
+
+实战：
+
+```typescript
+const userInfo: any = undefined;
+
+// 测试1：我们可能会写大量的这种try...catch
+class Demo1 {
+    getName() {
+        try {
+            return userInfo.name;
+        } catch (e) {
+            return "userInfo.name not exists"
+        }
+    }
+
+    getAge() {
+        try {
+            return userInfo.age;
+        } catch (e) {
+            return "userInfo.age not exists"
+        }
+    }
+}
+
+const demo1 = new Demo1();
+console.log(demo1.getName());
+console.log(demo1.getAge());
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 测试2：使用装饰器优化代码
+function catchError(message: string) {
+    return function (target: any, key: string, descriptor: PropertyDescriptor): any {
+        const fn = descriptor.value;         // 保存一下原始的函数
+        descriptor.value = function () {    // 替换函数
+            try {
+                fn();                       // 调用原始函数
+            } catch (e) {
+                return message;
+            }
+        }
+    }
+}
+
+
+class Demo2 {
+    @catchError("userInfo.name not exists")
+    getName() {
+        return userInfo.name;
+    }
+
+    @catchError("userInfo.age not exists")
+    getAge() {
+        return userInfo.age;
+    }
+}
+
+const demo2 = new Demo2();
+console.log(demo2.getName());
+console.log(demo2.getAge());
+```
+
+
+
+### （3）类访问器装饰器
+
+```typescript
+function decorator(target: any, key: string, descriptor: PropertyDescriptor) {
+    descriptor.writable = false;
+}
+
+class Demo {
+    constructor(private _name: string) {
+        this._name = _name;
+    }
+
+    get name() {
+        return this._name;
+    }
+
+    // 注意事项：get和set不能同时加装饰器
+    @decorator
+    set name(name: string) {
+        this._name = name;
+    }
+}
+
+
+const bob = new Demo("bob");
+console.log(bob.name);
+bob.name = "def";
+console.log(bob.name);
+```
+
+### （4）属性装饰器
+
+```type
+// (1) 无法接收到descriptor参数
+// (2) 返回一个descriptor以覆盖原始的name属性上的descriptor
+// 函数的作用是: 不让在外部修改属性
+function decorator1(target: any, key: string): any {
+    const descrioptor: PropertyDescriptor = {
+        writable: false
+    }
+    return descrioptor;
+}
+
+// class Demo1 {
+//
+//     @decorator1
+//     name = "bob";       // 这会报错，因为装饰器不让属性修改
+// }
+//
+// const bob = new Demo1();
+// console.log(bob.name);
+
+// --------------------------------------------------------------------
+// 实例上的属性不可修改，这里修改的是原型上的属性，即__proto__
+function decorator2(target: any, key: string): any {
+    target[key] = "def";
+}
+
+class Demo2 {
+    @decorator2
+    name = "abc";
+
+}
+
+const jack = new Demo2();
+console.log(jack.name);                         // abc
+console.log((jack as any).__proto__.name);      // def
+```
+
+### （5）参数装饰器
+
+```typescript
+// 参数：原型，方法名，参数所在的索引
+function decorator(target: any, key: string, paramIndex: number): any {
+    console.log(target, key, paramIndex);
+}
+
+class Demo {
+    getInfo(name: string, @decorator age: number) {
+        console.log(name, age);
+    }
+}
+
+const jack = new Demo();
+```
+
+
 
 
 
