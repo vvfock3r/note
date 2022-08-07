@@ -4391,6 +4391,7 @@ class Demo:
 #!/usr/bin/env python
 # -*- coding:utf-8-*-
 
+import time
 import threading
 
 class Single:
@@ -4399,6 +4400,7 @@ class Single:
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "_instance"):
             with cls._instance_lock:
+                # time.sleep(1)
                 if not hasattr(cls, "_instance"):
                     cls._instance = object.__new__(cls)
         return getattr(cls, "_instance")
@@ -4413,11 +4415,73 @@ class Single:
 #           返回类属性_instance
 #
 # 问: 加锁之后为什么还要判断有没有_instance属性?
-# 答: 如果不判断，那么线程1获取锁后，还没执行完，这时候线程2已经在尝试获取锁了，等线程1执行完，实际上已经是单例了，
-#     线程2又获取了一遍锁，又生成一个新对象，实际就并不是线程安全了。这与线程安全章节的queue陷阱类似。
+# 答: (1) 如果不判断，那么线程1获取锁后，还没执行完，这时候线程2已经在尝试获取锁了，等线程1执行完，实际上已经是单例了，
+#         线程2又获取了一遍锁，又生成一个新对象，实际就并不是线程安全了。这与线程安全章节的queue陷阱类似。可以取消注释# time.sleep(1)来验证
+#     (2) 如果不容易理解，可以从另一方面来考虑
+#         其实第一个if判断可以去掉，程序逻辑就变为：先加锁，若没有_instance属性就创建要给实例加上去
+#         第一个if可以用来先判断一次，可以避免多次创建实例都会加锁判断，提高程序运行效率
 
 for i in range(10):
-    threading.Thread(target=lambda: print(Single())).start()
+    # 这里print的函数的骚操作主要是： 将默认线程不安全的print函数改写为线程安全
+    threading.Thread(target=lambda: print(str(Single()) + "\n", end="")).start()
+```
+
+输出结果
+
+```bash
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+```
+
+验证第一个if判断是否需要，主要验证运行效率
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import threading
+import timeit
+
+
+class Single1:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "_instance"):
+            with cls._instance_lock:
+                if not hasattr(cls, "_instance"):
+                    cls._instance = super().__new__(cls)
+        return getattr(cls, "_instance")
+
+
+class Single2:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        with cls._instance_lock:
+            if not hasattr(cls, "_instance"):
+                cls._instance = super().__new__(cls)
+        return getattr(cls, "_instance")
+
+
+number = 1000000  # 运行一百万次，这也是默认值
+print(timeit.timeit(stmt=Single1, number=number))
+print(timeit.timeit(stmt=Single2, number=number))
+```
+
+输出结果，执行100万次，效率相差0.2秒
+
+```bash
+0.17731970000022557
+0.3915019999985816
 ```
 
 :::
