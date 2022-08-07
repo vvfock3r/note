@@ -82,6 +82,74 @@ java Main
 
 常量语法：`final <变量语法>`
 
+### 基本语句
+
+::: details （1）if语句
+
+```java
+import java.util.Scanner;
+
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        // 接收用户输入的数据，只支持接收一个整数
+        System.out.print("请输入你的分数: ");
+        Scanner s = new Scanner(System.in);
+        int grade = s.nextInt();
+
+        // 分数评级
+        if (grade > 100) {
+            System.out.println("The input range is 0-100, please re-enter");
+        } else if (grade > 90) {
+            System.out.println("A");
+        } else if (grade > 80) {
+            System.out.println("B");
+        } else if (grade > 70) {
+            System.out.println("C");
+        } else {
+            System.out.println("D");
+        }
+    }
+}
+```
+
+:::
+
+::: details （2）switch语句
+
+```java
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        int n = 100;
+        switch (n++) {
+            case 99:
+                System.out.println(99);
+                break;
+            case 100:
+                System.out.println(100);
+                break;
+            case 101:
+                System.out.println(101);
+                break;
+            default:
+                System.out.println("Default");
+                break;
+        }
+    }
+}
+```
+
+:::
+
 ### 基本数据类型
 
 **概览**
@@ -277,6 +345,94 @@ Hello 105
 100
 102
 105
+```
+
+:::
+
+::: details （5）关系运算符
+
+```java
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        // char类型比较，比较的是ASCII值
+        System.out.println('A' > 'B');  // false
+
+        // 浮点数与整数比较，只要值相等结果就为true
+        System.out.println(3.0 == 3);  // true
+    }
+}
+```
+
+:::
+
+::: details （6）逻辑运算符：短路和非短路
+
+* 与：&&或&
+* 或：|| 或 |
+* 非：!
+
+```java
+import java.util.Scanner;
+
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        // & 并不会短路，所有条件都会执行
+        int n1 = 3;
+        boolean b1 = (3 > 7) & ((n1++) < 2);
+        System.out.println(n1);     // 4
+        System.out.println(b1);     // false
+
+        // && 会短路，所以n2的值并不会增加
+        int n2 = 3;
+        boolean b2 = (3 > 7) && ((n2++) < 2);
+        System.out.println(n2);   // 3
+        System.out.println(b2);   // false
+
+        // | 不会短路
+        int n3 = 3;
+        boolean b3 = (3 < 7) | ((n3++) < 2);
+        System.out.println(n3);   // 4
+        System.out.println(b3);   // true
+
+        // || 会短路
+        int n4 = 3;
+        boolean b4 = (3 < 7) || ((n4++) < 2);
+        System.out.println(n4);   // 3
+        System.out.println(b4);   // true
+    }
+}
+```
+
+:::
+
+::: details （7）条件运算符
+
+语法：`布尔表达式 ? 表达式1 : 表达式2`
+
+```java
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        int n1 = 100, n2 = 200;
+
+        // 如果n1 > n2，那么返回n1，否则返回n2
+        System.out.println(n1 > n2 ? n1 : n2);
+    }
+}
 ```
 
 :::
