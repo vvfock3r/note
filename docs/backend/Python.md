@@ -4320,6 +4320,256 @@ print(p.show(p))  # 这里需要将实例传入到show方法中
 (7, 8)
 ```
 
+### 可迭代对象和迭代器
+
+文档：[https://docs.python.org/zh-cn/3.10/library/stdtypes.html#container.__iter__](https://docs.python.org/zh-cn/3.10/library/stdtypes.html#container.__iter__)
+
+<hr />
+
+#### **（1）基础知识**
+
+语法定义：实现了`__iter__`方法的对象称为可迭代对象，实现了`__iter__`方法和`__next__`的对象称为迭代器
+
+包含关系：迭代器是可迭代对象，但是可迭代对象不一定是迭代器
+
+<br />
+
+相同点：都可以使用`for xx in xx`语句
+
+不同点：
+
+* **同一个迭代器对象**只能使用**一次**for语句迭代
+
+* **同一个可迭代对象**可以**多次**使用for语句迭代，原因在于`__iter__`必须要返回一个迭代器对象
+
+<br />
+
+相关内建函数：
+
+* `iter(可迭代对象)` 将可迭代对象转为一个新的迭代器返回，等同于调用`可迭代对象.__iter__()`
+* `next(迭代器)`获取下一次迭代的值，迭代完成后会抛出`StopIteration`异常，for语句会自动帮我们捕获，然后退出循环
+
+<br />
+
+数据类型举例
+
+* 迭代器：生成器
+* 可迭代对象：字符串、列表、元组、字典等
+
+<br />
+
+#### **（2）迭代次数不同示例**
+
+::: details 点击查看完整代码
+
+```python
+# !/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from collections.abc import Iterable, Iterator
+
+# 定义数据
+l1 = [100, 200]  # 列表是可迭代对象，但不是迭代器
+l2 = iter(l1)  # 使用iter(可迭代对象)可以将 可迭代对象转为迭代器
+
+print("-" * 25 + " 一个可迭代对象和一个迭代器 " + "-" * 25)
+print(f"l1是可迭代对象: {isinstance(l1, Iterable)}, 是迭代器: {isinstance(l1, Iterator)}")
+print(f"l2是可迭代对象: {isinstance(l2, Iterable)}, 是迭代器: {isinstance(l2, Iterator)}")
+
+print("-" * 25 + "多次迭代l1" + "-" * 25)
+for i in l1:
+    print(i)
+
+for i in l1:
+    print(i)
+
+print("-" * 25 + "多次迭代l2" + "-" * 25)
+for i in l2:
+    print(i)
+
+for i in l2:  # 这里再迭代，已经没有数据了
+    print(i)
+
+# 需要注意的是：上面我们都是在迭代同一对象，如果是不同对象，不管是迭代器还是可迭代对象，都可以无限使用for语句，比如
+# for i in Range(10):   # Range是一个迭代器
+#     print(i)
+# for i in Range(10):   # 注意这里又是另外一个Range对象了，跟上面的不一样，所以可以继续迭代
+#     print(i)
+```
+
+:::
+
+输出结果
+
+```bash
+------------------------- 一个可迭代对象和一个迭代器 -------------------------
+l1是可迭代对象: True, 是迭代器: False
+l2是可迭代对象: True, 是迭代器: True
+-------------------------多次迭代l1-------------------------
+100
+200
+100
+200
+-------------------------多次迭代l2-------------------------
+100
+200
+```
+
+<br />
+
+<br />
+
+#### **（3）`__iter__`和`__next__`方法**
+
+`__iter__`必须返回一个迭代器，此时可以有以下几种返回值：
+
+* 返回实例本身(`self`)，意味着实例本身就是迭代器，所以也需要实现`__next__`方法
+* 将可迭代对象转为迭代器并返回，`return iter(可迭代对象)`
+* 返回生成器（生成器是迭代器的一种）
+
+`__next__`方法返回下一个值，如果值已经取完，抛出`StopIteration`，`for`语句会自动捕捉这个异常，然后退出循环
+
+示例代码 - 仿`range`
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+class Range:
+    def __init__(self, start, stop=None, step=1):
+        self.step = step
+        # 一个参数, start = stop
+        if stop is None:
+            self.start = - self.step
+            self.stop = start
+        else:
+            # 两个参数
+            self.start = start - self.step
+            self.stop = stop
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.start += self.step
+        if self.start >= self.stop:
+            raise StopIteration
+        return self.start
+
+
+for i in Range(10, 20, 3):
+    print(i)
+print(list(range(5)) == list(Range(5)))  # True
+print(list(range(5, 10)) == list(Range(5, 10)))  # True
+print(list(range(5, 10, 2)) == list(Range(5, 10, 2)))  # True
+print(list(range(2, 10, 2)) == list(Range(2, 10, 2)))  # True
+print(list(range(2, 10, 3)) == list(Range(2, 10, 3)))  # True
+```
+
+:::
+
+输出结果
+
+```bash
+10
+13
+16
+19
+True
+True
+True
+True
+True
+```
+
+
+
+#### **（4）迭代流程扩展**
+
+一个完整的迭代流程如下：
+
+① 检查对象是否实现了` __iter__ `方法，如果实现了就调用它，获取一个迭代器
+
+② 如果没有实现` __iter__ `方法，**但是实现了` __getitem__` 方法，Python会创建一个迭代器，尝试按顺序（从索引 0 开始）获取元素**
+
+​     如果尝试失败，Python抛出 `TypeError`异常，通常会提示`"x object is not iterable"`
+
+不实现`__iter__`但是实现`__getitem__`示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+
+from collections.abc import Iterable, Iterator
+
+
+class Range:
+    def __init__(self, start, stop=None, step=1):
+        self.step = step
+        # 1个参数
+        if stop is None:
+            self.start = -step
+            self.stop = start
+        # 2个参数
+        else:
+            self.start = start - step
+            self.stop = stop
+
+    def __getitem__(self, item):
+        value = self.start + self.step * (item + 1)
+        if value >= self.stop:
+            raise IndexError
+        return value
+
+
+data = Range(5, 8)
+print(data[0])
+print(data[1])
+print(data[2])
+print()
+
+for i in data:
+    print(i)
+print()
+
+for i in data:
+    print(i)
+print()
+
+print(isinstance(data, Iterable))
+print(isinstance(data, Iterator))
+
+# 总结：
+# 仅利用__getitem__就可以实现for语句迭代，但是它并不是可迭代对象，更不是迭代器
+```
+
+:::
+
+输出结果
+
+```bash
+5
+6
+7
+
+5
+6
+7
+
+5
+6
+7
+
+False
+False
+```
+
 
 
 ### 魔法方法
@@ -4721,246 +4971,6 @@ print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
 <Point (100, 200)>
 (100, 200)
 {'x':100, 'y':200 }
-```
-
-#### 可迭代对象和迭代器
-
-文档：[https://docs.python.org/zh-cn/3.10/library/stdtypes.html#container.__iter__](https://docs.python.org/zh-cn/3.10/library/stdtypes.html#container.__iter__)
-
-<hr />
-
-**（1）基础知识**
-
-语法定义：实现了`__iter__`方法的对象称为可迭代对象，实现了`__iter__`方法和`__next__`的对象称为迭代器
-
-包含关系：迭代器是可迭代对象，但是可迭代对象不一定是迭代器
-
-<br />
-
-相同点：都可以使用`for xx in xx`语句
-
-不同点：
-
-* **同一个迭代器对象**只能使用**一次**for语句迭代
-
-* **同一个可迭代对象**可以**多次**使用for语句迭代，原因在于`__iter__`必须要返回一个迭代器对象
-
-<br />
-
-相关内建函数：
-
-* `iter(可迭代对象)` 将可迭代对象转为一个新的迭代器返回，等同于调用`可迭代对象.__iter__()`
-* `next(迭代器)`获取下一次迭代的值，迭代完成后会抛出`StopIteration`异常，for语句会自动帮我们捕获，然后退出循环
-
-<br />
-
-数据类型举例
-
-* 迭代器：生成器
-* 可迭代对象：字符串、列表、元组、字典等
-
-<br />
-
-**（2）迭代次数不同示例**
-
-::: details 点击查看完整代码
-
-```python
-# !/usr/bin/env python
-# -*- coding:utf-8-*-
-
-import warnings
-
-warnings.filterwarnings("ignore")  # 关系collections.abc的警告
-
-from collections import Iterable, Iterator
-
-# 定义数据
-l1 = [100, 200]  # 列表是可迭代对象，但不是迭代器
-l2 = iter(l1)  # 使用iter(可迭代对象)可以将 可迭代对象转为迭代器
-
-print("-" * 25 + " 一个可迭代对象和一个迭代器 " + "-" * 25)
-print(f"l1是可迭代对象: {isinstance(l1, Iterable)}, 是迭代器: {isinstance(l1, Iterator)}")
-print(f"l2是可迭代对象: {isinstance(l2, Iterable)}, 是迭代器: {isinstance(l2, Iterator)}")
-
-print("-" * 25 + "多次迭代l1" + "-" * 25)
-for i in l1:
-    print(i)
-
-for i in l1:
-    print(i)
-
-print("-" * 25 + "多次迭代l2" + "-" * 25)
-for i in l2:
-    print(i)
-
-for i in l2:  # 这里再迭代，已经没有数据了
-    print(i)
-
-# 需要注意的是：上面我们都是在迭代同一对象，如果是不同对象，不管是迭代器还是可迭代对象，都可以无限使用for语句，比如
-# for i in Range(10):   # Range是一个迭代器
-#     print(i)
-# for i in Range(10):   # 注意这里又是另外一个Range对象了，跟上面的不一样，所以可以继续迭代
-#     print(i)
-```
-
-:::
-
-输出结果
-
-```bash
-------------------------- 一个可迭代对象和一个迭代器 -------------------------
-l1是可迭代对象: True, 是迭代器: False
-l2是可迭代对象: True, 是迭代器: True
--------------------------多次迭代l1-------------------------
-100
-200
-100
-200
--------------------------多次迭代l2-------------------------
-100
-200
-```
-
-<br />
-
-<br />
-
-**（3）`__iter__`和`__next__`方法**
-
-`__iter__`必须返回一个迭代器，此时可以有以下几种返回值：
-
-* 返回实例本身(`self`)，意味着实例本身就是迭代器，所以也需要实现`__next__`方法
-* 将可迭代对象转为迭代器并返回，`return iter(可迭代对象)`
-* 返回生成器（生成器是迭代器的一种）
-
-`__next__`方法返回下一个值，如果值已经取完，抛出`StopIteration`，`for`语句会自动捕捉这个异常，然后退出循环
-
-示例代码 - 仿`range`
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-
-class Range:
-    def __init__(self, start, stop=None, step=1):
-        self.step = step
-        # 一个参数, start = stop
-        if stop is None:
-            self.start = - self.step
-            self.stop = start
-        else:
-            # 两个参数
-            self.start = start - self.step
-            self.stop = stop
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        self.start += self.step
-        if self.start >= self.stop:
-            raise StopIteration
-        return self.start
-
-
-for i in Range(10, 20, 3):
-    print(i)
-print(list(range(5)) == list(Range(5)))  # True
-print(list(range(5, 10)) == list(Range(5, 10)))  # True
-print(list(range(5, 10, 2)) == list(Range(5, 10, 2)))  # True
-print(list(range(2, 10, 2)) == list(Range(2, 10, 2)))  # True
-print(list(range(2, 10, 3)) == list(Range(2, 10, 3)))  # True
-```
-
-:::
-
-输出结果
-
-```bash
-10
-13
-16
-19
-True
-True
-True
-True
-True
-```
-
-
-
-**（4）迭代流程扩展**
-
-一个完整的迭代流程如下：
-
-① 检查对象是否实现了` __iter__ `方法，如果实现了就调用它，获取一个迭代器
-
-② 如果没有实现` __iter__ `方法，**但是实现了` __getitem__` 方法，Python会创建一个迭代器，尝试按顺序（从索引 0 开始）获取元素**
-
-​     如果尝试失败，Python抛出 `TypeError`异常，通常会提示`"x object is not iterable"`
-
-不实现`__iter__`但是实现`__getitem__`示例
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-import warnings
-
-warnings.filterwarnings("ignore")  # 关系collections.abc的警告
-
-from collections import Iterable, Iterator
-
-
-class Range:
-    def __init__(self):
-        self.data = [x for x in range(5, 8)]
-
-    def __getitem__(self, item):
-        return self.data[item]
-
-
-data = Range()
-print(data[0])
-print(data[1])
-print(data[2])
-
-for i in data:
-    print(i)
-
-for i in data:
-    print(i)
-
-print(isinstance(data, Iterable))
-print(isinstance(data, Iterator))
-
-# 总结：
-# 仅利用__getitem__就可以实现for语句迭代，但是它并不是可迭代对象，更不是迭代器
-```
-
-:::
-
-输出结果
-
-```bash
-5
-6
-7
-5
-6
-7
-5
-6
-7
-False
-False
 ```
 
 
