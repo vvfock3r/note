@@ -4006,7 +4006,6 @@ if __name__ == '__main__':
 |                    | `__gt__`                                    | 大于，>                           |
 |                    | `__ge__`                                    | 大于等于，>=                      |
 |                    | `__ne__`                                    | 不等于，!=                        |
-|                    |                                             |                                   |
 |                    | `__add__`                                   | 加，+                             |
 |                    | `__sub__`                                   | 减，-                             |
 |                    | __`mul__`                                   | 乘，*                             |
@@ -4024,9 +4023,339 @@ if __name__ == '__main__':
 |                    | `__ifloordiv__`                             | //=                               |
 |                    | `__ipow__`                                  | **=                               |
 
+### 实例创建和销毁
+
+#### 创建实例：`__new__`
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__)
+
+创建类实例对象并返回，它可以让我们定制实例创建过程，比如实现**单例模式**
+
+默认的`__new__`行为
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+# class Demo:
+#    pass
+
+# 将以上代码展开的话，就等同于如下代码
+class Demo:
+    def __new__(cls, *args, **kwargs):
+        # return object.__new__(cls) # 写法1
+        return super().__new__(cls)  # 写法2
+```
+
+使用`__new__`实现线程安全的单例类
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import time
+import threading
+
+class Single:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "_instance"):
+            with cls._instance_lock:
+                # time.sleep(1)
+                if not hasattr(cls, "_instance"):
+                    cls._instance = object.__new__(cls)
+        return getattr(cls, "_instance")
 
 
-### 装饰器
+# 原理说明
+#   每次创建【类实例对象】时先检查【类对象】上是否有_instance属性，
+#       如果有，说明已经实例化过了，直接返回类实例化对象
+#       如果没有，那么才开始创建实例对象
+#           获取锁
+#               类属性_instance = 类实例化对象
+#           返回类属性_instance
+#
+# 问: 加锁之后为什么还要判断有没有_instance属性?
+# 答: (1) 如果不判断，那么线程1获取锁后，还没执行完，这时候线程2已经在尝试获取锁了，等线程1执行完，实际上已经是单例了，
+#         线程2又获取了一遍锁，又生成一个新对象，实际就并不是线程安全了。这与线程安全章节的queue陷阱类似。可以取消注释# time.sleep(1)来验证
+#     (2) 如果不容易理解，可以从另一方面来考虑
+#         其实第一个if判断可以去掉，程序逻辑就变为：先加锁，若没有_instance属性就创建要给实例加上去
+#         第一个if可以用来先判断一次，可以避免多次创建实例都会加锁判断，提高程序运行效率
+
+for i in range(10):
+    # 这里print的函数的骚操作主要是： 将默认线程不安全的print函数改写为线程安全
+    threading.Thread(target=lambda: print(str(Single()) + "\n", end="")).start()
+```
+
+输出结果
+
+```bash
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+<__main__.Single object at 0x000002620E539570>
+```
+
+验证第一个if判断是否需要，主要验证运行效率
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import threading
+import timeit
+
+
+class Single1:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "_instance"):
+            with cls._instance_lock:
+                if not hasattr(cls, "_instance"):
+                    cls._instance = super().__new__(cls)
+        return getattr(cls, "_instance")
+
+
+class Single2:
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        with cls._instance_lock:
+            if not hasattr(cls, "_instance"):
+                cls._instance = super().__new__(cls)
+        return getattr(cls, "_instance")
+
+
+number = 1000000  # 运行一百万次，这也是默认值
+print(timeit.timeit(stmt=Single1, number=number))
+print(timeit.timeit(stmt=Single2, number=number))
+```
+
+输出结果，执行100万次，效率相差0.2秒
+
+```bash
+0.17731970000022557
+0.3915019999985816
+```
+
+:::
+
+#### 销毁实例：`__del__`
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__)
+
+在实例将被销毁时调用，注意：`del x` 并不直接调用 `x.__del__()` --- 前者会将 `x` 的引用计数减一，而后者仅会在 `x` 的引用计数变为零时被调用。
+
+代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+import sys
+import time
+
+class Demo:
+    def __del__(self):
+        print("__del__ called")
+
+
+a = Demo()
+b = a
+c = a
+
+print(a is b is c)  # True
+print(sys.getrefcount(a) - 1)  # 引用计数为3， a，b,c
+
+del a  # del会将对象的引用计数-1，只有当对象的引用计数为0时，才会调用__del__，所以这里并不会有任何输出
+
+time.sleep(3)
+
+# 程序在结束时，会将引用计数置为0，并调用一次__del__
+# __del__ called
+
+
+# 输出结果
+# True
+# 3
+# __del__ called
+```
+
+:::
+
+
+
+### `实例[key]`
+
+[文档：https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__)
+
+代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+# 测试1：准备几种不同的数据结构
+l = [100, 200, 300]
+d = {"name": "bob", "age": 20, 10: 20}
+
+print(l.__getitem__(0))       # 等同于 l[0], 列表没有key，只有索引，所以0代表的是索引
+print(d.__getitem__("name"))  # 等同于d["name"]
+print(d.__getitem__(10))      # 等同于d[10]，这里虽然是数字，看起来像是通过索引来访问（其实不是），本质上还是通过key
+
+
+# 测试2：
+class Demo:
+    def __init__(self, *args, **kwargs):
+        self.data = {
+            "name": "Demo",
+            "version": "v1"
+        }
+
+    def __getitem__(self, item):
+        print(f"Called: __getitem__({item})")
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        print(f"Called: __setitem__({key}, {value})")
+        self.data[key] = value
+
+    def __delitem__(self, key):
+        print(f"Called: __delitem__({key})")
+        del self.data[key]
+
+
+print("-" * 50)
+# (1)
+d = Demo()
+print(d["name"])
+
+# (2)
+d["color"] = "red"
+
+# (3)
+del d["version"]
+```
+
+输出结果
+
+```bash
+100
+bob
+20
+--------------------------------------------------
+Called: __getitem__(name)
+Demo
+Called: __setitem__(color, red)
+Called: __delitem__(version)
+```
+
+:::
+
+
+
+### 实例可视化
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__)
+
+* `__str__`和`__repr__`作用类似，推荐两个定义成一样的，并且优先定义`__repr__`（`__str__`也可以不定义会自动调用`__repr__`）
+
+* `__str__`和`__repr__`不同的例子可以参考`datetime`模块实现
+
+  ```python
+  from datetime import date
+  print(str(date.today()))   # 2022-04-08
+  print(repr(date.today()))  # datetime.date(2022, 4, 8)
+  ```
+
+* `__format__`用的并不多，当需要一个对象可以展示多种样式时可以定义这个方法
+
+示例代码
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+
+class Person2(Person):
+    def __repr__(self):
+        return f'<Person2 {self.name}>'
+
+
+# 默认情况下的输出
+bob = Person("Bob")
+print(bob)  # <__main__.Person object at 0x0000017AE21FD548>
+
+# 优化默认输出
+jack = Person2("Jack")
+print(jack)  # <Person2 Jack>
+print("-" * 50)
+
+
+# __format__可以定制多种输出格式
+class Point:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f"<Point ({self.x}, {self.y})>"
+
+    def __format__(self, format_spec):
+        # 显示格式，也可以放到类外边去定义
+        FORMAT = {
+            "default": "<Point ({}, {})>",  # 默认显示格式
+            "parentheses": "({}, {})",  # 小括号显示格式
+            "dictionary": "{{'x':{}, 'y':{} }}",  # 字典显示格式
+        }
+
+        # 不指定则使用默认显示形式
+        if format_spec == "":
+            return self.__repr__()
+
+        return FORMAT[format_spec].format(self.x, self.y)
+
+
+point = Point(100, 200)
+print(f"{point}")  # 默认显示格式， <Point (100, 200)>
+print(f"{point:parentheses}")  # 小括号显示格式， (100, 200)
+print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
+```
+
+输出结果
+
+```bash
+<__main__.Person object at 0x00000210C7965908>
+<Person2 Jack>
+--------------------------------------------------
+<Point (100, 200)>
+(100, 200)
+{'x':100, 'y':200 }
+```
+
+:::
+
+### 常用装饰器
 
 （1）属性装饰器 `@property`
 
@@ -4092,209 +4421,7 @@ logging.warning(f"{bob.name}")
 
 :::
 
-### 继承
-
-Python支持单继承和多继承
-
-
-
-#### （1）哪些属性不会继承
-
-父类中的**私有属性**在子类中不能直接访问，但可以通过**._父类__属性**来访问
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class A:
-    def __init__(self):
-        self.__money = 1000
-        self._name = "我叫大A"
-
-
-class B(A):
-    def getMoney(self):
-        # 直接访问是访问不到的，会报错，也就是没有继承下来
-        return self.__money
-
-    def getMoney2(self):
-        print(self.__dict__)  # {'_A__money': 1000, '_name': '我叫大A'}
-
-        # return self._A__money  # 写法1, Pycharm会有黄色警告
-        return self.__dict__["_A__money"]  # 写法2
-
-
-print(B().getMoney2())
-```
-
-:::
-
-输出结果
-
-```bash
-{'_A__money': 1000, '_name': '我叫大A'}
-1000
-```
-
-
-
-#### （2）类与类之间的属性查找顺序
-
-按照【深度优先】的搜索顺序，使用的是C3算法
-
-使用`类对象.__mro__` 或 `类对象.mro()方法` 可以显示查找顺序
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class A:
-    def __init__(self):
-        print("Class A.__init__ called")
-
-
-class B:
-    def __init__(self):
-        print("Class B.__init__ called")
-
-
-class C(A, B):
-    def __init__(self):
-        print("Class C.__init__ called")
-        super().__init__()
-
-
-c = C()
-print(C.mro())  # 返回列表
-print(C.__mro__)  # 返回元组
-```
-
-:::
-
-输出结果
-
-```bash
-Class C.__init__ called
-Class A.__init__ called
-[<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>]
-(<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>)
-```
-
-
-
-#### （3）super解决多继承下的问题
-
-若要调用父类方法，强烈建议使用`super()`而不是直接写父类名，因为在多继承中这会有问题
-
-错误代码示例
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Base:
-    def __init__(self):
-        print("Class Base.__init__ called")
-
-
-class A(Base):
-    def __init__(self):
-        Base.__init__(self)
-        print("Class A.__init__ called")
-
-
-class B(Base):
-    def __init__(self):
-        Base.__init__(self)
-        print("Class B.__init__ called")
-
-
-class C(A, B):
-    def __init__(self):
-        A.__init__(self)
-        B.__init__(self)	# 并且，A和B的调用顺序也没有遵循MRO顺序，不够规范
-        print("Class C.__init__ called")
-
-
-c = C()
-
-# 输出结果
-# Class Base.__init__ called
-# Class A.__init__ called
-# Class Base.__init__ called
-# Class B.__init__ called
-# Class C.__init__ called
-
-# 可以看到Base.__init__调用了2次！
-```
-
-:::
-
-正确代码示例
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Base:
-    def __init__(self):
-        print("Class Base.__init__ called")
-
-
-class A(Base):
-    def __init__(self):
-        super().__init__()
-        print("Class A.__init__ called")
-
-
-class B(Base):
-    def __init__(self):
-        super().__init__()
-        print("Class B.__init__ called")
-
-
-class C(A, B):
-    def __init__(self):
-        super().__init__()
-        print("Class C.__init__ called")
-
-
-c = C()
-
-# 输出结果
-# Class Base.__init__ called
-# Class B.__init__ called
-# Class A.__init__ called
-# Class C.__init__ called
-
-# 可以看到Base.__init__调用了1次
-```
-
-:::
-
-
-
-#### （4）继承相关魔法方法
-
-| 方法                               | 说明                                                         |
-| ---------------------------------- | ------------------------------------------------------------ |
-| `类对象.__base__`                  | 类对象的父类对象，多继承情况下也只显示一个（注意：实例对象没有这个属性） |
-| `类对象.__bases__`                 | 类对象的父类对象元祖，多继承情况下显示所有父类（注意：实例对象没有这个属性） |
-| `类对象.__subclasses__`            | 类对象的子类对象列表，与`__bases__`相对应（注意：实例对象没有这个属性） |
-| `类对象.__mro__` 或 `类对象.mro()` | 类与类之间的属性查找顺序（前面已经讲过）（注意：实例对象没有这个属性） |
-| `实例对象.__class`__               | 实例所属的类对象（本章扩展内容，与继承没有关系，单纯是记录一下） |
-
-
-
-### 反射
+### 常用反射函数
 
 反射就是通过**字符串**映射出对象的方法
 
@@ -4358,6 +4485,314 @@ print(p.show(p))  # 这里需要将实例传入到show方法中
 ```
 
 :::
+
+### 运算符重载及应用
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types)
+
+示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from functools import total_ordering
+
+
+# __lt__、__le__、__gt__、__ge__全部写完的话太麻烦，使用total_ordering装饰器后，只需要实现其中一种即可；
+# 但是如需不需要最好不要加这个装饰器，因为可能带来性能问题
+
+@total_ordering
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __repr__(self):
+        return f"<Point ({self.x}, {self.y})>"
+
+    def __add__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __iadd__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __gt__(self, other):
+        return self.x > other.x
+
+
+# 实例化
+p1 = Point(1, 2)
+p2 = Point(1, 3)
+
+# 支持+ +=等运算符
+p3 = p1 + p2
+p1 += p2
+print(p1 == p3)
+
+# 可哈希,可作为dict/set等的key
+d = {}
+d[p3] = "p3"
+print(d)
+```
+
+输出结果
+
+```bash
+True
+{<Point (2, 5)>: 'p3'}
+```
+
+:::
+
+**pathlib中的运算符重载**
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+from pathlib import Path
+
+host1 = Path("C:\Windows\System32\drivers\etc") / "hosts"
+host2 = Path("C:\Windows\System32\drivers\etc") / Path("hosts")
+
+print(host1)
+print(host1.exists())
+
+print(host2)
+print(host2.exists())
+
+# C:\Windows\System32\drivers\etc\hosts
+# True
+# C:\Windows\System32\drivers\etc\hosts
+# True
+```
+
+
+
+### 上下文管理：with
+
+**文档**
+
+* [https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement](https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement)
+
+* [https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__)
+
+
+
+**说明**
+
+`__enter__`：
+
+* **使用`with..as`语句时，`__enter__`的返回值就等于`as`后面跟的变量**
+* 如果`__enter__`方法发生错误，那么意味着`with`语句尚未开始执行，`__exit__`自然也不会执行
+* 如果`__enter__`方法未发生错误，那么`__exit__()` 将总是被调用
+
+
+
+`__exit__`:
+
+* `with`语句执行完成后，会自动执行`__exit__`方法，即使在with上下文中遇到异常，`__exit__`也会被执行
+* **`__exit__`的返回值决定`with`语句中的异常是否向外抛出（等效于`False`为抛出异常，等效于`True`为压制异常）**
+
+
+
+**两种调用方法**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Demo:
+    def __enter__(self):
+        print('__enter__ called')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__ called')
+
+    def demo(self):
+        return self
+
+
+# 使用实例的方式调用
+with Demo() as f:
+    print("Class test")
+
+print('-' * 50)
+
+# 使用实例方法调用
+with Demo().demo() as c:
+    print("Func test")
+```
+
+输出结果
+
+```bash
+__enter__ called
+Class test
+__exit__ called
+--------------------------------------------------
+__enter__ called
+Func test
+__exit__ called
+```
+
+:::
+
+**异常抛出与压制**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Demo:
+    def __enter__(self):
+        print('__enter__ called')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__ called')
+        return True  # 压制异常(如果有)
+        # return False  # 抛出异常(如果有), 这句也可以不写，默认return None就等效于False
+
+
+# 使用实例的方式调用
+with Demo() as a:
+    raise Exception("error")
+```
+
+:::
+
+
+
+### 实例属性查找顺序
+
+文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__)
+
+
+
+**实例属性查找顺序如下**
+
+（1）主要顺序
+
+① 调用`__getattribute__(item)` --> 返回（计算后的）正常值
+
+② 调用`__getattribute__(item)` --> 返回（计算后的）异常值`AttributeError` --> 如果定义了`__getattr__`则调用，否则继续抛出原来的`AttributeError`
+
+> 我们可以称`__getattribute__`为属性拦截器
+
+<br />
+
+（2）计算后的值如何获得？
+实例字典 --> 类字典 --> ... --> 直到`object`类字典 --> `object`抛出`AttributeError`
+
+<br />
+
+（3）注意事项
+
+① `__getattribute__(item)`方法中不能再使用`self.x`、`self.__dict__`等属性，因为这会造成无限递归
+
+② `__getattr__`中不能再使用`self.不存在的属性`，因为这同样会造成无限递归
+
+③ `object`对象没有`__getattr__`方法，所以我们不能调用父类或object的`__getattr__`方法
+
+<br />
+
+**实例属性查找-正常值示例**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+    
+    def __init__(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def __getattribute__(self, item):
+        print(f"Called __getattribute__({item})")
+        return super().__getattribute__(item)
+
+
+# 实例化对象
+person = Person("bob")
+
+# 实例属性查找-1
+print(person.name)
+print("-" * 30)
+# Called __getattribute__(name)
+# bob
+
+# 实例属性查找-2
+print(person.getName())
+# Called __getattribute__(getName)
+# Called __getattribute__(name)
+# bob
+```
+
+:::
+
+**实例属性查找-AttributeError示例**
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Person:
+
+    def __init__(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def __getattribute__(self, item):
+        print(f"Called __getattribute__({item})")
+        return super().__getattribute__(item)
+
+    def __getattr__(self, item):
+        # object对象没有__getattr__方法, 不能使用super
+        return f"实例对象{self.__class__.__name__}不存在{item}属性"
+
+
+# 实例化对象
+person = Person("bob")
+
+# 实例属性查找
+print(person.abc)
+```
+
+:::
+
+输出结果
+
+```bash
+Called __getattribute__(abc)
+Called __getattribute__(__class__)
+实例对象Person不存在abc属性
+```
+
+
 
 ### 迭代
 
@@ -4612,31 +5047,15 @@ False
 
 :::
 
-### 实例创建和销毁
+### 继承
 
-#### 创建实例：`__new__`
+Python支持单继承和多继承
 
-文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__)
 
-创建类实例对象并返回，它可以让我们定制实例创建过程，比如实现**单例模式**
 
-默认的`__new__`行为
+#### （1）哪些属性不会继承
 
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-# class Demo:
-#    pass
-
-# 将以上代码展开的话，就等同于如下代码
-class Demo:
-    def __new__(cls, *args, **kwargs):
-        # return object.__new__(cls) # 写法1
-        return super().__new__(cls)  # 写法2
-```
-
-使用`__new__`实现线程安全的单例类
+父类中的**私有属性**在子类中不能直接访问，但可以通过**._父类__属性**来访问
 
 ::: details 点击查看完整代码
 
@@ -4644,108 +5063,43 @@ class Demo:
 #!/usr/bin/env python
 # -*- coding:utf-8-*-
 
-import time
-import threading
-
-class Single:
-    _instance_lock = threading.Lock()
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, "_instance"):
-            with cls._instance_lock:
-                # time.sleep(1)
-                if not hasattr(cls, "_instance"):
-                    cls._instance = object.__new__(cls)
-        return getattr(cls, "_instance")
+class A:
+    def __init__(self):
+        self.__money = 1000
+        self._name = "我叫大A"
 
 
-# 原理说明
-#   每次创建【类实例对象】时先检查【类对象】上是否有_instance属性，
-#       如果有，说明已经实例化过了，直接返回类实例化对象
-#       如果没有，那么才开始创建实例对象
-#           获取锁
-#               类属性_instance = 类实例化对象
-#           返回类属性_instance
-#
-# 问: 加锁之后为什么还要判断有没有_instance属性?
-# 答: (1) 如果不判断，那么线程1获取锁后，还没执行完，这时候线程2已经在尝试获取锁了，等线程1执行完，实际上已经是单例了，
-#         线程2又获取了一遍锁，又生成一个新对象，实际就并不是线程安全了。这与线程安全章节的queue陷阱类似。可以取消注释# time.sleep(1)来验证
-#     (2) 如果不容易理解，可以从另一方面来考虑
-#         其实第一个if判断可以去掉，程序逻辑就变为：先加锁，若没有_instance属性就创建要给实例加上去
-#         第一个if可以用来先判断一次，可以避免多次创建实例都会加锁判断，提高程序运行效率
+class B(A):
+    def getMoney(self):
+        # 直接访问是访问不到的，会报错，也就是没有继承下来
+        return self.__money
 
-for i in range(10):
-    # 这里print的函数的骚操作主要是： 将默认线程不安全的print函数改写为线程安全
-    threading.Thread(target=lambda: print(str(Single()) + "\n", end="")).start()
-```
+    def getMoney2(self):
+        print(self.__dict__)  # {'_A__money': 1000, '_name': '我叫大A'}
 
-输出结果
-
-```bash
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-<__main__.Single object at 0x000002620E539570>
-```
-
-验证第一个if判断是否需要，主要验证运行效率
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-import threading
-import timeit
+        # return self._A__money  # 写法1, Pycharm会有黄色警告
+        return self.__dict__["_A__money"]  # 写法2
 
 
-class Single1:
-    _instance_lock = threading.Lock()
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, "_instance"):
-            with cls._instance_lock:
-                if not hasattr(cls, "_instance"):
-                    cls._instance = super().__new__(cls)
-        return getattr(cls, "_instance")
-
-
-class Single2:
-    _instance_lock = threading.Lock()
-
-    def __new__(cls, *args, **kwargs):
-        with cls._instance_lock:
-            if not hasattr(cls, "_instance"):
-                cls._instance = super().__new__(cls)
-        return getattr(cls, "_instance")
-
-
-number = 1000000  # 运行一百万次，这也是默认值
-print(timeit.timeit(stmt=Single1, number=number))
-print(timeit.timeit(stmt=Single2, number=number))
-```
-
-输出结果，执行100万次，效率相差0.2秒
-
-```bash
-0.17731970000022557
-0.3915019999985816
+print(B().getMoney2())
 ```
 
 :::
 
-#### 销毁实例：`__del__`
+输出结果
 
-文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__)
+```bash
+{'_A__money': 1000, '_name': '我叫大A'}
+1000
+```
 
-在实例将被销毁时调用，注意：`del x` 并不直接调用 `x.__del__()` --- 前者会将 `x` 的引用计数减一，而后者仅会在 `x` 的引用计数变为零时被调用。
 
-代码示例
+
+#### （2）类与类之间的属性查找顺序
+
+按照【深度优先】的搜索顺序，使用的是C3算法
+
+使用`类对象.__mro__` 或 `类对象.mro()方法` 可以显示查找顺序
 
 ::: details 点击查看完整代码
 
@@ -4753,42 +5107,91 @@ print(timeit.timeit(stmt=Single2, number=number))
 #!/usr/bin/env python
 # -*- coding:utf-8-*-
 
-import sys
-import time
-
-class Demo:
-    def __del__(self):
-        print("__del__ called")
+class A:
+    def __init__(self):
+        print("Class A.__init__ called")
 
 
-a = Demo()
-b = a
-c = a
+class B:
+    def __init__(self):
+        print("Class B.__init__ called")
 
-print(a is b is c)  # True
-print(sys.getrefcount(a) - 1)  # 引用计数为3， a，b,c
 
-del a  # del会将对象的引用计数-1，只有当对象的引用计数为0时，才会调用__del__，所以这里并不会有任何输出
+class C(A, B):
+    def __init__(self):
+        print("Class C.__init__ called")
+        super().__init__()
 
-time.sleep(3)
 
-# 程序在结束时，会将引用计数置为0，并调用一次__del__
-# __del__ called
+c = C()
+print(C.mro())  # 返回列表
+print(C.__mro__)  # 返回元组
+```
 
+:::
+
+输出结果
+
+```bash
+Class C.__init__ called
+Class A.__init__ called
+[<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>]
+(<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>)
+```
+
+
+
+#### （3）super解决多继承下的问题
+
+若要调用父类方法，强烈建议使用`super()`而不是直接写父类名，因为在多继承中这会有问题
+
+错误代码示例
+
+::: details 点击查看完整代码
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8-*-
+
+class Base:
+    def __init__(self):
+        print("Class Base.__init__ called")
+
+
+class A(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print("Class A.__init__ called")
+
+
+class B(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print("Class B.__init__ called")
+
+
+class C(A, B):
+    def __init__(self):
+        A.__init__(self)
+        B.__init__(self)	# 并且，A和B的调用顺序也没有遵循MRO顺序，不够规范
+        print("Class C.__init__ called")
+
+
+c = C()
 
 # 输出结果
-# True
-# 3
-# __del__ called
+# Class Base.__init__ called
+# Class A.__init__ called
+# Class Base.__init__ called
+# Class B.__init__ called
+# Class C.__init__ called
+
+# 可以看到Base.__init__调用了2次！
 ```
 
 :::
 
-### `obj[key]`操作
-
-[文档：https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__)
-
-代码示例
+正确代码示例
 
 ::: details 点击查看完整代码
 
@@ -4796,365 +5199,63 @@ time.sleep(3)
 #!/usr/bin/env python
 # -*- coding:utf-8-*-
 
-# 测试1：准备几种不同的数据结构
-l = [100, 200, 300]
-d = {"name": "bob", "age": 20, 10: 20}
+class Base:
+    def __init__(self):
+        print("Class Base.__init__ called")
 
-print(l.__getitem__(0))       # 等同于 l[0], 列表没有key，只有索引，所以0代表的是索引
-print(d.__getitem__("name"))  # 等同于d["name"]
-print(d.__getitem__(10))      # 等同于d[10]，这里虽然是数字，看起来像是通过索引来访问（其实不是），本质上还是通过key
 
+class A(Base):
+    def __init__(self):
+        super().__init__()
+        print("Class A.__init__ called")
 
-# 测试2：
-class Demo:
-    def __init__(self, *args, **kwargs):
-        self.data = {
-            "name": "Demo",
-            "version": "v1"
-        }
 
-    def __getitem__(self, item):
-        print(f"Called: __getitem__({item})")
-        return self.data[item]
+class B(Base):
+    def __init__(self):
+        super().__init__()
+        print("Class B.__init__ called")
 
-    def __setitem__(self, key, value):
-        print(f"Called: __setitem__({key}, {value})")
-        self.data[key] = value
 
-    def __delitem__(self, key):
-        print(f"Called: __delitem__({key})")
-        del self.data[key]
+class C(A, B):
+    def __init__(self):
+        super().__init__()
+        print("Class C.__init__ called")
 
 
-print("-" * 50)
-# (1)
-d = Demo()
-print(d["name"])
+c = C()
 
-# (2)
-d["color"] = "red"
+# 输出结果
+# Class Base.__init__ called
+# Class B.__init__ called
+# Class A.__init__ called
+# Class C.__init__ called
 
-# (3)
-del d["version"]
-```
-
-输出结果
-
-```bash
-100
-bob
-20
---------------------------------------------------
-Called: __getitem__(name)
-Demo
-Called: __setitem__(color, red)
-Called: __delitem__(version)
-```
-
-:::
-
-### 对象可视化
-
-文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__)
-
-* `__str__`和`__repr__`作用类似，推荐两个定义成一样的，并且优先定义`__repr__`（`__str__`也可以不定义会自动调用`__repr__`）
-
-* `__str__`和`__repr__`不同的例子可以参考`datetime`模块实现
-
-  ```python
-  from datetime import date
-  print(str(date.today()))   # 2022-04-08
-  print(repr(date.today()))  # datetime.date(2022, 4, 8)
-  ```
-
-* `__format__`用的并不多，当需要一个对象可以展示多种样式时可以定义这个方法
-
-
-
-示例代码
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Person:
-    def __init__(self, name):
-        self.name = name
-
-
-class Person2(Person):
-    def __repr__(self):
-        return f'<Person2 {self.name}>'
-
-
-# 默认情况下的输出
-bob = Person("Bob")
-print(bob)  # <__main__.Person object at 0x0000017AE21FD548>
-
-# 优化默认输出
-jack = Person2("Jack")
-print(jack)  # <Person2 Jack>
-print("-" * 50)
-
-
-# __format__可以定制多种输出格式
-class Point:
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
-
-    def __repr__(self):
-        return f"<Point ({self.x}, {self.y})>"
-
-    def __format__(self, format_spec):
-        # 显示格式，也可以放到类外边去定义
-        FORMAT = {
-            "default": "<Point ({}, {})>",  # 默认显示格式
-            "parentheses": "({}, {})",  # 小括号显示格式
-            "dictionary": "{{'x':{}, 'y':{} }}",  # 字典显示格式
-        }
-
-        # 不指定则使用默认显示形式
-        if format_spec == "":
-            return self.__repr__()
-
-        return FORMAT[format_spec].format(self.x, self.y)
-
-
-point = Point(100, 200)
-print(f"{point}")  # 默认显示格式， <Point (100, 200)>
-print(f"{point:parentheses}")  # 小括号显示格式， (100, 200)
-print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
-```
-
-输出结果
-
-```bash
-<__main__.Person object at 0x00000210C7965908>
-<Person2 Jack>
---------------------------------------------------
-<Point (100, 200)>
-(100, 200)
-{'x':100, 'y':200 }
-```
-
-:::
-
-### 上下文管理：with
-
-**文档**
-
-* [https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement](https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement)
-
-* [https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__)
-
-
-
-**说明**
-
-`__enter__`：
-
-* **使用`with..as`语句时，`__enter__`的返回值就等于`as`后面跟的变量**
-* 如果`__enter__`方法发生错误，那么意味着`with`语句尚未开始执行，`__exit__`自然也不会执行
-* 如果`__enter__`方法未发生错误，那么`__exit__()` 将总是被调用
-
-
-
-`__exit__`:
-
-* `with`语句执行完成后，会自动执行`__exit__`方法，即使在with上下文中遇到异常，`__exit__`也会被执行
-* **`__exit__`的返回值决定`with`语句中的异常是否向外抛出（等效于`False`为抛出异常，等效于`True`为压制异常）**
-
-
-
-**两种调用方法**
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Demo:
-    def __enter__(self):
-        print('__enter__ called')
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        print('__exit__ called')
-
-    def demo(self):
-        return self
-
-
-# 使用实例的方式调用
-with Demo() as f:
-    print("Class test")
-
-print('-' * 50)
-
-# 使用实例方法调用
-with Demo().demo() as c:
-    print("Func test")
-```
-
-输出结果
-
-```bash
-__enter__ called
-Class test
-__exit__ called
---------------------------------------------------
-__enter__ called
-Func test
-__exit__ called
-```
-
-:::
-
-**异常抛出与压制**
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Demo:
-    def __enter__(self):
-        print('__enter__ called')
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        print('__exit__ called')
-        return True  # 压制异常(如果有)
-        # return False  # 抛出异常(如果有), 这句也可以不写，默认return None就等效于False
-
-
-# 使用实例的方式调用
-with Demo() as a:
-    raise Exception("error")
+# 可以看到Base.__init__调用了1次
 ```
 
 :::
 
 
 
-### 实例属性查找
+#### （4）继承相关魔法方法
 
-文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__)
-
-
-
-**实例属性查找顺序如下**
-
-（1）主要顺序
-
-① 调用`__getattribute__(item)` --> 返回（计算后的）正常值
-
-② 调用`__getattribute__(item)` --> 返回（计算后的）异常值`AttributeError` --> 如果定义了`__getattr__`则调用，否则继续抛出原来的`AttributeError`
-
-> 我们可以称`__getattribute__`为属性拦截器
-
-<br />
-
-（2）计算后的值如何获得？
-实例字典 --> 类字典 --> ... --> 直到`object`类字典 --> `object`抛出`AttributeError`
-
-<br />
-
-（3）注意事项
-
-① `__getattribute__(item)`方法中不能再使用`self.x`、`self.__dict__`等属性，因为这会造成无限递归
-
-② `__getattr__`中不能再使用`self.不存在的属性`，因为这同样会造成无限递归
-
-③ `object`对象没有`__getattr__`方法，所以我们不能调用父类或object的`__getattr__`方法
-
-<br />
-
-**实例属性查找-正常值示例**
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Person:
-    
-    def __init__(self, name):
-        self.name = name
-
-    def getName(self):
-        return self.name
-
-    def __getattribute__(self, item):
-        print(f"Called __getattribute__({item})")
-        return super().__getattribute__(item)
+| 方法                               | 说明                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `类对象.__base__`                  | 类对象的父类对象，多继承情况下也只显示一个（注意：实例对象没有这个属性） |
+| `类对象.__bases__`                 | 类对象的父类对象元祖，多继承情况下显示所有父类（注意：实例对象没有这个属性） |
+| `类对象.__subclasses__`            | 类对象的子类对象列表，与`__bases__`相对应（注意：实例对象没有这个属性） |
+| `类对象.__mro__` 或 `类对象.mro()` | 类与类之间的属性查找顺序（前面已经讲过）（注意：实例对象没有这个属性） |
+| `实例对象.__class`__               | 实例所属的类对象（本章扩展内容，与继承没有关系，单纯是记录一下） |
 
 
-# 实例化对象
-person = Person("bob")
-
-# 实例属性查找-1
-print(person.name)
-print("-" * 30)
-# Called __getattribute__(name)
-# bob
-
-# 实例属性查找-2
-print(person.getName())
-# Called __getattribute__(getName)
-# Called __getattribute__(name)
-# bob
-```
-
-:::
-
-**实例属性查找-AttributeError示例**
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Person:
-
-    def __init__(self, name):
-        self.name = name
-
-    def getName(self):
-        return self.name
-
-    def __getattribute__(self, item):
-        print(f"Called __getattribute__({item})")
-        return super().__getattribute__(item)
-
-    def __getattr__(self, item):
-        # object对象没有__getattr__方法, 不能使用super
-        return f"实例对象{self.__class__.__name__}不存在{item}属性"
 
 
-# 实例化对象
-person = Person("bob")
 
-# 实例属性查找
-print(person.abc)
-```
 
-:::
 
-输出结果
 
-```bash
-Called __getattribute__(abc)
-Called __getattribute__(__class__)
-实例对象Person不存在abc属性
-```
+
+
 
 
 
@@ -5303,96 +5404,6 @@ static method
 
 
 
-### 运算符重载
-
-文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types)
-
-示例
-
-::: details 点击查看完整代码
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-from functools import total_ordering
-
-
-# __lt__、__le__、__gt__、__ge__全部写完的话太麻烦，使用total_ordering装饰器后，只需要实现其中一种即可；
-# 但是如需不需要最好不要加这个装饰器，因为可能带来性能问题
-
-@total_ordering
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __hash__(self):
-        return hash((self.x, self.y))
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-    def __repr__(self):
-        return f"<Point ({self.x}, {self.y})>"
-
-    def __add__(self, other):
-        return Point(self.x + other.x, self.y + other.y)
-
-    def __iadd__(self, other):
-        return Point(self.x + other.x, self.y + other.y)
-
-    def __gt__(self, other):
-        return self.x > other.x
-
-
-# 实例化
-p1 = Point(1, 2)
-p2 = Point(1, 3)
-
-# 支持+ +=等运算符
-p3 = p1 + p2
-p1 += p2
-print(p1 == p3)
-
-# 可哈希,可作为dict/set等的key
-d = {}
-d[p3] = "p3"
-print(d)
-```
-
-:::
-
-输出结果
-
-```bash
-True
-{<Point (2, 5)>: 'p3'}
-```
-
-**pathlib中的运算符重载**
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-from pathlib import Path
-
-host1 = Path("C:\Windows\System32\drivers\etc") / "hosts"
-host2 = Path("C:\Windows\System32\drivers\etc") / Path("hosts")
-
-print(host1)
-print(host1.exists())
-
-print(host2)
-print(host2.exists())
-
-# C:\Windows\System32\drivers\etc\hosts
-# True
-# C:\Windows\System32\drivers\etc\hosts
-# True
-```
-
 
 
 ### 元类
@@ -5407,7 +5418,7 @@ print(host2.exists())
 
 
 
-**使用内置元类type创建类**
+#### （1）使用内置元类type创建类
 
 示例代码
 
@@ -5457,7 +5468,7 @@ print(B.mro())
 
 
 
-**自定义元类**
+#### （2）自定义元类对象来创建类
 
 ::: details 点击查看完整代码
 
@@ -5514,7 +5525,7 @@ B.__init__ called
 
 
 
-**使用元类创建单例类**
+#### （3）使用元类对象创建单例类
 
 ::: details 点击查看完整代码
 
@@ -5573,7 +5584,7 @@ for i in range(10):
 
 
 
-### 抽象类
+#### （4）元类应用之抽象类
 
 抽象类就是提取一对类的共同特征，抽象称一个类
 
