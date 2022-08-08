@@ -3987,6 +3987,45 @@ if __name__ == '__main__':
 
 ## 六、面向对象
 
+### 魔法方法概览
+
+| 分类               | 魔法方法                                    | 说明                              |
+| ------------------ | ------------------------------------------- | --------------------------------- |
+| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回              |
+|                    | `__del__`                                   | 在实例将被销毁时调用              |
+| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典            |
+| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用         |
+| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                            |
+| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                |
+| with上下文管理     | `__enter__`、`__exit__`                     |                                   |
+| 实例属性查找       | `__getattribute__`                          |                                   |
+| 描述器             | `__get__`、`__set__`、`__delete__`          |                                   |
+| 运算符重载         | `__lt__`                                    | 小于，<                           |
+|                    | `__le__`                                    | 小于等于，<=                      |
+|                    | `__eq__`                                    | 等于，==                          |
+|                    | `__gt__`                                    | 大于，>                           |
+|                    | `__ge__`                                    | 大于等于，>=                      |
+|                    | `__ne__`                                    | 不等于，!=                        |
+|                    |                                             |                                   |
+|                    | `__add__`                                   | 加，+                             |
+|                    | `__sub__`                                   | 减，-                             |
+|                    | __`mul__`                                   | 乘，*                             |
+|                    | __`truediv__`                               | 除，5 / 3 = 1.6666666666666667    |
+|                    | `__floordiv__`                              | 地板除，5 // 3 = 1                |
+|                    | `__mod__`                                   | 取余，%                           |
+|                    | `__pow__`                                   | 计算次方， 2 ** 3 = 2 * 2 * 2 = 8 |
+|                    | `__divmod__`                                | 等同于 `(x//y, x%y)`              |
+|                    |                                             |                                   |
+|                    | `__iadd__`                                  | +=                                |
+|                    | `__isub__`                                  | -=                                |
+|                    | `__imul__`                                  | *=                                |
+|                    | `__itruediv__`                              | /=                                |
+|                    | `__imod__`                                  | %=                                |
+|                    | `__ifloordiv__`                             | //=                               |
+|                    | `__ipow__`                                  | **=                               |
+
+
+
 ### 装饰器
 
 （1）属性装饰器 `@property`
@@ -4059,7 +4098,7 @@ Python支持单继承和多继承
 
 
 
-#### 哪些属性不会继承
+#### （1）哪些属性不会继承
 
 父类中的**私有属性**在子类中不能直接访问，但可以通过**._父类__属性**来访问
 
@@ -4101,7 +4140,7 @@ print(B().getMoney2())
 
 
 
-#### 类与类之间的属性查找顺序
+#### （2）类与类之间的属性查找顺序
 
 按照【深度优先】的搜索顺序，使用的是C3算法
 
@@ -4147,7 +4186,7 @@ Class A.__init__ called
 
 
 
-#### super解决多继承下的问题
+#### （3）super解决多继承下的问题
 
 若要调用父类方法，强烈建议使用`super()`而不是直接写父类名，因为在多继承中这会有问题
 
@@ -4243,7 +4282,7 @@ c = C()
 
 
 
-#### 继承相关魔法方法
+#### （4）继承相关魔法方法
 
 | 方法                               | 说明                                                         |
 | ---------------------------------- | ------------------------------------------------------------ |
@@ -4309,8 +4348,6 @@ p.show = show
 print(p.show(p))  # 这里需要将实例传入到show方法中
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4319,6 +4356,8 @@ print(p.show(p))  # 这里需要将实例传入到show方法中
 (5, 6)
 (7, 8)
 ```
+
+:::
 
 ### 迭代
 
@@ -4488,19 +4527,21 @@ True
 
 :::
 
-#### **（4）迭代流程扩展**
+#### **（4）`for`循环流程**
 
-一个完整的迭代流程如下：
+① 检查对象是否实现了` __iter__ `方法，如果实现了就调用它，获取一个新的迭代器
 
-① 检查对象是否实现了` __iter__ `方法，如果实现了就调用它，获取一个迭代器
+​      调用`迭代器.__next__`方法获取下一个值，直到抛出`StopIteration`异常，for语句会自动帮我们捕获，然后退出循环
 
-② 如果没有实现` __iter__ `方法，**但是实现了` __getitem__` 方法，Python会创建一个迭代器，尝试按顺序（从索引 0 开始）获取元素**
+② 如果没有实现` __iter__ `方法，但是实现了` __getitem__` 方法，Python会创建一个迭代器，尝试按顺序（从索引 0 开始）获取元素，
 
-​     如果尝试失败，Python抛出 `TypeError`异常，通常会提示`"x object is not iterable"`
+​     直到抛出`IndexError`异常，for语句会自动帮我们捕获，然后退出循环
 
-不实现`__iter__`但是实现`__getitem__`示例
+<span style="color: red; font-weight: bold;">总结：for循环支持【迭代协议】和【使用索引】来获取值，并自动为我们处理循环完成后的异常</span>
 
-::: details 点击查看完整代码
+
+
+::: details 不实现`__iter__`但是实现`__getitem__`示例
 
 ```python
 #!/usr/bin/env python
@@ -4550,8 +4591,6 @@ print(isinstance(data, Iterator))
 # 仅利用__getitem__就可以实现for语句迭代，但是它并不是可迭代对象，更不是迭代器
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4571,48 +4610,11 @@ False
 False
 ```
 
+:::
 
+### 实例创建和销毁
 
-### 魔法方法
-
-| 分类               | 魔法方法                                    | 说明                              |
-| ------------------ | ------------------------------------------- | --------------------------------- |
-| 实例创建和销毁     | `__new__`                                   | 创建类实例对象并返回              |
-|                    | `__del__`                                   | 在实例将被销毁时调用              |
-| 属性字典           | `__dict__`                                  | 对象所有属性组成的字典            |
-| self[key]          | `__getitem__`、`__setitem__`、`__delitem__` | 通过`self[key]`访问时调用         |
-| 可视化             | `__repr__`、`__str__`、`__format__`         | 可视化                            |
-| 可迭代对象和迭代器 | `__iter__`、`__next__`                      | 可迭代对象和迭代器                |
-| with上下文管理     | `__enter__`、`__exit__`                     |                                   |
-| 实例属性查找       | `__getattribute__`                          |                                   |
-| 描述器             | `__get__`、`__set__`、`__delete__`          |                                   |
-| 运算符重载         | `__lt__`                                    | 小于，<                           |
-|                    | `__le__`                                    | 小于等于，<=                      |
-|                    | `__eq__`                                    | 等于，==                          |
-|                    | `__gt__`                                    | 大于，>                           |
-|                    | `__ge__`                                    | 大于等于，>=                      |
-|                    | `__ne__`                                    | 不等于，!=                        |
-|                    |                                             |                                   |
-|                    | `__add__`                                   | 加，+                             |
-|                    | `__sub__`                                   | 减，-                             |
-|                    | __`mul__`                                   | 乘，*                             |
-|                    | __`truediv__`                               | 除，5 / 3 = 1.6666666666666667    |
-|                    | `__floordiv__`                              | 地板除，5 // 3 = 1                |
-|                    | `__mod__`                                   | 取余，%                           |
-|                    | `__pow__`                                   | 计算次方， 2 ** 3 = 2 * 2 * 2 = 8 |
-|                    | `__divmod__`                                | 等同于 `(x//y, x%y)`              |
-|                    |                                             |                                   |
-|                    | `__iadd__`                                  | +=                                |
-|                    | `__isub__`                                  | -=                                |
-|                    | `__imul__`                                  | *=                                |
-|                    | `__itruediv__`                              | /=                                |
-|                    | `__imod__`                                  | %=                                |
-|                    | `__ifloordiv__`                             | //=                               |
-|                    | `__ipow__`                                  | **=                               |
-
-
-
-#### `__new__`
+#### 创建实例：`__new__`
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__new__)
 
@@ -4737,7 +4739,7 @@ print(timeit.timeit(stmt=Single2, number=number))
 
 :::
 
-#### `__del__`
+#### 销毁实例：`__del__`
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__del__)
 
@@ -4782,39 +4784,7 @@ time.sleep(3)
 
 :::
 
-
-
-#### `__dict__`
-
-文档：[https://docs.python.org/zh-cn/3.10/library/stdtypes.html#object.__dict__](https://docs.python.org/zh-cn/3.10/library/stdtypes.html#object.__dict__)
-
-这个太重要了，后面会经常用到，给一个简单的例子
-
-```python
-#!/usr/bin/env python
-# -*- coding:utf-8-*-
-
-class Demo:
-    '''测试Demo'''
-
-    def __init__(self, name):
-        self.name = name
-        self.sex = "man"
-
-
-print(Demo.__dict__)
-print(Demo("Bob").__dict__)
-
-# 第一次输出为 类字典
-# {'__module__': '__main__', '__doc__': '测试Demo', '__init__': <function Demo.__init__ at 0x00000229047F8C18>, '__dict__': <attribute '__dict__' of 'Demo' objects>, '__weakref__': <attribute '__weakref__' of 'Demo' objects>}
-
-# 第二次输出为 实例字典
-# {'name': 'Bob', 'sex': 'man'}
-```
-
-
-
-#### `self[key]`
+### `obj[key]`操作
 
 [文档：https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getitem__)
 
@@ -4830,9 +4800,9 @@ print(Demo("Bob").__dict__)
 l = [100, 200, 300]
 d = {"name": "bob", "age": 20, 10: 20}
 
-print(l.__getitem__(0))  # 等同于 l[0], 列表没有key，只有索引，所以0代表的是索引
+print(l.__getitem__(0))       # 等同于 l[0], 列表没有key，只有索引，所以0代表的是索引
 print(d.__getitem__("name"))  # 等同于d["name"]
-print(d.__getitem__(10))  # 等同于d[10]，这里虽然是数字，看起来像是通过索引来访问（其实不是），本质上还是通过key
+print(d.__getitem__(10))      # 等同于d[10]，这里虽然是数字，看起来像是通过索引来访问（其实不是），本质上还是通过key
 
 
 # 测试2：
@@ -4868,8 +4838,6 @@ d["color"] = "red"
 del d["version"]
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4883,9 +4851,9 @@ Called: __setitem__(color, red)
 Called: __delitem__(version)
 ```
 
+:::
 
-
-#### 可视化
+### 对象可视化
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__repr__)
 
@@ -4961,8 +4929,6 @@ print(f"{point:parentheses}")  # 小括号显示格式， (100, 200)
 print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4974,15 +4940,15 @@ print(f"{point:dictionary}")  # 字典显示格式， {'x':100, 'y':200 }
 {'x':100, 'y':200 }
 ```
 
+:::
 
+### 上下文管理：with
 
-#### with上下文管理
+**文档**
 
-文档
+* [https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement](https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement)
 
-（1）[https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement](https://docs.python.org/zh-cn/3.10/reference/compound_stmts.html#the-with-statement)
-
-（2）[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__)
+* [https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__enter__)
 
 
 
@@ -5034,8 +5000,6 @@ with Demo().demo() as c:
     print("Func test")
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -5048,7 +5012,7 @@ Func test
 __exit__ called
 ```
 
-
+:::
 
 **异常抛出与压制**
 
@@ -5076,7 +5040,9 @@ with Demo() as a:
 
 :::
 
-#### 实例属性查找
+
+
+### 实例属性查找
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#object.__getattribute__)
 
@@ -5192,9 +5158,9 @@ Called __getattribute__(__class__)
 
 
 
-#### 描述器
+### 描述器
 
-##### 描述器定义
+#### （1）描述器定义
 
 如果实现了`__get__`、`__set__` 、`__delete__`中的任何一个，就实现了描述器定义
 
@@ -5204,7 +5170,7 @@ Called __getattribute__(__class__)
 
 
 
-##### 非数据描述器示例
+#### （2）非数据描述器示例
 
 ::: details 点击查看完整代码
 
@@ -5265,7 +5231,7 @@ Class A().__get__ called
 
 
 
-##### 非数据描述器应用
+#### （3）非数据描述器应用
 
 实现`@classmethod`、`@staticmethod`、`@property`装饰器
 
@@ -5337,7 +5303,7 @@ static method
 
 
 
-#### 运算符重载
+### 运算符重载
 
 文档：[https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types](https://docs.python.org/zh-cn/3.10/reference/datamodel.html#emulating-numeric-types)
 
