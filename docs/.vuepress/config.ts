@@ -8,67 +8,11 @@ import { viteBundler } from '@vuepress/bundler-vite'
 
 const navbar = [
     {
-        text: '运维',
-        children: [
-            {
-                text: 'Linux基础',
-                children: [
-                    { text: 'Bash', link: '/ops/Bash' },
-                ]
-            },
+        text: 'Linux',
+        children: [            
+			{ text: 'Bash脚本', link: '/linux/Bash' },            
         ]
     },
-
-    {
-        text: '前端',
-        children: [
-            {
-                text: '前端基础',
-                children: [
-                    { text: 'CSS', link: '/frontend/css' },
-                    { text: 'JavaScript', link: '/frontend/javascript' },
-                ]
-            },
-
-            {
-                text: '工程化',
-                children: [				    
-                    { text: 'Vue', link: '/frontend/vue' },
-					{ text: 'Node包管理器', link: '/frontend/Node-Package-Manager' },
-					{ text: 'TypeScript核心语法', link: '/frontend/TypeScript' },
-                ]
-            },
-
-            {
-                text: '可视化',
-                children: [
-                    { text: '浏览器原生绘图', link: '/frontend/浏览器原生绘图.html' },
-                    { text: 'Apache Echarts', link: '/frontend/echarts' },
-                ]
-            },
-        ]
-    },
-
-    {
-        text: '后端',
-        children: [
-            {
-                text: 'Python',
-                children: [
-                    { text: 'Python核心语法', link: '/backend/Python' },
-                    { text: 'Python实用模块', link: '/backend/Modules-for-Python' },
-                ]
-            },
-            {
-                text: 'Go',
-                children: [
-                    { text: 'Go核心语法', link: '/backend/Go' },
-                    { text: 'Go Web开发', link: '/backend/Web-for-Go' },
-                ]
-            },
-        ]
-    },
-
     {
         text: '容器',
         children: [
@@ -93,28 +37,56 @@ const navbar = [
                 ]
             },
         ]
-    },
-
+    },	
     {
-        text: '安全',
-        children: [
-            { text: 'Web安全入门', link: '/safe/web' },
-        ]
-    },
-
-    {
-        text: '算法',
+        text: '开发',
         children: [
             {
-                text: '通用算法',
+                text: '前端基础',
                 children: [
-                    { text: '双指针', link: '/algorithm/double-pointer' },
+                    { text: 'CSS', link: '/coding/frontend/css' },
+                    { text: 'JavaScript', link: '/coding/frontend/javascript' },
                 ]
             },
+            {
+                text: '工程化',
+                children: [				    
+                    { text: 'Vue', link: '/coding/frontend/vue' },
+					{ text: 'Node包管理器', link: '/coding/frontend/node-package-manager' },
+					{ text: 'TypeScript核心语法', link: '/coding/frontend/typeScript' },
+                ]
+            },
+            {
+                text: '可视化',
+                children: [
+                    { text: '浏览器原生绘图', link: '/coding/frontend/浏览器原生绘图.html' },
+                    { text: 'Apache Echarts', link: '/coding/frontend/echarts' },
+                ]
+            },
+			{
+                text: 'Python',
+                children: [
+                    { text: 'Python核心语法', link: '/coding/backend/Python' },
+                    { text: 'Python实用模块', link: '/coding/backend/Modules-for-Python' },
+                ]
+            },
+			{
+                text: 'Go',
+                children: [
+                    { text: 'Go核心语法', link: '/coding/backend/Go' },
+                    { text: 'Go Web开发', link: '/coding/backend/Web-for-Go' },
+                ]
+            },
+			
+			{
+				text: '其他',
+				children: [
+					{ text: 'Web安全入门', link: '/coding/other/web-security' },
+					{ text: '通用算法入门', link: '/coding/other/algorithm' },
+				]
+			},
         ]
-    },
-
-    // Github
+    },	
     { text: 'Github', link: 'https://github.com/VVFock3r/Notes' },
 ]
 

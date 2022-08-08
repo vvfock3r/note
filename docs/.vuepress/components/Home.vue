@@ -17,12 +17,9 @@ export default {
       const pieDom = document.getElementById('pie');
       const chart = echarts.init(pieDom, 'light');
       const data = [
-        {name: '运维', value: 1},
-        {name: '前端', value: 7},
-        {name: '后端', value: 4},
+        {name: 'Linux', value: 1},        
         {name: '容器', value: 5},
-        {name: '安全', value: 1},
-        {name: '算法', value: 1},
+		{name: '开发', value: 13},
       ]
       const total = data.reduce((total, current) => {
         return {
