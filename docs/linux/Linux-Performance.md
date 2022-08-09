@@ -2,7 +2,7 @@
 
 ## CPU
 
-### CPU信息来源
+### 基本信息
 
 ::: details （1）CPU核数
 
@@ -84,7 +84,7 @@ Virtualization type: full
 
 :::
 
-### CPU使用率
+### 使用率问题
 
 #### （1）计算公式和显示不一致问题
 
@@ -98,9 +98,11 @@ $$
 
 :::tip
 
-第一个公式基本没有啥参考价值，`ps`命令输出的CPU使用率就属于这一范围
+第一个公式基本没有啥参考价值，`ps`命令输出的平均CPU使用率就属于这一范围
 
 第二个公式常用于查看实时的CPU使用率，所谓的"实时"实际上也是某一段时间，只不过这段时间比较短而已，`top`中显示的CPU使用率就属于这一范围
+
+`top`默认每隔3秒刷新一次（在左上角可以查看时间变化），可以通过`top -d 1`来指定间隔时间
 
 :::
 
@@ -148,10 +150,82 @@ echo -e "\n[top] output:" ; \
     top -b -n 1 -c | grep python3 | grep main.py ; echo -e "\n"
 ```
 
-:::
-
-输出结果（`tmux`上下分屏输出）
+（3）输出结果（`tmux`上下分屏输出）
 
 ![image-20220809092807702](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220809092807702.png)
 
-#### （2）短时进程引起的CPU使用率异常
+:::
+
+<br />
+
+#### （2）模拟用户态(us)和内核态(sy)
+
+- `us => user time `：表示CPU使用率中用户态所占百分比。通常这个值越高越好。
+- `sy => system time` ：表示CPU使用率中内核态所占百分比。通常这个值越低越好。
+
+::: details 使用Go模拟us和sy占比高的情况
+
+```go
+package main
+
+import (
+	"flag"
+	"time"
+)
+
+// 模拟 用户态CPU平均使用率 高的情况
+func us() {
+	for {
+		go func() {
+			//time.Sleep(time.Second)
+		}()
+	}
+}
+
+// 模拟 内核态CPU平均使用率 高的情况
+func sy() {
+	for {
+		go func() {
+			time.Sleep(time.Second)
+		}()
+	}
+}
+
+func main() {
+	var t string
+	flag.StringVar(&t, "t", "", "指定CPU使用率增高所使用的类型，可选值us、sy")
+	flag.Parse()
+
+	if t == "us" {
+		us()
+	} else if t == "sy" {
+		sy()
+	} else {
+		flag.Usage()
+	}
+}
+```
+
+查看输出命令
+
+```bash
+vmstat_format='"%-5s%-5s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s%-10s\n"'
+vmstat_values='$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18'
+echo -e "\nvmstat format output: "; vmstat 1 | while read line; do echo "${line}" | \
+	# 删除第一行输出procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+	sed -r "/(.*)(procs)(.*)/d" | \
+	# 格式化输出列
+	awk '{printf '"${vmstat_format}"', '"${vmstat_values}"'}' | \
+	# 说明行前面加一个空行
+	sed -r 's/(.*)(free)(.*)/\n\1\2\3/' | \
+	# 删除第一列前面的空白
+	sed -r 's/^[[:blank:]]//';
+done
+```
+
+![image-20220810010359550](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810010359550.png)
+
+![image-20220810010146168](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810010146168.png)
+
+:::
+
