@@ -113,6 +113,8 @@ export default defineUserConfig({
             }
         }),
     ],
+	
+	// markdown
     markdown: {
         code: {
             // 不显示行号
@@ -123,6 +125,12 @@ export default defineUserConfig({
             level: [2, 3, 4, 5],
         }
     },
+	// markdown解析数学公式
+	extendsMarkdown: md=>{
+		md.use(require('markdown-it-mathjax3'))
+		md.linkify.set({fuzzEmail: false})
+	},
+	
     // Vite配置
     bundler: viteBundler({
         viteOptions: {
