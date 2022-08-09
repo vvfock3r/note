@@ -123,21 +123,31 @@ export default defineUserConfig({
         extractHeaders: {
             // 提取哪些子标题
             level: [2, 3, 4, 5],
-        }
+        },
     },
-	// markdown解析数学公式
-	extendsMarkdown: md=>{
+	
+	// markdown对数学公式支持插件
+	extendsMarkdown: md => {
 		md.use(require('markdown-it-mathjax3'))
 		md.linkify.set({fuzzEmail: false})
-	},
+    },
 	
     // Vite配置
-    bundler: viteBundler({
+    bundler: viteBundler({	
         viteOptions: {
             build: {
                 chunkSizeWarningLimit: 1500,
             }
-        },
-        vuePluginOptions: {},
+        },		
+        vuePluginOptions: {
+			template: {
+				compilerOptions: {
+					// 在使用markdown-it-mathjax3插件添加数学公式支持后,
+					// 启动开发服务器没有问题，但是打包后会报错 TypeError: Invalid value used as weak map key,
+					// 原因是该插件使用了自定义的标签 mjx-container，我们需要在这里配置一下该标签
+					isCustomElement: (tag) => tag === 'mjx-container',
+				},
+			},
+		},
     }),
 })
