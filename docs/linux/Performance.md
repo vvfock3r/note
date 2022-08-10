@@ -229,3 +229,98 @@ done
 
 :::
 
+#### （3）模拟IO等待(wa or iowait)
+
+::: tip
+
+分析：
+
+（1）通过`top`查看CPU信息，`sy`（内核态）占比较高，这可不是我们想看到的
+
+（2）再往后看，`wa`（IO等待占比）较高，说明`IO`可能会有问题
+
+（3）通过`iostat`查看，`vda`设备`tps`（每秒发送到设备的 I/O 请求数）较高
+
+（4）至此我们得出结论：CPU使用率增高是由于`vda`磁盘上的`IO`等待引起的
+
+:::
+
+![image-20220810070848855](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810070848855.png)
+
+#### （4）模拟软中断(si)和硬中断(hi)
+
+:::tip
+
+* 硬中断不太好模拟，这里只模拟软中断
+
+* `ksoftirqd/0`：其中`ksoftirqd`代表软中断程序，`0`代表编号为0的CPU
+
+:::
+
+::: details 使用hping3模拟软中断(si)，总共需要2台服务器
+
+（1）在第1台服务器上，启动一个Nginx服务
+
+```bash
+[root@localhost ~]# docker container run --name=demo -itd -p 8081:80 nginx:1.23
+75dab40fcc398e07a2147fdbde462713c728fc602c40f9c9a7777fdf408eaa19
+```
+
+（2）在第2台服务器上，先测试一下是否能正常访问
+
+```bash
+[root@localhost ~]# curl -I http://192.168.48.133:8081
+HTTP/1.1 200 OK
+Server: nginx/1.23.1
+Date: Tue, 09 Aug 2022 23:48:40 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 19 Jul 2022 14:05:27 GMT
+Connection: keep-alive
+ETag: "62d6ba27-267"
+Accept-Ranges: bytes
+```
+
+（3）在第2台服务器上，使用hping3发包
+
+```bash
+# 安装hping3工具
+[root@localhost ~]#  yum -y install hping3
+
+# 编写发包脚本
+[root@localhost ~]# vim main.sh		        
+#!/bin/bash
+
+function start(){
+  for i in `seq 50`
+  do
+    nohup hping3 -S -p 8081 -i u100 192.168.48.133 &>/dev/null &
+  done
+}
+
+function stop(){
+  ps aux | grep hping3 | grep -v grep | awk '{print $2}' | xargs kill -9
+}
+
+function main(){
+  if [[ "$1" == "start" ]];then
+    start
+  elif [[ "$1" == "stop" ]];then
+    stop
+  else
+    echo "Usage: ./$0 [ start | stop ]"
+fi
+}
+
+main "$@"
+
+# 执行脚本
+[root@localhost ~]# bash main.sh start
+```
+
+（4）在第1台服务器上启动top查看软中断使用率；该机器是4核CPU，400 * 0.24 = 96（单核CPU占比，有一些误差属正常）
+
+![image-20220810084550005](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810084550005.png)
+
+:::
+
