@@ -229,6 +229,8 @@ done
 
 :::
 
+<br />
+
 #### （3）模拟IO等待(wa or iowait)
 
 ::: tip
@@ -246,6 +248,8 @@ done
 :::
 
 ![image-20220810070848855](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810070848855.png)
+
+<br />
 
 #### （4）模拟软中断(si)和硬中断(hi)
 
