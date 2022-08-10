@@ -322,9 +322,9 @@ main "$@"
 [root@localhost ~]# bash main.sh start
 ```
 
-（4）在第1台服务器上启动top查看软中断使用率；该机器是4核CPU，400 * 0.24 = 96（单核CPU占比，有一些误差属正常）
+（4）在第1台服务器上启动top查看软中断使用率
 
-![image-20220810084550005](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810084550005.png)
+![image-20220810090725980](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810090725980.png)
 
 :::
 
