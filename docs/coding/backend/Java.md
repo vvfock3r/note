@@ -54,7 +54,7 @@ java Main
 
 ## 
 
-## 二、数据类型
+## 二、基于数据类型
 
 ### 命名规则
 
@@ -149,6 +149,62 @@ public class Main {
 ```
 
 :::
+
+::: details （3）for循环
+
+```java
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        // 正常循环
+        for (int i = 0; i < 10; i++) {
+            System.out.println(i);
+        }
+        // 在循环外边是找不到i变量的
+        
+        // 死循环
+        for (; ; ) {
+            System.out.println("Hello World!");
+        }        
+    }
+}
+```
+
+:::
+
+::: details （4）while循环
+
+```java
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        int n = 1;
+        while (n < 5) {
+            System.out.println(n);
+            n++;
+        }
+
+        // do..while语句中，do代码块必定会执行一次
+        int m = 1;
+        do {
+            System.out.println(m);
+            m++;
+        } while (m < 5);
+    }
+}
+```
+
+:::
+
+
 
 ### 基本数据类型
 
@@ -436,3 +492,63 @@ public class Main {
 ```
 
 :::
+
+## 三、引用数据类型
+
+### 数组
+
+#### 创建
+
+::: details 点击查看完整代码
+
+```java
+import java.util.Arrays;
+
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        // 1、数组声明，下面两种方式都是可以的（推荐使用第一种，第二种IDE会有提醒）
+        int[] arry1;
+        int arry2[];
+
+        // 2、数组创建
+        arry2 = new int[10];        // 10代表数组的长度
+        System.out.println(Arrays.toString(arry2));  // 输出数组的内容
+
+        // ---------------------------------------------------------
+
+        // 数组声明并创建
+        int[] arry3 = new int[10];
+        arry3[0] = 100;
+        System.out.println(Arrays.toString(arry3));  // 输出数组的内容
+
+        // 数组声明并创建
+        int[] arry4 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        System.out.println(Arrays.toString(arry4));  // 输出数组的内容
+
+        // ---------------------------------------------------------
+        // 查看数据类型
+        System.out.println(getType(arry2));
+        System.out.println(getType(arry3));
+        System.out.println(getType(arry4));
+    }
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[100, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[1, 2, 3, 4, 5, 6, 7, 8, 9]
+class [I
+class [I
+class [I
+```
+
