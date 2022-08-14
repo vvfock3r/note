@@ -1,4 +1,4 @@
-# 生产环境部署方式
+# kubernetes部署方式
 
 文档：[https://kubernetes.io/docs/setup/production-environment/tools/](https://kubernetes.io/docs/setup/production-environment/tools/)
 
@@ -11,18 +11,18 @@
 
 
 
-# 使用kubespray部署生产集群
+## 使用kubespray部署
 
 文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
 
 文档2：[https://github.com/kubernetes-sigs/kubespray](https://github.com/kubernetes-sigs/kubespray)
 
-## 前置要求
+### 前置要求
 
 * 在部署过程中需要去海外下载镜像，需要主机能够科学上网（直连或者通过`HTTP_PROXY`方式）
 * 支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上
 
-##  版本说明
+###  版本说明
 
 | 名称       |         版本 | 备注                            |
 | ---------- | -----------: | ------------------------------- |
@@ -32,7 +32,7 @@
 
 
 
-## 节点规划
+### 节点规划
 
 | 主机名 | Master节点 | Node节点 | Etcd节点 | 其他节点        | 内存 | CPU  | 静态IP         |
 | ------ | ---------- | -------- | -------- | --------------- | ---- | ---- | -------------- |
@@ -44,7 +44,7 @@
 
 
 
-## 更新系统
+### 更新系统
 
 ```bash
 # 更新系统并重启
@@ -57,7 +57,7 @@ CentOS Linux release 7.9.2009 (Core)
 
 
 
-## 设置静态内网IP（可选）
+### 设置静态内网IP（可选）
 
 如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址
 
@@ -103,7 +103,7 @@ rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 [root@localhost ~]# reboot
 ```
 
-## 系统初始化
+### 系统初始化
 
 ```bash
 # 修改主机名
@@ -144,7 +144,7 @@ EOF
 [root@localhost ~]# yum remove -y docker* && rm -vf /etc/docker/daemon.json
 ```
 
-## 配置Ansible主控节点
+### 配置Ansible主控节点
 
 Ansible主控节点部署在哪里都可以，只要能控制K8s Node节点即可
 
@@ -215,7 +215,7 @@ DEBUG: adding host node1 to group kube-node
 DEBUG: adding host node2 to group kube-node
 ```
 
-## 节点个性化配置
+### 节点个性化配置
 
 ```bash
 # 定制化配置文件
@@ -284,7 +284,7 @@ ingress_nginx_enabled: true		# 修改为true
 metrics_server_enabled: true    # 修改为true
 ```
 
-## 部署Kubernetes集群
+### 部署Kubernetes集群
 
 ```bash
 # 使用tmux(可选)
@@ -304,7 +304,7 @@ sys     3m51.848s
 
 
 
-## 检查集群状态
+### 检查集群状态
 
 ```bash
 # 查看节点状态(Master节点执行)
@@ -355,7 +355,7 @@ kube-system     nodelocaldns-gkgh9                            1/1     Running   
 kube-system     nodelocaldns-m2zvj                            1/1     Running   0          12m
 ```
 
-## 清理代理设置
+### 清理代理设置
 
 ```bash
 # 清理Containerd HTTP代理
@@ -374,7 +374,7 @@ Environment="HTTP_PROXY=http://192.168.0.100:7890" "HTTPS_PROXY=http://192.168.0
 
 
 
-## 访问dashboard
+### 访问dashboard
 
 ```bash
 # 创建service
@@ -426,9 +426,9 @@ EOF
 
 
 
-## FAQ
+### FAQ
 
-### Download file error
+#### Download file error
 
 ![image-20211229101545405](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211229101545405.png)
 
@@ -442,7 +442,7 @@ EOF
 
 <br />
 
-### 组件状态为Unhealthy
+#### 组件状态为Unhealthy
 
 `scheduler`和`controller-manager`组件状态为`Unhealthy`
 
@@ -459,7 +459,7 @@ EOF
 
 <br />
 
-### SSH超时
+#### SSH超时
 
 **错误描述**
 
@@ -489,5 +489,6 @@ timeout = 300			# 设置超时时间300秒
 gather_timeout = 300    # 设置超时时间300秒
 ```
 
+## 
 
-
+## 使用二进制部署
