@@ -4964,3 +4964,16 @@ deployment.apps/demo created
 ```
 
 :::
+
+## 
+
+## Pod弹性伸缩
+
+### 安装metrics-server
+
+Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server)
+
+```bash
+[root@node0 ~]# kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/v0.5.2/download/high-availability.yaml
+```
+
