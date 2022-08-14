@@ -54,7 +54,7 @@ java Main
 
 ## 
 
-## 二、基于数据类型
+## 二、基础
 
 ### 命名规则
 
@@ -71,6 +71,11 @@ java Main
 * 需要符合驼峰命名规则
 * 变量名的长度没有限制
 * 尽量简单，做到见名知意
+
+**包名命名规范**
+
+* 英文字母小写
+* 域名的倒序
 
 **类命名规则**
 
@@ -552,3 +557,111 @@ class [I
 class [I
 ```
 
+#### 遍历
+
+::: details 点击查看完整代码
+
+```java
+import java.util.Arrays;
+
+public class Main {
+    // 查看数据类型
+    private static String getType(Object obj) {
+        return obj.getClass().toString();
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {9, 8, 7, 6, 5};
+
+        // 方式1
+        for (int i = 0; i < arr.length; i++) {
+            System.out.println(arr[i]);
+        }
+        System.out.println();
+
+        // 方式2(推荐)
+        for (int n : arr) {
+            System.out.println(n);
+        }
+        System.out.println();
+    }
+}
+```
+
+:::
+
+输出结果
+
+```bash
+9
+8
+7
+6
+5
+
+9
+8
+7
+6
+5
+```
+
+## 
+
+## 四、面向对象
+
+### 基础
+
+* 先创建一个包 `dev.jinhui.animal`
+* 然后创建一个类 `Cat.java`
+
+::: details 点击查看完整代码
+
+```java
+package dev.jinhui.animal;
+
+public class Cat {
+    // 成员属性
+    String name;
+    int month;
+    double weight;
+    String species;
+
+    // 构造方法, 方法名与类名同名
+    public Cat(String name, int month, double weight, String species) {
+        this.name = name;
+        this.month = month;
+        this.weight = weight;
+        this.species = species;
+    }
+
+    // 成员方法
+    public void run() {
+        System.out.println(this.name + "快跑");
+    }
+
+    public void eat() {
+        System.out.println(this.name + "吃鱼");
+    }
+
+
+    // 执行入口
+    public static void main(String[] args) {
+        // 实例化对象
+        Cat cat = new Cat("小猫", 12, 1000, "黑猫");
+
+        // 测试
+        cat.run();
+        cat.eat();
+    }
+}
+```
+
+输出结果
+
+```bash
+小猫快跑
+小猫吃鱼
+```
+
+:::
