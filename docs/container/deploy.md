@@ -492,3 +492,681 @@ gather_timeout = 300    # 设置超时时间300秒
 ## 
 
 ## 使用二进制部署
+
+### 配置主机名
+
+```bash
+# 配置主机名
+[root@localhost ~]# hostnamectl set-hostname node0
+[root@localhost ~]# hostnamectl set-hostname node1
+[root@localhost ~]# hostnamectl set-hostname node2
+
+# 添加主机名解析
+[root@localhost ~]# vi /etc/hosts
+# kubernetes
+192.168.48.142 node0
+192.168.48.143 node1
+192.168.48.144 node2
+```
+
+### 安装依赖包
+
+```bash
+[root@localhost ~]# yum install -y socat conntrack ipvsadm ipset jq sysstat curl iptables libseccomp yum-utils
+```
+
+### 关闭防火墙等服务
+
+```bash
+# 关闭防火墙
+[root@localhost ~]# systemctl stop firewalld && systemctl disable firewalld
+
+# 关闭selinux
+[root@localhost ~]# setenforce 0 && getenforce
+[root@localhost ~]# sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config
+[root@localhost ~]# grep -E '^SELINUX=' /etc/selinux/config
+
+# 设置iptables规则
+[root@localhost ~]# iptables -F && iptables -X && iptables -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
+
+# 关闭swap
+[root@localhost ~]# swapoff -a && free –h
+[root@localhost ~]# vi /etc/fstab
+
+# 关闭dnsmasq(否则可能导致容器无法解析域名)
+[root@localhost ~]# service dnsmasq stop && systemctl disable dnsmasq
+```
+
+### 调整内核参数
+
+::: tip 
+
+若出现如下报错
+
+```bash
+[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file or directory
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+```
+
+解决办法
+
+```bash
+# 检查模块是否已经加载（输出为空代表模块没有加载）
+[root@node0 ~]# lsmod | grep br_netfilter
+br_netfilter           22256  0 
+bridge                151336  1 br_netfilter
+
+# 临时加载模块(重启后还需要重新加载)
+[root@localhost ~]# modprobe br_netfilter
+
+# 设置开启自加载模块
+[root@localhost ~]# echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
+```
+
+:::
+
+```bash
+[root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+EOF
+
+[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+```
+
+### 配置文件中转节点
+
+为了方便文件的`copy`我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
+
+```bash
+# 看看是否已经存在rsa公钥
+[root@localhost ~]# cat ~/.ssh/id_rsa.pub
+
+# 如果不存在就创建一个新的
+[root@localhost ~]# ssh-keygen -t rsa
+
+# 把id_rsa.pub文件内容copy到其他机器的授权文件中
+[root@localhost ~]# cat ~/.ssh/id_rsa.pub
+
+# 在其他节点执行下面命令（包括worker节点）
+[root@localhost ~]# echo "<file_content>" >> ~/.ssh/authorized_keys
+
+# 或执行如下命令
+[root@node0 ~]# ssh-copy-id root@node0
+[root@node0 ~]# ssh-copy-id root@node1
+[root@node0 ~]# ssh-copy-id root@node2
+```
+
+### 下载软件包
+
+::: tip 
+
+1. 打开Github Kubernetes Releases页面：[https://github.com/kubernetes/kubernetes/releases/](https://github.com/kubernetes/kubernetes/releases/)
+2. 选择合适的版本后，点击`See the CHANGELOG for more details`中的链接
+3. 根据 `Client Binaries` 和 `Server Binaries`下载二进制包
+
+:::
+
+```bash
+# 下载K8S二进制包
+[root@node0 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/kubernetes-server-linux-amd64.tar.gz
+[root@node0 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
+
+# 下载Etcd软件包
+[root@node0 ~]# wget https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
+[root@node0 ~]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
+```
+
+也可以单独下载某个二进制包
+
+```bash
+wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
+```
+
+### 分发软件包
+
+```bash
+# 进入kubernetes目录
+[root@node0 ~]# cd kubernetes/server/bin/
+
+# 把master相关组件分发到master节点
+[root@node0 bin]# MASTERS=(node0 node1)
+[root@node0 bin]# for instance in ${MASTERS[@]}; do
+  scp kube-apiserver kube-controller-manager kube-scheduler kubectl root@${instance}:/usr/local/bin/
+done
+
+# 把worker先关组件分发到worker节点
+[root@node0 bin]# WORKERS=(node1 node2)
+[root@node0 bin]# for instance in ${WORKERS[@]}; do
+  scp kubelet kube-proxy root@${instance}:/usr/local/bin/
+done
+
+# --------------------------------------------------------------------------------------------------------
+# 进入etcd目录
+[root@node0 ~]# cd ~/etcd-v3.4.20-linux-amd64/
+
+# 把etcd组件分发到etcd节点
+[root@node0 etcd-v3.4.20-linux-amd64]# ETCDS=(node0 node1 node2)
+[root@node0 etcd-v3.4.20-linux-amd64]# for instance in ${ETCDS[@]}; do
+  scp etcd etcdctl root@${instance}:/usr/local/bin/
+done
+```
+
+### 生成证书
+
+#### **下载cfssl工具**
+
+```bash
+[root@node0 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl
+[root@node0 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson
+[root@node0 ~]# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+
+[root@node0 ~]# cfssl version
+Version: 1.6.1
+Runtime: go1.12.12
+
+[root@node0 ~]# cfssljson --version
+Version: 1.6.1
+Runtime: go1.12.12
+```
+
+#### **（1）生成根证书**
+
+根证书是集群所有节点共享的，只需要创建一个 CA 证书，后续创建的所有证书都由它签名。
+
+```bash
+# 在任意节点（可以免密登录到其他节点）创建一个单独的证书目录
+[root@node0 ~]# mkdir pki && cd pki
+
+# 创建证书配置文件
+[root@node0 pki]# cat > ca-config.json <<EOF
+{
+  "signing": {
+    "default": {
+      "expiry": "876000h"
+    },
+    "profiles": {
+      "kubernetes": {
+        "usages": ["signing", "key encipherment", "server auth", "client auth"],
+        "expiry": "876000h"
+      }
+    }
+  }
+}
+EOF
+
+[root@node0 pki]# cat > ca-csr.json <<EOF
+{
+  "CN": "Kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "L": "Portland",
+      "O": "Kubernetes",
+      "OU": "CA",
+      "ST": "Oregon"
+    }
+  ]
+}
+EOF
+
+# 生成证书和私钥
+[root@node0 pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
+2022/08/16 03:00:35 [INFO] generating a new CA key and certificate from CSR
+2022/08/16 03:00:35 [INFO] generate received request
+2022/08/16 03:00:35 [INFO] received CSR
+2022/08/16 03:00:35 [INFO] generating key: rsa-2048
+2022/08/16 03:00:36 [INFO] encoded CSR
+2022/08/16 03:00:36 [INFO] signed certificate with serial number 456928096144843875343000970888480361746591907304
+
+# 我们最终想要的就是ca-key.pem和ca.pem，一个秘钥，一个证书
+[root@node0 pki]# ls -l
+total 20
+-rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
+-rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
+-rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
+-rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
+-rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+```
+
+#### **（2）生成admin客户端证书**
+
+```bash
+[root@node0 pki]# cat > admin-csr.json <<EOF
+{
+  "CN": "admin",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "system:masters",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  admin-csr.json | cfssljson -bare admin
+  
+2022/08/16 03:03:15 [INFO] generate received request
+2022/08/16 03:03:15 [INFO] received CSR
+2022/08/16 03:03:15 [INFO] generating key: rsa-2048
+2022/08/16 03:03:16 [INFO] encoded CSR
+2022/08/16 03:03:16 [INFO] signed certificate with serial number 56701544595050219920664756218068616182173410719
+2022/08/16 03:03:16 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").
+
+[root@node0 pki]# ls -l
+total 36
+-rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
+-rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
+-rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
+-rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
+-rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
+-rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
+-rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
+-rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
+-rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+```
+
+#### （3）生成kubelet客户端证书
+
+Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 Kubelet使用将其标识为system:nodes组中的凭据，其用户名为system：node:nodeName，接下里就给每个工作节点生成证书。
+
+```bash
+# 设置worker节点列表
+[root@node0 pki]# WORKERS=(node1 node2)
+[root@node0 pki]# WORKER_IPS=(192.168.48.143 192.168.48.144)
+
+# 生成所有worker节点的证书配置
+[root@node0 pki]# for ((i=0;i<${#WORKERS[@]};i++)); do
+cat > ${WORKERS[$i]}-csr.json <<EOF
+{
+  "CN": "system:node:${WORKERS[$i]}",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "Beijing",
+      "O": "system:nodes",
+      "OU": "seven",
+      "ST": "Beijing"
+    }
+  ]
+}
+EOF
+cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -hostname=${WORKERS[$i]},${WORKER_IPS[$i]} \
+  -profile=kubernetes \
+  ${WORKERS[$i]}-csr.json | cfssljson -bare ${WORKERS[$i]}
+done
+
+2022/08/16 03:07:19 [INFO] generate received request
+2022/08/16 03:07:19 [INFO] received CSR
+2022/08/16 03:07:19 [INFO] generating key: rsa-2048
+2022/08/16 03:07:20 [INFO] encoded CSR
+2022/08/16 03:07:20 [INFO] signed certificate with serial number 309586283877527497658046582685484544532407999911
+2022/08/16 03:07:20 [INFO] generate received request
+2022/08/16 03:07:20 [INFO] received CSR
+2022/08/16 03:07:20 [INFO] generating key: rsa-2048
+2022/08/16 03:07:20 [INFO] encoded CSR
+2022/08/16 03:07:20 [INFO] signed certificate with serial number 337014331130523850623470554111727354761321069190
+
+[root@node0 pki]# ls -l
+total 68
+-rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
+-rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
+-rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
+-rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
+-rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
+-rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
+-rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
+-rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
+-rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+-rw-r--r-- 1 root root 1078 Aug 16 03:07 node1.csr
+-rw-r--r-- 1 root root  223 Aug 16 03:07 node1-csr.json
+-rw------- 1 root root 1679 Aug 16 03:07 node1-key.pem
+-rw-r--r-- 1 root root 1456 Aug 16 03:07 node1.pem
+-rw-r--r-- 1 root root 1078 Aug 16 03:07 node2.csr
+-rw-r--r-- 1 root root  223 Aug 16 03:07 node2-csr.json
+-rw------- 1 root root 1675 Aug 16 03:07 node2-key.pem
+-rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
+```
+
+#### （4）生成 kube-controller-manager客户端证书
+
+```bash
+[root@node0 pki]# cat > kube-controller-manager-csr.json <<EOF
+{
+    "CN": "system:kube-controller-manager",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+      {
+        "C": "CN",
+        "ST": "BeiJing",
+        "L": "BeiJing",
+        "O": "system:kube-controller-manager",
+        "OU": "seven"
+      }
+    ]
+}
+EOF
+
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
+  
+2022/08/16 03:08:51 [INFO] generate received request
+2022/08/16 03:08:51 [INFO] received CSR
+2022/08/16 03:08:51 [INFO] generating key: rsa-2048
+2022/08/16 03:08:52 [INFO] encoded CSR
+2022/08/16 03:08:52 [INFO] signed certificate with serial number 221915438695063545294639641644945037613649072201
+2022/08/16 03:08:52 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").  
+
+[root@node0 pki]# ls -l
+total 84
+-rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
+-rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
+-rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
+-rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
+-rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
+-rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
+-rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
+-rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
+-rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+-rw-r--r-- 1 root root 1066 Aug 16 03:08 kube-controller-manager.csr
+-rw-r--r-- 1 root root  286 Aug 16 03:08 kube-controller-manager-csr.json
+-rw------- 1 root root 1675 Aug 16 03:08 kube-controller-manager-key.pem
+-rw-r--r-- 1 root root 1464 Aug 16 03:08 kube-controller-manager.pem
+-rw-r--r-- 1 root root 1078 Aug 16 03:07 node1.csr
+-rw-r--r-- 1 root root  223 Aug 16 03:07 node1-csr.json
+-rw------- 1 root root 1679 Aug 16 03:07 node1-key.pem
+-rw-r--r-- 1 root root 1456 Aug 16 03:07 node1.pem
+-rw-r--r-- 1 root root 1078 Aug 16 03:07 node2.csr
+-rw-r--r-- 1 root root  223 Aug 16 03:07 node2-csr.json
+-rw------- 1 root root 1675 Aug 16 03:07 node2-key.pem
+-rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
+```
+
+#### （5）生成kube-proxy客户端证书
+
+```bash
+[root@node0 pki]# cat > kube-proxy-csr.json <<EOF
+{
+  "CN": "system:kube-proxy",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  kube-proxy-csr.json | cfssljson -bare kube-proxy
+  
+2022/08/16 03:09:57 [INFO] generate received request
+2022/08/16 03:09:57 [INFO] received CSR
+2022/08/16 03:09:57 [INFO] generating key: rsa-2048
+2022/08/16 03:09:57 [INFO] encoded CSR
+2022/08/16 03:09:57 [INFO] signed certificate with serial number 86023864614881132646707942680916828167128767772
+2022/08/16 03:09:57 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").  
+```
+
+#### （6）生成kube-scheduler客户端证书
+
+```bash
+[root@node0 pki]# cat > kube-scheduler-csr.json <<EOF
+{
+    "CN": "system:kube-scheduler",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+      {
+        "C": "CN",
+        "ST": "BeiJing",
+        "L": "BeiJing",
+        "O": "system:kube-scheduler",
+        "OU": "seven"
+      }
+    ]
+}
+EOF
+
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  kube-scheduler-csr.json | cfssljson -bare kube-scheduler
+  
+2022/08/16 03:10:55 [INFO] generate received request
+2022/08/16 03:10:55 [INFO] received CSR
+2022/08/16 03:10:55 [INFO] generating key: rsa-2048
+2022/08/16 03:10:55 [INFO] encoded CSR
+2022/08/16 03:10:55 [INFO] signed certificate with serial number 134008838321960678762782262862085624755917598665
+2022/08/16 03:10:55 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").  
+```
+
+#### （7）生成kube-apiserver服务端证书
+
+服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
+
+```bash
+[root@node0 pki]# cat > kubernetes-csr.json <<EOF
+{
+  "CN": "kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+# apiserver的service ip地址（一般是svc网段的第一个ip）
+[root@node0 pki]# KUBERNETES_SVC_IP=10.233.0.1
+
+# 所有的master内网ip，逗号分隔（云环境可以加上master公网ip以便支持公网ip访问）
+[root@node0 pki]# MASTER_IPS=192.168.48.142,192.168.48.143
+# 生成证书
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -hostname=${KUBERNETES_SVC_IP},${MASTER_IPS},127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local \
+  -profile=kubernetes \
+  kubernetes-csr.json | cfssljson -bare kubernetes
+  
+2022/08/16 03:14:36 [INFO] generate received request
+2022/08/16 03:14:36 [INFO] received CSR
+2022/08/16 03:14:36 [INFO] generating key: rsa-2048
+2022/08/16 03:14:36 [INFO] encoded CSR
+2022/08/16 03:14:36 [INFO] signed certificate with serial number 269673411800826022201577034662155588426444682801  
+```
+
+#### （8）生成Service Account证书
+
+```bash
+[root@node0 pki]# cat > service-account-csr.json <<EOF
+{
+  "CN": "service-accounts",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  service-account-csr.json | cfssljson -bare service-account
+  
+2022/08/16 03:15:50 [INFO] generate received request
+2022/08/16 03:15:50 [INFO] received CSR
+2022/08/16 03:15:50 [INFO] generating key: rsa-2048
+2022/08/16 03:15:50 [INFO] encoded CSR
+2022/08/16 03:15:50 [INFO] signed certificate with serial number 619622287562670459586578539958465276344541634040
+2022/08/16 03:15:50 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").  
+```
+
+#### （9）生成proxy-client 证书
+
+```bash
+[root@node0 pki]# cat > proxy-client-csr.json <<EOF
+{
+  "CN": "aggregator",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+[root@node0 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  proxy-client-csr.json | cfssljson -bare proxy-client
+
+2022/08/16 03:16:45 [INFO] generate received request
+2022/08/16 03:16:45 [INFO] received CSR
+2022/08/16 03:16:45 [INFO] generating key: rsa-2048
+2022/08/16 03:16:45 [INFO] encoded CSR
+2022/08/16 03:16:45 [INFO] signed certificate with serial number 180843303364370957992836109575724179780153250165
+2022/08/16 03:16:45 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").
+```
+
+#### 分发客户端、服务端证书
+
+分发worker节点需要的证书和私钥
+
+```bash
+for instance in ${WORKERS[@]}; do
+  scp ca.pem ${instance}-key.pem ${instance}.pem root@${instance}:~/
+done
+```
+
+分发master节点需要的证书和私钥
+
+> 注意：
+>
+> 由于下面分发的证书既包含了etcd的证书也包含了k8s主节点的证书。 
+>
+> 所以 MASTER_IPS 中必须包含所有 `master` 节点以及 `etcd` 节点。
+>
+> 如果没有包含所有etcd节点的证书，需要重新定义，逗号分隔
+
+```bash
+OIFS=$IFS
+IFS=','
+for instance in ${MASTER_IPS}; do
+  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+    service-account-key.pem service-account.pem proxy-client.pem proxy-client-key.pem root@${instance}:~/
+done
+IFS=$OIFS
+```
+
