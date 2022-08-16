@@ -102,7 +102,8 @@ jobs:
           #key: ${{ secrets.PRIVATEKEY }}
           script: |
             docker container inspect ${{ env.containerName }} &>/dev/null && docker container rm -f ${{ env.containerName }}
-            docker container run --name ${{ env.containerName }} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
+            # docker container run --name ${{ env.containerName }} -p80:80 -p443:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
+            docker container run --name ${{ env.containerName }}   -p6666:443 --restart always --cpus 1.0 --memory 1g -d ${{ env.imageName }}:${{ env.imageTag }}
 
       - name: 服务器清理资源
         uses: appleboy/ssh-action@master
