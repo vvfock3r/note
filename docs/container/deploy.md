@@ -1043,7 +1043,7 @@ EOF
 [root@node0 pki]# KUBERNETES_SVC_IP=10.233.0.1
 
 # 所有的master内网ip，逗号分隔（云环境可以加上master公网ip以便支持公网ip访问）
-[root@node0 pki]# MASTER_IPS=192.168.48.142,192.168.48.143
+[root@node0 pki]# MASTER_IPS=192.168.48.142,192.168.48.143,192.168.48.144
 # 生成证书
 [root@node0 pki]# cfssl gencert \
   -ca=ca.pem \
@@ -1169,4 +1169,415 @@ for instance in ${MASTER_IPS}; do
 done
 IFS=$OIFS
 ```
+
+### 认证配置
+
+kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客户端定位kube-apiserver并通过apiserver的安全认证。
+
+接下来我们一起来生成各个组件的kubeconfigs，包括controller-manager，kubelet，kube-proxy，scheduler，以及admin用户。
+
+以下命令需要与上一节“生成证书”在同一个目录下执行
+
+#### （1）kubelet认证配置
+
+```bash
+# 指定你的worker列表（hostname），空格分隔
+[root@node0 pki]# WORKERS="node0 node1"
+[root@node0 pki]# for instance in ${WORKERS}; do
+  kubectl config set-cluster kubernetes \
+    --certificate-authority=ca.pem \
+    --embed-certs=true \
+    --server=https://127.0.0.1:6443 \
+    --kubeconfig=${instance}.kubeconfig
+
+  kubectl config set-credentials system:node:${instance} \
+    --client-certificate=${instance}.pem \
+    --client-key=${instance}-key.pem \
+    --embed-certs=true \
+    --kubeconfig=${instance}.kubeconfig
+
+  kubectl config set-context default \
+    --cluster=kubernetes \
+    --user=system:node:${instance} \
+    --kubeconfig=${instance}.kubeconfig
+
+  kubectl config use-context default --kubeconfig=${instance}.kubeconfig
+done
+
+Cluster "kubernetes" set.
+error: could not stat client-certificate file node0.pem: stat node0.pem: no such file or directory
+Context "default" created.
+Switched to context "default".
+Cluster "kubernetes" set.
+User "system:node:node1" set.
+Context "default" created.
+Switched to context "default".
+```
+
+#### （2）kube-proxy认证配置
+
+```bash
+kubectl config set-cluster kubernetes \
+    --certificate-authority=ca.pem \
+    --embed-certs=true \
+    --server=https://127.0.0.1:6443 \
+    --kubeconfig=kube-proxy.kubeconfig
+
+kubectl config set-credentials system:kube-proxy \
+   --client-certificate=kube-proxy.pem \
+   --client-key=kube-proxy-key.pem \
+   --embed-certs=true \
+   --kubeconfig=kube-proxy.kubeconfig
+
+kubectl config set-context default \
+   --cluster=kubernetes \
+   --user=system:kube-proxy \
+   --kubeconfig=kube-proxy.kubeconfig
+
+[root@node0 pki]# kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+```
+
+#### （3）kube-controller-manager认证配置
+
+```bash
+kubectl config set-cluster kubernetes \
+  --certificate-authority=ca.pem \
+  --embed-certs=true \
+  --server=https://127.0.0.1:6443 \
+  --kubeconfig=kube-controller-manager.kubeconfig
+
+kubectl config set-credentials system:kube-controller-manager \
+  --client-certificate=kube-controller-manager.pem \
+  --client-key=kube-controller-manager-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-controller-manager.kubeconfig
+
+kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=system:kube-controller-manager \
+  --kubeconfig=kube-controller-manager.kubeconfig
+
+kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
+```
+
+#### （4）kube-scheduler认证配置
+
+```bash
+kubectl config set-cluster kubernetes \
+  --certificate-authority=ca.pem \
+  --embed-certs=true \
+  --server=https://127.0.0.1:6443 \
+  --kubeconfig=kube-scheduler.kubeconfig
+
+kubectl config set-credentials system:kube-scheduler \
+  --client-certificate=kube-scheduler.pem \
+  --client-key=kube-scheduler-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-scheduler.kubeconfig
+
+kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=system:kube-scheduler \
+  --kubeconfig=kube-scheduler.kubeconfig
+
+kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
+```
+
+#### （5）admin用户认证配置
+
+```bash
+kubectl config set-cluster kubernetes \
+  --certificate-authority=ca.pem \
+  --embed-certs=true \
+  --server=https://127.0.0.1:6443 \
+  --kubeconfig=admin.kubeconfig
+
+kubectl config set-credentials admin \
+  --client-certificate=admin.pem \
+  --client-key=admin-key.pem \
+  --embed-certs=true \
+  --kubeconfig=admin.kubeconfig
+
+kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=admin \
+  --kubeconfig=admin.kubeconfig
+
+kubectl config use-context default --kubeconfig=admin.kubeconfig
+```
+
+#### 分发配置文件
+
+把kubelet和kube-proxy需要的kubeconfig配置分发到每个worker节点
+
+```bash
+[root@node0 pki]# WORKERS="node1 node2"
+[root@node0 pki]# for instance in ${WORKERS}; do
+    scp ${instance}.kubeconfig kube-proxy.kubeconfig ${instance}:~/
+done
+```
+
+把kube-controller-manager和kube-scheduler需要的kubeconfig配置分发到master节点
+
+```bash
+[root@node0 pki]# MASTERS="node0 node1"
+[root@node0 pki]# for instance in ${MASTERS}; do
+    scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
+done
+```
+
+### 部署ETCD集群
+
+（1）拷贝etcd证书（在所有etcd节点执行）
+
+```bash
+[root@node0 pki]# mkdir -p /etc/etcd /var/lib/etcd
+[root@node0 pki]# chmod 700 /var/lib/etcd
+[root@node0 pki]# cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
+```
+
+（2）配置etcd.service文件（在所有etcd节点执行）
+
+```bash
+ETCD_NAME=$(hostname -s)
+ETCD_IP=192.168.48.142
+
+# etcd所有节点的ip地址
+ETCD_NAMES=(node0 node1 node2)
+ETCD_IPS=(192.168.48.142 192.168.48.143 192.168.48.144)
+
+cat <<EOF > /etc/systemd/system/etcd.service
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/etcd \\
+  --name ${ETCD_NAME} \\
+  --cert-file=/etc/etcd/kubernetes.pem \\
+  --key-file=/etc/etcd/kubernetes-key.pem \\
+  --peer-cert-file=/etc/etcd/kubernetes.pem \\
+  --peer-key-file=/etc/etcd/kubernetes-key.pem \\
+  --trusted-ca-file=/etc/etcd/ca.pem \\
+  --peer-trusted-ca-file=/etc/etcd/ca.pem \\
+  --peer-client-cert-auth \\
+  --client-cert-auth \\
+  --initial-advertise-peer-urls https://${ETCD_IP}:2380 \\
+  --listen-peer-urls https://${ETCD_IP}:2380 \\
+  --listen-client-urls https://${ETCD_IP}:2379,https://127.0.0.1:2379 \\
+  --advertise-client-urls https://${ETCD_IP}:2379 \\
+  --initial-cluster-token etcd-cluster-0 \\
+  --initial-cluster ${ETCD_NAMES[0]}=https://${ETCD_IPS[0]}:2380,${ETCD_NAMES[1]}=https://${ETCD_IPS[1]}:2380,${ETCD_NAMES[2]}=https://${ETCD_IPS[2]}:2380 \\
+  --initial-cluster-state new \\
+  --data-dir=/var/lib/etcd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+（3）启动etcd集群（在所有etcd节点执行）
+
+```bash
+systemctl daemon-reload && systemctl enable etcd && systemctl restart etcd
+```
+
+（4）验证etcd集群状态
+
+```bash
+ETCDCTL_API=3 etcdctl member list \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/etcd/ca.pem \
+  --cert=/etc/etcd/kubernetes.pem \
+  --key=/etc/etcd/kubernetes-key.pem
+```
+
+### 部署kubernetes控制平面
+
+#### 部署apiserver
+
+```bash
+# 创建kubernetes必要目录
+mkdir -p /etc/kubernetes/ssl
+# 准备证书文件
+mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+    service-account-key.pem service-account.pem \
+    proxy-client.pem proxy-client-key.pem \
+    /etc/kubernetes/ssl
+
+# 配置kube-apiserver.service
+# 本机内网ip
+IP=192.168.48.142
+# apiserver实例数
+APISERVER_COUNT=2
+# etcd节点
+ETCD_ENDPOINTS=(192.168.48.142 192.168.48.143 192.168.48.144)
+# 创建 apiserver service
+$ cat <<EOF > /etc/systemd/system/kube-apiserver.service
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-apiserver \\
+  --advertise-address=${IP} \\
+  --allow-privileged=true \\
+  --apiserver-count=${APISERVER_COUNT} \\
+  --audit-log-maxage=30 \\
+  --audit-log-maxbackup=3 \\
+  --audit-log-maxsize=100 \\
+  --audit-log-path=/var/log/audit.log \\
+  --authorization-mode=Node,RBAC \\
+  --bind-address=0.0.0.0 \\
+  --client-ca-file=/etc/kubernetes/ssl/ca.pem \\
+  --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \\
+  --etcd-cafile=/etc/kubernetes/ssl/ca.pem \\
+  --etcd-certfile=/etc/kubernetes/ssl/kubernetes.pem \\
+  --etcd-keyfile=/etc/kubernetes/ssl/kubernetes-key.pem \\
+  --etcd-servers=https://${ETCD_ENDPOINTS[0]}:2379,https://${ETCD_ENDPOINTS[1]}:2379,https://${ETCD_ENDPOINTS[2]}:2379 \\
+  --event-ttl=1h \\
+  --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem \\
+  --kubelet-client-certificate=/etc/kubernetes/ssl/kubernetes.pem \\
+  --kubelet-client-key=/etc/kubernetes/ssl/kubernetes-key.pem \\
+  --service-account-issuer=api \\
+  --service-account-key-file=/etc/kubernetes/ssl/service-account.pem \\
+  --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-key.pem \\
+  --api-audiences=api,vault,factors \\
+  --service-cluster-ip-range=10.233.0.0/16 \\
+  --service-node-port-range=30000-32767 \\
+  --proxy-client-cert-file=/etc/kubernetes/ssl/proxy-client.pem \\
+  --proxy-client-key-file=/etc/kubernetes/ssl/proxy-client-key.pem \\
+  --runtime-config=api/all=true \\
+  --requestheader-client-ca-file=/etc/kubernetes/ssl/ca.pem \\
+  --requestheader-allowed-names=aggregator \\
+  --requestheader-extra-headers-prefix=X-Remote-Extra- \\
+  --requestheader-group-headers=X-Remote-Group \\
+  --requestheader-username-headers=X-Remote-User \\
+  --tls-cert-file=/etc/kubernetes/ssl/kubernetes.pem \\
+  --tls-private-key-file=/etc/kubernetes/ssl/kubernetes-key.pem \\
+  --v=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+#### 部署kube-controller-manager
+
+```bash
+# 准备kubeconfig配置文件
+mv kube-controller-manager.kubeconfig /etc/kubernetes/
+
+# 创建 kube-controller-manager.service
+$ cat <<EOF > /etc/systemd/system/kube-controller-manager.service
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-controller-manager \\
+  --bind-address=0.0.0.0 \\
+  --cluster-cidr=10.200.0.0/16 \\
+  --cluster-name=kubernetes \\
+  --cluster-signing-cert-file=/etc/kubernetes/ssl/ca.pem \\
+  --cluster-signing-key-file=/etc/kubernetes/ssl/ca-key.pem \\
+  --cluster-signing-duration=876000h0m0s \\
+  --kubeconfig=/etc/kubernetes/kube-controller-manager.kubeconfig \\
+  --leader-elect=true \\
+  --root-ca-file=/etc/kubernetes/ssl/ca.pem \\
+  --service-account-private-key-file=/etc/kubernetes/ssl/service-account-key.pem \\
+  --service-cluster-ip-range=10.233.0.0/16 \\
+  --use-service-account-credentials=true \\
+  --v=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+#### 配置kube-scheduler
+
+```bash
+# 准备kubeconfig配置文件
+mv kube-scheduler.kubeconfig /etc/kubernetes
+
+# 创建 scheduler service 文件
+cat <<EOF > /etc/systemd/system/kube-scheduler.service
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-scheduler \\
+  --authentication-kubeconfig=/etc/kubernetes/kube-scheduler.kubeconfig \\
+  --authorization-kubeconfig=/etc/kubernetes/kube-scheduler.kubeconfig \\
+  --kubeconfig=/etc/kubernetes/kube-scheduler.kubeconfig \\
+  --leader-elect=true \\
+  --bind-address=0.0.0.0 \\  
+  --v=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+#### 启动服务
+
+```bash
+systemctl daemon-reload
+systemctl enable kube-apiserver
+systemctl enable kube-controller-manager
+systemctl enable kube-scheduler
+systemctl restart kube-apiserver
+systemctl restart kube-controller-manager
+systemctl restart kube-scheduler
+
+# 检查服务
+[root@node0 ~]# netstat -tlnpu
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1068/sshd           
+tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      1238/master         
+tcp        0      0 192.168.48.142:2379     0.0.0.0:*               LISTEN      1813/etcd           
+tcp        0      0 127.0.0.1:2379          0.0.0.0:*               LISTEN      1813/etcd           
+tcp        0      0 192.168.48.142:2380     0.0.0.0:*               LISTEN      1813/etcd           
+tcp6       0      0 :::10257                :::*                    LISTEN      1930/kube-controlle 
+tcp6       0      0 :::10259                :::*                    LISTEN      2421/kube-scheduler 
+tcp6       0      0 :::22                   :::*                    LISTEN      1068/sshd           
+tcp6       0      0 ::1:25                  :::*                    LISTEN      1238/master         
+tcp6       0      0 :::6443                 :::*                    LISTEN      1923/kube-apiserver 
+```
+
+#### 配置kubectl
+
+kubectl是用来管理kubernetes集群的客户端工具，前面我们已经下载到了所有的master节点。下面我们来配置这个工具，让它可以使用。
+
+```bash
+# 创建kubectl的配置目录
+mkdir ~/.kube/
+
+# 把管理员的配置文件移动到kubectl的默认目录
+mv ~/admin.kubeconfig ~/.kube/config
+
+# 测试
+kubectl get nodes  # 输出结果 No resources found
+```
+
+在执行 kubectl exec、run、logs 等命令时，apiserver 会转发到 kubelet。这里定义 RBAC 规则，授权 apiserver 调用 kubelet API。
+
+```bash
+# 只需要执行一次
+kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
+```
+
+### 部署kubernetes工作节点
 
