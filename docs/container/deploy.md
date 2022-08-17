@@ -428,7 +428,7 @@ EOF
 
 ### FAQ
 
-#### Download file error
+**（1）Download file error**
 
 ![image-20211229101545405](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211229101545405.png)
 
@@ -442,7 +442,7 @@ EOF
 
 <br />
 
-#### 组件状态为Unhealthy
+**（2）组件状态为Unhealthy**
 
 `scheduler`和`controller-manager`组件状态为`Unhealthy`
 
@@ -459,7 +459,7 @@ EOF
 
 <br />
 
-#### SSH超时
+**（3）SSH超时**
 
 **错误描述**
 
@@ -685,7 +685,7 @@ Version: 1.6.1
 Runtime: go1.12.12
 ```
 
-#### **（1）生成根证书**
+#### **（1）根证书**
 
 根证书是集群所有节点共享的，只需要创建一个 CA 证书，后续创建的所有证书都由它签名。
 
@@ -749,7 +749,7 @@ total 20
 -rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
 ```
 
-#### **（2）生成admin客户端证书**
+#### **（2）admin客户端证书**
 
 ```bash
 [root@node0 pki]# cat > admin-csr.json <<EOF
@@ -801,7 +801,7 @@ total 36
 -rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
 ```
 
-#### （3）生成kubelet客户端证书
+#### （3）kubelet客户端证书
 
 Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 Kubelet使用将其标识为system:nodes组中的凭据，其用户名为system：node:nodeName，接下里就给每个工作节点生成证书。
 
@@ -871,7 +871,7 @@ total 68
 -rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
 ```
 
-#### （4）生成 kube-controller-manager客户端证书
+#### （4）kube-controller-manager证书
 
 ```bash
 [root@node0 pki]# cat > kube-controller-manager-csr.json <<EOF
@@ -935,7 +935,7 @@ total 84
 -rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
 ```
 
-#### （5）生成kube-proxy客户端证书
+#### （5）kube-proxy客户端证书
 
 ```bash
 [root@node0 pki]# cat > kube-proxy-csr.json <<EOF
@@ -975,7 +975,7 @@ of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://ca
 specifically, section 10.2.3 ("Information Requirements").  
 ```
 
-#### （6）生成kube-scheduler客户端证书
+#### （6）kube-scheduler客户端证书
 
 ```bash
 [root@node0 pki]# cat > kube-scheduler-csr.json <<EOF
@@ -1015,7 +1015,7 @@ of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://ca
 specifically, section 10.2.3 ("Information Requirements").  
 ```
 
-#### （7）生成kube-apiserver服务端证书
+#### （7）kube-apiserver服务端证书
 
 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
 
@@ -1060,7 +1060,7 @@ EOF
 2022/08/16 03:14:36 [INFO] signed certificate with serial number 269673411800826022201577034662155588426444682801  
 ```
 
-#### （8）生成Service Account证书
+#### （8）Service Account证书
 
 ```bash
 [root@node0 pki]# cat > service-account-csr.json <<EOF
@@ -1100,7 +1100,7 @@ of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://ca
 specifically, section 10.2.3 ("Information Requirements").  
 ```
 
-#### （9）生成proxy-client 证书
+#### （9）proxy-client 证书
 
 ```bash
 [root@node0 pki]# cat > proxy-client-csr.json <<EOF
@@ -1178,7 +1178,7 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 
 以下命令需要与上一节“生成证书”在同一个目录下执行
 
-#### （1）kubelet认证配置
+#### （1）kubelet
 
 ```bash
 # 指定你的worker列表（hostname），空格分隔
@@ -1214,7 +1214,7 @@ Context "default" created.
 Switched to context "default".
 ```
 
-#### （2）kube-proxy认证配置
+#### （2）kube-proxy
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1237,7 +1237,7 @@ kubectl config set-context default \
 [root@node0 pki]# kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ```
 
-#### （3）kube-controller-manager认证配置
+#### （3）kube-controller-manager
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1260,7 +1260,7 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
 ```
 
-#### （4）kube-scheduler认证配置
+#### （4）kube-scheduler
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1283,7 +1283,7 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
 ```
 
-#### （5）admin用户认证配置
+#### （5）admin
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1580,4 +1580,34 @@ kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=syst
 ```
 
 ### 部署kubernetes工作节点
+
+#### 部署Containerd
+
+```bash
+# 设定containerd的版本号
+VERSION=1.4.3
+
+# 下载压缩包
+wget https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
+
+# 解压缩
+tar -xvf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
+
+# 复制需要的文件
+cp etc/crictl.yaml /etc/
+cp etc/systemd/system/containerd.service /etc/systemd/system/
+cp -r usr /
+
+# 配置文件
+mkdir -p /etc/containerd # 创建配置文件目录
+containerd config default > /etc/containerd/config.toml  # 默认配置生成配置文件
+vi /etc/containerd/config.toml  # 定制化配置（可选）
+
+# 启动服务
+systemctl enable containerd
+systemctl restart containerd
+
+# 检查状态
+systemctl status containerd
+```
 
