@@ -1182,7 +1182,7 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 
 ```bash
 # 指定你的worker列表（hostname），空格分隔
-[root@node0 pki]# WORKERS="node0 node1"
+[root@node0 pki]# WORKERS="node1 node2"
 [root@node0 pki]# for instance in ${WORKERS}; do
   kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
@@ -1205,11 +1205,11 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 done
 
 Cluster "kubernetes" set.
-error: could not stat client-certificate file node0.pem: stat node0.pem: no such file or directory
-Context "default" created.
+User "system:node:node1" set.
+Context "default" modified.
 Switched to context "default".
 Cluster "kubernetes" set.
-User "system:node:node1" set.
+User "system:node:node2" set.
 Context "default" created.
 Switched to context "default".
 ```
@@ -1609,5 +1609,231 @@ systemctl restart containerd
 
 # 检查状态
 systemctl status containerd
+```
+
+#### 部署kubelet
+
+文档：
+
+* [https://kubernetes.io/zh-cn/docs/reference/command-line-tools-reference/kubelet/](https://kubernetes.io/zh-cn/docs/reference/command-line-tools-reference/kubelet/)
+* [https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/](https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/)
+
+```bash
+mkdir -p /etc/kubernetes/ssl/
+mv ${HOSTNAME}-key.pem ${HOSTNAME}.pem ca.pem ca-key.pem /etc/kubernetes/ssl/
+mv ${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
+IP=192.168.48.143
+
+# 写入kubelet配置文件
+cat <<EOF > /etc/kubernetes/kubelet-config.yaml
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    enabled: true
+  x509:
+    clientCAFile: "/etc/kubernetes/ssl/ca.pem"
+authorization:
+  mode: Webhook
+clusterDomain: "cluster.local"
+clusterDNS:
+  - "169.254.25.10"
+podCIDR: "10.200.0.0/16"
+address: ${IP}
+readOnlyPort: 0
+staticPodPath: /etc/kubernetes/manifests
+healthzPort: 10248
+healthzBindAddress: 127.0.0.1
+kubeletCgroups: /systemd/system.slice
+resolvConf: "/etc/resolv.conf"
+runtimeRequestTimeout: "15m"
+kubeReserved:
+  cpu: 200m
+  memory: 512M
+tlsCertFile: "/etc/kubernetes/ssl/${HOSTNAME}.pem"
+tlsPrivateKeyFile: "/etc/kubernetes/ssl/${HOSTNAME}-key.pem"
+registerNode: true
+EOF
+
+cat <<EOF > /etc/systemd/system/kubelet.service
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=containerd.service
+Requires=containerd.service
+
+[Service]
+ExecStart=/usr/local/bin/kubelet \\
+  --config=/etc/kubernetes/kubelet-config.yaml \\
+  --kubeconfig=/etc/kubernetes/kubeconfig \\
+  --container-runtime=remote \\
+  --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock \\
+  --node-ip=${IP} \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+#### 配置nginx-proxy
+
+nginx-proxy是一个用于worker节点访问apiserver的一个代理，是apiserver一个优雅的高可用方案，它使用kubelet的staticpod方式启动，让每个节点都可以均衡的访问到每个apiserver服务，优雅的替代了通过虚拟ip访问apiserver的方式。
+
+> Tips: nginx-proxy 只需要在没有 apiserver 的节点部署
+
+```bash
+mkdir -p /etc/nginx
+
+# master ip列表
+MASTER_IPS=(192.168.48.142 192.168.48.143)
+
+# 执行前请先copy一份，并修改好upstream的 'server' 部分配置
+cat <<EOF > /etc/nginx/nginx.conf
+error_log stderr notice;
+
+worker_processes 2;
+worker_rlimit_nofile 130048;
+worker_shutdown_timeout 10s;
+
+events {
+  multi_accept on;
+  use epoll;
+  worker_connections 16384;
+}
+
+stream {
+  upstream kube_apiserver {
+    least_conn;
+    server ${MASTER_IPS[0]}:6443;
+    server ${MASTER_IPS[1]}:6443;    
+  }
+
+  server {
+    listen        127.0.0.1:6443;
+    proxy_pass    kube_apiserver;
+    proxy_timeout 10m;
+    proxy_connect_timeout 1s;
+  }
+}
+
+http {
+  aio threads;
+  aio_write on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  keepalive_timeout 5m;
+  keepalive_requests 100;
+  reset_timedout_connection on;
+  server_tokens off;
+  autoindex off;
+
+  server {
+    listen 8081;
+    location /healthz {
+      access_log off;
+      return 200;
+    }
+    location /stub_status {
+      stub_status on;
+      access_log off;
+    }
+  }
+}
+EOF
+
+mkdir -p /etc/kubernetes/manifests/
+
+cat <<EOF > /etc/kubernetes/manifests/nginx-proxy.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-proxy
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    k8s-app: kube-nginx
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    kubernetes.io/os: linux
+  priorityClassName: system-node-critical
+  containers:
+  - name: nginx-proxy
+    image: docker.io/library/nginx:1.19
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32M
+    securityContext:
+      privileged: true
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+    volumeMounts:
+    - mountPath: /etc/nginx
+      name: etc-nginx
+      readOnly: true
+  volumes:
+  - name: etc-nginx
+    hostPath:
+      path: /etc/nginx
+EOF
+```
+
+#### 配置kube-proxy
+
+```bash
+mv kube-proxy.kubeconfig /etc/kubernetes/
+
+# 创建 kube-proxy-config.yaml
+cat <<EOF > /etc/kubernetes/kube-proxy-config.yaml
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+bindAddress: 0.0.0.0
+clientConnection:
+  kubeconfig: "/etc/kubernetes/kube-proxy.kubeconfig"
+clusterCIDR: "10.200.0.0/16"
+mode: ipvs
+EOF
+
+cat <<EOF > /etc/systemd/system/kube-proxy.service
+[Unit]
+Description=Kubernetes Kube Proxy
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-proxy \\
+  --config=/etc/kubernetes/kube-proxy-config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+#### 启动服务
+
+```bash
+systemctl daemon-reload
+systemctl enable kubelet kube-proxy
+systemctl restart kubelet kube-proxy
+journalctl -f -u kubelet
+journalctl -f -u kube-proxy
+
+systemctl status kubelet && systemctl status kube-proxy
 ```
 
