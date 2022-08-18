@@ -1837,3 +1837,111 @@ journalctl -f -u kube-proxy
 systemctl status kubelet && systemctl status kube-proxy
 ```
 
+### 部署网络插件Calico
+
+文档：[https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises](https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises)
+
+（1）下载YAML文件
+
+```bash
+curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
+```
+
+（2）修改IP自动发现
+
+> 当kubelet的启动参数中存在--node-ip的时候，以host-network模式启动的pod的status.hostIP字段就会自动填入kubelet中指定的ip地址。
+
+```bash
+# 修改前
+- name: IP
+  value: "autodetect"
+  
+# 修改后
+- name: IP
+  valueFrom:
+    fieldRef:
+      fieldPath: status.hostIP
+```
+
+（3）修改CIDR
+
+```bash
+# 修改前
+# - name: CALICO_IPV4POOL_CIDR
+#   value: "192.168.0.0/16"
+
+# 修改后
+- name: CALICO_IPV4POOL_CIDR
+  value: "10.200.0.0/16"
+```
+
+（4）部署
+
+```bash
+[root@node0 ~]# kubectl apply -f calico.yaml 
+configmap/calico-config created
+customresourcedefinition.apiextensions.k8s.io/bgpconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/bgppeers.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/blockaffinities.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/caliconodestatuses.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/clusterinformations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/felixconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/globalnetworkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/globalnetworksets.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/hostendpoints.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamblocks.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamconfigs.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipamhandles.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ippools.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/ipreservations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/kubecontrollersconfigurations.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/networkpolicies.crd.projectcalico.org created
+customresourcedefinition.apiextensions.k8s.io/networksets.crd.projectcalico.org created
+clusterrole.rbac.authorization.k8s.io/calico-kube-controllers created
+clusterrolebinding.rbac.authorization.k8s.io/calico-kube-controllers created
+clusterrole.rbac.authorization.k8s.io/calico-node created
+clusterrolebinding.rbac.authorization.k8s.io/calico-node created
+daemonset.apps/calico-node created
+serviceaccount/calico-node created
+deployment.apps/calico-kube-controllers created
+serviceaccount/calico-kube-controllers created
+poddisruptionbudget.policy/calico-kube-controllers created
+```
+
+（5）检查状态
+
+```bash
+# 检查Pod状态
+[root@node0 ~]# kubectl get pods -A
+NAMESPACE     NAME                                       READY   STATUS             RESTARTS      AGE
+kube-system   calico-kube-controllers-555bc4b957-h4xjj   1/1     Running            0             113s
+kube-system   calico-node-292qw                          1/1     Running            0             113s
+kube-system   calico-node-h76ng                          1/1     Running            0             113s
+kube-system   nginx-proxy-node2                          1/1     Running            1 (20m ago)   16h
+
+# 查看Node状态，已经变成Ready了
+[root@node0 ~]# kubectl get node
+NAME    STATUS   ROLES    AGE   VERSION
+node1   Ready    <none>   21h   v1.24.3
+node2   Ready    <none>   16h   v1.24.3
+```
+
+### 部署DNS插件CoreDNS
+
+文档：
+
+* coredns官方文档：[https://coredns.io/plugins/kubernetes/](https://coredns.io/plugins/kubernetes/)
+* NodeLocal DNSCache：[https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/)
+
+```bash
+# 下载coredns yaml
+wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/coredns.yaml.sed
+wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/deploy.sh
+chmod +x deploy.sh
+./deploy.sh -i 10.233.0.10 >coredns.yml
+kubectl apply -f coredns.yml
+
+# 创建 coredns
+kubectl apply -f coredns.yaml
+```
+
