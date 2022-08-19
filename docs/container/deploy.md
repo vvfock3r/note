@@ -11,43 +11,13 @@
 
 
 
-## 使用kubespray部署
+## 前置要求：系统初始化
 
-文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
-
-文档2：[https://github.com/kubernetes-sigs/kubespray](https://github.com/kubernetes-sigs/kubespray)
-
-### 前置要求
-
-* 在部署过程中需要去海外下载镜像，需要主机能够科学上网（直连或者通过`HTTP_PROXY`方式）
-* 支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上
-
-###  版本说明
-
-| 名称       |         版本 | 备注                            |
-| ---------- | -----------: | ------------------------------- |
-| OS         | `Centos 7.9` |                                 |
-| kubespray  |    `v2.19.0` |                                 |
-| Kubernetes |    `v1.23.7` | `kubespray v2.19.0`默认安装版本 |
-
-
-
-### 节点规划
-
-| 主机名 | Master节点 | Node节点 | Etcd节点 | 其他节点        | 内存 | CPU  | 静态IP         |
-| ------ | ---------- | -------- | -------- | --------------- | ---- | ---- | -------------- |
-| node0  | √          | √        | √        | Ansible主控节点 | 4G   | 2核  | 192.168.48.128 |
-| node1  | √          | √        | √        |                 | 4G   | 2核  | 192.168.48.134 |
-| node2  |            | √        | √        |                 | 4G   | 2核  | 192.168.48.135 |
-
-> 根据以上信息安装操作系统，安装完成后不需要做任何操作
-
-
-
-### 更新系统
+### （1）更新系统
 
 ```bash
 # 更新系统并重启
+[root@localhost ~]# yum -y epel-release
 [root@localhost ~]# yum -y update && reboot
 
 # 查看系统版本
@@ -55,11 +25,33 @@
 CentOS Linux release 7.9.2009 (Core)
 ```
 
+### （2）配置时区（可选）
 
+```bash
+# 先检查一下当前的时区是否正确
+[root@localhost ~]# timedatectl
+      Local time: Fri 2022-08-19 15:02:02 CST
+  Universal time: Fri 2022-08-19 07:02:02 UTC
+        RTC time: Fri 2022-08-19 07:02:00
+       Time zone: Asia/Shanghai (CST, +0800)
+     NTP enabled: n/a
+NTP synchronized: no
+ RTC in local TZ: no
+      DST active: n/a
 
-### 设置静态内网IP（可选）
+# 配置为东八区
+[root@localhost ~]# timedatectl set-timezone "Asia/Shanghai"
+```
+
+### （3）配置24小时制（可选）
+
+### （4）配置静态IP（可选）
+
+:::tip
 
 如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址
+
+:::
 
 ```bash
 [root@localhost ~]# vi /etc/sysconfig/network-scripts/ifcfg-ens33
@@ -98,33 +90,95 @@ PING www.a.shifen.com (39.156.66.14) 56(84) bytes of data.
 --- www.a.shifen.com ping statistics ---
 4 packets transmitted, 4 received, 0% packet loss, time 3005ms
 rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
-
-# 重启系统（可选）
-[root@localhost ~]# reboot
 ```
 
-### 系统初始化
+### （5）同步服务器时间（可选）
 
 ```bash
-# 修改主机名
-[root@localhost ~]# hostnamectl set-hostname node0
-[root@localhost ~]# hostnamectl set-hostname node1
-[root@localhost ~]# hostnamectl set-hostname node2
+[root@localhost ~]# yum install ntpdate -y
+[root@localhost ~]# ntpdate time.windows.com
+```
 
-# 关闭selinux
-[root@localhost ~]# setenforce 0 && sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config
+### （6）配置主机名
 
+```bash
+# 配置主机名
+[root@localhost ~]# hostnamectl set-hostname node-1
+[root@localhost ~]# hostnamectl set-hostname node-2
+[root@localhost ~]# hostnamectl set-hostname node-3
+
+# 添加主机名解析
+[root@localhost ~]# cat >> /etc/hosts <<EOF
+
+# kubernetes
+192.168.48.142 node-1
+192.168.48.143 node-2
+192.168.48.144 node-3
+EOF
+```
+
+### （7）关闭某些服务
+
+```bash
 # 关闭防火墙
 [root@localhost ~]# systemctl stop firewalld && systemctl disable firewalld
 
+# 关闭selinux
+[root@localhost ~]# setenforce 0 && \
+	getenforce && \
+	sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
+	grep -E '^SELINUX=' /etc/selinux/config
+
 # 设置iptables规则
-[root@localhost ~]# iptables -F && iptables -X && iptables -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
+[root@localhost ~]# iptables -F && \
+	iptables -X && \
+	iptables -F -t nat && \
+	iptables -X -t nat && \
+	iptables -P FORWARD ACCEPT
 
 # 关闭swap
-[root@localhost ~]# swapoff -a && vi /etc/fstab
-[root@localhost ~]# free -m && cat /etc/fstab
+[root@localhost ~]# swapoff -a && \
+	sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
+	free
 
-# K8S参数设置
+# 关闭dnsmasq(否则可能导致容器无法解析域名)
+[root@localhost ~]# service dnsmasq stop && systemctl disable dnsmasq
+```
+
+### （8）调整内核参数
+
+::: tip 
+
+若出现如下报错
+
+```bash
+[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file or directory
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+```
+
+解决办法
+
+```bash
+# 检查模块是否已经加载（输出为空代表模块没有加载）
+[root@node0 ~]# lsmod | grep br_netfilter
+br_netfilter           22256  0 
+bridge                151336  1 br_netfilter
+
+# 临时加载模块(重启后还需要重新加载)
+[root@localhost ~]# modprobe br_netfilter
+
+# 设置开启自加载模块
+[root@localhost ~]# echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
+```
+
+:::
+
+```bash
 [root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
@@ -133,16 +187,50 @@ net.ipv4.ip_forward = 1
 vm.swappiness = 0
 vm.overcommit_memory = 1
 EOF
-# 使配置生效
+
 [root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
-
-# 时间同步
-[root@localhost ~]# yum install ntpdate -y
-[root@localhost ~]# ntpdate time.windows.com
-
-# 移除docker相关软件包（可选）
-[root@localhost ~]# yum remove -y docker* && rm -vf /etc/docker/daemon.json
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
 ```
+
+## 
+
+## 使用kubespray部署
+
+文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
+
+文档2：[https://github.com/kubernetes-sigs/kubespray](https://github.com/kubernetes-sigs/kubespray)
+
+### 前置要求
+
+* 在部署过程中需要去海外下载镜像，需要主机能够科学上网（直连或者通过`HTTP_PROXY`方式）
+* 支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上
+
+###  版本说明
+
+| 名称       |         版本 | 备注                            |
+| ---------- | -----------: | ------------------------------- |
+| OS         | `Centos 7.9` |                                 |
+| kubespray  |    `v2.19.0` |                                 |
+| Kubernetes |    `v1.23.7` | `kubespray v2.19.0`默认安装版本 |
+
+
+
+### 节点规划
+
+| 主机名 | Master节点 | Node节点 | Etcd节点 | 其他节点        | 内存 | CPU  | 静态IP         |
+| ------ | ---------- | -------- | -------- | --------------- | ---- | ---- | -------------- |
+| node0  | √          | √        | √        | Ansible主控节点 | 4G   | 2核  | 192.168.48.128 |
+| node1  | √          | √        | √        |                 | 4G   | 2核  | 192.168.48.134 |
+| node2  |            | √        | √        |                 | 4G   | 2核  | 192.168.48.135 |
+
+> 根据以上信息安装操作系统，安装完成后不需要做任何操作
+
+
 
 ### 配置Ansible主控节点
 
@@ -493,214 +581,26 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ## 使用二进制部署
 
-### 系统初始化
-
-#### （1）更新系统
-
-```bash
-[root@localhost ~]# yum -y epel-release
-[root@localhost ~]# yum -y update
-```
-
-#### （2）配置时区（可选）
-
-```bash
-# 先检查一下当前的时区是否正确
-[root@localhost ~]# timedatectl
-      Local time: Fri 2022-08-19 15:02:02 CST
-  Universal time: Fri 2022-08-19 07:02:02 UTC
-        RTC time: Fri 2022-08-19 07:02:00
-       Time zone: Asia/Shanghai (CST, +0800)
-     NTP enabled: n/a
-NTP synchronized: no
- RTC in local TZ: no
-      DST active: n/a
-
-# 配置为东八区
-[root@localhost ~]# timedatectl set-timezone "Asia/Shanghai"
-```
-
-#### （3）配置24小时制（可选）
-
-#### （4）配置静态IP（可选）
-
-:::tip
-
-如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址
-
-:::
-
-```bash
-[root@localhost ~]# vi /etc/sysconfig/network-scripts/ifcfg-ens33
-TYPE="Ethernet"
-PROXY_METHOD="none"
-BROWSER_ONLY="no"
-BOOTPROTO="static"		# 设置为静态IP
-DEFROUTE="yes"
-IPV4_FAILURE_FATAL="no"
-IPV6INIT="yes"
-IPV6_AUTOCONF="yes"
-IPV6_DEFROUTE="yes"
-IPV6_FAILURE_FATAL="no"
-IPV6_ADDR_GEN_MODE="stable-privacy"
-NAME="ens33"
-UUID="068dc849-6e8c-4bed-b2de-2fe66c424521"
-DEVICE="ens33"
-ONBOOT="yes"			# 开启自启
-IPADDR=192.168.48.140	# IP，根据实际情况修改
-NETMASK=255.255.255.0	# 子网掩码
-GATEWAY=192.168.48.2	# 默认网关，根据实际情况修改
-DNS1=192.168.48.2       # DNS1
-DNS2=8.8.8.8            # DNS2
-
-# 重启网络
-[root@localhost ~]# systemctl restart network.service
-
-# 测试网络
-[root@localhost ~]# ping -c 4 www.baidu.com
-PING www.a.shifen.com (39.156.66.14) 56(84) bytes of data.
-64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=1 ttl=128 time=27.3 ms
-64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=2 ttl=128 time=28.0 ms
-64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=3 ttl=128 time=43.1 ms
-64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=4 ttl=128 time=23.9 ms
-
---- www.a.shifen.com ping statistics ---
-4 packets transmitted, 4 received, 0% packet loss, time 3005ms
-rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
-```
-
-#### （5）同步服务器时间（可选）
-
-```bash
-[root@localhost ~]# yum install ntpdate -y
-[root@localhost ~]# ntpdate time.windows.com
-```
-
-#### （6）配置主机名
-
-```bash
-# 配置主机名
-[root@localhost ~]# hostnamectl set-hostname node-1
-[root@localhost ~]# hostnamectl set-hostname node-2
-[root@localhost ~]# hostnamectl set-hostname node-3
-
-# 添加主机名解析
-[root@localhost ~]# cat >> /etc/hosts <<EOF
-
-# kubernetes
-192.168.48.142 node-1
-192.168.48.143 node-2
-192.168.48.144 node-3
-EOF
-```
-
 ### 安装依赖包
 
 ```bash
 [root@localhost ~]# yum -y install yum-utils vim curl wget socat conntrack ipvsadm ipset jq sysstat iptables libseccomp
 ```
 
-### 关闭防火墙等服务
 
-```bash
-# 关闭防火墙
-[root@localhost ~]# systemctl stop firewalld && systemctl disable firewalld
-
-# 关闭selinux
-[root@localhost ~]# setenforce 0 && \
-	getenforce && \
-	sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
-	grep -E '^SELINUX=' /etc/selinux/config
-
-# 设置iptables规则
-[root@localhost ~]# iptables -F && \
-	iptables -X && \
-	iptables -F -t nat && \
-	iptables -X -t nat && \
-	iptables -P FORWARD ACCEPT
-
-# 关闭swap
-[root@localhost ~]# swapoff -a && \
-	sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
-	free
-
-# 关闭dnsmasq(否则可能导致容器无法解析域名)
-[root@localhost ~]# service dnsmasq stop && systemctl disable dnsmasq
-```
-
-### 调整内核参数
-
-::: tip 
-
-若出现如下报错
-
-```bash
-[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
-sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file or directory
-sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
-```
-
-解决办法
-
-```bash
-# 检查模块是否已经加载（输出为空代表模块没有加载）
-[root@node0 ~]# lsmod | grep br_netfilter
-br_netfilter           22256  0 
-bridge                151336  1 br_netfilter
-
-# 临时加载模块(重启后还需要重新加载)
-[root@localhost ~]# modprobe br_netfilter
-
-# 设置开启自加载模块
-[root@localhost ~]# echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
-```
-
-:::
-
-```bash
-[root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
-EOF
-
-[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
-```
 
 ### 配置文件中转节点
 
 为了方便文件的`copy`我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
 
 ```bash
-# 看看是否已经存在rsa公钥
-[root@localhost ~]# cat ~/.ssh/id_rsa.pub
+# 生成密钥对
+[root@node-1 ~]# ssh-keygen -t rsa
 
-# 如果不存在就创建一个新的
-[root@localhost ~]# ssh-keygen -t rsa
-
-# 把id_rsa.pub文件内容copy到其他机器的授权文件中
-[root@localhost ~]# cat ~/.ssh/id_rsa.pub
-
-# 在其他节点执行下面命令（包括worker节点）
-[root@localhost ~]# echo "<file_content>" >> ~/.ssh/authorized_keys
-
-# 或执行如下命令
-[root@node0 ~]# ssh-copy-id root@node0
-[root@node0 ~]# ssh-copy-id root@node1
-[root@node0 ~]# ssh-copy-id root@node2
+# 配置免密登录
+[root@node-1 ~]# ssh-copy-id root@node-1
+[root@node-1 ~]# ssh-copy-id root@node-2
+[root@node-1 ~]# ssh-copy-id root@node-3
 ```
 
 ### 下载软件包
@@ -711,29 +611,32 @@ vm.overcommit_memory = 1
 2. 选择合适的版本后，点击`See the CHANGELOG for more details`中的链接
 3. 根据 `Client Binaries` 和 `Server Binaries`下载二进制包
 
-:::
-
-```bash
-# 下载K8S二进制包
-[root@node0 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/kubernetes-server-linux-amd64.tar.gz
-[root@node0 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
-
-# 下载Etcd软件包
-[root@node0 ~]# wget https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
-[root@node0 ~]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
-```
-
 也可以单独下载某个二进制包
 
 ```bash
 wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
 ```
 
+:::
+
+```bash
+# 下载K8S二进制包
+[root@node-1 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
+[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
+[root@node-1 ~]# cd kubernetes
+[root@node-1 kubernetes]# mkdir src && tar zxf  kubernetes-src.tar.gz -C ./src
+[root@node-1 kubernetes]# cd ~
+
+# 下载Etcd软件包
+[root@node-1 ~]# wget https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
+[root@node-1 ~]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
+```
+
 ### 分发软件包
 
 ```bash
 # 进入kubernetes目录
-[root@node0 ~]# cd kubernetes/server/bin/
+[root@node-1 ~]# cd kubernetes/server/bin/
 
 # 把master相关组件分发到master节点
 [root@node0 bin]# MASTERS=(node0 node1)
