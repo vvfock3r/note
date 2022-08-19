@@ -11,7 +11,7 @@
 
 
 
-## 前置要求：系统初始化
+## 系统初始化
 
 ### （1）更新系统
 
@@ -197,9 +197,18 @@ vm.swappiness = 0
 vm.overcommit_memory = 1
 ```
 
+### （9）安装常用软件包
+
+```bash
+[root@localhost ~]# yum -y install yum-utils \
+	vim curl wget \
+	socat conntrack ipvsadm ipset \
+	sysstat iptables libseccomp
+```
+
 ## 
 
-## 使用kubespray部署
+## 🍁 方式一：使用kubespray部署
 
 文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
 
@@ -579,17 +588,9 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ## 
 
-## 使用二进制部署
+## 🍁 方式二：使用二进制部署（推荐）
 
-### 安装依赖包
-
-```bash
-[root@localhost ~]# yum -y install yum-utils vim curl wget socat conntrack ipvsadm ipset jq sysstat iptables libseccomp
-```
-
-
-
-### 配置文件中转节点
+### 中转节点
 
 为了方便文件的`copy`我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
 
@@ -608,14 +609,20 @@ gather_timeout = 300    # 设置超时时间300秒
 ::: tip 
 
 1. 打开Github Kubernetes Releases页面：[https://github.com/kubernetes/kubernetes/releases/](https://github.com/kubernetes/kubernetes/releases/)
+
 2. 选择合适的版本后，点击`See the CHANGELOG for more details`中的链接
+
 3. 根据 `Client Binaries` 和 `Server Binaries`下载二进制包
 
-也可以单独下载某个二进制包
+   特别说明：
 
-```bash
-wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
-```
+   ① Server Binaries二进制包中包含了Client Binaries中的可执行命令，所以我们只需要下载Server Binaries包即可
+
+   ② 也可以单独下载某个二进制包
+
+   ```bash
+   wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
+   ```
 
 :::
 
