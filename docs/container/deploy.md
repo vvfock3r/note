@@ -1933,6 +1933,8 @@ node2   Ready    <none>   16h   v1.24.3
 * coredns官方文档：[https://coredns.io/plugins/kubernetes/](https://coredns.io/plugins/kubernetes/)
 * NodeLocal DNSCache：[https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/)
 
+（1）部署coredns
+
 ```bash
 # 下载coredns yaml
 wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/coredns.yaml.sed
@@ -1945,3 +1947,39 @@ kubectl apply -f coredns.yml
 kubectl apply -f coredns.yaml
 ```
 
+（2）部署NodeLocal DNSCache
+
+文档：[https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns](https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns)
+
+```bash
+cp -ra ~/kubernetes/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
+
+# 设置为 kube-dns service ip,这里并没有用到kube-dns，所以置为空
+sed -ri 's/,__PILLAR__DNS__SERVER__//g' nodelocaldns.yaml
+sed -ri 's/__PILLAR__DNS__SERVER__//g' nodelocaldns.yaml
+
+# 设置为本地链接IP，这个值要和kubelet配置中的clusterDNS相同
+sed -ri 's/__PILLAR__LOCAL__DNS__/169.254.25.10/g' nodelocaldns.yaml
+
+# 设置DNS域名地址，默认为cluster.local
+sed -ri 's/__PILLAR__DNS__DOMAIN__/cluster.local/g' nodelocaldns.yaml
+
+# 设置集群内部查询的上游服务器，这个值和coredns值保持一致
+sed -ri 's/__PILLAR__CLUSTER__DNS__/10.233.0.10/g' nodelocaldns.yaml
+
+# 设置集群外部查询的上游服务器
+sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
+
+# 部署
+[root@node0 ~]# kubectl apply -f nodelocaldns.yaml 
+serviceaccount/node-local-dns created
+service/kube-dns-upstream created
+configmap/node-local-dns created
+daemonset.apps/node-local-dns created
+service/node-local-dns created
+
+# 查看Pod
+[root@node0 ~]# kubectl get pods  -A | grep -E '[[:blank:]]node'
+kube-system   node-local-dns-86z4q                       1/1     Running            0                 59s
+kube-system   node-local-dns-bkxhv                       1/1     Running            0                 59s
+```
