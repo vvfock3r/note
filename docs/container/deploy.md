@@ -208,7 +208,7 @@ vm.overcommit_memory = 1
 
 ## 
 
-## 🍁 方式一：使用kubespray部署
+## 🍁 使用kubespray部署
 
 文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
 
@@ -588,7 +588,7 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ## 
 
-## 🍁 方式二：使用二进制部署（推荐）
+## 🍁 使用二进制部署（推荐）
 
 ### 中转节点
 
@@ -614,15 +614,7 @@ gather_timeout = 300    # 设置超时时间300秒
 
 3. 根据 `Client Binaries` 和 `Server Binaries`下载二进制包
 
-   特别说明：
-
-   ① Server Binaries二进制包中包含了Client Binaries中的可执行命令，所以我们只需要下载Server Binaries包即可
-
-   ② 也可以单独下载某个二进制包
-
-   ```bash
-   wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
-   ```
+   Server Binaries二进制包中包含了Client Binaries中的可执行命令，所以我们只需要下载Server Binaries包即可
 
 :::
 
@@ -637,6 +629,9 @@ gather_timeout = 300    # 设置超时时间300秒
 # 下载Etcd软件包
 [root@node-1 ~]# wget https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
 [root@node-1 ~]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
+
+# 备注: 也可以单独下载某个二进制包
+# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
 ```
 
 ### 分发软件包
@@ -646,49 +641,51 @@ gather_timeout = 300    # 设置超时时间300秒
 [root@node-1 ~]# cd kubernetes/server/bin/
 
 # 把master相关组件分发到master节点
-[root@node0 bin]# MASTERS=(node0 node1)
-[root@node0 bin]# for instance in ${MASTERS[@]}; do
+[root@node-1 bin]# MASTERS=(node-1 node-2)
+[root@node-1 bin]# for instance in ${MASTERS[@]}; do
   scp kube-apiserver kube-controller-manager kube-scheduler kubectl root@${instance}:/usr/local/bin/
 done
 
-# 把worker先关组件分发到worker节点
-[root@node0 bin]# WORKERS=(node1 node2)
-[root@node0 bin]# for instance in ${WORKERS[@]}; do
+# 把worker相关组件分发到master和worker节点
+[root@node-1 bin]# WORKERS=(node-1 node-2 node-3)
+[root@node-1 bin]# for instance in ${WORKERS[@]}; do
   scp kubelet kube-proxy root@${instance}:/usr/local/bin/
 done
 
 # --------------------------------------------------------------------------------------------------------
 # 进入etcd目录
-[root@node0 ~]# cd ~/etcd-v3.4.20-linux-amd64/
+[root@node-1 bin]# cd ~/etcd-v3.4.20-linux-amd64/
 
 # 把etcd组件分发到etcd节点
-[root@node0 etcd-v3.4.20-linux-amd64]# ETCDS=(node0 node1 node2)
-[root@node0 etcd-v3.4.20-linux-amd64]# for instance in ${ETCDS[@]}; do
+[root@node-1 etcd-v3.4.20-linux-amd64]# ETCDS=(node-1 node-2 node-3)
+[root@node-1 etcd-v3.4.20-linux-amd64]# for instance in ${ETCDS[@]}; do
   scp etcd etcdctl root@${instance}:/usr/local/bin/
 done
 ```
 
-### 生成证书
+### 生成所有的证书
 
 #### **下载cfssl工具**
 
 ```bash
-[root@node0 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl
-[root@node0 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson
-[root@node0 ~]# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+# 下载二进制工具
+[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl
+[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson
+[root@node-1 ~]# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
 
-[root@node0 ~]# cfssl version
+# 查看版本
+[root@node-1 ~]# cfssl version
 Version: 1.6.1
 Runtime: go1.12.12
 
-[root@node0 ~]# cfssljson --version
+[root@node-1 ~]# cfssljson --version
 Version: 1.6.1
 Runtime: go1.12.12
 ```
 
 #### **（1）根证书**
 
-根证书是集群所有节点共享的，只需要创建一个 CA 证书，后续创建的所有证书都由它签名。
+根证书是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
 
 ```bash
 # 在任意节点（可以免密登录到其他节点）创建一个单独的证书目录
