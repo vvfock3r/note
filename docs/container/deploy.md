@@ -493,26 +493,111 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ## 使用二进制部署
 
-### 配置主机名
+### 系统初始化
+
+#### （1）更新系统
+
+```bash
+[root@localhost ~]# yum -y epel-release
+[root@localhost ~]# yum -y update
+```
+
+#### （2）配置时区（可选）
+
+```bash
+# 先检查一下当前的时区是否正确
+[root@localhost ~]# timedatectl
+      Local time: Fri 2022-08-19 15:02:02 CST
+  Universal time: Fri 2022-08-19 07:02:02 UTC
+        RTC time: Fri 2022-08-19 07:02:00
+       Time zone: Asia/Shanghai (CST, +0800)
+     NTP enabled: n/a
+NTP synchronized: no
+ RTC in local TZ: no
+      DST active: n/a
+
+# 配置为东八区
+[root@localhost ~]# timedatectl set-timezone "Asia/Shanghai"
+```
+
+#### （3）配置24小时制（可选）
+
+#### （4）配置静态IP（可选）
+
+:::tip
+
+如果使用`VMware Workstation`等在本地部署，需要保证使用静态内网IP地址
+
+:::
+
+```bash
+[root@localhost ~]# vi /etc/sysconfig/network-scripts/ifcfg-ens33
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO="static"		# 设置为静态IP
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="yes"
+IPV6_AUTOCONF="yes"
+IPV6_DEFROUTE="yes"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="ens33"
+UUID="068dc849-6e8c-4bed-b2de-2fe66c424521"
+DEVICE="ens33"
+ONBOOT="yes"			# 开启自启
+IPADDR=192.168.48.140	# IP，根据实际情况修改
+NETMASK=255.255.255.0	# 子网掩码
+GATEWAY=192.168.48.2	# 默认网关，根据实际情况修改
+DNS1=192.168.48.2       # DNS1
+DNS2=8.8.8.8            # DNS2
+
+# 重启网络
+[root@localhost ~]# systemctl restart network.service
+
+# 测试网络
+[root@localhost ~]# ping -c 4 www.baidu.com
+PING www.a.shifen.com (39.156.66.14) 56(84) bytes of data.
+64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=1 ttl=128 time=27.3 ms
+64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=2 ttl=128 time=28.0 ms
+64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=3 ttl=128 time=43.1 ms
+64 bytes from 39.156.66.14 (39.156.66.14): icmp_seq=4 ttl=128 time=23.9 ms
+
+--- www.a.shifen.com ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
+```
+
+#### （5）同步服务器时间（可选）
+
+```bash
+[root@localhost ~]# yum install ntpdate -y
+[root@localhost ~]# ntpdate time.windows.com
+```
+
+#### （6）配置主机名
 
 ```bash
 # 配置主机名
-[root@localhost ~]# hostnamectl set-hostname node0
-[root@localhost ~]# hostnamectl set-hostname node1
-[root@localhost ~]# hostnamectl set-hostname node2
+[root@localhost ~]# hostnamectl set-hostname node-1
+[root@localhost ~]# hostnamectl set-hostname node-2
+[root@localhost ~]# hostnamectl set-hostname node-3
 
 # 添加主机名解析
-[root@localhost ~]# vi /etc/hosts
+[root@localhost ~]# cat >> /etc/hosts <<EOF
+
 # kubernetes
-192.168.48.142 node0
-192.168.48.143 node1
-192.168.48.144 node2
+192.168.48.142 node-1
+192.168.48.143 node-2
+192.168.48.144 node-3
+EOF
 ```
 
 ### 安装依赖包
 
 ```bash
-[root@localhost ~]# yum install -y socat conntrack ipvsadm ipset jq sysstat curl iptables libseccomp yum-utils
+[root@localhost ~]# yum -y install yum-utils vim curl wget socat conntrack ipvsadm ipset jq sysstat iptables libseccomp
 ```
 
 ### 关闭防火墙等服务
@@ -522,16 +607,22 @@ gather_timeout = 300    # 设置超时时间300秒
 [root@localhost ~]# systemctl stop firewalld && systemctl disable firewalld
 
 # 关闭selinux
-[root@localhost ~]# setenforce 0 && getenforce
-[root@localhost ~]# sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config
-[root@localhost ~]# grep -E '^SELINUX=' /etc/selinux/config
+[root@localhost ~]# setenforce 0 && \
+	getenforce && \
+	sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
+	grep -E '^SELINUX=' /etc/selinux/config
 
 # 设置iptables规则
-[root@localhost ~]# iptables -F && iptables -X && iptables -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
+[root@localhost ~]# iptables -F && \
+	iptables -X && \
+	iptables -F -t nat && \
+	iptables -X -t nat && \
+	iptables -P FORWARD ACCEPT
 
 # 关闭swap
-[root@localhost ~]# swapoff -a && free –h
-[root@localhost ~]# vi /etc/fstab
+[root@localhost ~]# swapoff -a && \
+	sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
+	free
 
 # 关闭dnsmasq(否则可能导致容器无法解析域名)
 [root@localhost ~]# service dnsmasq stop && systemctl disable dnsmasq
