@@ -150,5 +150,7 @@ export default defineUserConfig({
 			},
 		},
     }),
+	
+	// 关闭页面预拉取, 文档: https://v2.vuepress.vuejs.org/zh/reference/config.html#shouldpreload
 	shouldPrefetch: false,
 })
