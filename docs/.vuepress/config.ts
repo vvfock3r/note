@@ -5,6 +5,7 @@ const {path} = require('@vuepress/utils')
 const {registerComponentsPlugin} = require('@vuepress/plugin-register-components')
 
 import {viteBundler} from '@vuepress/bundler-vite'
+import {BuildOptions} from "vite";
 
 const navbar = [
     {
@@ -120,7 +121,7 @@ export default defineUserConfig({
             // 不显示行号
             lineNumbers: false,
         },
-        extractHeaders: {
+        headers: {
             // 提取哪些子标题
             level: [2, 3, 4, 5],
         },
@@ -136,7 +137,11 @@ export default defineUserConfig({
         viteOptions: {
             build: {
                 chunkSizeWarningLimit: 1500,
-            }
+            },
+            // 防止被SSR外部化依赖项
+            ssr: {
+                noExternal: ['echarts'],
+            },
         },
         vuePluginOptions: {
             template: {

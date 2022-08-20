@@ -19,11 +19,11 @@ import {TitleComponent, TooltipComponent, LegendComponent} from 'echarts/compone
 import {CanvasRenderer} from 'echarts/renderers';
 
 echarts.use([
+  PieChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
-  CanvasRenderer,
-  PieChart
+  CanvasRenderer
 ]);
 
 export default {
