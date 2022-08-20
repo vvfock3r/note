@@ -7,26 +7,49 @@
 </template>
 
 <script>
-import {onMounted} from 'vue'
-import * as echarts from 'echarts';
+import {onMounted} from 'vue';
+
+// 引入echarts中所有的图表和组件
+// import * as echarts from 'echarts';
+
+// 按需引入echarts图表和组件
+import * as echarts from 'echarts/core';
+import {PieChart} from 'echarts/charts';
+import {TitleComponent, TooltipComponent, LegendComponent} from 'echarts/components';
+import {CanvasRenderer} from 'echarts/renderers';
+
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer,
+  PieChart
+]);
+
 
 export default {
   name: "Home",
   setup() {
+    // 展示图表
     const showPieChart = () => {
+      // 初始化
       const pieDom = document.getElementById('pie');
       const chart = echarts.init(pieDom, 'light');
+
+      // 准备数据
       const data = [
-        {name: 'Linux', value: 1},        
+        {name: 'Linux', value: 1},
         {name: '容器', value: 5},
-		{name: '开发', value: 13},
+        {name: '开发', value: 13},
       ]
       const total = data.reduce((total, current) => {
         return {
           value: total.value + current.value,
         }
       });
-      chart.setOption({
+
+      // 配置选项
+      const options = {
         // 标题
         title: [
           {
@@ -98,17 +121,24 @@ export default {
             backgroundColor: 'red',
           }
         ]
-      })
+      }
+
+      // 渲染
+      chart.setOption(options)
+
       // 动态调整图表大小
       window.addEventListener('resize', function () {
         chart.resize();
       })
     }
+
+    // 销毁图表
     const disposePieChart = () => {
       const pieDom = document.getElementById('pie');
       const chart = echarts.init(pieDom, 'light');
       chart.dispose();
     }
+
     onMounted(() => {
       disposePieChart();
       showPieChart();
