@@ -735,6 +735,7 @@ EOF
 
 # 生成根证书和私钥
 [root@node-1 pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
 2022/08/16 03:00:35 [INFO] generating a new CA key and certificate from CSR
 2022/08/16 03:00:35 [INFO] generate received request
 2022/08/16 03:00:35 [INFO] received CSR
@@ -751,10 +752,11 @@ total 20
 -rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem       # CA证书
 ```
 
-#### **（2）admin客户端证书**
+#### **（2）admin证书**
 
 ```bash
-[root@node0 pki]# cat > admin-csr.json <<EOF
+# admin客户端证书配置文件
+[root@node-1 pki]# cat > admin-csr.json <<EOF
 {
   "CN": "admin",
   "key": {
@@ -773,13 +775,14 @@ total 20
 }
 EOF
 
-cfssl gencert \
+# 生成证书
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
   admin-csr.json | cfssljson -bare admin
-  
+
 2022/08/16 03:03:15 [INFO] generate received request
 2022/08/16 03:03:15 [INFO] received CSR
 2022/08/16 03:03:15 [INFO] generating key: rsa-2048
@@ -790,30 +793,26 @@ websites. For more information see the Baseline Requirements for the Issuance an
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").
 
-[root@node0 pki]# ls -l
-total 36
+[root@node-1 pki]# ls -l | grep admin
 -rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
 -rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
 -rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
 -rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
--rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
--rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
--rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
--rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
--rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
 ```
 
-#### （3）kubelet客户端证书
+#### （3）kubelet证书
 
-Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 Kubelet使用将其标识为system:nodes组中的凭据，其用户名为system：node:nodeName，接下里就给每个工作节点生成证书。
+Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 
+
+Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`，接下里就给每个工作节点生成证书
 
 ```bash
 # 设置worker节点列表
-[root@node0 pki]# WORKERS=(node1 node2)
-[root@node0 pki]# WORKER_IPS=(192.168.48.143 192.168.48.144)
+[root@node-1 pki]# WORKERS=(node-2 node-3)
+[root@node-1 pki]# WORKER_IPS=(192.168.48.143 192.168.48.144)
 
 # 生成所有worker节点的证书配置
-[root@node0 pki]# for ((i=0;i<${#WORKERS[@]};i++)); do
+[root@node-1 pki]# for ((i=0;i<${#WORKERS[@]};i++)); do
 cat > ${WORKERS[$i]}-csr.json <<EOF
 {
   "CN": "system:node:${WORKERS[$i]}",
@@ -852,17 +851,7 @@ done
 2022/08/16 03:07:20 [INFO] encoded CSR
 2022/08/16 03:07:20 [INFO] signed certificate with serial number 337014331130523850623470554111727354761321069190
 
-[root@node0 pki]# ls -l
-total 68
--rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
--rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
--rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
--rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
--rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
--rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
--rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
--rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
--rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+[root@node0 pki]# ls -l | grep node
 -rw-r--r-- 1 root root 1078 Aug 16 03:07 node1.csr
 -rw-r--r-- 1 root root  223 Aug 16 03:07 node1-csr.json
 -rw------- 1 root root 1679 Aug 16 03:07 node1-key.pem
@@ -876,7 +865,7 @@ total 68
 #### （4）kube-controller-manager证书
 
 ```bash
-[root@node0 pki]# cat > kube-controller-manager-csr.json <<EOF
+[root@node-1 pki]# cat > kube-controller-manager-csr.json <<EOF
 {
     "CN": "system:kube-controller-manager",
     "key": {
@@ -895,7 +884,7 @@ total 68
 }
 EOF
 
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
@@ -912,7 +901,7 @@ websites. For more information see the Baseline Requirements for the Issuance an
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").  
 
-[root@node0 pki]# ls -l
+[root@node-1 pki]# ls -l | grep kube-controller-manager
 total 84
 -rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
 -rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
@@ -940,7 +929,7 @@ total 84
 #### （5）kube-proxy客户端证书
 
 ```bash
-[root@node0 pki]# cat > kube-proxy-csr.json <<EOF
+[root@node-1 pki]# cat > kube-proxy-csr.json <<EOF
 {
   "CN": "system:kube-proxy",
   "key": {
@@ -959,7 +948,7 @@ total 84
 }
 EOF
 
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
@@ -980,7 +969,7 @@ specifically, section 10.2.3 ("Information Requirements").
 #### （6）kube-scheduler客户端证书
 
 ```bash
-[root@node0 pki]# cat > kube-scheduler-csr.json <<EOF
+[root@node-1 pki]# cat > kube-scheduler-csr.json <<EOF
 {
     "CN": "system:kube-scheduler",
     "key": {
@@ -999,7 +988,7 @@ specifically, section 10.2.3 ("Information Requirements").
 }
 EOF
 
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
@@ -1022,7 +1011,7 @@ specifically, section 10.2.3 ("Information Requirements").
 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
 
 ```bash
-[root@node0 pki]# cat > kubernetes-csr.json <<EOF
+[root@node-1 pki]# cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
   "key": {
@@ -1042,12 +1031,12 @@ specifically, section 10.2.3 ("Information Requirements").
 EOF
 
 # apiserver的service ip地址（一般是svc网段的第一个ip）
-[root@node0 pki]# KUBERNETES_SVC_IP=10.233.0.1
+[root@node-1 pki]# KUBERNETES_SVC_IP=10.233.0.1
 
 # 所有的master内网ip，逗号分隔（云环境可以加上master公网ip以便支持公网ip访问）
-[root@node0 pki]# MASTER_IPS=192.168.48.142,192.168.48.143,192.168.48.144
+[root@node-1 pki]# MASTER_IPS=192.168.48.142,192.168.48.143,192.168.48.144
 # 生成证书
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
@@ -1065,7 +1054,7 @@ EOF
 #### （8）Service Account证书
 
 ```bash
-[root@node0 pki]# cat > service-account-csr.json <<EOF
+[root@node-1 pki]# cat > service-account-csr.json <<EOF
 {
   "CN": "service-accounts",
   "key": {
@@ -1084,7 +1073,7 @@ EOF
 }
 EOF
 
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
@@ -1105,7 +1094,7 @@ specifically, section 10.2.3 ("Information Requirements").
 #### （9）proxy-client 证书
 
 ```bash
-[root@node0 pki]# cat > proxy-client-csr.json <<EOF
+[root@node-1 pki]# cat > proxy-client-csr.json <<EOF
 {
   "CN": "aggregator",
   "key": {
@@ -1124,7 +1113,7 @@ specifically, section 10.2.3 ("Information Requirements").
 }
 EOF
 
-[root@node0 pki]# cfssl gencert \
+[root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
