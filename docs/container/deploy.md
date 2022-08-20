@@ -669,9 +669,9 @@ done
 
 ```bash
 # 下载二进制工具
-[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl
-[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson
-[root@node-1 ~]# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl && \
+	wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson && \
+	chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
 
 # 查看版本
 [root@node-1 ~]# cfssl version
@@ -685,14 +685,14 @@ Runtime: go1.12.12
 
 #### **（1）根证书**
 
-根证书是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
+根证书（CA 证书）是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
 
 ```bash
-# 在任意节点（可以免密登录到其他节点）创建一个单独的证书目录
-[root@node0 ~]# mkdir pki && cd pki
+# 在中转节点（可以免密登录到其他节点）创建一个单独的证书目录
+[root@node-1 ~]# mkdir pki && cd pki
 
-# 创建证书配置文件
-[root@node0 pki]# cat > ca-config.json <<EOF
+# 创建根证书配置文件（过期时间 876000h/24/365 = 100年）
+[root@node-1 pki]# cat > ca-config.json <<EOF
 {
   "signing": {
     "default": {
@@ -700,15 +700,21 @@ Runtime: go1.12.12
     },
     "profiles": {
       "kubernetes": {
-        "usages": ["signing", "key encipherment", "server auth", "client auth"],
-        "expiry": "876000h"
+		"expiry": "876000h",
+        "usages": [
+          "signing",
+          "key encipherment",
+          "server auth",
+          "client auth"
+        ]
       }
     }
   }
 }
 EOF
 
-[root@node0 pki]# cat > ca-csr.json <<EOF
+# 创建根证书签名请求文件
+[root@node-1 pki]# cat > ca-csr.json <<EOF
 {
   "CN": "Kubernetes",
   "key": {
@@ -727,9 +733,8 @@ EOF
 }
 EOF
 
-# 生成证书和私钥
-[root@node0 pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
-
+# 生成根证书和私钥
+[root@node-1 pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 2022/08/16 03:00:35 [INFO] generating a new CA key and certificate from CSR
 2022/08/16 03:00:35 [INFO] generate received request
 2022/08/16 03:00:35 [INFO] received CSR
@@ -737,14 +742,13 @@ EOF
 2022/08/16 03:00:36 [INFO] encoded CSR
 2022/08/16 03:00:36 [INFO] signed certificate with serial number 456928096144843875343000970888480361746591907304
 
-# 我们最终想要的就是ca-key.pem和ca.pem，一个秘钥，一个证书
-[root@node0 pki]# ls -l
+[root@node-1 pki]# ls -l
 total 20
 -rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
 -rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
 -rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
--rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
--rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
+-rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem   # CA证书私钥
+-rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem       # CA证书
 ```
 
 #### **（2）admin客户端证书**
