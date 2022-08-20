@@ -32,8 +32,8 @@ const navbar = [
                 text: '容器编排工具',
                 children: [
                     { text: 'Docker Compose', link: '/container/docker-compose' },
-                    { text: 'Kubernetes：部署', link: '/container/deploy' },
-                    { text: 'Kubernetes：从入门到放弃', link: '/container/kubernetes' },
+                    { text: 'Kubernetes：部署方式', link: '/container/kubernetes-deploy' },
+                    { text: 'Kubernetes：使用文档', link: '/container/kubernetes-document' },
                 ]
             },
         ]
