@@ -138,7 +138,9 @@ export default defineUserConfig({
             build: {
                 chunkSizeWarningLimit: 1500,
             },
-            // 防止被SSR外部化依赖项
+            // 说明：防止被ssr外部化依赖项，这里主要解决的问题是echarts按需引入后报错: SyntaxError: Unexpected token 'export'
+            // 文档：https://v2.vuepress.vuejs.org/zh/reference/bundler/vite.html#ssr-externals-%E9%97%AE%E9%A2%98
+            // 备注：还没有给ssr配置项提供类型,所以在编辑器中下面会标红
             ssr: {
                 noExternal: ['echarts'],
             },
