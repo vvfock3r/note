@@ -26,7 +26,6 @@ echarts.use([
   PieChart
 ]);
 
-
 export default {
   name: "Home",
   setup() {
