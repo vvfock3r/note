@@ -700,7 +700,7 @@ Runtime: go1.12.12
     },
     "profiles": {
       "kubernetes": {
-		"expiry": "876000h",
+        "expiry": "876000h",
         "usages": [
           "signing",
           "key encipherment",
