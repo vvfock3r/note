@@ -808,8 +808,8 @@ Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`syst
 
 ```bash
 # 设置worker节点列表
-[root@node-1 pki]# WORKERS=(node-2 node-3)
-[root@node-1 pki]# WORKER_IPS=(192.168.48.143 192.168.48.144)
+[root@node-1 pki]# WORKERS=(node-1 node-2 node-3)
+[root@node-1 pki]# WORKER_IPS=(192.168.48.142 192.168.48.143 192.168.48.144)
 
 # 生成所有worker节点的证书配置
 [root@node-1 pki]# for ((i=0;i<${#WORKERS[@]};i++)); do
@@ -851,15 +851,19 @@ done
 2022/08/16 03:07:20 [INFO] encoded CSR
 2022/08/16 03:07:20 [INFO] signed certificate with serial number 337014331130523850623470554111727354761321069190
 
-[root@node0 pki]# ls -l | grep node
--rw-r--r-- 1 root root 1078 Aug 16 03:07 node1.csr
--rw-r--r-- 1 root root  223 Aug 16 03:07 node1-csr.json
--rw------- 1 root root 1679 Aug 16 03:07 node1-key.pem
--rw-r--r-- 1 root root 1456 Aug 16 03:07 node1.pem
--rw-r--r-- 1 root root 1078 Aug 16 03:07 node2.csr
--rw-r--r-- 1 root root  223 Aug 16 03:07 node2-csr.json
--rw------- 1 root root 1675 Aug 16 03:07 node2-key.pem
--rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
+[root@node-1 pki]# ls -l | grep node
+-rw-r--r-- 1 root root 1078 Aug 20 09:10 node-1.csr
+-rw-r--r-- 1 root root  224 Aug 20 09:10 node-1-csr.json
+-rw------- 1 root root 1675 Aug 20 09:10 node-1-key.pem
+-rw-r--r-- 1 root root 1456 Aug 20 09:10 node-1.pem
+-rw-r--r-- 1 root root 1078 Aug 20 09:10 node-2.csr
+-rw-r--r-- 1 root root  224 Aug 20 09:10 node-2-csr.json
+-rw------- 1 root root 1675 Aug 20 09:10 node-2-key.pem
+-rw-r--r-- 1 root root 1456 Aug 20 09:10 node-2.pem
+-rw-r--r-- 1 root root 1078 Aug 20 09:10 node-3.csr
+-rw-r--r-- 1 root root  224 Aug 20 09:10 node-3-csr.json
+-rw------- 1 root root 1679 Aug 20 09:10 node-3-key.pem
+-rw-r--r-- 1 root root 1456 Aug 20 09:10 node-3.pem
 ```
 
 #### （4）kube-controller-manager证书
@@ -902,31 +906,13 @@ of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://ca
 specifically, section 10.2.3 ("Information Requirements").  
 
 [root@node-1 pki]# ls -l | grep kube-controller-manager
-total 84
--rw-r--r-- 1 root root 1009 Aug 16 03:03 admin.csr
--rw-r--r-- 1 root root  213 Aug 16 03:02 admin-csr.json
--rw------- 1 root root 1679 Aug 16 03:03 admin-key.pem
--rw-r--r-- 1 root root 1407 Aug 16 03:03 admin.pem
--rw-r--r-- 1 root root  236 Aug 16 03:00 ca-config.json
--rw-r--r-- 1 root root 1005 Aug 16 03:00 ca.csr
--rw-r--r-- 1 root root  211 Aug 16 03:00 ca-csr.json
--rw------- 1 root root 1679 Aug 16 03:00 ca-key.pem
--rw-r--r-- 1 root root 1318 Aug 16 03:00 ca.pem
 -rw-r--r-- 1 root root 1066 Aug 16 03:08 kube-controller-manager.csr
 -rw-r--r-- 1 root root  286 Aug 16 03:08 kube-controller-manager-csr.json
 -rw------- 1 root root 1675 Aug 16 03:08 kube-controller-manager-key.pem
 -rw-r--r-- 1 root root 1464 Aug 16 03:08 kube-controller-manager.pem
--rw-r--r-- 1 root root 1078 Aug 16 03:07 node1.csr
--rw-r--r-- 1 root root  223 Aug 16 03:07 node1-csr.json
--rw------- 1 root root 1679 Aug 16 03:07 node1-key.pem
--rw-r--r-- 1 root root 1456 Aug 16 03:07 node1.pem
--rw-r--r-- 1 root root 1078 Aug 16 03:07 node2.csr
--rw-r--r-- 1 root root  223 Aug 16 03:07 node2-csr.json
--rw------- 1 root root 1675 Aug 16 03:07 node2-key.pem
--rw-r--r-- 1 root root 1456 Aug 16 03:07 node2.pem
 ```
 
-#### （5）kube-proxy客户端证书
+#### （5）kube-proxy证书
 
 ```bash
 [root@node-1 pki]# cat > kube-proxy-csr.json <<EOF
@@ -963,10 +949,16 @@ EOF
 2022/08/16 03:09:57 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
-specifically, section 10.2.3 ("Information Requirements").  
+specifically, section 10.2.3 ("Information Requirements").
+
+[root@node-1 pki]# ls -l | grep kube-proxy
+-rw-r--r-- 1 root root 1009 Aug 20 09:11 kube-proxy.csr
+-rw-r--r-- 1 root root  214 Aug 20 09:11 kube-proxy-csr.json
+-rw------- 1 root root 1679 Aug 20 09:11 kube-proxy-key.pem
+-rw-r--r-- 1 root root 1407 Aug 20 09:11 kube-proxy.pem
 ```
 
-#### （6）kube-scheduler客户端证书
+#### （6）kube-scheduler证书
 
 ```bash
 [root@node-1 pki]# cat > kube-scheduler-csr.json <<EOF
@@ -1003,10 +995,16 @@ EOF
 2022/08/16 03:10:55 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
-specifically, section 10.2.3 ("Information Requirements").  
+specifically, section 10.2.3 ("Information Requirements").
+
+[root@node-1 pki]# ls -l | grep kube-scheduler
+-rw-r--r-- 1 root root 1041 Aug 20 09:12 kube-scheduler.csr
+-rw-r--r-- 1 root root  268 Aug 20 09:12 kube-scheduler-csr.json
+-rw------- 1 root root 1679 Aug 20 09:12 kube-scheduler-key.pem
+-rw-r--r-- 1 root root 1440 Aug 20 09:12 kube-scheduler.pem
 ```
 
-#### （7）kube-apiserver服务端证书
+#### （7）kube-apiserver证书
 
 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
 
@@ -1035,6 +1033,7 @@ EOF
 
 # 所有的master内网ip，逗号分隔（云环境可以加上master公网ip以便支持公网ip访问）
 [root@node-1 pki]# MASTER_IPS=192.168.48.142,192.168.48.143,192.168.48.144
+
 # 生成证书
 [root@node-1 pki]# cfssl gencert \
   -ca=ca.pem \
@@ -1049,6 +1048,12 @@ EOF
 2022/08/16 03:14:36 [INFO] generating key: rsa-2048
 2022/08/16 03:14:36 [INFO] encoded CSR
 2022/08/16 03:14:36 [INFO] signed certificate with serial number 269673411800826022201577034662155588426444682801  
+
+[root@node-1 pki]# ls -l | grep kubernetes
+-rw-r--r-- 1 root root 1249 Aug 20 09:14 kubernetes.csr
+-rw-r--r-- 1 root root  207 Aug 20 09:13 kubernetes-csr.json
+-rw------- 1 root root 1675 Aug 20 09:14 kubernetes-key.pem
+-rw-r--r-- 1 root root 1623 Aug 20 09:14 kubernetes.pem
 ```
 
 #### （8）Service Account证书
@@ -1088,7 +1093,13 @@ EOF
 2022/08/16 03:15:50 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
-specifically, section 10.2.3 ("Information Requirements").  
+specifically, section 10.2.3 ("Information Requirements").
+
+[root@node-1 pki]# ls -l | grep service-account
+-rw-r--r-- 1 root root 1009 Aug 20 09:15 service-account.csr
+-rw-r--r-- 1 root root  213 Aug 20 09:15 service-account-csr.json
+-rw------- 1 root root 1675 Aug 20 09:15 service-account-key.pem
+-rw-r--r-- 1 root root 1407 Aug 20 09:15 service-account.pem
 ```
 
 #### （9）proxy-client 证书
@@ -1129,6 +1140,12 @@ EOF
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").
+
+[root@node-1 pki]# ls -l | grep proxy-client
+-rw-r--r-- 1 root root 1001 Aug 20 09:16 proxy-client.csr
+-rw-r--r-- 1 root root  207 Aug 20 09:15 proxy-client-csr.json
+-rw------- 1 root root 1675 Aug 20 09:16 proxy-client-key.pem
+-rw-r--r-- 1 root root 1399 Aug 20 09:16 proxy-client.pem
 ```
 
 #### 分发客户端、服务端证书
@@ -1136,20 +1153,13 @@ specifically, section 10.2.3 ("Information Requirements").
 分发worker节点需要的证书和私钥
 
 ```bash
-for instance in ${WORKERS[@]}; do
+[root@node-1 pki]# WORKERS=(node-1 node-2 node-3)
+[root@node-1 pki]# for instance in ${WORKERS[@]}; do
   scp ca.pem ${instance}-key.pem ${instance}.pem root@${instance}:~/
 done
 ```
 
 分发master节点需要的证书和私钥
-
-> 注意：
->
-> 由于下面分发的证书既包含了etcd的证书也包含了k8s主节点的证书。 
->
-> 所以 MASTER_IPS 中必须包含所有 `master` 节点以及 `etcd` 节点。
->
-> 如果没有包含所有etcd节点的证书，需要重新定义，逗号分隔
 
 ```bash
 OIFS=$IFS
@@ -1159,6 +1169,15 @@ for instance in ${MASTER_IPS}; do
     service-account-key.pem service-account.pem proxy-client.pem proxy-client-key.pem root@${instance}:~/
 done
 IFS=$OIFS
+```
+
+分发etcd节点需要的证书和私钥
+
+```bash
+[root@node-1 pki]# ETCDS=(node-1 node-2 node-3)
+[root@node-1 pki]# for instance in ${ETCDS[@]}; do
+  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem root@${instance}:~/
+done
 ```
 
 ### 认证配置
