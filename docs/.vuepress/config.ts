@@ -5,7 +5,6 @@ const {path} = require('@vuepress/utils')
 const {registerComponentsPlugin} = require('@vuepress/plugin-register-components')
 
 import {viteBundler} from '@vuepress/bundler-vite'
-import {BuildOptions} from "vite";
 
 const navbar = [
     {

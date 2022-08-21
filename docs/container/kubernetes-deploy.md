@@ -1284,7 +1284,7 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 
 ```bash
 # 指定你的worker列表（hostname），空格分隔
-[root@node-1 pki]# WORKERS="node-1 node-2 node-3" ; for instance in ${WORKERS}; do
+[root@node-1 pki]# NODES="node-1 node-2 node-3" ; for instance in ${NODES}; do
   kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \

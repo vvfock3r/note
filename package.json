@@ -5,8 +5,8 @@
   "author": "yujinhui <1265921100@qq.com>",
   "license": "MIT",
   "devDependencies": {
-    "@vuepress/plugin-register-components": "2.0.0-beta.49",
-    "vuepress": "^2.0.0-beta.49"
+    "@vuepress/plugin-register-components": "^2.0.0-beta.46",
+    "vuepress": "^2.0.0-beta.46"
   },
   "scripts": {
     "docs:dev": "vuepress dev docs",
