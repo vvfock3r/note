@@ -621,8 +621,8 @@ gather_timeout = 300    # 设置超时时间300秒
 ```bash
 # 下载K8S二进制包
 [root@node-1 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
-[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz && cd kubernetes
-[root@node-1 kubernetes]# mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
+[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
+[root@node-1 ~]# cd kubernetes && mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
 [root@node-1 kubernetes]# cd ~
 
 # 下载Etcd软件包
@@ -667,22 +667,21 @@ done
 done
 ```
 
-### 生成所有的证书
+### 生成所有证书
 
 #### **下载cfssl工具**
 
 ```bash
 # 下载二进制工具
 [root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl && \
-	wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson && \
-	chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+                 wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson && \
+                 chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
 
 # 查看版本
-[root@node-1 ~]# cfssl version
+[root@node-1 ~]# cfssl version && echo && cfssljson --version
 Version: 1.6.1
 Runtime: go1.12.12
 
-[root@node-1 ~]# cfssljson --version
 Version: 1.6.1
 Runtime: go1.12.12
 ```
