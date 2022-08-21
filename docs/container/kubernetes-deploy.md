@@ -686,7 +686,7 @@ Version: 1.6.1
 Runtime: go1.12.12
 ```
 
-#### **（1）根证书**
+#### **（1）CA证书**
 
 根证书（CA 证书）是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
 
@@ -759,7 +759,59 @@ total 20
 
 :::
 
-#### **（2）admin证书**
+#### （2）SA证书
+
+* Service Account证书，集群共享一份证书
+
+::: details 点击查看完整命令
+
+```bash
+[root@node-1 pki]# cat > service-account-csr.json <<EOF
+{
+  "CN": "service-accounts",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
+}
+EOF
+
+[root@node-1 pki]# cfssl gencert \
+  -ca=ca.pem \
+  -ca-key=ca-key.pem \
+  -config=ca-config.json \
+  -profile=kubernetes \
+  service-account-csr.json | cfssljson -bare service-account
+  
+2022/08/21 11:51:10 [INFO] generate received request
+2022/08/21 11:51:10 [INFO] received CSR
+2022/08/21 11:51:10 [INFO] generating key: rsa-2048
+2022/08/21 11:51:11 [INFO] encoded CSR
+2022/08/21 11:51:11 [INFO] signed certificate with serial number 175935166455417068459398438005389278116292115335
+2022/08/21 11:51:11 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+websites. For more information see the Baseline Requirements for the Issuance and Management
+of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
+specifically, section 10.2.3 ("Information Requirements").
+
+[root@node-1 pki]# ls -l | grep service-account
+-rw-r--r-- 1 root root 1009 Aug 21 11:51 service-account.csr
+-rw-r--r-- 1 root root  213 Aug 21 11:51 service-account-csr.json
+-rw------- 1 root root 1679 Aug 21 11:51 service-account-key.pem
+-rw-r--r-- 1 root root 1407 Aug 21 11:51 service-account.pem
+```
+
+:::
+
+#### **（3）admin证书**
 
 admin用户证书，集群内只需要创建一份即可
 
@@ -813,24 +865,26 @@ specifically, section 10.2.3 ("Information Requirements").
 
 :::
 
-#### （3）kubelet证书
+#### （4）kubelet证书
 
-* Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`
+* Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 
 
-* 每个工作节点使用自己的证书
+  Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`
+
+* 每个Node使用自己的证书
 
 ::: details 点击查看完整命令
 
 ```bash
-# 设置worker节点列表
-[root@node-1 pki]# WORKERS=(node-1 node-2 node-3)
-[root@node-1 pki]# WORKER_IPS=(192.168.48.142 192.168.48.143 192.168.48.144)
+# 设置Node列表
+[root@node-1 pki]# NODES=(node-1 node-2 node-3)
+[root@node-1 pki]# NODE_IPS=(192.168.48.142 192.168.48.143 192.168.48.144)
 
-# 生成所有worker节点的证书配置
-[root@node-1 pki]# for ((i=0;i<${#WORKERS[@]};i++)); do
-cat > ${WORKERS[$i]}-csr.json <<EOF
+# 生成所有Node节点的证书配置
+[root@node-1 pki]# for ((i=0;i<${#NODES[@]};i++)); do
+cat > ${NODES[$i]}-csr.json <<EOF
 {
-  "CN": "system:node:${WORKERS[$i]}",
+  "CN": "system:node:${NODES[$i]}",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -850,9 +904,9 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${WORKERS[$i]},${WORKER_IPS[$i]} \
+  -hostname=${NODES[$i]},${NODE_IPS[$i]} \
   -profile=kubernetes \
-  ${WORKERS[$i]}-csr.json | cfssljson -bare ${WORKERS[$i]}
+  ${NODES[$i]}-csr.json | cfssljson -bare ${NODES[$i]}
 done
 
 2022/08/21 11:47:59 [INFO] generate received request
@@ -884,58 +938,6 @@ done
 -rw-r--r-- 1 root root  224 Aug 21 11:48 node-3-csr.json
 -rw------- 1 root root 1675 Aug 21 11:48 node-3-key.pem
 -rw-r--r-- 1 root root 1456 Aug 21 11:48 node-3.pem
-```
-
-:::
-
-#### （4）kube-controller-manager证书
-
-* 所有Master节点共享一份证书
-
-::: details 点击查看完整命令
-
-```bash
-[root@node-1 pki]# cat > kube-controller-manager-csr.json <<EOF
-{
-    "CN": "system:kube-controller-manager",
-    "key": {
-        "algo": "rsa",
-        "size": 2048
-    },
-    "names": [
-      {
-        "C": "CN",
-        "ST": "BeiJing",
-        "L": "BeiJing",
-        "O": "system:kube-controller-manager",
-        "OU": "seven"
-      }
-    ]
-}
-EOF
-
-[root@node-1 pki]# cfssl gencert \
-  -ca=ca.pem \
-  -ca-key=ca-key.pem \
-  -config=ca-config.json \
-  -profile=kubernetes \
-  kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
-  
-2022/08/21 11:48:32 [INFO] generate received request
-2022/08/21 11:48:32 [INFO] received CSR
-2022/08/21 11:48:32 [INFO] generating key: rsa-2048
-2022/08/21 11:48:32 [INFO] encoded CSR
-2022/08/21 11:48:32 [INFO] signed certificate with serial number 611097625429267385505563611927508226697109199115
-2022/08/21 11:48:32 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
-websites. For more information see the Baseline Requirements for the Issuance and Management
-of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
-specifically, section 10.2.3 ("Information Requirements").
-
-[root@node-1 pki]# ls -l | grep kube-controller-manager
--rw-r--r-- 1 root root 1066 Aug 21 11:48 kube-controller-manager.csr
--rw-r--r-- 1 root root  286 Aug 21 11:48 kube-controller-manager-csr.json
--rw------- 1 root root 1679 Aug 21 11:48 kube-controller-manager-key.pem
--rw-r--r-- 1 root root 1464 Aug 21 11:48 kube-controller-manager.pem
 ```
 
 :::
@@ -992,29 +994,29 @@ specifically, section 10.2.3 ("Information Requirements").
 
 :::
 
-#### （6）kube-scheduler证书
+#### （6）proxy-client 证书
 
-* 所有Master节点共享一份证书
+* 所有Node节点共享一份证书
 
 ::: details 点击查看完整命令
 
 ```bash
-[root@node-1 pki]# cat > kube-scheduler-csr.json <<EOF
+[root@node-1 pki]# cat > proxy-client-csr.json <<EOF
 {
-    "CN": "system:kube-scheduler",
-    "key": {
-        "algo": "rsa",
-        "size": 2048
-    },
-    "names": [
-      {
-        "C": "CN",
-        "ST": "BeiJing",
-        "L": "BeiJing",
-        "O": "system:kube-scheduler",
-        "OU": "seven"
-      }
-    ]
+  "CN": "aggregator",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "seven"
+    }
+  ]
 }
 EOF
 
@@ -1023,30 +1025,33 @@ EOF
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
-  kube-scheduler-csr.json | cfssljson -bare kube-scheduler
-  
-2022/08/21 11:49:26 [INFO] generate received request
-2022/08/21 11:49:26 [INFO] received CSR
-2022/08/21 11:49:26 [INFO] generating key: rsa-2048
-2022/08/21 11:49:27 [INFO] encoded CSR
-2022/08/21 11:49:27 [INFO] signed certificate with serial number 529607043360813455375991599802579655701759291101
-2022/08/21 11:49:27 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+  proxy-client-csr.json | cfssljson -bare proxy-client
+
+2022/08/21 11:51:35 [INFO] generate received request
+2022/08/21 11:51:35 [INFO] received CSR
+2022/08/21 11:51:35 [INFO] generating key: rsa-2048
+2022/08/21 11:51:36 [INFO] encoded CSR
+2022/08/21 11:51:36 [INFO] signed certificate with serial number 624599378216669470989725514687740733197475898533
+2022/08/21 11:51:36 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").
 
-[root@node-1 pki]# ls -l | grep kube-scheduler
--rw-r--r-- 1 root root 1041 Aug 21 11:49 kube-scheduler.csr
--rw-r--r-- 1 root root  268 Aug 21 11:49 kube-scheduler-csr.json
--rw------- 1 root root 1679 Aug 21 11:49 kube-scheduler-key.pem
--rw-r--r-- 1 root root 1440 Aug 21 11:49 kube-scheduler.pem
+[root@node-1 pki]# ls -l | grep proxy-client
+-rw-r--r-- 1 root root 1001 Aug 21 11:51 proxy-client.csr
+-rw-r--r-- 1 root root  207 Aug 21 11:51 proxy-client-csr.json
+-rw------- 1 root root 1675 Aug 21 11:51 proxy-client-key.pem
+-rw-r--r-- 1 root root 1399 Aug 21 11:51 proxy-client.pem
 ```
 
 :::
 
 #### （7）kube-apiserver证书
 
-* 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
+* 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，
+
+  所以证书必须要包含客户端所访问的名字或ip，用以客户端验证
+
 * 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
@@ -1101,29 +1106,29 @@ EOF
 
 :::
 
-#### （8）Service Account证书
+#### （8）kube-scheduler证书
 
-* 集群共享一份证书
+* 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
 
 ```bash
-[root@node-1 pki]# cat > service-account-csr.json <<EOF
+[root@node-1 pki]# cat > kube-scheduler-csr.json <<EOF
 {
-  "CN": "service-accounts",
-  "key": {
-    "algo": "rsa",
-    "size": 2048
-  },
-  "names": [
-    {
-      "C": "CN",
-      "ST": "BeiJing",
-      "L": "BeiJing",
-      "O": "k8s",
-      "OU": "seven"
-    }
-  ]
+    "CN": "system:kube-scheduler",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+      {
+        "C": "CN",
+        "ST": "BeiJing",
+        "L": "BeiJing",
+        "O": "system:kube-scheduler",
+        "OU": "seven"
+      }
+    ]
 }
 EOF
 
@@ -1132,50 +1137,50 @@ EOF
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
-  service-account-csr.json | cfssljson -bare service-account
+  kube-scheduler-csr.json | cfssljson -bare kube-scheduler
   
-2022/08/21 11:51:10 [INFO] generate received request
-2022/08/21 11:51:10 [INFO] received CSR
-2022/08/21 11:51:10 [INFO] generating key: rsa-2048
-2022/08/21 11:51:11 [INFO] encoded CSR
-2022/08/21 11:51:11 [INFO] signed certificate with serial number 175935166455417068459398438005389278116292115335
-2022/08/21 11:51:11 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+2022/08/21 11:49:26 [INFO] generate received request
+2022/08/21 11:49:26 [INFO] received CSR
+2022/08/21 11:49:26 [INFO] generating key: rsa-2048
+2022/08/21 11:49:27 [INFO] encoded CSR
+2022/08/21 11:49:27 [INFO] signed certificate with serial number 529607043360813455375991599802579655701759291101
+2022/08/21 11:49:27 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").
 
-[root@node-1 pki]# ls -l | grep service-account
--rw-r--r-- 1 root root 1009 Aug 21 11:51 service-account.csr
--rw-r--r-- 1 root root  213 Aug 21 11:51 service-account-csr.json
--rw------- 1 root root 1679 Aug 21 11:51 service-account-key.pem
--rw-r--r-- 1 root root 1407 Aug 21 11:51 service-account.pem
+[root@node-1 pki]# ls -l | grep kube-scheduler
+-rw-r--r-- 1 root root 1041 Aug 21 11:49 kube-scheduler.csr
+-rw-r--r-- 1 root root  268 Aug 21 11:49 kube-scheduler-csr.json
+-rw------- 1 root root 1679 Aug 21 11:49 kube-scheduler-key.pem
+-rw-r--r-- 1 root root 1440 Aug 21 11:49 kube-scheduler.pem
 ```
 
 :::
 
-#### （9）proxy-client 证书
+#### （9）kube-controller-manager证书
 
-* 所有Node节点共享一份证书
+* 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
 
 ```bash
-[root@node-1 pki]# cat > proxy-client-csr.json <<EOF
+[root@node-1 pki]# cat > kube-controller-manager-csr.json <<EOF
 {
-  "CN": "aggregator",
-  "key": {
-    "algo": "rsa",
-    "size": 2048
-  },
-  "names": [
-    {
-      "C": "CN",
-      "ST": "BeiJing",
-      "L": "BeiJing",
-      "O": "k8s",
-      "OU": "seven"
-    }
-  ]
+    "CN": "system:kube-controller-manager",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+      {
+        "C": "CN",
+        "ST": "BeiJing",
+        "L": "BeiJing",
+        "O": "system:kube-controller-manager",
+        "OU": "seven"
+      }
+    ]
 }
 EOF
 
@@ -1184,26 +1189,28 @@ EOF
   -ca-key=ca-key.pem \
   -config=ca-config.json \
   -profile=kubernetes \
-  proxy-client-csr.json | cfssljson -bare proxy-client
-
-2022/08/21 11:51:35 [INFO] generate received request
-2022/08/21 11:51:35 [INFO] received CSR
-2022/08/21 11:51:35 [INFO] generating key: rsa-2048
-2022/08/21 11:51:36 [INFO] encoded CSR
-2022/08/21 11:51:36 [INFO] signed certificate with serial number 624599378216669470989725514687740733197475898533
-2022/08/21 11:51:36 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
+  kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
+  
+2022/08/21 11:48:32 [INFO] generate received request
+2022/08/21 11:48:32 [INFO] received CSR
+2022/08/21 11:48:32 [INFO] generating key: rsa-2048
+2022/08/21 11:48:32 [INFO] encoded CSR
+2022/08/21 11:48:32 [INFO] signed certificate with serial number 611097625429267385505563611927508226697109199115
+2022/08/21 11:48:32 [WARNING] This certificate lacks a "hosts" field. This makes it unsuitable for
 websites. For more information see the Baseline Requirements for the Issuance and Management
 of Publicly-Trusted Certificates, v.1.1.6, from the CA/Browser Forum (https://cabforum.org);
 specifically, section 10.2.3 ("Information Requirements").
 
-[root@node-1 pki]# ls -l | grep proxy-client
--rw-r--r-- 1 root root 1001 Aug 21 11:51 proxy-client.csr
--rw-r--r-- 1 root root  207 Aug 21 11:51 proxy-client-csr.json
--rw------- 1 root root 1675 Aug 21 11:51 proxy-client-key.pem
--rw-r--r-- 1 root root 1399 Aug 21 11:51 proxy-client.pem
+[root@node-1 pki]# ls -l | grep kube-controller-manager
+-rw-r--r-- 1 root root 1066 Aug 21 11:48 kube-controller-manager.csr
+-rw-r--r-- 1 root root  286 Aug 21 11:48 kube-controller-manager-csr.json
+-rw------- 1 root root 1679 Aug 21 11:48 kube-controller-manager-key.pem
+-rw-r--r-- 1 root root 1464 Aug 21 11:48 kube-controller-manager.pem
 ```
 
 :::
+
+
 
 #### 分发客户端、服务端证书
 
@@ -2067,8 +2074,8 @@ daemonset.apps/node-local-dns created
 service/node-local-dns created
 
 # 查看Pod
-[root@node-1 ~]# kubectl get pods  -A | grep node-local-dns
-kube-system   node-local-dns-7ks4l                       0/1     ContainerCreating   0          16s
-kube-system   node-local-dns-fg96w                       0/1     ContainerCreating   0          16s
-kube-system   node-local-dns-p2lkd                       0/1     ContainerCreating   0          16s
+[root@node-1 ~]# kubectl get pods -A | grep node-local-dns
+kube-system   node-local-dns-8wqmd                       1/1     Running   0          12s
+kube-system   node-local-dns-wdgkw                       1/1     Running   0          12s
+kube-system   node-local-dns-z76pz                       1/1     Running   0          12s
 ```
