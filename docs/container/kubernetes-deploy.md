@@ -201,7 +201,7 @@ vm.overcommit_memory = 1
 
 ```bash
 [root@localhost ~]# yum -y install yum-utils \
-	vim curl wget \
+	vim curl wget rsync \
 	socat conntrack ipvsadm ipset \
 	sysstat iptables libseccomp
 ```
@@ -623,7 +623,7 @@ gather_timeout = 300    # 设置超时时间300秒
 [root@node-1 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
 [root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
 [root@node-1 ~]# cd kubernetes
-[root@node-1 kubernetes]# mkdir src && tar zxf  kubernetes-src.tar.gz -C ./src
+[root@node-1 kubernetes]# mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
 [root@node-1 kubernetes]# cd ~
 
 # 下载Etcd软件包
@@ -685,11 +685,7 @@ Runtime: go1.12.12
 
 #### **（1）根证书**
 
-::: tip
-
 根证书（CA 证书）是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
-
-:::
 
 ::: details 点击查看完整命令
 
@@ -762,11 +758,7 @@ total 20
 
 #### **（2）admin证书**
 
-::: tip
-
 admin用户证书，集群内只需要创建一份即可
-
-:::
 
 ::: details 点击查看完整命令
 
@@ -820,15 +812,9 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （3）kubelet证书
 
-::: tip
+* Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`
 
-Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 
-
-Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`
-
-每个工作节点使用自己的证书
-
-:::
+* 每个工作节点使用自己的证书
 
 ::: details 点击查看完整命令
 
@@ -901,11 +887,7 @@ done
 
 #### （4）kube-controller-manager证书
 
-::: tip
-
-所有Master节点共享一份证书
-
-:::
+* 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -957,11 +939,7 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （5）kube-proxy证书
 
-::: tip
-
-所有Node节点共享一份证书
-
-:::
+* 所有Node节点共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -1013,11 +991,7 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （6）kube-scheduler证书
 
-::: tip
-
-所有Master节点共享一份证书
-
-:::
+* 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -1069,13 +1043,8 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （7）kube-apiserver证书
 
-::: tip
-
-服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
-
-所有Master节点共享一份证书
-
-:::
+* 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
+* 所有Master节点共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -1131,11 +1100,7 @@ EOF
 
 #### （8）Service Account证书
 
-::: tip
-
-集群共享一份证书
-
-:::
+* 集群共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -1187,11 +1152,7 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （9）proxy-client 证书
 
-::: tip
-
-所有Node节点共享一份证书
-
-:::
+* 所有Node节点共享一份证书
 
 ::: details 点击查看完整命令
 
@@ -1691,7 +1652,7 @@ VERSION=1.4.3
 wget https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
 
 # 解压缩
-tar -xvf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
+mkdir -p containerd && tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd && cd ./containerd
 
 # 复制需要的文件
 cp etc/crictl.yaml /etc/
@@ -1704,8 +1665,8 @@ containerd config default > /etc/containerd/config.toml  # 默认配置生成配
 vi /etc/containerd/config.toml  # 定制化配置（可选）
 
 # 启动服务
-systemctl enable containerd
 systemctl restart containerd
+systemctl enable containerd
 
 # 检查状态
 systemctl status containerd
@@ -1721,6 +1682,7 @@ systemctl status containerd
 ```bash
 mkdir -p /etc/kubernetes/ssl/
 mv ${HOSTNAME}-key.pem ${HOSTNAME}.pem ca.pem ca-key.pem /etc/kubernetes/ssl/
+
 mv ${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
 IP=192.168.48.142
 
@@ -1782,17 +1744,20 @@ EOF
 
 #### 配置nginx-proxy
 
-nginx-proxy是一个用于worker节点访问apiserver的一个代理，是apiserver一个优雅的高可用方案，它使用kubelet的staticpod方式启动，让每个节点都可以均衡的访问到每个apiserver服务，优雅的替代了通过虚拟ip访问apiserver的方式。
+* `nginx-proxy`是一个用于worker节点访问apiserver的一个代理，是apiserver一个优雅的高可用方案
 
-> Tips: nginx-proxy 只需要在没有 apiserver 的节点部署
+  它使用kubelet的staticpod方式启动，让每个节点都可以均衡的访问到每个apiserver服务
+
+* `nginx-proxy`只需要在没有`apiserver `的节点部署
 
 ```bash
+# 定义Master IP列表
+MASTERS=(192.168.48.142 192.168.48.143)
+
+# 创建Nginx配置文件目录
 mkdir -p /etc/nginx
 
-# master ip列表
-MASTER_IPS=(192.168.48.142 192.168.48.143)
-
-# 执行前请先copy一份，并修改好upstream的 'server' 部分配置
+# 创建Nginx配置文件(根据实际情况修改下方upstream部分)
 cat <<EOF > /etc/nginx/nginx.conf
 error_log stderr notice;
 
@@ -1809,8 +1774,8 @@ events {
 stream {
   upstream kube_apiserver {
     least_conn;
-    server ${MASTER_IPS[0]}:6443;
-    server ${MASTER_IPS[1]}:6443;    
+    server ${MASTERS[0]}:6443;
+    server ${MASTERS[1]}:6443;
   }
 
   server {
@@ -1847,6 +1812,7 @@ http {
 }
 EOF
 
+# 创建Proxy Pod
 mkdir -p /etc/kubernetes/manifests/
 
 cat <<EOF > /etc/kubernetes/manifests/nginx-proxy.yaml
@@ -1891,14 +1857,19 @@ spec:
     hostPath:
       path: /etc/nginx
 EOF
+
+# 在每个工作节点下载镜像
+crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+ctr -n k8s.io i tag  registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
 ```
 
 #### 配置kube-proxy
 
 ```bash
+# 移动配置
 mv kube-proxy.kubeconfig /etc/kubernetes/
 
-# 创建 kube-proxy-config.yaml
+# 创建YAML
 cat <<EOF > /etc/kubernetes/kube-proxy-config.yaml
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -1909,6 +1880,7 @@ clusterCIDR: "10.200.0.0/16"
 mode: ipvs
 EOF
 
+# 创建System Service
 cat <<EOF > /etc/systemd/system/kube-proxy.service
 [Unit]
 Description=Kubernetes Kube Proxy
@@ -1929,12 +1901,13 @@ EOF
 
 ```bash
 systemctl daemon-reload
-systemctl enable kubelet kube-proxy
-systemctl restart kubelet kube-proxy
-journalctl -f -u kubelet
-journalctl -f -u kube-proxy
+
+systemctl restart kubelet kube-proxy && systemctl enable kubelet kube-proxy
 
 systemctl status kubelet && systemctl status kube-proxy
+
+journalctl -f -u kubelet
+journalctl -f -u kube-proxy
 ```
 
 ### 部署网络插件Calico
@@ -2012,18 +1985,20 @@ poddisruptionbudget.policy/calico-kube-controllers created
 
 ```bash
 # 检查Pod状态
-[root@node0 ~]# kubectl get pods -A
-NAMESPACE     NAME                                       READY   STATUS             RESTARTS      AGE
-kube-system   calico-kube-controllers-555bc4b957-h4xjj   1/1     Running            0             113s
-kube-system   calico-node-292qw                          1/1     Running            0             113s
-kube-system   calico-node-h76ng                          1/1     Running            0             113s
-kube-system   nginx-proxy-node2                          1/1     Running            1 (20m ago)   16h
+[root@node-1 ~]# kubectl get pods -A 
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
+kube-system   calico-kube-controllers-5b97f5d8cf-nmx9v   1/1     Running   0          11m
+kube-system   calico-node-djmlg                          1/1     Running   0          11m
+kube-system   calico-node-ph5lj                          1/1     Running   0          11m
+kube-system   calico-node-wshgm                          1/1     Running   0          11m
+kube-system   nginx-proxy-node-3                         1/1     Running   0          29m
 
 # 查看Node状态，已经变成Ready了
-[root@node0 ~]# kubectl get node
-NAME    STATUS   ROLES    AGE   VERSION
-node1   Ready    <none>   21h   v1.24.3
-node2   Ready    <none>   16h   v1.24.3
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES    AGE   VERSION
+node-1   Ready    <none>   40m   v1.24.4
+node-2   Ready    <none>   40m   v1.24.4
+node-3   Ready    <none>   29m   v1.24.4
 ```
 
 ### 部署DNS插件CoreDNS
@@ -2037,14 +2012,19 @@ node2   Ready    <none>   16h   v1.24.3
 
 ```bash
 # 下载coredns yaml
-wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/coredns.yaml.sed
-wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/deploy.sh
-chmod +x deploy.sh
-./deploy.sh -i 10.233.0.10 >coredns.yml
-kubectl apply -f coredns.yml
+[root@node-1 ~]# wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/coredns.yaml.sed
+[root@node-1 ~]# wget https://raw.githubusercontent.com/coredns/deployment/master/kubernetes/deploy.sh
+[root@node-1 ~]# chmod +x deploy.sh
+[root@node-1 ~]# ./deploy.sh -i 10.233.0.10 > coredns.yaml
 
-# 创建 coredns
-kubectl apply -f coredns.yaml
+# 部署
+[root@node-1 ~]# kubectl apply -f coredns.yaml
+serviceaccount/coredns created
+clusterrole.rbac.authorization.k8s.io/system:coredns created
+clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
+configmap/coredns created
+deployment.apps/coredns created
+service/kube-dns created
 ```
 
 （2）部署NodeLocal DNSCache
@@ -2052,7 +2032,8 @@ kubectl apply -f coredns.yaml
 文档：[https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns](https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns)
 
 ```bash
-cp -ra ~/kubernetes/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
+# 拷贝yaml文件
+cp ~/kubernetes/src/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
 
 # 设置为 kube-dns service ip,这里并没有用到kube-dns，所以置为空
 sed -ri 's/,__PILLAR__DNS__SERVER__//g' nodelocaldns.yaml
@@ -2070,8 +2051,12 @@ sed -ri 's/__PILLAR__CLUSTER__DNS__/10.233.0.10/g' nodelocaldns.yaml
 # 设置集群外部查询的上游服务器
 sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
 
+# 使用科学上网提前下载镜像
+[root@node-1 ~]# grep image nodelocaldns.yaml 
+        image: k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1
+
 # 部署
-[root@node0 ~]# kubectl apply -f nodelocaldns.yaml 
+[root@node-1 ~]# kubectl apply -f nodelocaldns.yaml 
 serviceaccount/node-local-dns created
 service/kube-dns-upstream created
 configmap/node-local-dns created
@@ -2079,7 +2064,8 @@ daemonset.apps/node-local-dns created
 service/node-local-dns created
 
 # 查看Pod
-[root@node0 ~]# kubectl get pods  -A | grep -E '[[:blank:]]node'
-kube-system   node-local-dns-86z4q                       1/1     Running            0                 59s
-kube-system   node-local-dns-bkxhv                       1/1     Running            0                 59s
+[root@node-1 ~]# kubectl get pods  -A | grep node-local-dns
+kube-system   node-local-dns-7ks4l                       0/1     ContainerCreating   0          16s
+kube-system   node-local-dns-fg96w                       0/1     ContainerCreating   0          16s
+kube-system   node-local-dns-p2lkd                       0/1     ContainerCreating   0          16s
 ```
