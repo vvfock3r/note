@@ -104,6 +104,7 @@ export default defineUserConfig({
     lang: 'zh-CN',
     title: 'note',
     description: '打怪升级之旅~',
+    head: [['link', {rel: 'icon', href: 'https://tuchuang-1257805459.cos.accelerate.myqcloud.com/favicon.png'}]],
 
     // 插件配置
     plugins: [
@@ -120,7 +121,7 @@ export default defineUserConfig({
             // 不显示行号
             lineNumbers: false,
         },
-        extractHeaders : {
+        extractHeaders: {
             // 提取哪些子标题
             level: [2, 3, 4, 5],
         },
