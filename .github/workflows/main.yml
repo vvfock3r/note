@@ -63,16 +63,8 @@ jobs:
                  --description "$(echo -n Github Action: `git rev-parse --short HEAD`)"
 
       - name: 构建镜像并导出
-        run: |
-          for ((i=1; i<=3; i++))
-          do
-            docker image build . --file Dockerfile --tag ${imageName}:${imageTag} 2>/dev/null
-            if [[ $? -ne 0 ]];then
-                echo "构建镜像失败,重试中..."
-                continue
-            fi
-            break
-          done
+        run: |          
+          docker image build . --file Dockerfile --tag ${imageName}:${imageTag}          
           docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
 
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
