@@ -104,7 +104,7 @@ export default defineUserConfig({
     lang: 'zh-CN',
     title: 'note',
     description: '打怪升级之旅~',
-    head: [['link', {rel: 'icon', href: 'https://tuchuang-1257805459.cos.accelerate.myqcloud.com/favicon.png'}]],
+    head: [['link', {rel: 'icon', href: 'favicon.png'}]],
 
     // 插件配置
     plugins: [
