@@ -120,7 +120,7 @@ export default defineUserConfig({
             // 不显示行号
             lineNumbers: false,
         },
-        headers: {
+        extractHeaders : {
             // 提取哪些子标题
             level: [2, 3, 4, 5],
         },
