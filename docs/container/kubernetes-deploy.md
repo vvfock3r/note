@@ -820,9 +820,17 @@ specifically, section 10.2.3 ("Information Requirements").
 
 #### （3）kubelet证书
 
+::: tip
+
 Kubernetes使用一种称为Node Authorizer的专用授权模式来授权Kubelets发出的API请求。 
 
-Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`，接下里就给每个工作节点生成证书
+Kubelet使用将其标识为`system:nodes`组中的凭据，其用户名为`system:node:<nodeName>`
+
+每个工作节点使用自己的证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 # 设置worker节点列表
@@ -889,7 +897,17 @@ done
 -rw-r--r-- 1 root root 1456 Aug 21 11:48 node-3.pem
 ```
 
+:::
+
 #### （4）kube-controller-manager证书
+
+::: tip
+
+所有Master节点共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > kube-controller-manager-csr.json <<EOF
@@ -935,7 +953,17 @@ specifically, section 10.2.3 ("Information Requirements").
 -rw-r--r-- 1 root root 1464 Aug 21 11:48 kube-controller-manager.pem
 ```
 
+:::
+
 #### （5）kube-proxy证书
+
+::: tip
+
+所有Node节点共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > kube-proxy-csr.json <<EOF
@@ -981,7 +1009,17 @@ specifically, section 10.2.3 ("Information Requirements").
 -rw-r--r-- 1 root root 1407 Aug 21 11:49 kube-proxy.pem
 ```
 
+:::
+
 #### （6）kube-scheduler证书
+
+::: tip
+
+所有Master节点共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > kube-scheduler-csr.json <<EOF
@@ -1027,9 +1065,19 @@ specifically, section 10.2.3 ("Information Requirements").
 -rw-r--r-- 1 root root 1440 Aug 21 11:49 kube-scheduler.pem
 ```
 
+:::
+
 #### （7）kube-apiserver证书
 
+::: tip
+
 服务端证书与客户端略有不同，客户端需要通过一个名字或者一个ip去访问服务端，所以证书必须要包含客户端所访问的名字或ip，用以客户端验证。
+
+所有Master节点共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > kubernetes-csr.json <<EOF
@@ -1079,7 +1127,17 @@ EOF
 -rw-r--r-- 1 root root 1623 Aug 21 11:50 kubernetes.pem
 ```
 
+:::
+
 #### （8）Service Account证书
+
+::: tip
+
+集群共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > service-account-csr.json <<EOF
@@ -1125,7 +1183,17 @@ specifically, section 10.2.3 ("Information Requirements").
 -rw-r--r-- 1 root root 1407 Aug 21 11:51 service-account.pem
 ```
 
+:::
+
 #### （9）proxy-client 证书
+
+::: tip
+
+所有Node节点共享一份证书
+
+:::
+
+::: details 点击查看完整命令
 
 ```bash
 [root@node-1 pki]# cat > proxy-client-csr.json <<EOF
@@ -1171,52 +1239,52 @@ specifically, section 10.2.3 ("Information Requirements").
 -rw-r--r-- 1 root root 1399 Aug 21 11:51 proxy-client.pem
 ```
 
+:::
+
 #### 分发客户端、服务端证书
 
-分发worker节点需要的证书和私钥
+（1）分发Node节点需要的证书和私钥
 
 ```bash
-[root@node-1 pki]# WORKERS=(node-1 node-2 node-3)
-[root@node-1 pki]# for instance in ${WORKERS[@]}; do
+[root@node-1 pki]# NODES=(node-1 node-2 node-3) ; for instance in ${NODES[@]}; do
   scp ca.pem ${instance}-key.pem ${instance}.pem root@${instance}:~/
 done
 ```
 
-分发master节点需要的证书和私钥
+（2）分发Master节点需要的证书和私钥
 
 ```bash
-OIFS=$IFS
-IFS=','
-for instance in ${MASTER_IPS}; do
-  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+[root@node-1 pki]# MASTERS=(node-1 node-2) ; for instance in ${MASTERS[@]}; do
+    scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
     service-account-key.pem service-account.pem proxy-client.pem proxy-client-key.pem root@${instance}:~/
 done
-IFS=$OIFS
 ```
 
-分发etcd节点需要的证书和私钥
+（3）分发Etcd节点需要的证书和私钥
 
 ```bash
-[root@node-1 pki]# ETCDS=(node-1 node-2 node-3)
-[root@node-1 pki]# for instance in ${ETCDS[@]}; do
+[root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do
   scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem root@${instance}:~/
 done
 ```
 
 ### 认证配置
 
+::: tip
+
 kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客户端定位kube-apiserver并通过apiserver的安全认证。
 
-接下来我们一起来生成各个组件的kubeconfigs，包括controller-manager，kubelet，kube-proxy，scheduler，以及admin用户。
+接下来我们一起来生成各个组件的kubeconfigs，包括controller-manager，kubelet，kube-proxy，scheduler，以及admin用户
 
-以下命令需要与上一节“生成证书”在同一个目录下执行
+:::
 
 #### （1）kubelet
 
+::: details 点击查看完整命令
+
 ```bash
 # 指定你的worker列表（hostname），空格分隔
-[root@node-1 pki]# WORKERS="node-1 node-2 node-3"
-[root@node-1 pki]# for instance in ${WORKERS}; do
+[root@node-1 pki]# WORKERS="node-1 node-2 node-3" ; for instance in ${WORKERS}; do
   kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
@@ -1250,6 +1318,8 @@ User "system:node:node-3" set.
 Context "default" created.
 Switched to context "default".
 ```
+
+:::
 
 #### （2）kube-proxy
 
