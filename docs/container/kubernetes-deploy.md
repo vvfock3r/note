@@ -590,9 +590,9 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ## 🍁 使用二进制部署（推荐）
 
-### 中转节点
+### 设置中转节点
 
-为了方便文件的`copy`我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
+为了方便文件的分发，我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
 
 ```bash
 # 生成密钥对
@@ -614,15 +614,14 @@ gather_timeout = 300    # 设置超时时间300秒
 
 3. 根据 `Client Binaries` 和 `Server Binaries`下载二进制包
 
-   Server Binaries二进制包中包含了Client Binaries中的可执行命令，所以我们只需要下载Server Binaries包即可
+   `Server Binaries`二进制包中包含了`Client Binaries`中的可执行命令，所以我们只需要下载`Server Binaries`包即可
 
 :::
 
 ```bash
 # 下载K8S二进制包
 [root@node-1 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
-[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
-[root@node-1 ~]# cd kubernetes
+[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz && cd kubernetes
 [root@node-1 kubernetes]# mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
 [root@node-1 kubernetes]# cd ~
 
@@ -640,26 +639,31 @@ gather_timeout = 300    # 设置超时时间300秒
 # 进入kubernetes目录
 [root@node-1 ~]# cd kubernetes/server/bin/
 
-# 把master相关组件分发到master节点
-[root@node-1 bin]# MASTERS=(node-1 node-2)
-[root@node-1 bin]# for instance in ${MASTERS[@]}; do
-  scp kube-apiserver kube-controller-manager kube-scheduler kubectl root@${instance}:/usr/local/bin/
+# Master节点
+[root@node-1 bin]# MASTERS=(node-1 node-2) ; for instance in ${MASTERS[@]}; do
+  scp kube-apiserver \
+      kube-controller-manager \
+      kube-scheduler \
+      kubectl \
+  root@${instance}:/usr/local/bin/
 done
 
-# 把worker相关组件分发到master和worker节点
-[root@node-1 bin]# WORKERS=(node-1 node-2 node-3)
-[root@node-1 bin]# for instance in ${WORKERS[@]}; do
-  scp kubelet kube-proxy root@${instance}:/usr/local/bin/
+# Node节点
+[root@node-1 bin]# NODES=(node-1 node-2 node-3) ; for instance in ${NODES[@]}; do
+  scp kubelet \
+      kube-proxy \
+  root@${instance}:/usr/local/bin/
 done
 
 # --------------------------------------------------------------------------------------------------------
 # 进入etcd目录
 [root@node-1 bin]# cd ~/etcd-v3.4.20-linux-amd64/
 
-# 把etcd组件分发到etcd节点
-[root@node-1 etcd-v3.4.20-linux-amd64]# ETCDS=(node-1 node-2 node-3)
-[root@node-1 etcd-v3.4.20-linux-amd64]# for instance in ${ETCDS[@]}; do
-  scp etcd etcdctl root@${instance}:/usr/local/bin/
+# Etcd节点
+[root@node-1 etcd-v3.4.20-linux-amd64]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do
+  scp etcd \
+      etcdctl \
+  root@${instance}:/usr/local/bin/
 done
 ```
 
