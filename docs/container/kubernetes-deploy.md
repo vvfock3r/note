@@ -242,8 +242,7 @@ max user processes              (-u) 7184
 [root@localhost ~]# ulimit -n 102400 && ulimit -u 102400
 
 # 永久设置
-[root@localhost ~]# vim /etc/security/limits.conf
-
+[root@localhost ~]# cat >>/etc/security/limits.conf <<EOF
 # max number of open file descriptors
 * soft nofile 102400
 * hard nofile 102400
@@ -251,6 +250,7 @@ max user processes              (-u) 7184
 # max number of processes
 * soft nproc  102400
 * hard nproc  102400
+EOF
 ```
 
 ### （11）重启系统再次检查
@@ -695,7 +695,7 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ### 下载软件包
 
-::: tip 
+::: tip kubernetes下载地址是如何来的?
 
 1. 打开Github Kubernetes Releases页面：[https://github.com/kubernetes/kubernetes/releases/](https://github.com/kubernetes/kubernetes/releases/)
 
@@ -708,15 +708,18 @@ gather_timeout = 300    # 设置超时时间300秒
 :::
 
 ```bash
+# 中转节点创建软件包目录pkg
+[root@node-1 ~]# mkdir -p pkg && cd pkg
+
 # 下载K8S二进制包
-[root@node-1 ~]# wget https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
-[root@node-1 ~]# tar zxf kubernetes-server-linux-amd64.tar.gz
-[root@node-1 ~]# cd kubernetes && mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
-[root@node-1 kubernetes]# cd ~
+[root@node-1 pkg]# wget -c https://storage.googleapis.com/kubernetes-release/release/v1.24.4/kubernetes-server-linux-amd64.tar.gz
+[root@node-1 pkg]# tar zxf kubernetes-server-linux-amd64.tar.gz
+[root@node-1 pkg]# cd kubernetes && mkdir -p src && tar zxf  kubernetes-src.tar.gz -C ./src
+[root@node-1 kubernetes]# cd ~/pkg/
 
 # 下载Etcd软件包
-[root@node-1 ~]# wget https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
-[root@node-1 ~]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
+[root@node-1 pkg]# wget -c https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-amd64.tar.gz
+[root@node-1 pkg]# tar zxf etcd-v3.4.20-linux-amd64.tar.gz
 
 # 备注: 也可以单独下载某个二进制包
 # wget https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl
@@ -726,7 +729,7 @@ gather_timeout = 300    # 设置超时时间300秒
 
 ```bash
 # 进入kubernetes目录
-[root@node-1 ~]# cd kubernetes/server/bin/
+[root@node-1 ~]# cd ~/pkg/kubernetes/server/bin/
 
 # Master节点
 [root@node-1 bin]# MASTERS=(node-1 node-2) ; for instance in ${MASTERS[@]}; do
@@ -746,7 +749,7 @@ done
 
 # --------------------------------------------------------------------------------------------------------
 # 进入etcd目录
-[root@node-1 bin]# cd ~/etcd-v3.4.20-linux-amd64/
+[root@node-1 bin]# cd ~/pkg/etcd-v3.4.20-linux-amd64/
 
 # Etcd节点
 [root@node-1 etcd-v3.4.20-linux-amd64]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do
