@@ -1374,14 +1374,14 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 # 指定你的worker列表（hostname），空格分隔
 [root@node-1 kubeconfig]# NODES="node-1 node-2 node-3" ; for instance in ${NODES}; do
   kubectl config set-cluster kubernetes \
-    --certificate-authority=~/pki/ca.pem \
+    --certificate-authority=/root/pki/ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config set-credentials system:node:${instance} \
-    --client-certificate=~/pki/${instance}.pem \
-    --client-key=~/pki/${instance}-key.pem \
+    --client-certificate=/root/pki/${instance}.pem \
+    --client-key=/root/pki/${instance}-key.pem \
     --embed-certs=true \
     --kubeconfig=${instance}.kubeconfig
 
