@@ -782,7 +782,7 @@ Runtime: go1.12.12
 
 ```bash
 # 在中转节点创建一个单独的证书目录
-[root@node-1 ~]# mkdir ~/pki && cd ~/pki
+[root@node-1 ~]# mkdir -p ~/pki && cd ~/pki
 ```
 
 #### **（1）CA证书**
@@ -1342,7 +1342,7 @@ done
 ```bash
 [root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do	
 	rsync -avzp \
-        ca.pem \        
+        ca.pem \
         kubernetes-key.pem \
         kubernetes.pem \
     root@${instance}:~/tmp.etcd.ssl/
