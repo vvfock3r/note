@@ -735,7 +735,7 @@ done
 done
 ```
 
-### 生成所有证书
+### 生成SSL证书
 
 #### **准备工作：下载cfssl工具**
 
@@ -1310,12 +1310,13 @@ done
 （3）分发Etcd节点需要的证书和私钥
 
 ```bash
-[root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do
-	scp ca.pem \
-		ca-key.pem \
-		kubernetes-key.pem \
-		kubernetes.pem
-	root@${instance}:~/
+[root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do	
+	rsync -avzp \
+        ca.pem \
+        ca-key.pem \
+        kubernetes-key.pem \
+        kubernetes.pem \
+    root@${instance}:~/ssl-etcd/
 done
 ```
 
@@ -1374,6 +1375,8 @@ Switched to context "default".
 
 #### （2）kube-proxy
 
+::: details 点击查看完整命令
+
 ```bash
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
@@ -1395,7 +1398,11 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 ```
 
+:::
+
 #### （3）kube-controller-manager
+
+::: details 点击查看完整命令
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1418,7 +1425,11 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
 ```
 
+:::
+
 #### （4）kube-scheduler
+
+::: details 点击查看完整命令
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1441,7 +1452,11 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
 ```
 
+:::
+
 #### （5）admin
+
+::: details 点击查看完整命令
 
 ```bash
 kubectl config set-cluster kubernetes \
@@ -1463,6 +1478,8 @@ kubectl config set-context default \
 
 kubectl config use-context default --kubeconfig=admin.kubeconfig
 ```
+
+:::
 
 #### 分发配置文件：Node、Master
 
@@ -1500,12 +1517,14 @@ done
 （1）拷贝etcd证书
 
 ```bash
-[root@node-1 pki]# mkdir -p /etc/etcd /var/lib/etcd
+[root@node-1 pki]# mkdir -p /etc/etcd/ssl /var/lib/etcd
 [root@node-1 pki]# chmod 700 /var/lib/etcd
-[root@node-1 pki]# cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
+[root@node-1 pki]# mv ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
 ```
 
 （2）配置etcd.service文件
+
+::: details 点击查看完整命令
 
 ```bash
 ETCD_NAME=$(hostname -s)
@@ -1515,7 +1534,7 @@ ETCD_IP=192.168.48.144
 ETCD_NAMES=(node-1 node-2 node-3)
 ETCD_IPS=(192.168.48.142 192.168.48.143 192.168.48.144)
 
-cat <<EOF > /etc/systemd/system/etcd.service
+cat >/etc/systemd/system/etcd.service <<EOF
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos
@@ -1547,6 +1566,8 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 ```
+
+:::
 
 （3）启动etcd集群
 
@@ -1581,7 +1602,7 @@ mkdir -p /etc/kubernetes/ssl
 mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
     service-account-key.pem service-account.pem \
     proxy-client.pem proxy-client-key.pem \
-    /etc/kubernetes/ssl
+/etc/kubernetes/ssl
 
 # 配置kube-apiserver.service
 # 本机内网ip
@@ -2027,7 +2048,7 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 
 （2）修改IP自动发现
 
-> 当kubelet的启动参数中存在--node-ip的时候，以host-network模式启动的pod的status.hostIP字段就会自动填入kubelet中指定的ip地址。
+当kubelet的启动参数中存在--node-ip的时候，以host-network模式启动的pod的status.hostIP字段就会自动填入kubelet中指定的ip地址
 
 ```bash
 # 修改前
@@ -2056,34 +2077,7 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 （4）部署
 
 ```bash
-[root@node0 ~]# kubectl apply -f calico.yaml 
-configmap/calico-config created
-customresourcedefinition.apiextensions.k8s.io/bgpconfigurations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/bgppeers.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/blockaffinities.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/caliconodestatuses.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/clusterinformations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/felixconfigurations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/globalnetworkpolicies.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/globalnetworksets.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/hostendpoints.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ipamblocks.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ipamconfigs.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ipamhandles.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ippools.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/ipreservations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/kubecontrollersconfigurations.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/networkpolicies.crd.projectcalico.org created
-customresourcedefinition.apiextensions.k8s.io/networksets.crd.projectcalico.org created
-clusterrole.rbac.authorization.k8s.io/calico-kube-controllers created
-clusterrolebinding.rbac.authorization.k8s.io/calico-kube-controllers created
-clusterrole.rbac.authorization.k8s.io/calico-node created
-clusterrolebinding.rbac.authorization.k8s.io/calico-node created
-daemonset.apps/calico-node created
-serviceaccount/calico-node created
-deployment.apps/calico-kube-controllers created
-serviceaccount/calico-kube-controllers created
-poddisruptionbudget.policy/calico-kube-controllers created
+[root@node-1 ~]# kubectl apply -f calico.yaml 
 ```
 
 （5）检查状态
@@ -2124,12 +2118,6 @@ node-3   Ready    <none>   29m   v1.24.4
 
 # 部署
 [root@node-1 ~]# kubectl apply -f coredns.yaml
-serviceaccount/coredns created
-clusterrole.rbac.authorization.k8s.io/system:coredns created
-clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
-configmap/coredns created
-deployment.apps/coredns created
-service/kube-dns created
 ```
 
 （2）部署NodeLocal DNSCache
@@ -2162,11 +2150,6 @@ sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
 
 # 部署
 [root@node-1 ~]# kubectl apply -f nodelocaldns.yaml 
-serviceaccount/node-local-dns created
-service/kube-dns-upstream created
-configmap/node-local-dns created
-daemonset.apps/node-local-dns created
-service/node-local-dns created
 
 # 查看Pod
 [root@node-1 ~]# kubectl get pods -A | grep node-local-dns
