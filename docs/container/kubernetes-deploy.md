@@ -18,7 +18,7 @@
 
 ```bash
 # 更新系统并重启
-[root@localhost ~]# yum -y epel-release
+[root@localhost ~]# yum -y install epel-release
 [root@localhost ~]# yum -y update && reboot
 
 # 查看系统版本
@@ -45,6 +45,27 @@ NTP synchronized: no
 ```
 
 ### （3）配置24小时制（可选）
+
+:::tip
+
+CentOS默认情况就是24小时制，对于其他Linux发行版比如Ubuntu可能是12小时制，根据自己的喜好修改
+
+:::
+
+```bash
+# 查看当前时间
+root@ubuntu:~# date
+Sun Aug 14 10:21:00 PM CST 2022  # PM代表下午, 即晚上的10点
+
+# 修改为24小时制
+root@ubuntu:~# vim /etc/default/locale
+LANG=en_US.UTF-8
+LC_TIME=en_DK.UTF-8		# 新增这一行
+
+# 重启系统，然后再次查看时间
+root@ubuntu:~# date
+Sun Aug 14 22:23:33 CST 2022  # 已修改为22点
+```
 
 ### （4）配置静态IP（可选）
 
