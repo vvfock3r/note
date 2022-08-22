@@ -97,6 +97,8 @@ rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 ```bash
 [root@localhost ~]# yum install ntpdate -y
 [root@localhost ~]# ntpdate time.windows.com
+[root@localhost ~]# crontab -e
+* * * * * /usr/sbin/ntpdate time.windows.com
 ```
 
 ### （6）配置主机名
@@ -137,9 +139,9 @@ EOF
 	iptables -P FORWARD ACCEPT
 
 # 关闭swap
-[root@localhost ~]# swapoff -a && \
-	sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
-	free
+[root@localhost ~]# swapoff -a && free
+[root@localhost ~]# sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
+                    grep swap /etc/fstab
 
 # 关闭dnsmasq(否则可能导致容器无法解析域名)
 [root@localhost ~]# service dnsmasq stop && systemctl disable dnsmasq
@@ -205,6 +207,27 @@ vm.overcommit_memory = 1
 	socat conntrack ipvsadm ipset \
 	sysstat iptables libseccomp
 ```
+
+### （10）调整ulimit
+
+```bash
+# 检查当前配置
+[root@node-1 ~]# ulimit -a | grep -E 'open files|max user processes'
+open files                      (-n) 1024
+max user processes              (-u) 7184
+
+# 修改配置，重启系统后生效
+[root@localhost ~]# vim /etc/security/limits.conf
+# max number of open file descriptors
+* soft nofile 102400
+* hard nofile 102400
+
+# max number of processes
+* soft nproc  102400
+* hard nproc  102400
+```
+
+### （11）重启系统再次检查
 
 ## 
 
