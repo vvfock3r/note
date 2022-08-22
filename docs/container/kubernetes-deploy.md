@@ -141,7 +141,7 @@ EOF
 
 # 关闭swap
 [root@localhost ~]# swapoff -a && free
-[root@localhost ~]# sed -ri 's/(.*)([[:blank:]]swap[[:blank:]])(.*)/#\1\2\3/' /etc/fstab && \
+[root@localhost ~]# sed -ri '/(^[^#])(.*)[[:blank:]]swap[[:blank:]](.*)/s/^/#/' /etc/fstab && \
                     grep swap /etc/fstab
 
 # 关闭dnsmasq(否则可能导致容器无法解析域名)
@@ -754,6 +754,13 @@ Version: 1.6.1
 Runtime: go1.12.12
 ```
 
+#### 中转节点证书目录pki
+
+```bash
+# 在中转节点创建一个单独的证书目录
+[root@node-1 ~]# mkdir ~/pki && cd ~/pki
+```
+
 #### **（1）CA证书**
 
 根证书（CA 证书）是集群所有节点共享的，只需要创建一个根证书（CA 证书），后续创建的所有证书都由它签名
@@ -761,9 +768,6 @@ Runtime: go1.12.12
 ::: details 点击查看完整命令
 
 ```bash
-# 在中转节点（可以免密登录到其他节点）创建一个单独的证书目录
-[root@node-1 ~]# mkdir pki && cd pki
-
 # 创建根证书配置文件（过期时间 876000h/24/365 = 100年）
 [root@node-1 pki]# cat > ca-config.json <<EOF
 {
@@ -1331,22 +1335,29 @@ kubernetes的认证配置文件，也叫kubeconfigs，用于让kubernetes的客�
 
 :::
 
+#### 中转节点配置文件目录kubeconfig
+
+```bash
+# 在中转节点创建一个单独的配置文件目录
+[root@node-1 ~]# mkdir ~/kubeconfig && cd ~/kubeconfig
+```
+
 #### （1）kubelet
 
 ::: details 点击查看完整命令
 
 ```bash
 # 指定你的worker列表（hostname），空格分隔
-[root@node-1 pki]# NODES="node-1 node-2 node-3" ; for instance in ${NODES}; do
+[root@node-1 kubeconfig]# NODES="node-1 node-2 node-3" ; for instance in ${NODES}; do
   kubectl config set-cluster kubernetes \
-    --certificate-authority=ca.pem \
+    --certificate-authority=~/pki/ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config set-credentials system:node:${instance} \
-    --client-certificate=${instance}.pem \
-    --client-key=${instance}-key.pem \
+    --client-certificate=~/pki/${instance}.pem \
+    --client-key=~/pki/${instance}-key.pem \
     --embed-certs=true \
     --kubeconfig=${instance}.kubeconfig
 
@@ -1380,14 +1391,14 @@ Switched to context "default".
 
 ```bash
 kubectl config set-cluster kubernetes \
-    --certificate-authority=ca.pem \
+    --certificate-authority=~/pki/ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
     --kubeconfig=kube-proxy.kubeconfig
 
 kubectl config set-credentials system:kube-proxy \
-   --client-certificate=kube-proxy.pem \
-   --client-key=kube-proxy-key.pem \
+   --client-certificate=~/pki/kube-proxy.pem \
+   --client-key=~/pki/kube-proxy-key.pem \
    --embed-certs=true \
    --kubeconfig=kube-proxy.kubeconfig
 
@@ -1407,14 +1418,14 @@ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=ca.pem \
+  --certificate-authority=~/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=kube-controller-manager.kubeconfig
 
 kubectl config set-credentials system:kube-controller-manager \
-  --client-certificate=kube-controller-manager.pem \
-  --client-key=kube-controller-manager-key.pem \
+  --client-certificate=~/pki/kube-controller-manager.pem \
+  --client-key=~/pki/kube-controller-manager-key.pem \
   --embed-certs=true \
   --kubeconfig=kube-controller-manager.kubeconfig
 
@@ -1434,14 +1445,14 @@ kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconf
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=ca.pem \
+  --certificate-authority=~/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=kube-scheduler.kubeconfig
 
 kubectl config set-credentials system:kube-scheduler \
-  --client-certificate=kube-scheduler.pem \
-  --client-key=kube-scheduler-key.pem \
+  --client-certificate=~/pki/kube-scheduler.pem \
+  --client-key=~/pki/kube-scheduler-key.pem \
   --embed-certs=true \
   --kubeconfig=kube-scheduler.kubeconfig
 
@@ -1461,14 +1472,14 @@ kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=ca.pem \
+  --certificate-authority=~/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=admin.kubeconfig
 
 kubectl config set-credentials admin \
-  --client-certificate=admin.pem \
-  --client-key=admin-key.pem \
+  --client-certificate=~/pki/admin.pem \
+  --client-key=~/pki/admin-key.pem \
   --embed-certs=true \
   --kubeconfig=admin.kubeconfig
 
@@ -1487,23 +1498,23 @@ kubectl config use-context default --kubeconfig=admin.kubeconfig
 把kubelet和kube-proxy需要的kubeconfig配置分发到每个Node节点
 
 ```bash
-[root@node-1 pki]# NODES="node-1 node-2 node-3"
-[root@node-1 pki]# for instance in ${NODES}; do
-    scp ${instance}.kubeconfig \
+[root@node-1 kubeconfig]# NODES="node-1 node-2 node-3" ; for instance in ${NODES}; do
+    rsync -avzp \
+        ${instance}.kubeconfig \
     	kube-proxy.kubeconfig \
-	${instance}:~/
+	${instance}:~/tmp.node.kubeconfig/
 done
 ```
 
 把kube-controller-manager和kube-scheduler需要的kubeconfig配置分发到Master节点
 
 ```bash
-[root@node-1 pki]# MASTERS="node-1 node-2"
-[root@node-1 pki]# for instance in ${MASTERS}; do
-    scp admin.kubeconfig \
+[root@node-1 kubeconfig]# MASTERS="node-1 node-2" ; for instance in ${MASTERS}; do
+    rsync -avzp \
+        admin.kubeconfig \
     	kube-controller-manager.kubeconfig \
     	kube-scheduler.kubeconfig
-	${instance}:~/
+	${instance}:~/tmp.master.kubeconfig/
 done
 ```
 
@@ -1679,7 +1690,7 @@ EOF
 
 ```bash
 # 准备kubeconfig配置文件
-mv kube-controller-manager.kubeconfig /etc/kubernetes/
+mv ~/tmp.master.kubeconfig/kube-controller-manager.kubeconfig /etc/kubernetes/
 
 # 创建 kube-controller-manager.service
 cat >/etc/systemd/system/kube-controller-manager.service <<EOF
@@ -1714,7 +1725,7 @@ EOF
 
 ```bash
 # 准备kubeconfig配置文件
-mv kube-scheduler.kubeconfig /etc/kubernetes
+mv ~/tmp.master.kubeconfig/kube-scheduler.kubeconfig /etc/kubernetes
 
 # 创建 scheduler service 文件
 cat >/etc/systemd/system/kube-scheduler.service <<EOF
@@ -1736,6 +1747,12 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+```
+
+#### 清理临时目录
+
+```bash
+rmdir ~/tmp.master.kubeconfig
 ```
 
 #### 启动服务
@@ -1829,11 +1846,11 @@ mv ~/tmp.node.ssl/ca.pem \
 
 rmdir ~/tmp.node.ssl
 
-# 准备配置文件
-mv ${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
-IP=192.168.48.142
+# 准备kubeconfig配置文件
+mv ~/tmp.node.kubeconfig/${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
 
 # 写入kubelet配置文件
+IP=192.168.48.142
 cat >/etc/kubernetes/kubelet-config.yaml <<EOF
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -1866,6 +1883,7 @@ tlsPrivateKeyFile: "/etc/kubernetes/ssl/${HOSTNAME}-key.pem"
 registerNode: true
 EOF
 
+# 写入Systemd Service文件
 cat >/etc/systemd/system/kubelet.service <<EOF
 [Unit]
 Description=Kubernetes Kubelet
@@ -2013,8 +2031,8 @@ ctr -n k8s.io i tag  registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/paus
 #### 配置kube-proxy
 
 ```bash
-# 移动配置
-mv kube-proxy.kubeconfig /etc/kubernetes/
+# 准备kubeconfig配置文件
+mv ~/tmp.node.kubeconfig/kube-proxy.kubeconfig /etc/kubernetes/
 
 # 创建YAML
 cat >/etc/kubernetes/kube-proxy-config.yaml <<EOF
@@ -2042,6 +2060,12 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+```
+
+#### 清理临时目录
+
+```bash
+rmdir ~/tmp.node.kubeconfig
 ```
 
 #### 启动服务
