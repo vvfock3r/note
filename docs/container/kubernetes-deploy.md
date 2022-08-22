@@ -2105,15 +2105,13 @@ Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721856    1577 pod_workers.
 ```bash
 # 拉取镜像
 [root@node-3 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-Image is up to date for sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
 
 # 重新打个tag
 [root@node-3 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
-k8s.gcr.io/pause:3.2
 
-# 删除无用的镜像
-[root@node-3 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
+[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
 
 # 查看当前镜像列表
 [root@node-3 ~]# ctr -n k8s.io image ls -q
@@ -2219,17 +2217,51 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
   value: "10.200.0.0/16"
 ```
 
-（4）部署
+（4）部署前下载镜像
 
 ```bash
-[root@node-1 ~]# kubectl apply -f calico.yaml 
+# 部署过程中会下载很多的镜像，
+[root@node-1 ~]# cat calico.yaml | grep -i 'image:'
+          image: docker.io/calico/cni:v3.24.0
+          image: docker.io/calico/cni:v3.24.0
+          image: docker.io/calico/node:v3.24.0
+          image: docker.io/calico/node:v3.24.0
+          image: docker.io/calico/kube-controllers:v3.24.0
+
+# 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
+[root@node-1 ~]# cat calico.yaml | grep -i 'image:' | awk '{print $2}' | while read line; do
+  crictl pull ${line}
+done
+
+# ----------------------------------------------------------------------------------------------
+# 还会下载pause镜像，需要科学上网，所以这里提前下载好
+
+# 拉取镜像
+[root@node-1 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+
+# 重新打个tag
+[root@node-1 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
+
+# 删除无用的镜像
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
+[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
+
+# 查看当前镜像列表
+[root@node-1 ~]# ctr -n k8s.io image ls -q
+k8s.gcr.io/pause:3.2
+
+# ----------------------------------------------------------------------------------------------
+
+# 部署
+[root@node-1 ~]# kubectl apply -f calico.yaml
 ```
 
 （5）检查状态
 
 ```bash
 # 检查Pod状态
-[root@node-1 ~]# kubectl get pods -A 
+[root@node-1 ~]# kubectl get pods -A
 NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
 kube-system   calico-kube-controllers-5b97f5d8cf-nmx9v   1/1     Running   0          11m
 kube-system   calico-node-djmlg                          1/1     Running   0          11m
