@@ -1405,6 +1405,12 @@ Cluster "kubernetes" set.
 User "system:node:node-3" set.
 Context "default" created.
 Switched to context "default".
+
+[root@node-1 kubeconfig]# ls -l
+total 24
+-rw------- 1 root root 6305 Aug 22 19:37 node-1.kubeconfig
+-rw------- 1 root root 6301 Aug 22 19:37 node-2.kubeconfig
+-rw------- 1 root root 6301 Aug 22 19:37 node-3.kubeconfig
 ```
 
 :::
@@ -1415,14 +1421,14 @@ Switched to context "default".
 
 ```bash
 kubectl config set-cluster kubernetes \
-    --certificate-authority=~/pki/ca.pem \
+    --certificate-authority=/root/pki/ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
     --kubeconfig=kube-proxy.kubeconfig
 
 kubectl config set-credentials system:kube-proxy \
-   --client-certificate=~/pki/kube-proxy.pem \
-   --client-key=~/pki/kube-proxy-key.pem \
+   --client-certificate=/root/pki/kube-proxy.pem \
+   --client-key=/root/pki/kube-proxy-key.pem \
    --embed-certs=true \
    --kubeconfig=kube-proxy.kubeconfig
 
@@ -1432,6 +1438,9 @@ kubectl config set-context default \
    --kubeconfig=kube-proxy.kubeconfig
 
 kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+
+[root@node-1 kubeconfig]# ls -l | grep kube-proxy.kubeconfig
+-rw------- 1 root root 6.1K Aug 22 20:22 kube-proxy.kubeconfig
 ```
 
 :::
@@ -1442,14 +1451,14 @@ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=~/pki/ca.pem \
+  --certificate-authority=/root/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=kube-controller-manager.kubeconfig
 
 kubectl config set-credentials system:kube-controller-manager \
-  --client-certificate=~/pki/kube-controller-manager.pem \
-  --client-key=~/pki/kube-controller-manager-key.pem \
+  --client-certificate=/root/pki/kube-controller-manager.pem \
+  --client-key=/root/pki/kube-controller-manager-key.pem \
   --embed-certs=true \
   --kubeconfig=kube-controller-manager.kubeconfig
 
@@ -1459,6 +1468,9 @@ kubectl config set-context default \
   --kubeconfig=kube-controller-manager.kubeconfig
 
 kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
+
+[root@node-1 kubeconfig]# ls -l | grep kube-controller-manager.kubeconfig
+-rw------- 1 root root 6333 Aug 22 20:23 kube-controller-manager.kubeconfig
 ```
 
 :::
@@ -1469,14 +1481,14 @@ kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconf
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=~/pki/ca.pem \
+  --certificate-authority=/root/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=kube-scheduler.kubeconfig
 
 kubectl config set-credentials system:kube-scheduler \
-  --client-certificate=~/pki/kube-scheduler.pem \
-  --client-key=~/pki/kube-scheduler-key.pem \
+  --client-certificate=/root/pki/kube-scheduler.pem \
+  --client-key=/root/pki/kube-scheduler-key.pem \
   --embed-certs=true \
   --kubeconfig=kube-scheduler.kubeconfig
 
@@ -1486,6 +1498,9 @@ kubectl config set-context default \
   --kubeconfig=kube-scheduler.kubeconfig
 
 kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
+
+[root@node-1 kubeconfig]# ls -l | grep kube-scheduler.kubeconfig
+-rw------- 1 root root 6283 Aug 22 20:24 kube-scheduler.kubeconfig
 ```
 
 :::
@@ -1496,14 +1511,14 @@ kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
 
 ```bash
 kubectl config set-cluster kubernetes \
-  --certificate-authority=~/pki/ca.pem \
+  --certificate-authority=/root/pki/ca.pem \
   --embed-certs=true \
   --server=https://127.0.0.1:6443 \
   --kubeconfig=admin.kubeconfig
 
 kubectl config set-credentials admin \
-  --client-certificate=~/pki/admin.pem \
-  --client-key=~/pki/admin-key.pem \
+  --client-certificate=/root/pki/admin.pem \
+  --client-key=/root/pki/admin-key.pem \
   --embed-certs=true \
   --kubeconfig=admin.kubeconfig
 
@@ -1513,6 +1528,9 @@ kubectl config set-context default \
   --kubeconfig=admin.kubeconfig
 
 kubectl config use-context default --kubeconfig=admin.kubeconfig
+
+[root@node-1 kubeconfig]# ls -l | grep admin.kubeconfig
+-rw------- 1 root root 6207 Aug 22 20:25 admin.kubeconfig
 ```
 
 :::
@@ -1536,9 +1554,9 @@ done
 [root@node-1 kubeconfig]# MASTERS="node-1 node-2" ; for instance in ${MASTERS}; do
     rsync -avzp \
         admin.kubeconfig \
-    	kube-controller-manager.kubeconfig \
-    	kube-scheduler.kubeconfig
-	${instance}:~/tmp.master.kubeconfig/
+        kube-controller-manager.kubeconfig \
+        kube-scheduler.kubeconfig \
+    ${instance}:~/tmp.master.kubeconfig/
 done
 ```
 
