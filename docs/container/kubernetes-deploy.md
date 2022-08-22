@@ -1844,6 +1844,8 @@ rmdir ~/tmp.master.kubeconfig
 
 #### 部署Containerd
 
+（1）在中转节点下载软件包并分发相关文件
+
 ```bash
 # 设定containerd的版本号
 VERSION=1.4.3
@@ -1852,19 +1854,27 @@ VERSION=1.4.3
 wget -c https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
 
 # 解压缩
-mkdir -p containerd
-tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd
+mkdir -p containerd && \
+tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd && \
+cd ./containerd
 
-# 复制需要的文件
-cd ./containerd && \
-cp etc/crictl.yaml /etc/ && \
-cp etc/systemd/system/containerd.service /etc/systemd/system/ && \
-cp -r usr /
+# 分发相关文件
+[root@node-1 containerd]# Containerds=(node-1 node-2 node-3) ; for instance in ${Containerds[@]}; do
+  scp etc/crictl.yaml ${instance}:/etc/ && \
+  scp etc/systemd/system/containerd.service ${instance}:/etc/systemd/system/ && \
+  scp -r usr ${instance}:/
+done
+```
 
-# 配置文件
+（2）在所有Containerd节点执行
+
+```bash
+# 创建配置文件
 mkdir -p /etc/containerd # 创建配置文件目录
 containerd config default > /etc/containerd/config.toml  # 默认配置生成配置文件
-vi /etc/containerd/config.toml  # 定制化配置(可选，这里不做任何修改)
+
+# 定制化配置(可选，这里不做任何修改)
+# vi /etc/containerd/config.toml
 
 # 启动服务
 systemctl restart containerd
@@ -1885,10 +1895,9 @@ systemctl status containerd
 # 准备证书文件
 mkdir -p /etc/kubernetes/ssl/
 
-mv ~/tmp.node.ssl/ca.pem \
-   ~/tmp.node.ssl/ca-key.pem \
-   ~/tmp.node.ssl/${HOSTNAME}-key.pem \
-   ~/tmp.node.ssl/${HOSTNAME}.pem \
+mv -f ~/tmp.node.ssl/ca.pem \
+      ~/tmp.node.ssl/${HOSTNAME}-key.pem \
+      ~/tmp.node.ssl/${HOSTNAME}.pem \
 /etc/kubernetes/ssl/
 
 rmdir ~/tmp.node.ssl
@@ -1897,7 +1906,7 @@ rmdir ~/tmp.node.ssl
 mv ~/tmp.node.kubeconfig/${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
 
 # 写入kubelet配置文件
-IP=192.168.48.142
+IP=192.168.48.144
 cat >/etc/kubernetes/kubelet-config.yaml <<EOF
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -1962,6 +1971,8 @@ EOF
 
 * `nginx-proxy`只需要在worker节点部署（即只需要在没有`apiserver `的节点部署）
 
+**（1）创建nginx配置文件**
+
 ```bash
 # 定义Master IP列表
 MASTERS=(192.168.48.142 192.168.48.143)
@@ -2023,7 +2034,11 @@ http {
   }
 }
 EOF
+```
 
+（2）创建Pod YAML
+
+```bash
 # 创建Proxy Pod
 mkdir -p /etc/kubernetes/manifests/
 
@@ -2044,7 +2059,7 @@ spec:
   priorityClassName: system-node-critical
   containers:
   - name: nginx-proxy
-    image: docker.io/library/nginx:1.19
+    image: docker.io/library/nginx:1.23
     imagePullPolicy: IfNotPresent
     resources:
       requests:
@@ -2069,10 +2084,41 @@ spec:
     hostPath:
       path: /etc/nginx
 EOF
+```
 
-# 在每个工作节点下载镜像
-crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-ctr -n k8s.io i tag  registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
+（3）下载pause镜像
+
+:::tip
+
+kubelet会下载pause镜像，从日志中可以看出来
+
+```bash
+[root@node-3 ~]# journalctl -f -u kubelet | grep pause
+Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721744    1577 remote_runtime.go:212] "RunPodSandbox from runtime service failed" err="rpc error: code = Unknown desc = failed to get sandbox image \"k8s.gcr.io/pause:3.2\": failed to pull image \"k8s.gcr.io/pause:3.2\": failed to pull and unpack image \"k8s.gcr.io/pause:3.2\": failed to resolve reference \"k8s.gcr.io/pause:3.2\": failed to do request: Head \"https://k8s.gcr.io/v2/pause/manifests/3.2\": dial tcp 108.177.125.82:443: connect: connection refused"
+Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721779    1577 kuberuntime_sandbox.go:70] "Failed to create sandbox for pod" err="rpc error: code = Unknown desc = failed to get sandbox image \"k8s.gcr.io/pause:3.2\": failed to pull image \"k8s.gcr.io/pause:3.2\": failed to pull and unpack image \"k8s.gcr.io/pause:3.2\": failed to resolve reference \"k8s.gcr.io/pause:3.2\": failed to do request: Head \"https://k8s.gcr.io/v2/pause/manifests/3.2\": dial tcp 108.177.125.82:443: connect: connection refused" pod="kube-system/nginx-proxy-node-3"
+Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721795    1577 kuberuntime_manager.go:815] "CreatePodSandbox for pod failed" err="rpc error: code = Unknown desc = failed to get sandbox image \"k8s.gcr.io/pause:3.2\": failed to pull image \"k8s.gcr.io/pause:3.2\": failed to pull and unpack image \"k8s.gcr.io/pause:3.2\": failed to resolve reference \"k8s.gcr.io/pause:3.2\": failed to do request: Head \"https://k8s.gcr.io/v2/pause/manifests/3.2\": dial tcp 108.177.125.82:443: connect: connection refused" pod="kube-system/nginx-proxy-node-3"
+Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721856    1577 pod_workers.go:951] "Error syncing pod, skipping" err="failed to \"CreatePodSandbox\" for \"nginx-proxy-node-3_kube-system(e3d470d334dd01ea91bcc4d1eb652387)\" with CreatePodSandboxError: \"Failed to create sandbox for pod \\\"nginx-proxy-node-3_kube-system(e3d470d334dd01ea91bcc4d1eb652387)\\\": rpc error: code = Unknown desc = failed to get sandbox image \\\"k8s.gcr.io/pause:3.2\\\": failed to pull image \\\"k8s.gcr.io/pause:3.2\\\": failed to pull and unpack image \\\"k8s.gcr.io/pause:3.2\\\": failed to resolve reference \\\"k8s.gcr.io/pause:3.2\\\": failed to do request: Head \\\"https://k8s.gcr.io/v2/pause/manifests/3.2\\\": dial tcp 108.177.125.82:443: connect: connection refused\"" pod="kube-system/nginx-proxy-node-3" podUID=e3d470d334dd01ea91bcc4d1eb652387
+```
+
+:::
+
+```bash
+# 拉取镜像
+[root@node-3 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+Image is up to date for sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
+
+# 重新打个tag
+[root@node-3 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
+k8s.gcr.io/pause:3.2
+
+# 删除无用的镜像
+[root@node-3 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+
+# 查看当前镜像列表
+[root@node-3 ~]# ctr -n k8s.io image ls -q
+docker.io/library/nginx:1.23
+k8s.gcr.io/pause:3.2
 ```
 
 #### 配置kube-proxy
@@ -2118,14 +2164,21 @@ rmdir ~/tmp.node.kubeconfig
 #### 启动服务
 
 ```bash
+# 启动服务
 systemctl daemon-reload
-
 systemctl restart kubelet kube-proxy && systemctl enable kubelet kube-proxy
-
 systemctl status kubelet && systemctl status kube-proxy
 
+# 查看日志
 journalctl -f -u kubelet
 journalctl -f -u kube-proxy
+
+# Node节点status为NotReady
+[root@node-1 ~]# kubectl get node
+NAME     STATUS     ROLES    AGE     VERSION
+node-1   NotReady   <none>   15m     v1.24.4
+node-2   NotReady   <none>   15m     v1.24.4
+node-3   NotReady   <none>   4m24s   v1.24.4
 ```
 
 ### 部署网络插件Calico
