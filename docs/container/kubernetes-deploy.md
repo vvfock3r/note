@@ -1571,8 +1571,7 @@ done
 （1）拷贝etcd证书
 
 ```bash
-[root@node-1 ~]# mkdir -p /etc/etcd/ssl /var/lib/etcd
-[root@node-1 ~]# chmod 700 /var/lib/etcd
+[root@node-1 ~]# mkdir -p /etc/etcd/ssl /var/lib/etcd && chmod 700 /var/lib/etcd
 [root@node-1 ~]# mv ~/tmp.etcd.ssl/ca.pem \
                     ~/tmp.etcd.ssl/kubernetes.pem \
                     ~/tmp.etcd.ssl/kubernetes-key.pem \
@@ -1638,9 +1637,13 @@ systemctl daemon-reload && systemctl enable etcd && systemctl restart etcd
 ```bash
 ETCDCTL_API=3 etcdctl member list \
   --endpoints=https://127.0.0.1:2379 \
-  --cacert=/etc/etcd/ca.pem \
-  --cert=/etc/etcd/kubernetes.pem \
-  --key=/etc/etcd/kubernetes-key.pem
+  --cacert=/etc/etcd/ssl/ca.pem \
+  --cert=/etc/etcd/ssl/kubernetes.pem \
+  --key=/etc/etcd/ssl/kubernetes-key.pem
+  
+2c3beb1e7481123e, started, node-2, https://192.168.48.143:2380, https://192.168.48.143:2379, false
+369510e61aee9b6f, started, node-3, https://192.168.48.144:2380, https://192.168.48.144:2379, false
+e8775739ad328e98, started, node-1, https://192.168.48.142:2380, https://192.168.48.142:2379, false  
 ```
 
 ### 部署Kubernetes Master节点
@@ -1791,12 +1794,6 @@ WantedBy=multi-user.target
 EOF
 ```
 
-#### 清理临时目录
-
-```bash
-rmdir ~/tmp.master.kubeconfig
-```
-
 #### 启动服务
 
 ```bash
@@ -1826,7 +1823,7 @@ kubectl是用来管理kubernetes集群的客户端工具，前面我们已经下
 mkdir ~/.kube/
 
 # 把管理员的配置文件移动到kubectl的默认目录
-mv ~/admin.kubeconfig ~/.kube/config
+mv ~/tmp.master.kubeconfig/admin.kubeconfig ~/.kube/config
 
 # 测试
 kubectl get nodes  # 输出结果 No resources found
@@ -1835,6 +1832,12 @@ kubectl get nodes  # 输出结果 No resources found
 # 这里定义RBAC规则允许apiserver调用kubelet API
 # 只需要在任意一个Master节点执行一次
 kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
+```
+
+#### 清理临时目录
+
+```bash
+rmdir ~/tmp.master.kubeconfig
 ```
 
 ### 部署Kubernetes Node节点
@@ -1846,14 +1849,16 @@ kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=syst
 VERSION=1.4.3
 
 # 下载压缩包
-wget https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
+wget -c https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
 
 # 解压缩
-mkdir -p containerd && tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd && cd ./containerd
+mkdir -p containerd && \
+tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd
 
 # 复制需要的文件
-cp etc/crictl.yaml /etc/
-cp etc/systemd/system/containerd.service /etc/systemd/system/
+cd ./containerd && \
+cp etc/crictl.yaml /etc/ && \
+cp etc/systemd/system/containerd.service /etc/systemd/system/ && \
 cp -r usr /
 
 # 配置文件
