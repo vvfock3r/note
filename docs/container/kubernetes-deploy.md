@@ -2197,14 +2197,14 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 
 ```bash
 # 修改前
-- name: IP
-  value: "autodetect"
+            - name: IP
+              value: "autodetect"
   
 # 修改后
-- name: IP
-  valueFrom:
-    fieldRef:
-      fieldPath: status.hostIP
+            - name: IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
 ```
 
 （3）修改CIDR
