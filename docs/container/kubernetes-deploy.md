@@ -1852,7 +1852,7 @@ VERSION=1.4.3
 wget -c https://github.com/containerd/containerd/releases/download/v${VERSION}/cri-containerd-cni-${VERSION}-linux-amd64.tar.gz
 
 # 解压缩
-mkdir -p containerd && \
+mkdir -p containerd
 tar zxf cri-containerd-cni-${VERSION}-linux-amd64.tar.gz -C ./containerd
 
 # 复制需要的文件
@@ -1864,7 +1864,7 @@ cp -r usr /
 # 配置文件
 mkdir -p /etc/containerd # 创建配置文件目录
 containerd config default > /etc/containerd/config.toml  # 默认配置生成配置文件
-vi /etc/containerd/config.toml  # 定制化配置（可选）
+vi /etc/containerd/config.toml  # 定制化配置(可选，这里不做任何修改)
 
 # 启动服务
 systemctl restart containerd
