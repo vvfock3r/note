@@ -1284,10 +1284,11 @@ specifically, section 10.2.3 ("Information Requirements").
 
 ```bash
 [root@node-1 pki]# NODES=(node-1 node-2 node-3) ; for instance in ${NODES[@]}; do
-	scp ca.pem \
-		${instance}-key.pem \
-		${instance}.pem \
-	root@${instance}:~/
+    rsync -avzp \
+        ca.pem \
+        ${instance}-key.pem \
+        ${instance}.pem \
+    root@${instance}:~/tmp.node.ssl/
 done
 ```
 
@@ -1295,15 +1296,16 @@ done
 
 ```bash
 [root@node-1 pki]# MASTERS=(node-1 node-2) ; for instance in ${MASTERS[@]}; do
-	scp ca.pem \
+    rsync -avzp \
+        ca.pem \
         ca-key.pem \
         kubernetes-key.pem \
         kubernetes.pem \
-		service-account-key.pem \
-		service-account.pem \
-		proxy-client.pem \
-		proxy-client-key.pem \
-	root@${instance}:~/
+        service-account-key.pem \
+        service-account.pem \
+        proxy-client.pem \
+        proxy-client-key.pem \
+    root@${instance}:~/tmp.master.ssl/
 done
 ```
 
@@ -1312,11 +1314,10 @@ done
 ```bash
 [root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do	
 	rsync -avzp \
-        ca.pem \
-        ca-key.pem \
+        ca.pem \        
         kubernetes-key.pem \
         kubernetes.pem \
-    root@${instance}:~/ssl-etcd/
+    root@${instance}:~/tmp.etcd.ssl/
 done
 ```
 
@@ -1517,9 +1518,13 @@ done
 （1）拷贝etcd证书
 
 ```bash
-[root@node-1 pki]# mkdir -p /etc/etcd/ssl /var/lib/etcd
-[root@node-1 pki]# chmod 700 /var/lib/etcd
-[root@node-1 pki]# mv ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
+[root@node-1 ~]# mkdir -p /etc/etcd/ssl /var/lib/etcd
+[root@node-1 ~]# chmod 700 /var/lib/etcd
+[root@node-1 ~]# mv ~/tmp.etcd.ssl/ca.pem \
+                    ~/tmp.etcd.ssl/kubernetes.pem \
+                    ~/tmp.etcd.ssl/kubernetes-key.pem \
+                 /etc/etcd/ssl/
+[root@node-1 ~]# rmdir ~/tmp.etcd.ssl
 ```
 
 （2）配置etcd.service文件
@@ -1543,12 +1548,12 @@ Documentation=https://github.com/coreos
 Type=notify
 ExecStart=/usr/local/bin/etcd \\
   --name ${ETCD_NAME} \\
-  --cert-file=/etc/etcd/kubernetes.pem \\
-  --key-file=/etc/etcd/kubernetes-key.pem \\
-  --peer-cert-file=/etc/etcd/kubernetes.pem \\
-  --peer-key-file=/etc/etcd/kubernetes-key.pem \\
-  --trusted-ca-file=/etc/etcd/ca.pem \\
-  --peer-trusted-ca-file=/etc/etcd/ca.pem \\
+  --cert-file=/etc/etcd/ssl/kubernetes.pem \\
+  --key-file=/etc/etcd/ssl/kubernetes-key.pem \\
+  --peer-cert-file=/etc/etcd/ssl/kubernetes.pem \\
+  --peer-key-file=/etc/etcd/ssl/kubernetes-key.pem \\
+  --trusted-ca-file=/etc/etcd/ssl/ca.pem \\
+  --peer-trusted-ca-file=/etc/etcd/ssl/ca.pem \\
   --peer-client-cert-auth \\
   --client-cert-auth \\
   --initial-advertise-peer-urls https://${ETCD_IP}:2380 \\
@@ -1596,13 +1601,20 @@ ETCDCTL_API=3 etcdctl member list \
 #### 部署apiserver
 
 ```bash
-# 创建kubernetes必要目录
-mkdir -p /etc/kubernetes/ssl
 # 准备证书文件
-mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
-    service-account-key.pem service-account.pem \
-    proxy-client.pem proxy-client-key.pem \
+mkdir -p /etc/kubernetes/ssl
+
+mv ~/tmp.master.ssl/ca.pem \
+   ~/tmp.master.ssl/ca-key.pem \
+   ~/tmp.master.ssl/kubernetes.pem \
+   ~/tmp.master.ssl/kubernetes-key.pem \
+   ~/tmp.master.ssl/service-account.pem \
+   ~/tmp.master.ssl/service-account-key.pem \
+   ~/tmp.master.ssl/proxy-client.pem \
+   ~/tmp.master.ssl/proxy-client-key.pem \
 /etc/kubernetes/ssl
+
+rmdir ~/tmp.master.ssl
 
 # 配置kube-apiserver.service
 # 本机内网ip
@@ -1612,7 +1624,7 @@ APISERVER_COUNT=2
 # etcd节点
 ETCD_ENDPOINTS=(192.168.48.142 192.168.48.143 192.168.48.144)
 # 创建 apiserver service
-cat <<EOF > /etc/systemd/system/kube-apiserver.service
+cat >/etc/systemd/system/kube-apiserver.service <<EOF
 [Unit]
 Description=Kubernetes API Server
 Documentation=https://github.com/kubernetes/kubernetes
@@ -1670,7 +1682,7 @@ EOF
 mv kube-controller-manager.kubeconfig /etc/kubernetes/
 
 # 创建 kube-controller-manager.service
-cat <<EOF > /etc/systemd/system/kube-controller-manager.service
+cat >/etc/systemd/system/kube-controller-manager.service <<EOF
 [Unit]
 Description=Kubernetes Controller Manager
 Documentation=https://github.com/kubernetes/kubernetes
@@ -1705,7 +1717,7 @@ EOF
 mv kube-scheduler.kubeconfig /etc/kubernetes
 
 # 创建 scheduler service 文件
-cat <<EOF > /etc/systemd/system/kube-scheduler.service
+cat >/etc/systemd/system/kube-scheduler.service <<EOF
 [Unit]
 Description=Kubernetes Scheduler
 Documentation=https://github.com/kubernetes/kubernetes
@@ -1806,14 +1818,23 @@ systemctl status containerd
 * [https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/](https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/)
 
 ```bash
+# 准备证书文件
 mkdir -p /etc/kubernetes/ssl/
-mv ${HOSTNAME}-key.pem ${HOSTNAME}.pem ca.pem ca-key.pem /etc/kubernetes/ssl/
 
+mv ~/tmp.node.ssl/ca.pem \
+   ~/tmp.node.ssl/ca-key.pem \
+   ~/tmp.node.ssl/${HOSTNAME}-key.pem \
+   ~/tmp.node.ssl/${HOSTNAME}.pem \
+/etc/kubernetes/ssl/
+
+rmdir ~/tmp.node.ssl
+
+# 准备配置文件
 mv ${HOSTNAME}.kubeconfig /etc/kubernetes/kubeconfig
 IP=192.168.48.142
 
 # 写入kubelet配置文件
-cat <<EOF > /etc/kubernetes/kubelet-config.yaml
+cat >/etc/kubernetes/kubelet-config.yaml <<EOF
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
 authentication:
@@ -1845,7 +1866,7 @@ tlsPrivateKeyFile: "/etc/kubernetes/ssl/${HOSTNAME}-key.pem"
 registerNode: true
 EOF
 
-cat <<EOF > /etc/systemd/system/kubelet.service
+cat >/etc/systemd/system/kubelet.service <<EOF
 [Unit]
 Description=Kubernetes Kubelet
 Documentation=https://github.com/kubernetes/kubernetes
@@ -1884,7 +1905,7 @@ MASTERS=(192.168.48.142 192.168.48.143)
 mkdir -p /etc/nginx
 
 # 创建Nginx配置文件(根据实际情况修改下方upstream部分)
-cat <<EOF > /etc/nginx/nginx.conf
+cat >/etc/nginx/nginx.conf <<EOF
 error_log stderr notice;
 
 worker_processes 2;
@@ -1941,7 +1962,7 @@ EOF
 # 创建Proxy Pod
 mkdir -p /etc/kubernetes/manifests/
 
-cat <<EOF > /etc/kubernetes/manifests/nginx-proxy.yaml
+cat >/etc/kubernetes/manifests/nginx-proxy.yaml <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1996,7 +2017,7 @@ ctr -n k8s.io i tag  registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/paus
 mv kube-proxy.kubeconfig /etc/kubernetes/
 
 # 创建YAML
-cat <<EOF > /etc/kubernetes/kube-proxy-config.yaml
+cat >/etc/kubernetes/kube-proxy-config.yaml <<EOF
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 bindAddress: 0.0.0.0
@@ -2007,7 +2028,7 @@ mode: ipvs
 EOF
 
 # 创建System Service
-cat <<EOF > /etc/systemd/system/kube-proxy.service
+cat >/etc/systemd/system/kube-proxy.service <<EOF
 [Unit]
 Description=Kubernetes Kube Proxy
 Documentation=https://github.com/kubernetes/kubernetes
@@ -2048,7 +2069,7 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 
 （2）修改IP自动发现
 
-当kubelet的启动参数中存在--node-ip的时候，以host-network模式启动的pod的status.hostIP字段就会自动填入kubelet中指定的ip地址
+当kubelet的启动参数中存在`--node-ip`的时候，以host-network模式启动的pod的status.hostIP字段就会自动填入kubelet中指定的ip地址
 
 ```bash
 # 修改前
