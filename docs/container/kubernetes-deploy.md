@@ -1,13 +1,14 @@
-# kubernetes部署方式
+# kubernetes部署
+
+## 部署方式
 
 文档：[https://kubernetes.io/docs/setup/production-environment/tools/](https://kubernetes.io/docs/setup/production-environment/tools/)
 
-| 部署方式   | 复杂性 | 灵活性 | 描述                                            |
-| ---------- | ------ | ------ | ----------------------------------------------- |
-| Kubespray  | 简单   | 自定义 | 基于`kubeadm`和`Ansible`来部署                  |
-| kubeadm    | 适中   | 自定义 | `Kubeadm `是一个快捷搭建`kubernetes`的安装工具  |
-| 二进制部署 | 复杂   | 灵活   | 二进制部署                                      |
-| kops       | 未知   | 未知   | 在AWS上安装Kubernetes群集，本文档不考虑这种方式 |
+| 部署方式   | 复杂性 | 灵活性 | 描述                                           |
+| ---------- | ------ | ------ | ---------------------------------------------- |
+| Kubespray  | 简单   | 自定义 | 基于`kubeadm`和`Ansible`来部署                 |
+| kubeadm    | 适中   | 自定义 | `Kubeadm `是一个快捷搭建`kubernetes`的安装工具 |
+| 二进制部署 | 最复杂 | 最灵活 | 推荐生产环境使用                               |
 
 
 
@@ -644,10 +645,10 @@ gather_timeout = 300    # 设置超时时间300秒
 
 **（2）版本说明**
 
-| 组件       | 版本         |
-| ---------- | ------------ |
-| OS         | `Centos 7.9` |
-| kubernetes | `v1.24.4`    |
+| 组件       | 版本         | 备注                 |
+| ---------- | ------------ | -------------------- |
+| OS         | `Centos 7.9` |                      |
+| kubernetes | `v1.24.4`    | 同样支持部署其他版本 |
 
 **（3）科学上网**
 
@@ -657,7 +658,7 @@ gather_timeout = 300    # 设置超时时间300秒
 
 支持主流系统，内存最低2G，CPU最低2核，磁盘30G以上
 
-### 设置中转节点
+### 中转节点
 
 为了方便文件的分发，我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
 
@@ -736,7 +737,7 @@ done
 
 ### 生成所有证书
 
-#### **下载cfssl工具**
+#### **准备工作：下载cfssl工具**
 
 ```bash
 # 下载二进制工具
@@ -1277,15 +1278,16 @@ specifically, section 10.2.3 ("Information Requirements").
 
 :::
 
-
-
-#### 分发客户端、服务端证书
+#### 分发证书：Node、Master、Etcd
 
 （1）分发Node节点需要的证书和私钥
 
 ```bash
 [root@node-1 pki]# NODES=(node-1 node-2 node-3) ; for instance in ${NODES[@]}; do
-  scp ca.pem ${instance}-key.pem ${instance}.pem root@${instance}:~/
+	scp ca.pem \
+		${instance}-key.pem \
+		${instance}.pem \
+	root@${instance}:~/
 done
 ```
 
@@ -1293,8 +1295,15 @@ done
 
 ```bash
 [root@node-1 pki]# MASTERS=(node-1 node-2) ; for instance in ${MASTERS[@]}; do
-    scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
-    service-account-key.pem service-account.pem proxy-client.pem proxy-client-key.pem root@${instance}:~/
+	scp ca.pem \
+        ca-key.pem \
+        kubernetes-key.pem \
+        kubernetes.pem \
+		service-account-key.pem \
+		service-account.pem \
+		proxy-client.pem \
+		proxy-client-key.pem \
+	root@${instance}:~/
 done
 ```
 
@@ -1302,7 +1311,11 @@ done
 
 ```bash
 [root@node-1 pki]# ETCDS=(node-1 node-2 node-3) ; for instance in ${ETCDS[@]}; do
-  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem root@${instance}:~/
+	scp ca.pem \
+		ca-key.pem \
+		kubernetes-key.pem \
+		kubernetes.pem
+	root@${instance}:~/
 done
 ```
 
@@ -1451,23 +1464,28 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=admin.kubeconfig
 ```
 
-#### 分发配置文件
+#### 分发配置文件：Node、Master
 
-把kubelet和kube-proxy需要的kubeconfig配置分发到每个worker节点
+把kubelet和kube-proxy需要的kubeconfig配置分发到每个Node节点
 
 ```bash
-[root@node-1 pki]# WORKERS="node-1 node-2 node-3"
-[root@node-1 pki]# for instance in ${WORKERS}; do
-    scp ${instance}.kubeconfig kube-proxy.kubeconfig ${instance}:~/
+[root@node-1 pki]# NODES="node-1 node-2 node-3"
+[root@node-1 pki]# for instance in ${NODES}; do
+    scp ${instance}.kubeconfig \
+    	kube-proxy.kubeconfig \
+	${instance}:~/
 done
 ```
 
-把kube-controller-manager和kube-scheduler需要的kubeconfig配置分发到master节点
+把kube-controller-manager和kube-scheduler需要的kubeconfig配置分发到Master节点
 
 ```bash
 [root@node-1 pki]# MASTERS="node-1 node-2"
 [root@node-1 pki]# for instance in ${MASTERS}; do
-    scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
+    scp admin.kubeconfig \
+    	kube-controller-manager.kubeconfig \
+    	kube-scheduler.kubeconfig
+	${instance}:~/
 done
 ```
 
