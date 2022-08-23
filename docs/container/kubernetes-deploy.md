@@ -1818,6 +1818,8 @@ tcp6       0      0 :::10257                :::*                    LISTEN      
 
 kubectl是用来管理kubernetes集群的客户端工具，前面我们已经下载到了所有的master节点。下面我们来配置这个工具，让它可以使用。
 
+（1）配置kubectl
+
 ```bash
 # 创建kubectl的配置目录
 mkdir ~/.kube/
@@ -1832,6 +1834,16 @@ kubectl get nodes  # 输出结果 No resources found
 # 这里定义RBAC规则允许apiserver调用kubelet API
 # 只需要在任意一个Master节点执行一次
 kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
+```
+
+（2）启用 shell 自动补全功能
+
+文档：[https://kubernetes.io/zh-cn/docs/tasks/tools/install-kubectl-linux/#optional-kubectl-configurations](https://kubernetes.io/zh-cn/docs/tasks/tools/install-kubectl-linux/#optional-kubectl-configurations)
+
+```bash
+yum install -y bash-completion
+
+echo 'source <(kubectl completion bash)' >>~/.bashrc
 ```
 
 #### 清理临时目录
@@ -2303,7 +2315,7 @@ node-3   Ready    <none>   29m   v1.24.4
 
 ```bash
 # 拷贝yaml文件
-cp ~/kubernetes/src/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
+cp ~/pkg/kubernetes/src/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
 
 # 设置为 kube-dns service ip,这里并没有用到kube-dns，所以置为空
 sed -ri 's/,__PILLAR__DNS__SERVER__//g' nodelocaldns.yaml
@@ -2324,6 +2336,10 @@ sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
 # 使用科学上网提前下载镜像
 [root@node-1 ~]# grep image nodelocaldns.yaml 
         image: k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1
+
+# 参考命令
+docker image save k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1 -o node.tar # 导出镜像
+ctr -n k8s.io image import  node.tar # 导入镜像
 
 # 部署
 [root@node-1 ~]# kubectl apply -f nodelocaldns.yaml 
