@@ -2420,6 +2420,83 @@ kube-system   node-local-dns-pt79q                       1/1     Running   0    
 
 #### （1）Dashboard
 
+Github：[https://github.com/kubernetes/dashboard](https://github.com/kubernetes/dashboard)
+
+文档
+
+* [https://kubernetes.io/zh-cn/docs/tasks/access-application-cluster/web-ui-dashboard/](https://kubernetes.io/zh-cn/docs/tasks/access-application-cluster/web-ui-dashboard/)
+* [https://github.com/kubernetes/dashboard/tree/master/docs](https://github.com/kubernetes/dashboard/tree/master/docs)（重点）
+
+（1）部署Dashboard
+
+```bash
+# 下载Yaml文件
+[root@node-1 ~]# wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
+
+# 修改Yaml文件
+[root@node-1 ~]# vim recommended.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  type: NodePort                    # 新增这一行
+  ports:
+    - port: 443
+      targetPort: 8443
+      nodePort: 30000               # 新增这一行
+  selector:
+    k8s-app: kubernetes-dashboard
+    
+# 部署
+[root@node-1 ~]# kubectl apply -f recommended.yaml
+```
+
+（2）创建管理员用户
+
+```bash
+# 生成YAML文件
+[root@node-1 ~]# cat > kubernetes-dashboard-admin-user.yaml <<EOF
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+
+# 创建用户
+[root@node-1 ~]# kubectl apply -f kubernetes-dashboard-admin-user.yaml 
+serviceaccount/admin-user created
+clusterrolebinding.rbac.authorization.k8s.io/admin-user created
+
+# 创建token
+[root@node-1 ~]# kubectl -n kubernetes-dashboard create token admin-user
+eyJhbGciOiJSUzI1NiIsImtpZCI6IjQtcDlTOHZOSU1BLTlkcjFfX2tlZV9xOWF2R3E1aTVtbE0tWjdkbTY2aHMifQ.eyJhdWQiOlsiYXBpIiwidmF1bHQiLCJmYWN0b3JzIl0sImV4cCI6MTY2MTI1OTg2OSwiaWF0IjoxNjYxMjU2MjY5LCJpc3MiOiJhcGkiLCJrdWJlcm5ldGVzLmlvIjp7Im5hbWVzcGFjZSI6Imt1YmVybmV0ZXMtZGFzaGJvYXJkIiwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImFkbWluLXVzZXIiLCJ1aWQiOiJhYjVkZjA4Ni00MzM0LTRiNWItYTgxNC03NDQ1ZDNhYTI0NzcifX0sIm5iZiI6MTY2MTI1NjI2OSwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmVybmV0ZXMtZGFzaGJvYXJkOmFkbWluLXVzZXIifQ.Ls55F4zda0IGsKuqQAb8J_FOsdRieLE57DLH_p1OTlwPxM4z3rrHRi6CbzByWGo05qYw2xWptSpLL2plwP-s2gxM8Z4Gmw3Mk4tWoVW5_OmZ48kDSCMirSZkrCYRImMxlOjZl3_tl06igIFNeCfkJVJr1aWFktV59cF-qD42pw_H5917xcP_KbgKnTNMasnsd65mYbfqsEJO2_mQSo36nO3KRF3vakaqi7kSJ2zDORek4Qv4C5HWzr-h6HhuN5FlShQdPwQqQvDcX4wsixWyDp4LF6xIDO-54N9eFGinlCmc4v1rnRuCLQlo3tlNIqgJ_ZB1ZMywvhlN7sktnLRuDA
+
+# 如何查看token?
+```
+
+（3）访问 https://192.168.48.142:30000/
+
+![image-20220823201131176](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220823201131176.png)
+
 #### （2）Ingress NGINX Controller
 
 #### （3）Metrics Server
