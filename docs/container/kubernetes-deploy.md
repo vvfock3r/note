@@ -257,6 +257,43 @@ EOF
 
 ## 
 
+## 镜像导出和导入
+
+### pause
+
+```bash
+# 拉取镜像
+[root@node-3 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+
+# 重新打个tag
+[root@node-3 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
+
+# 删除一些无用的镜像
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
+[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
+
+# 查看当前镜像列表
+[root@node-3 ~]# ctr -n k8s.io image ls -q
+docker.io/library/nginx:1.23
+k8s.gcr.io/pause:3.2
+```
+
+### dns-node-cache
+
+```bash
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1
+
+# 导出镜像
+docker image save k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1 -o node.tar 
+
+# 导入镜像
+ctr -n k8s.io image import  node.tar
+```
+
+## 
+
 ## 🍁 使用kubespray部署
 
 文档1：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubespray/)
@@ -2102,6 +2139,10 @@ EOF
 
 :::tip
 
+镜像下载参考：<a href="#pause" style="text-decoration:none;">pause</a>
+
+:::
+
 kubelet会下载pause镜像，从日志中可以看出来
 
 ```bash
@@ -2110,25 +2151,6 @@ Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721744    1577 remote_runti
 Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721779    1577 kuberuntime_sandbox.go:70] "Failed to create sandbox for pod" err="rpc error: code = Unknown desc = failed to get sandbox image \"k8s.gcr.io/pause:3.2\": failed to pull image \"k8s.gcr.io/pause:3.2\": failed to pull and unpack image \"k8s.gcr.io/pause:3.2\": failed to resolve reference \"k8s.gcr.io/pause:3.2\": failed to do request: Head \"https://k8s.gcr.io/v2/pause/manifests/3.2\": dial tcp 108.177.125.82:443: connect: connection refused" pod="kube-system/nginx-proxy-node-3"
 Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721795    1577 kuberuntime_manager.go:815] "CreatePodSandbox for pod failed" err="rpc error: code = Unknown desc = failed to get sandbox image \"k8s.gcr.io/pause:3.2\": failed to pull image \"k8s.gcr.io/pause:3.2\": failed to pull and unpack image \"k8s.gcr.io/pause:3.2\": failed to resolve reference \"k8s.gcr.io/pause:3.2\": failed to do request: Head \"https://k8s.gcr.io/v2/pause/manifests/3.2\": dial tcp 108.177.125.82:443: connect: connection refused" pod="kube-system/nginx-proxy-node-3"
 Aug 22 23:28:58 node-3 kubelet[1577]: E0822 23:28:58.721856    1577 pod_workers.go:951] "Error syncing pod, skipping" err="failed to \"CreatePodSandbox\" for \"nginx-proxy-node-3_kube-system(e3d470d334dd01ea91bcc4d1eb652387)\" with CreatePodSandboxError: \"Failed to create sandbox for pod \\\"nginx-proxy-node-3_kube-system(e3d470d334dd01ea91bcc4d1eb652387)\\\": rpc error: code = Unknown desc = failed to get sandbox image \\\"k8s.gcr.io/pause:3.2\\\": failed to pull image \\\"k8s.gcr.io/pause:3.2\\\": failed to pull and unpack image \\\"k8s.gcr.io/pause:3.2\\\": failed to resolve reference \\\"k8s.gcr.io/pause:3.2\\\": failed to do request: Head \\\"https://k8s.gcr.io/v2/pause/manifests/3.2\\\": dial tcp 108.177.125.82:443: connect: connection refused\"" pod="kube-system/nginx-proxy-node-3" podUID=e3d470d334dd01ea91bcc4d1eb652387
-```
-
-:::
-
-```bash
-# 拉取镜像
-[root@node-3 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-
-# 重新打个tag
-[root@node-3 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
-
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
-[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
-
-# 查看当前镜像列表
-[root@node-3 ~]# ctr -n k8s.io image ls -q
-docker.io/library/nginx:1.23
-k8s.gcr.io/pause:3.2
 ```
 
 #### 配置kube-proxy
@@ -2231,8 +2253,14 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 
 （4）部署前下载镜像
 
+:::tip
+
+镜像下载参考：<a href="#pause" style="text-decoration:none;">pause</a>
+
+:::
+
 ```bash
-# 部署过程中会下载很多的镜像，
+# 部署过程中会下载很多的镜像
 [root@node-1 ~]# cat calico.yaml | grep -i 'image:'
           image: docker.io/calico/cni:v3.24.0
           image: docker.io/calico/cni:v3.24.0
@@ -2245,25 +2273,7 @@ curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
   crictl pull ${line}
 done
 
-# ----------------------------------------------------------------------------------------------
-# 还会下载pause镜像，需要科学上网，所以这里提前下载好
-
-# 拉取镜像
-[root@node-1 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-
-# 重新打个tag
-[root@node-1 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
-
-# 删除无用的镜像
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
-[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
-
-# 查看当前镜像列表
-[root@node-1 ~]# ctr -n k8s.io image ls -q
-k8s.gcr.io/pause:3.2
-
-# ----------------------------------------------------------------------------------------------
+# 同时还会下载pause镜像,需要科学上网，参考上面的下载地址
 
 # 部署
 [root@node-1 ~]# kubectl apply -f calico.yaml
@@ -2313,6 +2323,12 @@ node-3   Ready    <none>   29m   v1.24.4
 
 文档：[https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns](https://github.com/kubernetes/kubernetes/tree/v1.24.3/cluster/addons/dns/nodelocaldns)
 
+:::tip
+
+镜像下载参考：<a href="#dns-node-cache" style="text-decoration:none;">dns-node-cache</a>
+
+:::
+
 ```bash
 # 拷贝yaml文件
 cp ~/pkg/kubernetes/src/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml .
@@ -2333,14 +2349,10 @@ sed -ri 's/__PILLAR__CLUSTER__DNS__/10.233.0.10/g' nodelocaldns.yaml
 # 设置集群外部查询的上游服务器
 sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
 
-# 使用科学上网提前下载镜像
+# 使用科学上网提前下载镜像,参考上面地址
 [root@node-1 ~]# grep image nodelocaldns.yaml 
         image: k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1
-
-# 参考命令
-docker image save k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1 -o node.tar # 导出镜像
-ctr -n k8s.io image import  node.tar # 导入镜像
-
+        
 # 部署
 [root@node-1 ~]# kubectl apply -f nodelocaldns.yaml 
 
@@ -2348,5 +2360,6 @@ ctr -n k8s.io image import  node.tar # 导入镜像
 [root@node-1 ~]# kubectl get pods -A | grep node-local-dns
 kube-system   node-local-dns-8wqmd                       1/1     Running   0          12s
 kube-system   node-local-dns-wdgkw                       1/1     Running   0          12s
-kube-system   node-local-dns-z76pz                       1/1     Running   0          12s
+kube-system   node-local-dns-z76pz                       1/1     Running   0          12s        
 ```
+
