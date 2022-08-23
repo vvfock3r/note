@@ -2504,17 +2504,34 @@ eyJhbGciOiJSUzI1NiIsImtpZCI6IjQtcDlTOHZOSU1BLTlkcjFfX2tlZV9xOWF2R3E1aTVtbE0tWjdk
 Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server)
 
 ```bash
+# 在安装前，我们可以执行一下top子命令，输出如下
+[root@node-1 ~]# kubectl top node
+error: Metrics API not available # 要执行top子命令需要先安装Metrics Server
+
 # 安装高可用版本，此配置要求集群至少有2个可以调度Metrics Server的节点
 
 # 下载YAML
 wget https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/high-availability.yaml \
      -O metrics-server-v0.6.1-high-availability.yaml
 
-# 查看镜像(需要科学上网，参考上方地址)
+# 查看镜像
 [root@node-1 ~]# cat metrics-server-v0.6.1-high-availability.yaml | grep 'image:'
         image: k8s.gcr.io/metrics-server/metrics-server:v0.6.1
         
 # 部署
+[root@node-1 ~]# kubectl apply -f metrics-server-v0.6.1-high-availability.yaml
+
+# 查看
+[root@node-1 ~]# kubectl get pods -A | grep metrics-server
+kube-system            metrics-server-845994f88c-btd55             1/1     Running   0                   56s
+kube-system            metrics-server-845994f88c-d4r9l             1/1     Running   0                   56s
+
+# 查看node资源使用率
+[root@node-1 ~]# kubectl top node --show-capacity=true
+NAME     CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+node-1   274m         6%     1233Mi          67%       
+node-2   304m         7%     1257Mi          69%       
+node-3   183m         4%     1130Mi          62%
 ```
 
 #### （4）Istio
