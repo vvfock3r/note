@@ -171,7 +171,26 @@ EOF
 
 ### （8）调整内核参数
 
-::: tip 
+```bash
+[root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+EOF
+
+[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_nonlocal_bind = 1
+net.ipv4.ip_forward = 1
+vm.swappiness = 0
+vm.overcommit_memory = 1
+```
+
+::: warning
 
 若出现如下报错
 
@@ -201,25 +220,6 @@ bridge                151336  1 br_netfilter
 ```
 
 :::
-
-```bash
-[root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
-EOF
-
-[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
-```
 
 ### （9）安装常用软件包
 
@@ -1873,7 +1873,7 @@ kubectl get nodes  # 输出结果 No resources found
 kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
 ```
 
-（2）启用 shell 自动补全功能
+（2）启用Bash自动补全功能
 
 文档：[https://kubernetes.io/zh-cn/docs/tasks/tools/install-kubectl-linux/#optional-kubectl-configurations](https://kubernetes.io/zh-cn/docs/tasks/tools/install-kubectl-linux/#optional-kubectl-configurations)
 
