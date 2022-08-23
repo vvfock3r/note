@@ -2221,7 +2221,11 @@ node-3   NotReady   <none>   4m24s   v1.24.4
 
 ### 部署网络插件Calico
 
-文档：[https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises](https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises)
+文档：
+
+* Github：[https://github.com/projectcalico/calico/](https://github.com/projectcalico/calico/)
+
+* 文档：[https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises](https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises)
 
 :::tip
 
