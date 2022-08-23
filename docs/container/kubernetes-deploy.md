@@ -2503,6 +2503,20 @@ eyJhbGciOiJSUzI1NiIsImtpZCI6IjQtcDlTOHZOSU1BLTlkcjFfX2tlZV9xOWF2R3E1aTVtbE0tWjdk
 
 Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server)
 
+```bash
+# 安装高可用版本，此配置要求集群至少有2个可以调度Metrics Server的节点
+
+# 下载YAML
+wget https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/high-availability.yaml \
+     -O metrics-server-v0.6.1-high-availability.yaml
+
+# 查看镜像(需要科学上网，参考上方地址)
+[root@node-1 ~]# cat metrics-server-v0.6.1-high-availability.yaml | grep 'image:'
+        image: k8s.gcr.io/metrics-server/metrics-server:v0.6.1
+        
+# 部署
+```
+
 #### （4）Istio
 
 文档：[https://istio.io/](https://istio.io/)
