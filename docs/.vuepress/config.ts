@@ -102,7 +102,7 @@ export default defineUserConfig({
     }),
 
     lang: 'zh-CN',
-    title: 'note',
+    title: 'My Online Notes',
     description: '打怪升级之旅~',
     head: [['link', {rel: 'icon', href: 'favicon.png'}]],
 
