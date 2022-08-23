@@ -1891,6 +1891,12 @@ rmdir ~/tmp.master.kubeconfig
 
 ### 部署Kubernetes Node节点
 
+:::tip
+
+以下操作在所有Node节点执行
+
+:::
+
 #### 部署Containerd
 
 （1）在中转节点下载软件包并分发相关文件
@@ -2217,6 +2223,12 @@ node-3   NotReady   <none>   4m24s   v1.24.4
 
 文档：[https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises](https://projectcalico.docs.tigera.io/getting-started/kubernetes/self-managed-onprem/onpremises)
 
+:::tip
+
+以下操作在任意一个Master节点（可以执行`kubectl`的节点）执行
+
+:::
+
 （1）下载YAML文件
 
 ```bash
@@ -2305,6 +2317,12 @@ node-3   Ready    <none>   29m   v1.24.4
 
 * coredns官方文档：[https://coredns.io/plugins/kubernetes/](https://coredns.io/plugins/kubernetes/)
 * NodeLocal DNSCache：[https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/)
+
+:::tip
+
+以下操作在任意一个Master节点（可以执行`kubectl`的节点）执行
+
+:::
 
 （1）部署coredns
 
