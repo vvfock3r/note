@@ -2378,6 +2378,57 @@ sed -ri 's#__PILLAR__UPSTREAM__SERVERS__#/etc/resolv.conf#g' nodelocaldns.yaml
 [root@node-1 ~]# kubectl get pods -A | grep node-local-dns
 kube-system   node-local-dns-8wqmd                       1/1     Running   0          12s
 kube-system   node-local-dns-wdgkw                       1/1     Running   0          12s
-kube-system   node-local-dns-z76pz                       1/1     Running   0          12s        
+kube-system   node-local-dns-z76pz                       1/1     Running   0          12s
 ```
 
+### 检查集群状态
+
+```bash
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES    AGE   VERSION
+node-1   Ready    <none>   12h   v1.24.4
+node-2   Ready    <none>   12h   v1.24.4
+node-3   Ready    <none>   12h   v1.24.4
+
+[root@node-1 ~]# kubectl get cs
+Warning: v1 ComponentStatus is deprecated in v1.19+
+NAME                 STATUS    MESSAGE             ERROR
+controller-manager   Healthy   ok                  
+scheduler            Healthy   ok                  
+etcd-0               Healthy   {"health":"true"}   
+etcd-2               Healthy   {"health":"true"}   
+etcd-1               Healthy   {"health":"true"}
+
+[root@node-1 ~]# kubectl get pods -A
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS            AGE
+kube-system   calico-kube-controllers-5b97f5d8cf-45926   1/1     Running   1 (<invalid> ago)   12h
+kube-system   calico-node-mb9xx                          1/1     Running   1 (111m ago)        12h
+kube-system   calico-node-txfwh                          1/1     Running   1 (111m ago)        12h
+kube-system   calico-node-wxd9j                          1/1     Running   1 (<invalid> ago)   12h
+kube-system   coredns-754f9b4f7c-m88g9                   1/1     Running   0                   86m
+kube-system   nginx-proxy-node-3                         1/1     Running   1 (<invalid> ago)   12h
+kube-system   node-local-dns-9nw9v                       1/1     Running   0                   59m
+kube-system   node-local-dns-gdbp6                       1/1     Running   0                   59m
+kube-system   node-local-dns-pt79q                       1/1     Running   0                   59m
+```
+
+### 部署常用插件
+
+#### （1）Dashboard
+
+#### （2）Ingress NGINX Controller
+
+#### （3）Metrics Server
+
+Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server)
+
+#### （4）Istio
+
+文档：[https://istio.io/](https://istio.io/)
+
+Github：[https://github.com/istio/istio](https://github.com/istio/istio)
+
+### 清理中转节点痕迹
+
+* 清理免密登录node节点
+* 软件包、配置、证书等备份并删除
