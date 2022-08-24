@@ -289,7 +289,20 @@ docker image pull k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1
 docker image save k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1 -o node.tar 
 
 # 导入镜像
-ctr -n k8s.io image import  node.tar
+ctr -n k8s.io image import node.tar
+```
+
+### metrics-server
+
+```bash
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/metrics-server/metrics-server:v0.6.1
+
+# 导出镜像
+docker image save k8s.gcr.io/metrics-server/metrics-server:v0.6.1 -o metrics-server.tar
+
+# 导入镜像
+ctr -n k8s.io image import metrics-server.tar
 ```
 
 ## 
@@ -2503,6 +2516,12 @@ eyJhbGciOiJSUzI1NiIsImtpZCI6IjQtcDlTOHZOSU1BLTlkcjFfX2tlZV9xOWF2R3E1aTVtbE0tWjdk
 
 Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server)
 
+:::tip
+
+镜像下载参考：<a href="#metrics-server" style="text-decoration:none;">metrics-server</a>
+
+:::
+
 ```bash
 # 在安装前，我们可以执行一下top子命令，输出如下
 [root@node-1 ~]# kubectl top node
@@ -2514,7 +2533,7 @@ error: Metrics API not available # 要执行top子命令需要先安装Metrics S
 wget https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/high-availability.yaml \
      -O metrics-server-v0.6.1-high-availability.yaml
 
-# 查看镜像
+# 查看镜像（需要科学上网）
 [root@node-1 ~]# cat metrics-server-v0.6.1-high-availability.yaml | grep 'image:'
         image: k8s.gcr.io/metrics-server/metrics-server:v0.6.1
         
