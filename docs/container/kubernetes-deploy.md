@@ -2742,7 +2742,7 @@ no running Istio pods in "istio-system"
 
 （2）使用 Istioctl 安装（推荐此种安装方式）
 
-文档：https://istio.io/latest/docs/setup/install/istioctl/
+文档：[https://istio.io/latest/docs/setup/install/istioctl/](https://istio.io/latest/docs/setup/install/istioctl/)
 
 ```bash
 # 查看default配置文件对应的YAML
