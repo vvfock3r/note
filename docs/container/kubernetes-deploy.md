@@ -2429,7 +2429,7 @@ kube-system   node-local-dns-gdbp6                       1/1     Running   0    
 kube-system   node-local-dns-pt79q                       1/1     Running   0                   59m
 ```
 
-### 部署常用插件
+### 部署其他插件（可选）
 
 #### （1）Dashboard
 
@@ -2510,7 +2510,162 @@ eyJhbGciOiJSUzI1NiIsImtpZCI6IjQtcDlTOHZOSU1BLTlkcjFfX2tlZV9xOWF2R3E1aTVtbE0tWjdk
 
 ![image-20220823201131176](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220823201131176.png)
 
-#### （2）Ingress NGINX Controller
+#### （2）Ingress Nginx Controller
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
+
+**说明**
+
+`Ingress`公开从集群外部到集群内服务的 HTTP 和 HTTPS 路由，而具体实现流量路由则是由`Ingress Controller`负责
+
+Ingress Nginx 主要有2个开源实现
+
+| 实现                                                     | 文档                                                         | Github                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `Kubernetes`官方维护的`Ingress NGINX Controller`（推荐） | [https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/) | [https://github.com/kubernetes/ingress-nginx](https://github.com/kubernetes/ingress-nginx) |
+| Nginx官方维护的`NGINX Ingress Controller`                | [https://docs.nginx.com/nginx-ingress-controller/](https://docs.nginx.com/nginx-ingress-controller/) | [https://github.com/nginxinc/kubernetes-ingress](            |
+
+**安装Ingress Nginx（Kubernetes官方维护版本）**
+
+版本支持：[https://github.com/kubernetes/ingress-nginx#support-versions-table](https://github.com/kubernetes/ingress-nginx#support-versions-table)
+
+部署文档：[https://kubernetes.github.io/ingress-nginx/deploy/](https://kubernetes.github.io/ingress-nginx/deploy/)
+
+（1）下载YAML文件
+
+```bash
+[root@localhost k8s]# wget -O ingress-nginx.yml https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml
+```
+
+（2）修改YAML文件
+
+::: details 点击查看详情
+
+```bash
+# 1、修改为DaemonSet部署，这样访问任意一个Node都可以访问到Ingress NGINX
+[root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml  # 搜索出来只有一个
+kind: Deployment
+[root@localhost k8s]# sed -ri 's/Deployment/DaemonSet/g' ingress-nginx.yml
+[root@localhost k8s]# grep -Ei "Deployment|DaemonSet" ingress-nginx.yml
+kind: DaemonSet
+
+# 2、指定nodePort端口，否则若重新创建ingress-nginx会随机分配一个端口
+[root@node0 k8s]# vim ingress-nginx.yml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.2.0
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  externalTrafficPolicy: Local
+  ports:
+  - appProtocol: http
+    name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+    nodePort: 32261         # 添加这行
+  - appProtocol: https
+    name: https
+    port: 443
+    protocol: TCP
+    targetPort: https
+    nodePort: 32262         # 添加这行
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+  type: LoadBalancer
+  
+# 3、使用宿主机网络（可选）
+#    若配置了这一项则可以在宿主机可以看到监听了80和443端口，否则将看不到监听
+#    若配置了这一项则可以直接使用域名访问，而不必加上nodePort端口（在本文档是32261或32262），当然加上nodePort端口也是可以的
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.2.0
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  minReadySeconds: 0
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: ingress-nginx
+        app.kubernetes.io/name: ingress-nginx
+    spec:
+      hostNetwork: true          # 添加这一行
+```
+
+:::
+
+（3）部署Ingress Nginx（这一步会去海外下载镜像,请提前下载好镜像或配置`Containerd`代理）
+
+```bash
+[root@localhost k8s]# kubectl apply -f ingress-nginx.yml
+namespace/ingress-nginx unchanged
+serviceaccount/ingress-nginx unchanged
+serviceaccount/ingress-nginx-admission unchanged
+role.rbac.authorization.k8s.io/ingress-nginx unchanged
+role.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+clusterrole.rbac.authorization.k8s.io/ingress-nginx unchanged
+clusterrole.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+rolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
+rolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
+clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
+configmap/ingress-nginx-controller unchanged
+service/ingress-nginx-controller unchanged
+service/ingress-nginx-controller-admission unchanged
+daemonset.apps/ingress-nginx-controller configured
+job.batch/ingress-nginx-admission-create unchanged
+job.batch/ingress-nginx-admission-patch unchanged
+ingressclass.networking.k8s.io/nginx unchanged
+validatingwebhookconfiguration.admissionregistration.k8s.io/ingress-nginx-admission configured
+```
+
+（4）检查部署情况
+
+```bash
+# 查看Pod状态
+[root@localhost k8s]# kubectl get pods -n ingress-nginx
+NAME                                   READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-kmb95   0/1     Completed   0          19m
+ingress-nginx-admission-patch-jlxg8    0/1     Completed   0          19m
+ingress-nginx-controller-hqwh6         1/1     Running     0          19m
+ingress-nginx-controller-t6lwx         1/1     Running     0          19m
+ingress-nginx-controller-z9ql7         1/1     Running     0          19m
+
+# 查看Ingress NGINX service（如果要访问Ingress的80端口，那么就需要访问任意宿主机的32261端口）
+[root@node0 k8s]# kubectl get svc -n ingress-nginx
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.200.94.22     <pending>     80:32261/TCP,443:32262/TCP   12s
+ingress-nginx-controller-admission   ClusterIP      10.200.196.229   <none>        443/TCP                      12s
+
+# 查看Ingress NGINX Class Name
+[root@node0 k8s]# kubectl get ingressclass -A
+NAME    CONTROLLER             PARAMETERS   AGE
+nginx   k8s.io/ingress-nginx   <none>       26s
+```
 
 #### （3）Metrics Server
 
@@ -2555,9 +2710,73 @@ node-3   183m         4%     1130Mi          62%
 
 #### （4）Istio
 
-文档：[https://istio.io/](https://istio.io/)
+文档：
+
+* 英文：[https://istio.io/](https://istio.io/)
+* 中文：[https://istio.io/zh/](https://istio.io/zh/)
 
 Github：[https://github.com/istio/istio](https://github.com/istio/istio)
+
+安装方式说明：[https://istio.io/latest/docs/setup/install/](https://istio.io/latest/docs/setup/install/)
+
+（1）安装 istioctl
+
+文档：[https://istio.io/latest/docs/setup/getting-started/#download](https://istio.io/latest/docs/setup/getting-started/#download)
+
+```bash
+# 下载1.14.3版本Istio软件包
+[root@node-1 pkg]# curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.14.3 TARGET_ARCH=x86_64 sh -
+
+# 下载下来是个目录
+[root@node-1 pkg]# ls -ld istio-1.14.3
+drwxr-x--- 6 root root 115 Jul 29 06:30 istio-1.14.3
+
+# 拷贝二进制文件到PATH目录下
+root@node-1 pkg]# cp istio-1.14.3/bin/istioctl /usr/local/bin/
+
+# 查看版本
+[root@node-1 pkg]# istioctl version
+no running Istio pods in "istio-system"
+1.14.3
+```
+
+（2）使用 Istioctl 安装（推荐此种安装方式）
+
+文档：https://istio.io/latest/docs/setup/install/istioctl/
+
+```bash
+# 查看default配置文件对应的YAML
+[root@node-1 ~]# istioctl profile dump default
+
+# 使用default配置文件进行Istio安装，可用于生产环境
+[root@node-1 ~]# istioctl install --set profile=default
+This will install the Istio 1.14.3 default profile with ["Istio core" "Istiod" "Ingress gateways"] components into the cluster. Proceed? (y/N) y
+✔ Istio core installed                                                                                                           
+✔ Istiod installed                                                                                                               
+✔ Ingress gateways installed                                                                                                     
+✔ Installation complete                                                                                                         Making this installation the default for injection and validation.
+
+Thank you for installing Istio 1.14.  Please take a few minutes to tell us about your install/upgrade experience!  https://forms.gle/yEtCbt45FZ3VoDT5A
+
+# 看看都安装了什么
+[root@node-1 ~]# kubectl get deploy -n istio-system
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+istio-ingressgateway   1/1     1            1           59m
+istiod                 1/1     1            1           64m
+
+[root@node-1 ~]# kubectl get pods -n istio-system  -o wide
+NAME                                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+istio-ingressgateway-6dbb44ff8d-lbtsr   1/1     Running   0          54m   10.200.139.74   node-3   <none>           <none>
+istiod-6b5bb85ffb-jxsb2                 1/1     Running   0          67m   10.200.247.12   node-2   <none>           <none>
+
+# 再次查看版本
+[root@node-1 ~]# istioctl version
+client version: 1.14.3
+control plane version: 1.14.3           # 控制平面
+data plane version: 1.14.3 (1 proxies)	# 数据平面
+```
+
+
 
 ### 清理中转节点痕迹
 
