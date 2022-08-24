@@ -4850,7 +4850,7 @@ spec:
       - name: web
         image: nginx:1.23
         resources: 
-           requests:
+           requests:          # HPA会将这里的值作为总量与当前Pod使用量进行计算得到百分比，来判断是否需要扩容或缩容
              memory: "100Mi"
              cpu: "100m"
 ---
