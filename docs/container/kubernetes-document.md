@@ -4913,6 +4913,49 @@ NAME                    CPU(cores)   MEMORY(bytes)
 demo-78d8864777-2fbcf   0m           3Mi             
 demo-78d8864777-nwphc   0m           3Mi             
 demo-78d8864777-q6n7g   0m           3Mi
+
+# 看一下Deployment
+[root@node-1 ~]# kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-78d8864777-7dmf5   1/1     Running   0          7m35s
+demo-78d8864777-nwphc   1/1     Running   0          23m
+[root@node-1 ~]# kubectl describe deployment
+Name:                   demo
+Namespace:              default
+CreationTimestamp:      Wed, 24 Aug 2022 17:39:04 +0800
+Labels:                 <none>
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=web
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=web
+  Containers:
+   web:
+    Image:      nginx:1.23
+    Port:       <none>
+    Host Port:  <none>
+    Requests:
+      cpu:        100m
+      memory:     100Mi
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Progressing    True    NewReplicaSetAvailable
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   demo-78d8864777 (2/2 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  24m    deployment-controller  Scaled up replica set demo-78d8864777 to 3
+  Normal  ScalingReplicaSet  13m    deployment-controller  Scaled down replica set demo-78d8864777 to 1
+  Normal  ScalingReplicaSet  7m44s  deployment-controller  Scaled up replica set demo-78d8864777 to 4
 ```
 
 :::
@@ -5032,6 +5075,42 @@ demo-78d8864777-xzjrj   14m          3Mi
 :::
 
 ::: details  （2）基于CPU的弹性伸缩：HPA v2版本
+
+```bash
+# 创建YAML文件
+[root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:  
+  name: demo-hpa
+  namespace: default
+spec:
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 60
+        type: Utilization
+    type: Resource
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo
+EOF
+
+# 部署
+[root@node-1 ~]# kubectl apply -f hpa-v2-cpu.yaml
+```
+
+:::
+
+::: details  （3）基于CPU的弹性伸缩：使用kubectl autoscale命令创建HPA
+
+```bash
+[root@node-1 ~]# kubectl autoscale deployment demo --name demo-hpa --cpu-percent=60 --min=1 --max=5
+```
 
 :::
 
