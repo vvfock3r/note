@@ -4812,13 +4812,15 @@ deployment.apps/demo created
 
 Github：[https://github.com/kubernetes/autoscaler](https://github.com/kubernetes/autoscaler)
 
+<br />
+
 ### Cluster AutoScaler - Node弹性伸缩
 
 阿里云：[https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud)
 
 腾讯云：[https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/tencentcloud](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/tencentcloud)
 
-
+<br />
 
 ### HPA - Pod个数弹性伸缩
 
@@ -5113,5 +5115,7 @@ EOF
 ```
 
 :::
+
+<br />
 
 ### VPA - Pod配置弹性伸缩
