@@ -38,7 +38,7 @@ export default {
       // 准备数据
       const data = [
         {name: 'Linux', value: 1},
-        {name: '容器', value: 5},
+        {name: '容器', value: 6},
         {name: '开发', value: 13},
       ]
       const total = data.reduce((total, current) => {
