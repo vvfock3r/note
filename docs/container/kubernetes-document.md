@@ -5130,3 +5130,87 @@ EOF
 
 Github：[https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
 
+::: details  （1）基础测试
+
+```bash
+# 创建YAML文件
+[root@node-1 ~]# cat > demo.yml <<EOF
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+spec:
+  selector:
+    matchLabels:
+      app: demo
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: demo
+          image: ubuntu:22.04
+          resources:
+            requests:
+              cpu: 100m
+              memory: 50Mi
+            # 设置limits是requests的1.8倍
+            limits:
+              cpu: 180m
+              memory: 90Mi
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "while true; do timeout 0.5s yes >/dev/null; sleep 0.5s; done"
+---
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: demo-vpa
+spec:
+  updatePolicy:
+    # VPA运行模式
+    updateMode: Auto
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: demo
+  resourcePolicy:
+    containerPolicies:
+      - containerName: '*'
+		# 允许的最低配置
+        minAllowed:
+          cpu: 100m
+          memory: 50Mi
+		# 允许的最高配置
+        maxAllowed:
+          cpu: 300m
+          memory: 200Mi
+        controlledResources: ["cpu", "memory"]
+EOF
+
+# 部署
+[root@node-1 ~]# kubectl apply -f demo.yml
+deployment.apps/demo created
+verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
+
+# 等待几分钟
+
+# 查看一下Pod配置
+# (1) requests和resources的数值都变了
+# (2) 其中主要是requests的值，范围在minAllowed - maxAllowed之间
+# (3) limits的值则是根据【Pod原来的limits/requests的比例】动态调整，在本例子中是1.8倍的调整
+[root@node-1 ~]# kubectl get pod demo-75b4c9c96d-p84pb -o yaml | grep 'resources:' -A 6
+    resources:
+      limits:
+        cpu: 540m
+        memory: 360Mi
+      requests:
+        cpu: 300m
+        memory: 200Mi
+```
+
+:::
