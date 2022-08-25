@@ -10,7 +10,9 @@
 | kubeadm    | 适中   | 自定义 | `Kubeadm `是一个快捷搭建`kubernetes`的安装工具 |
 | Kubespray  | 简单   | 自定义 | 基于`kubeadm`和`Ansible`来部署                 |
 
-##  🔥使用二进制部署（推荐）
+##  
+
+## 🔥使用二进制部署（推荐）
 
 ### 必读说明
 
@@ -2513,6 +2515,45 @@ istiod-6b5bb85ffb-jxsb2                 1/1     Running   0          67m   10.20
 client version: 1.14.3
 control plane version: 1.14.3           # 控制平面
 data plane version: 1.14.3 (1 proxies)	# 数据平面
+```
+
+### 部署包管理器Helm（可选）
+
+文档：[https://helm.sh/](https://helm.sh/)
+
+Github：[https://github.com/helm/helm](https://github.com/helm/helm)
+
+（1）部署
+
+```bash
+[root@node-1 pkg]# wget -c https://get.helm.sh/helm-v3.9.4-linux-amd64.tar.gz
+[root@node-1 pkg]# mkdir helm-v3.9.4-linux-amd64 && tar zxf helm-v3.9.4-linux-amd64.tar.gz -C ./helm-v3.9.4-linux-amd64
+[root@node-1 pkg]# cp helm-v3.9.4-linux-amd64/linux-amd64/helm /usr/local/bin/
+
+[root@node-1 pkg]# helm version --short
+v3.9.4+gdbc6d8e
+```
+
+（2）添加或移除chart仓库
+
+```bash
+# 添加chart仓库
+[root@node-1 ~]# helm repo add azure  https://mirror.azure.cn/kubernetes/charts              # Microsoft Azure(由世纪互联运营)
+[root@node-1 ~]# helm repo add aliyun https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts # 阿里云
+[root@node-1 ~]# helm repo add tkemarket https://market-tke.tencentcloudcr.com/chartrepo/opensource-stable # 腾讯云应用市场
+
+# 更新本地chart列表
+[root@node-1 ~]# helm repo update
+
+# 查看chart仓库
+[root@node-1 ~]# helm repo list
+NAME            URL                                                              
+azure           https://mirror.azure.cn/kubernetes/charts                        
+aliyun          https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts           
+tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stable
+
+# 移除chart仓库
+[root@node-1 ~]# helm repo remove azure
 ```
 
 ### 清理中转节点痕迹
