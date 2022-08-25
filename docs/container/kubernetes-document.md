@@ -1671,6 +1671,14 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 :::
 
+### 如何重启一个Pod？
+
+```bash
+kubectl get pod {podname} -n {namespace} -o yaml | kubectl replace --force -f -
+```
+
+
+
 ## 
 
 ## 工作负载控制器
@@ -5119,3 +5127,6 @@ EOF
 <br />
 
 ### VPA - Pod配置弹性伸缩
+
+Github：[https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
+

@@ -225,7 +225,7 @@ bridge                151336  1 br_netfilter
 
 ```bash
 [root@localhost ~]# yum -y install yum-utils \
-	vim curl wget rsync \
+	vim curl wget rsync git \
 	socat conntrack ipvsadm ipset \
 	sysstat iptables libseccomp
 ```
@@ -303,6 +303,25 @@ docker image save k8s.gcr.io/metrics-server/metrics-server:v0.6.1 -o metrics-ser
 
 # 导入镜像
 ctr -n k8s.io image import metrics-server.tar
+```
+
+### Vertical Pod Autoscaler
+
+```bash
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/autoscaling/vpa-updater:0.11.0
+docker image pull k8s.gcr.io/autoscaling/vpa-recommender:0.11.0
+docker image pull k8s.gcr.io/autoscaling/vpa-admission-controller:0.11.0
+
+# 导出镜像
+docker image save k8s.gcr.io/autoscaling/vpa-updater:0.11.0 -o vpa-updater.tar
+docker image save k8s.gcr.io/autoscaling/vpa-recommender:0.11.0 -o vpa-recommender.tar
+docker image save k8s.gcr.io/autoscaling/vpa-admission-controller:0.11.0 -o vpa-admission-controller.tar
+
+# 导入镜像
+ctr -n k8s.io image import vpa-updater.tar
+ctr -n k8s.io image import vpa-recommender.tar
+ctr -n k8s.io image import vpa-admission-controller.tar
 ```
 
 ## 
@@ -2708,7 +2727,184 @@ node-2   304m         7%     1257Mi          69%
 node-3   183m         4%     1130Mi          62%
 ```
 
-#### （4）Istio
+#### （4）Vertical Pod Autoscaler
+
+Github：[https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
+
+OpenSSL下载地址：[https://www.openssl.org/source/](https://www.openssl.org/source/)
+
+（1）升级OpenSSL到1.1.1或者更高版本，这里升级到`3.0.5`版本
+
+```bash
+# ---------------------------备份旧的OpenSSL---------------------------
+
+# 检查OpenSSL版本
+[root@node-1 ~]# openssl version
+OpenSSL 1.0.2k-fips  26 Jan 2017
+
+# 先对旧的openssl做一个备份(二进制命令和库文件)
+[root@node-1 ~]# cp /usr/bin/openssl /usr/bin/openssl_`date +%F`
+[root@node-1 ~]# cp -ra /usr/include/openssl /usr/include/openssl_`date +%F`
+
+[root@node-1 openssl-3.0.5]# ls -ld /usr/bin/openssl_`date +%F`  /usr/include/openssl_`date +%F`
+-rwxr-xr-x 1 root root 555280 Aug 25 10:54 /usr/bin/openssl_2022-08-25
+drwxr-xr-x 2 root root   4096 Aug 25 11:13 /usr/include/openssl_2022-08-25
+
+# ---------------------------下载OpenSSL源码包---------------------------
+
+# 下载OpenSSL 1.1.1或者更高版本，这里下载3.0.5版本
+[root@node-1 ~]# wget -c https://www.openssl.org/source/openssl-3.0.5.tar.gz
+[root@node-1 ~]# tar zxf openssl-3.0.5.tar.gz && cd openssl-3.0.5
+
+# ---------------------------编译前的准备工作---------------------------
+
+# 先看一下程序安装目录是否已经存在，若存在需要指定为其他目录
+[root@node-1 ~]# ls /usr/local/openssl-3.0.5
+ls: cannot access /usr/local/openssl-3.0.5: No such file or directory
+
+# 查看动态链接库信息，这里主要是看一下下面的报错信息，报错本来就有，不是由我们后面的操作引起的
+[root@node-1 ~]# ldconfig -v 1>/dev/null
+ldconfig: Can't stat /libx32: No such file or directory
+ldconfig: Path `/usr/lib' given more than once
+ldconfig: Path `/usr/lib64' given more than once
+ldconfig: Can't stat /usr/libx32: No such file or directory
+
+# 查看一下perl版本，仅作记录使用
+[root@node-1 ~]# perl --version
+This is perl 5, version 16, subversion 3 (v5.16.3) built for x86_64-linux-thread-multi
+(with 44 registered patches, see perl -V for more detail)
+... 省略无关内容
+
+# 安装依赖包
+[root@node-1 ~]# yum install -y gcc gcc-c++ glibc make autoconf \
+                                openssl openssl-devel pcre-devel pam-devel zlib \
+                                perl-IPC-Cmd perl-Digest-SHA 'perl(Data::Dumper)'
+
+# ---------------------------编译和替换旧版本---------------------------
+
+# 正式编译
+[root@node-1 openssl-3.0.5]# ./config --prefix=/usr/local/openssl-3.0.5
+[root@node-1 openssl-3.0.5]# make && make install
+
+# 替换旧版本
+[root@node-1 openssl-3.0.5]# ln -s --force /usr/local/openssl-3.0.5/bin/openssl       /usr/bin/openssl
+[root@node-1 openssl-3.0.5]# ln -s --force /usr/local/openssl-3.0.5/include/openssl   /usr/include/openssl
+[root@node-1 openssl-3.0.5]# echo "/usr/local/openssl-3.0.5/lib64" > /etc/ld.so.conf.d/openssl-3.0.5.conf
+[root@node-1 openssl-3.0.5]# ldconfig -v | grep openssl
+ldconfig: Can't stat /libx32: No such file or directory
+ldconfig: Path `/usr/lib' given more than once
+ldconfig: Path `/usr/lib64' given more than once
+ldconfig: Can't stat /usr/libx32: No such file or directory
+/usr/local/openssl-3.0.5/lib64:
+        libxmlsec1-openssl.so.1 -> libxmlsec1-openssl.so.1.2.20 # 已正确加载
+
+# 查看版本
+[root@node-1 openssl-3.0.5]# openssl version
+OpenSSL 3.0.5 5 Jul 2022 (Library: OpenSSL 3.0.5 5 Jul 2022)
+```
+
+（2）安装VPA
+
+:::tip
+
+镜像下载参考：<a href="#Vertical Pod Autoscaler" style="text-decoration:none;">Vertical Pod Autoscaler</a>
+
+:::
+
+```bash
+# ---------------------------部署前的准备工作---------------------------
+
+# 下载源码
+[root@node-1 pkg]# wget -c https://github.com/kubernetes/autoscaler/archive/refs/tags/vertical-pod-autoscaler-0.11.0.tar.gz
+[root@node-1 pkg]# tar zxf autoscaler-vertical-pod-autoscaler-0.11.0.tar.gz
+[root@node-1 pkg]# cd autoscaler-vertical-pod-autoscaler-0.11.0/vertical-pod-autoscaler/
+
+# 查看kubectl真正执行的yaml文件
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-process-yamls.sh print
+
+# 查看需要使用的镜像，这里有两个问题：
+# (1) 镜像下载需要科学上网，建议提前下载好并导入到节点中
+# (2) 镜像下载策略为Always，即不会使用本地的镜像，若要使用本地镜像需要修改为ifNotPresent
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-process-yamls.sh print | grep 'image'
+          image: k8s.gcr.io/autoscaling/vpa-updater:0.11.0
+          imagePullPolicy: Always
+        image: k8s.gcr.io/autoscaling/vpa-recommender:0.11.0
+        imagePullPolicy: Always
+          image: k8s.gcr.io/autoscaling/vpa-admission-controller:0.11.0
+          imagePullPolicy: Always
+
+# 修改镜像下载策略
+[root@node-1 vertical-pod-autoscaler]# find deploy -type f | xargs grep 'image' --color=auto
+deploy/admission-controller-deployment.yaml:          image: k8s.gcr.io/autoscaling/vpa-admission-controller:0.11.0
+deploy/admission-controller-deployment.yaml:          imagePullPolicy: Always
+deploy/recommender-deployment.yaml:        image: k8s.gcr.io/autoscaling/vpa-recommender:0.11.0
+deploy/recommender-deployment.yaml:        imagePullPolicy: Always
+deploy/updater-deployment.yaml:          image: k8s.gcr.io/autoscaling/vpa-updater:0.11.0
+deploy/updater-deployment.yaml:          imagePullPolicy: Always
+
+sed -ri 's/(imagePullPolicy:)(.*)/\1 IfNotPresent/' ./deploy/admission-controller-deployment.yaml
+sed -ri 's/(imagePullPolicy:)(.*)/\1 IfNotPresent/' ./deploy/recommender-deployment.yaml
+sed -ri 's/(imagePullPolicy:)(.*)/\1 IfNotPresent/' ./deploy/updater-deployment.yaml
+
+# 检查镜像下载策略
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-process-yamls.sh print | grep 'image'
+          image: k8s.gcr.io/autoscaling/vpa-updater:0.11.0
+          imagePullPolicy: IfNotPresent
+        image: k8s.gcr.io/autoscaling/vpa-recommender:0.11.0
+        imagePullPolicy: IfNotPresent
+          image: k8s.gcr.io/autoscaling/vpa-admission-controller:0.11.0
+          imagePullPolicy: IfNotPresent
+
+# ---------------------------正式部署---------------------------
+
+# 执行脚本
+# 注意：脚本当前读取环境变量：$REGISTRY和$TAG. 除非您想使用非默认版本的 VPA，否则请确保不设置它们
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-up.sh
+customresourcedefinition.apiextensions.k8s.io/verticalpodautoscalercheckpoints.autoscaling.k8s.io created
+customresourcedefinition.apiextensions.k8s.io/verticalpodautoscalers.autoscaling.k8s.io created
+clusterrole.rbac.authorization.k8s.io/system:metrics-reader created
+clusterrole.rbac.authorization.k8s.io/system:vpa-actor created
+clusterrole.rbac.authorization.k8s.io/system:vpa-checkpoint-actor created
+clusterrole.rbac.authorization.k8s.io/system:evictioner created
+clusterrolebinding.rbac.authorization.k8s.io/system:metrics-reader created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-actor created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-checkpoint-actor created
+clusterrole.rbac.authorization.k8s.io/system:vpa-target-reader created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-target-reader-binding created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-evictionter-binding created
+serviceaccount/vpa-admission-controller created
+clusterrole.rbac.authorization.k8s.io/system:vpa-admission-controller created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-admission-controller created
+clusterrole.rbac.authorization.k8s.io/system:vpa-status-reader created
+clusterrolebinding.rbac.authorization.k8s.io/system:vpa-status-reader-binding created
+serviceaccount/vpa-updater created
+deployment.apps/vpa-updater created
+serviceaccount/vpa-recommender created
+deployment.apps/vpa-recommender created
+Generating certs for the VPA Admission Controller in /tmp/vpa-certs.
+Certificate request self-signature ok
+subject=CN = vpa-webhook.kube-system.svc
+Uploading certs to the cluster.
+secret/vpa-tls-certs created
+Deleting /tmp/vpa-certs.
+deployment.apps/vpa-admission-controller created
+service/vpa-webhook created
+
+# 看一下Pod状态
+[root@node-1 vertical-pod-autoscaler]# kubectl get pods -A -o wide | grep vpa
+kube-system   vpa-admission-controller-865c6fc6d4-qttsq   1/1  Running 0 47s  10.200.139.99    node-3   <none>    <none>
+kube-system   vpa-recommender-5bff7c5fc-dvfrd             1/1  Running 0 48s  10.200.84.160    node-1   <none>    <none>
+kube-system   vpa-updater-859786f5d-4vk2q                 1/1  Running 0 49s  10.200.139.98    node-3   <none>    <none>
+
+# ---------------------------卸载---------------------------
+
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-process-yamls.sh print | kubectl delete -f -
+[root@node-1 vertical-pod-autoscaler]# kubectl delete secret vpa-tls-certs -n kube-system
+```
+
+
+
+#### （5）Istio
 
 文档：
 
