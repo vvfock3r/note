@@ -2811,7 +2811,7 @@ OpenSSL 3.0.5 5 Jul 2022 (Library: OpenSSL 3.0.5 5 Jul 2022)
 
 :::tip
 
-镜像下载参考：<a href="#Vertical Pod Autoscaler" style="text-decoration:none;">Vertical Pod Autoscaler</a>
+镜像下载参考：<a href="#vertical-pod-autoscaler" style="text-decoration:none;">Vertical Pod Autoscaler</a>
 
 :::
 
