@@ -2735,6 +2735,8 @@ OpenSSL下载地址：[https://www.openssl.org/source/](https://www.openssl.org/
 
 （1）升级OpenSSL到1.1.1或者更高版本，这里升级到`3.0.5`版本
 
+::: details 点击查看完整命令
+
 ```bash
 # ---------------------------备份旧的OpenSSL---------------------------
 
@@ -2802,6 +2804,8 @@ ldconfig: Can't stat /usr/libx32: No such file or directory
 [root@node-1 openssl-3.0.5]# openssl version
 OpenSSL 3.0.5 5 Jul 2022 (Library: OpenSSL 3.0.5 5 Jul 2022)
 ```
+
+:::
 
 （2）安装VPA
 
@@ -2898,11 +2902,8 @@ kube-system   vpa-updater-859786f5d-4vk2q                 1/1  Running 0 49s  10
 
 # ---------------------------卸载---------------------------
 
-[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-process-yamls.sh print | kubectl delete -f -
-[root@node-1 vertical-pod-autoscaler]# kubectl delete secret vpa-tls-certs -n kube-system
+[root@node-1 vertical-pod-autoscaler]# ./hack/vpa-down.sh
 ```
-
-
 
 #### （5）Istio
 
