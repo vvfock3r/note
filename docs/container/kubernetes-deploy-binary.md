@@ -2560,6 +2560,16 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 
 ## 镜像列表（需科学上网）
 
+:::tip
+
+当`tar`包没有`tag`信息时，执行导入命令之后，无报错，退出码为0，但是通过`ctr image ls`或`crictl image` 查看却没有相关的镜像。
+
+这种情况下需要添加 `--digests=true` 来导入，参考命令：
+
+`ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar`
+
+:::
+
 ### pause
 
 ```bash
@@ -2606,8 +2616,8 @@ docker image save 04fcc7019408 -o ingress-nginx-controller.tar
 docker image save c41e9fcadf5a -o ingress-nginx-kube-webhook-certgen.tar
 
 # 导入镜像
-ctr -n k8s.io image import ingress-nginx-controller.tar
-ctr -n k8s.io image import ingress-nginx-kube-webhook-certgen.tar
+ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar
+ctr -n k8s.io image import --digests=true ingress-nginx-kube-webhook-certgen.tar
 ```
 
 ### metrics-server
