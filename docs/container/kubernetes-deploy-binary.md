@@ -2562,11 +2562,27 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 
 :::tip
 
-当`tar`包没有`tag`信息时，执行导入命令之后，无报错，退出码为0，但是通过`ctr image ls`或`crictl image` 查看却没有相关的镜像。
+当`tar`包没有`tag`或是`v1.2.0@sha256:d8196e3bc1`这种格式时，需要注意两点：
+
+（1）执行导入命令之后，无报错，退出码为0，但是通过`ctr image ls`或`crictl image` 查看却没有相关的镜像。
 
 这种情况下需要添加 `--digests=true` 来导入，参考命令：
 
-`ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar`
+```bash
+[root@node-1 ~]# ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar
+```
+
+（2）成功导入后，镜像名称会发生改变，需要重新打tag
+
+```bash
+[root@node-1 ~]# ctr -n k8s.io image ls -q | grep import
+import-2022-08-26@sha256:4a316673ea25f3913b08402d783639f22aa1d0c090a825b987c7f1341e9a9cbd
+import-2022-08-26@sha256:8018351af36a10f9859fbb103138f66d364d78d97cb9592fd26de0107563d0af
+
+[root@node-1 ~]# crictl image | grep import
+docker.io/library/import-2022-08-26               <none>              04fcc70194086       291MB
+docker.io/library/import-2022-08-26               <none>              c41e9fcadf5a2       49.1MB
+```
 
 :::
 
@@ -2607,17 +2623,31 @@ ctr -n k8s.io image import node.tar
 
 ```bash
 # 下载镜像（需科学上网）
-docker image pull k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
-docker image pull k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
-docker image pull k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+docker image pull \
+k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
 
-# 导出镜像
+docker image pull \
+k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+
+# 先查看一下ImageId，然后通过ImageID导出镜像，通过名字导出也可以，注意不到导错
 docker image save 04fcc7019408 -o ingress-nginx-controller.tar
 docker image save c41e9fcadf5a -o ingress-nginx-kube-webhook-certgen.tar
 
 # 导入镜像
 ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar
 ctr -n k8s.io image import --digests=true ingress-nginx-kube-webhook-certgen.tar
+
+# 查看镜像
+[root@node-1 ~]# ctr -n k8s.io image ls -q | grep -E '04fcc7019408|c41e9fcadf5a'
+sha256:04fcc70194086eb9118c8a015dc455c0f7f0249b10346f8b03f97d86ae99fb0c
+sha256:c41e9fcadf5a291120de706b7dfa1af598b9f2ed5138b6dcb9f79a68aad0ef4c
+
+# 重新打Tag，源镜像的名字一定要写全
+ctr -n k8s.io image tag sha256:04fcc70194086eb9118c8a015dc455c0f7f0249b10346f8b03f97d86ae99fb0c \
+k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
+
+ctr -n k8s.io image tag sha256:c41e9fcadf5a291120de706b7dfa1af598b9f2ed5138b6dcb9f79a68aad0ef4c \
+k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
 ```
 
 ### metrics-server
