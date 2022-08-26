@@ -732,5 +732,11 @@ version: 1.9.3
 ```bash
 # 先把原始的配置文件备份一下
 [root@node-1 harbor]# cp values.yaml values.yaml_original
+
+# 自签证书
+mkcert registry.jinhui.dev.pem
+
+# 创建TLS secret
+[root@node-1 yamlconfig]# kubectl create secret tls harbor --cert=registry.jinhui.dev.pem --key=registry.jinhui.dev-key.pem
 ```
 
