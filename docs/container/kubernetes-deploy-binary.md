@@ -2181,29 +2181,22 @@ spec:
 
 :::
 
-（3）部署Ingress Nginx（这一步会去海外下载镜像,请提前下载好镜像或配置`Containerd`代理）
+（3）部署Ingress Nginx
+
+:::tip
+
+镜像下载参考：<a href="#ingress-nginx" style="text-decoration:none;">Ingress Nginx</a>
+
+:::
 
 ```bash
+# 查看一下需要使用的镜像(需要科学上网)
+[root@localhost k8s]# grep image: ingress-nginx.yml | sort -u
+        image: k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
+        image: k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+
+# 部署
 [root@localhost k8s]# kubectl apply -f ingress-nginx.yml
-namespace/ingress-nginx unchanged
-serviceaccount/ingress-nginx unchanged
-serviceaccount/ingress-nginx-admission unchanged
-role.rbac.authorization.k8s.io/ingress-nginx unchanged
-role.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
-clusterrole.rbac.authorization.k8s.io/ingress-nginx unchanged
-clusterrole.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
-rolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
-rolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
-clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx unchanged
-clusterrolebinding.rbac.authorization.k8s.io/ingress-nginx-admission unchanged
-configmap/ingress-nginx-controller unchanged
-service/ingress-nginx-controller unchanged
-service/ingress-nginx-controller-admission unchanged
-daemonset.apps/ingress-nginx-controller configured
-job.batch/ingress-nginx-admission-create unchanged
-job.batch/ingress-nginx-admission-patch unchanged
-ingressclass.networking.k8s.io/nginx unchanged
-validatingwebhookconfiguration.admissionregistration.k8s.io/ingress-nginx-admission configured
 ```
 
 （4）检查部署情况
@@ -2598,6 +2591,23 @@ docker image save k8s.gcr.io/dns/k8s-dns-node-cache:1.21.1 -o node.tar
 
 # 导入镜像
 ctr -n k8s.io image import node.tar
+```
+
+### Ingress Nginx
+
+```bash
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185
+docker image pull k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+docker image pull k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
+
+# 导出镜像
+docker image save 04fcc7019408 -o ingress-nginx-controller.tar
+docker image save c41e9fcadf5a -o ingress-nginx-kube-webhook-certgen.tar
+
+# 导入镜像
+ctr -n k8s.io image import ingress-nginx-controller.tar
+ctr -n k8s.io image import ingress-nginx-kube-webhook-certgen.tar
 ```
 
 ### metrics-server

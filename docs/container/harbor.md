@@ -720,6 +720,17 @@ harbor/harbor   1.9.3           2.5.3           An open source trusted cloud nat
 # (2) helm search中只显示了一个版本，但是所有的版本都是可以安装的，比如 1.8.3
 [root@node-1 ~]# helm pull harbor/harbor --version 1.9.3 --untar
 
+# 查看Chart版本和Harbor版本
 [root@node-1 ~]# cd harbor/
+[root@node-1 harbor]# cat Chart.yaml | grep -E 'version|appVersion'
+appVersion: 2.5.3
+version: 1.9.3
+```
+
+### （3）配置Chart
+
+```bash
+# 先把原始的配置文件备份一下
+[root@node-1 harbor]# cp values.yaml values.yaml_original
 ```
 
