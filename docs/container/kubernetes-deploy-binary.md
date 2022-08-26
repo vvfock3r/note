@@ -2560,7 +2560,9 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 
 ## 镜像列表（需科学上网）
 
-:::tip
+### 注意事项
+
+:::warning
 
 当`tar`包没有`tag`或是`v1.2.0@sha256:d8196e3bc1`这种格式时，需要注意两点：
 
@@ -2572,7 +2574,7 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 [root@node-1 ~]# ctr -n k8s.io image import --digests=true ingress-nginx-controller.tar
 ```
 
-（2）成功导入后，镜像名称会发生改变，需要重新打tag
+（2）成功导入后，镜像名称会发生改变，需要重新打tag，具体操作步骤参考 <a href="#ingress-nginx" style="text-decoration:none;">Ingress Nginx</a>
 
 ```bash
 [root@node-1 ~]# ctr -n k8s.io image ls -q | grep import
