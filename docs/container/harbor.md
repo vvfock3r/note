@@ -55,8 +55,6 @@ Harbor支持在线安装和离线安装（区别是镜像是如何下载的）
 | `Docker Compose` | `2.5.0`                                |
 | `Harbor`         | `2.5.1`                                |
 
-> 依据配置清单设置好对应的资源
-
 ### （2）下载离线安装包并校验
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/download-installer/](https://goharbor.io/docs/2.5.0/install-config/download-installer/)
@@ -186,7 +184,7 @@ data_volume: /data
 
 prepare脚本会拉取镜像`goharbor/prepare:v2.5.1`，启动容器并生成了一堆配置文件和`docker-compose.yml`
 
-这里有一个疑问，不是说离线安装吗，居然还回去联网拉镜像，暂时还不清楚这是为啥。
+这里有一个疑问，不是说离线安装吗，居然还会去联网拉镜像，暂时还不清楚这是为啥。
 
 ::: details 点击查看详情
 
@@ -241,7 +239,15 @@ drwxr-xr-x 3 root root        20 Jun 10 14:26 common				# 新生成的，用于�
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/run-installer-script/](https://goharbor.io/docs/2.5.0/install-config/run-installer-script/)
 
-> install.sh内部会调用`docker-compose`而不是`docker compose`，如果有报错请参考 [https://jinhui.dev/container/docker-compose.html#软链接到全局](https://jinhui.dev/container/docker-compose.html#软链接到全局)
+* `install.sh`内部会调用`docker-compose`而不是`docker compose`，如果有报错请参考：
+
+  [https://jinhui.dev/container/docker-compose.html#软链接到全局](https://jinhui.dev/container/docker-compose.html#软链接到全局)
+
+* `--with-notary`：启用内容信任服务（此选项要求必须启用HTTPS）
+
+* `--with-trivy`：启用漏洞扫描服务
+
+* `--with-chartmuseum`：启用Chart仓库服务（推荐安装此服务）
 
 ::: details 点击查看详情
 
@@ -462,7 +468,7 @@ harbor.jinhui.dev
 
 ![image-20220610133746505](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220610133746505.png)
 
-### （7）Docker信任HTTP协议仓库并登录
+### （7）Docker信任HTTP协议仓库
 
 文档：[https://goharbor.io/docs/2.5.0/install-config/run-installer-script/#connect-http](https://goharbor.io/docs/2.5.0/install-config/run-installer-script/#connect-http)
 
@@ -682,5 +688,38 @@ Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 Login Succeeded
+```
+
+## 安装方式2：Kubernetes Helm
+
+文档：[https://goharbor.io/docs/2.5.0/install-config/harbor-ha-helm/](https://goharbor.io/docs/2.5.0/install-config/harbor-ha-helm/)
+
+### （1）配置清单
+
+| 资源       | 版本      |
+| ---------- | --------- |
+| Kubernetes | `v1.24.4` |
+| Helm       | `v3.9.4`  |
+| `Harbor`   | `2.5.3`   |
+
+### （2）下载Harbor Helm Chart包
+
+Github：[https://github.com/goharbor/harbor-helm](https://github.com/goharbor/harbor-helm)
+
+```bash
+# 添加Harbor官方仓库
+[root@node-1 ~]# helm repo add harbor https://helm.goharbor.io
+
+# 搜索Harbor
+[root@node-1 ~]# helm search repo harbor 
+NAME            CHART VERSION   APP VERSION     DESCRIPTION                                       
+harbor/harbor   1.9.3           2.5.3           An open source trusted cloud native registry th...
+
+# 下载Chart，需要注意的是：
+# (1) 若指定版本则是Chart的版本，而不是Harbor的版本，具体的对应关系可以在上方的Github中找到
+# (2) helm search中只显示了一个版本，但是所有的版本都是可以安装的，比如 1.8.3
+[root@node-1 ~]# helm pull harbor/harbor --version 1.9.3 --untar
+
+[root@node-1 ~]# cd harbor/
 ```
 

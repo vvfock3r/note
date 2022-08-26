@@ -2523,6 +2523,8 @@ data plane version: 1.14.3 (1 proxies)	# 数据平面
 
 Github：[https://github.com/helm/helm](https://github.com/helm/helm)
 
+版本支持：https://helm.sh/docs/topics/version_skew/
+
 （1）部署
 
 ```bash
