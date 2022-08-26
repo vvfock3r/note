@@ -2097,7 +2097,8 @@ Ingress Nginx 主要有2个开源实现
 （1）下载YAML文件
 
 ```bash
-[root@localhost k8s]# wget -O ingress-nginx.yml https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml
+[root@localhost k8s]# wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml \
+                     -O ingress-nginx.yml
 ```
 
 （2）修改YAML文件
@@ -2570,9 +2571,9 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 
 ## 镜像导出和导入（需科学上网）
 
-### 注意事项
+### 提醒
 
-:::warning
+:::tip
 
 ![image-20220826184803991](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220826184803991.png)
 
