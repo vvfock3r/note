@@ -2196,6 +2196,15 @@ spec:
         image: registry.k8s.io/ingress-nginx/controller:v1.3.0@sha256:d1707ca76d3b044ab8a28277a2466a02100ee9f58a86af1535a3edf9323ea1b5
         image: registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
 
+# 修改镜像地址，删掉摘要信息
+[root@node-1 yamlconfig]# sed -ri 's/(.*)(image:)(.*)(@sha256.*)/\1\2\3/' ingress-nginx.yml
+
+# 再次查看镜像地址
+[root@node-1 yamlconfig]# cat ingress-nginx.yml | grep image | sort -u
+        imagePullPolicy: IfNotPresent
+        image: registry.k8s.io/ingress-nginx/controller:v1.3.0
+        image: registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.1.1
+
 # 部署
 [root@localhost k8s]# kubectl apply -f ingress-nginx.yml
 ```
@@ -2204,24 +2213,24 @@ spec:
 
 ```bash
 # 查看Pod状态
-[root@localhost k8s]# kubectl get pods -n ingress-nginx
+[root@node-1 ~]# kubectl get pods -n ingress-nginx
 NAME                                   READY   STATUS      RESTARTS   AGE
-ingress-nginx-admission-create-kmb95   0/1     Completed   0          19m
-ingress-nginx-admission-patch-jlxg8    0/1     Completed   0          19m
-ingress-nginx-controller-hqwh6         1/1     Running     0          19m
-ingress-nginx-controller-t6lwx         1/1     Running     0          19m
-ingress-nginx-controller-z9ql7         1/1     Running     0          19m
+ingress-nginx-admission-create-bcrhr   0/1     Completed   0          51m
+ingress-nginx-admission-patch-b97n8    0/1     Completed   0          51m
+ingress-nginx-controller-5tgv8         1/1     Running     0          51m
+ingress-nginx-controller-65tvk         1/1     Running     0          51m
+ingress-nginx-controller-dvd94         1/1     Running     0          51m
 
 # 查看Ingress NGINX service（如果要访问Ingress的80端口，那么就需要访问任意宿主机的32261端口）
-[root@node0 k8s]# kubectl get svc -n ingress-nginx
+[root@node-1 ~]# kubectl get svc -n ingress-nginx
 NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-ingress-nginx-controller             LoadBalancer   10.200.94.22     <pending>     80:32261/TCP,443:32262/TCP   12s
-ingress-nginx-controller-admission   ClusterIP      10.200.196.229   <none>        443/TCP                      12s
+ingress-nginx-controller             LoadBalancer   10.233.167.128   <pending>     80:32261/TCP,443:32262/TCP   51m
+ingress-nginx-controller-admission   ClusterIP      10.233.203.28    <none>        443/TCP                      51m
 
 # 查看Ingress NGINX Class Name
-[root@node0 k8s]# kubectl get ingressclass -A
+[root@node-1 ~]# kubectl get ingressclass -A
 NAME    CONTROLLER             PARAMETERS   AGE
-nginx   k8s.io/ingress-nginx   <none>       26s
+nginx   k8s.io/ingress-nginx   <none>       51m
 ```
 
 #### （3）Metrics Server
@@ -2565,13 +2574,17 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 
 :::warning
 
-当镜像名称带有`@sha256:xxx`时，就像下面这样
+![image-20220826184803991](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220826184803991.png)
 
-```bash
-registry.k8s.io/ingress-nginx/controller:v1.3.0@sha256:d1707ca76d3b044ab8a28277a2466a02100ee9f58a86af1535a3edf9323ea1b5
-```
+当我们要操作这种**显式带摘要信息**的这种镜像的时候（如上图所示），需要注意几个问题：
 
-具体操作步骤参考 <a href="#ingress-nginx" style="text-decoration:none;">Ingress Nginx</a>
+* 1）在我们操作镜像过程中（下载、导出、导入镜像）可能会**丢失**或**修改**摘要，
+
+  所以我们的YAML文件也必须随之修改，否则就会因为摘要信息不匹配而导致部署时Pod重新下载镜像
+
+* 2）解决办法是：我们就当摘要信息不存在，将所有用到摘要信息的地方都给他去掉，包括**下载、导出、导入镜像**和**YAML文件中的镜像地**址
+
+参考示例：<a href="#ingress-nginx" style="text-decoration:none;">Ingress Nginx</a>
 
 :::
 
@@ -2615,6 +2628,12 @@ ctr -n k8s.io image import node.tar
 docker image pull registry.k8s.io/ingress-nginx/controller:v1.3.0
 docker image pull registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.1.1
 
+# 查看镜像的摘要(输出信息太多这里将摘要中间部分使用...代替了)
+docker image ls --digests 
+REPOSITORY                                         TAG    DIGEST                     IMAGE ID     CREATED       SIZE
+registry.k8s.io/ingress-nginx/controller           v1.3.0 sha256:d1707...df9323ea1b5 4d43c7489bf2 6 weeks ago   263MB
+registry.k8s.io/ingress-nginx/kube-webhook-certgen v1.1.1 sha256:64d8c...0cc67868660 c41e9fcadf5a 10 months ago 47.7MB
+
 # 导出镜像
 docker image save registry.k8s.io/ingress-nginx/controller:v1.3.0 -o ingress-nginx-controller.tar
 docker image save registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.1.1 -o ingress-nginx-kube-webhook-certgen.tar
@@ -2622,6 +2641,16 @@ docker image save registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.1.1 -o i
 # 导入镜像
 ctr -n k8s.io image import ingress-nginx-controller.tar
 ctr -n k8s.io image import ingress-nginx-kube-webhook-certgen.tar
+
+# 查看镜像，其中一个镜像的摘要信息丢失了，不过只要我们修改好YAML，不影响我们使用
+[root@node-1 ~]# crictl image --digests | grep ingress
+registry.k8s.io/ingress-nginx/controller             v1.3.0              <none>              4d43c7489bf23       266MB
+registry.k8s.io/ingress-nginx/kube-webhook-certgen   v1.1.1              64d8c73dca984       c41e9fcadf5a2       18.9MB
+
+# 当我去另一个节点上看时，摘要信息又变了，和原始的不一样了，所以这就是为什么推荐：就当摘要信息不存在就好了
+[root@node-2 ~]# crictl image --digests | grep ingress
+registry.k8s.io/ingress-nginx/controller             v1.3.0              72acf46c79c8e       4d43c7489bf23       266MB
+registry.k8s.io/ingress-nginx/kube-webhook-certgen   v1.1.1              64d8c73dca984       c41e9fcadf5a2       49.1MB
 ```
 
 ### metrics-server
