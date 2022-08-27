@@ -729,10 +729,130 @@ version: 1.9.3
 
 ### （3）配置Chart
 
+:::tip
+
 ```bash
 # 先把原始的配置文件备份一下
 [root@node-1 harbor]# cp values.yaml values.yaml_original
+```
 
+:::
+
+#### （1）expose和externalURL
+
+```bash
+expose:
+  # 设置暴露服务的方式, 支持ingress、clusterIP、nodePort、loadBalancer总共4种方式
+  # 不同暴露方式的参数在具体的YAML区块中填写
+  type: ingress
+  tls:
+    # 是否启用TSL
+    # 当expose.type=ingress且expose.tls=false时，需要
+    #  (1) 删除expose.ingress.annotations中的ingress.kubernetes.io/ssl-redirect: "true"
+    #  (2) 在pull/push镜像时，则必须包含端口, 参考 https://github.com/goharbor/harbor/issues/5291
+    enabled: true
+    # 证书来源，支持以下几种方式:
+    # 1) auto: 自动生成证书
+    # 2) secret: 从secret种读取证书
+    # 3) none: 如果证书配置在ingress种，可以选择此方式
+    certSource: secret              # ===> 证书来源修改为secret
+    auto:
+      # 当使用ingress时必须填写此字段
+      commonName: ""
+    secret:      
+      secretName: harbor            # ===> 修改证书所用secret的名称
+      # 当使用ingress时才会使用此字段， notary secret名称
+      notarySecretName: ""
+  ingress:
+    # 配置主机
+    hosts:
+      core: registry.jinhui.dev    # ===> 配置harbor访问域名
+      notary: ""
+    # 设置ingress controller类型，可选值如下:
+    # 1) default: 适用于大多数ingress controllers
+    # 2) gce: GCE ingress controller
+    # 3) ncp: NCP (NSX-T Container Plugin) ingress controller
+    controller: default
+    # 允许覆盖ingress的.Capabilities.KubeVersion.Version值
+    kubeVersionOverride: ""
+    # 设置ingress class名称         # ===> 配置ingress nginx类名
+    className: nginx
+    annotations:
+      # note different ingress controllers may require a different ssl-redirect annotation
+      # for Envoy, use ingress.kubernetes.io/force-ssl-redirect: "true" and remove the nginx lines below
+      ingress.kubernetes.io/ssl-redirect: "true"
+      ingress.kubernetes.io/proxy-body-size: "0"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    notary:
+      # notary ingress-specific annotations
+      annotations: { }
+      # notary ingress-specific labels
+      labels: { }
+    harbor:
+      # harbor ingress-specific annotations
+      annotations: { }
+      # harbor ingress-specific labels
+      labels: { }
+  clusterIP:
+    # The name of ClusterIP service
+    name: harbor
+    # Annotations on the ClusterIP service
+    annotations: { }
+    ports:
+      # The service port Harbor listens on when serving HTTP
+      httpPort: 80
+      # The service port Harbor listens on when serving HTTPS
+      httpsPort: 443
+      # The service port Notary listens on. Only needed when notary.enabled
+      # is set to true
+      notaryPort: 4443
+  nodePort:
+    # The name of NodePort service
+    name: harbor
+    ports:
+      http:
+        # The service port Harbor listens on when serving HTTP
+        port: 80
+        # The node port Harbor listens on when serving HTTP
+        nodePort: 30002
+      https:
+        # The service port Harbor listens on when serving HTTPS
+        port: 443
+        # The node port Harbor listens on when serving HTTPS
+        nodePort: 30003
+      # Only needed when notary.enabled is set to true
+      notary:
+        # The service port Notary listens on
+        port: 4443
+        # The node port Notary listens on
+        nodePort: 30004
+  loadBalancer:
+    # The name of LoadBalancer service
+    name: harbor
+    # Set the IP if the LoadBalancer supports assigning IP
+    IP: ""
+    ports:
+      # The service port Harbor listens on when serving HTTP
+      httpPort: 80
+      # The service port Harbor listens on when serving HTTPS
+      httpsPort: 443
+      # The service port Notary listens on. Only needed when notary.enabled
+      # is set to true
+      notaryPort: 4443
+    annotations: { }
+    sourceRanges: [ ]
+    
+# Harbor对外暴露的地址, 如果Harbor藏在代理后面，那么应该是代理服务器的地址, 否则：
+#   如果是ingress类型，那么应该为 expose.ingress.hosts.core
+#   如果是clusterIP类型，那么应该为expose.clusterIP.name
+#   如果是nodePort类型，那么应该为k8s node IP
+externalURL: https://registry.jinhui.dev
+```
+
+#### （4）证书配置
+
+```bash
 # 自签证书
 mkcert registry.jinhui.dev.pem
 

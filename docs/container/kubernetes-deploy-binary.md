@@ -2592,16 +2592,14 @@ tkemarket       https://market-tke.tencentcloudcr.com/chartrepo/opensource-stabl
 ### pause
 
 ```bash
-# 拉取镜像
-[root@node-3 ~]# crictl pull registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/pause:3.2
 
-# 重新打个tag
-[root@node-3 ~]# ctr -n k8s.io image tag registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2 k8s.gcr.io/pause:3.2
+# 导出镜像
+docker image save k8s.gcr.io/pause:3.2 -o pause.tar
 
-# 删除一些无用的镜像
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause:3.2
-[root@node-1 ~]# ctr -n k8s.io image rm registry.cn-hangzhou.aliyuncs.com/kubernetes-kubespray/pause@sha256:4a1c4b21597c1b4415bdbecb28a3296c6b5e23ca4f9feeb599860a1dac6a0108
-[root@node-1 ~]# ctr -n k8s.io image rm sha256:80d28bedfe5dec59da9ebf8e6260224ac9008ab5c11dbbe16ee3ba3e4439ac2c
+# 导入镜像
+ctr -n k8s.io image import pause.tar
 
 # 查看当前镜像列表
 [root@node-3 ~]# ctr -n k8s.io image ls -q
