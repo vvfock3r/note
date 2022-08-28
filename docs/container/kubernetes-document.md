@@ -3849,7 +3849,7 @@ drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657
 
 ::: details  （3）nfs
 
-**准备工作**
+**准备工作：**
 
 参考：
 
