@@ -2453,7 +2453,146 @@ kube-system   vpa-updater-859786f5d-4vk2q                 1/1  Running 0 49s  10
 [root@node-1 vertical-pod-autoscaler]# ./hack/vpa-down.sh
 ```
 
-#### （5）Istio
+#### （5）NFS存储
+
+**1）安装NFS Server**
+
+```bash
+# 安装NFS Server, 任意一台服务器即可，可以是集群外的也可以是集群内的
+[root@node-1 ~]# yum -y install nfs-utils
+
+[root@node-1 ~]# vim /etc/exports
+/data/k8s *(rw,no_root_squash)
+
+[root@node-1 ~]# mkdir -p /data/k8s
+
+# 启动服务 & 开机自启
+[root@node-1 ~]# systemctl enable nfs && systemctl start nfs
+
+# 所有Node都需要安装nfs-utils包，但不需要作为NFS Server启动服务
+[root@node-1 ~]# yum -y install nfs-utils
+[root@node-2 ~]# yum -y install nfs-utils
+[root@node-3 ~]# yum -y install nfs-utils
+```
+
+**2）部署NFS外部驱动（存储类），用于实现PV动态供给**
+
+文档：
+
+* [https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic)
+* [https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs)
+
+NFS外部驱动：
+
+* [https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
+
+::: details  使用kubectl安装nfs subdir外部驱动
+
+```bash
+# 克隆代码
+[root@node-1 ~]# git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
+[root@node-1 ~]# cd nfs-subdir-external-provisioner/deploy/
+
+# 拷贝所需要的配置文件
+[root@node-1 deploy]# mkdir deploy
+[root@node-1 deploy]# cp class.yaml \
+						 rbac.yaml \
+						 deployment.yaml						 
+						 objects/serviceaccount.yaml
+					  ./deploy
+[root@node-1 deploy]# cd deploy
+
+# 修改命名空间
+[root@node-1 deploy]# sed -ri 's/([[:blank:]]+)(namespace:)(.*)/\1\2 kube-system/' *.yaml
+
+# 指定NFS Server的地址和路径
+[root@node-1 deploy]# vim deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-client-provisioner
+  labels:
+    app: nfs-client-provisioner
+  # replace with namespace where provisioner is deployed
+  namespace: kube-system
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: k8s-sigs.io/nfs-subdir-external-provisioner
+            - name: NFS_SERVER
+              value: 192.168.48.128      # NFS Server地址
+            - name: NFS_PATH 
+              value: /data/k8s           # NFS 路径
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.48.128       # NFS Server地址
+            path: /data/k8s              # NFS 路径
+
+# 修改回收策略
+[root@node-1 deploy]# vim class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-client
+provisioner: k8s-sigs.io/nfs-subdir-external-provisioner # or choose another name, must match deployment's env PROVISIONER_NAME'
+parameters:
+  # 回收策略为Delete时，是否将NFS中的文件进行归档
+  # 归档的意思是：在NFS目录中，会将我们的数据目录进行改名，以archived-开头，变相达到删除的目录
+  archiveOnDelete: "false"
+
+# 查看所使用的镜像(需要科学上网)
+[root@node-1 deploy]# grep image: *
+deployment.yaml:          image: k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+
+# 创建
+[root@node-1 deploy]# kubectl apply -f .
+storageclass.storage.k8s.io/nfs-client created
+deployment.apps/nfs-client-provisioner created
+serviceaccount/nfs-client-provisioner created
+clusterrole.rbac.authorization.k8s.io/nfs-client-provisioner-runner created
+clusterrolebinding.rbac.authorization.k8s.io/run-nfs-client-provisioner created
+role.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+rolebinding.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
+serviceaccount/nfs-client-provisioner unchanged
+
+# 查看storageClass（不区分命名空间）
+[root@node-1 deploy]# kubectl get sc
+NAME          PROVISIONER                                   RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+nfs-client    k8s-sigs.io/nfs-subdir-external-provisioner   Delete          Immediate           false                  86s
+
+# 查看Deployment
+[root@node-1 deploy]# kubectl get deploy -n kube-system | grep -E 'NAME|nfs'
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+nfs-client-provisioner     1/1     1            1           6m39s
+
+# 查看Pod
+[root@node-1 deploy]# kubectl get pods -n kube-system | grep -E 'NAME|nfs'
+NAME                                        READY   STATUS    RESTARTS            AGE
+nfs-client-provisioner-d846f54bd-r6f77      1/1     Running   0                   7m9s
+```
+
+:::
+
+#### （6）Istio
 
 文档：
 

@@ -245,7 +245,7 @@ drwxr-xr-x 3 root root        20 Jun 10 14:26 common				# 新生成的，用于�
 
 * `--with-notary`：启用内容信任服务（此选项要求必须启用HTTPS）
 
-* `--with-trivy`：启用漏洞扫描服务
+* `--with-trivy`：启用镜像漏洞扫描服务
 
 * `--with-chartmuseum`：启用Chart仓库服务（推荐安装此服务）
 
@@ -738,19 +738,21 @@ version: 1.9.3
 
 :::
 
-#### （1）expose和externalURL
+#### （1）服务暴露配置
+
+::: details 方式一：expose.type = ingress（推荐）
 
 ```bash
 expose:
   # 设置暴露服务的方式, 支持ingress、clusterIP、nodePort、loadBalancer总共4种方式
   # 不同暴露方式的参数在具体的YAML区块中填写
-  type: ingress
+  type: ingress						# ===> 暴露类型为ingress(默认配置无需修改)
   tls:
     # 是否启用TSL
     # 当expose.type=ingress且expose.tls=false时，需要
     #  (1) 删除expose.ingress.annotations中的ingress.kubernetes.io/ssl-redirect: "true"
     #  (2) 在pull/push镜像时，则必须包含端口, 参考 https://github.com/goharbor/harbor/issues/5291
-    enabled: true
+    enabled: true					# ===> 启用TLS(默认配置无需修改)
     # 证书来源，支持以下几种方式:
     # 1) auto: 自动生成证书
     # 2) secret: 从secret种读取证书
@@ -766,97 +768,307 @@ expose:
   ingress:
     # 配置主机
     hosts:
-      core: registry.jinhui.dev    # ===> 配置harbor访问域名
-      notary: ""
+      core: registry.jinhui.dev    # ===> 修改harbor core服务域名
+      notary: notary.harbor.domain # ===> 没有启用notary服务，不用设置
     # 设置ingress controller类型，可选值如下:
     # 1) default: 适用于大多数ingress controllers
     # 2) gce: GCE ingress controller
     # 3) ncp: NCP (NSX-T Container Plugin) ingress controller
-    controller: default
+    controller: default				# ===> ingress类型(默认配置无需修改)
     # 允许覆盖ingress的.Capabilities.KubeVersion.Version值
     kubeVersionOverride: ""
-    # 设置ingress class名称         # ===> 配置ingress nginx类名
+    # 设置ingress class名称         # ===> 修改ingress nginx类名
     className: nginx
     annotations:
-      # note different ingress controllers may require a different ssl-redirect annotation
-      # for Envoy, use ingress.kubernetes.io/force-ssl-redirect: "true" and remove the nginx lines below
       ingress.kubernetes.io/ssl-redirect: "true"
       ingress.kubernetes.io/proxy-body-size: "0"
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
       nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    notary:
-      # notary ingress-specific annotations
+    notary:      
       annotations: { }
-      # notary ingress-specific labels
       labels: { }
     harbor:
-      # harbor ingress-specific annotations
       annotations: { }
-      # harbor ingress-specific labels
       labels: { }
-  clusterIP:
-    # The name of ClusterIP service
-    name: harbor
-    # Annotations on the ClusterIP service
-    annotations: { }
-    ports:
-      # The service port Harbor listens on when serving HTTP
-      httpPort: 80
-      # The service port Harbor listens on when serving HTTPS
-      httpsPort: 443
-      # The service port Notary listens on. Only needed when notary.enabled
-      # is set to true
-      notaryPort: 4443
-  nodePort:
-    # The name of NodePort service
-    name: harbor
-    ports:
-      http:
-        # The service port Harbor listens on when serving HTTP
-        port: 80
-        # The node port Harbor listens on when serving HTTP
-        nodePort: 30002
-      https:
-        # The service port Harbor listens on when serving HTTPS
-        port: 443
-        # The node port Harbor listens on when serving HTTPS
-        nodePort: 30003
-      # Only needed when notary.enabled is set to true
-      notary:
-        # The service port Notary listens on
-        port: 4443
-        # The node port Notary listens on
-        nodePort: 30004
-  loadBalancer:
-    # The name of LoadBalancer service
-    name: harbor
-    # Set the IP if the LoadBalancer supports assigning IP
-    IP: ""
-    ports:
-      # The service port Harbor listens on when serving HTTP
-      httpPort: 80
-      # The service port Harbor listens on when serving HTTPS
-      httpsPort: 443
-      # The service port Notary listens on. Only needed when notary.enabled
-      # is set to true
-      notaryPort: 4443
-    annotations: { }
-    sourceRanges: [ ]
-    
+
 # Harbor对外暴露的地址, 如果Harbor藏在代理后面，那么应该是代理服务器的地址, 否则：
 #   如果是ingress类型，那么应该为 expose.ingress.hosts.core
 #   如果是clusterIP类型，那么应该为expose.clusterIP.name
 #   如果是nodePort类型，那么应该为k8s node IP
-externalURL: https://registry.jinhui.dev
+externalURL: https://registry.jinhui.dev  # ===> 修改harbor访问域名
 ```
 
-#### （4）证书配置
+:::
+
+::: details 方式二：expose.type = nodePort
+
+:::
+
+::: details SSL证书配置，这里使用自签证书
 
 ```bash
 # 自签证书
-mkcert registry.jinhui.dev.pem
+[root@node-1 ~]# mkcert registry.jinhui.dev.pem
 
 # 创建TLS secret
-[root@node-1 yamlconfig]# kubectl create secret tls harbor --cert=registry.jinhui.dev.pem --key=registry.jinhui.dev-key.pem
+[root@node-1 ~]# kubectl create secret tls harbor 
+					-n harbor \
+                	--cert=registry.jinhui.dev.pem \
+                	--key=registry.jinhui.dev-key.pem
+```
+
+:::
+
+#### （2）数据持久化配置
+
+::: details 使用storageClass（PVC动态供给）
+
+```bash
+persistence:
+  # 开启持久化
+  enabled: true					# ===> 开启持久化(默认配置无需修改)
+  # 执行helm delete时对PVC的操作:
+  #   1) "keep": 不会删除PVC
+  #   2) "": 置为空，会删除PVC
+  resourcePolicy: "keep"	
+  # PVC设置
+  persistentVolumeClaim:
+    registry:
+      # 指定一个已经存在的PVC名称
+      existingClaim: ""
+      # 指定storageClass:
+      # 空值: 话使用默认的storageClass，
+      # “-”: 关闭PVC自动供给
+      storageClass: nfs-client	# ===> 修改为NFS的存储类
+      # subPath配合existingClaim使用
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      annotations: { }
+    chartmuseum:
+      existingClaim: ""
+      storageClass: nfs-client	# ===> 修改为NFS的存储类
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      annotations: { }
+    jobservice:
+      existingClaim: ""
+      storageClass: nfs-client	# ===> 修改为NFS的存储类	    
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: { }
+    # 内部数据库配置(若使用了外部数据则此配置将被忽略)
+    database:
+      existingClaim: ""
+      storageClass: nfs-client	# ===> 修改为NFS的存储类
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: { }
+    # 内部数据库配置(若使用了外部数据则此配置将被忽略)
+    redis:
+      existingClaim: ""
+      storageClass: nfs-client	# ===> 修改为NFS的存储类
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: { }
+    # trivy服务配置
+    trivy:
+      existingClaim: ""
+      storageClass: nfs-client	# ===> 修改为NFS的存储类
+      subPath: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      annotations: { }
+  # 定义image和chart的存储后端，详情参考: https://github.com/docker/distribution/blob/master/docs/configuration.md#storage
+  imageChartStorage:
+    # 是否关闭image和chart第二份存储，详情参考：https://github.com/docker/distribution/blob/master/docs/configuration.md#redirect
+    disableredirect: false
+    # 如果存储服务使用了自签证书，则必须指定下面的secret,secret包含ca.crt
+    # caBundleSecretName:
+
+    # 指定存储类型，如果使用PV存储的话则必须是filesystem类型
+    type: filesystem
+    filesystem:
+      rootdirectory: /storage
+      #maxthreads: 100
+```
+
+:::
+
+#### （3）数据库设置
+
+```bash
+database:
+  # if external database is used, set "type" to "external"
+  # and fill the connection informations in "external" section
+  type: internal		# ===> 使用内部数据库，默认配置
+  internal:
+    # set the service account to be used, default if left empty
+    serviceAccountName: ""
+    # mount the service account token
+    automountServiceAccountToken: false
+    image:
+      repository: goharbor/harbor-db
+      tag: v2.5.3
+    # The initial superuser password for internal database
+    password: NCyNHwtcciTzybcT	# ===> 修改数据库密码
+    # The size limit for Shared memory, pgSQL use it for shared_buffer
+    # More details see:
+    # https://github.com/goharbor/harbor/issues/15034
+    shmSizeLimit: 512Mi
+    # resources:
+    #  requests:
+    #    memory: 256Mi
+    #    cpu: 100m
+    nodeSelector: { }
+    tolerations: [ ]
+    affinity: { }
+    ## The priority class to run the pod as
+    priorityClassName:
+    initContainer:
+      migrator: { }
+      # resources:
+      #  requests:
+      #    memory: 128Mi
+      #    cpu: 100m
+      permissions: { }
+      # resources:
+      #  requests:
+      #    memory: 128Mi
+      #    cpu: 100m
+  external:
+    host: "192.168.0.1"
+    port: "5432"
+    username: "user"
+    password: "password"
+    coreDatabase: "registry"
+    notaryServerDatabase: "notary_server"
+    notarySignerDatabase: "notary_signer"
+    # "disable" - No SSL
+    # "require" - Always SSL (skip verification)
+    # "verify-ca" - Always SSL (verify that the certificate presented by the
+    # server was signed by a trusted CA)
+    # "verify-full" - Always SSL (verify that the certification presented by the
+    # server was signed by a trusted CA and the server host name matches the one
+    # in the certificate)
+    sslmode: "disable"
+  # The maximum number of connections in the idle connection pool per pod (core+exporter).
+  # If it <=0, no idle connections are retained.
+  maxIdleConns: 100
+  # The maximum number of open connections to the database per pod (core+exporter).
+  # If it <= 0, then there is no limit on the number of open connections.
+  # Note: the default number of connections is 1024 for postgre of harbor.
+  maxOpenConns: 900
+  ## Additional deployment annotations
+  podAnnotations: { }
+
+redis:
+  # if external Redis is used, set "type" to "external"
+  # and fill the connection informations in "external" section
+  type: internal		# ===> 使用内部Redis，默认配置
+  internal:
+    # set the service account to be used, default if left empty
+    serviceAccountName: ""
+    # mount the service account token
+    automountServiceAccountToken: false
+    image:
+      repository: goharbor/redis-photon
+      tag: v2.5.3
+    # resources:
+    #  requests:
+    #    memory: 256Mi
+    #    cpu: 100m
+    nodeSelector: { }
+    tolerations: [ ]
+    affinity: { }
+    ## The priority class to run the pod as
+    priorityClassName:
+  external:
+    # support redis, redis+sentinel
+    # addr for redis: <host_redis>:<port_redis>
+    # addr for redis+sentinel: <host_sentinel1>:<port_sentinel1>,<host_sentinel2>:<port_sentinel2>,<host_sentinel3>:<port_sentinel3>
+    addr: "192.168.0.2:6379"
+    # The name of the set of Redis instances to monitor, it must be set to support redis+sentinel
+    sentinelMasterSet: ""
+    # The "coreDatabaseIndex" must be "0" as the library Harbor
+    # used doesn't support configuring it
+    coreDatabaseIndex: "0"
+    jobserviceDatabaseIndex: "1"
+    registryDatabaseIndex: "2"
+    chartmuseumDatabaseIndex: "3"
+    trivyAdapterIndex: "5"
+    password: ""
+  ## Additional deployment annotations
+  podAnnotations: { }
+```
+
+#### （4）可选服务开关
+
+```bash
+# Helm Chart仓库服务
+chartmuseum:
+  enabled: true
+  ...
+
+# 镜像漏洞扫描服务
+trivy:  
+  enabled: true
+  ...
+
+# 内容信任服务
+notary:
+  enabled: true
+  ...
+
+# prometheus监控
+metrics:
+  enabled: true
+  ...
+
+# jaeger 或 otel
+trace:
+  enabled: false
+  ...
+```
+
+#### （5）密码/密钥设置
+
+```bash
+# Web界面登录密码
+harborAdminPassword: "Harbor12345"
+
+# secret key(16个字符)
+secretKey: "LZmhu65YarWqkPzX"
+```
+
+### （4）安装Harbor
+
+```bash
+# 先创建一个命名空间
+[root@node-1 harbor]# kubectl create namespace harbor
+namespace/harbor created
+
+# 安装
+[root@node-1 harbor]# helm install harbor . --namespace harbor
+NAME: harbor
+LAST DEPLOYED: Sun Aug 28 08:37:00 2022
+NAMESPACE: harbor
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Please wait for several minutes for Harbor deployment to complete.
+Then you should be able to visit the Harbor portal at https://registry.jinhui.dev
+For more details, please visit https://github.com/goharbor/harbor
+```
+
+### （5）卸载Harbor
+
+```bash
+[root@node-1 harbor]# helm uninstall harbor -n harbor
 ```
 

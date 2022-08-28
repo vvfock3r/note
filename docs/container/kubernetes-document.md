@@ -3851,20 +3851,7 @@ drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657
 
 **准备工作**
 
-```bash
-# 这里使用node0作为一个nfs server
-[root@node0 ~]# yum -y install nfs-utils
-[root@node0 ~]# vim /etc/exports
-/data/k8s *(rw,no_root_squash)
-
-[root@node0 ~]# mkdir -p /data/k8s
-[root@node0 ~]# systemctl start nfs
-[root@node0 ~]# systemctl enable nfs
-
-# 所有node都需要安装nfs-utils包
-[root@node1 ~]# yum -y install nfs-utils
-[root@node2 ~]# yum -y install nfs-utils
-```
+参考：
 
 **测试NFS**
 
@@ -4539,96 +4526,6 @@ Events:
 
 * [https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic)
 * [https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs)
-
-NFS外部驱动：
-
-* [https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
-
-::: details  使用kubectl安装nfs subdir外部驱动
-
-```bash
-# 克隆代码
-[root@node0 ~]# git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
-[root@node0 ~]# cd nfs-subdir-external-provisioner/deploy/
-
-# 修改配置
-[root@node0 deploy]# vim deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nfs-client-provisioner
-  labels:
-    app: nfs-client-provisioner
-  # replace with namespace where provisioner is deployed
-  namespace: default   # 命名空间，根据实际情况修改，建议修改
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: nfs-client-provisioner
-  template:
-    metadata:
-      labels:
-        app: nfs-client-provisioner
-    spec:
-      serviceAccountName: nfs-client-provisioner
-      containers:
-        - name: nfs-client-provisioner
-          image: k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
-          volumeMounts:
-            - name: nfs-client-root
-              mountPath: /persistentvolumes
-          env:
-            - name: PROVISIONER_NAME
-              value: k8s-sigs.io/nfs-subdir-external-provisioner
-            - name: NFS_SERVER
-              value: 192.168.48.128      # NFS Server地址
-            - name: NFS_PATH 
-              value: /data/k8s           # NFS 路径
-      volumes:
-        - name: nfs-client-root
-          nfs:
-            server: 192.168.48.128       # NFS Server地址
-            path: /data/k8s              # NFS 路径
-            
-[root@node0 deploy]# vim class.yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: nfs-client
-provisioner: k8s-sigs.io/nfs-subdir-external-provisioner # or choose another name, must match deployment's env PROVISIONER_NAME'
-parameters:
-  # 回收策略为Delete时，是否将NFS中的文件进行归档
-  # 归档的意思是：在NFS目录中，会将我们的数据目录进行改名，以archived-开头，变相达到删除的目录
-  archiveOnDelete: "false"
-  
-# 创建
-[root@node0 deploy]# kubectl apply -f class.yaml,rbac.yaml,deployment.yaml
-storageclass.storage.k8s.io/nfs-client created
-serviceaccount/nfs-client-provisioner created
-clusterrole.rbac.authorization.k8s.io/nfs-client-provisioner-runner created
-clusterrolebinding.rbac.authorization.k8s.io/run-nfs-client-provisioner created
-role.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
-rolebinding.rbac.authorization.k8s.io/leader-locking-nfs-client-provisioner created
-deployment.apps/nfs-client-provisioner created
-
-# 查看创建的资源
-[root@node0 deploy]# kubectl get sc
-NAME         PROVISIONER                                   RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
-nfs-client   k8s-sigs.io/nfs-subdir-external-provisioner   Delete          Immediate           false                  12s
-
-[root@node0 deploy]# kubectl get deploy
-NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
-nfs-client-provisioner   1/1     1            1           2m2s
-
-[root@node0 deploy]# kubectl get pods -o wide
-NAME                                      READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
-nfs-client-provisioner-659556df74-s6wxg   1/1     Running   0          2m13s   10.233.44.27   node2   <none>           <none>
-```
-
-:::
 
 ::: details  使用NFS动态供给：我们不再需要自定义PV，而是由NFS驱动动态创建PV
 
