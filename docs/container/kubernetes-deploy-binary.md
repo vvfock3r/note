@@ -2486,6 +2486,12 @@ NFS外部驱动：
 
 * [https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
 
+:::tip
+
+镜像下载参考：<a href="#nfs-subdir-external-provisioner" style="text-decoration:none;">nfs-subdir-external-provisioner</a>
+
+:::
+
 ::: details  使用kubectl安装nfs subdir外部驱动
 
 ```bash
