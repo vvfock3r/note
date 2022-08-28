@@ -1054,5 +1054,11 @@ database-data-harbor-database-0   Bound    ...太长了省略   1Gi        RWO  
 harbor-chartmuseum                Bound    ...太长了省略   5Gi        RWO            nfs-client     3m
 harbor-jobservice                 Bound    ...太长了省略   1Gi        RWO            nfs-client     3m
 harbor-registry                   Bound    ...太长了省略   5Gi        RWO            nfs-client     3m
+
+# 删除PVC（请根据实际情况执行，避免误删数据）
+[root@node-1 harbor]# kubectl get pvc -n harbor | awk '{print $1}' | grep -Ev 'NAME' | \
+while read line; do
+    kubectl delete pvc ${line} -n harbor
+done
 ```
 
