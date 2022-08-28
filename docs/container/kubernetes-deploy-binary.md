@@ -245,7 +245,7 @@ vm.overcommit_memory = 1
 
 ```bash
 # 检查模块是否已经加载（输出为空代表模块没有加载）
-[root@node0 ~]# lsmod | grep br_netfilter
+[root@localhost ~]# lsmod | grep br_netfilter
 br_netfilter           22256  0 
 bridge                151336  1 br_netfilter
 
@@ -271,7 +271,7 @@ bridge                151336  1 br_netfilter
 
 ```bash
 # 检查当前配置
-[root@node-1 ~]# ulimit -a | grep -E 'open files|max user processes'
+[root@localhost ~]# ulimit -a | grep -E 'open files|max user processes'
 open files                      (-n) 1024
 max user processes              (-u) 7184
 
@@ -298,12 +298,12 @@ EOF
 
 ```bash
 # 生成密钥对
-[root@node-1 ~]# ssh-keygen -t rsa
+[root@localhost ~]# ssh-keygen -t rsa
 
 # 配置免密登录
-[root@node-1 ~]# ssh-copy-id root@node-1
-[root@node-1 ~]# ssh-copy-id root@node-2
-[root@node-1 ~]# ssh-copy-id root@node-3
+[root@localhost ~]# ssh-copy-id root@node-1
+[root@localhost ~]# ssh-copy-id root@node-2
+[root@localhost ~]# ssh-copy-id root@node-3
 ```
 
 ### 下载软件包
@@ -2455,7 +2455,7 @@ kube-system   vpa-updater-859786f5d-4vk2q                 1/1  Running 0 49s  10
 
 #### （5）NFS存储
 
-**1）安装NFS Server**
+**1）安装NFS Server及依赖**
 
 ```bash
 # 安装NFS Server, 任意一台服务器即可，可以是集群外的也可以是集群内的

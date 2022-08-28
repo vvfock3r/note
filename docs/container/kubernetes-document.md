@@ -3849,9 +3849,9 @@ drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657
 
 ::: details  （3）nfs
 
-**准备工作：**
+**准备工作**
 
-参考：
+安装NFS Server及依赖：[https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储](https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储)
 
 **测试NFS**
 
@@ -4526,6 +4526,10 @@ Events:
 
 * [https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#dynamic)
 * [https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs](https://kubernetes.io/zh-cn/docs/concepts/storage/storage-classes/#nfs)
+
+安装依赖：
+
+* [https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储](https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储)
 
 ::: details  使用NFS动态供给：我们不再需要自定义PV，而是由NFS驱动动态创建PV
 
