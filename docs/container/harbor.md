@@ -1022,15 +1022,15 @@ For more details, please visit https://github.com/goharbor/harbor
 # 查看Pod状态
 [root@node-1 harbor]# kubectl get pods -n harbor
 NAME                                  READY   STATUS    RESTARTS   AGE
-harbor-chartmuseum-7494f58489-g9b2j   1/1     Running   0          54s
-harbor-core-698fb995d8-krprc          1/1     Running   0          54s
-harbor-database-0                     1/1     Running   0          54s
-harbor-exporter-787bd47fb6-dkzl9      0/1     Running   0          54s
-harbor-jobservice-5b47654fdd-mvktv    1/1     Running   0          54s
-harbor-portal-685498cc69-7k7nn        1/1     Running   0          54s
-harbor-redis-0                        1/1     Running   0          54s
-harbor-registry-95595c48b-4sw8j       2/2     Running   0          54s
-harbor-trivy-0                        1/1     Running   0          54s
+harbor-chartmuseum-744f8b5cb4-9jhv8   1/1     Running   0          3m31s
+harbor-core-75fbdb7948-6qcb2          1/1     Running   0          3m31s
+harbor-database-0                     1/1     Running   0          3m31s
+harbor-exporter-787bd47fb6-2grwr      1/1     Running   0          3m31s
+harbor-jobservice-58f889dc8c-8qd9v    1/1     Running   0          3m31s
+harbor-portal-685498cc69-qwkzl        1/1     Running   0          3m31s
+harbor-redis-0                        1/1     Running   0          3m31s
+harbor-registry-696b45fd59-qcjcl      2/2     Running   0          3m31s
+harbor-trivy-0                        1/1     Running   0          3m31s
 ```
 
 ### （5）卸载Harbor
