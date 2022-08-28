@@ -2228,8 +2228,8 @@ NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP
 ingress-nginx-controller             LoadBalancer   10.233.167.128   <pending>     80:32261/TCP,443:32262/TCP   51m
 ingress-nginx-controller-admission   ClusterIP      10.233.203.28    <none>        443/TCP                      51m
 
-# 查看Ingress NGINX Class Name
-[root@node-1 ~]# kubectl get ingressclass -A
+# 查看Ingress NGINX Class Name（不区分命名空间）
+[root@node-1 ~]# kubectl get ingressclass
 NAME    CONTROLLER             PARAMETERS   AGE
 nginx   k8s.io/ingress-nginx   <none>       51m
 ```

@@ -777,7 +777,7 @@ expose:
     controller: default				# ===> ingress类型(默认配置无需修改)
     # 允许覆盖ingress的.Capabilities.KubeVersion.Version值
     kubeVersionOverride: ""
-    # 设置ingress class名称         # ===> 修改ingress nginx类名
+    # 设置ingress class名称         # ===> 修改ingress nginx类名，使用kubectl get ingressclass查看类名
     className: nginx
     annotations:
       ingress.kubernetes.io/ssl-redirect: "true"
@@ -837,7 +837,7 @@ persistence:
       # 指定一个已经存在的PVC名称
       existingClaim: ""
       # 指定storageClass:
-      # 空值: 话使用默认的storageClass，
+      # 空值: 使用默认的storageClass，
       # “-”: 关闭PVC自动供给
       storageClass: nfs-client	# ===> 修改为NFS的存储类
       # subPath配合existingClaim使用
@@ -895,6 +895,15 @@ persistence:
     filesystem:
       rootdirectory: /storage
       #maxthreads: 100
+
+# 检查是否全部修改了
+[root@node-1 harbor]# grep storageClass values.yaml | grep -Ev '#'
+      storageClass: nfs-client
+      storageClass: nfs-client
+      storageClass: nfs-client
+      storageClass: nfs-client
+      storageClass: nfs-client
+      storageClass: nfs-client
 ```
 
 :::
@@ -903,22 +912,14 @@ persistence:
 
 ```bash
 database:
-  # if external database is used, set "type" to "external"
-  # and fill the connection informations in "external" section
   type: internal		# ===> 使用内部数据库，默认配置
-  internal:
-    # set the service account to be used, default if left empty
+  internal:    
     serviceAccountName: ""
-    # mount the service account token
     automountServiceAccountToken: false
     image:
       repository: goharbor/harbor-db
       tag: v2.5.3
-    # The initial superuser password for internal database
     password: NCyNHwtcciTzybcT	# ===> 修改数据库密码
-    # The size limit for Shared memory, pgSQL use it for shared_buffer
-    # More details see:
-    # https://github.com/goharbor/harbor/issues/15034
     shmSizeLimit: 512Mi
     # resources:
     #  requests:
@@ -940,40 +941,11 @@ database:
       #  requests:
       #    memory: 128Mi
       #    cpu: 100m
-  external:
-    host: "192.168.0.1"
-    port: "5432"
-    username: "user"
-    password: "password"
-    coreDatabase: "registry"
-    notaryServerDatabase: "notary_server"
-    notarySignerDatabase: "notary_signer"
-    # "disable" - No SSL
-    # "require" - Always SSL (skip verification)
-    # "verify-ca" - Always SSL (verify that the certificate presented by the
-    # server was signed by a trusted CA)
-    # "verify-full" - Always SSL (verify that the certification presented by the
-    # server was signed by a trusted CA and the server host name matches the one
-    # in the certificate)
-    sslmode: "disable"
-  # The maximum number of connections in the idle connection pool per pod (core+exporter).
-  # If it <=0, no idle connections are retained.
-  maxIdleConns: 100
-  # The maximum number of open connections to the database per pod (core+exporter).
-  # If it <= 0, then there is no limit on the number of open connections.
-  # Note: the default number of connections is 1024 for postgre of harbor.
-  maxOpenConns: 900
-  ## Additional deployment annotations
-  podAnnotations: { }
 
-redis:
-  # if external Redis is used, set "type" to "external"
-  # and fill the connection informations in "external" section
+redis: 
   type: internal		# ===> 使用内部Redis，默认配置
   internal:
-    # set the service account to be used, default if left empty
-    serviceAccountName: ""
-    # mount the service account token
+    serviceAccountName: ""    
     automountServiceAccountToken: false
     image:
       repository: goharbor/redis-photon
@@ -985,46 +957,28 @@ redis:
     nodeSelector: { }
     tolerations: [ ]
     affinity: { }
-    ## The priority class to run the pod as
     priorityClassName:
-  external:
-    # support redis, redis+sentinel
-    # addr for redis: <host_redis>:<port_redis>
-    # addr for redis+sentinel: <host_sentinel1>:<port_sentinel1>,<host_sentinel2>:<port_sentinel2>,<host_sentinel3>:<port_sentinel3>
-    addr: "192.168.0.2:6379"
-    # The name of the set of Redis instances to monitor, it must be set to support redis+sentinel
-    sentinelMasterSet: ""
-    # The "coreDatabaseIndex" must be "0" as the library Harbor
-    # used doesn't support configuring it
-    coreDatabaseIndex: "0"
-    jobserviceDatabaseIndex: "1"
-    registryDatabaseIndex: "2"
-    chartmuseumDatabaseIndex: "3"
-    trivyAdapterIndex: "5"
-    password: ""
-  ## Additional deployment annotations
-  podAnnotations: { }
 ```
 
 #### （4）可选服务开关
 
 ```bash
-# Helm Chart仓库服务
+# Helm Chart仓库服务（默认开启）
 chartmuseum:
   enabled: true
   ...
 
-# 镜像漏洞扫描服务
+# 镜像漏洞扫描服务（默认开启）
 trivy:  
   enabled: true
   ...
 
-# 内容信任服务
+# 内容信任服务（手动关闭）
 notary:
-  enabled: true
+  enabled: false
   ...
 
-# prometheus监控
+# prometheus监控（建议开启）
 metrics:
   enabled: true
   ...
@@ -1039,10 +993,10 @@ trace:
 
 ```bash
 # Web界面登录密码
-harborAdminPassword: "Harbor12345"
+harborAdminPassword: UXUCvl1IFbiRjCIm
 
 # secret key(16个字符)
-secretKey: "LZmhu65YarWqkPzX"
+secretKey: LZmhu65YarWqkPzX
 ```
 
 ### （4）安装Harbor
@@ -1064,11 +1018,41 @@ NOTES:
 Please wait for several minutes for Harbor deployment to complete.
 Then you should be able to visit the Harbor portal at https://registry.jinhui.dev
 For more details, please visit https://github.com/goharbor/harbor
+
+# 查看Pod状态
+[root@node-1 harbor]# kubectl get pods -n harbor
+NAME                                  READY   STATUS    RESTARTS   AGE
+harbor-chartmuseum-7494f58489-g9b2j   1/1     Running   0          54s
+harbor-core-698fb995d8-krprc          1/1     Running   0          54s
+harbor-database-0                     1/1     Running   0          54s
+harbor-exporter-787bd47fb6-dkzl9      0/1     Running   0          54s
+harbor-jobservice-5b47654fdd-mvktv    1/1     Running   0          54s
+harbor-portal-685498cc69-7k7nn        1/1     Running   0          54s
+harbor-redis-0                        1/1     Running   0          54s
+harbor-registry-95595c48b-4sw8j       2/2     Running   0          54s
+harbor-trivy-0                        1/1     Running   0          54s
 ```
 
 ### （5）卸载Harbor
 
 ```bash
-[root@node-1 harbor]# helm uninstall harbor -n harbor
+# 卸载Harbor，但是不会(完全)删除PVC
+[root@node-1 ~]# helm uninstall harbor -n harbor
+These resources were kept due to the resource policy:
+[PersistentVolumeClaim] harbor-chartmuseum
+[PersistentVolumeClaim] harbor-jobservice
+[PersistentVolumeClaim] harbor-registry
+
+release "harbor" uninstalled
+
+# 查看PVC
+[root@node-1 ~]# kubectl get pvc -n harbor
+NAME                              STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+data-harbor-redis-0               Bound    ...太长了省略   1Gi        RWO            nfs-client     87m
+data-harbor-trivy-0               Bound    ...太长了省略   5Gi        RWO            nfs-client     87m
+database-data-harbor-database-0   Bound    ...太长了省略   1Gi        RWO            nfs-client     87m
+harbor-chartmuseum                Bound    ...太长了省略   5Gi        RWO            nfs-client     3m
+harbor-jobservice                 Bound    ...太长了省略   1Gi        RWO            nfs-client     3m
+harbor-registry                   Bound    ...太长了省略   5Gi        RWO            nfs-client     3m
 ```
 
