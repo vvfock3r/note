@@ -2822,3 +2822,16 @@ ctr -n k8s.io image import vpa-updater.tar
 ctr -n k8s.io image import vpa-recommender.tar
 ctr -n k8s.io image import vpa-admission-controller.tar
 ```
+
+### nfs-subdir-external-provisioner
+
+```bash
+# 下载镜像（需科学上网）
+docker image pull k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+
+# 导出镜像
+docker image save k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2 -o nfs-subdir-external-provisioner.tar
+
+# 导入镜像
+ctr -n k8s.io image import nfs-subdir-external-provisioner.tar
+```
