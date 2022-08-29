@@ -4626,12 +4626,12 @@ deployment.apps/demo created
 
 **滚动更新**
 
-| 字段                                                         | 可选字段 | 默认值          | 说明 |
-| ------------------------------------------------------------ | -------- | --------------- | ---- |
-| 更新策略类型<br />（`.spec.strategy.type`）                  | 是       | `RollingUpdate` |      |
-| 最大不可用<br />（`.spec.strategy.rollingUpdate.maxUnavailable`） | 是       | `25%`           |      |
-| 最大峰值<br />（`.spec.strategy.rollingUpdate.maxSurge`）    | 是       | `25%`           |      |
-| 最短就绪时间<br />（`.spec.minReadySeconds`）                | 是       | 0               |      |
+| 字段                                                         | 可选字段 | 默认值          | 说明                                                         |
+| ------------------------------------------------------------ | -------- | --------------- | ------------------------------------------------------------ |
+| 更新策略类型<br />（`.spec.strategy.type`）                  | 是       | `RollingUpdate` |                                                              |
+| 最大不可用<br />（`.spec.strategy.rollingUpdate.maxUnavailable`） | 是       | `25%`           | 可以是绝对数字（例如，5），<br />也可以是所需 Pods 的百分比（例如，10%）；<br />百分比值会转换成绝对数并去除小数部分 |
+| 最大峰值<br />（`.spec.strategy.rollingUpdate.maxSurge`）    | 是       | `25%`           | 可以是绝对数字（例如，5），<br />也可以是所需 Pods 的百分比（例如，10%）；<br />百分比值会通过向上取整转换为绝对数 |
+| 最短就绪时间<br />（`.spec.minReadySeconds`）                | 是       | 0               |                                                              |
 
 ::: details  滚动更新示例
 
@@ -4717,6 +4717,12 @@ demo-8f99576b9-vrfvx   1/1     Running   0          99s
 ```
 
 :::
+
+### 蓝绿部署
+
+
+
+
 
 ## 
 
