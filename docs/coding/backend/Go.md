@@ -103,469 +103,6 @@ func main() {
 main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mod file not found in current directory or any parent directory; see 'go help modules'
 ```
 
-我们将在`Go Modules`来解决这个问题
-
-### Go Modules
-
-文档：[https://go.dev/ref/mod](https://go.dev/ref/mod)
-
-从`Go1.11`开始，官方推出Go module作为包管理工具
-
-
-
-#### （1）开启Go Module
-
-`GO111MODULE`变量控制是否启用go modules，他有3个值：
-
-* `on`：开启go module
-* `off`：关闭go module
-* `auto`：根据项目配置自动选择使用`go module`还是`go path`
-
-```bash
-# 不管开启没开启，都重新开启一遍
-C:\Users\Administrator\Desktop\Notes>go env -w GO111MODULE=on
-C:\Users\Administrator\Desktop\Notes>go env GO111MODULE
-on
-```
-
-
-
-#### （2）初始化项目：`go mod init`
-
-文档：[https://go.dev/ref/mod#go-mod-init](https://go.dev/ref/mod#go-mod-init)
-
-**基础使用**
-
-```bash
-# 先创建我们的项目目录demo
-[root@localhost ~]# mkdir demo
-[root@localhost ~]# cd demo/
-
-# 然后初始化项目
-[root@localhost demo]# go mod init demo
-go: creating new go.mod: module demo
-
-# 看一下都做了什么事：生成了一个文件go.mod
-[root@localhost demo]# ll
-total 4
--rw-r--r-- 1 root root 21 May 30 19:27 go.mod
-
-# 看看这个文件内容
-[root@localhost demo]# cat go.mod 
-module demo		# 模块名
-
-go 1.18			# go版本
-```
-
-**我们来看几个go明星项目的module名是如何写的**
-
-| Github地址                               | Module Name                               |
-| ---------------------------------------- | ----------------------------------------- |
-| https://github.com/containerd/containerd | `module github.com/containerd/containerd` |
-| https://github.com/gin-gonic/gin         | `module github.com/gin-gonic/gin`         |
-| https://github.com/pingcap/tidb          | `module github.com/pingcap/tidb`          |
-
-仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？，先不管他，后面再说
-
-**继续使用gin**
-
-```bash
-[root@localhost demo]# ls -l
-total 8
--rw-r--r-- 1 root root  21 May 30 19:49 go.mod
--rw-r--r-- 1 root root 327 May 30 19:17 main.go
-[root@localhost demo]# cat main.go
-package main
-
-import (
-        "github.com/gin-gonic/gin"
-        "log"
-        "net/http"
-)
-
-func main() {
-        // 监听地址
-        addr := "127.0.0.1:80"
-
-        // 实例化Gin路由引擎
-        r := gin.Default()
-
-        // 注册路由
-        r.GET("/", func(c *gin.Context) {
-                c.String(http.StatusOK, "Hello Gin!\n")
-        })
-
-        // 启动Gin Server
-        log.Fatalln(r.Run(addr))
-}
-[root@localhost demo]# go run main.go		# 这次报错不一样了，让我们使用go get下载gin
-main.go:4:2: no required module provides package github.com/gin-gonic/gin; to add it:
-        go get github.com/gin-gonic/gin
-```
-
-
-
-#### （3）下载第三方包：`go get`
-
-文档：[https://go.dev/ref/mod#go-get](https://go.dev/ref/mod#go-get)
-
-特点：
-
-* 必须在项目目录(含有go.mod的目录)使用`go get`，无法在全局目录使用
-* `go get`用来管理第三方包版本问题，会自动维护go.mod和go.sum文件
-* `go get`下载的包放在GOPATH/pkg目录内
-* 若不指定版本号只能更新到`v1.x.x`最新版，若第三方包没有版本号（Tag）则会更新到最后一次提交的代码
-
-
-
-::: details 基础用法
-
-```bash
-# 下载
-[root@localhost demo]# go get github.com/gin-gonic/gin
-go: added github.com/gin-contrib/sse v0.1.0
-go: added github.com/gin-gonic/gin v1.8.0
-go: added github.com/go-playground/locales v0.14.0
-go: added github.com/go-playground/universal-translator v0.18.0
-go: added github.com/go-playground/validator/v10 v10.10.0
-go: added github.com/goccy/go-json v0.9.7
-go: added github.com/json-iterator/go v1.1.12
-go: added github.com/leodido/go-urn v1.2.1
-go: added github.com/mattn/go-isatty v0.0.14
-go: added github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421
-go: added github.com/modern-go/reflect2 v1.0.2
-go: added github.com/pelletier/go-toml/v2 v2.0.1
-go: added github.com/ugorji/go/codec v1.2.7
-go: added golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
-go: added golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
-go: added golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
-go: added golang.org/x/text v0.3.6
-go: added google.golang.org/protobuf v1.28.0
-go: added gopkg.in/yaml.v2 v2.4.0
-
-# 查看go.mod, 将gin及其依赖的包都写入到go.mod文件中了
-[root@localhost demo]# cat go.mod
-module demo
-
-go 1.18
-
-# require里面代表依赖的包
-require (
-        github.com/gin-contrib/sse v0.1.0 // indirect
-        github.com/gin-gonic/gin v1.8.0 // indirect
-        github.com/go-playground/locales v0.14.0 // indirect
-        github.com/go-playground/universal-translator v0.18.0 // indirect
-        github.com/go-playground/validator/v10 v10.10.0 // indirect
-        github.com/goccy/go-json v0.9.7 // indirect
-        github.com/json-iterator/go v1.1.12 // indirect
-        github.com/leodido/go-urn v1.2.1 // indirect
-        github.com/mattn/go-isatty v0.0.14 // indirect
-        github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
-        github.com/modern-go/reflect2 v1.0.2 // indirect
-        github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-        github.com/ugorji/go/codec v1.2.7 // indirect
-        golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-        golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
-        golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
-        golang.org/x/text v0.3.6 // indirect
-        google.golang.org/protobuf v1.28.0 // indirect
-        gopkg.in/yaml.v2 v2.4.0 // indirect
-)
-
-# 我们下载的包在GOPATH目录下
-[root@localhost demo]# go env GOPATH
-/usr/local/gopath
-[root@localhost demo]# ls -l /usr/local/gopath/pkg/mod/
-total 20
-drwxr-xr-x 3 root root 4096 May 30 20:26 cache
-drwxr-xr-x 9 root root 4096 May 30 20:26 github.com
-drwxr-xr-x 3 root root 4096 May 30 20:26 golang.org
-drwxr-xr-x 3 root root 4096 May 30 20:26 google.golang.org
-drwxr-xr-x 3 root root 4096 May 30 20:26 gopkg.in
-
-# 还会生成一个go.sum文件，此文件不需要我们管理，先不做深入研究
-[root@localhost demo]# ls -lh go.sum 
--rw-r--r-- 1 root root 9.1K May 30 20:32 go.sum
-```
-
-:::
-
-::: details 安装最新版、安装指定版、移除版本、升级依赖
-
-```bash
-# 安装最新版本，以下两种方法都可以，这会下载最新的tag版本
-[root@localhost demo]# go get github.com/gin-gonic/gin
-[root@localhost demo]# go get github.com/gin-gonic/gin@latest
-
-# 安装指定版本
-[root@localhost demo]# go get github.com/gin-gonic/gin@v1.7.0
-go: downgraded github.com/gin-gonic/gin v1.8.0 => v1.7.0
-
-# 将包从go.mod中移除（本地并不会删除）
-[root@localhost demo]# go get github.com/gin-gonic/gin@none
-go: removed github.com/gin-gonic/gin v1.7.0
-
-# 查看本地包
-[root@localhost demo]# ll /usr/local/gopath/pkg/mod/github.com/gin-gonic/
-total 8
-dr-xr-xr-x 9 root root 4096 May 30 20:32 gin@v1.7.0
-dr-xr-xr-x 9 root root 4096 May 30 20:26 gin@v1.8.0
-
-# 升级依赖（这会升级所有依赖）
-[root@localhost demo]# go get -u
-go: downloading golang.org/x/net v0.0.0-20220526153639-5463443f8c37
-go: downloading github.com/go-playground/validator/v10 v10.11.0
-go: downloading github.com/go-playground/validator v9.31.0+incompatible
-go: downloading github.com/pelletier/go-toml v1.9.5
-go: downloading github.com/ugorji/go v1.2.7
-go: downloading golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
-go: downloading golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-go: downloading golang.org/x/text v0.3.7
-go: downloading github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-go: upgraded github.com/go-playground/validator/v10 v10.10.0 => v10.11.0
-go: upgraded github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 => v0.0.0-20180306012644-bacd9c7ef1dd
-go: upgraded golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 => v0.0.0-20220525230936-793ad666bf5e
-go: upgraded golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 => v0.0.0-20220526153639-5463443f8c37
-go: upgraded golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 => v0.0.0-20220520151302-bc2c85ada10a
-go: upgraded golang.org/x/text v0.3.6 => v0.3.7
-
-# 升级依赖go.mod变化
-[root@localhost demo]# cat go.mod 
-module demo
-
-go 1.18
-
-require github.com/gin-gonic/gin v1.8.0		// 这个原来在下面，并且有// indirect，现在没有了
-
-require (
-        github.com/gin-contrib/sse v0.1.0 // indirect
-        github.com/go-playground/locales v0.14.0 // indirect
-        github.com/go-playground/universal-translator v0.18.0 // indirect
-        github.com/go-playground/validator/v10 v10.11.0 // indirect
-        github.com/goccy/go-json v0.9.7 // indirect
-        github.com/golang/protobuf v1.5.2 // indirect
-        github.com/json-iterator/go v1.1.12 // indirect
-        github.com/leodido/go-urn v1.2.1 // indirect
-        github.com/mattn/go-isatty v0.0.14 // indirect
-        github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-        github.com/modern-go/reflect2 v1.0.2 // indirect
-        github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-        github.com/ugorji/go/codec v1.2.7 // indirect
-        golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
-        golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
-        golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
-        golang.org/x/text v0.3.7 // indirect
-        google.golang.org/protobuf v1.28.0 // indirect
-        gopkg.in/yaml.v2 v2.4.0 // indirect
-)
-```
-
-:::
-
-#### （4）安装可执行文件：`go install`
-
-文档：[https://go.dev/ref/mod#go-install](https://go.dev/ref/mod#go-install)
-
-特点：
-
-* 可以在全局使用`go install`，不会维护go.mod和go.sum文件
-* 使用`go install github.com/xxx/@版本`,必须加上版本，如果是最新版则是`latest`
-* 其原理是：
-  * 下载第三方包到`GOPATH/pkg`
-  * 然后编译（入口是`main`包的`main`方法）
-  * 将可执行文件放在`GOPATH/bin`目录下
-* 可以使用`go install`的第三方包，一般都有一个`main`包和`main`方法
-
-举几个例子
-
-| Github                                 | main               |
-| -------------------------------------- | ------------------ |
-| https://github.com/davecheney/httpstat | `main.go`          |
-| https://github.com/Code-Hex/pget       | `cmd/pget/main.go` |
-
-#### （5）依赖整理：go mod tidy
-
-很常用的一个命令，可多次执行
-
-```bash
-[root@localhost demo]# go help mod
-Go mod provides access to operations on modules.
-
-Note that support for modules is built into all the go commands,
-not just 'go mod'. For example, day-to-day adding, removing, upgrading,
-and downgrading of dependencies should be done using 'go get'.
-See 'go help modules' for an overview of module functionality.
-
-Usage:
-
-        go mod <command> [arguments]
-
-The commands are:
-
-        download    download modules to local cache
-        edit        edit go.mod from tools or scripts
-        graph       print module requirement graph
-        init        initialize new module in current directory
-        tidy        add missing and remove unused modules			# 添加缺少的包，并移除未使用的包
-        vendor      make vendored copy of dependencies
-        verify      verify dependencies have expected content
-        why         explain why packages or modules are needed
-
-Use "go help mod <command>" for more information about a command.
-```
-
-#### （6）发布公共模块到GitHub🎉
-
-::: details （1）先跑通一个最简单的发布流程
-
-① 首先在Github上新建一个仓库test
-
-② 其次克隆代码，使用go mod初始化，要求module name必须是绝对路径（`github.com/用户名/项目名`）
-
-```bash
-# 克隆
-git clone https://github.com/vvfock3r/test.git
-
-# 初始化Go模块
-go mod init github.com/vvfock3r/test
-```
-
-③ 提交代码到test仓库
-
-```bash
-# 新建一个文件utils.go
-package test
-
-func Add(x, y int) int {
-	return x + y
-}
-
-# 提交
-git add *
-git commit -m "test"
-git push -u origin main
-```
-
-④ 使用GoLand新建一个Go项目demo，进行测试
-
-```bash
-# 添加依赖包
-C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test 
-go: downloading github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34
-
-# 编写main.go
-package main
-
-import (
-	"fmt"
-	"github.com/vvfock3r/test"
-)
-
-func main() {
-	fmt.Println(test.Add(1, 2))
-}
-
-# 测试执行
-C:\Users\Administrator\GolandProjects\demo>go run .      
-3
-
-# 查看go.mod
-module demo
-
-go 1.18
-
-require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
-```
-
-总结几个关键点：
-
-（1）第三方模块的模块名：应使用`github.com/用户名/项目名`
-
-（2）第三方模块的版本：若无版本，Go自动添加一个版本`v0.0.0-时间-提交ID`
-
-* `v0.0.0`是固定的
-* 时间格式`年月日时分秒`
-* 提交ID长度`12`位
-
-从上面可以看出，一次提交可以认为是一个版本
-
-:::
-
-::: details （2）更新第三方包延迟问题
-
-描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
-
-结果：第三方包刚刚更新的代码，我们无法立马拉取到新代码，测试过的方法有：
-
-* 使用`go get -u github.com/vvfock3r/test`更新，无效
-* 删除`go.mod`和本地`GOPATH`下的`test`模块相关的任何东西，然后使用`go get`重新下载，无效
-
-原因是：我们`go get`下载包并不是直接从`github.com`下载的，而是通过`GOPROXY`指定的镜像站下载的（通过`go get -x`可以看到），而镜像站存在一定延迟从而导致不能马上下载最新包
-
-解决办法：使用`go get github.com/vvfock3r/test@提交ID`来进行更新（提交ID并不一定是完整的ID），可以在下图中这个位置找到最新提交ID
-
-![image-20220601140958608](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220601140958608.png)
-
-:::
-
-::: details （3）指定第三方包的版本
-
-如果我想让用户使用`go get github.com/vvfock3r/test@v1.0.0`这样的方式来安装指定版本，该如何做呢？
-
-这里的`v1.0.0`，就是仓库的`Tag`名称，但是有几点注意事项：
-
-* Tag名称必须是类似`v1.0.0`这种规则，如果是`v1.0`这样是拉取不到对应版本的
-
-  ```bash
-  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v1.0
-  go: github.com/vvfock3r/test@v1.0: no matching versions for query "v1.0"
-  ```
-
-* 对于`v2.0.0`及以上版本，我们如果直接使用`go get github.com/vvfock3r/test@v2.0.0`会报错
-
-  ```bash
-  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v2.0.0
-  go: github.com/vvfock3r/test@v2.0.0: invalid version: module contains a go.mod file, so module path must match major version ("github.com/vvfock3r/test/v2")
-  
-  # 原因也给出来了：模块路径必须包含主版本号
-  ```
-
-  这个时候我们有两种解决方案：
-
-  * 永远不升级到`v2.x.x`，一直使用v1的版本比如`v1.0.0`、`v1.0.1`、`@v1.999.999`
-  * 升级到`v2.x.x`，需要在项目根目录下创建一个`v2`的目录，代表这是一个全新的版本
-
-* 其他：Github上新打的Tag可以直接在命令行使用`go get `下载，没有GOPROXY缓存的问题（指定版本为`latest`除外）
-
-:::
-
-::: details （4）replace简介
-
-replace可以让我们对包进行替换，可以达到这样的效果：导入的是`a`包，但实际使用的是`b`包
-
-使用replace可以直接修改go.mod文件，也可以使用`go mod edit -replace`命令（推荐）
-
-语法
-
-```bash
-# 语法
-# go mod edit -replace 旧地址=新地址
-
-# 示例：将v1.1.2替换为v1.1.1版本，也就是降低了一个版本
-go mod edit -replace github.com/vvfock3r/test@v1.1.2=github.com/vvfock3r/test@v1.1.1
-
-# 查看一下go.mod文件
-module demo
-go 1.18
-require github.com/vvfock3r/test v1.1.2
-replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# replace
-
-# 说明
-虽然go.mod中require是v1.1.2版本，但实际上在使用v1.1.1版本
-```
-
-:::
-
 
 
 ## 前置知识
@@ -7667,3 +7204,467 @@ func main() {
 
 从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
 
+## 
+
+我们将在`Go Modules`来解决这个问题
+
+### Go Modules
+
+文档：[https://go.dev/ref/mod](https://go.dev/ref/mod)
+
+从`Go1.11`开始，官方推出Go module作为包管理工具
+
+
+
+#### （1）开启Go Module
+
+`GO111MODULE`变量控制是否启用go modules，他有3个值：
+
+* `on`：开启go module
+* `off`：关闭go module
+* `auto`：根据项目配置自动选择使用`go module`还是`go path`
+
+```bash
+# 不管开启没开启，都重新开启一遍
+C:\Users\Administrator\Desktop\Notes>go env -w GO111MODULE=on
+C:\Users\Administrator\Desktop\Notes>go env GO111MODULE
+on
+```
+
+
+
+#### （2）初始化项目：`go mod init`
+
+文档：[https://go.dev/ref/mod#go-mod-init](https://go.dev/ref/mod#go-mod-init)
+
+**基础使用**
+
+```bash
+# 先创建我们的项目目录demo
+[root@localhost ~]# mkdir demo
+[root@localhost ~]# cd demo/
+
+# 然后初始化项目
+[root@localhost demo]# go mod init demo
+go: creating new go.mod: module demo
+
+# 看一下都做了什么事：生成了一个文件go.mod
+[root@localhost demo]# ll
+total 4
+-rw-r--r-- 1 root root 21 May 30 19:27 go.mod
+
+# 看看这个文件内容
+[root@localhost demo]# cat go.mod 
+module demo		# 模块名
+
+go 1.18			# go版本
+```
+
+**我们来看几个go明星项目的module名是如何写的**
+
+| Github地址                               | Module Name                               |
+| ---------------------------------------- | ----------------------------------------- |
+| https://github.com/containerd/containerd | `module github.com/containerd/containerd` |
+| https://github.com/gin-gonic/gin         | `module github.com/gin-gonic/gin`         |
+| https://github.com/pingcap/tidb          | `module github.com/pingcap/tidb`          |
+
+仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？，先不管他，后面再说
+
+**继续使用gin**
+
+```bash
+[root@localhost demo]# ls -l
+total 8
+-rw-r--r-- 1 root root  21 May 30 19:49 go.mod
+-rw-r--r-- 1 root root 327 May 30 19:17 main.go
+[root@localhost demo]# cat main.go
+package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "log"
+        "net/http"
+)
+
+func main() {
+        // 监听地址
+        addr := "127.0.0.1:80"
+
+        // 实例化Gin路由引擎
+        r := gin.Default()
+
+        // 注册路由
+        r.GET("/", func(c *gin.Context) {
+                c.String(http.StatusOK, "Hello Gin!\n")
+        })
+
+        // 启动Gin Server
+        log.Fatalln(r.Run(addr))
+}
+[root@localhost demo]# go run main.go		# 这次报错不一样了，让我们使用go get下载gin
+main.go:4:2: no required module provides package github.com/gin-gonic/gin; to add it:
+        go get github.com/gin-gonic/gin
+```
+
+
+
+#### （3）下载第三方包：`go get`
+
+文档：[https://go.dev/ref/mod#go-get](https://go.dev/ref/mod#go-get)
+
+特点：
+
+* 必须在项目目录(含有go.mod的目录)使用`go get`，无法在全局目录使用
+* `go get`用来管理第三方包版本问题，会自动维护go.mod和go.sum文件
+* `go get`下载的包放在GOPATH/pkg目录内
+* 若不指定版本号只能更新到`v1.x.x`最新版，若第三方包没有版本号（Tag）则会更新到最后一次提交的代码
+
+
+
+::: details 基础用法
+
+```bash
+# 下载
+[root@localhost demo]# go get github.com/gin-gonic/gin
+go: added github.com/gin-contrib/sse v0.1.0
+go: added github.com/gin-gonic/gin v1.8.0
+go: added github.com/go-playground/locales v0.14.0
+go: added github.com/go-playground/universal-translator v0.18.0
+go: added github.com/go-playground/validator/v10 v10.10.0
+go: added github.com/goccy/go-json v0.9.7
+go: added github.com/json-iterator/go v1.1.12
+go: added github.com/leodido/go-urn v1.2.1
+go: added github.com/mattn/go-isatty v0.0.14
+go: added github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421
+go: added github.com/modern-go/reflect2 v1.0.2
+go: added github.com/pelletier/go-toml/v2 v2.0.1
+go: added github.com/ugorji/go/codec v1.2.7
+go: added golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+go: added golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+go: added golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
+go: added golang.org/x/text v0.3.6
+go: added google.golang.org/protobuf v1.28.0
+go: added gopkg.in/yaml.v2 v2.4.0
+
+# 查看go.mod, 将gin及其依赖的包都写入到go.mod文件中了
+[root@localhost demo]# cat go.mod
+module demo
+
+go 1.18
+
+# require里面代表依赖的包
+require (
+        github.com/gin-contrib/sse v0.1.0 // indirect
+        github.com/gin-gonic/gin v1.8.0 // indirect
+        github.com/go-playground/locales v0.14.0 // indirect
+        github.com/go-playground/universal-translator v0.18.0 // indirect
+        github.com/go-playground/validator/v10 v10.10.0 // indirect
+        github.com/goccy/go-json v0.9.7 // indirect
+        github.com/json-iterator/go v1.1.12 // indirect
+        github.com/leodido/go-urn v1.2.1 // indirect
+        github.com/mattn/go-isatty v0.0.14 // indirect
+        github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+        github.com/modern-go/reflect2 v1.0.2 // indirect
+        github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+        github.com/ugorji/go/codec v1.2.7 // indirect
+        golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+        golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+        golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+        golang.org/x/text v0.3.6 // indirect
+        google.golang.org/protobuf v1.28.0 // indirect
+        gopkg.in/yaml.v2 v2.4.0 // indirect
+)
+
+# 我们下载的包在GOPATH目录下
+[root@localhost demo]# go env GOPATH
+/usr/local/gopath
+[root@localhost demo]# ls -l /usr/local/gopath/pkg/mod/
+total 20
+drwxr-xr-x 3 root root 4096 May 30 20:26 cache
+drwxr-xr-x 9 root root 4096 May 30 20:26 github.com
+drwxr-xr-x 3 root root 4096 May 30 20:26 golang.org
+drwxr-xr-x 3 root root 4096 May 30 20:26 google.golang.org
+drwxr-xr-x 3 root root 4096 May 30 20:26 gopkg.in
+
+# 还会生成一个go.sum文件，此文件不需要我们管理，先不做深入研究
+[root@localhost demo]# ls -lh go.sum 
+-rw-r--r-- 1 root root 9.1K May 30 20:32 go.sum
+```
+
+:::
+
+::: details 安装最新版、安装指定版、移除版本、升级依赖
+
+```bash
+# 安装最新版本，以下两种方法都可以，这会下载最新的tag版本
+[root@localhost demo]# go get github.com/gin-gonic/gin
+[root@localhost demo]# go get github.com/gin-gonic/gin@latest
+
+# 安装指定版本
+[root@localhost demo]# go get github.com/gin-gonic/gin@v1.7.0
+go: downgraded github.com/gin-gonic/gin v1.8.0 => v1.7.0
+
+# 将包从go.mod中移除（本地并不会删除）
+[root@localhost demo]# go get github.com/gin-gonic/gin@none
+go: removed github.com/gin-gonic/gin v1.7.0
+
+# 查看本地包
+[root@localhost demo]# ll /usr/local/gopath/pkg/mod/github.com/gin-gonic/
+total 8
+dr-xr-xr-x 9 root root 4096 May 30 20:32 gin@v1.7.0
+dr-xr-xr-x 9 root root 4096 May 30 20:26 gin@v1.8.0
+
+# 升级依赖（这会升级所有依赖）
+[root@localhost demo]# go get -u
+go: downloading golang.org/x/net v0.0.0-20220526153639-5463443f8c37
+go: downloading github.com/go-playground/validator/v10 v10.11.0
+go: downloading github.com/go-playground/validator v9.31.0+incompatible
+go: downloading github.com/pelletier/go-toml v1.9.5
+go: downloading github.com/ugorji/go v1.2.7
+go: downloading golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+go: downloading golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+go: downloading golang.org/x/text v0.3.7
+go: downloading github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+go: upgraded github.com/go-playground/validator/v10 v10.10.0 => v10.11.0
+go: upgraded github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 => v0.0.0-20180306012644-bacd9c7ef1dd
+go: upgraded golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 => v0.0.0-20220525230936-793ad666bf5e
+go: upgraded golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 => v0.0.0-20220526153639-5463443f8c37
+go: upgraded golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 => v0.0.0-20220520151302-bc2c85ada10a
+go: upgraded golang.org/x/text v0.3.6 => v0.3.7
+
+# 升级依赖go.mod变化
+[root@localhost demo]# cat go.mod 
+module demo
+
+go 1.18
+
+require github.com/gin-gonic/gin v1.8.0		// 这个原来在下面，并且有// indirect，现在没有了
+
+require (
+        github.com/gin-contrib/sse v0.1.0 // indirect
+        github.com/go-playground/locales v0.14.0 // indirect
+        github.com/go-playground/universal-translator v0.18.0 // indirect
+        github.com/go-playground/validator/v10 v10.11.0 // indirect
+        github.com/goccy/go-json v0.9.7 // indirect
+        github.com/golang/protobuf v1.5.2 // indirect
+        github.com/json-iterator/go v1.1.12 // indirect
+        github.com/leodido/go-urn v1.2.1 // indirect
+        github.com/mattn/go-isatty v0.0.14 // indirect
+        github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+        github.com/modern-go/reflect2 v1.0.2 // indirect
+        github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+        github.com/ugorji/go/codec v1.2.7 // indirect
+        golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+        golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
+        golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+        golang.org/x/text v0.3.7 // indirect
+        google.golang.org/protobuf v1.28.0 // indirect
+        gopkg.in/yaml.v2 v2.4.0 // indirect
+)
+```
+
+:::
+
+#### （4）安装可执行文件：`go install`
+
+文档：[https://go.dev/ref/mod#go-install](https://go.dev/ref/mod#go-install)
+
+特点：
+
+* 可以在全局使用`go install`，不会维护go.mod和go.sum文件
+* 使用`go install github.com/xxx/@版本`,必须加上版本，如果是最新版则是`latest`
+* 其原理是：
+  * 下载第三方包到`GOPATH/pkg`
+  * 然后编译（入口是`main`包的`main`方法）
+  * 将可执行文件放在`GOPATH/bin`目录下
+* 可以使用`go install`的第三方包，一般都有一个`main`包和`main`方法
+
+举几个例子
+
+| Github                                 | main               |
+| -------------------------------------- | ------------------ |
+| https://github.com/davecheney/httpstat | `main.go`          |
+| https://github.com/Code-Hex/pget       | `cmd/pget/main.go` |
+
+#### （5）依赖整理：go mod tidy
+
+很常用的一个命令，可多次执行
+
+```bash
+[root@localhost demo]# go help mod
+Go mod provides access to operations on modules.
+
+Note that support for modules is built into all the go commands,
+not just 'go mod'. For example, day-to-day adding, removing, upgrading,
+and downgrading of dependencies should be done using 'go get'.
+See 'go help modules' for an overview of module functionality.
+
+Usage:
+
+        go mod <command> [arguments]
+
+The commands are:
+
+        download    download modules to local cache
+        edit        edit go.mod from tools or scripts
+        graph       print module requirement graph
+        init        initialize new module in current directory
+        tidy        add missing and remove unused modules			# 添加缺少的包，并移除未使用的包
+        vendor      make vendored copy of dependencies
+        verify      verify dependencies have expected content
+        why         explain why packages or modules are needed
+
+Use "go help mod <command>" for more information about a command.
+```
+
+#### （6）发布公共模块到GitHub🎉
+
+::: details （1）先跑通一个最简单的发布流程
+
+① 首先在Github上新建一个仓库test
+
+② 其次克隆代码，使用go mod初始化，要求module name必须是绝对路径（`github.com/用户名/项目名`）
+
+```bash
+# 克隆
+git clone https://github.com/vvfock3r/test.git
+
+# 初始化Go模块
+go mod init github.com/vvfock3r/test
+```
+
+③ 提交代码到test仓库
+
+```bash
+# 新建一个文件utils.go
+package test
+
+func Add(x, y int) int {
+	return x + y
+}
+
+# 提交
+git add *
+git commit -m "test"
+git push -u origin main
+```
+
+④ 使用GoLand新建一个Go项目demo，进行测试
+
+```bash
+# 添加依赖包
+C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test 
+go: downloading github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34
+
+# 编写main.go
+package main
+
+import (
+	"fmt"
+	"github.com/vvfock3r/test"
+)
+
+func main() {
+	fmt.Println(test.Add(1, 2))
+}
+
+# 测试执行
+C:\Users\Administrator\GolandProjects\demo>go run .      
+3
+
+# 查看go.mod
+module demo
+
+go 1.18
+
+require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
+```
+
+总结几个关键点：
+
+（1）第三方模块的模块名：应使用`github.com/用户名/项目名`
+
+（2）第三方模块的版本：若无版本，Go自动添加一个版本`v0.0.0-时间-提交ID`
+
+* `v0.0.0`是固定的
+* 时间格式`年月日时分秒`
+* 提交ID长度`12`位
+
+从上面可以看出，一次提交可以认为是一个版本
+
+:::
+
+::: details （2）更新第三方包延迟问题
+
+描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
+
+结果：第三方包刚刚更新的代码，我们无法立马拉取到新代码，测试过的方法有：
+
+* 使用`go get -u github.com/vvfock3r/test`更新，无效
+* 删除`go.mod`和本地`GOPATH`下的`test`模块相关的任何东西，然后使用`go get`重新下载，无效
+
+原因是：我们`go get`下载包并不是直接从`github.com`下载的，而是通过`GOPROXY`指定的镜像站下载的（通过`go get -x`可以看到），而镜像站存在一定延迟从而导致不能马上下载最新包
+
+解决办法：使用`go get github.com/vvfock3r/test@提交ID`来进行更新（提交ID并不一定是完整的ID），可以在下图中这个位置找到最新提交ID
+
+![image-20220601140958608](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220601140958608.png)
+
+:::
+
+::: details （3）指定第三方包的版本
+
+如果我想让用户使用`go get github.com/vvfock3r/test@v1.0.0`这样的方式来安装指定版本，该如何做呢？
+
+这里的`v1.0.0`，就是仓库的`Tag`名称，但是有几点注意事项：
+
+* Tag名称必须是类似`v1.0.0`这种规则，如果是`v1.0`这样是拉取不到对应版本的
+
+  ```bash
+  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v1.0
+  go: github.com/vvfock3r/test@v1.0: no matching versions for query "v1.0"
+  ```
+
+* 对于`v2.0.0`及以上版本，我们如果直接使用`go get github.com/vvfock3r/test@v2.0.0`会报错
+
+  ```bash
+  C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test@v2.0.0
+  go: github.com/vvfock3r/test@v2.0.0: invalid version: module contains a go.mod file, so module path must match major version ("github.com/vvfock3r/test/v2")
+  
+  # 原因也给出来了：模块路径必须包含主版本号
+  ```
+
+  这个时候我们有两种解决方案：
+
+  * 永远不升级到`v2.x.x`，一直使用v1的版本比如`v1.0.0`、`v1.0.1`、`@v1.999.999`
+  * 升级到`v2.x.x`，需要在项目根目录下创建一个`v2`的目录，代表这是一个全新的版本
+
+* 其他：Github上新打的Tag可以直接在命令行使用`go get `下载，没有GOPROXY缓存的问题（指定版本为`latest`除外）
+
+:::
+
+::: details （4）replace简介
+
+replace可以让我们对包进行替换，可以达到这样的效果：导入的是`a`包，但实际使用的是`b`包
+
+使用replace可以直接修改go.mod文件，也可以使用`go mod edit -replace`命令（推荐）
+
+语法
+
+```bash
+# 语法
+# go mod edit -replace 旧地址=新地址
+
+# 示例：将v1.1.2替换为v1.1.1版本，也就是降低了一个版本
+go mod edit -replace github.com/vvfock3r/test@v1.1.2=github.com/vvfock3r/test@v1.1.1
+
+# 查看一下go.mod文件
+module demo
+go 1.18
+require github.com/vvfock3r/test v1.1.2
+replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# replace
+
+# 说明
+虽然go.mod中require是v1.1.2版本，但实际上在使用v1.1.1版本
+```
+
+:::
