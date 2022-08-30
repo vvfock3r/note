@@ -3005,11 +3005,11 @@ type LoginForm Form
 
 // 给它增加一些方法
 func (l *LoginForm) Encrypt() (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(l.Password), 10)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(l.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
-	return string(hash), nil
+	return string(hashed), nil
 }
 func (l *LoginForm) ValidatePasswordHashed(hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(l.Password))
