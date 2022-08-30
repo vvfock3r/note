@@ -8,100 +8,7 @@ Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd
 
 
 
-## 项目管理
 
-### 环境变量
-
-**查看/设置环境变量**
-
-```bash
-go env 						# 查看所有环境变量
-go env -json				# 查看所有环境变量，json格式
-go env [environment]		# 查看某个具体的环境变量
-go env -w GO111MODULE=on	# 设置环境变量，永久生效
-go help env					# 查看env命令帮助
-```
-
-**重要环境变量**
-
-| 环境变量      | 说明                                                         | 设置命令                                      |
-| ------------- | ------------------------------------------------------------ | --------------------------------------------- |
-| `GOROOT`      | Go的安装目录                                                 | 一般不用自己设置                              |
-| `GOPATH`      | 代表Go的工作区，可以是一个目录，也可以是多个目录，使用逗号分隔?<br />官方说明文档：https://github.com/golang/go/wiki/GOPATH | `go env -w GOPATH=/usr/local/gopath`          |
-| `GO111MODULE` | Go 1.11版本增加的模块管理机制，强烈建议开启                  | `go env -w GO111MODULE=on`                    |
-| `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认值：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
-| `GOSUMDB`     | 用来校验下载的包的安全性，一般情况下不需要修改<br />默认值：`sum.golang.org`<br />关闭：`off` | `go env -w GOSUMDB=off`                       |
-
-更多环境变量：[https://golang.google.cn/cmd/go/#hdr-Environment_variables](https://golang.google.cn/cmd/go/#hdr-Environment_variables) 或`go help environment` 
-
-### 单文件应用
-
-`main.go`
-
-```go
-package main
- 
-import "fmt"
- 
-func main() {
-   fmt.Println("Hello World!")
-}
-```
-
-说明：
-
-- `package`声明我自己的包名
-
-- `import` 导入其他包，这里`fmt`是内置的一个包
-
-- `func `声明函数
-
-- 程序执行的入口必须是`main`包和`main`方法，文件名任意
-
-- 两种运行方式
-
-  ```bash
-  # (1) 编译和运行
-  go build main.go        # 编译
-  ./main.exe              # 运行
-  
-  # (2) 编译并运行
-  go run main.go
-  ```
-
-问题：我要导入一个第三方包会报错，比如使用gin来启动一个HTTP Server，这是怎么回事呢？
-
-`main.go`
-
-```bash
-[root@localhost ~]# cat main.go 
-package main
-
-import (
-        "github.com/gin-gonic/gin"
-        "log"
-        "net/http"
-)
-
-func main() {
-        // 监听地址
-        addr := "127.0.0.1:80"
-
-        // 实例化Gin路由引擎
-        r := gin.Default()
-
-        // 注册路由
-        r.GET("/", func(c *gin.Context) {
-                c.String(http.StatusOK, "Hello Gin!\n")
-        })
-
-        // 启动Gin Server
-        log.Fatalln(r.Run(addr))
-}
-
-[root@localhost ~]# go run main.go   # 在当前目录及父目录没有找到go.mod文件
-main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mod file not found in current directory or any parent directory; see 'go help modules'
-```
 
 
 
@@ -7205,6 +7112,101 @@ func main() {
 从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
 
 ## 
+
+## 项目管理
+
+### 环境变量
+
+**查看/设置环境变量**
+
+```bash
+go env 						# 查看所有环境变量
+go env -json				# 查看所有环境变量，json格式
+go env [environment]		# 查看某个具体的环境变量
+go env -w GO111MODULE=on	# 设置环境变量，永久生效
+go help env					# 查看env命令帮助
+```
+
+**重要环境变量**
+
+| 环境变量      | 说明                                                         | 设置命令                                      |
+| ------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| `GOROOT`      | Go的安装目录                                                 | 一般不用自己设置                              |
+| `GOPATH`      | 代表Go的工作区，可以是一个目录，也可以是多个目录，使用逗号分隔?<br />官方说明文档：https://github.com/golang/go/wiki/GOPATH | `go env -w GOPATH=/usr/local/gopath`          |
+| `GO111MODULE` | Go 1.11版本增加的模块管理机制，强烈建议开启                  | `go env -w GO111MODULE=on`                    |
+| `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认值：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
+| `GOSUMDB`     | 用来校验下载的包的安全性，一般情况下不需要修改<br />默认值：`sum.golang.org`<br />关闭：`off` | `go env -w GOSUMDB=off`                       |
+
+更多环境变量：[https://golang.google.cn/cmd/go/#hdr-Environment_variables](https://golang.google.cn/cmd/go/#hdr-Environment_variables) 或`go help environment` 
+
+### 单文件应用
+
+`main.go`
+
+```go
+package main
+ 
+import "fmt"
+ 
+func main() {
+   fmt.Println("Hello World!")
+}
+```
+
+说明：
+
+- `package`声明我自己的包名
+
+- `import` 导入其他包，这里`fmt`是内置的一个包
+
+- `func `声明函数
+
+- 程序执行的入口必须是`main`包和`main`方法，文件名任意
+
+- 两种运行方式
+
+  ```bash
+  # (1) 编译和运行
+  go build main.go        # 编译
+  ./main.exe              # 运行
+  
+  # (2) 编译并运行
+  go run main.go
+  ```
+
+问题：我要导入一个第三方包会报错，比如使用gin来启动一个HTTP Server，这是怎么回事呢？
+
+`main.go`
+
+```bash
+[root@localhost ~]# cat main.go 
+package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "log"
+        "net/http"
+)
+
+func main() {
+        // 监听地址
+        addr := "127.0.0.1:80"
+
+        // 实例化Gin路由引擎
+        r := gin.Default()
+
+        // 注册路由
+        r.GET("/", func(c *gin.Context) {
+                c.String(http.StatusOK, "Hello Gin!\n")
+        })
+
+        // 启动Gin Server
+        log.Fatalln(r.Run(addr))
+}
+
+[root@localhost ~]# go run main.go   # 在当前目录及父目录没有找到go.mod文件
+main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mod file not found in current directory or any parent directory; see 'go help modules'
+```
 
 我们将在`Go Modules`来解决这个问题
 
