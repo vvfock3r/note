@@ -2296,7 +2296,7 @@ OpenSSL 1.0.2k-fips  26 Jan 2017
 [root@node-1 ~]# cp /usr/bin/openssl /usr/bin/openssl_`date +%F`
 [root@node-1 ~]# cp -ra /usr/include/openssl /usr/include/openssl_`date +%F`
 
-[root@node-1 openssl-3.0.5]# ls -ld /usr/bin/openssl_`date +%F`  /usr/include/openssl_`date +%F`
+[root@node-1 ~]# ls -ld /usr/bin/openssl_`date +%F`  /usr/include/openssl_`date +%F`
 -rwxr-xr-x 1 root root 555280 Aug 25 10:54 /usr/bin/openssl_2022-08-25
 drwxr-xr-x 2 root root   4096 Aug 25 11:13 /usr/include/openssl_2022-08-25
 
