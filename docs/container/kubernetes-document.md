@@ -4604,25 +4604,22 @@ deployment.apps/demo created
 
 ## 应用发布策略
 
-### RollingUpdate - 滚动更新
+### 策略说明
+
+| 发布策略                 | 说明                                             | 备注                                          |
+| ------------------------ | ------------------------------------------------ | --------------------------------------------- |
+| RollingUpdate - 滚动更新 | 先启动新版本的Pod，待其启动完成后，再杀死旧Pod   | 默认的更新策略；更新过程中新老Pod都会收到请求 |
+| Recreate - 重新创建      | 现有的全部Pods被杀死成功后，才会创建新版本的 Pod |                                               |
+| 蓝绿部署                 | 同时启动2个版本的Pod，通过Service匹配指定的版本  | 更新过程中只有某一个版本能收到请求            |
+| 金丝雀部署               |                                                  |                                               |
+
+
+
+### 滚动更新
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy)
 
-
-
-**更新策略**
-
-（1）滚动更新（`RollingUpdate`）---> 这是默认的更新策略
-
-更新时会创建一个新的`ReplicaSet`，并将其扩容为1，等待其就绪，然后将旧`ReplicaSet`缩容1；如此循环，直到旧`ReplicaSet`为0后将其删除
-
-（2）重新创建（`Recreate`）
-
-现有的全部Pods被杀死成功后，才会创建新版本的 Pod
-
-
-
-**滚动更新**
+**配置说明**
 
 | 字段                                                         | 可选字段 | 默认值          | 说明                                                         |
 | ------------------------------------------------------------ | -------- | --------------- | ------------------------------------------------------------ |
@@ -4718,7 +4715,100 @@ demo-8f99576b9-vrfvx   1/1     Running   0          99s
 
 ### 蓝绿部署
 
+```bash
+# 创建Deployment blue版本
+[root@node-1 ~]# cat > demo-deployment-blue.yml <<- EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-blue
+  namespace: default
+spec:
+  replicas: 3  
+  selector:
+    matchLabels:
+      app: web
+      strategy: blue
+  template:
+    metadata:
+      labels:
+        app: web
+        strategy: blue
+    spec:
+      containers:
+      - name: demo
+        image: nginx:1.22
+EOF
 
+# 创建Deployment green版本
+cp demo-deployment-blue.yml demo-deployment-green.yml
+sed -ri 's/name: demo-blue/name: demo-green/' demo-deployment-green.yml    # 修改Deployment名字
+sed -ri 's/strategy: blue/strategy: green/' demo-deployment-green.yml      # 修改蓝绿版本标识符，这里使用标签来做
+sed -ri 's/image: nginx:1.22/image: nginx:1.23/' demo-deployment-green.yml # 新版本镜像升级
+
+
+# 创建Service
+[root@node-1 ~]# cat > demo-service.yml <<- EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+spec:
+  selector:
+    app: web
+    strategy: blue
+  type: NodePort
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 31000
+EOF
+
+[root@node-1 ~]# kubectl get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+demo-blue-79cff87869-4glmt   1/1     Running   0          3s
+demo-blue-79cff87869-m4gct   1/1     Running   0          3s
+demo-blue-79cff87869-zhsx7   1/1     Running   0          3s
+demo-green-98f4b7bbf-5f27q   1/1     Running   0          3s
+demo-green-98f4b7bbf-cnj88   1/1     Running   0          3s
+demo-green-98f4b7bbf-trs6f   1/1     Running   0          3s
+
+[root@node-1 ~]# kubectl get svc
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+demo         NodePort    10.233.40.213   <none>        80:31000/TCP   9s
+
+# 访问测试（blue版本）
+[root@node-1 ~]# curl http://192.168.48.142:31000 -I
+HTTP/1.1 200 OK
+Server: nginx/1.22.0
+Date: Tue, 30 Aug 2022 01:56:35 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Mon, 23 May 2022 23:59:19 GMT
+Connection: keep-alive
+ETag: "628c1fd7-267"
+Accept-Ranges: bytes
+
+# 版本切换（人为修改service）
+sed -ri 's/strategy: blue/strategy: green/' demo-service.yml
+kubectl apply -f demo-service.yml
+
+# 再次访问
+[root@node-1 ~]# curl http://192.168.48.142:31000 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.1
+Date: Tue, 30 Aug 2022 01:59:43 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 19 Jul 2022 14:05:27 GMT
+Connection: keep-alive
+ETag: "62d6ba27-267"
+Accept-Ranges: bytes
+```
+
+### 金丝雀部署
 
 
 
