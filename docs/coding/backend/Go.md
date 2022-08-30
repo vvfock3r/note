@@ -8,8 +8,6 @@ Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd
 
 
 
-
-
 ## 项目管理
 
 ### 环境变量
@@ -34,7 +32,7 @@ go help env					# 查看env命令帮助
 | `GOPROXY`     | 代理地址，由于墙的因素建议修改<br />默认值：https://proxy.golang.org,direct<br />七牛云：https://goproxy.cn,direct | `go env -w GOPROXY=https://goproxy.cn,direct` |
 | `GOSUMDB`     | 用来校验下载的包的安全性，一般情况下不需要修改<br />默认值：`sum.golang.org`<br />关闭：`off` | `go env -w GOSUMDB=off`                       |
 
-更多环境变量：https://golang.google.cn/cmd/go/#hdr-Environment_variables 或`go help environment` 
+更多环境变量：[https://golang.google.cn/cmd/go/#hdr-Environment_variables](https://golang.google.cn/cmd/go/#hdr-Environment_variables) 或`go help environment` 
 
 ### 单文件应用
 
@@ -2919,9 +2917,9 @@ defer是延迟调用，比如有`A`、`B`两个函数，在`A`函数中`defer B(
 
 ## 
 
-## 别名和自定义类型
+## 自定义类型
 
-### 别名和自定义类型
+### 别名
 
 ```go
 package main
@@ -2933,28 +2931,137 @@ func add(x, y int) int {
 }
 
 func main() {
-	// 定义别名， 使用=， 不能给Counter添加方法等
+	// 定义别名， 使用=， 不能给Counter添加方法，Counter本质上就是int
 	type Counter = int
 
 	// 使用别名，可以继续像使用int一样使用，本质上它就是int
 	var a Counter = 20
 	fmt.Println(add(1, a)) // 21
-
-	// ------------------------------------------------------
-	// 自定义类型, 这是一个全新的类型
-	type Number int
-
-	// 错误使用自定义类型
-	var b Number = 100
-	//fmt.Println(add(1, b)) // 这里会报错，因为Number已经是全新的类型了
-
-	// 类型转换
-	fmt.Printf("%T %#v\n", int8(b), int8(b))     // int8 100
-	fmt.Printf("%T %#v\n", Number(a), Number(a)) // main.Number 20
 }
 ```
 
-### 仿`http handler`对象转换
+### 自定义类型
+
+#### （1）基础使用
+
+```go
+package main
+
+import "fmt"
+
+func add(x, y int) int {
+	return x + y
+}
+
+func main() {
+	// 自定义类型, 这是一个全新的类型
+	// Number除了和int和相同的数据结构外，其他方面没有任何关系
+	type Number int
+
+	// 赋值
+	var a Number = 100
+	var b int = 200
+
+	// 错误使用自定义类型
+	//fmt.Println(add(1, a)) // 这里会报错，因为Number已经是全新的类型了
+
+	// 和原类型可以做类型转换
+	fmt.Printf("%T %#v\n", int(a), int(a))       // int 100
+	fmt.Printf("%T %#v\n", Number(b), Number(b)) // main.Number 200
+}
+```
+
+#### （2）定义复杂的类型
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"golang.org/x/crypto/bcrypt"
+	"log"
+)
+
+// 自定义类型
+//type intSlice []int
+
+// 定义一个结构体，假设这是一个第三方的结构体
+type Form struct {
+	UserName string
+	Password string
+}
+
+func NewForm(username, password string) *Form {
+	return &Form{
+		UserName: username,
+		Password: password,
+	}
+}
+
+// 自定义类型
+type LoginForm Form
+
+// 给它增加一些方法
+func (l *LoginForm) Encrypt() (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(l.Password), 10)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+func (l *LoginForm) ValidatePasswordHashed(hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(l.Password))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func main() {
+	// 实例化一个Form对象
+	form := NewForm("jinhui", "qaz.123")
+
+	// 类型转换
+	loginForm := LoginForm(*form)
+	fmt.Printf("%#v\n", loginForm)
+
+	// 加解密操作
+	for i := 1; i <= 3; i++ {
+		// 获取加密字符串
+		hashed, err := loginForm.Encrypt()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Println("加密字符串: ", hashed)
+
+		// 验证加密字符串是否合法
+		fmt.Println("验证加密串: ", loginForm.ValidatePasswordHashed(hashed))
+	}
+
+	// 将类型转换回去 LoginForm -> Form
+	form2 := Form(loginForm)
+	fmt.Printf("%#v\n", form2)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+main.LoginForm{UserName:"jinhui", Password:"qaz.123"}
+加密字符串:  $2a$10$DnrKdw.Gp.yQs9z.mKQOKOJc/jbHc0/sLUusR3YOYpylkT8Lt/uTy
+验证加密串:  true
+加密字符串:  $2a$10$P6iEQKFy99kdCBefE.MCKO171rd4zIfLmMNbvTediK.mRATx2EVgC
+验证加密串:  true
+加密字符串:  $2a$10$kmV5jDMJfC4Bzy51IaVq9uCX9w//pig9hABRPr.u9Ob5KsF6u7ouK
+验证加密串:  true
+main.Form{UserName:"jinhui", Password:"qaz.123"}
+```
+
+#### （3）仿`http handler`对象转换
 
 ::: details 点击查看完整代码
 
