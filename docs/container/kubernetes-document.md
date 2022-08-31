@@ -1682,6 +1682,8 @@ kubectl get pod {podname} -n {namespace} -o yaml | kubectl replace --force -f -
 
 文档：[https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/](https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/)
 
+::: details  点击查看详情
+
 ```bash
 # 创建YAML
 [root@node-1 ~]# cat > demo.yml <<- EOF
@@ -1745,13 +1747,55 @@ fe00::2 ip6-allrouters
 # (3) 使用spec.hostAliases我们可以向/etc/hosts中添加条目
 ```
 
+:::
+
 <br />
 
 ### 共享宿主机命名空间
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces](https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces)
 
+<br />
 
+### 容器生命周期回调
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/](https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/)
+
+有两个回调暴露给容器：
+
+* `PostStart`：容器创建之后执行，它和我们定义的容器的`command`命令是并行执行的
+* `PreStop`：容器终止之前执行，执行完成之后再向容器发送终止信号
+
+::: details  点击查看详情
+
+```bash
+[root@node-1 ~]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ Command ] The app is running! >> /tmp/demo.log && sleep 3600']
+    lifecycle:
+      postStart:
+        exec:
+          command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ postStart ] starting... >> /tmp/demo.log']
+      preStop:
+        exec:
+          command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ preStop ] stopping... >> /tmp/demo.log && sleep 10']
+EOF
+
+[root@node-1 ~]# kubectl apply -f demo.yml
+
+[root@node-1 ~]# kubectl exec -it demo -- cat /tmp/demo.log
+2022-08-31 11:23:13 [ Command ] The app is running!
+2022-08-31 11:23:13 [ postStart ] starting...
+```
+
+:::
 
 ## 
 
