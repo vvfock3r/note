@@ -74,12 +74,11 @@ serverVersion:
 
 
 
-**Pod特性：**
+**Pod说明：**
 
-* Pod是K8S最小的部署单元，是一组容器的集合
-
-* 同一Pod中的容器共享**网络**和**存储**资源
-* 同一Pod中的容器总是部署在同一个Node上
+* Pod是一个逻辑的概念
+* Pod中可以包含一个或多个容器，容器共享**网络**和**存储**资源，这需要用到一个中间容器`Pause`，这是创建`Pod`时启动的第一个容器
+* Pod是K8S最小的部署单元，也就是说同一Pod中的容器总是部署在同一个Node上
 
 
 
@@ -91,8 +90,6 @@ Kubernetes集群的整个生命周期中创建的每个对象都有一个不同�
 [root@node0 k8s]# kubectl get pod demo -o json | grep -i uid
         "uid": "05b1bc5d-379a-45cf-b2d6-77642b08bcb1"
 ```
-
-
 
 <br />
 
@@ -1438,8 +1435,6 @@ Tolerations:                 op=Exists
 <br />
 
 ### 多容器
-
-<br />
 
 #### 共享网络和存储示例
 
