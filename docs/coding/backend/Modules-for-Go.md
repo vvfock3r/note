@@ -322,12 +322,56 @@ output:  ini
 
 #### 添加一个参数（Arg）
 
+（1）默认情况下支持参数
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init abc def xyz
+init command running...
+init command args:  [abc def xyz]
+output:  json
+```
+
+（2）如果我们不想让他有参数，可以这样做
+
+`cmd/init/init.go`
+
+```go
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	// 添加这一行，意思是不允许有参数
+	Args: cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+		fmt.Println("output: ", output)
+	},
+}
+```
+
+再次执行查看输出
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init abc def xyz
+Error: unknown command "abc" for "demo init"
+Usage:                                                
+  demo init [flags]                                   
+                                                      
+Flags:                                                
+  -h, --help            help for init
+  -o, --output string   Output format (default "json")
+
+unknown command "abc" for "demo init"exit status 1
+```
+
+（3）自己处理参数
+
 ::: details 点击查看完整代码
 
 `cmd/init/init.go`
 
 ```go
-package cmd
+package init
 
 import (
 	"fmt"
@@ -335,32 +379,38 @@ import (
 	"strings"
 )
 
-// 定义选项
-var output string
+var (
+	output string
+)
 
-func init() {
-	rootCmd.AddCommand(getCmd)
-
-	getCmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get", // get子命令
-	Short: "Display one or many resources.",
-	Long:  `Display one or many resources.`,
-
-	// 添加参数预处理处理函数，可以用于参数校验(这个不是必须的)
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	// 自己处理参数
 	Args: func(cmd *cobra.Command, args []string) error {
-		args[0] = strings.ToUpper(args[0]) // 转为大写
+		// 只能传递一个参数
+		if len(args) > 1 {
+			return fmt.Errorf("Only one parameter can be passed for %q", cmd.CommandPath())
+		} else if len(args) < 1 {
+			return fmt.Errorf("At least one parameter must be passed for %q", cmd.CommandPath())
+		}
+
+		// 对参数处理,转为大写
+		args[0] = strings.ToUpper(args[0])
+
+		// 校验没问题，放行通过
 		return nil
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("get command exec")
-		fmt.Println("args: ", args)
-		// 获取选项的值
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
 		fmt.Println("output: ", output)
 	},
+}
+
+func init() {
+	Cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
 }
 ```
 
@@ -369,9 +419,33 @@ var getCmd = &cobra.Command{
 输出结果
 
 ```bash
-C:\Users\Administrator\GolandProjects\demo>go run main.go get abc123
-get command exec
-args:  [ABC123]
-output:  json  
-```
+# 不传递参数
+C:\Users\Administrator\GolandProjects\demo>go run main.go init   
+Error: At least one parameter must be passed for "demo init"
+Usage:
+  demo init [flags]
 
+Flags:
+  -h, --help            help for init
+  -o, --output string   Output format (default "json")
+
+At least one parameter must be passed for "demo init"exit status 1
+
+# 传递多个参数
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a b
+Error: Only one parameter can be passed for "demo init"
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help            help for init
+  -o, --output string   Output format (default "json")
+
+Only one parameter can be passed for "demo init"exit status 1
+
+# 传递1个参数
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a 
+init command running...
+init command args:  [A]
+output:  json
+```
