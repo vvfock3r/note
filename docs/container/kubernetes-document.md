@@ -72,6 +72,8 @@ serverVersion:
 
 文档2：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/)
 
+Pause容器：[https://kubernetes.io/zh-cn/docs/concepts/windows/intro/#pause-container](https://kubernetes.io/zh-cn/docs/concepts/windows/intro/#pause-container)
+
 
 
 **Pod说明：**
@@ -1666,11 +1668,88 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 :::
 
-### 如何重启一个Pod？
+<br />
+
+### 重启Pod
 
 ```bash
 kubectl get pod {podname} -n {namespace} -o yaml | kubectl replace --force -f -
 ```
+
+<br />
+
+### 向容器的/etc/hosts添加记录
+
+文档：[https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/](https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/)
+
+```bash
+# 创建YAML
+[root@node-1 ~]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  hostAliases:
+  - ip: "127.0.0.1"
+    hostnames:
+    - "a.com"
+    - "b.com"
+  - ip: "10.1.2.3"
+    hostnames:
+    - "c.com"
+    - "d.com"
+  containers:
+  - name: demo1
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  - name: demo2
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# 部署
+[root@node-1 ~]# kubectl apply -f demo.yml
+
+# 分别查看两个容器中的/etc/hosts
+[root@node-1 ~]# kubectl exec -it demo -c demo1 -- cat /etc/hosts
+# Kubernetes-managed hosts file.
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+fe00::0 ip6-mcastprefix
+fe00::1 ip6-allnodes
+fe00::2 ip6-allrouters
+10.200.84.169   demo
+
+# Entries added by HostAliases.
+127.0.0.1       a.com   b.com
+10.1.2.3        c.com   d.com
+[root@node-1 ~]# kubectl exec -it demo -c demo2 -- cat /etc/hosts
+# Kubernetes-managed hosts file.
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+fe00::0 ip6-mcastprefix
+fe00::1 ip6-allnodes
+fe00::2 ip6-allrouters
+10.200.84.169   demo
+
+# Entries added by HostAliases.
+127.0.0.1       a.com   b.com
+10.1.2.3        c.com   d.com
+
+# 我们可以得到结论
+# (1) Pod中的容器中的/etc/hosts与宿主机的不一致
+# (2) Pod中的多容器中的/etc/hosts一致
+# (3) 使用spec.hostAliases我们可以向/etc/hosts中添加条目
+```
+
+<br />
+
+### 共享宿主机命名空间
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces](https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces)
 
 
 
