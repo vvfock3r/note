@@ -464,7 +464,7 @@ output:  json
 
 ### 选项
 
-#### 必选选项
+#### （1）必选选项
 
 `cmd/init/init.go`
 
@@ -497,6 +497,63 @@ required flag(s) "output" not setexit status 1
 ```
 
 <br />
+
+#### （2）多选项支持
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var (
+	output string
+	value  []string
+)
+
+var Cmd = &cobra.Command{
+	Use:     "init",
+	Short:   "System initialization",
+	Aliases: []string{"i", "ini", "nit"},
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+		fmt.Println("output: ", output)
+		fmt.Println("value: ", value)
+	},
+}
+
+func init() {
+	// 添加选项
+	Cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
+
+	// 支持多次调用该选项
+	Cmd.Flags().StringSliceVarP(&value, "", "v", []string{}, "可以多次调用该选项")
+
+	// StringArrayVarP和StringSliceVarP效果相同
+	//Cmd.Flags().StringArrayVarP(&value, "", "v", []string{}, "可以多次调用该选项")
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 多次调用该选项
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -v x -v y -v 3 
+init command running...
+init command args:  []
+output:  json
+value:  [x y 3]
+```
 
 
 
