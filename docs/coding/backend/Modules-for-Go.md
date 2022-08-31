@@ -49,6 +49,8 @@ go get -u github.com/spf13/cobra@latest
 go install github.com/spf13/cobra-cli@latest
 ```
 
+<br />
+
 #### 基本概念
 
 ```bash
@@ -60,6 +62,8 @@ git clone https://github.com/spf13/cobra.git --depth 1
 * **Flags** ：标志，在上面的例子中对应`--depth 1`
 
 其中Args和Flags的位置可以互换
+
+<br />
 
 #### 常规目录结构
 
@@ -147,6 +151,8 @@ Usage:
 Flags:
   -h, --help   help for demo
 ```
+
+<br />
 
 #### 添加一个子命令（Command）
 
@@ -243,6 +249,8 @@ Flags:
   -h, --help   help for init
 ```
 
+<br />
+
 #### 添加一个选项（Flags）
 
 ::: details 点击查看完整代码
@@ -319,6 +327,8 @@ init command running...
 init command args:  []
 output:  ini   
 ```
+
+<br />
 
 #### 添加一个参数（Arg）
 
@@ -449,3 +459,46 @@ init command running...
 init command args:  [A]
 output:  json
 ```
+
+<br />
+
+### 选项
+
+#### 必选选项
+
+`cmd/init/init.go`
+
+```go
+func init() {
+	// 添加选项
+	Cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
+	// 标记为必选选项
+	Cmd.MarkFlagRequired("output1")
+}
+```
+
+输出结果
+
+```bash
+# 不传参数会报错
+C:\Users\Administrator\GolandProjects\demo>go run main.go init
+Error: required flag(s) "output" not set
+Usage:                               
+  demo init [flags]
+                                     
+Aliases:                             
+  init, i, ini, nit                  
+                                     
+Flags:                               
+  -h, --help            help for init
+  -o, --output string   Output format (default "json")
+
+required flag(s) "output" not setexit status 1
+```
+
+<br />
+
+
+
+
+
