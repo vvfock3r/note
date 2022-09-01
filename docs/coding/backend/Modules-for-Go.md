@@ -466,7 +466,9 @@ output:  json
 
 #### （1）*Run系列函数
 
-**函数说明**
+<br />
+
+***Run系列函数**
 
 1. <span style="color: blue; font-weight: bold;">PersistentPreRun</span>
 2. <span style="color: green; font-weight: bold;">PreRun</span>
@@ -474,11 +476,28 @@ output:  json
 4. <span style="color: green; font-weight: bold;">PostRun</span>
 5. <span style="color: blue; font-weight: bold;">PersistentPostRun</span>
 
-**解释说明1**
+**解释说明**
 
 * 函数执行顺序说明：按照上面的排序顺序执行
 * `Persistent*`系列函数（蓝色字体）：如果本命令定义了该函数则执行，否则则执行父命令对应的函数，即会继承父命令的函数并执行
 * `PreRun/Run/PostRun`（绿色字体）：本命令真正执行的函数，一般情况都是使用`Run`
+
+<br />
+
+***RunE系列函数**
+
+1. <span style="color: blue; font-weight: bold;">PersistentPreRunE</span>
+2. <span style="color: green; font-weight: bold;">PreRunE</span>
+3. <span style="color: green; font-weight: bold;">RunE</span>
+4. <span style="color: green; font-weight: bold;">PostRunE</span>
+5. <span style="color: blue; font-weight: bold;">PersistentPostRunE</span>
+
+**解释说明**
+
+* 与`*Run`函数类似，但是可以返回`error`
+* 假设`*Run`和`*Rune`都定义了，那么`*Rune`会执行，而`*Run`不会执行
+
+<br />
 
 ::: details 点击查看完整代码
 
