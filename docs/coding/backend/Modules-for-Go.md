@@ -585,6 +585,7 @@ var Cmd = &cobra.Command{
 输出结果
 
 ```bash
+# 父命令函数执行
 C:\Users\Administrator\GolandProjects\demo>go run main.go
 [ root ] PersistentPreRun
 [ root ] PreRun           
@@ -592,6 +593,7 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 [ root ] PostRun          
 [ root ] PersistentPostRun
 
+# 子命令没有定义Persistent*，则继承父命令的函数
 C:\Users\Administrator\GolandProjects\demo>go run main.go init
 [ root ] PersistentPreRun
 [ init ] PreRun           
