@@ -466,8 +466,6 @@ output:  json
 
 #### （1）*Run函数
 
-<br />
-
 ***Run系列函数**
 
 1. <span style="color: blue; font-weight: bold;">PersistentPreRun</span>
@@ -494,7 +492,7 @@ output:  json
 
 **解释说明**
 
-* 与`*Run`函数类似，但是可以返回`error`
+* 与`*Run`函数类似，但是需要返回`error`类型
 * 假设`*Run`和`*Rune`都定义了，那么`*Rune`会执行，而`*Run`不会执行
 
 <br />
