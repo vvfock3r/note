@@ -666,7 +666,7 @@ var Cmd = &cobra.Command{
 输出结果
 
 ```bash
-# 开启全部静默模式：故意输入一个不存在的选项 ==》 仅输出错误信息
+# 开启全部静默模式：故意输入一个不存在的选项
 C:\Users\Administrator\GolandProjects\demo>go run main.go init --abc 123
 unknown flag: --abcexit status 1
 
