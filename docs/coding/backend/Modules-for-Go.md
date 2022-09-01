@@ -462,6 +462,220 @@ output:  json
 
 <br />
 
+### 命令
+
+#### （1）*Run系列函数
+
+**函数说明**
+
+1. <span style="color: blue; font-weight: bold;">PersistentPreRun</span>
+2. <span style="color: green; font-weight: bold;">PreRun</span>
+3. <span style="color: green; font-weight: bold;">Run</span>
+4. <span style="color: green; font-weight: bold;">PostRun</span>
+5. <span style="color: blue; font-weight: bold;">PersistentPostRun</span>
+
+**解释说明1**
+
+* 函数执行顺序说明：按照上面的排序顺序执行
+* `Persistent*`系列函数（蓝色字体）：如果本命令定义了该函数则执行，否则则执行父命令对应的函数，即会继承父命令的函数并执行
+* `PreRun/Run/PostRun`（绿色字体）：本命令真正执行的函数，一般情况都是使用`Run`
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	initialize "demo/cmd/init"
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+const (
+	shortMeesage = `Short message`
+	longMessage  = `
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra`
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: shortMeesage,
+	Long:  longMessage,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] PersistentPreRun")
+	},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] PreRun")
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] Run")
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] PostRun")
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] PersistentPostRun")
+	},
+}
+
+func init() {
+	// 添加子命令
+	rootCmd.AddCommand(initialize.Cmd)
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PreRun")
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] Run")
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PostRun")
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go
+[ root ] PersistentPreRun
+[ root ] PreRun           
+[ root ] Run              
+[ root ] PostRun          
+[ root ] PersistentPostRun
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init
+[ root ] PersistentPreRun
+[ init ] PreRun           
+[ init ] Run              
+[ init ] PostRun          
+[ root ] PersistentPostRun
+```
+
+#### （2）定义别名
+
+`cmd/init/init.go`
+
+```go
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	// 定义别名
+	Aliases: []string{"i", "int", "nit"},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+	},
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:                      
+  demo init [flags]         
+                            
+Aliases:                    
+  init, i, int, nit
+                            
+Flags:                      
+  -h, --help   help for init
+```
+
+#### （3）静默模式
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	// 静默Usage信息
+	SilenceUsage: true,
+	// 静默Error信息
+	SilenceErrors: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 开启全部静默模式：故意输入一个不存在的选项 ==》 仅输出错误信息
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --abc 123
+unknown flag: --abcexit status 1
+
+# 关闭静默Error：SilenceErrors: false,
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --abc 123
+Error: unknown flag: --abc
+unknown flag: --abcexit status 1
+
+# 两个都关闭（这也是默认的行为）
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --abc 123
+Error: unknown flag: --abc
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+
+unknown flag: --abcexit status 1
+```
+
+#### （4）
+
+::: details 点击查看完整代码
+
+:::
+
+<br />
+
 ### 选项
 
 #### （1）持久选项
@@ -539,7 +753,7 @@ var Cmd = &cobra.Command{
 		// 方式一：获取持久标志的值
 		fmt.Println(cmd.Root().PersistentFlags().GetInt("count"))
 
-		// 方式二：获取持久标志的值(推荐)
+		// 方式二：获取持久标志的值
 		fmt.Println(cmd.Flags().GetInt("count"))
 	},
 }
@@ -579,7 +793,8 @@ init command args:  []
 func init() {
 	// 添加选项
 	Cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
-	// 标记本地选项为必选选项
+	
+    // 标记本地选项为必选选项
 	Cmd.MarkFlagRequired("output")
     
     // 标记持久选项为必选选项
@@ -754,6 +969,3 @@ yaml:  false
 username:  root
 password:  123456
 ```
-
-
-
