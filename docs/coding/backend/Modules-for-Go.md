@@ -464,7 +464,114 @@ output:  json
 
 ### 选项
 
-#### （1）必选选项
+#### （1）持久选项
+
+持久选项代表**该命令下的所有子命令都会继承该选项**
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	initialize "demo/cmd/init" // 因为与模块默认的init函数有冲突，所以这里重命名一下
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+const (
+	shortMeesage = `Short message`
+	longMessage  = `
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra`
+)
+
+var Count int
+
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: shortMeesage,
+	Long:  longMessage,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("根命令执行...")
+	},
+}
+
+func init() {
+	// 根命令上的持久标志，对根命令下所有的子命令都生效
+	rootCmd.PersistentFlags().IntVarP(&Count, "count", "c", -1, "verbose output")
+
+	// 添加子命令
+	rootCmd.AddCommand(initialize.Cmd)
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+`cmd/init/init.go`
+
+`init`子命令中并没有定义任何选项
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+
+		// 方式一：获取持久标志的值
+		fmt.Println(cmd.Root().PersistentFlags().GetInt("count"))
+
+		// 方式二：获取持久标志的值(推荐)
+		fmt.Println(cmd.Flags().GetInt("count"))
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 查看帮助信息，init子命令继承了夫命令的-c选项
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h    
+System initialization
+
+Usage:                                         
+  demo init [flags]                            
+                                               
+Flags:                                         
+  -h, --help   help for init                   
+                                               
+Global Flags:
+  -c, --count int   verbose output (default -1)
+
+# 使用选项
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -c 200
+init command running...
+init command args:  []
+200 <nil>             
+200 <nil>
+```
+
+#### （2）必选选项
 
 `cmd/init/init.go`
 
@@ -472,8 +579,11 @@ output:  json
 func init() {
 	// 添加选项
 	Cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format")
-	// 标记为必选选项
-	Cmd.MarkFlagRequired("output1")
+	// 标记本地选项为必选选项
+	Cmd.MarkFlagRequired("output")
+    
+    // 标记持久选项为必选选项
+    // rootCmd.MarkPersistentFlagRequired("output")
 }
 ```
 
@@ -498,7 +608,7 @@ required flag(s) "output" not setexit status 1
 
 <br />
 
-#### （2）多选项支持
+#### （3）多选项支持
 
 ::: details 点击查看完整代码
 
@@ -548,14 +658,102 @@ func init() {
 
 ```bash
 # 多次调用该选项
-C:\Users\Administrator\GolandProjects\demo>go run main.go init -v x -v y -v 3 
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -v 1 -v 2 -v 3 
 init command running...
 init command args:  []
 output:  json
-value:  [x y 3]
+value:  [1 2 3]
 ```
 
+#### （4）选项组
 
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var (
+	json     bool
+	yaml     bool
+	username string
+	password string
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init command running...")
+		fmt.Println("init command args: ", args)
+		fmt.Println("json: ", json)
+		fmt.Println("yaml: ", yaml)
+		fmt.Println("username: ", username)
+		fmt.Println("password: ", password)
+	},
+}
+
+func init() {
+	// 互斥选项
+	Cmd.Flags().BoolVar(&json, "json", false, "Output in JSON")
+	Cmd.Flags().BoolVar(&yaml, "yaml", false, "Output in YAML")
+	Cmd.MarkFlagsMutuallyExclusive("json", "yaml")
+
+	// 使用以下其中任意一个选项，则另一个选项也必须使用
+	Cmd.Flags().StringVarP(&username, "username", "u", "", "Username (required if password is set)")
+	Cmd.Flags().StringVarP(&password, "password", "p", "", "Password (required if username is set)")
+	Cmd.MarkFlagsRequiredTogether("username", "password")
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 两个选项为互斥选项
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --json --yaml
+Error: if any flags in the group [json yaml] are set none of the others can be; [json yaml] were all set
+...
+
+# 单独使用则没问题
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --json                                         
+init command running...
+init command args:  []
+json:  true           
+yaml:  false          
+username:             
+password:             
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init --yaml
+init command running...
+init command args:  []
+json:  false          
+yaml:  true           
+username:             
+password:
+
+# -------------------------------------------------------------------------------------
+
+# 若提供了-u选项，则也必须提供-p选项
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -u root
+Error: if any flags in the group [username password] are set they must all be set; missing [password]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -u root -p123456
+init command running...
+init command args:  []
+json:  false
+yaml:  false
+username:  root
+password:  123456
+```
 
 
 
