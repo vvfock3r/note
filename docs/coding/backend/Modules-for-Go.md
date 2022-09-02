@@ -37,7 +37,7 @@ Cobra CLI
 
 * Github：[https://github.com/spf13/cobra-cli](https://github.com/spf13/cobra-cli)
 
-### 基础示例
+### 基础
 
 #### 安装
 
@@ -1450,7 +1450,7 @@ init Args: [a]
 
 <br />
 
-### 私人定制
+### 定制
 
 #### （1）Usage：不显示`[flags]`
 
