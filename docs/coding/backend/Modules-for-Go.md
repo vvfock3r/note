@@ -1452,7 +1452,7 @@ init Args: [a]
 
 ### 定制
 
-#### （1）Usage：不显示`[flags]`
+#### （1）不显示`[flags]`
 
 ::: details 点击查看完整代码
 
