@@ -759,7 +759,9 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init
 
 <br />
 
-#### （5）
+#### （5）自动补全
+
+文档：[https://github.com/spf13/cobra/blob/main/shell_completions.md](https://github.com/spf13/cobra/blob/main/shell_completions.md)
 
 <br />
 
@@ -1448,7 +1450,7 @@ init Args: [a]
 
 <br />
 
-### 帮助信息
+### 私人定制
 
 #### （1）Usage：不显示`[flags]`
 
@@ -1506,4 +1508,171 @@ Usage:
 Flags:                      
   -h, --help   help for init
 ```
+
+<br />
+
+#### （2）Version选项
+
+```go
+// 代码部分
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: shortMeesage,
+	Long:  longMessage,
+	Version: "v1.0.0",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] Run")
+	},
+}
+
+// 演示效果
+C:\Users\Administrator\GolandProjects\demo>go run main.go -h
+
+This is a very long text                                   
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:                                                                  
+  demo [flags]                                                          
+  demo [command]
+                                                                        
+Available Commands:                                                     
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command                                    
+  init        System initialization                                     
+                                                                        
+Flags:                                                                  
+  -h, --help      help for demo                                         
+  -v, --version   version for demo
+                                                                        
+Use "demo [command] --help" for more information about a command.
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go -v     
+demo version v1.0.0
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go --version
+demo version v1.0.0
+```
+
+如上代码所示，只需要添加`Version`字段，即可自动添加`-v/--version`选项
+
+看起来很美好，但是有以下几个问题：
+
+* `-v/--version`选项不支持子命令使用，会报错
+* 输出信息无法定制
+
+<br />
+
+改进后的版本
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	initialize "demo/cmd/init"
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+const (
+	version      = "v1.0.0"
+	shortMeesage = `Short message`
+	longMessage  = `
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra`
+)
+
+// (1) 初始化变量
+var Version bool
+
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: shortMeesage,
+	Long:  longMessage,
+
+	// (3) PersistentPreRun
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if Version {
+			fmt.Println(version)
+			os.Exit(0)
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] Run")
+	},
+}
+
+func init() {
+	// 添加子命令
+	rootCmd.AddCommand(initialize.Cmd)
+
+	// (2) 添加一个持久标志（全局选项）
+	rootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "version message")
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+:::
+
+输出效果
+
+```bash
+# 根命令帮助信息
+C:\Users\Administrator\GolandProjects\demo>go run main.go -h
+
+This is a very long text                                   
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:                                                                  
+  demo [flags]                                                          
+  demo [command]                                                        
+                                                                        
+Available Commands:                                                     
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command                                    
+  init        System initialization                                     
+                                                                        
+Flags:                                                                  
+  -h, --help      help for demo                                         
+  -v, --version   version message                                       
+                                                                        
+Use "demo [command] --help" for more information about a command.
+
+# 根命令查看版本
+C:\Users\Administrator\GolandProjects\demo>go run main.go -v
+v1.0.0
+
+# 子命令帮助信息
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:             
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+
+Global Flags:
+  -v, --version   version message
+
+# 子命令执行和查看版本
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a 
+init Run
+init Args: [a]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a -v
+v1.0.0
+```
+
+
 
