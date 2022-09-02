@@ -1801,7 +1801,7 @@ var rootCmd = &cobra.Command{
 	Use:   "demo",
 	Short: shortMeesage,
 	Long:  longMessage,
-
+    SilenceUsage: true,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if Version {
 			fmt.Println(version)
@@ -1876,9 +1876,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "init",
 	Short: "System initialization",
-	Annotations: map[string]string{
-		"version": "def",
-	},
+    SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("init Run")
 		fmt.Println("init Args:", args)
@@ -1966,5 +1964,10 @@ Cache Flags:
 Result Flags:                          
   -f, --filename string   filename     
   -o, --output string     output format
+
+# 对于报错信息，需要配合SilenceUsage: true 来使用，否会会输出默认的帮助信息
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -a -b
+Error: unknown shorthand flag: 'a' in -a
+unknown shorthand flag: 'a' in -aexit status 1
 ```
 
