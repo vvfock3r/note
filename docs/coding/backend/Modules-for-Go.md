@@ -1874,9 +1874,12 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "init",
-	Short: "System initialization",
-    SilenceUsage: true,
+	Use:          "init",
+	Short:        "System initialization",
+	SilenceUsage: true,
+	Annotations: map[string]string{
+		"version": "def",
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("init Run")
 		fmt.Println("init Args:", args)
@@ -1891,17 +1894,17 @@ Usage:
   demo init [flags]
 
 Flags:
-  -h, --help   help for init     
-  -v, --version   version message
+  -h, --help               help for init     
+  -v, --version            version message
 
 Cache Flags:
       --dir string         cache dir
       --max-age duration   cache ttl
 
 Result Flags:
-  -f, --filename string   filename
-  -o, --output string     output format
-`
+  -f, --filename string    filename
+  -o, --output string      output format`
+
 	Cmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		fmt.Fprintf(os.Stdout, usage)
 	})
