@@ -687,11 +687,71 @@ Flags:
 unknown flag: --abcexit status 1
 ```
 
-#### （4）
+#### （4）隐藏命令
 
 ::: details 点击查看完整代码
 
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	// 隐藏命令
+	Hidden: true,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PreRun")
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] Run")
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PostRun")
+	},
+}
+```
+
 :::
+
+输出结果
+
+```bash
+# 查看根命令，并没有init子命令
+C:\Users\Administrator\GolandProjects\demo>go run main.go -h   
+
+This is a very long text                                   
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:                                                                  
+  demo [flags]                                                          
+  demo [command]                                                        
+                                                                        
+Available Commands:                                                     
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command                                    
+                                                                        
+Flags:                                                                  
+  -h, --help   help for demo                                            
+
+Use "demo [command] --help" for more information about a command.
+
+# 但是却可以调用
+C:\Users\Administrator\GolandProjects\demo>go run main.go init
+[ root ] PersistentPreRun
+[ init ] PreRun
+[ init ] Run
+[ init ] PostRun
+[ root ] PersistentPostRun
+```
+
+#### （5）
 
 <br />
 
@@ -988,3 +1048,65 @@ yaml:  false
 username:  root
 password:  123456
 ```
+
+### 参数
+
+### 帮助信息
+
+#### （1）Usage：不显示`[flags]`
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:                   "init",
+	Short:                 "System initialization",
+    // 不显示Usage中[flags]
+	DisableFlagsInUseLine: true,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PreRun")
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] Run")
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ init ] PostRun")
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# DisableFlagsInUseLine: false （默认值）
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+  
+# DisableFlagsInUseLine: true
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:                      
+  demo init            # 注意这一行的区别
+                            
+Flags:                      
+  -h, --help   help for init
+```
+
