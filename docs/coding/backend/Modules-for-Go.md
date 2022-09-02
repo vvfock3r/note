@@ -1051,6 +1051,282 @@ password:  123456
 
 ### 参数
 
+#### （1）设置不允许带参数
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	// 不允许带参数
+	Args: cobra.NoArgs,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 不带参数执行，没问题
+C:\Users\Administrator\GolandProjects\demo>go run main.go init  
+init Run
+init Args: []
+
+# 带参数执行，报错
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a
+Error: unknown command "a" for "demo init"
+Usage:                      
+  demo init [flags]         
+                            
+Flags:                      
+  -h, --help   help for init
+
+unknown command "a" for "demo init"exit status 1
+```
+
+#### （2）设置至少带N个参数
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	// 设置至少带2个参数
+	Args: cobra.MinimumNArgs(2),
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init
+Error: requires at least 2 arg(s), only received 0
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+
+requires at least 2 arg(s), only received 0exit status 1
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a b
+init Run
+init Args: [a b]
+```
+
+#### （3）设置至多带N个参数
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	//设置至多带2个参数
+	Args: cobra.MaximumNArgs(2),
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init    
+init Run
+init Args: []
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1
+init Run
+init Args: [1]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1 2
+init Run
+init Args: [1 2]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1 2 3
+Error: accepts at most 2 arg(s), received 3
+Usage:                              
+  demo init [flags]                 
+                                    
+Flags:                              
+  -h, --help   help for init        
+                                    
+accepts at most 2 arg(s), received 3exit status 1
+```
+
+#### （4）设置参数个数范围
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	// 参数个数：最少1个，最多2个
+	Args: cobra.RangeArgs(1, 2),
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init      
+Error: accepts between 1 and 2 arg(s), received 0
+Usage:                                    
+  demo init [flags]                       
+                                          
+Flags:                                    
+  -h, --help   help for init              
+                                          
+accepts between 1 and 2 arg(s), received 0exit status 1
+                                                       
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1
+init Run
+init Args: [1]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1 2
+init Run
+init Args: [1 2]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1 2 3
+Error: accepts between 1 and 2 arg(s), received 3
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+
+accepts between 1 and 2 arg(s), received 3exit status 1
+```
+
+#### （5）设置参数值可选范围
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	// 设置只允许指定的参数
+	ValidArgs: []string{"a", "c"},
+	Args:      cobra.OnlyValidArgs,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go init
+init Run
+init Args: []
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a
+init Run
+init Args: [a]                             
+                                           
+C:\Users\Administrator\GolandProjects\demo>go run main.go init c
+init Run
+init Args: [c]                             
+                                           
+C:\Users\Administrator\GolandProjects\demo>go run main.go init b
+Error: invalid argument "b" for "demo init"
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init
+
+invalid argument "b" for "demo init"exit status 1
+```
+
+<br />
+
 ### 帮助信息
 
 #### （1）Usage：不显示`[flags]`
