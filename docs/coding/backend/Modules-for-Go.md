@@ -1952,18 +1952,18 @@ Flags:
 C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
 
 System initialization                        
-                                             
+
 Usage:                                       
   demo init [flags]
-                                             
+
 Flags:
   -h, --help               help for init     
   -v, --version            version message   
-                                             
+
 Cache Flags:                                 
       --dir string         cache dir         
       --max-age duration   cache ttl         
-                                             
+
 Result Flags:                                
   -f, --filename string    filename          
   -o, --output string      output format
