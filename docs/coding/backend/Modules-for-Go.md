@@ -1951,22 +1951,22 @@ Flags:
 # init子命令帮助信息 --> 选项分组
 C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
 
-System initialization                  
-                                       
-Usage:                                 
-  demo init [flags]                    
-                                       
-Flags:                                 
-  -h, --help   help for init           
-  -v, --version   version message      
-                                       
-Cache Flags:                           
-      --dir string         cache dir   
-      --max-age duration   cache ttl   
-                                       
-Result Flags:                          
-  -f, --filename string   filename     
-  -o, --output string     output format
+System initialization                        
+                                             
+Usage:                                       
+  demo init [flags]
+                                             
+Flags:
+  -h, --help               help for init     
+  -v, --version            version message   
+                                             
+Cache Flags:                                 
+      --dir string         cache dir         
+      --max-age duration   cache ttl         
+                                             
+Result Flags:                                
+  -f, --filename string    filename          
+  -o, --output string      output format
 
 # 对于报错信息，需要配合SilenceUsage: true 来使用，否会会输出默认的帮助信息
 C:\Users\Administrator\GolandProjects\demo>go run main.go init -a -b
