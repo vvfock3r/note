@@ -1849,6 +1849,7 @@ Flags:
   -v, --version   version message                                       
                                                                         
 Use "demo [command] --help" for more information about a command.`
+
 	rootCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		fmt.Fprintf(os.Stdout, usage)
 	})
