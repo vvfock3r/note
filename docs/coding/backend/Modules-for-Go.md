@@ -1768,3 +1768,201 @@ Global Flags:
 ```
 
 :::
+
+**3、终极大招：手写Help信息，非必要情况下最好不要使用**
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	initialize "demo/cmd/init"
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+const (
+	version      = "v1.0.0"
+	shortMeesage = `Short message`
+	longMessage  = `
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra`
+)
+
+var Version bool
+
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: shortMeesage,
+	Long:  longMessage,
+
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if Version {
+			fmt.Println(version)
+			os.Exit(0)
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] Run")
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(initialize.Cmd)
+	rootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "version message")
+
+	// 设置帮助信息
+	const usage = `
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:
+  demo [flags]
+  demo [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+
+BASIC COMMANDS
+  init          Initialize ipfs local configuration
+  add <path>    Add a file to IPFS
+  cat <ref>     Show IPFS object data
+  get <ref>     Download IPFS objects
+  ls <ref>      List links from an object
+  refs <ref>    List hashes of links from an object
+  
+DATA STRUCTURE COMMANDS
+  block         Interact with raw blocks in the datastore
+  object        Interact with raw dag nodes
+  files         Interact with objects as if they were a unix filesystem
+  dag           Interact with IPLD documents (experimental)
+
+Flags:                                                                  
+  -h, --help      help for demo                                         
+  -v, --version   version message                                       
+                                                                        
+Use "demo [command] --help" for more information about a command.`
+	rootCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		fmt.Fprintf(os.Stdout, usage)
+	})
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+	Annotations: map[string]string{
+		"version": "def",
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+
+func init() {
+	const usage = `
+System initialization
+
+Usage:
+  demo init [flags]
+
+Flags:
+  -h, --help   help for init     
+  -v, --version   version message
+
+Cache Flags:
+      --dir string         cache dir
+      --max-age duration   cache ttl
+
+Result Flags:
+  -f, --filename string   filename
+  -o, --output string     output format
+`
+	Cmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		fmt.Fprintf(os.Stdout, usage)
+	})
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 根命令帮助信息 --> 子命令分组
+C:\Users\Administrator\GolandProjects\demo>go run main.go -h
+
+This is a very long text
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:
+  demo [flags]
+  demo [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+
+Basic Commands:
+  init          Initialize ipfs local configuration
+  add <path>    Add a file to IPFS
+  cat <ref>     Show IPFS object data
+  get <ref>     Download IPFS objects
+  ls <ref>      List links from an object
+  refs <ref>    List hashes of links from an object
+
+Data Structure Commands:
+  block         Interact with raw blocks in the datastore
+  object        Interact with raw dag nodes
+  files         Interact with objects as if they were a unix filesystem
+  dag           Interact with IPLD documents (experimental)
+
+Flags:
+  -h, --help      help for demo
+  -v, --version   version message
+
+# init子命令帮助信息 --> 选项分组
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+
+System initialization                  
+                                       
+Usage:                                 
+  demo init [flags]                    
+                                       
+Flags:                                 
+  -h, --help   help for init           
+  -v, --version   version message      
+                                       
+Cache Flags:                           
+      --dir string         cache dir   
+      --max-age duration   cache ttl   
+                                       
+Result Flags:                          
+  -f, --filename string   filename     
+  -o, --output string     output format
+```
+
