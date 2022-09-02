@@ -1674,5 +1674,97 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init a -v
 v1.0.0
 ```
 
+#### （3）定制Help
 
+**1、取消Help命令**
 
+参考：https://github.com/spf13/cobra/issues/587
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+// 代码
+func init() {
+	rootCmd.AddCommand(initialize.Cmd)
+	rootCmd.SetHelpCommand(&cobra.Command{
+		Use:    "no-help",
+		Hidden: true,
+	})
+}
+
+// 效果
+C:\Users\Administrator\GolandProjects\demo>go run main.go -h
+
+This is a very long text                                   
+For details, please refer to https://github.com/spf13/cobra
+
+Usage:                                                                  
+  demo [flags]                                                          
+  demo [command]                                                        
+                                                                        
+Available Commands:                                                     
+  completion  Generate the autocompletion script for the specified shell
+  init        System initialization                                     
+                                                                        
+Flags:                                                                  
+  -h, --help      help for demo                                         
+  -v, --version   version message                                       
+
+Use "demo [command] --help" for more information about a command.
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go help init
+Error: unknown command "help" for "demo"
+Run 'demo --help' for usage.
+unknown command "help" for "demo"exit status 1
+```
+
+:::
+
+**2、升级为Global Flags**
+
+::: details 点击查看完整代码
+
+`cmd/cobra.go`
+
+```go
+// 代码
+func init() {
+	rootCmd.AddCommand(initialize.Cmd)
+
+	rootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "version message")
+	rootCmd.PersistentFlags().BoolP("help", "h", false, "help message")
+
+	rootCmd.SetHelpCommand(&cobra.Command{
+		Use:    "no-help",
+		Hidden: true,
+	})
+}
+
+// 效果
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:
+  demo init [flags]
+
+Global Flags:
+  -h, --help      help message
+  -v, --version   version message
+
+// 如果不显式绑定为持久标志，那么输出效果如下
+C:\Users\Administrator\GolandProjects\demo>go run main.go init -h
+System initialization
+
+Usage:                      
+  demo init [flags]         
+                            
+Flags:                      
+  -h, --help   help for init
+
+Global Flags:
+  -v, --version   version message
+```
+
+:::
