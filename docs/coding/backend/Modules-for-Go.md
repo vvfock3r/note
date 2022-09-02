@@ -600,6 +600,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init
 [ root ] PersistentPostRun
 ```
 
+<br />
+
 #### （2）定义别名
 
 `cmd/init/init.go`
@@ -632,6 +634,8 @@ Aliases:
 Flags:                      
   -h, --help   help for init
 ```
+
+<br />
 
 #### （3）静默模式
 
@@ -686,6 +690,8 @@ Flags:
 
 unknown flag: --abcexit status 1
 ```
+
+<br />
 
 #### （4）隐藏命令
 
@@ -750,6 +756,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init
 [ init ] PostRun
 [ root ] PersistentPostRun
 ```
+
+<br />
 
 #### （5）
 
@@ -864,6 +872,8 @@ init command args:  []
 200 <nil>
 ```
 
+<br />
+
 #### （2）必选选项
 
 `cmd/init/init.go`
@@ -959,6 +969,8 @@ output:  json
 value:  [1 2 3]
 ```
 
+<br />
+
 #### （4）选项组
 
 ::: details 点击查看完整代码
@@ -1049,6 +1061,8 @@ username:  root
 password:  123456
 ```
 
+<br />
+
 ### 参数
 
 #### （1）设置不允许带参数
@@ -1101,6 +1115,8 @@ Flags:
 unknown command "a" for "demo init"exit status 1
 ```
 
+<br />
+
 #### （2）设置至少带N个参数
 
 ::: details 点击查看完整代码
@@ -1148,6 +1164,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init a b
 init Run
 init Args: [a b]
 ```
+
+<br />
 
 #### （3）设置至多带N个参数
 
@@ -1204,6 +1222,8 @@ Flags:
                                     
 accepts at most 2 arg(s), received 3exit status 1
 ```
+
+<br />
 
 #### （4）设置参数个数范围
 
@@ -1268,7 +1288,9 @@ Flags:
 accepts between 1 and 2 arg(s), received 3exit status 1
 ```
 
-#### （5）设置参数值可选范围
+<br />
+
+#### （5）设置参数可选值
 
 ::: details 点击查看完整代码
 
@@ -1323,6 +1345,105 @@ Flags:
   -h, --help   help for init
 
 invalid argument "b" for "demo init"exit status 1
+```
+
+<br />
+
+#### （6）自定义参数校验
+
+::: details 点击查看完整代码
+
+`cmd/init/init.go`
+
+```go
+package init
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"strings"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "init",
+	Short: "System initialization",
+
+	// 这里故意大写
+	ValidArgs: []string{"A", "B"},
+
+	// 自定义参数校验
+	Args: func(cmd *cobra.Command, args []string) error {
+		// 限制参数个数
+		if err := cobra.RangeArgs(1, 1)(cmd, args); err != nil {
+			return err
+		}
+
+		// 参数处理：全部转为小写,用于忽略参数大小写
+		for k, v := range args {
+			args[k] = strings.ToLower(v)
+		}
+		for k, v := range cmd.ValidArgs {
+			cmd.ValidArgs[k] = strings.ToLower(v)
+		}
+
+		// 限制参数值范围
+		if err := cobra.OnlyValidArgs(cmd, args); err != nil {
+			return err
+		}
+
+		return nil
+	},
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("init Run")
+		fmt.Println("init Args:", args)
+	},
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# (1) 仅支持1个参数
+C:\Users\Administrator\GolandProjects\demo>go run main.go init 1 2 3
+Error: accepts between 1 and 1 arg(s), received 3
+Usage:                                    
+  demo init [flags]                       
+                                          
+Flags:                                    
+  -h, --help   help for init              
+                                          
+accepts between 1 and 1 arg(s), received 3exit status 1
+
+# (2) 参数可选值: A或B
+C:\Users\Administrator\GolandProjects\demo>go run main.go init A    
+init Run
+init Args: [a]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init B
+init Run
+init Args: [b]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init C
+Error: invalid argument "c" for "demo init"
+Usage:                      
+  demo init [flags]         
+                            
+Flags:                      
+  -h, --help   help for init
+
+invalid argument "c" for "demo init"exit status 1
+
+# (3) 忽略大小写
+C:\Users\Administrator\GolandProjects\demo>go run main.go init a
+init Run
+init Args: [a]
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go init A
+init Run
+init Args: [a]
 ```
 
 <br />
