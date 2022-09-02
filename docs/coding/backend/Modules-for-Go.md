@@ -1678,7 +1678,7 @@ v1.0.0
 
 **1、取消Help命令**
 
-参考：https://github.com/spf13/cobra/issues/587
+参考：[https://github.com/spf13/cobra/issues/587](https://github.com/spf13/cobra/issues/587)
 
 ::: details 点击查看完整代码
 
