@@ -2016,3 +2016,129 @@ unknown shorthand flag: 'a' in -aexit status 1
 
 Github：[https://github.com/spf13/viper](https://github.com/spf13/viper)
 
+### 安装
+
+```bash
+go get github.com/spf13/viper
+```
+
+### 从文件中读取配置
+
+#### 1）单路径搜索
+
+:::tip
+
+以下代码会从**当前目录**下读取`config.yaml`文件，当前目录值得是：
+
+执行命令时所在的目录，而不是命令所在的目录，所以也就意味着当执行命令时，我们的配置文件是非固定的，随着执行目录变化而变化
+
+:::
+
+::: details 点击查看完整代码
+
+`config.yaml`
+
+```yaml
+database:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: blog
+  dbname: blog
+  password: 123456
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigFile("config.yaml")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 获取值
+	fmt.Println(viper.Get("database.port"))
+}
+```
+
+输出结果
+
+```bash
+3306
+```
+
+:::
+
+#### 2）多路径搜索
+
+:::tip
+
+文件名和扩展名必须分开设置，才支持多路径搜索，即
+
+```go
+// 此代码不支持多路径搜索
+viper.SetConfigFile("config.yaml")
+
+// 要改成这种形式，才支持多路径搜索
+viper.SetConfigName("config")
+viper.SetConfigType("yaml")
+```
+
+:::
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+func main() {
+	// 设置配置文件，注意：文件名和扩展名必须分开设置，才支持多路径搜索
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	// 添加搜索路径，按添加顺序搜索
+	viper.AddConfigPath(".")           // 首先添加当前目录，默认不会搜索当前目录
+	viper.AddConfigPath("$HOME/.demo") // 其次添加家目录
+	viper.AddConfigPath("/tmp")        // 最后添加/etc目录
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 获取值
+	fmt.Println(viper.Get("database.port"))
+	fmt.Println("当前正在使用的配置文件: ", viper.ConfigFileUsed())
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[root@node-1 go]# go run main.go 
+3309
+当前正在使用的配置文件:  /root/.demo/config.yaml
+```
+
+
+
