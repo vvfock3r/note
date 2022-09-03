@@ -2527,7 +2527,7 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 
 ### 优先级
 
-**按照优先级从高到底排序：**
+按照优先级**从高到底**排序：
 
 1. `viper.Set(key string, value interface{})`设置的值
 2. **命令行**（`Flag`）中读取的值
