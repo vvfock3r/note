@@ -2525,7 +2525,7 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 
 <br />
 
-### 读取配置优先级
+### 优先级
 
 **按照优先级从高到底排序：**
 
@@ -2535,3 +2535,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 4. **配置文件**中读取的值
 5. **远程Key/Value存储**中读取的值
 6. **默认值**
+
+<br />
+
+### 获取值
+
