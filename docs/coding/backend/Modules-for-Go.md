@@ -2424,3 +2424,98 @@ func main() {
 ```
 
 :::
+
+#### 3）命令行
+
+::: details 点击查看完整代码
+
+`main.go`
+
+```go
+package main
+
+import (
+	"demo/cmd"
+	"fmt"
+	"github.com/spf13/viper"
+)
+
+func main() {
+	cmd.Execute()
+	fmt.Println("[ Viper ] Host: ", viper.Get("host"))
+	fmt.Println("[ Viper ] Port: ", viper.Get("port"))
+}
+```
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+)
+
+var (
+	Host string
+	Port string
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "demo [-F file | -D dir]... [-f format] profile",
+	Short: "Short message",
+	Long:  `Long message`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("[ root ] Run")
+		fmt.Println("[ root ] Host:", Host)
+		fmt.Println("[ root ] Port:", Port)
+	},
+}
+
+func init() {
+	rootCmd.Flags().StringVarP(&Host, "host", "", "1.1.1.1", "host")
+	rootCmd.Flags().StringVarP(&Port, "port", "", "80", "port")
+
+	// 绑定配置
+	if err := viper.BindPFlag("host", rootCmd.Flags().Lookup("host")); err != nil {
+		log.Fatalln(err)
+	}
+	if err := viper.BindPFlag("port", rootCmd.Flags().Lookup("port")); err != nil {
+		log.Fatalln(err)
+	}
+	viper.SetDefault("host", "127.0.0.1")
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go --host 192.168.1.1 --port 12345
+[ root ] Run
+[ root ] Host: 192.168.1.1  
+[ root ] Port: 12345        
+[ Viper ] Host:  192.168.1.1
+[ Viper ] Port:  12345
+
+C:\Users\Administrator\GolandProjects\demo>go run main.go                   
+[ root ] Run
+[ root ] Host: 1.1.1.1
+[ root ] Port: 80
+[ Viper ] Host:  127.0.0.1
+[ Viper ] Port:  80
+```
+
