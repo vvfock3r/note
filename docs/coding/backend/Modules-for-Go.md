@@ -2379,4 +2379,48 @@ func main() {
 
 ::: details SetEnvPrefix 和 AutomaticEnv
 
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+)
+
+func main() {
+	// 设置环境变量
+	if err := os.Setenv("ID", "12"); err != nil {
+		log.Fatalln(err)
+	}
+	if err := os.Setenv("SPF_ID", "13"); err != nil {
+		log.Fatalln(err)
+	}
+	if err := os.Setenv("TEST_ID", "15"); err != nil {
+		log.Fatalln(err)
+	}
+
+	// ------------------------------------------------------------------
+	// 设置环境变量前缀,如果多次设置后面的会覆盖前面的
+	viper.SetEnvPrefix("spf")
+
+	// 自动匹配
+	// 1) 若设置了前缀，匹配规则: 前缀_中间变量
+	// 2) 若没有设置前缀，匹配规则：中间变量
+	viper.AutomaticEnv()
+
+	// ------------------------------------------------------------------
+
+	// 获取值（中间变量）
+	fmt.Println(viper.Get("id"))
+}
+```
+
+输出结果
+
+```bash
+13
+```
+
 :::
