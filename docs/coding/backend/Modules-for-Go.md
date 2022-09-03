@@ -2022,6 +2022,8 @@ Github：[https://github.com/spf13/viper](https://github.com/spf13/viper)
 go get github.com/spf13/viper
 ```
 
+<br />
+
 ### 从文件中读取配置
 
 #### 1）单路径搜索
@@ -2080,6 +2082,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 2）多路径搜索
 
@@ -2140,6 +2144,8 @@ func main() {
 当前正在使用的配置文件:  /root/.demo/config.yaml
 ```
 
+<br />
+
 #### 3）设置默认值
 
 ::: details 点击查看完整代码
@@ -2186,6 +2192,8 @@ func main() {
 12345
 当前正在使用的配置文件:  /root/go/config.yaml
 ```
+
+<br />
 
 #### 4）实时读取配置
 
@@ -2250,3 +2258,125 @@ Config file changed: /root/go/config.yaml
 3307
 ```
 
+<br />
+
+### 从其他位置读取配置
+
+#### 1）io.Reader
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+func main() {
+	// 设置配置
+	viper.SetConfigType("yaml")
+	var yamlExample = []byte(`
+Hacker: true
+name: steve
+hobbies:
+- skateboarding
+- snowboarding
+- go
+clothing:
+  jacket: leather
+  trousers: denim
+age: 35
+eyes : brown
+beard: true
+`)
+
+	// 读取配置
+	if err := viper.ReadConfig(bytes.NewBuffer(yamlExample)); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 获取值
+	fmt.Println(viper.Get("name"))
+}
+```
+
+输出结果
+
+```bash
+steve
+```
+
+:::
+
+#### 2）环境变量
+
+说明：
+
+* `viper`并不会直接读取环境变量，而是会用到一个中间变量，我们大多数都在操作这个中间变量
+* 1个中间变量可以对应1个或多个环境变量
+* 环境变量不区分大小写
+
+::: details SetEnvPrefix 和 BindEnv
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+)
+
+func main() {
+	// 设置环境变量
+	if err := os.Setenv("ID", "12"); err != nil {
+		log.Fatalln(err)
+	}
+	if err := os.Setenv("SPF_ID", "13"); err != nil {
+		log.Fatalln(err)
+	}
+	if err := os.Setenv("TEST_ID", "15"); err != nil {
+		log.Fatalln(err)
+	}
+
+	// ------------------------------------------------------------------
+	// 设置环境变量前缀,如果多次设置后面的会覆盖前面的
+	viper.SetEnvPrefix("spf")
+
+	// 提供了一个参数(中间变量)，这会组合出环境变量，格式是:
+	//   设置了前缀的情况下: 前缀_中间变量,即 SPF_ID
+	//   未设置前缀的情况下: 中间变量，即ID
+	if err := viper.BindEnv("id"); err != nil {
+		log.Fatalln(err)
+	}
+
+	// ------------------------------------------------------------------
+
+	// 提供两个或多个参数，中间变量、环境变量...
+	if err := viper.BindEnv("id", "TEST_ID"); err != nil {
+		log.Fatalln(err)
+	}
+
+	// ------------------------------------------------------------------
+
+	// 获取值（中间变量）
+	fmt.Println(viper.Get("id"))
+}
+```
+
+输出结果
+
+```bash
+13
+```
+
+:::
+
+::: details SetEnvPrefix 和 AutomaticEnv
+
+:::
