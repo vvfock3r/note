@@ -2312,6 +2312,8 @@ steve
 
 :::
 
+<br />
+
 #### 2）环境变量
 
 说明：
@@ -2425,6 +2427,8 @@ func main() {
 
 :::
 
+<br />
+
 #### 3）命令行
 
 ::: details 点击查看完整代码
@@ -2519,3 +2523,15 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 [ Viper ] Port:  80
 ```
 
+<br />
+
+### 读取配置优先级
+
+**按照优先级从高到底排序：**
+
+1. `viper.Set(key string, value interface{})`设置的值
+2. **命令行**（`Flag`）中读取的值
+3. **环境变量**中读取的值
+4. **配置文件**中读取的值
+5. **远程Key/Value存储**中读取的值
+6. **默认值**
