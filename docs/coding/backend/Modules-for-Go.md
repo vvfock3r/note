@@ -2140,5 +2140,113 @@ func main() {
 当前正在使用的配置文件:  /root/.demo/config.yaml
 ```
 
+#### 3）设置默认值
 
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	// 添加搜索路径，按添加顺序搜索
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.demo")
+	viper.AddConfigPath("/tmp")
+
+	// 设置默认值, database.port1是一个不存在的key
+	viper.SetDefault("database.port1", "12345")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 获取值
+	fmt.Println(viper.Get("database.port1"))
+	fmt.Println("当前正在使用的配置文件: ", viper.ConfigFileUsed())
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[root@node-1 go]# go run main.go 
+12345
+当前正在使用的配置文件:  /root/go/config.yaml
+```
+
+#### 4）实时读取配置
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+	"log"
+	"time"
+)
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	// 添加搜索路径，按添加顺序搜索
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.demo")
+	viper.AddConfigPath("/tmp")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 监听配置文件变化，需要注意的是：
+	// 1）一旦找到某个配置文件，只会监听这一个配置文件，对它进行改名等也不会自动寻找其他配置文件
+	// 2)对已经读取过的配置文件改名，不会影响到继续读取配置
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+	})
+	viper.WatchConfig()
+
+	// 获取值
+	for {
+		fmt.Println(viper.Get("database.port"))
+		time.Sleep(time.Second)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+[root@node-1 go]# go run main.go 
+3306
+3306
+3306
+3306
+Config file changed: /root/go/config.yaml
+Config file changed: /root/go/config.yaml
+3307
+3307
+3307
+```
 
