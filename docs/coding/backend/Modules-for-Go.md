@@ -2991,7 +2991,9 @@ blog
 
 ### Zap
 
-安装
+Github：[https://github.com/uber-go/zap](https://github.com/uber-go/zap)
+
+### 安装
 
 ```bash
 go get -u go.uber.org/zap
