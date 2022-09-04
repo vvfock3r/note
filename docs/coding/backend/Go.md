@@ -7757,6 +7757,8 @@ go build -ldflags "${flags}" ${Options} main.go
 
 :::
 
+输出结果
+
 ```bash
 # 在Linux上执行
 [root@localhost ~]# bash build.sh
