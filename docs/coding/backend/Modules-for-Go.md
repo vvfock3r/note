@@ -26,9 +26,17 @@
         <td><li><code>Go 1.19</code></li><li><code>Viper v1.12.0</code></li></td>
         <td></td>
         <td></td>
-    </tr>        
+    </tr>
+    <tr>
+        <td>日志记录</td>
+        <td><a href="#zap" style="text-decoration:none;">Zap</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Zap v1.23.0</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>         
     </tbody>
 </table>
+
 
 
 <br />
@@ -2978,4 +2986,14 @@ blog
 #### 4）自定义解码
 
 待补充
+
+<br />
+
+### Zap
+
+安装
+
+```bash
+go get -u go.uber.org/zap
+```
 
