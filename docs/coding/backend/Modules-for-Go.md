@@ -2470,7 +2470,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "demo [-F file | -D dir]... [-f format] profile",
+	Use:   "demo",
 	Short: "Short message",
 	Long:  `Long message`,
 
@@ -2540,3 +2540,199 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 
 ### 获取值
 
+（1）自动转换类型
+
+若key存在则返回value，自动转为合适的类型，比如值为80会转为int类型，true会转为bool类型
+
+若key不存在则会返回nil，类型也为nil
+
+- `Get(key string) : interface{}`
+
+<br />
+
+（2）返回指定的类型
+
+若key存在，若value能转为对应类型则返回，若不能转为对应类型则返回零值
+
+若key不存在则返回零值
+
+- `GetBool(key string) : bool`
+- `GetFloat64(key string) : float64`
+- `GetInt(key string) : int`
+- `GetIntSlice(key string) : []int`
+- `GetString(key string) : string`
+- `GetStringMap(key string) : map[string]interface{}`
+- `GetStringMapString(key string) : map[string]string`
+- `GetStringSlice(key string) : []string`
+- `GetTime(key string) : time.Time`
+- `GetDuration(key string) : time.Duration`
+
+<br />
+
+（3）`viper.IsSet`检查key是否存在，但是它并不会检查cobra设置的默认值，除非我们再使用`viper.SetDefault`显式设置一遍
+
+- `IsSet(key string) : bool`
+
+<br />
+
+获取所有配置
+
+- `AllSettings() : map[string]interface{}`
+
+::: details 点击查看完整代码
+
+`main.go`
+
+```go
+package main
+
+import (
+	"demo/cmd"
+	"fmt"
+	"github.com/spf13/viper"
+)
+
+func main() {
+	cmd.Execute()
+
+	// Get获取Key
+	fmt.Println("Get | Key  存在:",
+		fmt.Sprint(viper.Get("host")),
+		fmt.Sprintf("%T", viper.Get("host")),
+	)
+	fmt.Println("Get | Key不存在:",
+		fmt.Sprint(viper.Get("non-key")),
+		fmt.Sprintf("%T", viper.Get("non-key")),
+	)
+	fmt.Println()
+
+	// GetInt获取Key
+	fmt.Println("GetInt | Key  存在 | Value为Int类型   :",
+		fmt.Sprint(viper.GetInt("port")),
+		fmt.Sprintf("%T", viper.GetInt("port")),
+	)
+	fmt.Println("GetInt | Key  存在 | Value为String类型:",
+		fmt.Sprint(viper.GetInt("host")),
+		fmt.Sprintf("%T", viper.GetInt("host")),
+	)
+	fmt.Println("GetInt | Key不存在                    :",
+		fmt.Sprint(viper.GetInt("non-key")),
+		fmt.Sprintf("%T", viper.GetInt("non-key")),
+	)
+	fmt.Println()
+
+	// IsSet检测Key是否显示设置
+	//   viper.Set/SetDefault设置的值	返回true
+	//   通过命令行传递的值				返回true
+	//   通过cobra设置的默认值				返回false
+	fmt.Println("IsSet | Key  存在:", viper.IsSet("verbose"))
+	fmt.Println("IsSet | Key不存在:", viper.IsSet("non-key"))
+	fmt.Println()
+
+	// 获取所有配置
+	fmt.Println("AllSettings: ")
+	for k, v := range viper.AllSettings() {
+		fmt.Print(k, "  ==>  ", v)
+		fmt.Println()
+	}
+}
+```
+
+`cmd/cobra.go`
+
+```go
+package cmd
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+)
+
+var (
+	Host    string
+	Port    int
+	Verbose bool
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "demo",
+	Short: "Short message",
+	Long:  `Long message`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+	},
+}
+
+func init() {
+	rootCmd.Flags().StringVarP(&Host, "host", "", "127.0.0.1", "host")
+	rootCmd.Flags().IntVarP(&Port, "port", "", 80, "port")
+	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "", true, "verbose")
+
+	// 绑定配置（若未配置会自动使用上面的默认值）
+	if err := viper.BindPFlag("host", rootCmd.Flags().Lookup("host")); err != nil {
+		log.Fatalln(err)
+	}
+	if err := viper.BindPFlag("port", rootCmd.Flags().Lookup("port")); err != nil {
+		log.Fatalln(err)
+	}
+	if err := viper.BindPFlag("verbose", rootCmd.Flags().Lookup("verbose")); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 这里设置与否，viper都能正确获取到值
+	// 如果没有设置这里，并且命令行不传对应选项的话，使用viper.IsSet会返回false
+	//viper.SetDefault("host", rootCmd.Flags().Lookup("host").Value)
+	//viper.SetDefault("port", rootCmd.Flags().Lookup("port").Value)
+	//viper.SetDefault("verbose", rootCmd.Flags().Lookup("verbose").Value)
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+# 直接执行
+C:\Users\Administrator\GolandProjects\demo>go run main.go
+Get | Key  存在: 127.0.0.1 string
+Get | Key不存在: <nil> <nil>
+
+GetInt | Key  存在 | Value为Int类型    : 80 int
+GetInt | Key  存在 | Value为String类型 : 0 int   # !
+GetInt | Key不存在                    : 0 int
+
+IsSet | Key  存在: false # !
+IsSet | Key不存在: false
+
+AllSettings:
+host  ==>  127.0.0.1
+port  ==>  80
+verbose  ==>  true
+
+# 传递参数
+C:\Users\Administrator\GolandProjects\demo>go run main.go --verbose       
+Get | Key  存在: 127.0.0.1 string
+Get | Key不存在: <nil> <nil>
+
+GetInt | Key  存在 | Value为Int类型   : 80 int
+GetInt | Key  存在 | Value为String类型: 0 int
+GetInt | Key不存在                    : 0 int
+
+IsSet | Key  存在: true  # !
+IsSet | Key不存在: false
+
+AllSettings:
+verbose  ==>  true
+host  ==>  127.0.0.1
+port  ==>  80
+```
