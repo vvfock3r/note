@@ -7766,7 +7766,7 @@ go build -ldflags "${flags}" ${Options} main.go
 Version:             1.0.0
 Go version:          go1.18.1
 Git commit:          unknown
-CST Build:           2022-09-04 21:34:06 CST +0800
+Build time:          2022-09-04 21:34:06 CST +0800
 OS/Arch:             linux/amd64
 
 # 在Windows上执行
@@ -7778,7 +7778,7 @@ $ sh build.sh -o demo
 Version:             1.0.0
 Go version:          go1.19
 Git commit:          unknown
-CST Build:           2022-09-04 22:51:19 CST +0800
+Build time:          2022-09-04 22:51:19 CST +0800
 OS/Arch:             linux/amd64
 ```
 
