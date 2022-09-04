@@ -2302,7 +2302,7 @@ func main() {
 
 :::
 
-::: details WriteConfigAs / SafeWriteConfigAs
+::: details WriteConfig/ SafeWriteConfig
 
 `config.yaml`
 
@@ -2311,7 +2311,7 @@ database:
     dbname: blog
     host: 192.168.100.20
     password: qaz.123
-    port: 12345
+    port: 3306
     username: root
 ```
 
