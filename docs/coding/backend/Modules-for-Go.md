@@ -2260,6 +2260,112 @@ Config file changed: /root/go/config.yaml
 
 <br />
 
+#### 5）写入配置文件
+
+::: details WriteConfigAs / SafeWriteConfigAs
+
+```go
+package main
+
+import (
+	"github.com/spf13/viper"
+	"log"
+)
+
+var err error
+
+func main() {
+	viper.Set("Host", "127.0.0.1")
+	viper.Set("Port", 80)
+	viper.Set("UserName", "root")
+	viper.Set("Password", "qaz.123")
+
+	// 覆盖写入配置文件（若配置文件存在会覆盖）
+	err = viper.WriteConfigAs("./a.yaml")
+	if err != nil {
+		log.Fatalln("[ 1 ] " + err.Error())
+	}
+
+	// 安全写入配置文件（若配置文件存在会报错）
+	err = viper.SafeWriteConfigAs("./a.yaml")
+	if err != nil {
+		log.Fatalln("[ 2 ] " + err.Error())
+	}
+}
+```
+
+输出结果
+
+```bash
+2022/09/04 16:04:02 [ 2 ] Config File "./a.yaml" Already Exists
+```
+
+:::
+
+::: details WriteConfigAs / SafeWriteConfigAs
+
+`config.yaml`
+
+```yaml
+database:
+    dbname: blog
+    host: 192.168.100.20
+    password: qaz.123
+    port: 12345
+    username: root
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"github.com/spf13/viper"
+	"log"
+)
+
+var err error
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 设置新的值
+	viper.Set("database.port", 12345)
+
+	// 覆盖写入配置文件
+	err = viper.WriteConfig()
+	if err != nil {
+		log.Fatalln("[ 1 ] " + err.Error())
+	}
+
+	// 安全写入配置文件
+	err = viper.SafeWriteConfig()
+	if err != nil {
+		log.Fatalln("[ 2 ] " + err.Error())
+	}
+}
+```
+
+输出结果
+
+```bash
+2022/09/04 16:09:04 [ 2 ] Config File "C:\\Users\\Administrator\\GolandProjects\\demo\\config.yaml" Already Exists
+```
+
+:::
+
+<br />
+
 ### 从其他位置读取配置
 
 #### 1）io.Reader
@@ -2864,4 +2970,8 @@ root
 qaz.123
 blog
 ```
+
+#### 4）自定义解码
+
+待补充
 
