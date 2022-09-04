@@ -2540,6 +2540,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 
 ### 获取值
 
+#### 1）Get*系列函数
+
 （1）自动转换类型
 
 若key存在则返回value，自动转为合适的类型，比如值为80会转为int类型，true会转为bool类型
@@ -2736,3 +2738,130 @@ verbose  ==>  true
 host  ==>  127.0.0.1
 port  ==>  80
 ```
+
+<br />
+
+#### 2）提取子树
+
+::: details 点击查看完整代码
+
+`config.yaml`
+
+```yaml
+cache:
+  cache1:
+    max-items: 100
+    item-size: 64
+  cache2:
+    max-items: 200
+    item-size: 80
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigFile("config.yaml")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 提取子树
+	vp := viper.Sub("cache.cache2")  // 返回*viper实例
+	fmt.Println(vp.Get("max-items"))
+}
+```
+
+:::
+
+输出结果
+
+```bash
+200
+```
+
+#### 3）解码到结构体
+
+:::tip
+
+只会解码一致的部分
+
+:::
+
+::: details 点击查看完整代码
+
+`config.yaml`
+
+```yaml
+database:
+  host: 192.168.100.20
+  port: 3306
+  username: root
+  password: qaz.123
+  dbname: blog
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"log"
+)
+
+type Config struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Dbname   string
+}
+
+func main() {
+	// 设置配置文件
+	viper.SetConfigFile("config.yaml")
+
+	// 读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 映射到结构体，注意：结构体首字母需要大写
+	var config Config
+	if err := viper.Sub("database").Unmarshal(&config); err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println(config.Host)
+	fmt.Println(config.Port)
+	fmt.Println(config.Username)
+	fmt.Println(config.Password)
+	fmt.Println(config.Dbname)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+192.168.100.20
+3306   
+root   
+qaz.123
+blog
+```
+
