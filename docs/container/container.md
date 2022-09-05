@@ -2895,11 +2895,7 @@ vim /etc/percona-${Version}/conf.d/my.cnf
 ::: details （3）连接MySQL
 
 ```bash
-# MySQL
-docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
-mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
-
-# Percona
+# MySQL/Percona
 docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
 mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 ```
