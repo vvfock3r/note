@@ -2815,16 +2815,31 @@ docker image pull mariadb:10.9.2
 
 :::
 
+::: details （2）设置变量
+
+```bash
+# MySQL
+Version="5.7.39"                 # MySQL版本
+ContainerName="mysql-${Version}" # 容器名称
+Password="QiNqg[l.%;H>>rO9"      # Root密码
+ListenPort=3306                  # 监听端口
+
+# Percona
+Version="5.7.35"                   # Percona版本
+ContainerName="percona-${Version}" # 容器名称
+Password="QiNqg[l.%;H>>rO9"        # Root密码
+ListenPort=3306                    # 监听端口
+```
+
+:::
+
 ::: details （2）启动MySQL
 
 **MySQL**
 
 ```bash
 # 启动容器 - MySQL
-Version="5.7.39"
-Password="QiNqg[l.%;H>>rO9"
-ListenPort=3306
-docker container run --name mysql-${Version} \
+docker container run --name ${ContainerName} \
                      -v /etc/mysql-${Version}/conf.d:/etc/mysql/conf.d \
                      -v /var/lib/mysql-${Version}:/var/lib/mysql/ \
                      -p ${ListenPort}:3306 \
@@ -2833,7 +2848,7 @@ docker container run --name mysql-${Version} \
                    mysql:${Version}
 
 # 拷贝配置文件到宿主机,用于持久化
-docker container cp mysql-${Version}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
+docker container cp ${ContainerName}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
 
 # 删掉下面所有的includedir配置
 vim /etc/mysql-${Version}/conf.d/my.cnf
@@ -2845,15 +2860,11 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 **Percona**
 
 ```bash
-# 启动容器 - Percona
-Version="5.7.35"
-Password="QiNqg[l.%;H>>rO9"
-ListenPort=3307
-
 # Percona需要先创建目录并授权，否则会报Permission denied
 mkdir -p /var/lib/percona-${Version} && chmod -R 777 /var/lib/percona-${Version} 
 
-docker container run --name percona-${Version} \
+# 启动容器 - Percona
+docker container run --name ${ContainerName} \
                      -v /etc/percona-${Version}/conf.d:/etc/my.cnf.d \
                      -v /var/lib/percona-${Version}:/var/lib/mysql/ \
                      -p ${ListenPort}:3306 \
@@ -2862,7 +2873,7 @@ docker container run --name percona-${Version} \
                    percona:${Version}
 
 # 拷贝配置文件到宿主机,用于持久化，-L用于拷贝软链所指向的真正文件
-docker container cp -L percona-${Version}:/etc/my.cnf  /etc/percona-${Version}/conf.d/
+docker container cp -L ${ContainerName}:/etc/my.cnf  /etc/percona-${Version}/conf.d/
 
 # 删掉下面所有的includedir配置
 vim /etc/percona-${Version}/conf.d/my.cnf
@@ -2885,11 +2896,11 @@ vim /etc/percona-${Version}/conf.d/my.cnf
 
 ```bash
 # MySQL
-docker container exec -it mysql-${Version} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
+docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
 mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 
 # Percona
-docker container exec -it percona-${Version} mysql -uroot -p"${Password}"  # 在容器内部连接MySQL
+docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
 mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 ```
 
@@ -2913,20 +2924,20 @@ default-character-set=utf8mb4
 :::
 
 ```bash
-# MySQL 
-vim /etc/mysql-${Version}/conf.d/my.cnf   # 修改配置，参考上面操作步骤
-docker container restart mysql-${Version} # 重启容器，使配置文件生效
-docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset # 检查字符集
+# 修改配置，参考上面操作步骤
+vim /etc/mysql-${Version}/conf.d/my.cnf     # MySQL
+vim /etc/percona-${Version}/conf.d/my.cnf   # Percona
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 检查字符集
+docker exec -it ${ContainerName} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset 
 
 Server characterset:    utf8mb4
 Db     characterset:    utf8mb4
 Client characterset:    utf8mb4
 Conn.  characterset:    utf8mb4
-
-# Percona
-vim /etc/percona-${Version}/conf.d/my.cnf   # 修改配置，参考上面操作步骤
-docker container restart percona-${Version} # 重启容器，使配置文件生效
-docker exec -it percona-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset # 检查字符集
 ```
 
 :::
@@ -2935,12 +2946,12 @@ docker exec -it percona-${Version} mysql -uroot -p"${Password}" -e "status;" | g
 
 ```bash
 # MySQL
-docker container rm -f mysql-${Version}    # 删除容器
+docker container rm -f ${ContainerName}    # 删除容器
 rm -rf /etc/mysql-${Version}/              # 删除宿主机上的配置
 rm -rf /var/lib/mysql-${Version}/          # 删除宿主机上的数据目录
 
 # Percona
-docker container rm -f percona-${Version}   # 删除容器
+docker container rm -f ${ContainerName}     # 删除容器
 rm -rf /etc/percona-${Version}/             # 删除宿主机上的配置
 rm -rf /var/lib/percona-${Version}/         # 删除宿主机上的数据目录
 ```
