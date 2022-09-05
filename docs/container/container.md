@@ -2747,8 +2747,8 @@ QiNqg[l.%;H>>rO9
 （1）下载镜像
 
 ```bash
-docker image pull mysql:5.7.39
-docker image pull mysql:8.0.30
+[root@localhost ~]# docker image pull mysql:5.7.39
+[root@localhost ~]# docker image pull mysql:8.0.30
 ```
 
 （2）启动容器
@@ -2764,16 +2764,36 @@ docker container run --name mysql-${Version} \
                      -p ${ListenPort}:3306 \
                      -e MYSQL_ROOT_PASSWORD=${Password} \
                      -d \
-                  mysql:${Version}
+                   mysql:${Version}
 
 # 拷贝配置文件到宿主机,方便以后修改参数
 docker container cp mysql-${Version}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
+
+# 删掉下面这两行配置
+vim /etc/mysql-${Version}/conf.d/my.cnf
+
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mysql.conf.d/
 ```
 
 （3）连接MySQL
 
 ```bash
+# 在容器内部连接MySQL
 docker exec -it mysql-${Version} mysql -uroot -p"${Password}"
+
+# 在容器外部连接MySQL
+mysql -h192.168.48.133 -P3306 -uroot -p"QiNqg[l.%;H>>rO9"
+
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MySQL connection id is 14
+Server version: 5.7.39 MySQL Community Server (GPL)
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MySQL [(none)]> Bye
 ```
 
 （4）修改参数，这里以修改字符集为例
@@ -2793,6 +2813,33 @@ default-character-set=utf8mb4
 
 # 重启容器，使配置文件生效
 docker container restart mysql-${Version}
+
+# 检查字符集
+docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;"
+
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--------------
+mysql  Ver 14.14 Distrib 5.7.39, for Linux (x86_64) using  EditLine wrapper
+
+Connection id:          7
+Current database:
+Current user:           root@localhost
+SSL:                    Not in use
+Current pager:          stdout
+Using outfile:          ''
+Using delimiter:        ;
+Server version:         5.7.39 MySQL Community Server (GPL)
+Protocol version:       10
+Connection:             Localhost via UNIX socket
+Server characterset:    utf8mb4
+Db     characterset:    utf8mb4
+Client characterset:    utf8mb4
+Conn.  characterset:    utf8mb4
+UNIX socket:            /var/run/mysqld/mysqld.sock
+Uptime:                 2 min 54 sec
+
+Threads: 1  Questions: 19  Slow queries: 0  Opens: 106  Flush tables: 1  Open tables: 99  Queries per second avg: 0.109
+--------------
 ```
 
 （5）删除容器
