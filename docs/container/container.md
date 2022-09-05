@@ -2836,9 +2836,7 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 
 :::tip
 
-最好使用相同版本的MySQL客户端来连接，否则可能会出现奇奇怪怪的问题，
-
-比如使用**MySQL 5.7及以下的客户端**连接**MySQL Server 8.x**，报错如下
+最好使用相同版本的MySQL客户端来连接，否则可能会出现奇奇怪怪的问题，比如使用**MySQL 5.7及以下的客户端**连接**MySQL Server 8.x**，报错如下
 
 `ERROR 2059 (HY000): Authentication plugin 'caching_sha2_password' cannot be loaded: /usr/lib64/mysql/plugin/caching_sha2_password.so: cannot open shared object file: No such file or directory`
 
