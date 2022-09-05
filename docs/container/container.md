@@ -2828,7 +2828,13 @@ ListenPort=3306                  # 监听端口
 Version="5.7.35"                   # Percona版本
 ContainerName="percona-${Version}" # 容器名称
 Password="QiNqg[l.%;H>>rO9"        # Root密码
-ListenPort=3306                    # 监听端口
+ListenPort=3307                    # 监听端口
+
+# MariaDB
+Version="10.9.2"                   # MariaDB版本
+ContainerName="mariadb-${Version}" # 容器名称
+Password="QiNqg[l.%;H>>rO9"        # Root密码
+ListenPort=3308                    # 监听端口
 ```
 
 :::
@@ -2882,6 +2888,28 @@ vim /etc/percona-${Version}/conf.d/my.cnf
 !includedir /etc/percona-server.conf.d/
 ```
 
+**MariaDB**
+
+```bash
+# 启动容器 - MariaDB
+docker container run --name ${ContainerName} \
+                     -v /etc/mariadb-${Version}/conf.d:/etc/mysql/conf.d \
+                     -v /var/lib/mariadb-${Version}:/var/lib/mysql/ \
+                     -p ${ListenPort}:3306 \
+                     -e MYSQL_ROOT_PASSWORD=${Password} \
+                     -d \
+                   mariadb:${Version}
+
+# 拷贝配置文件到宿主机,用于持久化
+docker container cp -L ${ContainerName}:/etc/mysql/my.cnf /etc/mariadb-${Version}/conf.d/
+
+# 删掉下面所有的includedir配置
+vim /etc/mariadb-${Version}/conf.d/my.cnf
+
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mysql.conf.d/
+```
+
 :::
 
 :::tip
@@ -2895,7 +2923,7 @@ vim /etc/percona-${Version}/conf.d/my.cnf
 ::: details （3）连接MySQL
 
 ```bash
-# MySQL/Percona
+# MySQL/Percona/MariaDB
 docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
 mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 ```
@@ -2923,6 +2951,7 @@ default-character-set=utf8mb4
 # 修改配置，参考上面操作步骤
 vim /etc/mysql-${Version}/conf.d/my.cnf     # MySQL
 vim /etc/percona-${Version}/conf.d/my.cnf   # Percona
+vim /etc/mariadb-${Version}/conf.d/my.cnf   # MariaDB
 
 # 重启容器，使配置文件生效
 docker container restart ${ContainerName}
@@ -2950,6 +2979,11 @@ rm -rf /var/lib/mysql-${Version}/          # 删除宿主机上的数据目录
 docker container rm -f ${ContainerName}     # 删除容器
 rm -rf /etc/percona-${Version}/             # 删除宿主机上的配置
 rm -rf /var/lib/percona-${Version}/         # 删除宿主机上的数据目录
+
+# MariaDB
+docker container rm -f ${ContainerName}     # 删除容器
+rm -rf /etc/mariadb-${Version}/             # 删除宿主机上的配置
+rm -rf /var/lib/mariadb-${Version}/         # 删除宿主机上的数据目录
 ```
 
 :::
