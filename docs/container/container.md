@@ -2897,10 +2897,9 @@ mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在
 
 ::: details （4）修改参数，这里以修改字符集为例
 
-```bash
-# 修改字符集为utf8mb4
-vim /etc/mysql-${Version}/conf.d/my.cnf
+:::tip
 
+```bash
 [mysqld]
 character-set-server=utf8mb4
 collation-server=utf8mb4_general_ci
@@ -2909,17 +2908,25 @@ collation-server=utf8mb4_general_ci
 [client]
 default-character-set=utf8mb4
 ...
+```
 
-# 重启容器，使配置文件生效
-docker container restart mysql-${Version}
+:::
 
-# 检查字符集
-docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset
+```bash
+# MySQL 
+vim /etc/mysql-${Version}/conf.d/my.cnf   # 修改配置，参考上面操作步骤
+docker container restart mysql-${Version} # 重启容器，使配置文件生效
+docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset # 检查字符集
 
 Server characterset:    utf8mb4
 Db     characterset:    utf8mb4
 Client characterset:    utf8mb4
 Conn.  characterset:    utf8mb4
+
+# Percona
+vim /etc/percona-${Version}/conf.d/my.cnf   # 修改配置，参考上面操作步骤
+docker container restart percona-${Version} # 重启容器，使配置文件生效
+docker exec -it percona-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset # 检查字符集
 ```
 
 :::
