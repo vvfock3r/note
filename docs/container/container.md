@@ -2746,7 +2746,7 @@ QiNqg[l.%;H>>rO9
 
 **使用MySQL**
 
-::: details （1）下载镜像（后面的步骤均以`mysql:5.7.39`举例）
+::: details （1）下载镜像（后面的步骤均以mysql:5.7.39举例）
 
 ```bash
 # 下载镜像 - MySQL
