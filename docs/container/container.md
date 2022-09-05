@@ -2830,16 +2830,24 @@ ContainerConfTpl=/etc/my.cnf        # 容器配置文件模板
 
 
 # Percona
-Version="5.7.35"                   # Percona版本
-ContainerName="percona-${Version}" # 容器名称
-Password="QiNqg[l.%;H>>rO9"        # Root密码
-ListenPort=3307                    # 监听端口
+Type="percona"                        # 类型
+Version="5.7.35"                      # 版本
+ContainerName="${Type}-${Version}"    # 容器名称
+RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
+ListenPort=3307                       # 监听端口
+ContainerConfPath=/etc/my.cnf.d       # 容器中配置文件目录
+ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
+ContainerConfTpl=/etc/my.cnf          # 容器配置文件模板
 
 # MariaDB
-Version="10.9.2"                   # MariaDB版本
-ContainerName="mariadb-${Version}" # 容器名称
-Password="QiNqg[l.%;H>>rO9"        # Root密码
-ListenPort=3308                    # 监听端口
+Type="mariadb"                        # 类型
+Version="10.9.2"                      # MariaDB版本
+ContainerName="mariadb-${Version}"    # 容器名称
+RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
+ListenPort=3308                       # 监听端口
+ContainerConfPath=/etc/mysql/conf.d   # 容器中配置文件目录
+ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
+ContainerConfTpl=/etc/mysql/my.cnf    # 容器配置文件模板
 ```
 
 :::
@@ -2849,67 +2857,23 @@ ListenPort=3308                    # 监听端口
 **MySQL**
 
 ```bash
+# Percona需要先创建目录并授权，否则会报Permission denied
+mkdir -p /var/lib/${Type}-${Version} && chmod -R 777 /var/lib/${Type}-${Version} 
+
 # 启动容器 - MySQL
 docker container run --name ${ContainerName} \
                      -v /etc/${Type}-${Version}/conf.d:${ContainerConfPath} \
                      -v /var/lib/${Type}-${Version}:${ContainerDataPath} \
                      -p ${ListenPort}:3306 \
-                     -e MYSQL_ROOT_PASSWORD=${Password} \
+                     -e MYSQL_ROOT_PASSWORD=${RootPassword} \
                      -d \
                    ${Type}:${Version}
 
 # 拷贝配置文件到宿主机,用于持久化
-docker container cp ${ContainerName}:${ContainerConfTpl} /etc/${Type}-${Version}/conf.d/
+docker container cp -L ${ContainerName}:${ContainerConfTpl} /etc/${Type}-${Version}/conf.d/
 
 # 删掉下面所有的includedir配置
 vim /etc/${Type}-${Version}/conf.d/my.cnf
-
-!includedir /etc/mysql/conf.d/
-!includedir /etc/mysql/mysql.conf.d/
-```
-
-**Percona**
-
-```bash
-# Percona需要先创建目录并授权，否则会报Permission denied
-mkdir -p /var/lib/percona-${Version} && chmod -R 777 /var/lib/percona-${Version} 
-
-# 启动容器 - Percona
-docker container run --name ${ContainerName} \
-                     -v /etc/percona-${Version}/conf.d:/etc/my.cnf.d \
-                     -v /var/lib/percona-${Version}:/var/lib/mysql/ \
-                     -p ${ListenPort}:3306 \
-                     -e MYSQL_ROOT_PASSWORD=${Password} \
-                     -d \
-                   percona:${Version}
-
-# 拷贝配置文件到宿主机,用于持久化，-L用于拷贝软链所指向的真正文件
-docker container cp -L ${ContainerName}:/etc/my.cnf  /etc/percona-${Version}/conf.d/
-
-# 删掉下面所有的includedir配置
-vim /etc/percona-${Version}/conf.d/my.cnf
-
-!includedir /etc/my.cnf.d/
-!includedir /etc/percona-server.conf.d/
-```
-
-**MariaDB**
-
-```bash
-# 启动容器 - MariaDB
-docker container run --name ${ContainerName} \
-                     -v /etc/mariadb-${Version}/conf.d:/etc/mysql/conf.d \
-                     -v /var/lib/mariadb-${Version}:/var/lib/mysql/ \
-                     -p ${ListenPort}:3306 \
-                     -e MYSQL_ROOT_PASSWORD=${Password} \
-                     -d \
-                   mariadb:${Version}
-
-# 拷贝配置文件到宿主机,用于持久化
-docker container cp -L ${ContainerName}:/etc/mysql/my.cnf /etc/mariadb-${Version}/conf.d/
-
-# 删掉下面所有的includedir配置
-vim /etc/mariadb-${Version}/conf.d/my.cnf
 
 !includedir /etc/mysql/conf.d/
 !includedir /etc/mysql/mysql.conf.d/
@@ -2929,17 +2893,18 @@ vim /etc/mariadb-${Version}/conf.d/my.cnf
 
 ```bash
 # MySQL/Percona/MariaDB
-docker container exec -it ${ContainerName} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
-mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
+docker container exec -it ${ContainerName} mysql -uroot -p"${RootPassword}"    # 在容器内部连接MySQL
+mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${RootPassword}"              # 在容器外部连接MySQL
 ```
 
 :::
 
 ::: details （4）修改参数，这里以修改字符集为例
 
-:::tip
-
 ```bash
+# 修改配置，参考上面操作步骤
+vim /etc/${Type}-${Version}/conf.d/my.cnf
+
 [mysqld]
 character-set-server=utf8mb4
 collation-server=utf8mb4_general_ci
@@ -2948,15 +2913,6 @@ collation-server=utf8mb4_general_ci
 [client]
 default-character-set=utf8mb4
 ...
-```
-
-:::
-
-```bash
-# 修改配置，参考上面操作步骤
-vim /etc/${Type}-${Version}/conf.d/my.cnf     # MySQL
-vim /etc/percona-${Version}/conf.d/my.cnf   # Percona
-vim /etc/mariadb-${Version}/conf.d/my.cnf   # MariaDB
 
 # 重启容器，使配置文件生效
 docker container restart ${ContainerName}
@@ -2975,20 +2931,14 @@ Conn.  characterset:    utf8mb4
 ::: details （5）删除MySQL
 
 ```bash
-# MySQL
-docker container rm -f ${ContainerName}      # 删除容器
-rm -rf /etc/${Type}-${Version}/              # 删除宿主机上的配置
-rm -rf /var/lib/${Type}-${Version}/          # 删除宿主机上的数据目录
+# 删除容器
+docker container rm -f ${ContainerName}
 
-# Percona
-docker container rm -f ${ContainerName}     # 删除容器
-rm -rf /etc/percona-${Version}/             # 删除宿主机上的配置
-rm -rf /var/lib/percona-${Version}/         # 删除宿主机上的数据目录
+# 删除宿主机上的配置
+rm -rf /etc/${Type}-${Version}/
 
-# MariaDB
-docker container rm -f ${ContainerName}     # 删除容器
-rm -rf /etc/mariadb-${Version}/             # 删除宿主机上的配置
-rm -rf /var/lib/mariadb-${Version}/         # 删除宿主机上的数据目录
+# 删除宿主机上的数据目录
+rm -rf /var/lib/${Type}-${Version}/
 ```
 
 :::
