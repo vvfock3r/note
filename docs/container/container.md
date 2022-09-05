@@ -2819,10 +2819,15 @@ docker image pull mariadb:10.9.2
 
 ```bash
 # MySQL
-Version="5.7.39"                 # MySQL版本
-ContainerName="mysql-${Version}" # 容器名称
-Password="QiNqg[l.%;H>>rO9"      # Root密码
-ListenPort=3306                  # 监听端口
+Type="mysql"                        # 类型
+Version="5.7.39"                    # 版本
+ContainerName="${Type}-${Version}"  # 容器名称
+RootPassword="QiNqg[l.%;H>>rO9"     # Root密码
+ListenPort=3306                     # 监听端口
+ContainerConfPath=/etc/mysql/conf.d # 容器中配置文件目录
+ContainerDataPath=/var/lib/mysql/   # 容器中数据目录
+ContainerConfTpl=/etc/my.cnf        # 容器配置文件模板
+
 
 # Percona
 Version="5.7.35"                   # Percona版本
@@ -2846,18 +2851,18 @@ ListenPort=3308                    # 监听端口
 ```bash
 # 启动容器 - MySQL
 docker container run --name ${ContainerName} \
-                     -v /etc/mysql-${Version}/conf.d:/etc/mysql/conf.d \
-                     -v /var/lib/mysql-${Version}:/var/lib/mysql/ \
+                     -v /etc/${Type}-${Version}/conf.d:${ContainerConfPath} \
+                     -v /var/lib/${Type}-${Version}:${ContainerDataPath} \
                      -p ${ListenPort}:3306 \
                      -e MYSQL_ROOT_PASSWORD=${Password} \
                      -d \
-                   mysql:${Version}
+                   ${Type}:${Version}
 
 # 拷贝配置文件到宿主机,用于持久化
-docker container cp ${ContainerName}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
+docker container cp ${ContainerName}:${ContainerConfTpl} /etc/${Type}-${Version}/conf.d/
 
 # 删掉下面所有的includedir配置
-vim /etc/mysql-${Version}/conf.d/my.cnf
+vim /etc/${Type}-${Version}/conf.d/my.cnf
 
 !includedir /etc/mysql/conf.d/
 !includedir /etc/mysql/mysql.conf.d/
@@ -2949,7 +2954,7 @@ default-character-set=utf8mb4
 
 ```bash
 # 修改配置，参考上面操作步骤
-vim /etc/mysql-${Version}/conf.d/my.cnf     # MySQL
+vim /etc/${Type}-${Version}/conf.d/my.cnf     # MySQL
 vim /etc/percona-${Version}/conf.d/my.cnf   # Percona
 vim /etc/mariadb-${Version}/conf.d/my.cnf   # MariaDB
 
@@ -2971,9 +2976,9 @@ Conn.  characterset:    utf8mb4
 
 ```bash
 # MySQL
-docker container rm -f ${ContainerName}    # 删除容器
-rm -rf /etc/mysql-${Version}/              # 删除宿主机上的配置
-rm -rf /var/lib/mysql-${Version}/          # 删除宿主机上的数据目录
+docker container rm -f ${ContainerName}      # 删除容器
+rm -rf /etc/${Type}-${Version}/              # 删除宿主机上的配置
+rm -rf /var/lib/${Type}-${Version}/          # 删除宿主机上的数据目录
 
 # Percona
 docker container rm -f ${ContainerName}     # 删除容器
