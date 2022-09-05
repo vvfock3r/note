@@ -2748,6 +2748,8 @@ QiNqg[l.%;H>>rO9
 
 （1）下载镜像（后面的步骤以`mysql:5.7.39`举例）
 
+::: details 点击查看详情
+
 ```bash
 # 下载镜像 - MySQL
 docker image pull mysql:5.7.39
@@ -2761,7 +2763,11 @@ docker image pull percona:8.0.29-21
 docker image pull mariadb:10.9.2
 ```
 
+:::
+
 （2）启动容器
+
+::: details 点击查看详情
 
 ```bash
 # 启动容器
@@ -2786,7 +2792,11 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 !includedir /etc/mysql/mysql.conf.d/
 ```
 
+:::
+
 （3）连接MySQL
+
+::: details 点击查看详情
 
 ```bash
 # 在容器内部连接MySQL
@@ -2806,7 +2816,11 @@ Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 MySQL [(none)]> Bye
 ```
 
+:::
+
 （4）修改参数，这里以修改字符集为例
+
+::: details 点击查看详情
 
 ```bash
 # 修改字符集为utf8mb4
@@ -2852,7 +2866,11 @@ Threads: 1  Questions: 19  Slow queries: 0  Opens: 106  Flush tables: 1  Open ta
 --------------
 ```
 
+:::
+
 （5）删除容器
+
+::: details 点击查看详情
 
 ```bash
 # 删除容器
@@ -2864,6 +2882,8 @@ rm -rf /etc/mysql-${Version}/
 # 删除宿主机上的数据目录
 rm -rf /var/lib/mysql-${Version}/
 ```
+
+:::
 
 ## 
 
