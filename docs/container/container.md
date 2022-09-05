@@ -2717,6 +2717,8 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 :::
 
+<br />
+
 ### 部署常用服务用于开发环境
 
 :::tip
@@ -2744,11 +2746,19 @@ QiNqg[l.%;H>>rO9
 
 **使用MySQL**
 
-（1）下载镜像
+（1）下载镜像（后面的步骤以`mysql:5.7.39`举例）
 
 ```bash
-[root@localhost ~]# docker image pull mysql:5.7.39
-[root@localhost ~]# docker image pull mysql:8.0.30
+# 下载镜像 - MySQL
+docker image pull mysql:5.7.39
+docker image pull mysql:8.0.30
+
+# 下载镜像 - Percona
+docker image pull percona:5.7.35
+docker image pull percona:8.0.29-21
+
+# 下载镜像 - MariaDB
+docker image pull mariadb:10.9.2
 ```
 
 （2）启动容器
@@ -2853,21 +2863,6 @@ rm -rf /etc/mysql-${Version}/
 
 # 删除宿主机上的数据目录
 rm -rf /var/lib/mysql-${Version}/
-```
-
-**使用Percona**
-
-```bash
-# 下载镜像
-docker image pull percona:5.7.35
-docker image pull percona:8.0.29-21
-```
-
-**使用MariaDB**
-
-```bash
-# 下载镜像
-docker image pull mariadb:10.9.2
 ```
 
 ## 
