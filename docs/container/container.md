@@ -156,7 +156,7 @@ sudo yum install docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-
 
 # 启动Docker Engine
 sudo systemctl start docker.service
-sudo systemctl enable docker.service	# 设置开启自启
+sudo systemctl enable docker.service    # 设置开启自启
 
 # 测试Docker Engine
 sudo docker run hello-world
@@ -629,6 +629,35 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 阿里云镜像源：https://help.aliyun.com/document_detail/60750.html（根据文档去控制台申请加速地址）
 
+<br />
+
+#### 添加代理服务器
+
+```bash
+# 先找到 docker.service 所在的路径，一般是 /usr/lib/systemd/system/docker.service
+[root@localhost ~]# systemctl status docker.service
+
+# 创建docker.service.d
+mkdir -p /usr/lib/systemd/system/docker.service.d/
+
+# 添加代理
+vim /usr/lib/systemd/system/docker.service.d/http-proxy.conf
+
+[Service]
+Environment="HTTP_PROXY=http://192.168.0.102:7890" "HTTPS_PROXY=http://192.168.0.102:7890"
+
+# 重启Docker
+systemctl daemon-reload
+systemctl restart docker.service
+
+# 验证
+docker info | grep -i proxy
+ HTTP Proxy: http://192.168.0.102:7890
+ HTTPS Proxy: http://192.168.0.102:7890
+```
+
+<br />
+
 #### 镜像的分层结构
 
 镜像其实就是一个`tar`文件，内部采用的是分层结构，每一层（Layer）存储的只是与上一层的差异，由`Storage Driver`（存储驱动程序）进行管理
@@ -694,6 +723,8 @@ docker.io/library/nginx:latest
 还可以通过第三方工具`dive`来查看更具体一些的信息，Github：[https://github.com/wagoodman/dive](https://github.com/wagoodman/dive)
 
 ![image-20220510152343911](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220510152343911.png)
+
+<br />
 
 #### 镜像导出和导入
 
@@ -774,6 +805,8 @@ See 'docker run --help'.
 10
 ```
 
+<br />
+
 #### Dockerfile(1):简介和常用指令
 
 Dockerrfile是一个文本文件，记录了构建镜像的所有步骤
@@ -804,7 +837,7 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 | ENTRYPOINT | 设置容器启动时运行的命令<br />（2）CMD或之后的参数会被当做参数传递给ENTRYPOINT |
 | CMD        | 设置容器启动时运行的命令<br />（2）CMD命令可以被docker run之后的参数替换 |
 
-
+<br />
 
 #### Dockerfile(2):CMD和ENTRYPOINT
 
@@ -1042,6 +1075,8 @@ drwxr-xr-x.   1 root root  78 Nov 13  2020 var
 ```
 
 :::
+
+<br />
 
 #### Dockerfile(3):多阶段构建优化Go项目
 
@@ -1334,6 +1369,8 @@ Hello, world!
 
 :::
 
+<br />
+
 ### Docker存储
 
 #### 持久化方式1：`bind mounts`
@@ -1545,6 +1582,8 @@ See 'docker run --help'.
 ```
 
 :::
+
+<br />
 
 #### 持久化方式2：`volumes`
 
@@ -1798,6 +1837,8 @@ local     mypkg	# 自动创建的，用于持久化/pkg/
 ```
 
 :::
+
+<br />
 
 #### 内存文件系统：tmpfs mounts
 
