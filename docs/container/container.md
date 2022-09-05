@@ -2782,15 +2782,23 @@ QiNqg[l.%;H>>rO9
 
 #### MySQL
 
-以下都是由`Docker Hub`官网维护的MySQL常用分支
+`Docker Hub`地址：
 
 * MySQL：[https://hub.docker.com/_/mysql](https://hub.docker.com/_/mysql)
 * Percona：[https://hub.docker.com/_/percona](https://hub.docker.com/_/percona)
 * MariaDB：[https://hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb)
 
+官网下载地址：
+
+* MySQL：[https://dev.mysql.com/downloads/mysql/](https://dev.mysql.com/downloads/mysql/)
+* Percona：[https://www.percona.com/downloads/](https://www.percona.com/downloads/)
+* MariaDB：[https://mariadb.org/download/](https://mariadb.org/download/)
+
+
+
 **使用MySQL**
 
-::: details （1）下载镜像（后面的步骤均以mysql:5.7.39举例）
+::: details （1）下载镜像
 
 ```bash
 # 下载镜像 - MySQL
@@ -2809,8 +2817,10 @@ docker image pull mariadb:10.9.2
 
 ::: details （2）启动MySQL
 
+**MySQL**
+
 ```bash
-# 启动容器
+# 启动容器 - MySQL
 Version="5.7.39"
 Password="QiNqg[l.%;H>>rO9"
 ListenPort=3306
@@ -2832,6 +2842,35 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 !includedir /etc/mysql/mysql.conf.d/
 ```
 
+**Percona**
+
+```bash
+# 启动容器 - Percona
+Version="5.7.35"
+Password="QiNqg[l.%;H>>rO9"
+ListenPort=3307
+
+# Percona需要先创建目录并授权，否则会报Permission denied
+mkdir -p /var/lib/percona-${Version} && chmod -R 777 /var/lib/percona-${Version} 
+
+docker container run --name percona-${Version} \
+                     -v /etc/percona-${Version}/conf.d:/etc/my.cnf.d \
+                     -v /var/lib/percona-${Version}:/var/lib/mysql/ \
+                     -p ${ListenPort}:3306 \
+                     -e MYSQL_ROOT_PASSWORD=${Password} \
+                     -d \
+                   percona:${Version}
+
+# 拷贝配置文件到宿主机,用于持久化，-L用于拷贝软链所指向的真正文件
+docker container cp -L percona-${Version}:/etc/my.cnf  /etc/percona-${Version}/conf.d/
+
+# 删掉下面所有的includedir配置
+vim /etc/percona-${Version}/conf.d/my.cnf
+
+!includedir /etc/my.cnf.d/
+!includedir /etc/percona-server.conf.d/
+```
+
 :::
 
 :::tip
@@ -2845,21 +2884,13 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 ::: details （3）连接MySQL
 
 ```bash
-# 在容器内部连接MySQL
-docker container exec -it mysql-${Version} mysql -uroot -p"${Password}"
+# MySQL
+docker container exec -it mysql-${Version} mysql -uroot -p"${Password}"    # 在容器内部连接MySQL
+mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 
-# 在容器外部连接MySQL
-mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"
-
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MySQL connection id is 14
-Server version: 5.7.39 MySQL Community Server (GPL)
-
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
-MySQL [(none)]> Bye
+# Percona
+docker container exec -it percona-${Version} mysql -uroot -p"${Password}"  # 在容器内部连接MySQL
+mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"              # 在容器外部连接MySQL
 ```
 
 :::
@@ -2883,31 +2914,12 @@ default-character-set=utf8mb4
 docker container restart mysql-${Version}
 
 # 检查字符集
-docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;"
+docker exec -it mysql-${Version} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset
 
-mysql: [Warning] Using a password on the command line interface can be insecure.
---------------
-mysql  Ver 14.14 Distrib 5.7.39, for Linux (x86_64) using  EditLine wrapper
-
-Connection id:          7
-Current database:
-Current user:           root@localhost
-SSL:                    Not in use
-Current pager:          stdout
-Using outfile:          ''
-Using delimiter:        ;
-Server version:         5.7.39 MySQL Community Server (GPL)
-Protocol version:       10
-Connection:             Localhost via UNIX socket
 Server characterset:    utf8mb4
 Db     characterset:    utf8mb4
 Client characterset:    utf8mb4
 Conn.  characterset:    utf8mb4
-UNIX socket:            /var/run/mysqld/mysqld.sock
-Uptime:                 2 min 54 sec
-
-Threads: 1  Questions: 19  Slow queries: 0  Opens: 106  Flush tables: 1  Open tables: 99  Queries per second avg: 0.109
---------------
 ```
 
 :::
@@ -2915,14 +2927,15 @@ Threads: 1  Questions: 19  Slow queries: 0  Opens: 106  Flush tables: 1  Open ta
 ::: details （5）删除MySQL
 
 ```bash
-# 删除容器
-docker container rm -f mysql-${Version}
+# MySQL
+docker container rm -f mysql-${Version}    # 删除容器
+rm -rf /etc/mysql-${Version}/              # 删除宿主机上的配置
+rm -rf /var/lib/mysql-${Version}/          # 删除宿主机上的数据目录
 
-# 删除宿主机上的配置
-rm -rf /etc/mysql-${Version}/
-
-# 删除宿主机上的数据目录
-rm -rf /var/lib/mysql-${Version}/
+# Percona
+docker container rm -f percona-${Version}   # 删除容器
+rm -rf /etc/percona-${Version}/             # 删除宿主机上的配置
+rm -rf /var/lib/percona-${Version}/         # 删除宿主机上的数据目录
 ```
 
 :::
