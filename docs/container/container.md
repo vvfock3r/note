@@ -625,9 +625,9 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 然而由于网络原因，下载一个Docker官方镜像可能会需要很长的时间，甚至下载失败。为此，我们可以使用国内的镜像源
 
-腾讯云镜像源：https://mirrors.cloud.tencent.com/（点右上角【文档】，在右侧找到Docker源）
+腾讯云镜像源：[https://mirrors.cloud.tencent.com/](https://mirrors.cloud.tencent.com/)（点右上角【文档】，在右侧找到Docker源）
 
-阿里云镜像源：https://help.aliyun.com/document_detail/60750.html（根据文档去控制台申请加速地址）
+阿里云镜像源：[https://help.aliyun.com/document_detail/60750.html](https://help.aliyun.com/document_detail/60750.html)（根据文档去控制台申请加速地址）
 
 <br />
 
@@ -644,7 +644,7 @@ mkdir -p /usr/lib/systemd/system/docker.service.d/
 vim /usr/lib/systemd/system/docker.service.d/http-proxy.conf
 
 [Service]
-Environment="HTTP_PROXY=http://192.168.0.102:7890" "HTTPS_PROXY=http://192.168.0.102:7890"
+Environment="HTTP_PROXY=http://192.168.0.102:7890" "HTTPS_PROXY=http://192.168.0.102:7890" "NO_PROXY=127.0.0.1,localhost"
 
 # 重启Docker
 systemctl daemon-reload
@@ -654,6 +654,7 @@ systemctl restart docker.service
 docker info | grep -i proxy
  HTTP Proxy: http://192.168.0.102:7890
  HTTPS Proxy: http://192.168.0.102:7890
+ No Proxy: 127.0.0.1,localhost
 ```
 
 <br />
