@@ -2717,6 +2717,112 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 :::
 
+### 部署常用服务用于开发环境
+
+:::tip
+
+可以使用如下命令生成`16`位随机密码，若不想要某个字母在`tr -d`后面添加
+
+```bash
+[root@localhost ~]# cat /dev/urandom | \tr -dc "[[:graph:]]" | tr -d "{}()'\"\`" | fold -w 16 | head -n 5
+5~|7y3=ooxnw.a/j
+3<EL_=tA;<VY>fH&
+%6&vAvw[MjHJM.gs
+w<C|d|35xeB3g13j
+QiNqg[l.%;H>>rO9
+```
+
+:::
+
+#### MySQL
+
+以下都是由`Docker Hub`官网维护的MySQL常用分支
+
+* MySQL：[https://hub.docker.com/_/mysql](https://hub.docker.com/_/mysql)
+* Percona：[https://hub.docker.com/_/percona](https://hub.docker.com/_/percona)
+* MariaDB：[https://hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb)
+
+**使用MySQL**
+
+（1）下载镜像
+
+```bash
+docker image pull mysql:5.7.39
+docker image pull mysql:8.0.30
+```
+
+（2）启动容器
+
+```bash
+# 启动容器
+Version="5.7.39"
+Password="QiNqg[l.%;H>>rO9"
+ListenPort=3306
+docker container run --name mysql-${Version} \
+                     -v /etc/mysql-${Version}/conf.d:/etc/mysql/conf.d \
+                     -v /var/lib/mysql-${Version}:/var/lib/mysql/ \
+                     -p ${ListenPort}:3306 \
+                     -e MYSQL_ROOT_PASSWORD=${Password} \
+                     -d \
+                  mysql:${Version}
+
+# 拷贝配置文件到宿主机,方便以后修改参数
+docker container cp mysql-${Version}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
+```
+
+（3）连接MySQL
+
+```bash
+docker exec -it mysql-${Version} mysql -uroot -p"${Password}"
+```
+
+（4）修改参数，这里以修改字符集为例
+
+```bash
+# 修改字符集为utf8mb4
+vim /etc/mysql-${Version}/conf.d/my.cnf
+
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_general_ci
+...
+
+[client]
+default-character-set=utf8mb4
+...
+
+# 重启容器，使配置文件生效
+docker container restart mysql-${Version}
+```
+
+（5）删除容器
+
+```bash
+# 删除容器
+docker container rm -f mysql-${Version}
+
+# 删除宿主机上的配置
+rm -rf /etc/mysql-${Version}/
+
+# 删除宿主机上的数据目录
+rm -rf /var/lib/mysql-${Version}/
+```
+
+**使用Percona**
+
+```bash
+# 下载镜像
+docker image pull percona:5.7.35
+docker image pull percona:8.0.29-21
+```
+
+**使用MariaDB**
+
+```bash
+# 下载镜像
+docker image pull mariadb:10.9.2
+```
+
 ## 
 
 ## Containerd
