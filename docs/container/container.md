@@ -2796,10 +2796,10 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 
 ```bash
 # 在容器内部连接MySQL
-docker exec -it mysql-${Version} mysql -uroot -p"${Password}"
+docker container exec -it mysql-${Version} mysql -uroot -p"${Password}"
 
 # 在容器外部连接MySQL
-mysql -h192.168.48.133 -P3306 -uroot -p"QiNqg[l.%;H>>rO9"
+mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${Password}"
 
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MySQL connection id is 14
