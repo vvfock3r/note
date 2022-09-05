@@ -2782,7 +2782,7 @@ docker container run --name mysql-${Version} \
                      -d \
                    mysql:${Version}
 
-# 拷贝配置文件到宿主机,方便以后修改参数
+# 拷贝配置文件到宿主机,用于持久化
 docker container cp mysql-${Version}:/etc/my.cnf /etc/mysql-${Version}/conf.d/
 
 # 删掉下面这两行配置
