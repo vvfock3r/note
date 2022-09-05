@@ -2819,14 +2819,14 @@ docker image pull mariadb:10.9.2
 
 ```bash
 # MySQL
-Type="mysql"                        # 类型
-Version="5.7.39"                    # 版本
-ContainerName="${Type}-${Version}"  # 容器名称
-RootPassword="QiNqg[l.%;H>>rO9"     # Root密码
-ListenPort=3306                     # 监听端口
-ContainerConfPath=/etc/mysql/conf.d # 容器中配置文件目录
-ContainerDataPath=/var/lib/mysql/   # 容器中数据目录
-ContainerConfTpl=/etc/my.cnf        # 容器配置文件模板
+Type="mysql"                          # 类型
+Version="5.7.39"                      # 版本
+ContainerName="${Type}-${Version}"    # 容器名称
+RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
+ListenPort=3306                       # 监听端口
+ContainerConfPath=/etc/mysql/conf.d   # 容器中配置文件目录
+ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
+ContainerConfTpl=/etc/my.cnf          # 容器配置文件模板
 
 
 # Percona
@@ -2842,7 +2842,7 @@ ContainerConfTpl=/etc/my.cnf          # 容器配置文件模板
 # MariaDB
 Type="mariadb"                        # 类型
 Version="10.9.2"                      # MariaDB版本
-ContainerName="mariadb-${Version}"    # 容器名称
+ContainerName="${Type}-${Version}"    # 容器名称
 RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
 ListenPort=3308                       # 监听端口
 ContainerConfPath=/etc/mysql/conf.d   # 容器中配置文件目录
@@ -2858,7 +2858,7 @@ ContainerConfTpl=/etc/mysql/my.cnf    # 容器配置文件模板
 
 ```bash
 # Percona需要先创建目录并授权，否则会报Permission denied
-mkdir -p /var/lib/${Type}-${Version} && chmod -R 777 /var/lib/${Type}-${Version} 
+mkdir -p /var/lib/${Type}-${Version} && chmod -R 777 /var/lib/${Type}-${Version}
 
 # 启动容器 - MySQL
 docker container run --name ${ContainerName} \
@@ -2869,7 +2869,7 @@ docker container run --name ${ContainerName} \
                      -d \
                    ${Type}:${Version}
 
-# 拷贝配置文件到宿主机,用于持久化
+# 拷贝配置文件到宿主机,用于持久化, -L用于追踪软链文件源文件
 docker container cp -L ${ContainerName}:${ContainerConfTpl} /etc/${Type}-${Version}/conf.d/
 
 # 删掉下面所有的includedir配置
