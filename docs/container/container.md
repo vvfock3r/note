@@ -2746,9 +2746,7 @@ QiNqg[l.%;H>>rO9
 
 **使用MySQL**
 
-（1）下载镜像（后面的步骤以`mysql:5.7.39`举例）
-
-::: details 点击查看详情
+::: details （1）下载镜像（后面的步骤均以`mysql:5.7.39`举例）
 
 ```bash
 # 下载镜像 - MySQL
@@ -2765,9 +2763,7 @@ docker image pull mariadb:10.9.2
 
 :::
 
-（2）启动容器
-
-::: details 点击查看详情
+::: details （2）启动MySQL
 
 ```bash
 # 启动容器
@@ -2794,9 +2790,7 @@ vim /etc/mysql-${Version}/conf.d/my.cnf
 
 :::
 
-（3）连接MySQL
-
-::: details 点击查看详情
+::: details （3）连接MySQL
 
 ```bash
 # 在容器内部连接MySQL
@@ -2818,9 +2812,7 @@ MySQL [(none)]> Bye
 
 :::
 
-（4）修改参数，这里以修改字符集为例
-
-::: details 点击查看详情
+::: details （4）修改参数，这里以修改字符集为例
 
 ```bash
 # 修改字符集为utf8mb4
@@ -2868,9 +2860,7 @@ Threads: 1  Questions: 19  Slow queries: 0  Opens: 106  Flush tables: 1  Open ta
 
 :::
 
-（5）删除容器
-
-::: details 点击查看详情
+::: details （5）删除MySQL
 
 ```bash
 # 删除容器
