@@ -2876,7 +2876,7 @@ LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目
 
 :::
 
-::: details （2）启动MySQL
+::: details （3）启动MySQL
 
 **MySQL**
 
@@ -2914,7 +2914,7 @@ vim ${LocalHostConfPath}/my.cnf
 
 :::
 
-::: details （3）连接MySQL
+::: details （4）连接MySQL
 
 ```bash
 docker container exec -it ${ContainerName} mysql -uroot -P${ContainerPort} -p"${RootPassword}"  # 在容器内部连接MySQL
@@ -2923,7 +2923,7 @@ mysql -h192.168.48.133 -P${LocalHostPort} -uroot -p"${RootPassword}"            
 
 :::
 
-::: details （4）修改参数，这里以修改字符集为例
+::: details （5）修改参数，这里以修改字符集为例
 
 ```bash
 # 修改配置
@@ -2952,7 +2952,7 @@ Conn.  characterset:    utf8mb4
 
 :::
 
-::: details （5）删除MySQL
+::: details （6）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
