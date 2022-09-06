@@ -2819,35 +2819,56 @@ docker image pull mariadb:10.9.2
 
 ```bash
 # MySQL
-Type="mysql"                          # 类型
-Version="5.7.39"                      # 版本
-ContainerName="${Type}-${Version}"    # 容器名称
-RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
-ListenPort=3306                       # 监听端口
-ContainerConfPath=/etc/mysql/conf.d   # 容器中配置文件目录
-ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
-ContainerConfTpl=/etc/my.cnf          # 容器配置文件模板
+Type="mysql"                                                # 类型    （不要随意修改）
+Version="8.0.30"                                            # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3306                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/mysql/conf.d                         # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/my.cnf                               # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
 
 
 # Percona
-Type="percona"                        # 类型
-Version="5.7.35"                      # 版本
-ContainerName="${Type}-${Version}"    # 容器名称
-RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
-ListenPort=3307                       # 监听端口
-ContainerConfPath=/etc/my.cnf.d       # 容器中配置文件目录
-ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
-ContainerConfTpl=/etc/my.cnf          # 容器配置文件模板
+Type="percona"                                              # 类型    （不要随意修改）
+Version="5.7.35"                                            # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3307                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/my.cnf.d                             # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/my.cnf                               # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
 
 # MariaDB
-Type="mariadb"                        # 类型
-Version="10.9.2"                      # MariaDB版本
-ContainerName="${Type}-${Version}"    # 容器名称
-RootPassword="QiNqg[l.%;H>>rO9"       # Root密码
-ListenPort=3308                       # 监听端口
-ContainerConfPath=/etc/mysql/conf.d   # 容器中配置文件目录
-ContainerDataPath=/var/lib/mysql/     # 容器中数据目录
-ContainerConfTpl=/etc/mysql/my.cnf    # 容器配置文件模板
+Type="mariadb"                                              # 类型    （不要随意修改）
+Version="10.9.2"                                            # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3308                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/mysql/conf.d                         # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/mysql/my.cnf                         # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
 ```
 
 :::
@@ -2858,22 +2879,23 @@ ContainerConfTpl=/etc/mysql/my.cnf    # 容器配置文件模板
 
 ```bash
 # Percona需要先创建目录并授权，否则会报Permission denied
-mkdir -p /var/lib/${Type}-${Version} && chmod -R 777 /var/lib/${Type}-${Version}
+mkdir -p ${LocalHostDataPath} && chmod -R 777 ${LocalHostDataPath} && ls -ld ${LocalHostDataPath}
 
 # 启动容器 - MySQL
 docker container run --name ${ContainerName} \
-                     -v /etc/${Type}-${Version}/conf.d:${ContainerConfPath} \
-                     -v /var/lib/${Type}-${Version}:${ContainerDataPath} \
-                     -p ${ListenPort}:3306 \
+                     -v ${LocalHostConfPath}:${ContainerConfPath} \
+                     -v ${LocalHostDataPath}:${ContainerDataPath} \
+                     -p ${LocalHostPort}:${ContainerPort} \
                      -e MYSQL_ROOT_PASSWORD=${RootPassword} \
+                     --restart=always \
                      -d \
                    ${Type}:${Version}
 
 # 拷贝配置文件到宿主机,用于持久化, -L用于追踪软链文件源文件
-docker container cp -L ${ContainerName}:${ContainerConfTpl} /etc/${Type}-${Version}/conf.d/
+docker container cp -L ${ContainerName}:${ContainerConfFile} ${LocalHostConfPath}
 
 # 删掉下面所有的includedir配置
-vim /etc/${Type}-${Version}/conf.d/my.cnf
+vim ${LocalHostConfPath}/my.cnf
 
 !includedir /etc/mysql/conf.d/
 !includedir /etc/mysql/mysql.conf.d/
@@ -2892,8 +2914,8 @@ vim /etc/${Type}-${Version}/conf.d/my.cnf
 :::
 
 ```bash
-docker container exec -it ${ContainerName} mysql -uroot -p"${RootPassword}"    # 在容器内部连接MySQL
-mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${RootPassword}"              # 在容器外部连接MySQL
+docker container exec -it ${ContainerName} mysql -uroot -P${ContainerPort} -p"${RootPassword}"  # 在容器内部连接MySQL
+mysql -h192.168.48.133 -P${LocalHostPort} -uroot -p"${RootPassword}"                            # 在容器外部连接MySQL
 ```
 
 :::
@@ -2902,7 +2924,7 @@ mysql -h192.168.48.133 -P${ListenPort} -uroot -p"${RootPassword}"              #
 
 ```bash
 # 修改配置
-vim /etc/${Type}-${Version}/conf.d/my.cnf
+vim ${LocalHostConfPath}/my.cnf
 
 [mysqld]
 character-set-server=utf8mb4
@@ -2917,7 +2939,7 @@ default-character-set=utf8mb4
 docker container restart ${ContainerName}
 
 # 检查字符集
-docker exec -it ${ContainerName} mysql -uroot -p"${Password}" -e "status;" | grep -i characterset 
+docker exec -it ${ContainerName} mysql -uroot -p"${RootPassword}" -e "status;" | grep -i characterset
 
 Server characterset:    utf8mb4
 Db     characterset:    utf8mb4
@@ -2933,11 +2955,12 @@ Conn.  characterset:    utf8mb4
 # 删除容器
 docker container rm -f ${ContainerName}
 
-# 删除宿主机上的配置
-rm -rf /etc/${Type}-${Version}/
+# 删除宿主机上的配置(请先确认目录是否正确)
+echo   $(dirname ${LocalHostConfPath})
+rm -rf $(dirname ${LocalHostConfPath})
 
-# 删除宿主机上的数据目录
-rm -rf /var/lib/${Type}-${Version}/
+# 删除宿主机上的数据目录(请先确认目录是否正确)
+rm -rf ${LocalHostDataPath}
 ```
 
 :::
