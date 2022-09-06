@@ -24,7 +24,7 @@ const navbar = [
                 ]
             },
             {
-                text: '容器仓库',
+                text: '镜像仓库',
                 children: [
                     {text: 'Harbor', link: '/container/harbor'},
                 ]
@@ -35,7 +35,14 @@ const navbar = [
                     {text: 'Docker Compose', link: '/container/docker-compose'},
                     {text: 'Kubernetes：二进制包部署', link: '/container/kubernetes-deploy-binary'},
                     {text: 'Kubernetes：其他方式部署', link: '/container/kubernetes-deploy-other'},
-                    {text: 'Kubernetes：使用姿势详解', link: '/container/kubernetes-document'},
+                    {text: 'Kubernetes：使用文档详解', link: '/container/kubernetes-document'},
+                ]
+            },
+            {
+                text: '容器监控',
+                children: [
+                    {text: 'Prometheus', link: '/container/prometheus'},
+                    {text: 'Grafana', link: '/container/grafana'},
                 ]
             },
         ]
