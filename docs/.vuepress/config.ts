@@ -19,7 +19,8 @@ const navbar = [
             {
                 text: '容器基础',
                 children: [
-                    {text: '容器核心技术', link: '/container/container'},
+                    {text: '容器概念', link: '/container/container'},
+                    {text: '容器引擎', link: '/container/container-engine'},
                 ]
             },
             {
