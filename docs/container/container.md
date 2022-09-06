@@ -2835,10 +2835,11 @@ LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文
 ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
 LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
 
+# =========================================================================================
 
 # Percona
 Type="percona"                                              # 类型    （不要随意修改）
-Version="5.7.35"                                            # 版本    （根据实际情况修改）
+Version="8.0.29-21"                                         # 版本    （根据实际情况修改）
 AppName="demo"                                              # 应用名称 （根据实际情况修改）
 ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
 RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
@@ -2852,6 +2853,8 @@ LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文
 
 ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
 LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
+
+# =========================================================================================
 
 # MariaDB
 Type="mariadb"                                              # 类型    （不要随意修改）
@@ -2952,15 +2955,9 @@ Conn.  characterset:    utf8mb4
 ::: details （5）删除MySQL
 
 ```bash
-# 删除容器
-docker container rm -f ${ContainerName}
-
-# 删除宿主机上的配置(请先确认目录是否正确)
-echo   $(dirname ${LocalHostConfPath})
-rm -rf $(dirname ${LocalHostConfPath})
-
-# 删除宿主机上的数据目录(请先确认目录是否正确)
-rm -rf ${LocalHostDataPath}
+docker container rm -f ${ContainerName}  # 删除容器
+rm -rf $(dirname ${LocalHostConfPath})   # 删除宿主机上的配置(请先确认目录是否正确)
+rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请先确认目录是否正确)
 ```
 
 :::
