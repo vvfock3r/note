@@ -6,13 +6,13 @@ Github：[https://github.com/prometheus/prometheus/](https://github.com/promethe
 
 <br />
 
-## 部署Server
+## 部署Prometheus Server
 
 文档：[https://prometheus.io/download/](https://prometheus.io/download/)
 
 <br />
 
-**方式一：二进制部署**
+### 手动部署
 
 文档：[https://prometheus.io/docs/prometheus/2.38/getting_started/](https://prometheus.io/docs/prometheus/2.38/getting_started/)
 
@@ -89,24 +89,26 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 
 <br />
 
-**方式二：容器部署**
+### 容器部署
 
 文档：[https://prometheus.io/docs/prometheus/2.38/installation/](https://prometheus.io/docs/prometheus/2.38/installation/)
 
 Docker Hub：[https://hub.docker.com/r/prom/prometheus](https://hub.docker.com/r/prom/prometheus)
 
 ```bash
-# 创建配置文件目录和数据目录
-[root@localhost ~]# mkdir /etc/prometheus
-[root@localhost ~]# mkdir /var/lib/prometheus
+# (1)创建配置文件目录和数据目录
+mkdir /etc/prometheus
+mkdir /var/lib/prometheus
 
-# (1) 需要提前准备配置文件prometheus.yml
-[root@localhost ~]# docker container run --name get-prometheus-config --rm -d prom/prometheus:v2.38.0
-[root@localhost ~]# docker container cp get-prometheus-config:/etc/prometheus/prometheus.yml .
+# (2) 需要提前准备配置文件prometheus.yml
+docker container run --name get-prometheus-config --rm -d prom/prometheus:v2.38.0
+docker container cp get-prometheus-config:/etc/prometheus/prometheus.yml /etc/prometheus
+docker container rm -f get-prometheus-config
 
-# (2) 数据存储目录需要提前创建并授权
+# (3) 数据存储目录需要提前创建并授权
+chmod -R 777 /var/lib/prometheus
 
-
+# (4) 启动容器
 docker container run --name "prometheus" \
                      -p 9090:9090 \
                      -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
@@ -115,12 +117,11 @@ docker container run --name "prometheus" \
                      -d \
                  prom/prometheus:v2.38.0
 
-docker rm -f prometheus
+docker ps | grep prometheus
+fe38d59cfea7   prom/prometheus:v2.38.0   "/bin/prometheus --c…"   24 seconds ago   Up 24 seconds   0.0.0.0:9090->9090/tcp, :::9090->9090/tcp              prometheu
 ```
 
 
 
-
-
-## 部署Exporter
+## 部署Prometheus Exporter
 
