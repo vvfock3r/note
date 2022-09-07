@@ -146,7 +146,33 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
 [root@node-1 ~]# cd kube-prometheus-stack
 ```
 
-#### （2）修改配置
+#### （2）查看镜像
+
+```bash
+[root@node-1 kube-prometheus-stack]# cat values.yaml  | grep -E 'repository:|tag:' 
+      repository: quay.io/prometheus/alertmanager
+      tag: v0.24.0
+  #   repository: docker.io/grafana/grafana
+  #   tag: 9.0.6
+    #   repository: quay.io/kiwigrid/k8s-sidecar
+    #   tag: 1.19.2
+  #  repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+  #  tag: v2.5.0
+  #   repository: quay.io/prometheus/node-exporter
+  #   tag: v1.3.1
+        repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+        tag: v1.2.0
+    repository: quay.io/prometheus-operator/prometheus-operator
+    tag: v0.58.0
+      repository: quay.io/prometheus-operator/prometheus-config-reloader
+      tag: v0.58.0
+    repository: quay.io/thanos/thanos
+    tag: v0.27.0
+      repository: quay.io/prometheus/prometheus
+      tag: v2.37.0
+      repository: quay.io/thanos/thanos
+      tag: v0.27.0
+```
 
 #### （3）部署
 
