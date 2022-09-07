@@ -121,6 +121,41 @@ docker ps | grep prometheus
 fe38d59cfea7   prom/prometheus:v2.38.0   "/bin/prometheus --c…"   24 seconds ago   Up 24 seconds   0.0.0.0:9090->9090/tcp, :::9090->9090/tcp              prometheu
 ```
 
+<br />
+
+### K8S部署之kube-prometheus-stack
+
+文档：[https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+
+#### （1）下载Chart
+
+```bash
+# 添加仓库
+[root@node-1 ~]# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+[root@node-1 ~]# helm repo update
+
+# 搜索
+[root@node-1 ~]# helm search repo kube-prometheus-stack
+NAME                                            CHART VERSION   APP VERSION     DESCRIPTION
+prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          kube-prometheus-stack collects Kubernetes manif...
+
+# 下载Chart，需要注意的是：
+# (1) 若指定版本则是Chart的版本，而不是kube-prometheus-stack的版本，具体的对应关系可以在上方的Github中找到
+# (2) helm search中只显示了一个版本，但是所有的版本都是可以安装的
+[root@node-1 ~]# helm pull prometheus-community/kube-prometheus-stack --version 39.11.0 --untar
+[root@node-1 ~]# cd kube-prometheus-stack
+```
+
+#### （2）修改配置
+
+#### （3）部署
+
+```bash
+[root@node-1 kube-prometheus-stack]# helm install kube-prometheus-stack .
+```
+
+
+
 
 
 ## 部署Prometheus Exporter
