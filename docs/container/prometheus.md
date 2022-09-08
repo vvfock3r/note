@@ -292,7 +292,7 @@ secret/grafana.jinhui.dev created
 * 服务暴露方式为`Ingress`
 * 配置`HTTPS`
 
-::: details prometheus
+::: details 点击查看详情
 
 ```bash
 [root@node-1 kube-prometheus-stack]# vim values.yaml
@@ -348,9 +348,50 @@ secret/prometheus.jinhui.dev created
 
 ![image-20220908151058058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220908151058058.png)
 
+::: details 配置controller-manager
+
+```yaml
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+kubeControllerManager:
+  enabled: true
+  
+  endpoints:          # => (1) 修改这里
+    - 192.168.48.142
+    - 192.168.48.143
+  
+  ## If using kubeControllerManager.endpoints only the port and targetPort are used  
+  service:
+    enabled: true
+    ## If null or unset, the value is determined dynamically based on target Kubernetes version due to change
+    ## of default port in Kubernetes 1.22.
+    port: null
+    targetPort: null
+    # selector:
+    #   component: kube-controller-manager
+  serviceMonitor:
+    enabled: true
+    ## Scrape interval. If not set, the Prometheus default scrape interval is used.
+    interval: ""
+
+    ## proxyUrl: URL of a proxy that should be used for scraping.
+    proxyUrl: ""
+
+    ## Enable scraping kube-controller-manager over https.
+    ## Requires proper certs (not self-signed) and delegated authentication/authorization checks.
+    ## If null or unset, the value is determined dynamically based on target Kubernetes version.
+    https: true        # => (2) 修改这里
+```
+
+:::
+
+::: details 配置etcd
+
 ```bash
 
 ```
+
+:::
 
 ### （5）卸载
 
