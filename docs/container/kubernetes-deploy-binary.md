@@ -1747,6 +1747,7 @@ cat >/etc/kubernetes/kube-proxy-config.yaml <<EOF
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 bindAddress: 0.0.0.0
+metricsBindAddress: 0.0.0.0:10249
 clientConnection:
   kubeconfig: "/etc/kubernetes/kube-proxy.kubeconfig"
 clusterCIDR: "10.200.0.0/16"

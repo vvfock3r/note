@@ -354,7 +354,7 @@ secret/prometheus.jinhui.dev created
 
 ![image-20220908151058058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220908151058058.png)
 
-::: details 配置controller-manager
+::: details 配置kube-controller-manager
 
 ```yaml
 [root@node-1 kube-prometheus-stack]# vim values.yaml
@@ -386,7 +386,7 @@ kubeControllerManager:
     ## Enable scraping kube-controller-manager over https.
     ## Requires proper certs (not self-signed) and delegated authentication/authorization checks.
     ## If null or unset, the value is determined dynamically based on target Kubernetes version.
-    https: true        # => (2) 修改这里
+    https: null
 ```
 
 :::
@@ -394,8 +394,76 @@ kubeControllerManager:
 ::: details 配置etcd
 
 ```bash
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+kubeEtcd:
+  enabled: true 
+  endpoints:          # => (1) 修改这里
+  - 192.168.48.142
+  - 192.168.48.143
+  - 192.168.48.144
+  service:
+    enabled: true
+    port: 2379
+    targetPort: 2379
+    # selector:
+    #   component: etcd
 
+  ## Configure secure access to the etcd cluster by loading a secret into prometheus and
+  ## specifying security configuration below. For example, with a secret named etcd-client-cert
+  ##
+  ## serviceMonitor:
+  ##   scheme: https
+  ##   insecureSkipVerify: false
+  ##   serverName: localhost
+  ##   caFile: /etc/prometheus/secrets/etcd-client-cert/etcd-ca
+  ##   certFile: /etc/prometheus/secrets/etcd-client-cert/etcd-client
+  ##   keyFile: /etc/prometheus/secrets/etcd-client-cert/etcd-client-key
+  ##
+  serviceMonitor:
+    enabled: true
+    ## Scrape interval. If not set, the Prometheus default scrape interval is used.    
+    interval: ""
+    ## proxyUrl: URL of a proxy that should be used for scraping.
+    proxyUrl: ""
+    scheme: https              # => (2) 修改这里
+    insecureSkipVerify: false
+    serverName: ""
+    caFile: /etc/prometheus/secrets/etcd-client-cert/ca.pem               # => (3) 修改这里
+    certFile: /etc/prometheus/secrets/etcd-client-cert/kubernetes.pem     # => (4) 修改这里
+    keyFile: /etc/prometheus/secrets/etcd-client-cert/kubernetes-key.pem  # => (5) 修改这里
+
+# 创建secret
+# 1) secret名称要和上面路径中secrets/<secret名称>/ 保持一致
+# 1) 证书文件名称要和上面路径中secrets/<secret名称>/<证书名称>/ 保持一致
+[root@node-1 kube-prometheus-stack]# kubectl create secret generic etcd-client-cert \
+                                          -n monitoring \
+                                          --from-file=/etc/kubernetes/ssl/ca.pem \
+                                          --from-file=/etc/kubernetes/ssl/kubernetes.pem \
+                                          --from-file=/etc/kubernetes/ssl/kubernetes-key.pem
+
+# 将secrets挂载到prometheus pod中
+prometheus:
+  ...
+  prometheusSpec:
+    ...
+    secrets:                 # => (6) 修改这里，使用我们刚创建的secret
+    - etcd-client-cert
 ```
 
 :::
 
+::: details 配置kube-proxy
+
+```bash
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+kubeProxy:
+  enabled: true
+  endpoints:         # => (1) 修改这里
+  - 192.168.48.142
+  - 192.168.48.143
+  - 192.168.48.144
+```
+
+:::
