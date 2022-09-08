@@ -352,7 +352,13 @@ secret/prometheus.jinhui.dev created
 
 #### 3）配置部分服务手动发现
 
+在**Status => Service Discovery**中查看未能正确获取配置的服务：
+
 ![image-20220908151058058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220908151058058.png)
+
+解决完以后查看列表：
+
+![image-20220908182624194](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220908182624194.png)
 
 ::: details 配置kube-controller-manager
 
