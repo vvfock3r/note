@@ -186,7 +186,7 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
 namespace/monitoring created
 ```
 
-### （4）正式部署
+### （4）部署
 
 ```bash
 [root@node-1 kube-prometheus-stack]# helm install kube-prometheus-stack . --namespace monitoring
@@ -214,7 +214,13 @@ kube-prometheus-stack-prometheus-node-exporter-vgkqj        1/1     Running   0 
 prometheus-kube-prometheus-stack-prometheus-0               2/2     Running   0          9m49s
 ```
 
-### （5）修改配置
+### （5）卸载
+
+```bash
+[root@node-1 ~]# helm uninstall kube-prometheus-stack --namespace monitoring
+```
+
+### （6）修改配置
 
 #### 1）配置Grafana
 
@@ -392,10 +398,4 @@ kubeControllerManager:
 ```
 
 :::
-
-### （5）卸载
-
-```bash
-[root@node-1 ~]# helm uninstall kube-prometheus-stack --namespace monitoring
-```
 
