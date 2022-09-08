@@ -467,3 +467,18 @@ kubeProxy:
 ```
 
 :::
+
+::: details 配置kube-scheduler
+
+```bash
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+kubeScheduler:
+  enabled: true
+  endpoints:         # => (1) 修改这里
+  - 192.168.48.142
+  - 192.168.48.143
+```
+
+:::
+
