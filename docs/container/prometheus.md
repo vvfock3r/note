@@ -123,11 +123,15 @@ fe38d59cfea7   prom/prometheus:v2.38.0   "/bin/prometheus --c…"   24 seconds a
 
 <br />
 
-### K8S部署之kube-prometheus-stack
+## 部署Prometheus Exporter
+
+<br />
+
+## kube-prometheus-stack
 
 文档：[https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 
-#### （1）下载Chart
+### （1）下载Chart
 
 ```bash
 # 添加仓库
@@ -146,10 +150,11 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
 [root@node-1 ~]# cd kube-prometheus-stack
 ```
 
-#### （2）查看镜像
+### （2）查看镜像
 
 ```bash
-[root@node-1 kube-prometheus-stack]# cat values.yaml  | grep -E 'repository:|tag:' 
+# 镜像下载需要科学上网
+[root@node-1 kube-prometheus-stack]# cat values.yaml | grep -E 'repository:|tag:' 
       repository: quay.io/prometheus/alertmanager
       tag: v0.24.0
   #   repository: docker.io/grafana/grafana
@@ -174,15 +179,182 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
       tag: v0.27.0
 ```
 
-#### （3）部署
+### （3）创建单独的命名空间
 
 ```bash
-[root@node-1 kube-prometheus-stack]# helm install kube-prometheus-stack .
+[root@node-1 kube-prometheus-stack]# kubectl create namespace monitoring
+namespace/monitoring created
 ```
 
+### （4）正式部署
 
+```bash
+[root@node-1 kube-prometheus-stack]# helm install kube-prometheus-stack . --namespace monitoring
+NAME: kube-prometheus-stack
+LAST DEPLOYED: Thu Sep  8 11:45:52 2022
+NAMESPACE: monitoring
+STATUS: deployed
+REVISION: 1
+NOTES:
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace monitoring get pods -l "release=kube-prometheus-stack"
 
+Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
 
+# 查看Pod
+[root@node-1 kube-prometheus-stack]# kubectl get pods -n monitoring
+NAME                                                        READY   STATUS    RESTARTS   AGE
+alertmanager-kube-prometheus-stack-alertmanager-0           2/2     Running   0          9m50s
+kube-prometheus-stack-grafana-595f8cff67-h69np              3/3     Running   0          9m53s
+kube-prometheus-stack-kube-state-metrics-66dd655687-p9sdz   1/1     Running   0          9m54s
+kube-prometheus-stack-operator-7bc9959dd6-mxzgd             1/1     Running   0          9m54s
+kube-prometheus-stack-prometheus-node-exporter-5zzqg        1/1     Running   0          9m53s
+kube-prometheus-stack-prometheus-node-exporter-gwrb5        1/1     Running   0          9m54s
+kube-prometheus-stack-prometheus-node-exporter-vgkqj        1/1     Running   0          9m53s
+prometheus-kube-prometheus-stack-prometheus-0               2/2     Running   0          9m49s
+```
 
-## 部署Prometheus Exporter
+### （5）修改配置
+
+#### 1）配置Grafana
+
+* 配置Web端`admin`用户密码
+* 服务暴露方式为`Ingress`
+* 配置`HTTPS`
+
+::: details 点击查看详情
+
+```yaml
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+grafana:
+  ...
+  adminPassword: ZsVo6PZ5C@lK       # => (1) 修改这里
+  ...
+  ingress:
+    ## If true, Grafana Ingress will be created
+    ##
+    enabled: true                    # => (2) 修改这里
+
+    ## IngressClassName for Grafana Ingress.
+    ## Should be provided if Ingress is enable.
+    ##
+    ingressClassName: nginx          # => (3) 修改这里
+
+    ## Annotations for Grafana Ingress
+    ##
+    annotations: { }
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+
+    ## Labels to be added to the Ingress
+    ##
+    labels: { }
+
+    ## Hostnames.
+    ## Must be provided if Ingress is enable.
+    ##
+    # hosts:
+    #   - grafana.domain.com
+    hosts:                            # => (4) 修改这里
+      - grafana.jinhui.dev
+
+    ## Path for grafana ingress
+    path: /
+
+    ## TLS configuration for grafana Ingress
+    ## Secret must be manually created in the namespace
+    ##
+    tls:                               # => (5) 修改这里
+      - secretName: grafana.jinhui.dev
+        hosts:
+          - grafana.jinhui.dev
+
+# 生成自签证书
+C:\Users\Administrator\Desktop>mkcert grafana.jinhui.dev
+
+Created a new certificate valid for the following names 📜
+ - "grafana.jinhui.dev"
+
+The certificate is at "./grafana.jinhui.dev.pem" and the key at "./grafana.jinhui.dev-key.pem" ✅
+
+It will expire on 8 December 2024 🗓
+
+# 创建secret
+[root@node-1 ~]# kubectl create secret tls grafana.jinhui.dev -n monitoring --cert=grafana.jinhui.dev.pem --key=grafana.jinhui.dev-key.pem
+secret/grafana.jinhui.dev created
+```
+
+:::
+
+#### 2）配置Prometheus
+
+* 服务暴露方式为`Ingress`
+* 配置`HTTPS`
+
+::: details prometheus
+
+```bash
+[root@node-1 kube-prometheus-stack]# vim values.yaml
+...
+prometheus:
+  ...
+  ingress:
+    enabled: true                          # => (1) 修改这里
+    ingressClassName: nginx                # => (2) 修改这里
+
+    annotations: { }
+    labels: { }
+
+    ## Redirect ingress to an additional defined port on the service
+    # servicePort: 8081
+
+    ## Hostnames.
+    ## Must be provided if Ingress is enabled.
+    ##
+    # hosts:
+    #   - prometheus.domain.com
+    hosts:                                   # => (3) 修改这里
+      - prometheus.jinhui.dev
+
+    ## Paths to use for ingress rules - one path should match the prometheusSpec.routePrefix
+    ##
+    paths: [ ]
+    # - /
+
+    tls: [ ]                                 # => (4) 修改这里
+      - secretName: prometheus.jinhui.dev
+        hosts:
+          - prometheus.jinhui.dev
+
+# 生成自签证书
+C:\Users\Administrator\Desktop>mkcert prometheus.jinhui.dev
+
+Created a new certificate valid for the following names 📜
+ - "prometheus.jinhui.dev"
+
+The certificate is at "./prometheus.jinhui.dev.pem" and the key at "./prometheus.jinhui.dev-key.pem" ✅
+
+It will expire on 8 December 2024 🗓
+
+# 创建secret
+[root@node-1 ~]# kubectl create secret tls prometheus.jinhui.dev -n monitoring --cert=prometheus.jinhui.dev.pem --key=prometheus.jinhui.dev-key.pem
+secret/prometheus.jinhui.dev created
+```
+
+:::
+
+#### 3）配置部分服务手动发现
+
+![image-20220908151058058](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220908151058058.png)
+
+```bash
+
+```
+
+### （5）卸载
+
+```bash
+[root@node-1 ~]# helm uninstall kube-prometheus-stack --namespace monitoring
+```
 
