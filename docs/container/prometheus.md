@@ -131,6 +131,8 @@ fe38d59cfea7   prom/prometheus:v2.38.0   "/bin/prometheus --c…"   24 seconds a
 
 文档：[https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 
+<br />
+
 ### （1）下载Chart
 
 ```bash
@@ -149,6 +151,8 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
 [root@node-1 ~]# helm pull prometheus-community/kube-prometheus-stack --version 39.11.0 --untar
 [root@node-1 ~]# cd kube-prometheus-stack
 ```
+
+<br />
 
 ### （2）查看镜像
 
@@ -179,12 +183,16 @@ prometheus-community/kube-prometheus-stack      39.11.0         0.58.0          
       tag: v0.27.0
 ```
 
+<br />
+
 ### （3）创建单独的命名空间
 
 ```bash
 [root@node-1 kube-prometheus-stack]# kubectl create namespace monitoring
 namespace/monitoring created
 ```
+
+<br />
 
 ### （4）部署
 
@@ -214,13 +222,19 @@ kube-prometheus-stack-prometheus-node-exporter-vgkqj        1/1     Running   0 
 prometheus-kube-prometheus-stack-prometheus-0               2/2     Running   0          9m49s
 ```
 
+<br />
+
 ### （5）卸载
 
 ```bash
 [root@node-1 ~]# helm uninstall kube-prometheus-stack --namespace monitoring
 ```
 
+<br />
+
 ### （6）修改配置
+
+<br />
 
 #### 1）配置Grafana
 
@@ -293,6 +307,8 @@ secret/grafana.jinhui.dev created
 
 :::
 
+<br />
+
 #### 2）配置Prometheus
 
 * 服务暴露方式为`Ingress`
@@ -349,6 +365,8 @@ secret/prometheus.jinhui.dev created
 ```
 
 :::
+
+<br />
 
 #### 3）配置部分服务手动发现
 
