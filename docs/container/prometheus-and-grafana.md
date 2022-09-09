@@ -199,3 +199,105 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 [root@localhost ~]# curl http://192.168.48.133:9100/metrics
 ```
 
+<br />
+
+## 服务配置
+
+### 添加抓取目标
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+
+Prometheus默认会抓取自身暴露出来的指标，默认的配置如下
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+```
+
+以上配置看起来比较乱，将注释删掉，将上面提到的默认值显式写出来，如下所示：
+
+```bash
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["localhost:9090"]
+```
+
+然后配置抓取`node_export`指标（需要提前在Prometheus所在主机部署`node_exporter`）：
+
+```bash
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9090"
+        - "localhost:9100"
+```
+
+### 配置Basic Auth认证
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+
+::: details （1）Prometheus添加Basic Auth认证
+
+```bash
+# 使用bcrypt算法对密码加密
+[root@localhost ~]# yum -y install httpd-tools
+[root@localhost ~]# htpasswd -nBC 10 "" | tr -d ":"
+New password:           # 密码是123456
+Re-type new password: 
+$2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
+
+# 修改或创建配置文件
+[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
+basic_auth_users:
+  admin: $2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
+
+# 检查配置文件是否正确
+[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
+/etc/prometheus/prometheus-web.yml SUCCESS
+
+# 修改Prometheus启动参数，添加如下选项
+--web.config.file=/etc/prometheus/prometheus-web.yml
+
+# 重启服务并测试
+[root@localhost ~]# curl http://admin:123456@127.0.0.1:9090/metrics
+```
+
+:::
+
+::: details （2）Prometheus抓取自身时添加认证信息
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9090"
+        - "localhost:9100"
+    # 添加如下信息
+    basic_auth:
+      username: "admin"
+      password: "123456"
+      
+# 重启Prometheus，然后去Web界面检查
+```
+
+:::
