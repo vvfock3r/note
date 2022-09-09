@@ -307,6 +307,8 @@ secret/grafana.jinhui.dev created
 
 :::
 
+访问验证：[https://grafana.jinhui.dev](https://grafana.jinhui.dev)
+
 <br />
 
 #### 2）配置Prometheus
@@ -365,6 +367,8 @@ secret/prometheus.jinhui.dev created
 ```
 
 :::
+
+访问验证：[https://prometheus.jinhui.dev](https://prometheus.jinhui.dev)
 
 <br />
 
