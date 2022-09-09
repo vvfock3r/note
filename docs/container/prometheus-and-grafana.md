@@ -6,7 +6,9 @@ Github：[https://github.com/prometheus/prometheus/](https://github.com/promethe
 
 <br />
 
-## 部署Prometheus Server
+## 服务部署
+
+### Prometheus Server
 
 文档：[https://prometheus.io/download/](https://prometheus.io/download/)
 
@@ -14,7 +16,7 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 <br />
 
-### 二进制部署
+#### 二进制部署
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
 
@@ -91,7 +93,7 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 
 <br />
 
-### Dcoker部署
+#### Dcoker部署
 
 文档：[https://prometheus.io/docs/prometheus/2.38/installation/](https://prometheus.io/docs/prometheus/2.38/installation/)
 
@@ -120,16 +122,16 @@ docker container run --name "prometheus" \
                  prom/prometheus:v2.38.0
 
 docker ps | grep prometheus
-fe38d59cfea7   prom/prometheus:v2.38.0   "/bin/prometheus --c…"   24 seconds ago   Up 24 seconds   0.0.0.0:9090->9090/tcp, :::9090->9090/tcp              prometheu
+fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago Up 24 seconds 0.0.0.0:9090->9090/tcp, :::9090->9090/tcp  prometheu
 ```
 
 <br />
 
-## 部署Node Exporter
+### Node Exporter
 
 Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
 
-### 二进制部署
+#### 二进制部署
 
 下载地址：[https://prometheus.io/download/#node_exporter](https://prometheus.io/download/#node_exporter)
 
@@ -177,7 +179,7 @@ tcp6       0      0 :::9100                 :::*                    LISTEN      
 
 <br />
 
-### Docker部署
+#### Docker部署
 
 文档：[https://github.com/prometheus/node_exporter#docker](https://github.com/prometheus/node_exporter#docker)
 
@@ -194,6 +196,6 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
                                      prom/node-exporter:v1.3.1
         
 # 测试metrics接口
-[root@localhost ~]# curl http://192.168.48.133:9100/metrics        
+[root@localhost ~]# curl http://192.168.48.133:9100/metrics
 ```
 
