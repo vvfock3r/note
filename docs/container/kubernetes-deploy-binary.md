@@ -1599,7 +1599,7 @@ EOF
 
 * `nginx-proxy`是一个用于worker节点访问apiserver的一个代理，是apiserver一个优雅的高可用方案
 
-  它使用kubelet的staticpod方式启动，让每个节点都可以均衡的访问到每个apiserver服务
+  它使用kubelet的**静态Pod（非APIServer创建的Pod）**方式启动，让每个节点都可以均衡的访问到每个apiserver服务
 
 * `nginx-proxy`只需要在worker节点部署（即只需要在没有`apiserver `的节点部署）
 
