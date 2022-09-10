@@ -244,14 +244,24 @@ scrape_configs:
     static_configs:
       - targets:
         - "localhost:9090"
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
         - "localhost:9100"
 ```
 
-### 配置Basic Auth认证
+<br />
 
-文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+### 配置Basic Auth
 
-::: details （1）Prometheus添加Basic Auth认证
+文档：
+
+* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+* [https://prometheus.io/docs/guides/basic-auth/](https://prometheus.io/docs/guides/basic-auth/)
+
+::: details （1）Prometheus Web添加Basic Auth认证
 
 ```bash
 # 使用bcrypt算法对密码加密
@@ -261,7 +271,7 @@ New password:           # 密码是123456
 Re-type new password: 
 $2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
 
-# 修改或创建配置文件
+# 修改或创建Web配置文件
 [root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
 basic_auth_users:
   admin: $2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
@@ -290,14 +300,113 @@ scrape_configs:
     metrics_path: "/metrics"
     static_configs:
       - targets:
-        - "localhost:9090"
-        - "localhost:9100"
+        - "localhost:9090"       
     # 添加如下信息
     basic_auth:
       username: "admin"
       password: "123456"
-      
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+
 # 重启Prometheus，然后去Web界面检查
 ```
+
+:::
+
+<br />
+
+### 配置HTTPS协议
+
+文档：
+
+* [https://prometheus.io/docs/prometheus/latest/configuration/https/](https://prometheus.io/docs/prometheus/latest/configuration/https/)
+* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config)
+
+::: details （1）Prometheus Web添加 自签HTTPS证书支持
+
+```bash
+# 生成自签证书
+C:\Users\Administrator\Desktop>mkcert prometheus.jinhui.dev
+
+Created a new certificate valid for the following names 📜
+ - "prometheus.jinhui.dev"
+
+The certificate is at "./prometheus.jinhui.dev.pem" and the key at "./prometheus.jinhui.dev-key.pem" ✅
+
+It will expire on 9 December 2024 🗓
+
+# 将证书上传到/etc/prometheus/pki/
+# 修改/etc/hosts解析域名
+
+# 修改Web配置文件，添加如下配置
+[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
+tls_server_config:
+  cert_file: /etc/prometheus/pki/prometheus.jinhui.dev.pem
+  key_file: /etc/prometheus/pki/prometheus.jinhui.dev-key.pem
+
+# 检查配置文件
+[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
+/etc/prometheus/prometheus-web.yml SUCCESS
+
+# 重启Prometheus，使用HTTPS协议登录Web界面验证
+```
+
+:::
+
+::: details （2）Prometheus抓取目标修改
+
+* 需要将协议改为`HTTPS`
+* 需要匹配证书中的域名：
+  * 方式一：添加`tls_config.server_name`用于验证证书中的域名
+  * 方式二：修改 `static_configs.targets`处改成域名的形式
+* 自签证书需要验证CA：
+  * 方式一：由于Prometheus不认识自签证书的CA，还需要指定一下CA文件
+  * 方式二：关闭服务端证书验证
+
+```bash
+# 先上传CA文件到系统中/etc/prometheus/pki/
+
+
+# 修改配置
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "https"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9090"
+    basic_auth:
+      username: "admin"
+      password: "123456"
+    tls_config:
+      server_name: "prometheus.jinhui.dev"
+      ca_file: "/etc/prometheus/pki/rootCA.pem"
+      #insecure_skip_verify: true
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus，登录Web界面验证
+```
+
+![image-20220910085501979](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220910085501979.png)
 
 :::
