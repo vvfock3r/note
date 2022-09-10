@@ -14,6 +14,8 @@ Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com
 
 ### Prometheus Server
 
+<br />
+
 **部署方式1：二进制部署**
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
@@ -147,6 +149,8 @@ fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago U
 
 ### Node Exporter
 
+<br />
+
 **部署方式1：二进制部署**
 
 下载地址：[https://prometheus.io/download/#node_exporter](https://prometheus.io/download/#node_exporter)
@@ -246,15 +250,9 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 <br />
 
-#### 二进制部署
+**部署方式1：二进制部署**
 
-文档：
-
-* [https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar](https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar)
-
-* [https://thanos.io/v0.28/thanos/storage.md/#tencent-cos](https://thanos.io/v0.28/thanos/storage.md/#tencent-cos)
-
-::: details （1）下载二进制包
+::: details 准备工作1：下载二进制包和修改Prometheus启动参数
 
 ```bash
 # 下载二进制包
@@ -277,7 +275,7 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
 
 :::
 
-::: details （2）修改Prometheus配置以满足Thanos的要求
+::: details 准备工作2：修改Prometheus启动参数以满足Thanos的要求
 
 ```bash
 # Prometheus启动命令添加如下参数
@@ -298,13 +296,19 @@ global:
 
 :::
 
-::: details （3）创建启动脚本和配置文件
+::: details （1）部署Thanos Sidecar服务
+
+文档：
+
+* [https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar](https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar)
+
+* [https://thanos.io/v0.28/thanos/storage.md/#tencent-cos](https://thanos.io/v0.28/thanos/storage.md/#tencent-cos)
 
 ```bash
 # 创建配置文件目录
 [root@localhost ~]# mkdir /etc/thanos/
 
-# 创建配置文件（使用腾讯云COS存储）
+# 创建存储桶配置文件（使用腾讯云COS存储）
 [root@localhost ~]# vim /etc/thanos/cos_bucket_config.yaml
 type: COS
 config:
@@ -338,7 +342,7 @@ config:
 prefix: ""
 
 # 创建启动脚本
-[root@localhost ~]# cat >/usr/lib/systemd/system/thanos.service <<EOF
+[root@localhost ~]# cat >/usr/lib/systemd/system/thanos_sidecar.service <<EOF
 [Unit]
 Description=Thanos
 Documentation=https://thanos.io/
@@ -355,18 +359,20 @@ ExecStart=/usr/local/bin/thanos sidecar \\
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# (3) 启动服务并验证
+[root@localhost ~]# systemctl daemon-reload && \
+                    systemctl enable thanos_sidecar  && \
+                    systemctl start thanos_sidecar  && \
+                    systemctl status thanos_sidecar
 ```
 
 :::
 
-::: details （4）启动服务并验证
+::: details （2）部署Thanos Query服务
 
 ```bash
-# 启动sidecar服务,用于将Prometheus数据备份到对象存储桶中
-[root@localhost ~]# systemctl daemon-reload && \
-                    systemctl enable thanos  && \
-                    systemctl start thanos  && \
-                    systemctl status thanos
+
 ```
 
 :::
