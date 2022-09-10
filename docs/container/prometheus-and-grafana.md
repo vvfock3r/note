@@ -250,6 +250,14 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 <br />
 
+各组件简介：
+
+* Sidecar：监听Prometheus本地存储目录，每隔2小时将数据上传到对象存储中
+* Store：读取对象存储，提供给其他组件查询历史数据
+* Query：全局查询层，它提供了一个类似Prometheus的UI界面，汇总/去重来自Sidecar、Store等的数据
+
+<br />
+
 **部署方式1：二进制部署**
 
 ::: details 准备工作1：下载二进制包
@@ -352,6 +360,8 @@ After=network-online.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/thanos sidecar \\
+    --grpc-address         0.0.0.0:10901 \\
+    --http-address         0.0.0.0:10902 \\
     --tsdb.path            /var/lib/prometheus \\
     --prometheus.url       http://localhost:9090 \\
     --objstore.config-file /etc/thanos/cos_bucket_config.yaml
@@ -369,14 +379,67 @@ EOF
 
 :::
 
-::: details （2）部署Thanos Query服务
+::: details （2）部署Thanos Store服务
 
 ```bash
-thanos query \
-    --grpc-address=0.0.0.0:10911 \
-    --http-address 0.0.0.0:10912 \
-    --store        localhost:10901 \
+# 创建启动脚本
+[root@localhost ~]# cat >/usr/lib/systemd/system/thanos_store.service <<EOF
+[Unit]
+Description=Thanos
+Documentation=https://thanos.io/
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/thanos store \\
+    --grpc-address         0.0.0.0:10911 \\
+    --http-address         0.0.0.0:10912 \\
+    --data-dir             /var/lib/thanos/store \\
+    --objstore.config-file /etc/thanos/cos_bucket_config.yaml
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启动服务并验证
+[root@localhost ~]# systemctl daemon-reload && \
+                    systemctl enable thanos_store  && \
+                    systemctl start thanos_store  && \
+                    systemctl status thanos_store
+```
+
+:::
+
+::: details （3）部署Thanos Query服务
+
+```bash
+# 创建启动脚本
+[root@localhost ~]# cat >/usr/lib/systemd/system/thanos_query.service <<EOF
+[Unit]
+Description=Thanos
+Documentation=https://thanos.io/
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/thanos query \\
+    --grpc-address=0.0.0.0:10991 \\
+    --http-address 0.0.0.0:10992 \\
+    --store        localhost:10901 \\
+    --store        localhost:10911 \\
     --store        dnssrv+_grpc._tcp.thanos-store.monitoring.svc
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启动服务并验证
+[root@localhost ~]# systemctl daemon-reload && \
+                    systemctl enable thanos_query  && \
+                    systemctl start thanos_query  && \
+                    systemctl status thanos_query
 ```
 
 :::
