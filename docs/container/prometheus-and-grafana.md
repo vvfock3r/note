@@ -20,6 +20,10 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
 
+（1）下载二进制包
+
+::: details 点击查看完整命令
+
 ```bash
 # 下载二进制包
 [root@localhost ~]# wget -c https://github.com/prometheus/prometheus/releases/download/v2.38.0/prometheus-2.38.0.linux-amd64.tar.gz
@@ -55,7 +59,15 @@ promtool, version 2.38.0 (branch: HEAD, revision: 818d6e60888b2a3ea363aee8a9828c
 [root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
 Checking /etc/prometheus/prometheus.yml
  SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+```
 
+:::
+
+（2）编写Systemd启动脚本
+
+::: details 点击查看完整命令
+
+```bash
 # 编写启动脚本
 [root@localhost ~]# cat >/usr/lib/systemd/system/prometheus.service <<EOF
 [Unit]
@@ -76,11 +88,17 @@ ExecStart=/usr/local/bin/prometheus \\
 [Install]
 WantedBy=multi-user.target
 EOF
+```
 
+:::
+
+（3）启动服务并验证
+
+```bash
 # 启动服务
 [root@localhost ~]# systemctl daemon-reload && \
                     systemctl enable prometheus && \
-                    systemctl start prometheus && \
+                    systemctl start  prometheus && \
                     systemctl status prometheus
 # 检查端口
 [root@localhost ~]# netstat -atlnpu | grep 9090
@@ -209,15 +227,123 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 #### 二进制部署
 
+文档：
+
+* [https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar](https://thanos.io/v0.28/thanos/quick-tutorial.md/#sidecar)
+
+* [https://thanos.io/v0.28/thanos/storage.md/#tencent-cos](https://thanos.io/v0.28/thanos/storage.md/#tencent-cos)
+
+（1）下载二进制包
+
+::: details 点击查看完整命令
+
 ```bash
 # 下载二进制包
 [root@localhost ~]# wget -c https://github.com/thanos-io/thanos/releases/download/v0.28.0/thanos-0.28.0.linux-amd64.tar.gz
 
 # 解压二进制包
+[root@localhost ~]# tar zxf thanos-0.28.0.linux-amd64.tar.gz
 
+# 移动文件
+[root@localhost ~]# mv thanos-0.28.0.linux-amd64/thanos /usr/local/bin/
+
+# 查看版本
+[root@localhost ~]# thanos --version
+thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236add810137)
+  build user:       root@38565b300166
+  build date:       20220826-17:54:10
+  go version:       go1.18.5
+  platform:         linux/amd64
 ```
 
+:::
 
+（2）修改Prometheus配置以满足Thanos的要求
+
+```bash
+# Prometheus启动命令添加如下参数
+/usr/local/bin/prometheus \
+  --storage.tsdb.max-block-duration=2h \
+  --storage.tsdb.min-block-duration=2h \
+  --web.enable-lifecycle
+```
+
+（3）创建启动脚本和配置文件
+
+::: details 点击查看完整命令
+
+```bash
+# 创建配置文件目录
+[root@localhost ~]# mkdir /etc/thanos/
+
+# 创建配置文件（使用腾讯云COS存储）
+[root@localhost ~]# vim /etc/thanos/cos_bucket_config.yaml
+type: COS
+config:
+  # 存储桶名称
+  bucket: "prometheus-1257805459"
+  # 所在地域
+  region: "ap-beijing"
+  # 存储桶地址
+  endpoint: "https://prometheus-1257805459.cos.ap-beijing.myqcloud.com"
+  # 密钥
+  app_id: "xxx"
+  secret_key: "xxx"
+  secret_id: "xxx"
+  # HTTP配置
+  http_config:
+    idle_conn_timeout: 1m30s
+    response_header_timeout: 2m
+    insecure_skip_verify: false
+    tls_handshake_timeout: 10s
+    expect_continue_timeout: 1s
+    max_idle_conns: 100
+    max_idle_conns_per_host: 100
+    max_conns_per_host: 0
+    tls_config:
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
+      server_name: ""
+      insecure_skip_verify: false
+    disable_compression: false
+prefix: ""
+
+# 创建启动脚本
+[root@localhost ~]# cat >/usr/lib/systemd/system/thanos.service <<EOF
+[Unit]
+Description=Thanos
+Documentation=https://thanos.io/
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/thanos sidecar \\
+    --tsdb.path            /var/lib/prometheus \\
+    --prometheus.url       http://localhost:9090 \\
+    --objstore.config-file /etc/thanos/cos_bucket_config.yaml
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+:::
+
+（4）启动服务
+
+::: details 点击查看完整命令
+
+```bash
+# 启动sidecar服务,用于将Prometheus数据备份到对象存储桶中
+[root@localhost ~]# systemctl daemon-reload && \
+                    systemctl enable thanos  && \
+                    systemctl start thanos  && \
+                    systemctl status thanos
+```
+
+:::
 
 <br />
 
