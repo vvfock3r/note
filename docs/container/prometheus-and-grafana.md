@@ -244,6 +244,8 @@ scrape_configs:
     static_configs:
       - targets:
         - "localhost:9090"
+  # 因为Prometheus和node_exporter在同一个机器上，所以可以直接在上面添加ip，但是强烈不建议这么做，因为语义就乱了
+  # 这里新建一个job，代表所有的node_exporter服务
   - job_name: "node"
     scheme: "http"
     metrics_path: "/metrics"
@@ -283,8 +285,11 @@ basic_auth_users:
 # 修改Prometheus启动参数，添加如下选项
 --web.config.file=/etc/prometheus/prometheus-web.yml
 
-# 重启服务并测试
+# 重启服务
+
+# 测试（以下是curl的两种使用姿势，YWRtaW46MTIzNDU2是通过echo -n "admin:123456" | base64 而来）
 [root@localhost ~]# curl http://admin:123456@127.0.0.1:9090/metrics
+[root@localhost ~]# curl -H "Authorization: Basic YWRtaW46MTIzNDU2" http://127.0.0.1:9090/metrics
 ```
 
 :::
