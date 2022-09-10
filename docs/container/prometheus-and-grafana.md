@@ -252,7 +252,7 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 **部署方式1：二进制部署**
 
-::: details 准备工作1：下载二进制包和修改Prometheus启动参数
+::: details 准备工作1：下载二进制包
 
 ```bash
 # 下载二进制包
@@ -275,7 +275,7 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
 
 :::
 
-::: details 准备工作2：修改Prometheus启动参数以满足Thanos的要求
+::: details 准备工作2：修改Prometheus启动参数
 
 ```bash
 # Prometheus启动命令添加如下参数
