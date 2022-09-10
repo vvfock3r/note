@@ -372,7 +372,12 @@ EOF
 ::: details （2）部署Thanos Query服务
 
 ```bash
-
+thanos query \
+    --http-address 0.0.0.0:19192 \
+    --store        1.2.3.4:19090 \
+    --store        1.2.3.5:19090 \
+    --store        dnssrv+_grpc._tcp.thanos-store.monitoring.svc \
+    --grpc-address="0.0.0.0:10909"
 ```
 
 :::
