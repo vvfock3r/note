@@ -220,6 +220,8 @@ tcp6       0      0 :::9100                 :::*                    LISTEN      
 
 Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.com/r/prom/node-exporter)
 
+::: details 点击查看详情
+
 ```bash
 # 启动容器
 [root@localhost ~]# docker container run --name "node_exporter" \
@@ -234,6 +236,8 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 [root@localhost ~]# curl http://192.168.48.133:9100/metrics
 ```
 
+:::
+
 <br />
 
 ### Thanos
@@ -241,6 +245,8 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 文档：[https://thanos.io/](https://thanos.io/)
 
 Github：[https://github.com/prometheus/prometheus](https://github.com/prometheus/prometheus)
+
+<br />
 
 #### 二进制部署
 
@@ -597,5 +603,4 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
 
-目前推荐使用的是[Thanos](https://github.com/thanos-io/thanos)
-
+推荐使用[Thanos](https://github.com/thanos-io/thanos)
