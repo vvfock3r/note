@@ -201,7 +201,27 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 
 <br />
 
-## 服务配置
+### Thanos
+
+文档：[https://thanos.io/](https://thanos.io/)
+
+Github：[https://github.com/prometheus/prometheus](https://github.com/prometheus/prometheus)
+
+#### 二进制部署
+
+```bash
+# 下载二进制包
+[root@localhost ~]# wget -c https://github.com/thanos-io/thanos/releases/download/v0.28.0/thanos-0.28.0.linux-amd64.tar.gz
+
+# 解压二进制包
+
+```
+
+
+
+<br />
+
+## 基本配置
 
 ### 添加抓取目标
 
@@ -415,3 +435,28 @@ Checking /etc/prometheus/prometheus.yml
 ![image-20220910085501979](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220910085501979.png)
 
 :::
+
+<br />
+
+## 存储配置
+
+文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
+
+### 本地存储
+
+Prometheus内部实现了一个磁盘的时间序列数据库，常用参数有：
+
+* `--storage.tsdb.path`指定数据保存在本地磁盘的路径，不支持不符合`POSIX`标准的文件系统，所以不要将数据保存在`NFS`文件系统中
+* `--storage.tsdb.retention.time`设置保留时间，默认数据保留时间为15天（`15d`），支持的最低保留时间为2小时（`2h`）
+* `--storage.tsdb.retention.size`设置磁盘最大使用量
+
+Prometheus本地存储并不适合长期存储数据，建议通过**远程读写**方式使用外部存储
+
+<br />
+
+### 外部存储
+
+支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
+
+目前推荐使用的是[Thanos](https://github.com/thanos-io/thanos)
+
