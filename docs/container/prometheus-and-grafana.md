@@ -10,11 +10,11 @@ Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com
 
 ## 服务部署
 
-### Prometheus Server
-
 <br />
 
-#### 二进制部署
+### Prometheus Server
+
+**部署方式1：二进制部署**
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
 
@@ -107,7 +107,7 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 
 <br />
 
-#### Dcoker部署
+**部署方式2：Dcoker部署**
 
 文档：[https://prometheus.io/docs/prometheus/2.38/installation/](https://prometheus.io/docs/prometheus/2.38/installation/)
 
@@ -147,9 +147,7 @@ fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago U
 
 ### Node Exporter
 
-<br />
-
-#### 二进制部署
+**部署方式1：二进制部署**
 
 下载地址：[https://prometheus.io/download/#node_exporter](https://prometheus.io/download/#node_exporter)
 
@@ -214,7 +212,7 @@ tcp6       0      0 :::9100                 :::*                    LISTEN      
 
 <br />
 
-#### Docker部署
+**部署方式2：Docker部署**
 
 文档：[https://github.com/prometheus/node_exporter#docker](https://github.com/prometheus/node_exporter#docker)
 
@@ -287,6 +285,15 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
   --storage.tsdb.max-block-duration=2h \
   --storage.tsdb.min-block-duration=2h \
   --web.enable-lifecycle
+
+# Prometheus配置文件添加全局唯一的标签
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+global:
+  ...
+  # 新增标签，只要是kv对，写啥都行
+  external_labels:
+    cluster: eu1
+    replica: 0
 ```
 
 :::
