@@ -20,9 +20,7 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
 
-（1）下载二进制包
-
-::: details 点击查看完整命令
+::: details （1）下载二进制包
 
 ```bash
 # 下载二进制包
@@ -63,9 +61,7 @@ Checking /etc/prometheus/prometheus.yml
 
 :::
 
-（2）编写Systemd启动脚本
-
-::: details 点击查看完整命令
+::: details （2）编写Systemd启动脚本
 
 ```bash
 # 编写启动脚本
@@ -92,7 +88,7 @@ EOF
 
 :::
 
-（3）启动服务并验证
+::: details （3）启动服务并验证
 
 ```bash
 # 启动服务
@@ -109,6 +105,8 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 # 浏览器访问：http://<ip>:9090
 ```
 
+:::
+
 <br />
 
 #### Dcoker部署
@@ -116,6 +114,8 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 文档：[https://prometheus.io/docs/prometheus/2.38/installation/](https://prometheus.io/docs/prometheus/2.38/installation/)
 
 Docker Hub：[https://hub.docker.com/r/prom/prometheus](https://hub.docker.com/r/prom/prometheus)
+
+::: details 点击查看详情
 
 ```bash
 # (1)创建配置文件目录和数据目录
@@ -142,6 +142,8 @@ docker container run --name "prometheus" \
 docker ps | grep prometheus
 fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago Up 24 seconds 0.0.0.0:9090->9090/tcp, :::9090->9090/tcp  prometheu
 ```
+
+:::
 
 <br />
 
@@ -233,9 +235,7 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 * [https://thanos.io/v0.28/thanos/storage.md/#tencent-cos](https://thanos.io/v0.28/thanos/storage.md/#tencent-cos)
 
-（1）下载二进制包
-
-::: details 点击查看完整命令
+::: details （1）下载二进制包
 
 ```bash
 # 下载二进制包
@@ -258,7 +258,7 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
 
 :::
 
-（2）修改Prometheus配置以满足Thanos的要求
+::: details （2）修改Prometheus配置以满足Thanos的要求
 
 ```bash
 # Prometheus启动命令添加如下参数
@@ -268,9 +268,9 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
   --web.enable-lifecycle
 ```
 
-（3）创建启动脚本和配置文件
+:::
 
-::: details 点击查看完整命令
+::: details （3）创建启动脚本和配置文件
 
 ```bash
 # 创建配置文件目录
@@ -331,9 +331,7 @@ EOF
 
 :::
 
-（4）启动服务
-
-::: details 点击查看完整命令
+::: details （4）启动服务并验证
 
 ```bash
 # 启动sidecar服务,用于将Prometheus数据备份到对象存储桶中
@@ -429,7 +427,8 @@ basic_auth_users:
 /etc/prometheus/prometheus-web.yml SUCCESS
 
 # 修改Prometheus启动参数，添加如下选项
---web.config.file=/etc/prometheus/prometheus-web.yml
+/usr/local/bin/prometheus \
+  --web.config.file=/etc/prometheus/prometheus-web.yml
 
 # 重启服务
 
@@ -525,7 +524,6 @@ tls_server_config:
 
 ```bash
 # 先上传CA文件到系统中/etc/prometheus/pki/
-
 
 # 修改配置
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
