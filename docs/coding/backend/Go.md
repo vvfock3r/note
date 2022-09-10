@@ -3825,28 +3825,36 @@ func main() {
 **根据读写方式可以分为**
 
 * 读写`Channel`
-
 * 只读`Channel`
-
 * 只写`Channel`
-
-  
 
 
 
 **定义**
 
 ```go
-// 声明一个int类型的channel
-var channel chan int
-fmt.Printf("%T\n", channel) // chan int
+package main
 
-// ch赋值
-channel = make(chan int)
-fmt.Printf("%#v\n", channel) // (chan int)(0xc00005a060)
+import "fmt"
 
-// 以上两句可以简写成如下形式（推荐这种写法）
-ch := make(chan int)
+func main() {
+	// 声明一个int类型的channel
+	var channel chan int
+	fmt.Printf("%T %#v\n", channel, channel)
+
+	// 初始化channel
+	channel = make(chan int)
+	fmt.Printf("%T %#v\n", channel, channel)
+
+	// 以上两句可以简写成如下形式（推荐这种写法）
+	ch := make(chan int)
+	fmt.Printf("%T %#v\n", ch, ch)
+}
+
+// 输出结果
+//chan int (chan int)(nil)
+//chan int (chan int)(0xc00005e060)
+//chan int (chan int)(0xc00005e0c0)
 ```
 
 **读和写**
