@@ -4,15 +4,13 @@
 
 Github：[https://github.com/prometheus/prometheus/](https://github.com/prometheus/prometheus/)
 
+Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
+
 <br />
 
 ## 服务部署
 
 ### Prometheus Server
-
-文档：[https://prometheus.io/download/](https://prometheus.io/download/)
-
-Github：[https://github.com/prometheus/prometheus](https://github.com/prometheus/prometheus)
 
 <br />
 
@@ -149,7 +147,7 @@ fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago U
 
 ### Node Exporter
 
-Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
+<br />
 
 #### 二进制部署
 
