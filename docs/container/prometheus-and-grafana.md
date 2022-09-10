@@ -373,11 +373,10 @@ EOF
 
 ```bash
 thanos query \
-    --http-address 0.0.0.0:19192 \
-    --store        1.2.3.4:19090 \
-    --store        1.2.3.5:19090 \
-    --store        dnssrv+_grpc._tcp.thanos-store.monitoring.svc \
-    --grpc-address="0.0.0.0:10909"
+    --grpc-address=0.0.0.0:10911 \
+    --http-address 0.0.0.0:10912 \
+    --store        localhost:10901 \
+    --store        dnssrv+_grpc._tcp.thanos-store.monitoring.svc
 ```
 
 :::
