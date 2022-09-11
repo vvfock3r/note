@@ -865,9 +865,9 @@ Gauge：一个可增可减的度量值
 
 Histogram：累计直方图类，用于统计在某个区间内出现次数的度量值，示例：
 
-* `prometheus_http_request_duration_seconds_bucket`（`Histogram`*不同区间分类* 通常使用`bucket`作为后缀）
-* `prometheus_http_request_duration_seconds_count`（`Histogram`*所有区间采样次数总和* 通常使用`count`作为后缀）
-* `prometheus_http_request_duration_seconds_sum`（`Histogram`*所有区间采样值总和* 通常使用`sum`作为后缀）
+* `prometheus_http_request_duration_seconds_bucket`（*不同区间分类* 通常使用`bucket`作为后缀）
+* `prometheus_http_request_duration_seconds_count`（*所有区间采样次数总和* 通常使用`count`作为后缀）
+* `prometheus_http_request_duration_seconds_sum`（*所有区间采样值总和* 通常使用`sum`作为后缀）
 
 Summary：百分位统计
 
