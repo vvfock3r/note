@@ -75,6 +75,7 @@ After=network-online.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/prometheus \\
+    --log.level=info \\
     --config.file=/etc/prometheus/prometheus.yml \\
     --storage.tsdb.path=/var/lib/prometheus \\
     --web.listen-address=0.0.0.0:9090 \\
@@ -684,3 +685,195 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
 
 推荐使用[Thanos](https://github.com/thanos-io/thanos)
+
+<br />
+
+## PromSQL
+
+### Metrics
+
+文档：[https://prometheus.io/docs/practices/naming/#metric-and-label-naming](https://prometheus.io/docs/practices/naming/#metric-and-label-naming)
+
+#### Metrics格式
+
+```bash
+<metric name>{<label name>=<label value>, <label name>=<label value>, ...}
+```
+
+
+
+#### Metric Name
+
+* 前缀
+
+  * 对于特定的应用程序的指标，前缀通常是应用程序本身，比如`node_xxx`、`prometheus_xxx`，
+
+  * 其他前缀：`go_`、`process_`、`promhttp_`、`net_conntrack_`
+
+    ::: details Prometheus Metrics其他前缀
+
+    ```bash
+    [root@localhost ~]# curl -s http://localhost:9090/metrics | grep -Ev '^#|^prometheus'
+    go_gc_duration_seconds{quantile="0"} 3.7749e-05
+    go_gc_duration_seconds{quantile="0.25"} 0.000135832
+    go_gc_duration_seconds{quantile="0.5"} 0.000262359
+    go_gc_duration_seconds{quantile="0.75"} 0.000559839
+    go_gc_duration_seconds{quantile="1"} 0.004266578
+    go_gc_duration_seconds_sum 1.9167514730000001
+    go_gc_duration_seconds_count 2673
+    go_goroutines 35
+    go_info{version="go1.18.5"} 1
+    go_memstats_alloc_bytes 2.5264648e+07
+    go_memstats_alloc_bytes_total 6.9963375656e+10
+    go_memstats_buck_hash_sys_bytes 1.587149e+06
+    go_memstats_frees_total 1.63039907e+08
+    go_memstats_gc_sys_bytes 8.553304e+06
+    go_memstats_heap_alloc_bytes 2.5264648e+07
+    go_memstats_heap_idle_bytes 6.3709184e+07
+    go_memstats_heap_inuse_bytes 2.7648e+07
+    go_memstats_heap_objects 143609
+    go_memstats_heap_released_bytes 5.5984128e+07
+    go_memstats_heap_sys_bytes 9.1357184e+07
+    go_memstats_last_gc_time_seconds 1.6628725317127545e+09
+    go_memstats_lookups_total 0
+    go_memstats_mallocs_total 1.63183516e+08
+    go_memstats_mcache_inuse_bytes 2400
+    go_memstats_mcache_sys_bytes 15600
+    go_memstats_mspan_inuse_bytes 257720
+    go_memstats_mspan_sys_bytes 979200
+    go_memstats_next_gc_bytes 4.2732576e+07
+    go_memstats_other_sys_bytes 747267
+    go_memstats_stack_inuse_bytes 917504
+    go_memstats_stack_sys_bytes 917504
+    go_memstats_sys_bytes 1.04157208e+08
+    go_threads 9
+    net_conntrack_dialer_conn_attempted_total{dialer_name="alertmanager"} 0
+    net_conntrack_dialer_conn_attempted_total{dialer_name="default"} 0
+    net_conntrack_dialer_conn_attempted_total{dialer_name="node"} 1
+    net_conntrack_dialer_conn_attempted_total{dialer_name="prometheus"} 1
+    net_conntrack_dialer_conn_closed_total{dialer_name="alertmanager"} 0
+    net_conntrack_dialer_conn_closed_total{dialer_name="default"} 0
+    net_conntrack_dialer_conn_closed_total{dialer_name="node"} 0
+    net_conntrack_dialer_conn_closed_total{dialer_name="prometheus"} 0
+    net_conntrack_dialer_conn_established_total{dialer_name="alertmanager"} 0
+    net_conntrack_dialer_conn_established_total{dialer_name="default"} 0
+    net_conntrack_dialer_conn_established_total{dialer_name="node"} 1
+    net_conntrack_dialer_conn_established_total{dialer_name="prometheus"} 1
+    net_conntrack_dialer_conn_failed_total{dialer_name="alertmanager",reason="refused"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="alertmanager",reason="resolution"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="alertmanager",reason="timeout"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="alertmanager",reason="unknown"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="default",reason="refused"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="default",reason="resolution"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="default",reason="timeout"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="default",reason="unknown"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="node",reason="refused"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="node",reason="resolution"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="node",reason="timeout"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="node",reason="unknown"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="prometheus",reason="refused"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="prometheus",reason="resolution"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="prometheus",reason="timeout"} 0
+    net_conntrack_dialer_conn_failed_total{dialer_name="prometheus",reason="unknown"} 0
+    net_conntrack_listener_conn_accepted_total{listener_name="http"} 1.012112e+06
+    net_conntrack_listener_conn_closed_total{listener_name="http"} 1.012109e+06
+    process_cpu_seconds_total 182.81
+    process_max_fds 1024
+    process_open_fds 22
+    process_resident_memory_bytes 9.8811904e+07
+    process_start_time_seconds 1.66285560552e+09
+    process_virtual_memory_bytes 1.010167808e+09
+    process_virtual_memory_max_bytes 1.8446744073709552e+19
+    promhttp_metric_handler_requests_in_flight 1
+    promhttp_metric_handler_requests_total{code="200"} 2145
+    promhttp_metric_handler_requests_total{code="500"} 0
+    promhttp_metric_handler_requests_total{code="503"} 0
+    ```
+
+    :::
+
+    ::: details Node Export Metrics其他前缀
+
+    ```bash
+    [root@localhost ~]# curl -s http://localhost:9100/metrics | grep -Ev '^#|^node'
+    go_gc_duration_seconds{quantile="0"} 2.1018e-05
+    go_gc_duration_seconds{quantile="0.25"} 0.000102126
+    go_gc_duration_seconds{quantile="0.5"} 0.00020795
+    go_gc_duration_seconds{quantile="0.75"} 0.000316398
+    go_gc_duration_seconds{quantile="1"} 0.001584589
+    go_gc_duration_seconds_sum 0.254249617
+    go_gc_duration_seconds_count 1066
+    go_goroutines 9
+    go_info{version="go1.17.3"} 1
+    go_memstats_alloc_bytes 2.574184e+06
+    go_memstats_alloc_bytes_total 2.189799864e+09
+    go_memstats_buck_hash_sys_bytes 1.612111e+06
+    go_memstats_frees_total 2.1251409e+07
+    go_memstats_gc_cpu_fraction 4.2257114165388405e-05
+    go_memstats_gc_sys_bytes 5.433456e+06
+    go_memstats_heap_alloc_bytes 2.574184e+06
+    go_memstats_heap_idle_bytes 8.159232e+06
+    go_memstats_heap_inuse_bytes 3.964928e+06
+    go_memstats_heap_objects 17004
+    go_memstats_heap_released_bytes 7.675904e+06
+    go_memstats_heap_sys_bytes 1.212416e+07
+    go_memstats_last_gc_time_seconds 1.6628725016464016e+09
+    go_memstats_lookups_total 0
+    go_memstats_mallocs_total 2.1268413e+07
+    go_memstats_mcache_inuse_bytes 2400
+    go_memstats_mcache_sys_bytes 16384
+    go_memstats_mspan_inuse_bytes 65144
+    go_memstats_mspan_sys_bytes 98304
+    go_memstats_next_gc_bytes 4.194304e+06
+    go_memstats_other_sys_bytes 524873
+    go_memstats_stack_inuse_bytes 458752
+    go_memstats_stack_sys_bytes 458752
+    go_memstats_sys_bytes 2.026804e+07
+    go_threads 6
+    process_cpu_seconds_total 63.73
+    process_max_fds 1024
+    process_open_fds 10
+    process_resident_memory_bytes 2.3138304e+07
+    process_start_time_seconds 1.66285520589e+09
+    process_virtual_memory_bytes 7.35105024e+08
+    process_virtual_memory_max_bytes 1.8446744073709552e+19
+    promhttp_metric_handler_errors_total{cause="encoding"} 0
+    promhttp_metric_handler_errors_total{cause="gathering"} 0
+    promhttp_metric_handler_requests_in_flight 1
+    promhttp_metric_handler_requests_total{code="200"} 1157
+    promhttp_metric_handler_requests_total{code="500"} 0
+    promhttp_metric_handler_requests_total{code="503"} 0
+    ```
+
+    :::
+
+* 单位
+  * 单位是可选的，比如 `go_goroutines`
+  * 若要使用单位则应该使用基本单位（参考[官方文档](https://prometheus.io/docs/practices/naming/#base-units)），比如使用 `seconds`而不是使用 `milliseconds`
+  * 每个基本单位都应该用复数，比如 `seconds`而不是 `second`
+  * 单位后面可以加描述性的后缀，比如 `prometheus_http_requests_total`（`Counter`通常使用`total`作为后缀）
+
+<br />
+
+#### Type
+
+文档：[https://prometheus.io/docs/tutorials/understanding_metric_types/](https://prometheus.io/docs/tutorials/understanding_metric_types/)
+
+Counter：一个只能增加或重置的度量值
+
+Gauge：一个可增可减的度量值
+
+Histogram：累计直方图类，用于统计在某个区间内出现次数的度量值，示例：
+
+* `prometheus_http_request_duration_seconds_bucket`（`Histogram`*不同区间分类* 通常使用`bucket`作为后缀）
+* `prometheus_http_request_duration_seconds_count`（`Histogram`*所有区间采样次数总和* 通常使用`count`作为后缀）
+* `prometheus_http_request_duration_seconds_sum`（`Histogram`*所有区间采样值总和* 通常使用`sum`作为后缀）
+
+Summary：百分位统计
+
+
+
+<br />
+
+### 内置函数
+
