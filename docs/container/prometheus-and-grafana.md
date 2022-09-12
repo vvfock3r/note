@@ -801,6 +801,28 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m] offset 1d
 
 #### @修饰符
 
+```bash
+# @修饰符允许我们查看某一个具体时间点的数据
+
+# (1) 先使用范围向量查询一次，以表格显示，可以得到值和时间戳
+prometheus_http_requests_total{handler="/metrics"}[120m:12m]
+
+1562 @1662948000
+2282 @1662948720
+3002 @1662949440
+3722 @1662950160
+4442 @1662950880
+5162 @1662951600
+5882 @1662952320
+6602 @1662953040
+7322 @1662953760
+27485 @1662954480
+
+# (2) 使用@修饰符查询具体时间点的数据
+prometheus_http_requests_total{handler="/metrics"} @1662948720
+prometheus_http_requests_total{handler="/metrics"} @1662953760
+```
+
 
 
 
