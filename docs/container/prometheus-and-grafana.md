@@ -754,6 +754,8 @@ Summary：百分位统计
 
 ### 时间序列选择器
 
+文档：[https://prometheus.io/docs/prometheus/2.38/querying/basics/](https://prometheus.io/docs/prometheus/2.38/querying/basics/)
+
 #### 即时向量
 
 **基本操作符**
@@ -823,7 +825,49 @@ prometheus_http_requests_total{handler="/metrics"} @1662948720
 prometheus_http_requests_total{handler="/metrics"} @1662953760
 ```
 
+<br />
 
+### 运算符
+
+文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
+
+#### 二元运算符
+
+按优先级由高到低排序：
+
+1. `^`
+2. `*`, `/`, `%`,`atan2`
+3. `+`,`-`
+4. `==`, `!=`, `<=`, `<`, `>=`,`>`
+5. `and`（并且）,`unless`（排除）
+6. `or`（或者）
+
+相同优先级的运算符是左结合的。例如， `2 * 3 % 2`等价于`(2 * 3) % 2`。然而`^`是右结合的，所以`2 ^ 3 ^ 2`等价于`2 ^ (3 ^ 2)`
+
+
+
+（1）计算Node内存使用率
+
+```bash
+# 方式1
+( 1 - (node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes) / node_memory_MemTotal_bytes ) * 100
+
+# 方式2
+100 - (node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes) / node_memory_MemTotal_bytes * 100
+
+# 方式3
+(node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
+```
+
+#### 向量匹配`on`和`ignoring`
+
+待补充
+
+#### 组修饰符`group_left`和`group_right`
+
+待补充
+
+#### 内置聚合运算符
 
 
 
