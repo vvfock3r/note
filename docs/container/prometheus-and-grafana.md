@@ -745,9 +745,9 @@ Summary：百分位统计
 
 在 Prometheus 的表达式语言中，表达式或子表达式可以计算为以下四种类型之一：
 
-- **即时向量**：一组时间序列，每个时间序列包含一个样本，都共享相同的时间戳
-- **范围向量**： 一组时间序列，其中包含每个时间序列随时间变化的数据点范围
-- **标量**： 一个简单的数字浮点值
+- **即时向量（Instant vector）**：一组时间序列，每个时间序列包含一个样本，都共享相同的时间戳
+- **范围向量（Range vector）**： 一组时间序列，其中包含每个时间序列随时间变化的数据点范围
+- **标量（Scalar）**： 一个简单的数字浮点值
 - **String** ： 一个简单的字符串值；目前未使用
 
 <br />
@@ -867,7 +867,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 待补充
 
-#### 内置聚合运算符
+#### 聚合运算符
 
 - `sum`（计算维度总和）
 - `min`（选择最小尺寸）
@@ -885,4 +885,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 `without（label，...）`用于从计算结果中移除列举的标签，而保留其它标签
 
 `by（label, ...）`则正好相反，结果向量中只保留列出的标签，其余标签则移除
+
+
+
+#### 函数
+
+文档：[https://prometheus.io/docs/prometheus/latest/querying/functions/](https://prometheus.io/docs/prometheus/latest/querying/functions/)
+
+须知：
+
+* 使用函数要知道操作的是哪种向量，即时向量（instant-vector）还是范围向量（）
+* 有些函数是有默认参数的，比如`year(v=vector(time()) instant-vector)`
 
