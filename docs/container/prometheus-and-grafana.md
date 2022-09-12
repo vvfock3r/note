@@ -869,7 +869,20 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 #### 内置聚合运算符
 
+- `sum`（计算维度总和）
+- `min`（选择最小尺寸）
+- `max`（选择最大尺寸）
+- `avg`（计算尺寸的平均值）
+- `group`（结果向量中的所有值都是 1）
+- `stddev`（计算维度上的总体标准偏差）
+- `stdvar`（计算维度上的总体标准方差）
+- `count`（计算向量中的元素个数）
+- `count_values`（计算具有相同值的元素个数）
+- `bottomk`（样本值的最小 k 个元素）
+- `topk`（按样本值计算的最大 k 个元素）
+- `quantile`（在维度上计算 φ-quantile (0 ≤ φ ≤ 1)）
 
+`without（label，...）`用于从计算结果中移除列举的标签，而保留其它标签
 
-
+`by（label, ...）`则正好相反，结果向量中只保留列出的标签，其余标签则移除
 
