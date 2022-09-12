@@ -766,7 +766,7 @@ Summary：百分位统计
 **注意事项**
 
 * 正则表达式匹配完全锚定，即 `env=~"foo"`被视为`env=~"^foo$"`
-* ``prometheus_http_requests_total{code="200"}`也等同于 `{__name__="prometheus_http_requests_total", code="200"}`
+* `prometheus_http_requests_total{code="200"}`也等同于 `{__name__="prometheus_http_requests_total", code="200"}`
 
 <br />
 
@@ -789,9 +789,17 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m]
 
 #### 时间偏移
 
+```bash
+# 查看1天前这个时间点的数据
+prometheus_http_requests_total{handler="/metrics"} offset 1d
+
+# 查看1天前这个时间点过去5分钟的数据
+prometheus_http_requests_total{handler="/metrics"}[5m:1m] offset 1d
+```
 
 
 
+#### @修饰符
 
 
 
