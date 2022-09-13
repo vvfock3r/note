@@ -646,6 +646,46 @@ scrape_configs:
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
+### 重新标记
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config)
+
+`relabel_config`会**在目标被抓取之前**动态重写目标的标签集
+
+
+
+::: details （1）替换标签值 或 新增标签
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+- job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    relabel_configs:
+      - action: replace                  # action为replace，这也是默认值
+        source_labels: ['__address__']   # 指定源标签
+        target_label: 'job'              # 指定目标标签
+
+# 上面配置的意思是：用源标签的值替换目标标签的值
+# 需要注意的点：
+#  (1) 若源标签不存在则本配置无效
+#  (2) 若目标标签不存在则会新增一个标签
+```
+
+查看效果
+
+![image-20220913221443064](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913221443064.png)
+
+![image-20220913220900439](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913220900439.png)
+
+![image-20220913221008777](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913221008777.png)
+
+:::
+
 
 
 
