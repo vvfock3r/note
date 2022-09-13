@@ -144,9 +144,6 @@ docker container run --name "prometheus" \
                      --restart=always \
                      -d \
                  prom/prometheus:v2.38.0
-
-docker ps | grep prometheus
-fe38d59cfea7   prom/prometheus:v2.38.0 "/bin/prometheus --c…" 24 seconds ago Up 24 seconds 0.0.0.0:9090->9090/tcp, :::9090->9090/tcp  prometheu
 ```
 
 :::
