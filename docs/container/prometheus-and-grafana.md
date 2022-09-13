@@ -4,7 +4,11 @@
 
 Github：[https://github.com/prometheus/prometheus/](https://github.com/prometheus/prometheus/)
 
-Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
+Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
+
+* Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
+
+AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
 
 <br />
 
@@ -135,7 +139,7 @@ chmod -R 777 /var/lib/prometheus
 docker container run --name "prometheus" \
                      -p 9090:9090 \
                      -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-                     -v /prometheus:/prometheus \
+                     -v /var/lib/prometheus:/prometheus \
                      --restart=always \
                      -d \
                  prom/prometheus:v2.38.0
@@ -240,6 +244,125 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 ```
 
 :::
+
+<br />
+
+### AlertManager
+
+<br />
+
+**部署方式1：二进制部署**
+
+下载地址：[https://prometheus.io/download/#alertmanager](https://prometheus.io/download/#alertmanager)
+
+::: details （1）下载二进制包
+
+```bash
+# 下载二进制包
+[root@localhost ~]# wget -c https://github.com/prometheus/alertmanager/releases/download/v0.24.0/alertmanager-0.24.0.linux-amd64.tar.gz
+[root@localhost ~]# tar zxf alertmanager-0.24.0.linux-amd64.tar.gz
+
+# 创建配置文件目录
+[root@localhost ~]# mkdir /etc/alertmanager
+[root@localhost ~]# mkdir /var/lib/alertmanager
+
+# 移动二进制文件和配置文件
+[root@localhost ~]# mv alertmanager-0.24.0.linux-amd64/alertmanager      /usr/local/bin/
+[root@localhost ~]# mv alertmanager-0.24.0.linux-amd64/amtool            /usr/local/bin/
+[root@localhost ~]# mv alertmanager-0.24.0.linux-amd64/alertmanager.yml  /etc/alertmanager/
+
+# 查看版本
+[root@localhost ~]# alertmanager --version
+alertmanager, version 0.24.0 (branch: HEAD, revision: f484b17fa3c583ed1b2c8bbcec20ba1db2aa5f11)
+  build user:       root@265f14f5c6fc
+  build date:       20220325-09:31:33
+  go version:       go1.17.8
+  platform:         linux/amd64
+[root@localhost ~]# amtool --version
+amtool, version 0.24.0 (branch: HEAD, revision: f484b17fa3c583ed1b2c8bbcec20ba1db2aa5f11)
+  build user:       root@265f14f5c6fc
+  build date:       20220325-09:31:33
+  go version:       go1.17.8
+  platform:         linux/amd64
+```
+
+:::
+
+::: details （2）编写Systemd启动脚本
+
+```bash
+# 编写启动脚本
+[root@localhost ~]# cat >/usr/lib/systemd/system/alertmanager.service <<EOF
+[Unit]
+Description=AlertManager
+Documentation=https://github.com/prometheus/alertmanager
+Wants=network-online.target
+After=network-online.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/alertmanager \\
+    --log.level=info \\
+    --config.file=/etc/alertmanager/alertmanager.yml \\
+    --storage.path=/var/lib/alertmanager \\
+ 
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+:::
+
+::: details （3）启动服务并验证
+
+```bash
+# 启动服务
+[root@localhost ~]# systemctl daemon-reload && \
+                    systemctl enable alertmanager && \
+                    systemctl start  alertmanager && \
+                    systemctl status alertmanager
+# 检查端口
+[root@localhost ~]# netstat -atlnpu | grep -i alertmanager
+tcp6       0      0 :::9093                 :::*                    LISTEN      1864/alertmanager   
+tcp6       0      0 :::9094                 :::*                    LISTEN      1864/alertmanager   
+udp6       0      0 :::9094                 :::*                                1864/alertmanager
+
+# 浏览器访问：http://<ip>:9093
+```
+
+:::
+
+<br />
+
+**部署方式2：Docker部署**
+
+Docker Hub：[https://hub.docker.com/r/prom/alertmanager](https://hub.docker.com/r/prom/alertmanager)
+
+```bash
+# (1)创建配置文件目录和数据目录
+mkdir /etc/alertmanager
+mkdir /var/lib/alertmanager
+
+# (2) 需要提前准备配置文件alertmanager.yml
+docker container run --name get-alertmanager-config --rm -d prom/alertmanager:v0.24.0
+docker container cp get-alertmanager-config:/etc/alertmanager/alertmanager.yml /etc/alertmanager
+docker container rm -f get-alertmanager-config
+
+# (3) 启动容器
+[root@localhost ~]# docker run --name alertmanager \
+                               -p 9093:9093 \
+                               -v /etc/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+                               -v /var/lib/alertmanager:/alertmanager \
+                               --restart=always \
+                               -d \
+                           prom/alertmanager:v0.24.0
+
+[root@localhost ~]# docker ps | grep alertmanager
+129e52ab3c42   prom/alertmanager:v0.24.0   "/bin/alertmanager -…"   About a minute ago   Up About a minute   127.0.0.1:9093->9093/tcp                              alertmanager
+
+# 测试
+# 浏览器访问：http://<ip>:9093
+```
 
 <br />
 
@@ -827,7 +950,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-### 运算符
+### 运算
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
 
@@ -897,3 +1020,6 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 * 使用函数要知道操作的是哪种向量，即时向量（instant-vector）还是范围向量（）
 * 有些函数是有默认参数的，比如`year(v=vector(time()) instant-vector)`
 
+<br />
+
+## 报警
