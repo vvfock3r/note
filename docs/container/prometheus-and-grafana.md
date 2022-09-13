@@ -573,7 +573,7 @@ EOF
 
 ## 1）采集配置
 
-### 添加抓取目标
+### 添加目标
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
 
@@ -625,6 +625,33 @@ scrape_configs:
 ```
 
 <br />
+
+### 添加标签
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
+
+```bash
+# 比如node下有两台主机，分别拥有不同的标签
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+        labels:
+          a: 1
+      - targets:
+        - "127.0.0.1:9100"
+        labels:
+          b: 2
+```
+
+![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
+
+
+
+
 
 ## 2）PromSQL
 
@@ -1026,3 +1053,4 @@ Checking /etc/prometheus/prometheus.yml
 <br />
 
 ## 5）报警配置
+
