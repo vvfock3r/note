@@ -82,6 +82,7 @@ ExecStart=/usr/local/bin/prometheus \\
     --log.level=info \\
     --config.file=/etc/prometheus/prometheus.yml \\
     --storage.tsdb.path=/var/lib/prometheus \\
+    --storage.tsdb.retention.time=15d \\
     --web.listen-address=0.0.0.0:9090 \\
     --web.console.templates=/etc/prometheus/consoles \\
     --web.console.libraries=/etc/prometheus/console_libraries
@@ -570,7 +571,7 @@ EOF
 
 <br />
 
-## 基本配置
+## 1）采集配置
 
 ### 添加抓取目标
 
@@ -625,193 +626,7 @@ scrape_configs:
 
 <br />
 
-### 配置Basic Auth
-
-文档：
-
-* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
-* [https://prometheus.io/docs/guides/basic-auth/](https://prometheus.io/docs/guides/basic-auth/)
-
-::: details （1）Prometheus Web添加Basic Auth认证
-
-```bash
-# 使用bcrypt算法对密码加密
-[root@localhost ~]# yum -y install httpd-tools
-[root@localhost ~]# htpasswd -nBC 10 "" | tr -d ":"
-New password:           # 密码是123456
-Re-type new password: 
-$2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
-
-# 修改或创建Web配置文件
-[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
-basic_auth_users:
-  admin: $2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
-
-# 检查配置文件是否正确
-[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
-/etc/prometheus/prometheus-web.yml SUCCESS
-
-# 修改Prometheus启动参数，添加如下选项
-/usr/local/bin/prometheus \
-  --web.config.file=/etc/prometheus/prometheus-web.yml
-
-# 重启服务
-
-# 测试（以下是curl的两种使用姿势，YWRtaW46MTIzNDU2是通过echo -n "admin:123456" | base64 而来）
-[root@localhost ~]# curl http://admin:123456@127.0.0.1:9090/metrics
-[root@localhost ~]# curl -H "Authorization: Basic YWRtaW46MTIzNDU2" http://127.0.0.1:9090/metrics
-```
-
-:::
-
-::: details （2）Prometheus抓取自身时添加认证信息
-
-```bash
-[root@localhost ~]# vim /etc/prometheus/prometheus.yml
-...
-scrape_configs:
-  - job_name: "prometheus"
-    scheme: "http"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-        - "localhost:9090"       
-    # 添加如下信息
-    basic_auth:
-      username: "admin"
-      password: "123456"
-  - job_name: "node"
-    scheme: "http"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-        - "localhost:9100"
-
-# 检查配置文件
-[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
-Checking /etc/prometheus/prometheus.yml
- SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
-
-# 重启Prometheus，然后去Web界面检查
-```
-
-:::
-
-<br />
-
-### 配置HTTPS协议
-
-文档：
-
-* [https://prometheus.io/docs/prometheus/latest/configuration/https/](https://prometheus.io/docs/prometheus/latest/configuration/https/)
-* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config)
-
-::: details （1）Prometheus Web添加 自签HTTPS证书支持
-
-```bash
-# 生成自签证书
-C:\Users\Administrator\Desktop>mkcert prometheus.jinhui.dev
-
-Created a new certificate valid for the following names 📜
- - "prometheus.jinhui.dev"
-
-The certificate is at "./prometheus.jinhui.dev.pem" and the key at "./prometheus.jinhui.dev-key.pem" ✅
-
-It will expire on 9 December 2024 🗓
-
-# 将证书上传到/etc/prometheus/pki/
-# 修改/etc/hosts解析域名
-
-# 修改Web配置文件，添加如下配置
-[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
-tls_server_config:
-  cert_file: /etc/prometheus/pki/prometheus.jinhui.dev.pem
-  key_file: /etc/prometheus/pki/prometheus.jinhui.dev-key.pem
-
-# 检查配置文件
-[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
-/etc/prometheus/prometheus-web.yml SUCCESS
-
-# 重启Prometheus，使用HTTPS协议登录Web界面验证
-```
-
-:::
-
-::: details （2）Prometheus抓取目标修改
-
-* 需要将协议改为`HTTPS`
-* 需要匹配证书中的域名：
-  * 方式一：添加`tls_config.server_name`用于验证证书中的域名
-  * 方式二：修改 `static_configs.targets`处改成域名的形式
-* 自签证书需要验证CA：
-  * 方式一：由于Prometheus不认识自签证书的CA，还需要指定一下CA文件
-  * 方式二：关闭服务端证书验证
-
-```bash
-# 先上传CA文件到系统中/etc/prometheus/pki/
-
-# 修改配置
-[root@localhost ~]# vim /etc/prometheus/prometheus.yml
-scrape_configs:
-  - job_name: "prometheus"
-    scheme: "https"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-        - "localhost:9090"
-    basic_auth:
-      username: "admin"
-      password: "123456"
-    tls_config:
-      server_name: "prometheus.jinhui.dev"
-      ca_file: "/etc/prometheus/pki/rootCA.pem"
-      #insecure_skip_verify: true
-  - job_name: "node"
-    scheme: "http"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-        - "localhost:9100"
-
-# 检查配置文件
-[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
-Checking /etc/prometheus/prometheus.yml
- SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
- 
-# 重启Prometheus，登录Web界面验证
-```
-
-![image-20220910085501979](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220910085501979.png)
-
-:::
-
-<br />
-
-## 存储配置
-
-文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
-
-### 本地存储
-
-Prometheus内部实现了一个磁盘的时间序列数据库，常用参数有：
-
-* `--storage.tsdb.path`指定数据保存在本地磁盘的路径，不支持不符合`POSIX`标准的文件系统，所以不要将数据保存在`NFS`文件系统中
-* `--storage.tsdb.retention.time`设置保留时间，默认数据保留时间为15天（`15d`），支持的最低保留时间为2小时（`2h`）
-* `--storage.tsdb.retention.size`设置磁盘最大使用量
-
-Prometheus本地存储并不适合长期存储数据，建议通过**远程读写**方式使用外部存储
-
-<br />
-
-### 外部存储
-
-支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
-
-推荐使用[Thanos](https://github.com/thanos-io/thanos)
-
-<br />
-
-## PromSQL
+## 2）PromSQL
 
 ### Metrics
 
@@ -1022,4 +837,192 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-## 报警
+## 3）存储配置
+
+文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
+
+### 本地存储
+
+Prometheus内部实现了一个磁盘的时间序列数据库，常用参数有：
+
+* `--storage.tsdb.path`指定数据保存在本地磁盘的路径，不支持不符合`POSIX`标准的文件系统，所以不要将数据保存在`NFS`文件系统中
+* `--storage.tsdb.retention.time`设置保留时间，默认数据保留时间为15天（`15d`），支持的最低保留时间为2小时（`2h`）
+* `--storage.tsdb.retention.size`设置磁盘最大使用量
+
+Prometheus本地存储并不适合长期存储数据，建议通过**远程读写**方式使用外部存储
+
+<br />
+
+### 外部存储
+
+支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
+
+推荐使用[Thanos](https://github.com/thanos-io/thanos)
+
+<br />
+
+## 4）安全配置
+
+### 配置Basic Auth
+
+文档：
+
+* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+* [https://prometheus.io/docs/guides/basic-auth/](https://prometheus.io/docs/guides/basic-auth/)
+
+::: details （1）Prometheus Web添加Basic Auth认证
+
+```bash
+# 使用bcrypt算法对密码加密
+[root@localhost ~]# yum -y install httpd-tools
+[root@localhost ~]# htpasswd -nBC 10 "" | tr -d ":"
+New password:           # 密码是123456
+Re-type new password: 
+$2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
+
+# 修改或创建Web配置文件
+[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
+basic_auth_users:
+  admin: $2y$10$b1tsEV5yD3xYCxH3rMMSAuc.HsTNW8xEWCDl0prxPpqL.DhT27pBG
+
+# 检查配置文件是否正确
+[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
+/etc/prometheus/prometheus-web.yml SUCCESS
+
+# 修改Prometheus启动参数，添加如下选项
+/usr/local/bin/prometheus \
+  --web.config.file=/etc/prometheus/prometheus-web.yml
+
+# 重启服务
+
+# 测试（以下是curl的两种使用姿势，YWRtaW46MTIzNDU2是通过echo -n "admin:123456" | base64 而来）
+[root@localhost ~]# curl http://admin:123456@127.0.0.1:9090/metrics
+[root@localhost ~]# curl -H "Authorization: Basic YWRtaW46MTIzNDU2" http://127.0.0.1:9090/metrics
+```
+
+:::
+
+::: details （2）Prometheus抓取自身时添加认证信息
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9090"       
+    # 添加如下信息
+    basic_auth:
+      username: "admin"
+      password: "123456"
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+
+# 重启Prometheus，然后去Web界面检查
+```
+
+:::
+
+<br />
+
+### 配置HTTPS协议
+
+文档：
+
+* [https://prometheus.io/docs/prometheus/latest/configuration/https/](https://prometheus.io/docs/prometheus/latest/configuration/https/)
+* [https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tls_config)
+
+::: details （1）Prometheus Web添加 自签HTTPS证书支持
+
+```bash
+# 生成自签证书
+C:\Users\Administrator\Desktop>mkcert prometheus.jinhui.dev
+
+Created a new certificate valid for the following names 📜
+ - "prometheus.jinhui.dev"
+
+The certificate is at "./prometheus.jinhui.dev.pem" and the key at "./prometheus.jinhui.dev-key.pem" ✅
+
+It will expire on 9 December 2024 🗓
+
+# 将证书上传到/etc/prometheus/pki/
+# 修改/etc/hosts解析域名
+
+# 修改Web配置文件，添加如下配置
+[root@localhost ~]# vim /etc/prometheus/prometheus-web.yml
+tls_server_config:
+  cert_file: /etc/prometheus/pki/prometheus.jinhui.dev.pem
+  key_file: /etc/prometheus/pki/prometheus.jinhui.dev-key.pem
+
+# 检查配置文件
+[root@localhost ~]# promtool check web-config /etc/prometheus/prometheus-web.yml
+/etc/prometheus/prometheus-web.yml SUCCESS
+
+# 重启Prometheus，使用HTTPS协议登录Web界面验证
+```
+
+:::
+
+::: details （2）Prometheus抓取目标修改
+
+* 需要将协议改为`HTTPS`
+* 需要匹配证书中的域名：
+  * 方式一：添加`tls_config.server_name`用于验证证书中的域名
+  * 方式二：修改 `static_configs.targets`处改成域名的形式
+* 自签证书需要验证CA：
+  * 方式一：由于Prometheus不认识自签证书的CA，还需要指定一下CA文件
+  * 方式二：关闭服务端证书验证
+
+```bash
+# 先上传CA文件到系统中/etc/prometheus/pki/
+
+# 修改配置
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+scrape_configs:
+  - job_name: "prometheus"
+    scheme: "https"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9090"
+    basic_auth:
+      username: "admin"
+      password: "123456"
+    tls_config:
+      server_name: "prometheus.jinhui.dev"
+      ca_file: "/etc/prometheus/pki/rootCA.pem"
+      #insecure_skip_verify: true
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus，登录Web界面验证
+```
+
+![image-20220910085501979](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220910085501979.png)
+
+:::
+
+<br />
+
+## 5）报警配置
