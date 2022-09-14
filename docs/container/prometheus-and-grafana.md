@@ -826,6 +826,20 @@ Checking /etc/prometheus/prometheus.yml
 
 :::
 
+<br />
+
+### 指标重新标记：metric_relabel_configs
+
+`metric_relabel_configs`是 Prometheus 在保存数据前的最后一步标签重新编辑
+
+特点：
+
+* `metric_relabel_configs` 模块和 `relabel_config` 模块语法很相似
+* `metric_relabel_configs`一个很常用的用途是：将监控不需要的数据直接丢掉，不在Prometheus中保存
+* `metric_relabel_configs`不适用于自动生成的时间序列，例如`up`
+
+<br />
+
 ### 自动生成的时间序列
 
 文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
@@ -840,8 +854,8 @@ Checking /etc/prometheus/prometheus.yml
 * `up{}`：目标抓取成功返回1，抓取失败返回0，通常应用于实例可用性监控
 * `scrape_duration_seconds{}`：持续的抓取时间？
 * `scrape_samples_scraped{}`：目标暴露的样本数，等同于`curl -s http://127.0.0.1:9090/metrics | grep -Ev '^#' | wc`
-* `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数，也就是没有重新标记的指标数量
-* `scrape_series_added{}`：
+* `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数？
+* `scrape_series_added{}`：本次抓取中新系列的大致数量？
 
 <br />
 
