@@ -830,11 +830,13 @@ Checking /etc/prometheus/prometheus.yml
 
 ### 指标重新标记：metric_relabel_configs
 
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs)
+
 `metric_relabel_configs`是 Prometheus 在保存数据前的最后一步标签重新编辑
 
 特点：
 
-* `metric_relabel_configs` 模块和 `relabel_config` 模块语法很相似
+* `metric_relabel_configs` 模块和 `relabel_config` 模块语法一致
 * `metric_relabel_configs`一个很常用的用途是：将监控不需要的数据直接丢掉，不在Prometheus中保存
 * `metric_relabel_configs`不适用于自动生成的时间序列，例如`up`
 
