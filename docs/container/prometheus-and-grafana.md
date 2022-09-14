@@ -12,7 +12,7 @@ AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/p
 
 <br />
 
-## 服务部署
+## * 服务部署
 
 <br />
 
@@ -568,7 +568,7 @@ EOF
 
 <br />
 
-## 1）采集配置
+## * 采集配置
 
 ### 添加目标
 
@@ -646,13 +646,13 @@ scrape_configs:
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
-### 重新标记(1)：relabel_config
+### 目标重新标记：relabel_config
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config)
 
 `relabel_config`会**在目标被抓取之前动态重写目标的标签集**
 
-::: details （1）直接替换实例标签值：动态值
+::: details （1）直接替换目标标签值：动态值
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -695,7 +695,7 @@ scrape_configs:
 
 :::
 
-::: details （2）直接替换实例标签值：静态值
+::: details （2）直接替换目标标签值：静态值
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -716,7 +716,7 @@ scrape_configs:
 
 :::
 
-::: details （3）使用正则替换实例标签值
+::: details （3）使用正则替换目标标签值
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -748,7 +748,7 @@ scrape_configs:
 
 :::
 
-::: details （3）删除实例指定的标签
+::: details （3）删除目标指定的标签
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -793,7 +793,7 @@ Checking /etc/prometheus/prometheus.yml
 
 :::
 
-::: details （4）删除匹配的实例
+::: details （4）删除目标的实例
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -811,13 +811,13 @@ Checking /etc/prometheus/prometheus.yml
         labels:
           a: "abcdef"
     relabel_configs:
-      - action: "drop"         # 删除匹配的实例
+      - action: "drop"         # 删除匹配的目标
         source_labels: ["a"]   # 带有a标签的
         regex: "([0-9]+)"      # 且a标签值全部为数字
 
 # 以上配置也等同于
     relabel_configs:
-      - action: "keep"       # 保留匹配的实例
+      - action: "keep"       # 保留匹配的目标
         source_labels: ["a"] # 带有a标签的
         regex: "([a-zA-Z]+)" # 且a标签值全部为字母
 ```
@@ -828,7 +828,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-## 2）PromSQL
+## * PromSQL
 
 ### Metrics
 
@@ -892,11 +892,9 @@ Summary：百分位统计
 
 <br />
 
-### 时间序列选择器
+### 选择器：即时向量
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/basics/](https://prometheus.io/docs/prometheus/2.38/querying/basics/)
-
-#### 即时向量
 
 **基本操作符**
 
@@ -912,7 +910,7 @@ Summary：百分位统计
 
 <br />
 
-#### 范围向量
+### 选择器：范围向量
 
 ```bash
 # 这样查是查询当前的值
@@ -929,7 +927,7 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m]
 
 ![image-20220912112033373](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220912112033373.png)
 
-#### 时间偏移
+### 选择器：时间偏移
 
 ```bash
 # 查看1天前这个时间点的数据
@@ -941,7 +939,7 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m] offset 1d
 
 
 
-#### @修饰符
+### 选择器：@修饰符
 
 ```bash
 # @修饰符允许我们查看某一个具体时间点的数据
@@ -967,11 +965,9 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-### 运算
+### 运算符：二元运算符
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
-
-#### 二元运算符
 
 按优先级由高到低排序：
 
@@ -999,15 +995,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 (node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
 ```
 
-#### 向量匹配`on`和`ignoring`
+### 运算符：向量匹配`on`和`ignoring`
 
 待补充
 
-#### 组修饰符`group_left`和`group_right`
+### 运算符：组修饰符`group_left`和`group_right`
 
 待补充
 
-#### 聚合运算符
+### 运算符：聚合运算符
 
 - `sum`（计算维度总和）
 - `min`（选择最小尺寸）
@@ -1028,7 +1024,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 
 
-#### 函数
+### 运算符：函数
 
 文档：[https://prometheus.io/docs/prometheus/latest/querying/functions/](https://prometheus.io/docs/prometheus/latest/querying/functions/)
 
@@ -1039,7 +1035,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-## 3）存储配置
+## * 存储配置
 
 文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
 
@@ -1063,7 +1059,7 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 <br />
 
-## 4）安全配置
+## * 安全配置
 
 ### 配置Basic Auth
 
@@ -1227,5 +1223,5 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-## 5）报警配置
+## * 报警配置
 
