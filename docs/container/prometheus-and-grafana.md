@@ -320,10 +320,8 @@ EOF
                     systemctl start  alertmanager && \
                     systemctl status alertmanager
 # 检查端口
-[root@localhost ~]# netstat -atlnpu | grep -i alertmanager
-tcp6       0      0 :::9093                 :::*                    LISTEN      1864/alertmanager   
-tcp6       0      0 :::9094                 :::*                    LISTEN      1864/alertmanager   
-udp6       0      0 :::9094                 :::*                                1864/alertmanager
+[root@localhost ~]# netstat -atlnpu | grep -i 9093
+tcp6       0      0 :::9093                 :::*                    LISTEN      1071/alertmanager
 
 # 浏览器访问：http://<ip>:9093
 ```
@@ -565,6 +563,31 @@ EOF
 ```
 
 :::
+
+### 辅助脚本
+
+`watcher.sh`：在学习阶段会频繁修改配置文件，此脚本用于监听`Prometheus`配置文件，一旦发现被修改后就重启服务，避免重复操作
+
+```bash
+#!/bin/bash
+
+while [ 1 ]
+do
+  firstMd5=$(md5sum /etc/prometheus/prometheus.yml | awk '{print $1}')
+  sleep 1
+  secondMd5=$(md5sum /etc/prometheus/prometheus.yml | awk '{print $1}')
+  if [[ $firstMd5 != $secondMd5 ]];then
+    promtool check config /etc/prometheus/prometheus.yml
+    if [[ $? -eq 0 ]];then
+      systemctl restart prometheus
+    fi
+  fi
+done
+```
+
+效果图
+
+![image-20220914184114103](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914184114103.png)
 
 <br />
 
@@ -839,6 +862,26 @@ Checking /etc/prometheus/prometheus.yml
 * `metric_relabel_configs` 模块和 `relabel_config` 模块语法一致
 * `metric_relabel_configs`一个很常用的用途是：将监控不需要的数据直接丢掉，不在Prometheus中保存
 * `metric_relabel_configs`不适用于自动生成的时间序列，例如`up`
+
+这里给出一个简单的示例
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+- job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    metric_relabel_configs:
+      - action: "replace"
+        source_labels: ["go_info"]
+        target_label: "version"
+        replacement: "go100.99"
+```
+
+![image-20220914185957941](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914185957941.png)
 
 <br />
 
@@ -1258,3 +1301,58 @@ Checking /etc/prometheus/prometheus.yml
 
 ## * 报警配置
 
+### 规则配置
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+# 指定规则文件
+rule_files:
+  - "rules/*.yml"
+  
+# 创建规则文件目录
+[root@localhost ~]# mkdir /etc/prometheus/rules
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus
+[root@localhost ~]# systemctl restart prometheus
+```
+
+
+
+### 记录规则
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/)
+
+说明：记录规则可以允许我们使用当前采样指标生成新的采样指标
+
+举例：node_exporter没有提供对CPU数量的指标，但是可以通过已经存在的CPU指标来间接获取到CPU数量
+
+::: details （1）新增一条记录规则：node_cpu_total
+
+```bash
+# 新增一条规则
+[root@localhost ~]# vim /etc/prometheus/rules/node.yml
+groups:
+  - name: cpu                                                         # 定义一个组,用于关联所有cpu相关指标
+    rules:                                                            # 
+    - record: node_cpu_total                                          # 定义指标名称
+      expr: count by (instance) (node_cpu_seconds_total{mode="idle"}) # 定义指标的值,这里的意思是计算出每个目标的CPU数量
+      
+# 检查配置文件
+[root@localhost ~]# promtool check rules /etc/prometheus/rules/*.yml
+Checking /etc/prometheus/rules/node.yml
+  SUCCESS: 1 rules found
+```
+
+![image-20220914191202162](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914191202162.png)
+
+:::
+
+::: details （2）
+
+:::
