@@ -646,15 +646,13 @@ scrape_configs:
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
-### 重新标记
+### 重新标记(1)：relabel_config
 
-文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config)
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config)
 
-`relabel_config`会**在目标被抓取之前**动态重写目标的标签集
+`relabel_config`会**在目标被抓取之前动态重写目标的标签集**
 
-
-
-::: details （1）替换标签值 或 新增标签
+::: details （1）直接替换实例标签值：动态值
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -666,29 +664,140 @@ scrape_configs:
       - targets:
         - "localhost:9100"
     relabel_configs:
-      - action: replace                  # action为replace，这也是默认值
-        source_labels: ['__address__']   # 指定源标签
-        target_label: 'job'              # 指定目标标签
+      - action: "replace"                # action为replace，这也是默认值
+        source_labels: ["__address__"]   # 指定源标签
+        target_label: "job"              # 指定目标标签
 
 # 上面配置的意思是：用源标签的值替换目标标签的值
 # 需要注意的点：
-#  (1) 若源标签不存在则本配置无效
+#  (1) 若源标签不存在或值匹配不上则本配置无效
 #  (2) 若目标标签不存在则会新增一个标签
+
+
+# relabel_configs还有一些默认值，如果我们都写出来的话，将会是这样的
+# 上下两段配置效果是一样的，我们在后面会有关于正则的一些例子
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    relabel_configs:
+      - action: "replace"
+        source_labels: ["__address__"]
+        separator: ";"                 # 指定分隔符,会使用此分隔符连接source_labels的多个值,组成一个新值
+        regex: "(.*)"                  # 匹配多个标签组成的新值
+        target_label: "job"
+        replacement: "$1"              # 新标签的值，这里是引用上面regex的值
 ```
 
-查看效果
-
-![image-20220913221443064](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913221443064.png)
-
-![image-20220913220900439](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913220900439.png)
-
-![image-20220913221008777](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913221008777.png)
+![image-20220914123015546](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914123015546.png)
 
 :::
 
+::: details （2）直接替换实例标签值：静态值
 
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+- job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    relabel_configs:
+      - action: "replace"                # action为replace，这也是默认值
+        target_label: "job"              # 指定目标标签
+        replacement: "NewJob"            # 设置一个静态值
+```
 
+![image-20220914130109575](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914130109575.png)
 
+:::
+
+::: details （3）使用正则替换实例标签值
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    relabel_configs:
+      # port
+      - action: "replace"
+        source_labels: ["__address__"]
+        separator: ";"                 # 默认值，用于连接source_labels中的多个标签组成一个新值
+        regex: "(.*)(:)(.*)"           # 使用正则匹配源标签的值，然后正则分组,默认为(.*)
+        target_label: "port"           # 新标签名
+        replacement: "$3"              # 新标签值
+        # endpoint
+      - action: "replace"
+        source_labels: ["__scheme__", "__address__", "__metrics_path__"]
+        separator: ";"
+        regex: "(.*)(;)(.*)(;)(.*)"
+        target_label: "endpoint"
+        replacement: "$1://$3$5"
+```
+
+![image-20220914125740128](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914125740128.png)
+
+:::
+
+::: details （3）删除实例指定的标签
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+- job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+        labels:
+          a: 1
+          b: 2
+    relabel_configs:
+      - action: "labeldrop"
+        regex: "(job)|(a)"
+
+# 以上的意思是：将regex匹配到的标签全部删掉
+# 需要注意
+# (1) 正则是完全锚定的，即 "(job)|(a)" == "(^job$)|(^a$)"
+# (2) 如果删除掉__address__标签，那么Web界面上就不会显示抓取目标了，就相当于根本没写抓取目标一样
+
+# ===================================================================================
+# 还有一个类似的labelkeep，用于保留regex匹配到的标签，删除其他的标签，但是测试之后发现有问题
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+    relabel_configs:
+      - action: "labelkeep"
+        regex: "(job)"
+
+# 配置文件检查失败，还不知道是啥原因
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+  FAILED: instance 0 in group 0: no address
+```
+
+![image-20220914132137844](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914132137844.png)
+
+:::
+
+::: details （4）
+
+:::
+
+<br />
 
 ## 2）PromSQL
 
