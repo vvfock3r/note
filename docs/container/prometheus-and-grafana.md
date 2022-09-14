@@ -826,6 +826,23 @@ Checking /etc/prometheus/prometheus.yml
 
 :::
 
+### 自动生成的时间序列
+
+文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
+
+每个目标自动生成的标签：
+
+- `job`：目标所属的已配置作业名称。
+- `instance`:`<host>:<port>`被抓取的目标 URL 的一部分
+
+每个目标自动生成的监控指标：
+
+* `up{}`：目标抓取成功返回1，抓取失败返回0，通常应用于实例可用性监控
+* `scrape_duration_seconds{}`：持续的抓取时间？
+* `scrape_samples_scraped{}`：目标暴露的样本数，等同于`curl -s http://127.0.0.1:9090/metrics | grep -Ev '^#' | wc`
+* `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数，也就是没有重新标记的指标数量
+* `scrape_series_added{}`：
+
 <br />
 
 ## * PromSQL
