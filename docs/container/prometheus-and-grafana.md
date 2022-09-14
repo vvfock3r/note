@@ -793,7 +793,36 @@ Checking /etc/prometheus/prometheus.yml
 
 :::
 
-::: details （4）
+::: details （4）删除匹配的实例
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+        labels:
+          a: 123456
+      - targets:
+        - "127.0.0.1:9100"
+        labels:
+          a: "abcdef"
+    relabel_configs:
+      - action: "drop"         # 删除匹配的实例
+        source_labels: ["a"]   # 带有a标签的
+        regex: "([0-9]+)"      # 且a标签值全部为数字
+
+# 以上配置也等同于
+    relabel_configs:
+      - action: "keep"       # 保留匹配的实例
+        source_labels: ["a"] # 带有a标签的
+        regex: "([a-zA-Z]+)" # 且a标签值全部为字母
+```
+
+![image-20220914134235025](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914134235025.png)
 
 :::
 
