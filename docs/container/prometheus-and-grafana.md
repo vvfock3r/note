@@ -303,11 +303,16 @@ ExecStart=/usr/local/bin/alertmanager \\
     --log.level=info \\
     --config.file=/etc/alertmanager/alertmanager.yml \\
     --storage.path=/var/lib/alertmanager \\
+    --web.external-url=http://192.168.48.133:9093 \\
  
 [Install]
 WantedBy=multi-user.target
 EOF
 ```
+
+说明：
+
+* `--web.external-url`：在发送邮箱告警等里面可能会有`AlertManager`的地址，这里设置的就是AlertManager外部访问的地址
 
 :::
 
