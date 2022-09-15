@@ -1301,7 +1301,7 @@ Checking /etc/prometheus/prometheus.yml
 
 ## * 报警配置
 
-### 规则配置
+### 规则目录
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -1326,7 +1326,7 @@ Checking /etc/prometheus/prometheus.yml
 
 ### 记录规则
 
-文档：[https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/)
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/recording_rules/](https://prometheus.io/docs/prometheus/2.38/configuration/recording_rules/)
 
 说明：记录规则可以允许我们使用当前采样指标生成新的采样指标
 
@@ -1353,6 +1353,135 @@ Checking /etc/prometheus/rules/node.yml
 
 :::
 
-::: details （2）
+### 报警记录
+
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/alerting_rules/](https://prometheus.io/docs/prometheus/2.38/configuration/alerting_rules/)
+
+::: details （1）新增一条报警规则：InstanceDown
+
+```bash
+# 新增一条规则
+[root@localhost ~]# vim /etc/prometheus/rules/node.yml
+...
+- name: alert
+    rules:
+    - alert: InstanceDown     
+      expr: up == 0           
+      for: 1m                 
+      labels:                 
+        severity: page
+      annotations:
+        summary: "Instance {{ $labels.instance }} down"
+        description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
+
+# 检查配置文件
+[root@localhost rules]# promtool check rules /etc/prometheus/rules/*.yml
+Checking /etc/prometheus/rules/node.yml
+  SUCCESS: 2 rules found
+
+# 现在把node_exporter进程关闭，过几分钟查看Prometheus的报警状态
+[root@localhost rules]# systemctl stop node_exporter
+```
+
+![image-20220915092626439](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220915092626439.png)
+
+:::
+
+### 配置Prometheus发送告警到AlertManager中
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+...
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - localhost:9093     # 这里写alertmanager的地址
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+  SUCCESS: 1 rule files found
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+
+Checking /etc/prometheus/rules/node.yml
+  SUCCESS: 2 rules found
+
+# 重启Prometheus
+[root@localhost ~]# systemctl restart prometheus.service
+```
+
+### 配置AlertManager发送告警到Email中
+
+文档：[https://prometheus.io/docs/alerting/0.24/configuration/](https://prometheus.io/docs/alerting/0.24/configuration/)
+
+
+
+::: details （1）邮箱告警：基础示例
+
+这里使用QQ邮箱作为发件人，邮箱地址配置参考：[https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=20010&&no=1000557](https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=20010&&no=1000557)
+
+```bash
+# 配置方式一：配置一个全局邮箱发件人，所有的邮件都由此邮箱发出
+[root@localhost ~]# vim /etc/alertmanager/alertmanager.yml
+global:
+  # (3) 配置全局邮箱发件人
+  smtp_smarthost: "smtp.qq.com:587"         # 587端口为TLS端口
+  smtp_from: "1265921100@qq.com"            #
+  smtp_auth_username: "1265921100@qq.com"   #
+  smtp_auth_password: "afzzggfmyhhhihcf"    # 这里填16位授权码而不是密码，在QQ邮箱: 设置->账户->POP3/SMTP服务中可以获取
+  smtp_require_tls: true                    # 默认为true
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'email'              # (1) 接收者名称，任意字符串
+receivers:
+  - name: 'email'                # (2) email具体配置
+    email_configs:
+    - to: "1265921100@qq.com"
+
+# 配置方式二：根据收件人的不同，配置不同的发件邮箱
+[root@localhost ~]# vim /etc/alertmanager/alertmanager.yml
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'email'              # (1) 接收者名称，任意字符串
+receivers:
+  - name: 'email'                # (2) email具体配置
+    email_configs:
+    - to: "1265921100@qq.com"
+      smarthost: "smtp.qq.com:587"
+      from: "1265921100@qq.com"
+      auth_username: "1265921100@qq.com"
+      auth_password: "afzzggfmyhhhihcf"
+      require_tls: true
+
+# 以上两种方式可以同时使用
+
+# ---------------------------------------------------------------------------------
+
+# 检查配置文件
+[root@localhost ~]# amtool check-config /etc/alertmanager/alertmanager.yml 
+Checking '/etc/alertmanager/alertmanager.yml'  SUCCESS
+Found:
+ - global config
+ - route
+ - 1 inhibit rules
+ - 1 receivers
+ - 0 templates
+ 
+ # 重启AlertManager
+ [root@localhost ~]# systemctl restart alertmanager
+```
+
+![image-20220915131908339](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220915131908339.png)
+
+:::
+
+::: details （2）邮箱告警：自定义HTML模板
 
 :::
