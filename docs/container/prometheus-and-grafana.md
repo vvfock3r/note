@@ -1374,7 +1374,7 @@ Checking /etc/prometheus/rules/node.yml
     rules:
     - alert: InstanceDown     
       expr: up == 0           
-      for: 1m                 
+      for: 1m
       labels:                 
         severity: page
       annotations:
@@ -1427,8 +1427,6 @@ Checking /etc/prometheus/rules/node.yml
 ### 配置AlertManager发送告警
 
 文档：[https://prometheus.io/docs/alerting/0.24/configuration/](https://prometheus.io/docs/alerting/0.24/configuration/)
-
-
 
 ::: details （1）发送告警到邮箱：基础示例
 
@@ -1501,3 +1499,28 @@ Found:
 
 :::
 
+<br />
+
+### 告警时间
+
+（1）告警发生以后持久多长时间才发送到AlertManager
+
+在**报警规则**中`for`字段来配置
+
+（2）发送重复告警时间间隔
+
+```bash
+[root@localhost ~]# vim /etc/alertmanager/alertmanager.yml
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 1h
+  repeat_interval: 1h     # 发送重复告警时间间隔
+  ...
+```
+
+### 告警分组
+
+分组概念：分组可以将**类似性质的告警分类为单个通知**，在通知中我们可以看到有哪些服务实例受到了影响
+
+分组类型：可以将`Alertmanager`配置为按其集群和警报名称对警报进行分组
