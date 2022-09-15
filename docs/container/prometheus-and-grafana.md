@@ -1322,7 +1322,7 @@ Checking /etc/prometheus/prometheus.yml
 [root@localhost ~]# systemctl restart prometheus
 ```
 
-
+<br />
 
 ### 记录规则
 
@@ -1352,6 +1352,8 @@ Checking /etc/prometheus/rules/node.yml
 ![image-20220914191202162](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914191202162.png)
 
 :::
+
+<br />
 
 ### 报警记录
 
@@ -1387,7 +1389,11 @@ Checking /etc/prometheus/rules/node.yml
 
 :::
 
-### 配置Prometheus发送告警到AlertManager中
+<br />
+
+### 配置Prometheus发送告警
+
+配置Prometheus发送告警到AlertManager中
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -1411,13 +1417,15 @@ Checking /etc/prometheus/rules/node.yml
 [root@localhost ~]# systemctl restart prometheus.service
 ```
 
-### 配置AlertManager发送告警到Email中
+<br />
+
+### 配置AlertManager发送告警
 
 文档：[https://prometheus.io/docs/alerting/0.24/configuration/](https://prometheus.io/docs/alerting/0.24/configuration/)
 
 
 
-::: details （1）邮箱告警：基础示例
+::: details （1）发送告警到邮箱：基础示例
 
 这里使用QQ邮箱作为发件人，邮箱地址配置参考：[https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=20010&&no=1000557](https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=20010&&no=1000557)
 
@@ -1482,6 +1490,9 @@ Found:
 
 :::
 
-::: details （2）邮箱告警：自定义HTML模板
+::: details （2）发送告警到邮箱：自定义HTML模板（待补充）
+
+原始模板：[https://github.com/prometheus/alertmanager/tree/main/template](https://github.com/prometheus/alertmanager/tree/main/template)
 
 :::
+
