@@ -2993,11 +2993,15 @@ blog
 
 Github：[https://github.com/uber-go/zap](https://github.com/uber-go/zap)
 
+
+
 ### 安装
 
 ```bash
 go get -u go.uber.org/zap
 ```
+
+<br />
 
 ### 默认的Logger
 
@@ -3043,6 +3047,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 {"level":"info","msg":"Hello World!"}
 {"level":"info","ts":1663367983.508526,"caller":"demo/main.go:28","msg":"2022-09-17 06:39:43.5085261 +0800 CST m=+0.018391001"}
 ```
+
+<br />
 
 ### 自定义Logger
 
@@ -3129,6 +3135,160 @@ main.main()
 exit status 2
 ```
 
+<br />
+
 ### 合并多个Core
 
+假设我们需要做一些差异化配置，比如终端的日志级别为Debug，而文件的日志级别为WARN，
+
+这时可以生成多个Core，然后再进行合并Core操作
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+	"time"
+)
+
+func getEncoer() zapcore.Encoder {
+	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.ConsoleSeparator = " "
+	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	}
+	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
+	}
+	encoder := zapcore.NewConsoleEncoder(encoderConfig)
+	return encoder
+}
+
+func getFileWriteSyncer() zapcore.WriteSyncer {
+	file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	fileHandler := zapcore.AddSync(file)
+	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler)
+	return writeSyncer
+}
+
+func getConsoleWriteSyncer() zapcore.WriteSyncer {
+	stdoutHandler := zapcore.AddSync(os.Stdout)
+	writeSyncer := zapcore.NewMultiWriteSyncer(stdoutHandler)
+	return writeSyncer
+}
+
+func main() {
+	// 初始化core
+	encoder := getEncoer()
+	core := zapcore.NewTee(
+		zapcore.NewCore(encoder, getConsoleWriteSyncer(), zapcore.DebugLevel),
+		zapcore.NewCore(encoder, getFileWriteSyncer(), zapcore.WarnLevel),
+	)
+
+	// 初始化logger
+	logger := zap.New(core, zap.AddCaller()).Sugar()
+
+	// 输出日志
+	logger.Debug("Hello World!")
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Panic("Hello World!")
+}
+```
+
+:::
+
+<br />
+
 ### 日志切割方案
+
+lumberjack：[https://github.com/natefinch/lumberjack](https://github.com/natefinch/lumberjack)
+
+**安装**
+
+```bash
+go get gopkg.in/natefinch/lumberjack.v2
+go: added gopkg.in/natefinch/lumberjack.v2 v2.0.0
+```
+
+**使用**
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"time"
+)
+
+func getEncoer() zapcore.Encoder {
+	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.ConsoleSeparator = " "
+	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	}
+	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
+	}
+	encoder := zapcore.NewConsoleEncoder(encoderConfig)
+	return encoder
+}
+
+func getFileWriteSyncer() zapcore.WriteSyncer {
+	lumberJackLogger := &lumberjack.Logger{
+		Filename:   "./test.log", // 日志文件
+		MaxSize:    10,           // 日志文件的最大大小(单位为MB)
+		MaxBackups: 5,            // 保留旧文件的最大个数
+		MaxAge:     30,           // 保留旧文件的最大时长(单位为天)
+		Compress:   false,        // 是否压缩/归档旧文件
+	}
+	fileHandler := zapcore.AddSync(lumberJackLogger)
+	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler)
+	return writeSyncer
+}
+
+func getConsoleWriteSyncer() zapcore.WriteSyncer {
+	stdoutHandler := zapcore.AddSync(os.Stdout)
+	writeSyncer := zapcore.NewMultiWriteSyncer(stdoutHandler)
+	return writeSyncer
+}
+
+func main() {
+	// 初始化core
+	encoder := getEncoer()
+	core := zapcore.NewTee(
+		zapcore.NewCore(encoder, getConsoleWriteSyncer(), zapcore.DebugLevel),
+		zapcore.NewCore(encoder, getFileWriteSyncer(), zapcore.WarnLevel),
+	)
+
+	// 初始化logger
+	logger := zap.New(core, zap.AddCaller()).Sugar()
+
+	// 输出日志
+	logger.Debug("Hello World!")
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Panic("Hello World!")
+}
+```
+
+:::
+
