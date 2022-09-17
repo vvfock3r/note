@@ -33,7 +33,14 @@
         <td><li><code>Go 1.19</code></li><li><code>Zap v1.23.0</code></li></td>
         <td></td>
         <td></td>
-    </tr>         
+    </tr>
+    <tr>
+        <td>ORM</td>
+        <td><a href="#gorm" style="text-decoration:none;">Gorm</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Gorm v1.23.9</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
@@ -3291,4 +3298,20 @@ func main() {
 ```
 
 :::
+
+<br />
+
+## Gorm
+
+Github：[https://github.com/go-gorm/gorm](https://github.com/go-gorm/gorm)
+
+文档：[https://gorm.io/zh_CN/docs/](https://gorm.io/zh_CN/docs/)
+
+### 安装
+
+```bash
+go get -u gorm.io/gorm
+go get -u gorm.io/driver/sqlite
+go get -u gorm.io/driver/mysql
+```
 
