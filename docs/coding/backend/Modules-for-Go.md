@@ -3315,3 +3315,215 @@ go get -u gorm.io/driver/sqlite
 go get -u gorm.io/driver/mysql
 ```
 
+<br />
+
+### 数据库版本
+
+```bash
+mysql> status;
+--------------
+mysql  Ver 8.0.30 for Linux on x86_64 (MySQL Community Server - GPL)
+
+Connection id:          15
+Current database:       demo
+Current user:           root@192.168.48.133
+SSL:                    Cipher in use is ECDHE-RSA-AES128-GCM-SHA256
+Current pager:          stdout
+Using outfile:          ''
+Using delimiter:        ;
+Server version:         8.0.30 MySQL Community Server - GPL
+Protocol version:       10
+Connection:             192.168.48.133 via TCP/IP
+Server characterset:    utf8mb4
+Db     characterset:    utf8mb4
+Client characterset:    utf8mb4
+Conn.  characterset:    utf8mb4
+TCP port:               3306
+Binary data as:         Hexadecimal
+Uptime:                 1 hour 1 min 41 sec
+
+Threads: 2  Questions: 82  Slow queries: 0  Opens: 205  Flush tables: 3  Open tables: 124  Queries per second avg: 0.022
+--------------
+```
+
+<br />
+
+### 连接数据库
+
+DSN格式：[https://github.com/go-sql-driver/mysql#dsn-data-source-name](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
+
+::: details 连接MySQL
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+func main() {
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%T\n", db)
+	fmt.Printf("%#v\n", db)
+}
+```
+
+输出结果
+
+```bash
+*gorm.DB
+&gorm.DB{Config:(*gorm.Config)(0xc0001c4240), Error:error(nil), RowsAffected:0, Statement:(*gorm.Statement)(0xc0001d0380), clone:1}
+```
+
+:::
+
+### 定义模型
+
+文档：
+
+* 定义模型：[https://gorm.io/zh_CN/docs/models.html](https://gorm.io/zh_CN/docs/models.html)
+* 约定大于配置：[https://gorm.io/zh_CN/docs/conventions.html](https://gorm.io/zh_CN/docs/conventions.html)
+
+::: details 嵌入gorm.Model和其他结构体
+
+```go
+type User1 struct {
+	gorm.Model
+	Name string
+}
+
+// 等效于
+type User2 struct {
+	ID        uint `gorm:"primaryKey"` // id为主键
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"` // 普通索引
+	Name      string
+}
+
+// =============================================================
+
+type Author struct {
+    Name  string
+    Email string
+}
+type Blog struct {
+  ID      int
+  Author  Author `gorm:"embedded"`
+  Upvotes int32
+}
+
+// 等效于
+type Blog struct {
+  ID       int64
+  Name     string
+  Email    string
+  Upvotes  int32
+}
+```
+
+:::
+
+### 自动建表
+
+文档：[https://gorm.io/zh_CN/docs/migration.html](https://gorm.io/zh_CN/docs/migration.html)
+
+::: details AutoMigrate简单示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"log"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name string
+}
+
+type Role struct {
+	Name string
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	//err = db.AutoMigrate(&User{}, &Role{})
+	err = db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&User{}, &Role{})
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+:::
+
+### 增加记录
