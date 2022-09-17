@@ -2999,3 +2999,136 @@ Github：[https://github.com/uber-go/zap](https://github.com/uber-go/zap)
 go get -u go.uber.org/zap
 ```
 
+### 默认的Logger
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"time"
+)
+
+func main() {
+	// 提供不同默认参数的3种Logger
+	proLogger, _ := zap.NewProduction()
+	devLogger, _ := zap.NewDevelopment()
+	exampleLogger := zap.NewExample()
+
+	// 打印一下日志看看效果
+	proLogger.Info("Hello World!")
+	devLogger.Info("Hello World!")
+	exampleLogger.Info("Hello World!")
+
+	// 默认这3种日志是不能打印非结构化数据的，以下3条语句编译会报错
+	//proLogger.Info(time.Now())
+	//devLogger.Info(time.Now())
+	//exampleLogger.Info(time.Now())
+
+	// Logger分为两种：
+	//   Logger: 性能最好，但是只支持结构化数据，使用不太方便
+	//   SugaredLogger: 比Logger性能差，比标准库或第三方日志库性能要好，支持非结构化数据，使用较方便
+	sugarlogger := proLogger.Sugar()  // Logger转SugaredLogger
+	sugarlogger.Info(time.Now())      // 输出非结构化日志
+	proLogger = sugarlogger.Desugar() // SugaredLogger转Logger
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go
+{"level":"info","ts":1663367983.4938114,"caller":"demo/main.go:15","msg":"Hello World!"}
+2022-09-17T06:39:43.493+0800    INFO    demo/main.go:16 Hello World!                                                           
+{"level":"info","msg":"Hello World!"}
+{"level":"info","ts":1663367983.508526,"caller":"demo/main.go:28","msg":"2022-09-17 06:39:43.5085261 +0800 CST m=+0.018391001"}
+```
+
+### 自定义Logger
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+	"time"
+)
+
+func getEncoer() zapcore.Encoder {
+	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.ConsoleSeparator = " "
+	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	}
+	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
+	}
+	encoder := zapcore.NewConsoleEncoder(encoderConfig)
+	return encoder
+}
+
+func getWriteSyncer() zapcore.WriteSyncer {
+	file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	fileHandler := zapcore.AddSync(file)
+	stdoutHandler := zapcore.AddSync(os.Stdout)
+	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler, stdoutHandler)
+	return writeSyncer
+}
+
+func main() {
+	// 初始化core
+	encoder := getEncoer()
+	writeSyncer := getWriteSyncer()
+	core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
+
+	// 初始化logger
+	logger := zap.New(core, zap.AddCaller()).Sugar()
+
+	// 输出日志
+	logger.Debug("Hello World!")
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Panic("Hello World!")
+}
+```
+
+:::
+
+输出结果
+
+```bash
+C:\Users\Administrator\GolandProjects\demo>go run main.go
+2022-09-17 08:31:15.933 [ DEBUG ] demo/main.go:46 Hello World!
+2022-09-17 08:31:15.947 [ INFO  ] demo/main.go:47 Hello World!
+2022-09-17 08:31:15.949 [ WARN  ] demo/main.go:48 Hello World!
+2022-09-17 08:31:15.949 [ ERROR ] demo/main.go:49 Hello World!
+2022-09-17 08:31:15.949 [ PANIC ] demo/main.go:50 Hello World!
+panic: Hello World!
+
+goroutine 1 [running]:
+go.uber.org/zap/zapcore.CheckWriteAction.OnWrite(0x0?, 0x0?, {0x0?, 0x0?, 0xc000054560?})
+        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/zapcore/entry.go:198 +0x65
+go.uber.org/zap/zapcore.(*CheckedEntry).Write(0xc000024c30, {0x0, 0x0, 0x0})
+        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/zapcore/entry.go:264 +0x3ec
+go.uber.org/zap.(*SugaredLogger).log(0xc000109e98, 0x4, {0x0?, 0x0?}, {0xc000109ea0?, 0x1?, 0x1?}, {0x0, 0x0, 0x0})
+        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/sugar.go:287 +0xee
+go.uber.org/zap.(*SugaredLogger).Panic(...)
+        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/sugar.go:145
+main.main()
+        C:/Users/Administrator/GolandProjects/demo/main.go:50 +0x350                                               
+exit status 2
+```
+
+### 合并多个Core
+
+### 日志切割方案
