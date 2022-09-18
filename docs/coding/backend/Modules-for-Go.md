@@ -3527,3 +3527,440 @@ func main() {
 :::
 
 ### 增加记录
+
+文档：[https://gorm.io/zh_CN/docs/create.html](https://gorm.io/zh_CN/docs/create.html)
+
+#### 增加单条记录
+
+::: details 增加单条记录：db.Create(&user)
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	//err = db.Migrator().DropTable(&User{})
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 添加单条记录
+	user := User{Name: "Jinzhu", Age: 18, Birthday: time.Now()}
+	result := db.Create(&user)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+    
+    // 查看gorm.Model字段
+	fmt.Println("ID       : ", user.ID)
+	fmt.Println("CreatedAt: ", user.CreatedAt)
+	fmt.Println("UpdatedAt: ", user.UpdatedAt)
+	fmt.Println("DeletedAt: ", user.DeletedAt)
+}
+```
+
+输出结果
+
+```bash
+ID       :  1
+CreatedAt:  2022-09-18 13:35:27.769 +0800 CST    
+UpdatedAt:  2022-09-18 13:35:27.769 +0800 CST    
+DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}  // DeletedAt是一个结构体
+```
+
+:::
+
+#### 批量插入记录
+
+::: details 批量插入记录：db.Create(&users)
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{
+		{Name: "jinzhu1", Birthday: time.Now()},
+		{Name: "jinzhu2", Birthday: time.Now()},
+		{Name: "jinzhu3", Birthday: time.Now()},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看数据
+	for _, user := range users {
+		fmt.Println("ID       : ", user.ID)
+		fmt.Println("CreatedAt: ", user.CreatedAt)
+		fmt.Println("UpdatedAt: ", user.UpdatedAt)
+		fmt.Println("DeletedAt: ", user.DeletedAt)
+	}
+}
+```
+
+输出结果
+
+```bash
+ID       :  1
+CreatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+UpdatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}
+ID       :  2
+CreatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+UpdatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}
+ID       :  3
+CreatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+UpdatedAt:  2022-09-18 14:07:14.931 +0800 CST    
+DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}
+```
+
+:::
+
+#### 分批插入数据
+
+::: details 分批插入记录：db.CreateInBatches(&users, 10) // 每次插入10条数据
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"strconv"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{}
+	for i := 0; i < 100; i++ {
+		user := User{Name: "jinzhu" + strconv.Itoa(i), Birthday: time.Now()}
+		users = append(users, user)
+	}
+	result := db.CreateInBatches(&users, 10) // 每次插入10条数据
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看数据
+	for _, user := range users {
+		fmt.Println("ID       : ", user.ID)
+		fmt.Println("CreatedAt: ", user.CreatedAt)
+		fmt.Println("UpdatedAt: ", user.UpdatedAt)
+		fmt.Println("DeletedAt: ", user.DeletedAt)
+	}
+}
+```
+
+:::
+
+#### time.Time类型
+
+::: details 零值和time.Time类型
+
+* 插入数据时若某个字段（基本数据类型）不传递值，会使用其零值
+* time.Time类型若不传递值可能会报错
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，Age和Birthday都没有传值，默认使用零值
+	var users = []User{
+		{Name: "jinzhu1"},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看数据
+	for _, user := range users {
+		fmt.Println("ID       : ", user.ID)
+		fmt.Println("CreatedAt: ", user.CreatedAt)
+		fmt.Println("UpdatedAt: ", user.UpdatedAt)
+		fmt.Println("DeletedAt: ", user.DeletedAt)
+	}
+}
+```
+
+**Time.time类型插入时报错**
+
+![image-20220918141751000](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918141751000.png)
+
+解决办法1：修改数据库
+
+![image-20220918142825999](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918142825999.png)
+
+![image-20220918142843485](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918142843485.png)
+
+:::
+
+解决办法2：修改为*Time.time类型（推荐）
+
+```go
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday *time.Time
+}
+
+func getTimePtr(t time.Time) *time.Time {
+	return &t
+}
+
+
+    // 批量添加记录，若要传递数据不能直接使用&time.Now()
+	var users = []User{
+		{Name: "jinzhu1"},
+		{Name: "jinzhu1", Birthday: getTimePtr(time.Now())},
+	}
+	result := db.Create(&users)
+```
+
+![image-20220918141933930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918141933930.png)
+
+#### 钩子函数
+
+
+
+<br />
+
+## Casbin
+
+## Swagger
