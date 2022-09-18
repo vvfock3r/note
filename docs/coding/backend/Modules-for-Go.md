@@ -3409,6 +3409,8 @@ func main() {
 
 :::
 
+<br />
+
 ### 定义模型
 
 文档：
@@ -3455,6 +3457,8 @@ type Blog struct {
 ```
 
 :::
+
+<br />
 
 ### 自动建表
 
@@ -3525,6 +3529,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 ### 增加记录
 
@@ -4058,11 +4064,183 @@ func getTimePtr(t time.Time) *time.Time {
 
 ![image-20220918141933930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918141933930.png)
 
+<br />
+
 ### 查询记录
 
-文档：[https://gorm.io/zh_CN/docs/query.html](https://gorm.io/zh_CN/docs/query.html)
+文档：
+
+* [https://gorm.io/zh_CN/docs/query.html](https://gorm.io/zh_CN/docs/query.html)
+* [https://gorm.io/zh_CN/docs/advanced_query.html](https://gorm.io/zh_CN/docs/advanced_query.html)
+
+#### 查询所有对象
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"strconv"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users []User
+	for i := 0; i < 100; i++ {
+		user := User{Name: "jinzhu" + strconv.Itoa(i), Birthday: time.Now()}
+		users = append(users, user)
+	}
+	result := db.CreateInBatches(&users, 10) // 每次插入10条数据
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查询所有记录
+	var users2 []User
+	result = db.Find(&users2) // select * from users;
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看信息
+	fmt.Println("记录条数: ", result.RowsAffected) // 等同于len(users)
+	for _, user := range users2 {
+		fmt.Println("Name: ", user.Name)
+	}
+}
+```
+
+:::
+
+#### 指定单条记录
+
+* 查询时它自动添加 `LIMIT 1` 
+* 没有找到记录时返回 `ErrRecordNotFound` 错误
+
+```go
+// 获取第一条记录（主键升序）
+db.First(&user)  // SELECT * FROM users ORDER BY id LIMIT 1;
+
+// 获取最后一条记录（主键降序）
+db.Last(&user)   // SELECT * FROM users ORDER BY id DESC LIMIT 1;
+
+// 获取一条记录，没有指定排序字段
+db.Take(&user)  // SELECT * FROM users LIMIT 1;
+
+// ------------------------------------------------------------
+
+// 返回值
+result.RowsAffected // 返回找到的记录数
+result.Error        // returns error or nil
+
+// ------------------------------------------------------------
+// 未找到记录时
+
+// First/Last/Take会返回ErrRecordNotFound错误，然后通过result.RowsAffected判断是否查询到记录
+errors.Is(result.Error, gorm.ErrRecordNotFound)
+
+// 若要避免ErrRecordNotFound错误可以使用Find
+db.Limit(1).Find(&user)
+```
+
+#### 指定查询条件
+
+```go
+// ==
+db.Where("name = ?", "jinzhu211").Find(&user)
+// SELECT * FROM users WHERE name = 'jinzhu';
+
+// != or <>
+db.Where("name != ?", "jinzhu").Find(&users)
+// SELECT * FROM users WHERE name != 'jinzhu';
+
+// IN
+db.Where("name IN ?", []string{"jinzhu", "jinzhu 2"}).Find(&users)
+// SELECT * FROM users WHERE name IN ('jinzhu','jinzhu 2');
+
+// LIKE
+db.Where("name LIKE ?", "%jin%").Find(&users)
+// SELECT * FROM users WHERE name LIKE '%jin%';
+
+// AND
+db.Where("name = ? AND age >= ?", "jinzhu", "22").Find(&users)
+// SELECT * FROM users WHERE name = 'jinzhu' AND age >= 22;
+
+// Time
+db.Where("updated_at > ?", lastWeek).Find(&users)
+// SELECT * FROM users WHERE updated_at > '2000-01-01 00:00:00';
+
+// BETWEEN
+db.Where("created_at BETWEEN ? AND ?", lastWeek, today).Find(&users)
+// SELECT * FROM users WHERE created_at BETWEEN '2000-01-01 00:00:00' AND '2000-01-08 00:00:00';
+```
+
+### 更新记录
 
 
+
+<br />
 
 ### 钩子函数
 
