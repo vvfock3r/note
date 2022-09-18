@@ -4037,8 +4037,6 @@ func main() {
 
 ![image-20220918142843485](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918142843485.png)
 
-:::
-
 解决办法2：修改为*Time.time类型（推荐）
 
 ```go
@@ -4063,6 +4061,8 @@ func getTimePtr(t time.Time) *time.Time {
 ```
 
 ![image-20220918141933930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918141933930.png)
+
+:::
 
 <br />
 
