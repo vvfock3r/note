@@ -4240,6 +4240,8 @@ db.Where("created_at BETWEEN ? AND ?", lastWeek, today).Find(&users)
 
 ### 更新记录
 
+文档：[https://gorm.io/zh_CN/docs/update.html](https://gorm.io/zh_CN/docs/update.html)
+
 #### 更新指定字段
 
 * `Update`：只支持更新单个字段
@@ -4781,7 +4783,122 @@ func main() {
 	fmt.Println("硬删除记录数目: ", result.RowsAffected)
 ```
 
+<br />
 
+### 查看原始的SQL
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{
+		{Name: "jinzhu1", Age: 18, Birthday: time.Now()},
+		{Name: "jinzhu2", Age: 19, Birthday: time.Now()},
+		{Name: "jinzhu3", Age: 20, Birthday: time.Now()},
+		{Name: "1jinzhu", Age: 18, Birthday: time.Now()},
+		{Name: "2jinzhu", Age: 19, Birthday: time.Now()},
+		{Name: "3jinzhu", Age: 20, Birthday: time.Now()},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看生成的SQL,SQL并不会执行
+	rawSql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		var users []User
+		return tx.Where("name LIKE ?", "jinzhu%").Find(&users).Delete(&users)
+	})
+	fmt.Println(rawSql)
+
+	// 查看生成的SQL,SQL并不会执行
+	rawSql2 := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		var users []User
+		return tx.
+			Where("name LIKE ?", "jinzhu%").Find(&users).
+			Omit("name", "age").
+			Updates(map[string]any{
+				"name": "bob2",
+				"age":  20,
+			})
+	})
+	fmt.Println(rawSql2)
+}
+```
+
+输出结果
+
+```bash
+# 这个输出感觉太弱智了
+SELECT * FROM `users` WHERE name LIKE 'jinzhu%' AND `users`.`deleted_at` IS NULL
+SELECT * FROM `users` WHERE name LIKE 'jinzhu%' AND `users`.`deleted_at` IS NULL
+```
+
+:::
 
 <br />
 
