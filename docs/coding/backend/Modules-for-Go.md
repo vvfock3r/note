@@ -3532,7 +3532,7 @@ func main() {
 
 #### 增加单条记录
 
-::: details 增加单条记录：db.Create(&user)
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -3627,7 +3627,7 @@ DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}  // DeletedAt是一个结构�
 
 #### 批量插入记录
 
-::: details 批量插入记录：db.Create(&users)
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -3736,7 +3736,7 @@ DeletedAt:  {0001-01-01 00:00:00 +0000 UTC false}
 
 #### 分批插入数据
 
-::: details 分批插入记录：db.CreateInBatches(&users, 10) // 每次插入10条数据
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -3827,12 +3827,115 @@ func main() {
 
 :::
 
-#### time.Time类型
+#### 使用部分字段
 
-::: details 零值和time.Time类型
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 添加单条记录
+	user := User{Name: "Jinzhu1", Age: 18}
+	result := db.Select("Name", "CreatedAt").Create(&user) // 用指定的字段创建记录
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看gorm.Model字段
+	fmt.Println("ID       : ", user.ID)
+	fmt.Println("CreatedAt: ", user.CreatedAt)
+	fmt.Println("UpdatedAt: ", user.UpdatedAt)
+	fmt.Println("DeletedAt: ", user.DeletedAt)
+
+	// ======================================================================================
+
+	// 添加单条记录
+	user = User{Name: "Jinzhu2", Age: 18}
+	result = db.Omit("Age", "CreatedAt", "Birthday").Create(&user) // 忽略指定的字段
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查看gorm.Model字段
+	fmt.Println("ID       : ", user.ID)
+	fmt.Println("CreatedAt: ", user.CreatedAt)
+	fmt.Println("UpdatedAt: ", user.UpdatedAt)
+	fmt.Println("DeletedAt: ", user.DeletedAt)
+}
+```
+
+:::
+
+#### time.Time类型
 
 * 插入数据时若某个字段（基本数据类型）不传递值，会使用其零值
 * time.Time类型若不传递值可能会报错
+
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -3955,7 +4058,15 @@ func getTimePtr(t time.Time) *time.Time {
 
 ![image-20220918141933930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220918141933930.png)
 
-#### 钩子函数
+### 查询记录
+
+文档：[https://gorm.io/zh_CN/docs/query.html](https://gorm.io/zh_CN/docs/query.html)
+
+
+
+### 钩子函数
+
+文档：[https://gorm.io/zh_CN/docs/hooks.html](https://gorm.io/zh_CN/docs/hooks.html)
 
 
 
