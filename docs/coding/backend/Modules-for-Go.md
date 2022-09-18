@@ -4236,7 +4236,333 @@ db.Where("created_at BETWEEN ? AND ?", lastWeek, today).Find(&users)
 // SELECT * FROM users WHERE created_at BETWEEN '2000-01-01 00:00:00' AND '2000-01-08 00:00:00';
 ```
 
+<br />
+
 ### 更新记录
+
+#### 更新指定字段
+
+* `Update`：只支持更新单个字段
+* `Updates`：支持更新1个或多个字段
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{
+		{Name: "jinzhu1", Birthday: time.Now()},
+		{Name: "jinzhu2", Birthday: time.Now()},
+		{Name: "jinzhu3", Birthday: time.Now()},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 查询并更新，注意点：
+	// (1) 若没有找到记录不会新增记录
+	// (2) 若找到记录,Update只能更新单个字段(还会自动更新updated_at字段),Updates支持更新1个或多个字段
+	// (3) 若旧纪录和新记录完全相同,那么只会更新updated_at字段
+	var user []User
+	result = db.Where("name LIKE ?", "%jinzhu%").Find(&user).Update("name", "2")
+	//result = db.Where("name LIKE ?", "%jinzhu%").Find(&user).Updates(map[string]any{
+	//	"name": "bob",
+	//	"age":  18,
+	//})
+
+	if result.Error != nil {
+		panic(err)
+	}
+	fmt.Println("更新记录数目: ", result.RowsAffected)
+}
+```
+
+:::
+
+#### 排除指定字段
+
+```go
+	// Omit忽略某些字段,在下面这个例子种,只会更新updated_at
+	var user []User
+	result = db.
+		Where("name LIKE ?", "%jinzhu%").Find(&user).
+		Omit("name", "age").
+		Updates(map[string]any{
+			"name": "bob2",
+			"age":  20,
+		})
+
+	if result.Error != nil {
+		panic(err)
+	}
+	fmt.Println("更新记录数目: ", result.RowsAffected)
+```
+
+#### 更新所有字段
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+	Grade    int
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{
+		{Name: "jinzhu1", Age: 18, Birthday: time.Now()},
+		{Name: "jinzhu2", Age: 19, Birthday: time.Now()},
+		{Name: "jinzhu3", Age: 20, Birthday: time.Now()},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 先查询一下
+	var user User
+	result = db.Where("name = ?", "jinzhu2").Find(&user)
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 更新所有字段 ( deleted_at字段除外 )
+	user.Name = "example"
+	result = db.Save(&user)
+
+	if result.Error != nil {
+		panic(err)
+	}
+	fmt.Println("更新记录数目: ", result.RowsAffected)
+}
+```
+
+:::
+
+#### 使用SQL表达式
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "192.168.48.133"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+	Grade    int
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 若表存在则删除
+	err = db.Migrator().DropTable(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		panic(err)
+	}
+
+	// 批量添加记录，只需要传递Slice即可
+	var users = []User{
+		{Name: "jinzhu1", Age: 18, Birthday: time.Now()},
+		{Name: "jinzhu2", Age: 19, Birthday: time.Now()},
+		{Name: "jinzhu3", Age: 20, Birthday: time.Now()},
+	}
+	result := db.Create(&users)
+
+	// 检查错误
+	if result.Error != nil {
+		panic(err)
+	}
+
+	// 使用SQL表达式更新
+	var user []User
+	result = db.Where("name LIKE ?", "%jinzhu%").Find(&user).Updates(map[string]any{
+		"age":   gorm.Expr("age * 0.5 + age * 0.5 + 10"),
+		"grade": gorm.Expr("grade + ?", 60),
+	})
+
+	if result.Error != nil {
+		panic(err)
+	}
+	fmt.Println("更新记录数目: ", result.RowsAffected)
+}
+```
+
+:::
+
+<br />
+
+### 删除记录
 
 
 
