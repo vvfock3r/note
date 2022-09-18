@@ -4785,7 +4785,9 @@ func main() {
 
 <br />
 
-### 查看原始的SQL
+### 查看原始SQL
+
+文档：[https://gorm.io/zh_CN/docs/sql_builder.html#ToSQL](https://gorm.io/zh_CN/docs/sql_builder.html#ToSQL)
 
 ::: details 点击查看完整代码
 
