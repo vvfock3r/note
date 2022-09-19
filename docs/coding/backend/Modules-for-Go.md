@@ -41,8 +41,16 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>RBAC模型</td>
+        <td><a href="#casbin" style="text-decoration:none;">Casbin</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Casbin v2.55.0</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
     </tbody>
 </table>
+
 
 
 
@@ -4821,7 +4829,9 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 在线编辑器：[https://casbin.io/zh/editor](https://casbin.io/zh/editor)
 
-### ACL示例
+### 在线调试
+
+**（1）ACL示例**
 
 ![img](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//D1B8068391CF41F698965C29302C9C49.png)
 
@@ -4892,7 +4902,7 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
   ![image-20220919153045186](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919153045186.png)
 
-### RBAC示例
+**（2）RBAC示例**
 
 ![image-20220919154506579](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919154506579.png)
 
@@ -4928,7 +4938,9 @@ go get github.com/casbin/casbin/v2
 
 ### 基础示例
 
-::: details RBAC基础示例
+#### 从文件中读取数据
+
+::: details 点击查看完整代码
 
 `model.conf`
 
@@ -5002,9 +5014,136 @@ func main() {
 
 :::
 
-### 自定义函数
+#### 从字符串中读取数据
 
-### 存储到数据库中
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
+	"log"
+)
+
+func main() {
+	var (
+		ok  bool
+		err error
+	)
+
+	// 定义模型和规则
+	modelString := `
+	[request_definition]
+	r = sub, obj, act
+	
+	[policy_definition]
+	p = sub, obj, act
+	
+	[role_definition]
+	g = _, _
+	
+	[policy_effect]
+	e = some(where (p.eft == allow))
+	
+	[matchers]
+	m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+	`
+	policies := [][]string{
+		{"alice", "data3", "read"},
+		{"alice", "data4", "write"},
+
+		{"admin", "data1", "read"},
+		{"admin", "data1", "write"},
+
+		{"admin", "data2", "read"},
+		{"admin", "data2", "write"},
+	}
+
+	// 初始化模型
+	m, err := model.NewModelFromString(modelString)
+	if err != nil {
+		log.Fatalf("error: NewModelFromString: %s", err)
+	}
+
+	// 初始化Casbin
+	e, err := casbin.NewEnforcer(m)
+	if err != nil {
+		log.Fatalf("error: NewEnforcer: %s", err)
+	}
+
+	// 方式一：批量添加规则
+	// 需要注意：
+	//   (1) 若policies包含重复规则，添加到Enforcer前会去重
+	//   (2) 若policies中任意一个规则若已经存在在当前的Enforcer对象中，那么policies所有的规则都不会被添加
+	//ok, err = e.AddPolicies(policies)
+	//if err != nil {
+	//	log.Fatalf("error: AddPolicies: %s", err)
+	//}
+	//if ok {
+	//	fmt.Println("批量添加Policy成功")
+	//} else {
+	//	fmt.Println("批量添加Policy失败: 规则已经存在")
+	//}
+
+	// 方式二：单次添加规则
+	for _, policy := range policies {
+		ok, err = e.AddPolicy(policy)
+		if err != nil {
+			log.Fatalf("error: AddPolicy: %s", err)
+		}
+		if ok {
+			fmt.Println("Policy添加成功: ", policy)
+		} else {
+			fmt.Println("Policy已经存在: ", policy)
+		}
+	}
+
+	// 添加 g, alice, admin
+	ok, err = e.AddRoleForUser("alice", "admin")
+	if err != nil {
+		log.Fatalf("error: AddRoleForUser: %s", err)
+	}
+	if ok {
+		fmt.Println("把用户添加进Role成功")
+	} else {
+		fmt.Println("用户已经存在于Role中")
+	}
+
+	// 查看所有的Policy,注意：这里看不到 用户和角色的对应关系
+	fmt.Println("Policy规则列表: ", e.GetPolicy())
+
+	// 定义输入参数
+	sub := "alice"
+	obj := "data1"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err = e.Enforce(sub, obj, act)
+	if err != nil {
+		log.Fatalf("error: Enforce: %s", err)
+	}
+
+	// 校验结果
+	if ok == true {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+
+// 总结：在真正添加规则的时候，我们可以不用管【规则是否已经存在】，直接忽略掉即可；添加用户到角色中也是同样的道理
+```
+
+:::
+
+#### 从数据库中读取数据
+
+
+
+### 使用自定义函数
 
 ### 超级管理员模式
 
