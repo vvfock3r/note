@@ -4936,6 +4936,8 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 go get github.com/casbin/casbin/v2
 ```
 
+<br />
+
 ### 基础示例
 
 #### 从文件中读取数据
@@ -5141,11 +5143,13 @@ func main() {
 
 #### 从数据库中读取数据
 
-
-
 ### 使用自定义函数
 
 ### 超级管理员模式
+
+<br />
+
+### 常用API
 
 <br />
 
