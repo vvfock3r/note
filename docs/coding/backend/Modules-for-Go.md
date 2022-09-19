@@ -4930,7 +4930,7 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 <br />
 
-### 安装
+### 模块安装
 
 ```bash
 go get github.com/casbin/casbin/v2
