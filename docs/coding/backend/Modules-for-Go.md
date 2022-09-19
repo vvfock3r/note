@@ -4896,7 +4896,29 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 #### RBAC说明
 
+![image-20220919154506579](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919154506579.png)
 
+**在RBAC模型中**：
+
+* 输入参数保持不变
+
+* 模型文件中增加了角色定义
+
+  ```bash
+  [role_definition] # 定义角色
+  g = _, _          # 这里的两个参数一般代表：用户, 角色
+  ```
+
+* 匹配规则中也增加了角色处理
+
+  ```bash
+  [matchers]
+  m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+  
+  # g(r.sub, p.sub) 这一句比较难理解
+  #  (1) 他会找到r.sub的角色，并根据规则文件中角色的权限来判断
+  #  (2) 同时也会使用自己的权限来判断（规则文件中直接对用户进行做的授权）
+  ```
 
 <br />
 
