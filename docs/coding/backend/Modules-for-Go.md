@@ -4815,9 +4815,90 @@ func main() {
 
 ## Casbin
 
-文档：[https://casbin.org/docs/zh-CN/overview](https://casbin.org/docs/zh-CN/overview)
-
 Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
+
+文档：[https://casbin.io/zh/docs/overview](https://casbin.io/zh/docs/overview)
+
+### 基础
+
+在线编辑器：[https://casbin.io/zh/editor](https://casbin.io/zh/editor)
+
+#### ACL说明
+
+![img](file:///C:\Users\Administrator\AppData\Roaming\Tencent\QQ\Temp\D1B8068391CF41F698965C29302C9C49.png)
+
+<br />
+
+**概念说明**
+
+模型（Model）：支持ACL、RBAC、ABAC等，参考文档：[https://casbin.io/zh/docs/supported-models](https://casbin.io/zh/docs/supported-models)
+
+模型（Model）文件：在这里定义模型（是使用ACL还是RBAC还是其他的? 数据校验时如何判断？）
+
+规则（Policy）文件：在这里指定谁对哪些资源有什么样的权限
+
+
+
+**以上图的例子说明**
+
+* 模型文件定义输入格式
+
+  ```bash
+  # 模型文件中定义的输入格式
+  [request_definition]
+  r = sub, obj, act
+  
+  # 和输入一一对应起来
+  alice 对应 sub
+  data1 对应 obj
+  read  对应 act
+  r 代表着这是一个变量，后面通过r.sbu可以调用到alice
+  ```
+
+* 模型文件定义规则格式
+
+  ```bash
+  # 模型文件中定义规则格式
+  [policy_definition]
+  p = sub, obj, act
+  
+  # 对于Policy文件中的第一条数据来说
+  sub  对应 alice
+  obj  对应 data1
+  act  对应 read
+  
+  # 实际上还有一个字段 eft，他只有两个值 allow(允许,这是默认值)、deny(拒绝)
+  ```
+
+* 模型文件定义匹配规则
+
+  ```bash
+  # 这里的意思是：输入和定义必须完全匹配
+  [matchers]
+  m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
+  ```
+
+* 模型文件定义最终允许还是拒绝
+
+  ```bash
+  # 这里的意思是：只要有一个是允许的最终就会允许
+  [policy_effect]
+  e = some(where (p.eft == allow))
+  ```
+
+  看下面的例子，虽然我们定义了deny，还是满足只要有一条允许就最终允许，所以返回true
+
+  ![image-20220919152946411](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919152946411.png)
+
+  修改一下policy_effect，需要满足为允许，并且不允许有拒绝，所以这里返回了false
+
+  ![image-20220919153045186](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919153045186.png)
+
+#### RBAC说明
+
+
+
+<br />
 
 ### 安装
 
