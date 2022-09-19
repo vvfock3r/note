@@ -4825,7 +4825,7 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 #### ACL说明
 
-![img](file:///C:\Users\Administrator\AppData\Roaming\Tencent\QQ\Temp\D1B8068391CF41F698965C29302C9C49.png)
+![img](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//D1B8068391CF41F698965C29302C9C49.png)
 
 <br />
 
