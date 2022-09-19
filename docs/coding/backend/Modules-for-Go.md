@@ -4928,7 +4928,81 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 go get github.com/casbin/casbin/v2
 ```
 
+### 基础示例
 
+::: details RBAC基础示例
+
+`model.conf`
+
+```ini
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+```
+
+`policy.csv`
+
+```
+g, alice, admin
+
+p, alice, data3, read
+p, alice, data4, write
+
+p, admin, data1, read
+p, admin, data1, write
+p, admin, data2, read
+p, admin, data2, write
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+)
+
+func main() {
+	// 初始化Casbin
+	e, err := casbin.NewEnforcer("./model.conf", "./policy.csv")
+	if err != nil {
+		panic(err)
+	}
+
+	// 定义输入参数
+	sub := "alice"
+	obj := "data2"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err := e.Enforce(sub, obj, act)
+	if err != nil {
+		panic(err)
+	}
+
+	// 校验结果
+	if ok == true {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+```
+
+:::
 
 
 
