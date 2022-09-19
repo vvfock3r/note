@@ -4819,11 +4819,9 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 文档：[https://casbin.io/zh/docs/overview](https://casbin.io/zh/docs/overview)
 
-### 基础
-
 在线编辑器：[https://casbin.io/zh/editor](https://casbin.io/zh/editor)
 
-#### ACL说明
+### ACL示例
 
 ![img](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//D1B8068391CF41F698965C29302C9C49.png)
 
@@ -4894,7 +4892,7 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
   ![image-20220919153045186](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919153045186.png)
 
-#### RBAC说明
+### RBAC示例
 
 ![image-20220919154506579](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919154506579.png)
 
