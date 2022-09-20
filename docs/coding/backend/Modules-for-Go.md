@@ -4922,8 +4922,9 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
   m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
   
   # g(r.sub, p.sub) 这一句比较难理解
-  #  (1) 他会找到r.sub的角色，并根据规则文件中角色的权限来判断
-  #  (2) 同时也会使用自己的权限来判断（规则文件中直接对用户进行做的授权）
+  #  (1) g是一个函数,他会判断r.sub是否属于p.sub这个角色，返回true或false
+  #  (2) 他会找到r.sub的角色，并根据规则文件中角色的权限来判断
+  #  (3) 同时也会使用自己的权限来判断（规则文件中直接对用户进行做的授权）
   ```
 
 <br />
@@ -5325,7 +5326,13 @@ mysql> select * from casbin_rule order by id;
 
 <br />
 
-### 使用自定义函数
+### 自定义matchers函数
+
+文档：[https://casbin.io/zh/docs/function](https://casbin.io/zh/docs/function)
+
+
+
+<br />
 
 ### 超级管理员模式
 
