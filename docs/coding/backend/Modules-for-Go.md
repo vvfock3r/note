@@ -5203,6 +5203,7 @@ func main() {
 	}
 
 	// 初始化Gorm适配器, 参数true会自动创建表 casbin_rule
+    // 如果已经有一个Gorm实例，可以通过 gormadapter.NewAdapterByDB(gormInstance) 来实例适配器
 	adapter, _ := gormadapter.NewAdapter("mysql", "root:QiNqg[l.%;H>>rO9@tcp(192.168.48.133:3306)/demo", true)
 
 	// 初始化casbin
@@ -5237,7 +5238,7 @@ func main() {
 		fmt.Println("用户已经存在于Role中")
 	}
 
-	// 保存规则到数据库中
+	// 保存规则到数据库中（这里不显示保存也会保存到数据库中，原因后面再查）
 	if err = e.SavePolicy(); err != nil {
 		log.Fatalf("error: SavePolicy: %s", err)
 	}
