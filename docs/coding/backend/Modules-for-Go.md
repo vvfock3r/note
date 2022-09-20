@@ -4839,11 +4839,9 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 **概念说明**
 
-模型（Model）：支持ACL、RBAC、ABAC等，参考文档：[https://casbin.io/zh/docs/supported-models](https://casbin.io/zh/docs/supported-models)
+模型（Model）：在这里定义模型（是使用ACL还是RBAC还是其他的? 数据校验时如何判断？）
 
-模型（Model）文件：在这里定义模型（是使用ACL还是RBAC还是其他的? 数据校验时如何判断？）
-
-规则（Policy）文件：在这里指定谁对哪些资源有什么样的权限
+规则（Policy）：在这里指定谁对哪些资源有什么样的权限
 
 
 
@@ -5142,6 +5140,189 @@ func main() {
 :::
 
 #### 从数据库中读取数据
+
+适配器文档：[https://casbin.io/zh/docs/adapters](https://casbin.io/zh/docs/adapters)
+
+安装Gorm适配器
+
+```bash
+go get github.com/casbin/gorm-adapter/v3
+```
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
+	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"log"
+)
+
+func main() {
+	var (
+		ok  bool
+		err error
+	)
+
+	// 定义规则
+	modelString := `
+	[request_definition]
+	r = sub, obj, act
+	
+	[policy_definition]
+	p = sub, obj, act
+	
+	[role_definition]
+	g = _, _
+	
+	[policy_effect]
+	e = some(where (p.eft == allow))
+	
+	[matchers]
+	m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+	`
+	policies := [][]string{
+		{"alice", "data3", "read"},
+		{"alice", "data4", "write"},
+
+		{"admin", "data1", "read"},
+		{"admin", "data1", "write"},
+
+		{"admin", "data2", "read"},
+		{"admin", "data2", "write"},
+	}
+
+	// 初始化模型
+	m, err := model.NewModelFromString(modelString)
+	if err != nil {
+		log.Fatalf("error: NewModelFromString: %s", err)
+	}
+
+	// 初始化Gorm适配器, 参数true会自动创建表 casbin_rule
+	adapter, _ := gormadapter.NewAdapter("mysql", "root:QiNqg[l.%;H>>rO9@tcp(192.168.48.133:3306)/demo", true)
+
+	// 初始化casbin
+	e, _ := casbin.NewEnforcer(m, adapter)
+
+	// 从数据库中读取规则
+	if err = e.LoadPolicy(); err != nil {
+		log.Fatalf("error: read policy from adapter: %s", err)
+	}
+
+	// 动态添加规则
+	for _, policy := range policies {
+		ok, err = e.AddPolicy(policy)
+		if err != nil {
+			log.Fatalf("error: AddPolicy: %s", err)
+		}
+		if ok {
+			fmt.Println("Policy添加成功: ", policy)
+		} else {
+			fmt.Println("Policy已经存在: ", policy)
+		}
+	}
+
+	// 添加 g, alice, admin
+	ok, err = e.AddRoleForUser("alice", "admin")
+	if err != nil {
+		log.Fatalf("error: AddRoleForUser: %s", err)
+	}
+	if ok {
+		fmt.Println("把用户添加进Role成功")
+	} else {
+		fmt.Println("用户已经存在于Role中")
+	}
+
+	// 保存规则到数据库中
+	if err = e.SavePolicy(); err != nil {
+		log.Fatalf("error: SavePolicy: %s", err)
+	}
+
+	// 查看所有的Policy,注意：这里看不到 用户和角色的对应关系
+	fmt.Println("Policy规则列表: ", e.GetPolicy())
+
+	// 定义输入参数
+	sub := "alice"
+	obj := "data1"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err = e.Enforce(sub, obj, act)
+	if err != nil {
+		log.Fatalf("error: Enforce: %s", err)
+	}
+
+	// 校验结果
+	if ok == true {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+```
+
+输出结果
+
+```bash
+# 输出结果
+Policy添加成功:  [alice data3 read] 
+Policy添加成功:  [alice data4 write]
+Policy添加成功:  [admin data1 read] 
+Policy添加成功:  [admin data1 write]
+Policy添加成功:  [admin data2 read] 
+Policy添加成功:  [admin data2 write]
+把用户添加进Role成功
+Policy规则列表:  [[alice data3 read] [alice data4 write] [admin data1 read] [admin data1 write] [admin data2 read] [admin data2 write]]
+通过
+
+# 查看数据库
+mysql> use demo;
+Database changed
+mysql> show tables;
++----------------+
+| Tables_in_demo |
++----------------+
+| casbin_rule    |
++----------------+
+1 row in set (0.00 sec)
+
+mysql> desc casbin_rule;
++-------+-----------------+------+-----+---------+----------------+
+| Field | Type            | Null | Key | Default | Extra          |
++-------+-----------------+------+-----+---------+----------------+
+| id    | bigint unsigned | NO   | PRI | NULL    | auto_increment |
+| ptype | varchar(100)    | YES  | MUL | NULL    |                |
+| v0    | varchar(100)    | YES  |     | NULL    |                |
+| v1    | varchar(100)    | YES  |     | NULL    |                |
+| v2    | varchar(100)    | YES  |     | NULL    |                |
+| v3    | varchar(100)    | YES  |     | NULL    |                |
+| v4    | varchar(100)    | YES  |     | NULL    |                |
+| v5    | varchar(100)    | YES  |     | NULL    |                |
++-------+-----------------+------+-----+---------+----------------+
+8 rows in set (0.00 sec)
+
+mysql> select * from casbin_rule order by id;
++----+-------+-------+-------+-------+------+------+------+
+| id | ptype | v0    | v1    | v2    | v3   | v4   | v5   |
++----+-------+-------+-------+-------+------+------+------+
+|  1 | p     | alice | data3 | read  |      |      |      |
+|  2 | p     | alice | data4 | write |      |      |      |
+|  3 | p     | admin | data1 | read  |      |      |      |
+|  4 | p     | admin | data1 | write |      |      |      |
+|  5 | p     | admin | data2 | read  |      |      |      |
+|  6 | p     | admin | data2 | write |      |      |      |
+|  7 | g     | alice | admin |       |      |      |      |
++----+-------+-------+-------+-------+------+------+------+
+7 rows in set (0.00 sec)
+```
+
+:::
+
+<br />
 
 ### 使用自定义函数
 
