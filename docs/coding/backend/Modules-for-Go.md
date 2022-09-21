@@ -5494,7 +5494,7 @@ import (
 	"regexp"
 )
 
-// ① 自定义函数，这里是把 RegexMatch代码拷出来了，测试使用
+// (1) 编写自定义函数，这里是把 RegexMatch代码拷出来了，并做了一些简单的修改，用来测试
 func RegexMatch(key1 string, key2 string) bool {
 	res, err := regexp.MatchString(key2, key1)
 	if err != nil {
@@ -5516,7 +5516,7 @@ func main() {
 	)
 
 	// 定义模型和规则
-	// ③ 模型中使用自定义函数
+    // (3) 模型中使用自定义函数
 	modelString := `
 		[request_definition]
 		r = sub, obj, act
@@ -5554,7 +5554,7 @@ func main() {
 		log.Fatalf("error: NewEnforcer: %s", err)
 	}
 
-	// ② 注册自定义函数
+    // (2) 注册自定义函数
 	e.AddFunction("my_func", RegexMatchFunc)
 
 	// 动态添加规则
@@ -5594,6 +5594,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 ### API
 
