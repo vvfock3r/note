@@ -4931,210 +4931,21 @@ go get github.com/casbin/casbin/v2
 
 <br />
 
-### 基础示例
+### 适配器（Adapters）
 
-#### 从文件中读取数据
+文档
 
-::: details 点击查看完整代码
+* [https://casbin.io/zh/docs/policy-storage](https://casbin.io/zh/docs/policy-storage)
+* [https://casbin.io/zh/docs/adapters](https://casbin.io/zh/docs/adapters)
 
-`model.conf`
+适配器（`Adapter`）就是定义如何存储和读写`Policy`
 
-```ini
-[request_definition]
-r = sub, obj, act
+* 我们也可以不使用任何适配器，将模型和`Policy`全部在代码中写死，但是这不利于扩展
+* 常用的适配器有：文件（内置）、数据库（需安装对应模块）
 
-[policy_definition]
-p = sub, obj, act
-
-[role_definition]
-g = _, _
-
-[policy_effect]
-e = some(where (p.eft == allow))
-
-[matchers]
-m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
-```
-
-`policy.csv`
-
-```
-g, alice, admin
-
-p, alice, data3, read
-p, alice, data4, write
-
-p, admin, data1, read
-p, admin, data1, write
-p, admin, data2, read
-p, admin, data2, write
-```
-
-`main.go`
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/casbin/casbin/v2"
-)
-
-func main() {
-	// 初始化Casbin
-	e, err := casbin.NewEnforcer("./model.conf", "./policy.csv")
-	if err != nil {
-		panic(err)
-	}
-
-	// 定义输入参数
-	sub := "alice"
-	obj := "data2"
-	act := "read"
-
-	// 校验输入是否有权限
-	ok, err := e.Enforce(sub, obj, act)
-	if err != nil {
-		panic(err)
-	}
-
-	// 校验结果
-	if ok == true {
-		fmt.Println("通过")
-	} else {
-		fmt.Println("拒绝")
-	}
-}
-```
-
-:::
-
-#### 从字符串中读取数据
+#### 仅使用代码
 
 ::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
-	"log"
-)
-
-func main() {
-	var (
-		ok  bool
-		err error
-	)
-
-	// 定义模型和规则
-	modelString := `
-	[request_definition]
-	r = sub, obj, act
-	
-	[policy_definition]
-	p = sub, obj, act
-	
-	[role_definition]
-	g = _, _
-	
-	[policy_effect]
-	e = some(where (p.eft == allow))
-	
-	[matchers]
-	m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
-	`
-	policies := [][]string{
-		{"alice", "data3", "read"},
-		{"alice", "data4", "write"},
-
-		{"admin", "data1", "read"},
-		{"admin", "data1", "write"},
-
-		{"admin", "data2", "read"},
-		{"admin", "data2", "write"},
-	}
-
-	// 初始化模型
-	m, err := model.NewModelFromString(modelString)
-	if err != nil {
-		log.Fatalf("error: NewModelFromString: %s", err)
-	}
-
-	// 初始化Casbin
-	e, err := casbin.NewEnforcer(m)
-	if err != nil {
-		log.Fatalf("error: NewEnforcer: %s", err)
-	}
-
-	// 方式一：批量添加规则
-	// 需要注意：
-	//   (1) 若policies包含重复规则，添加到Enforcer前会去重
-	//   (2) 若policies中任意一个规则若已经存在在当前的Enforcer对象中，那么policies所有的规则都不会被添加
-	//ok, err = e.AddPolicies(policies)
-	//if err != nil {
-	//	log.Fatalf("error: AddPolicies: %s", err)
-	//}
-	//if ok {
-	//	fmt.Println("批量添加Policy成功")
-	//} else {
-	//	fmt.Println("批量添加Policy失败: 规则已经存在")
-	//}
-
-	// 方式二：单次添加规则
-	for _, policy := range policies {
-		ok, err = e.AddPolicy(policy)
-		if err != nil {
-			log.Fatalf("error: AddPolicy: %s", err)
-		}
-		if ok {
-			fmt.Println("Policy添加成功: ", policy)
-		} else {
-			fmt.Println("Policy已经存在: ", policy)
-		}
-	}
-
-	// 添加 g, alice, admin
-	ok, err = e.AddRoleForUser("alice", "admin")
-	if err != nil {
-		log.Fatalf("error: AddRoleForUser: %s", err)
-	}
-	if ok {
-		fmt.Println("把用户添加进Role成功")
-	} else {
-		fmt.Println("用户已经存在于Role中")
-	}
-
-	// 查看所有的Policy,注意：这里看不到 用户和角色的对应关系
-	fmt.Println("Policy规则列表: ", e.GetPolicy())
-
-	// 定义输入参数
-	sub := "alice"
-	obj := "data1"
-	act := "read"
-
-	// 校验输入是否有权限
-	ok, err = e.Enforce(sub, obj, act)
-	if err != nil {
-		log.Fatalf("error: Enforce: %s", err)
-	}
-
-	// 校验结果
-	if ok == true {
-		fmt.Println("通过")
-	} else {
-		fmt.Println("拒绝")
-	}
-}
-
-// 总结：在真正添加规则的时候，我们可以不用管【规则是否已经存在】，直接忽略掉即可；添加用户到角色中也是同样的道理
-```
-
-:::
-
-::: details 优化后的代码：（1）角色策略也定义在policies中（2）添加策略时忽略返回值中策略是否存在，减少代码行数
 
 ```go
 package main
@@ -5195,6 +5006,10 @@ func main() {
 	}
 
 	// 动态添加规则
+	// (1) 使用AddPolicy、AddRoleForUser等函数添加时，返回值第一个参数为布尔值，true代表添加成功，false代表对象已经存在，无需重复添加，
+	//     根据实际情况选择是否使用这个值，如果不使用直接忽略掉即可，即使用_丢弃掉
+	// (2) 若要一次性添加多条规则，可以使用AddPolicies，但是需要注意
+	//     假如多条规则中任意一个规则若已经存在在当前的e对象中，那么所有的规则都不会被添加
 	for _, policy := range policies {
 		if policy[0] == "p" {
 			_, err = e.AddPolicy(policy[1:])
@@ -5202,7 +5017,7 @@ func main() {
 				log.Fatalf("error: AddPolicy: %s", err)
 			}
 		} else if policy[0] == "g" {
-			_, err = e.AddRoleForUser(policy[1], policy[2])
+			_, err = e.AddRoleForUser(policy[1], policy[2], policy[3:]...)
 			if err != nil {
 				log.Fatalf("error: AddRoleForUser: %s", err)
 			}
@@ -5210,6 +5025,10 @@ func main() {
 			log.Fatalf("error: Unknown ptype: %s", policy[0])
 		}
 	}
+
+	// 获取所有的规则
+	fmt.Println(e.GetPolicy()) // 只能获取p，不能获取g
+
 	// 定义输入参数
 	sub := "alice"
 	obj := "data1"
@@ -5222,7 +5041,7 @@ func main() {
 	}
 
 	// 校验结果
-	if ok == true {
+	if ok {
 		fmt.Println("通过")
 	} else {
 		fmt.Println("拒绝")
@@ -5232,11 +5051,95 @@ func main() {
 
 :::
 
-#### 从数据库中读取数据
+#### 文件适配器
 
-适配器文档：[https://casbin.io/zh/docs/adapters](https://casbin.io/zh/docs/adapters)
+::: details 点击查看完整代码
 
-安装Gorm适配器
+`model.conf`
+
+```ini
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+```
+
+`policy.csv`
+
+```
+g, alice, admin
+
+p, alice, data3, read
+p, alice, data4, write
+
+p, admin, data1, read
+p, admin, data1, write
+p, admin, data2, read
+p, admin, data2, write
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
+)
+
+func main() {
+	// 初始化Casbin
+	//e, err := casbin.NewEnforcer("./model.conf", "./policy.csv")
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// 以上代码等同于如下代码
+	a := fileadapter.NewAdapter("./policy.csv")
+	e, err := casbin.NewEnforcer("./model.conf", a)
+	if err != nil {
+		panic(err)
+	}
+
+	// 定义输入参数
+	sub := "alice"
+	obj := "data2"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err := e.Enforce(sub, obj, act)
+	if err != nil {
+		panic(err)
+	}
+
+	// 校验结果
+	if ok {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+```
+
+:::
+
+#### Gorm适配器
+
+文档：[https://github.com/casbin/gorm-adapter](https://github.com/casbin/gorm-adapter)
+
+安装
 
 ```bash
 go get github.com/casbin/gorm-adapter/v3
@@ -5261,32 +5164,34 @@ func main() {
 		err error
 	)
 
-	// 定义规则
+	// 定义模型和规则
 	modelString := `
-	[request_definition]
-	r = sub, obj, act
-	
-	[policy_definition]
-	p = sub, obj, act
-	
-	[role_definition]
-	g = _, _
-	
-	[policy_effect]
-	e = some(where (p.eft == allow))
-	
-	[matchers]
-	m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+		[request_definition]
+		r = sub, obj, act
+		
+		[policy_definition]
+		p = sub, obj, act
+		
+		[role_definition]
+		g = _, _
+		
+		[policy_effect]
+		e = some(where (p.eft == allow))
+		
+		[matchers]
+		m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 	`
 	policies := [][]string{
-		{"alice", "data3", "read"},
-		{"alice", "data4", "write"},
+		{"p", "alice", "data3", "read"},
+		{"p", "alice", "data4", "write"},
 
-		{"admin", "data1", "read"},
-		{"admin", "data1", "write"},
+		{"p", "admin", "data1", "read"},
+		{"p", "admin", "data1", "write"},
 
-		{"admin", "data2", "read"},
-		{"admin", "data2", "write"},
+		{"p", "admin", "data2", "read"},
+		{"p", "admin", "data2", "write"},
+
+		{"g", "alice", "admin"},
 	}
 
 	// 初始化模型
@@ -5296,11 +5201,14 @@ func main() {
 	}
 
 	// 初始化Gorm适配器, 参数true会自动创建表 casbin_rule
-    // 如果已经有一个Gorm实例，可以通过 gormadapter.NewAdapterByDB(gormInstance) 来实例适配器
+	// 如果已经有一个Gorm实例，可以通过 gormadapter.NewAdapterByDB(gormInstance) 来实例适配器
 	adapter, _ := gormadapter.NewAdapter("mysql", "root:QiNqg[l.%;H>>rO9@tcp(192.168.48.133:3306)/demo", true)
 
 	// 初始化casbin
-	e, _ := casbin.NewEnforcer(m, adapter)
+	e, err := casbin.NewEnforcer(m, adapter)
+	if err != nil {
+		log.Fatalf("error: NewEnforcer: %s", err)
+	}
 
 	// 从数据库中读取规则
 	if err = e.LoadPolicy(); err != nil {
@@ -5309,38 +5217,28 @@ func main() {
 
 	// 动态添加规则
 	for _, policy := range policies {
-		ok, err = e.AddPolicy(policy)
-		if err != nil {
-			log.Fatalf("error: AddPolicy: %s", err)
-		}
-		if ok {
-			fmt.Println("Policy添加成功: ", policy)
+		if policy[0] == "p" {
+			_, err = e.AddPolicy(policy[1:])
+			if err != nil {
+				log.Fatalf("error: AddPolicy: %s", err)
+			}
+		} else if policy[0] == "g" {
+			_, err = e.AddRoleForUser(policy[1], policy[2], policy[3:]...)
+			if err != nil {
+				log.Fatalf("error: AddRoleForUser: %s", err)
+			}
 		} else {
-			fmt.Println("Policy已经存在: ", policy)
+			log.Fatalf("error: Unknown ptype: %s", policy[0])
 		}
-	}
-
-	// 添加 g, alice, admin
-	ok, err = e.AddRoleForUser("alice", "admin")
-	if err != nil {
-		log.Fatalf("error: AddRoleForUser: %s", err)
-	}
-	if ok {
-		fmt.Println("把用户添加进Role成功")
-	} else {
-		fmt.Println("用户已经存在于Role中")
 	}
 
 	// 保存规则到数据库中
-    //  (1) 这会删除所有存储中的policy规则并将当前规则保存到数据库中，当规则较多时会可能会引起性能问题
-    //  (2) Gorm支持自动保存规则，所以下面的代码不会必须的
-    //      自动保存：https://casbin.io/zh/docs/adapters#%E8%87%AA%E5%8A%A8%E4%BF%9D%E5%AD%98
+	//  (1) 这会删除所有存储中的policy规则并将当前规则保存到数据库中，当规则较多时会可能会引起性能问题
+	//  (2) Gorm支持自动保存规则，所以下面的代码不会必须的
+	//      自动保存：https://casbin.io/zh/docs/adapters#%E8%87%AA%E5%8A%A8%E4%BF%9D%E5%AD%98
 	if err = e.SavePolicy(); err != nil {
 		log.Fatalf("error: SavePolicy: %s", err)
 	}
-
-	// 查看所有的Policy,注意：这里看不到 用户和角色的对应关系
-	fmt.Println("Policy规则列表: ", e.GetPolicy())
 
 	// 定义输入参数
 	sub := "alice"
@@ -5354,7 +5252,7 @@ func main() {
 	}
 
 	// 校验结果
-	if ok == true {
+	if ok {
 		fmt.Println("通过")
 	} else {
 		fmt.Println("拒绝")
@@ -5365,19 +5263,11 @@ func main() {
 输出结果
 
 ```bash
-# 输出结果
-Policy添加成功:  [alice data3 read] 
-Policy添加成功:  [alice data4 write]
-Policy添加成功:  [admin data1 read] 
-Policy添加成功:  [admin data1 write]
-Policy添加成功:  [admin data2 read] 
-Policy添加成功:  [admin data2 write]
-把用户添加进Role成功
-Policy规则列表:  [[alice data3 read] [alice data4 write] [admin data1 read] [admin data1 write] [admin data2 read] [admin data2 write]]
-通过
-
 # 查看数据库
 mysql> use demo;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
 Database changed
 mysql> show tables;
 +----------------+
@@ -5385,7 +5275,7 @@ mysql> show tables;
 +----------------+
 | casbin_rule    |
 +----------------+
-1 row in set (0.00 sec)
+1 row in set (0.01 sec)
 
 mysql> desc casbin_rule;
 +-------+-----------------+------+-----+---------+----------------+
@@ -5414,32 +5304,23 @@ mysql> select * from casbin_rule order by id;
 |  6 | p     | admin | data2 | write |      |      |      |
 |  7 | g     | alice | admin |       |      |      |      |
 +----+-------+-------+-------+-------+------+------+------+
-7 rows in set (0.00 sec)
+7 rows in set (0.01 sec)
 ```
 
 :::
 
 <br />
 
-### 超级管理员模式
+### 匹配器（Matchers）
 
-文档：[https://casbin.io/zh/docs/supported-models](https://casbin.io/zh/docs/supported-models)
+文档
 
-比如超级管理员设置为`root`，那么只需要更新`model`为
+* 基本介绍：[https://casbin.io/zh/docs/syntax-for-models#匹配器](https://casbin.io/zh/docs/syntax-for-models#匹配器)
 
-```bash
-m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
-```
-
-
+* 内置函数：[https://casbin.io/zh/docs/function](https://casbin.io/zh/docs/function)
+* 函数源码：[https://github.com/casbin/casbin/blob/master/util/builtin_operators.go](https://github.com/casbin/casbin/blob/master/util/builtin_operators.go)
 
 <br />
-
-### Matchers中的函数
-
-文档：[https://casbin.io/zh/docs/function](https://casbin.io/zh/docs/function)
-
-源码地址：[https://github.com/casbin/casbin/blob/master/util/builtin_operators.go](https://github.com/casbin/casbin/blob/master/util/builtin_operators.go)
 
 #### keyMatch：仅支持*的URL匹配
 
@@ -5479,7 +5360,7 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
 
 <br />
 
-#### 自定义函数
+#### 自定义比较函数
 
 ::: details 点击查看完整代码
 
@@ -5516,7 +5397,7 @@ func main() {
 	)
 
 	// 定义模型和规则
-    // (3) 模型中使用自定义函数
+	// (3) 模型中使用自定义函数
 	modelString := `
 		[request_definition]
 		r = sub, obj, act
@@ -5533,6 +5414,7 @@ func main() {
 		[matchers]
 		m = g(r.sub, p.sub) && ( r.obj == p.obj || my_func(r.obj, p.obj) ) && r.act == p.act
 	`
+	// (4) obj对应的位置我们可以写一些正则
 	policies := [][]string{
 		{"p", "alice", "data3", "read"},
 		{"p", "alice", "data4", "write"},
@@ -5554,7 +5436,7 @@ func main() {
 		log.Fatalf("error: NewEnforcer: %s", err)
 	}
 
-    // (2) 注册自定义函数
+	// (2) 注册自定义函数
 	e.AddFunction("my_func", RegexMatchFunc)
 
 	// 动态添加规则
@@ -5573,6 +5455,7 @@ func main() {
 			log.Fatalf("error: Unknown ptype: %s", policy[0])
 		}
 	}
+
 	// 定义输入参数
 	sub := "alice"
 	obj := "data1"
@@ -5585,7 +5468,7 @@ func main() {
 	}
 
 	// 校验结果
-	if ok == true {
+	if ok {
 		fmt.Println("通过")
 	} else {
 		fmt.Println("拒绝")
@@ -5595,9 +5478,15 @@ func main() {
 
 :::
 
-<br />
+#### 超级管理员模式
 
-### API
+文档：[https://casbin.io/zh/docs/supported-models](https://casbin.io/zh/docs/supported-models)
+
+比如超级管理员设置为`root`，那么只需要更新`model`为
+
+```bash
+m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
+```
 
 <br />
 
