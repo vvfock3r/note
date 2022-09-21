@@ -4837,14 +4837,6 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
 <br />
 
-**概念说明**
-
-模型（Model）：在这里定义模型（是使用ACL还是RBAC还是其他的? 数据校验时如何判断？）
-
-规则（Policy）：在这里指定谁对哪些资源有什么样的权限
-
-
-
 **以上图的例子说明**
 
 * 模型文件定义输入格式
@@ -4880,24 +4872,29 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
   ```bash
   # 这里的意思是：输入和定义必须完全匹配
+  # 这里可以定义各种各样的规则，有可能会匹配到多条，所以到这里还不能最终确定是允许还是拒绝
   [matchers]
   m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
   ```
 
-* 模型文件定义最终允许还是拒绝
+* 模型文件定义最终允许还是拒绝；`policy_effect`总共就支持几种，挑选一种合适自己的即可
 
+  参考文档：[https://casbin.io/zh/docs/syntax-for-models#policy-effect%E5%AE%9A%E4%B9%89](https://casbin.io/zh/docs/syntax-for-models#policy-effect%E5%AE%9A%E4%B9%89)
+  
   ```bash
   # 这里的意思是：只要有一个是允许的最终就会允许
   [policy_effect]
   e = some(where (p.eft == allow))
   ```
 
-  看下面的例子，虽然我们定义了deny，还是满足只要有一条允许就最终允许，所以返回true
+  看下面的例子，虽然我们定义了deny，但policy_effect中定义**只要有一条允许最终就是允许**，所以返回结果是`true`
 
   ![image-20220919152946411](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919152946411.png)
 
-  修改一下policy_effect，需要满足为允许，并且不允许有拒绝，所以这里返回了false
-
+  修改一下`policy_effect`，需要满足两个条件才可以：（1）允许（2）不允许有拒绝
+  
+  所以这里返回了`false`
+  
   ![image-20220919153045186](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220919153045186.png)
 
 **（2）RBAC示例**
@@ -4912,7 +4909,7 @@ Github：[https://github.com/casbin/casbin](https://github.com/casbin/casbin)
 
   ```bash
   [role_definition] # 定义角色
-  g = _, _          # 这里的两个参数一般代表：用户, 角色
+  g = _, _          # 这里的两个参数一般代表：用户, 角色，关系为：用户属于某个角色
   ```
 
 * 匹配规则中也增加了角色处理
@@ -5140,6 +5137,104 @@ func main() {
 
 :::
 
+::: details 优化后的代码：（1）角色策略也定义在policies中（2）添加策略时忽略返回值中策略是否存在，减少代码行数
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
+	"log"
+)
+
+func main() {
+	var (
+		ok  bool
+		err error
+	)
+
+	// 定义模型和规则
+	modelString := `
+		[request_definition]
+		r = sub, obj, act
+		
+		[policy_definition]
+		p = sub, obj, act
+		
+		[role_definition]
+		g = _, _
+		
+		[policy_effect]
+		e = some(where (p.eft == allow))
+		
+		[matchers]
+		m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+	`
+	policies := [][]string{
+		{"p", "alice", "data3", "read"},
+		{"p", "alice", "data4", "write"},
+
+		{"p", "admin", "data1", "read"},
+		{"p", "admin", "data1", "write"},
+
+		{"p", "admin", "data2", "read"},
+		{"p", "admin", "data2", "write"},
+
+		{"g", "alice", "admin"},
+	}
+
+	// 初始化模型
+	m, err := model.NewModelFromString(modelString)
+	if err != nil {
+		log.Fatalf("error: NewModelFromString: %s", err)
+	}
+
+	// 初始化Casbin
+	e, err := casbin.NewEnforcer(m)
+	if err != nil {
+		log.Fatalf("error: NewEnforcer: %s", err)
+	}
+
+	// 动态添加规则
+	for _, policy := range policies {
+		if policy[0] == "p" {
+			_, err = e.AddPolicy(policy[1:])
+			if err != nil {
+				log.Fatalf("error: AddPolicy: %s", err)
+			}
+		} else if policy[0] == "g" {
+			_, err = e.AddRoleForUser(policy[1], policy[2])
+			if err != nil {
+				log.Fatalf("error: AddRoleForUser: %s", err)
+			}
+		} else {
+			log.Fatalf("error: Unknown ptype: %s", policy[0])
+		}
+	}
+	// 定义输入参数
+	sub := "alice"
+	obj := "data1"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err = e.Enforce(sub, obj, act)
+	if err != nil {
+		log.Fatalf("error: Enforce: %s", err)
+	}
+
+	// 校验结果
+	if ok == true {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+```
+
+:::
+
 #### 从数据库中读取数据
 
 适配器文档：[https://casbin.io/zh/docs/adapters](https://casbin.io/zh/docs/adapters)
@@ -5239,7 +5334,10 @@ func main() {
 		fmt.Println("用户已经存在于Role中")
 	}
 
-	// 保存规则到数据库中（这里不显示保存也会保存到数据库中，原因后面再查）
+	// 保存规则到数据库中
+    //  (1) 这会删除所有存储中的policy规则并将当前规则保存到数据库中，当规则较多时会可能会引起性能问题
+    //  (2) Gorm支持自动保存规则，所以下面的代码不会必须的
+    //      自动保存：https://casbin.io/zh/docs/adapters#%E8%87%AA%E5%8A%A8%E4%BF%9D%E5%AD%98
 	if err = e.SavePolicy(); err != nil {
 		log.Fatalf("error: SavePolicy: %s", err)
 	}
@@ -5326,19 +5424,181 @@ mysql> select * from casbin_rule order by id;
 
 <br />
 
-### 自定义matchers函数
+### 超级管理员模式
+
+文档：[https://casbin.io/zh/docs/supported-models](https://casbin.io/zh/docs/supported-models)
+
+比如超级管理员设置为`root`，那么只需要更新`model`为
+
+```bash
+m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
+```
+
+
+
+<br />
+
+### Matchers中的函数
 
 文档：[https://casbin.io/zh/docs/function](https://casbin.io/zh/docs/function)
 
+源码地址：[https://github.com/casbin/casbin/blob/master/util/builtin_operators.go](https://github.com/casbin/casbin/blob/master/util/builtin_operators.go)
 
+#### keyMatch：仅支持*的URL匹配
+
+![image-20220921104614645](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921104614645.png)
 
 <br />
 
-### 超级管理员模式
+#### keyMatch2：支持*和:的URL匹配
+
+![image-20220921104534570](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921104534570.png)
 
 <br />
 
-### 常用API
+#### keyMatch3：支持*和{}的URL匹配
+
+![image-20220921104449235](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921104449235.png)
+
+<br />
+
+#### keyMatch4：严格模式的keyMatch3
+
+如果Policy中出现两次`{id}`，那么
+
+**（1）`keyMatch3`允许传递不同的值**
+
+![image-20220921105333528](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921105333528.png)
+
+**（2）`keyMatch4`要求值必须相等**
+
+![image-20220921105610083](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921105610083.png)
+
+<br />
+
+#### regexMatch：正则表达式匹配
+
+![image-20220921111238869](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220921111238869.png)
+
+<br />
+
+#### 自定义函数
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
+	"log"
+	"regexp"
+)
+
+// ① 自定义函数，这里是把 RegexMatch代码拷出来了，测试使用
+func RegexMatch(key1 string, key2 string) bool {
+	res, err := regexp.MatchString(key2, key1)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func RegexMatchFunc(args ...any) (any, error) {
+	name1 := args[0].(string)
+	name2 := args[1].(string)
+	return bool(RegexMatch(name1, name2)), nil
+}
+
+func main() {
+	var (
+		ok  bool
+		err error
+	)
+
+	// 定义模型和规则
+	// ③ 模型中使用自定义函数
+	modelString := `
+		[request_definition]
+		r = sub, obj, act
+		
+		[policy_definition]
+		p = sub, obj, act
+		
+		[role_definition]
+		g = _, _
+		
+		[policy_effect]
+		e = some(where (p.eft == allow))
+		
+		[matchers]
+		m = g(r.sub, p.sub) && ( r.obj == p.obj || my_func(r.obj, p.obj) ) && r.act == p.act
+	`
+	policies := [][]string{
+		{"p", "alice", "data3", "read"},
+		{"p", "alice", "data4", "write"},
+
+		{"p", "admin", "(^data1$)|(^data2$)", "read"},
+		{"p", "admin", "(^data1$)|(^data2$)", "write"},
+		{"g", "alice", "admin"},
+	}
+
+	// 初始化模型
+	m, err := model.NewModelFromString(modelString)
+	if err != nil {
+		log.Fatalf("error: NewModelFromString: %s", err)
+	}
+
+	// 初始化Casbin
+	e, err := casbin.NewEnforcer(m)
+	if err != nil {
+		log.Fatalf("error: NewEnforcer: %s", err)
+	}
+
+	// ② 注册自定义函数
+	e.AddFunction("my_func", RegexMatchFunc)
+
+	// 动态添加规则
+	for _, policy := range policies {
+		if policy[0] == "p" {
+			_, err = e.AddPolicy(policy[1:])
+			if err != nil {
+				log.Fatalf("error: AddPolicy: %s", err)
+			}
+		} else if policy[0] == "g" {
+			_, err = e.AddRoleForUser(policy[1], policy[2], policy[3:]...)
+			if err != nil {
+				log.Fatalf("error: AddRoleForUser: %s", err)
+			}
+		} else {
+			log.Fatalf("error: Unknown ptype: %s", policy[0])
+		}
+	}
+	// 定义输入参数
+	sub := "alice"
+	obj := "data1"
+	act := "read"
+
+	// 校验输入是否有权限
+	ok, err = e.Enforce(sub, obj, act)
+	if err != nil {
+		log.Fatalf("error: Enforce: %s", err)
+	}
+
+	// 校验结果
+	if ok == true {
+		fmt.Println("通过")
+	} else {
+		fmt.Println("拒绝")
+	}
+}
+```
+
+:::
+
+### API
 
 <br />
 
