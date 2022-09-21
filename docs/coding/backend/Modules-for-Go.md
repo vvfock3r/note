@@ -7,9 +7,9 @@
     <tr>
         <th style="width: 15%;">分类说明</th>
         <th style="width: 15%;">模块名称</th>
-        <th style="width: 15%;">测试版本</th>
-        <th style="width: 15%;">应用举例</th>
-        <th style="width: 40%;">备注</th>
+        <th style="width: 20%;">测试版本</th>
+        <th style="width: 30%;">应用举例</th>
+        <th style="width: 30%;">备注</th>
     </tr>
     </thead>
     <tbody>
@@ -42,17 +42,14 @@
         <td></td>
     </tr>
     <tr>
-        <td>RBAC模型</td>
+        <td>访问控制</td>
         <td><a href="#casbin" style="text-decoration:none;">Casbin</a></td>
         <td><li><code>Go 1.19</code></li><li><code>Casbin v2.55.0</code></li></td>
-        <td></td>
+        <td>Harbor、Docker ...</td>
         <td></td>
     </tr>        
     </tbody>
 </table>
-
-
-
 
 <br />
 
