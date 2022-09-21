@@ -4943,7 +4943,9 @@ go get github.com/casbin/casbin/v2
 * 我们也可以不使用任何适配器，将模型和`Policy`全部在代码中写死，但是这不利于扩展
 * 常用的适配器有：文件（内置）、数据库（需安装对应模块）
 
-#### 仅使用代码
+<br />
+
+#### （1）仅使用代码
 
 ::: details 点击查看完整代码
 
@@ -5051,7 +5053,7 @@ func main() {
 
 :::
 
-#### 文件适配器
+#### （2）文件适配器
 
 ::: details 点击查看完整代码
 
@@ -5135,7 +5137,7 @@ func main() {
 
 :::
 
-#### Gorm适配器
+#### （3）Gorm适配器
 
 文档：[https://github.com/casbin/gorm-adapter](https://github.com/casbin/gorm-adapter)
 
@@ -5477,6 +5479,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 超级管理员模式
 
