@@ -1670,7 +1670,7 @@ import (
 const version = "1.0.0"
 
 func main() {
-	// 定义一个Gauge类型的指标
+	// 定义一个 Gauge 类型的指标
 	business_exporter_build_info := prometheus.NewGauge(prometheus.GaugeOpts{
 		// 定义指标名称,有2种书写方式,下面这种方式是等价的
 
@@ -1739,7 +1739,7 @@ import (
 const version = "1.0.0"
 
 func main() {
-	// 定义一个Gauge类型的指标
+	// 定义一个 Counter 类型的指标
 	business_exporter_http_requests_total := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			// 定义指标名称
