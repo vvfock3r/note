@@ -27,7 +27,7 @@ AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/p
 [root@localhost ~]# wget -c https://github.com/prometheus/prometheus/releases/download/v2.38.0/prometheus-2.38.0.linux-amd64.tar.gz
 
 # 解压二进制包
-[root@localhost ~]# tar zxf prometheus-2.38.0.linux-amd64.tar.gz && cd prometheus-2.38.0.linux-amd64
+[root@localhost ~]# tar zxf prometheus-2.38.0.linux-amd64.tar.gz
 
 # 创建配置文件目录和数据目录
 [root@localhost ~]# mkdir /etc/prometheus
@@ -1654,6 +1654,158 @@ promhttp_metric_handler_requests_total{code="503"} 0
 
 :::
 
-::: details （2）自定义指标
+::: details （2）自定义指标：标签值固定：使用类似NewXx格式的函数
+
+```go
+package main
+
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"runtime"
+)
+
+const version = "1.0.0"
+
+func main() {
+	// 定义一个Gauge类型的指标
+	business_exporter_build_info := prometheus.NewGauge(prometheus.GaugeOpts{
+		// 定义指标名称,有2种书写方式,下面这种方式是等价的
+
+		// 方式一：Namespace_Subsystem_Name合起来组成一个指标名称
+		//Namespace: "business_exporter",
+		//Subsystem: "build",
+		//Name:      "info",
+
+		// 方式二: 直接写指标名
+		Name: "business_exporter_build_info",
+
+		// 定义帮助信息
+		Help: "A metric with a constant '1' value",
+
+		// 定义固定的标签，包含标签名和标签值
+		ConstLabels: map[string]string{"version": version, "goversion": runtime.Version()},
+	})
+
+	// 注册指标
+	prometheus.MustRegister(business_exporter_build_info)
+
+	// 更新指标的值
+	business_exporter_build_info.Add(1)
+
+	// 注册Handler
+	http.Handle("/metrics", promhttp.Handler())
+
+	// 启动服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 以上指标是模仿 node_exporter_build_info 写的一个简单示例
+[root@localhost ~]# curl -s http://127.0.0.1:9100/metrics  | grep -i node_exporter_build_info
+# HELP node_exporter_build_info A metric with a constant '1' value labeled by version, revision, branch, and goversion from which node_exporter was built.
+# TYPE node_exporter_build_info gauge
+node_exporter_build_info{branch="HEAD",goversion="go1.17.3",revision="a2321e7b940ddcff26873612bccdf7cd4c42b6b6",version="1.3.1"} 1
+
+# 测试我们自己定义的指标
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+# HELP business_exporter_build_info A metric with a constant '1' value
+# TYPE business_exporter_build_info gauge
+business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
+```
+
+:::
+
+::: details （2）自定义指标：标签值可变：使用类似NewXxVec格式的函数
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+const version = "1.0.0"
+
+func main() {
+	// 定义一个Gauge类型的指标
+	business_exporter_http_requests_total := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			// 定义指标名称
+			Name: "business_exporter_http_requests_total",
+
+			// 定义帮助信息
+			Help: "business_exporter_http_requests_total Counter of HTTP requests.",
+
+			// 定义固定的标签
+			ConstLabels: map[string]string{},
+		},
+		// 第二个参数定义标签名,标签值可变
+		[]string{"code", "handler"},
+	)
+
+	// 注册指标
+	prometheus.MustRegister(business_exporter_http_requests_total)
+
+	// 注册Handler
+	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		// 定义变量
+		var statusCode int
+
+		// 随机搞一个错误
+		if time.Now().Unix()%3 == 0 {
+			statusCode = http.StatusInternalServerError
+		} else {
+			statusCode = http.StatusOK
+		}
+
+		// 更新标签值和指标值
+		business_exporter_http_requests_total.WithLabelValues(strconv.Itoa(statusCode), r.Method).Add(1)
+
+		// 返回相应
+		w.WriteHeader(statusCode)
+		fmt.Fprint(w, "Code ", statusCode, "\n")
+	})
+
+	// 启动服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 以上指标是模仿 Prometheus的 prometheus_http_requests_total 写的一个简单示例
+[root@localhost ~]# curl -s http://127.0.0.1:9090/metrics | grep http_requests
+# HELP prometheus_http_requests_total Counter of HTTP requests.
+# TYPE prometheus_http_requests_total counter
+prometheus_http_requests_total{code="200",handler="/metrics"} 20
+
+# 发请求
+[root@localhost ~]# for ((i=0;i<1000;i++)); do curl http://127.0.0.1:8080/login; done
+Code 200
+Code 500
+Code 500
+...
+
+# 查看Metrics
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_http_requests_total
+# HELP business_exporter_http_requests_total business_exporter_http_requests_total Counter of HTTP requests.
+# TYPE business_exporter_http_requests_total counter
+business_exporter_http_requests_total{code="200",handler="GET"} 672
+business_exporter_http_requests_total{code="500",handler="GET"} 328
+```
 
 :::
