@@ -1654,7 +1654,7 @@ promhttp_metric_handler_requests_total{code="503"} 0
 
 :::
 
-::: details （2）自定义指标：标签值固定：使用类似NewXx格式的函数
+::: details （2）自定义指标：标签值固定：使用类似 NewXx(opts XxOpts) 格式的函数
 
 ```go
 package main
@@ -1721,7 +1721,7 @@ business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
 
 :::
 
-::: details （2）自定义指标：标签值可变：使用类似NewXxVec格式的函数
+::: details （2）自定义指标：标签值可变：使用类似 NewXxVec(opts XxOpts, labelNames []string) 格式的函数
 
 ```go
 package main
@@ -1812,5 +1812,9 @@ Code 500
 business_exporter_http_requests_total{code="200",handler="GET"} 672
 business_exporter_http_requests_total{code="500",handler="GET"} 328
 ```
+
+:::
+
+::: details （3）自定义指标：定义指标值回调函数：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
 
 :::
