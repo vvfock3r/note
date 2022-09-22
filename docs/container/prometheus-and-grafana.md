@@ -6,8 +6,6 @@ Github：[https://github.com/prometheus/prometheus/](https://github.com/promethe
 
 Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
 
-* Node Exporter：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
-
 AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
 
 <br />
@@ -1525,6 +1523,8 @@ route:
 <br />
 
 ### NodeExporter
+
+Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
 
 #### 收集器(Collector)：textfile
 
