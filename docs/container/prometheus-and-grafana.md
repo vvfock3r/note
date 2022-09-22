@@ -1806,7 +1806,7 @@ Code 500
 ...
 
 # 查看Metrics
-[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_http_requests_total
+[root@localhost ~]# curl -s http://127.0.0.1:8080/metrics | grep business_exporter_http_requests_total
 # HELP business_exporter_http_requests_total business_exporter_http_requests_total Counter of HTTP requests.
 # TYPE business_exporter_http_requests_total counter
 business_exporter_http_requests_total{code="200",handler="GET"} 672
