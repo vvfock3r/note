@@ -1555,5 +1555,105 @@ role{role="application_server"} 1
 role{role="application_server"} 2
 ```
 
+<br />
 
+### Exporter开发（Go）
 
+支持的语言：[https://prometheus.io/docs/instrumenting/clientlibs/](https://prometheus.io/docs/instrumenting/clientlibs/)
+
+Go客户端库：[https://github.com/prometheus/client_golang](https://github.com/prometheus/client_golang)
+
+#### 安装
+
+```bash
+# 要求Go版本 >= 1.17
+go get github.com/prometheus/client_golang/prometheus
+go get github.com/prometheus/client_golang/prometheus/promauto
+go get github.com/prometheus/client_golang/prometheus/promhttp
+```
+
+<br />
+
+#### 基础示例
+
+::: details （1）先把Exporter跑起来
+
+`main.go`
+
+```go
+package main
+
+import (
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+)
+
+func main() {
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+这是一个最简单的Exporter
+
+* 我们并没有添加任何的指标，只是暴露了一个`/metrics/`接口
+* `Prometheus`客户端库会自动为我们生成了一些指标
+
+```bash
+# 启动Exporter
+[root@localhost demo]# go run main.go
+
+# 查看metrics
+[root@localhost ~]# curl -s http://127.0.0.1:8080/metrics | grep -Ev '^#'
+go_gc_duration_seconds{quantile="0"} 0
+go_gc_duration_seconds{quantile="0.25"} 0
+go_gc_duration_seconds{quantile="0.5"} 0
+go_gc_duration_seconds{quantile="0.75"} 0
+go_gc_duration_seconds{quantile="1"} 0
+go_gc_duration_seconds_sum 0
+go_gc_duration_seconds_count 0
+go_goroutines 6
+go_info{version="go1.17.12"} 1
+go_memstats_alloc_bytes 2.0132e+06
+go_memstats_alloc_bytes_total 2.0132e+06
+go_memstats_buck_hash_sys_bytes 4257
+go_memstats_frees_total 0
+go_memstats_gc_sys_bytes 3.530384e+06
+go_memstats_heap_alloc_bytes 2.0132e+06
+go_memstats_heap_idle_bytes 1.80224e+06
+go_memstats_heap_inuse_bytes 2.031616e+06
+go_memstats_heap_objects 11335
+go_memstats_heap_released_bytes 1.80224e+06
+go_memstats_heap_sys_bytes 3.833856e+06
+go_memstats_last_gc_time_seconds 0
+go_memstats_lookups_total 0
+go_memstats_mallocs_total 11335
+go_memstats_mcache_inuse_bytes 2400
+go_memstats_mcache_sys_bytes 16384
+go_memstats_mspan_inuse_bytes 28560
+go_memstats_mspan_sys_bytes 32768
+go_memstats_next_gc_bytes 4.473924e+06
+go_memstats_other_sys_bytes 433375
+go_memstats_stack_inuse_bytes 360448
+go_memstats_stack_sys_bytes 360448
+go_memstats_sys_bytes 8.211472e+06
+go_threads 7
+process_cpu_seconds_total 0
+process_max_fds 1024
+process_open_fds 9
+process_resident_memory_bytes 1.734656e+07
+process_start_time_seconds 1.66382729189e+09
+process_virtual_memory_bytes 1.111302144e+09
+process_virtual_memory_max_bytes 1.8446744073709552e+19
+promhttp_metric_handler_requests_in_flight 1
+promhttp_metric_handler_requests_total{code="200"} 1
+promhttp_metric_handler_requests_total{code="500"} 0
+promhttp_metric_handler_requests_total{code="503"} 0
+```
+
+:::
+
+::: details （2）自定义指标
+
+:::
