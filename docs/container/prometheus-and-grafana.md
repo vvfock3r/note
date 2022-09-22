@@ -1710,7 +1710,7 @@ func main() {
 ```bash
 # 以上指标是模仿 node_exporter_build_info 写的一个简单示例
 [root@localhost ~]# curl -s http://127.0.0.1:9100/metrics  | grep -i node_exporter_build_info
-# HELP node_exporter_build_info A metric with a constant '1' value labeled by version, revision, branch, and goversion from which node_exporter was built.
+# HELP node_exporter_build_info A metric with a constant '1' value labeled by version ...
 # TYPE node_exporter_build_info gauge
 node_exporter_build_info{branch="HEAD",goversion="go1.17.3",revision="a2321e7b940ddcff26873612bccdf7cd4c42b6b6",version="1.3.1"} 1
 
