@@ -1738,8 +1738,6 @@ import (
 	"time"
 )
 
-const version = "1.0.0"
-
 func main() {
 	// 定义一个 Counter 类型的指标
 	business_exporter_http_requests_total := prometheus.NewCounterVec(
@@ -1817,6 +1815,63 @@ business_exporter_http_requests_total{code="500",handler="GET"} 328
 
 :::
 
-::: details （3）自定义指标：请求/metrics时执行回调函数更新指标值：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
+::: details （4）自定义指标：请求/metrics时执行回调函数更新指标值：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
+
+```go
+package main
+
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"math/rand"
+	"net/http"
+)
+
+func main() {
+	// 定义一个 Counter 类型的指标
+	business_exporter_random_number_float64 := prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			// 定义指标名称
+			Name: "business_exporter_random_number_float64",
+
+			// 定义帮助信息
+			Help: "business_exporter_random_number_float64 Randomly generate a floating point number from 0.0 to 1.0",
+
+			// 定义固定的标签
+			ConstLabels: map[string]string{},
+		},
+		// 第二个参数定义一个函数，请求/metrics时会调用此函数
+		func() float64 {
+			log.Println("Callback function is running")
+			return rand.Float64()
+		},
+	)
+
+	// 注册指标
+	prometheus.MustRegister(business_exporter_random_number_float64)
+
+	// 注册Handler
+	http.Handle("/metrics", promhttp.Handler())
+
+	// 启动服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 启动Exporter
+[root@localhost demo]# go run main.go
+
+# 访问/metrics
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep -Ev '^#' | grep business_exporter_random_number_float64
+business_exporter_random_number_float64 0.4377141871869802
+
+# 查看Exporter输出日志
+[root@localhost demo]# go run main.go
+2022/09/22 20:57:11 Callback function is running
+```
 
 :::
