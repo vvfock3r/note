@@ -1875,3 +1875,8 @@ business_exporter_random_number_float64 0.4377141871869802
 ```
 
 :::
+
+<br />
+
+#### 关于数据采样
+
