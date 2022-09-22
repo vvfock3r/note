@@ -1529,11 +1529,28 @@ route:
 #### 收集器(Collector)：textfile
 
 ```bash
+# textfile收集器默认是开启的，但是若要正常使用需要指定收集*.prom文件数据的目录
+[root@localhost ~]# vim /usr/lib/systemd/system/node_exporter.service
+...
+[Service]
 ExecStart=/usr/local/bin/node_exporter \
-    --collector.textfile="enabled" \
     --collector.textfile.directory="/var/lib/node_exporter/collector/textfile"
 
+# 创建目录
 [root@localhost ~]# mkdir -p /var/lib/node_exporter/collector/textfile
+
+# 重启node_exporter
+
+# 写入测试数据，文件名要以.prom结尾
+[root@localhost ~]# vim /var/lib/node_exporter/collector/textfile/role.prom
+role{role="application_server"} 1
+
+# 查看数据
+[root@localhost ~]# curl http://127.0.0.1:9100/metrics
+...
+# HELP role Metric read from /var/lib/node_exporter/collector/textfile/role.prom
+# TYPE role untyped
+role{role="application_server"} 2
 ```
 
 
