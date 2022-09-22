@@ -12,7 +12,7 @@ AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/p
 
 <br />
 
-## * 服务部署
+## 服务部署
 
 <br />
 
@@ -596,7 +596,7 @@ done
 
 <br />
 
-## * 采集配置
+## 采集配置
 
 ### 添加目标
 
@@ -909,7 +909,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-## * PromSQL
+## PromSQL
 
 ### Metrics
 
@@ -1116,7 +1116,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-## * 存储配置
+## 存储配置
 
 文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
 
@@ -1140,7 +1140,7 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 <br />
 
-## * 安全配置
+## 安全配置
 
 ### 配置Basic Auth
 
@@ -1304,7 +1304,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-## * 报警配置
+## 报警配置
 
 ### 规则目录
 
