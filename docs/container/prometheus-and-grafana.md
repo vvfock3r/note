@@ -1528,6 +1528,8 @@ route:
 
 #### 收集器(Collector)：textfile
 
+参考脚本：[https://github.com/prometheus-community/node-exporter-textfile-collector-scripts](https://github.com/prometheus-community/node-exporter-textfile-collector-scripts)
+
 ```bash
 # textfile收集器默认是开启的，但是若要正常使用需要指定收集*.prom文件数据的目录
 [root@localhost ~]# vim /usr/lib/systemd/system/node_exporter.service
