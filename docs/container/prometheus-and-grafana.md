@@ -1574,7 +1574,9 @@ go get github.com/prometheus/client_golang/prometheus/promhttp
 
 <br />
 
-#### 基础示例
+#### 定义指标
+
+> 请注意，在我们下面的描述中，标签值和指标值是两个完全不一样概念
 
 ::: details （1）先把Exporter跑起来
 
@@ -1721,7 +1723,7 @@ business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
 
 :::
 
-::: details （2）自定义指标：标签值可变：使用类似 NewXxVec(opts XxOpts, labelNames []string) 格式的函数
+::: details （3）自定义指标：标签值可变：使用类似 NewXxVec(opts XxOpts, labelNames []string) 格式的函数
 
 ```go
 package main
@@ -1815,6 +1817,6 @@ business_exporter_http_requests_total{code="500",handler="GET"} 328
 
 :::
 
-::: details （3）自定义指标：定义指标值回调函数：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
+::: details （3）自定义指标：请求/metrics时执行回调函数更新指标值：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
 
 :::
