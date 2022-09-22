@@ -1758,6 +1758,11 @@ func main() {
 	// 注册指标
 	prometheus.MustRegister(business_exporter_http_requests_total)
 
+	// 初始化标签值, 这一步不是必须的
+	// 假如不进行初始化，那么在没有访问路由的话，将不会生成metrics
+	business_exporter_http_requests_total.WithLabelValues("200", "/login").Add(0)
+	business_exporter_http_requests_total.WithLabelValues("500", "/login").Add(0)
+
 	// 注册Handler
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
