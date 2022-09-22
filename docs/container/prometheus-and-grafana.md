@@ -1880,3 +1880,6 @@ business_exporter_random_number_float64 0.4377141871869802
 
 #### 关于数据采样
 
+<br />
+
+#### 自定义数据类型
