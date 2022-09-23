@@ -1878,8 +1878,176 @@ business_exporter_random_number_float64 0.4377141871869802
 
 <br />
 
-#### 关于数据采样
+#### 数据采样
+
+**（1）采样数据更新方法**
+
+::: details 点击查看完整代码
+
+```go
+type Gauge interface {
+	Metric
+	Collector
+
+	// Set sets the Gauge to an arbitrary value.
+	Set(float64)  // 设置任意浮点数
+	// Inc increments the Gauge by 1. Use Add to increment it by arbitrary
+	// values.
+    Inc()         // +1,等同于Add(1)
+	// Dec decrements the Gauge by 1. Use Sub to decrement it by arbitrary
+	// values.
+	Dec()         // -1,等同于Sub(1)
+	// Add adds the given value to the Gauge. (The value can be negative,
+	// resulting in a decrease of the Gauge.)
+	Add(float64)  // +任意浮点数值
+	// Sub subtracts the given value from the Gauge. (The value can be
+	// negative, resulting in an increase of the Gauge.)
+	Sub(float64)  // -任意浮点数值
+
+	// SetToCurrentTime sets the Gauge to the current Unix time in seconds.
+	SetToCurrentTime() // 设置值为当前秒级时间戳
+}
+
+type Counter interface {
+	Metric
+	Collector
+
+	// Inc increments the counter by 1. Use Add to increment it by arbitrary
+	// non-negative values.
+	Inc()             // +1,等同于Add(1)
+	// Add adds the given value to the counter. It panics if the value is <
+	// 0.
+	Add(float64)      // +任意浮点数值    
+}
+
+type Histogram interface {
+	Metric
+	Collector
+
+	// Observe adds a single observation to the histogram. Observations are
+	// usually positive or zero. Negative observations are accepted but
+	// prevent current versions of Prometheus from properly detecting
+	// counter resets in the sum of observations. See
+	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
+	// for details.
+	Observe(float64)
+}
+
+type Summary interface {
+	Metric
+	Collector
+
+	// Observe adds a single observation to the summary. Observations are
+	// usually positive or zero. Negative observations are accepted but
+	// prevent current versions of Prometheus from properly detecting
+	// counter resets in the sum of observations. See
+	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
+	// for details.
+	Observe(float64)
+}
+```
+
+:::
+
+**（2）采样数据更新方式**
+
+* 启动一个`Goroutine`定期更新指标值
+  * 劣势：当采样时间间隔比较长时会导致数据不准，比如每隔30秒更新一次指标值，第20秒去抓取`/metrics`时数据就会不准
+* 请求`/metrics`时更新采样数据
+  * 劣势：当采样时间耗时比较长时会影响`/metrics`响应时间
 
 <br />
 
-#### 自定义数据类型
+#### 自定义注册指标
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"runtime"
+)
+
+const version = "1.0.0"
+
+// 定义一个结构体，实现 Collector 接口
+type BuildInfo struct {
+	desc *prometheus.Desc
+}
+
+// Describe方法：指标元信息
+func (c *BuildInfo) Describe(desc chan<- *prometheus.Desc) {
+	fmt.Println("Description is running")
+	desc <- c.desc
+}
+
+// Collect方法：收集标签值和指标值
+func (c *BuildInfo) Collect(metrics chan<- prometheus.Metric) {
+	fmt.Println("Collect is running")
+	metrics <- prometheus.MustNewConstMetric(
+		c.desc,
+		prometheus.GaugeValue,
+		1,
+	)
+}
+
+// 构造函数
+func NewBuildInfo() *BuildInfo {
+	return &BuildInfo{
+		prometheus.NewDesc(
+			// 指标名称
+			"business_exporter_build_info",
+			// 帮助信息
+			"A metric with a constant '1' value",
+			// 标签名切片（标签值可变）
+			nil,
+			// 标签名字典（标签值固定）
+			map[string]string{"version": version, "goversion": runtime.Version()},
+		),
+	}
+}
+
+func main() {
+	// 注册指标
+	prometheus.MustRegister(NewBuildInfo())
+
+	// 暴露http api
+	http.Handle("/metrics", promhttp.Handler())
+
+	// 启动web服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 启动服务
+[root@localhost demo]# go run main.go
+Description is running
+
+# 访问/metrics
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+# HELP business_exporter_build_info A metric with a constant '1' value
+# TYPE business_exporter_build_info gauge
+business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
+
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+# HELP business_exporter_build_info A metric with a constant '1' value
+# TYPE business_exporter_build_info gauge
+business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
+
+# 每次访问/metrics，Collect方法便会执行一次
+[root@localhost demo]# go run main.go 
+Description is running
+Collect is running
+Collect is running
+```
+
+:::
