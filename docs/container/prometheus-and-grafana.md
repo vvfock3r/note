@@ -646,6 +646,30 @@ scrape_configs:
 
 <br />
 
+#### 服务发现：基于文件
+
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
+
+<br />
+
+#### 服务发现：基于HTTP
+
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#http_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#http_sd_config)
+
+<br />
+
+#### 服务发现：基于Docker
+
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config)
+
+<br />
+
+#### 服务发现：基于Kubernetes
+
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config)
+
+<br />
+
 #### 添加标签
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
