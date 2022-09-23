@@ -650,6 +650,53 @@ scrape_configs:
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
 
+```bash
+# 修改Prometheus配置
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "node"
+    file_sd_configs:                                     # 基于文件的服务发现
+      - files: ["/etc/prometheus/file_sd_config/*.yml"]  # 文件目录, 文件名支持通配符，文件格式支持JSON和YAML
+        refresh_interval: "10s"                          # 服务发现间隔时间，默认为5分钟
+
+# 创建文件发现目录
+[root@localhost ~]# mkdir -p /etc/prometheus/file_sd_config/
+[root@localhost ~]# touch /etc/prometheus/file_sd_config/node.yml
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus
+[root@localhost ~]# systemctl restart prometheus.service
+
+# -------------------------------------------------------------------------------------------------------------
+# 这里我们添加主机，并让Prometheus自动发现我们添加的主机（无需重启Prometheus）
+
+[root@localhost ~]# vim /etc/prometheus/file_sd_config/node.yml
+- targets:
+    - "localhost:9100"
+  labels:
+    id: 1
+- targets:
+    - "127.0.0.1:9100"
+  labels:
+    id: 2
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+```
+
+到Web界面进行验证
+
+![image-20220923205543236](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220923205543236.png)
+
 <br />
 
 #### 服务发现：基于HTTP
@@ -2075,3 +2122,10 @@ Collect is running
 ```
 
 :::
+
+#### 检查Metrics接口
+
+```bash
+[root@localhost ~]# curl -s http://localhost:8080/metrics | promtool check metrics
+```
+
