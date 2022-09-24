@@ -699,9 +699,37 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 服务发现：基于HTTP
+#### 服务发现：基于DNS
 
-文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#http_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#http_sd_config)
+文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config)
+
+说明：
+
+* 支持A、AAAA、MX 和 SRV记录查询
+* 查询时会使用`/etc/resolv.conf`中的DNS服务器，不支持`/etc/hosts`解析域名
+* 好像不能自定义标签
+
+```bash
+# 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+  ...
+  - job_name: "node"
+    dns_sd_configs:
+      - type: "A"
+        names: ["jinhui.dev"]
+        port: 9100
+        refresh_interval: "10s"
+
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus
+[root@localhost ~]# systemctl restart prometheus.service
+```
+
+![image-20220924121715522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220924121715522.png)
 
 <br />
 
@@ -2126,6 +2154,7 @@ Collect is running
 #### 检查Metrics接口
 
 ```bash
+# 前提：需要确保以下地址是可以访问的
 [root@localhost ~]# curl -s http://localhost:8080/metrics | promtool check metrics
 ```
 

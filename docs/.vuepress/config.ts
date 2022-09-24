@@ -41,7 +41,7 @@ const navbar = [
             {
                 text: '容器监控',
                 children: [
-                    {text: 'Prometheus & Grafana', link: '/container/prometheus-and-grafana'},
+                    {text: 'Prometheus & Grafana', link: '/container/prometheus'},
                     {text: 'Kube Prometheus Stack', link: '/container/kube-prometheus-stack'},
                 ]
             },
