@@ -707,7 +707,6 @@ Checking /etc/prometheus/prometheus.yml
 
 * 支持A、AAAA、MX 和 SRV记录查询
 * 查询时会使用`/etc/resolv.conf`中的DNS服务器，不支持`/etc/hosts`解析域名
-* 好像不能自定义标签
 
 ```bash
 # 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
@@ -736,6 +735,20 @@ Checking /etc/prometheus/prometheus.yml
 #### 服务发现：基于Docker
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config)
+
+```bash
+# 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+  ...
+  
+# 检查配置文件
+[root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
+Checking /etc/prometheus/prometheus.yml
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+ 
+# 重启Prometheus
+[root@localhost ~]# systemctl restart prometheus.service
+```
 
 <br />
 
