@@ -2200,7 +2200,7 @@ func (v *Viper) searchInPath(in string) (filename string) {
 	v.logger.Debug("searching for config in path", "path", in)
 	for _, ext := range SupportedExts {
 		v.logger.Debug("checking if file exists", "file", filepath.Join(in, v.configName+"."+ext))
-        // 当 【 路径 + configName + "." + 扩展名 】 组成的配置文件，一旦找到便返回
+        // 【 路径 + configName + "." + 扩展名 】 组成的配置文件，一旦找到便返回
 		if b, _ := exists(v.fs, filepath.Join(in, v.configName+"."+ext)); b {
 			v.logger.Debug("found file", "file", filepath.Join(in, v.configName+"."+ext))
 			return filepath.Join(in, v.configName+"."+ext)
