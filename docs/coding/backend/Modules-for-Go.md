@@ -14,6 +14,13 @@
     </thead>
     <tbody>
     <tr>
+        <td>实时重载</td>
+        <td><a href="#air" style="text-decoration:none;">Air</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Air v1.40.4</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
+    <tr>
         <td>命令行界面</td>
         <td><a href="#cobra" style="text-decoration:none;">Cobra</a></td>
         <td><li><code>Go 1.19</code></li><li><code>Cobra v1.5.0</code></li></td>
@@ -50,6 +57,7 @@
     </tr>        
     </tbody>
 </table>
+
 <br />
 
 ## Air
@@ -87,7 +95,7 @@ air -v
 
 ### 基础使用
 
-直接执行`air`即可，它会监听当前目录下的文件，当文件发生改变后会自动重新编译并运行
+直接执行`air`即可，它会监听当前目录下的文件，当文件发生改变后会重新编译代码并运行
 
 这样使用虽然方便，但是定制性很差，更好的方式是：使用配置文件来控制`air`的各项参数
 
