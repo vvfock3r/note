@@ -708,6 +708,8 @@ Checking /etc/prometheus/prometheus.yml
 * 支持A、AAAA、MX 和 SRV记录查询
 * 查询时会使用`/etc/resolv.conf`中的DNS服务器，不支持`/etc/hosts`解析域名
 
+::: details 点击查看详情
+
 ```bash
 # 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -730,16 +732,23 @@ Checking /etc/prometheus/prometheus.yml
 
 ![image-20220924121715522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220924121715522.png)
 
+:::
+
 <br />
 
 #### 服务发现：基于Docker
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config)
 
+::: details 点击查看详情
+
 ```bash
 # 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
   ...
+  docker_sd_configs:
+    - host: "unix:///var/run/docker.sock"
+      refresh_interval: "10s"
   
 # 检查配置文件
 [root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
@@ -749,6 +758,12 @@ Checking /etc/prometheus/prometheus.yml
 # 重启Prometheus
 [root@localhost ~]# systemctl restart prometheus.service
 ```
+
+这里我们随便起了一个容器，并没有提供Metrics接口，所以State状态为DOWN
+
+![image-20220925141134345](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220925141134345.png)
+
+:::
 
 <br />
 
