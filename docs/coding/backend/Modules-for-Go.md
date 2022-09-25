@@ -2183,7 +2183,7 @@ func main() {
 ```go
 // SetConfigType sets the type of the configuration returned by the
 // remote source, e.g. "json".
-// 上面的意思是：指定远程配置文件的类型，而我们想当然的认为指定的是扩展名是错误的
+// 上面的意思是：指定远程配置文件的类型，比如从etcd、consul等读取配置，而我们想当然的认为指定的是扩展名是错误的
 func SetConfigType(in string) { v.SetConfigType(in) }
 
 func (v *Viper) SetConfigType(in string) {
@@ -2193,8 +2193,8 @@ func (v *Viper) SetConfigType(in string) {
 }
 
 // 查看路径搜索源码
-
 var SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini"}
+var SupportedRemoteProviders = []string{"etcd", "etcd3", "consul", "firestore"}
 
 func (v *Viper) searchInPath(in string) (filename string) {
 	v.logger.Debug("searching for config in path", "path", in)
