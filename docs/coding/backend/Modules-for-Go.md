@@ -58,17 +58,23 @@ Github：[https://github.com/cosmtrek/air](https://github.com/cosmtrek/air)
 
 ### 安装
 
+**使用go install安装**
+
 ```bash
-# 使用go install安装后查看不了具体的版本号
+# 直接使用go install安装后查看不了版本号，需要通过-ldflags注入
 go install github.com/cosmtrek/air@v1.40.4
 
 # 查看版本
-air -v       
+air -v
 
   __    _   ___
  / /\  | | | |_)
 /_/--\ |_| |_| \_ , built with Go
+```
 
+**直接下载二进制（推荐）**
+
+```bash
 # 推荐到Github下载编译好的二进制文件
 air -v
 
@@ -153,6 +159,7 @@ tmp_dir = "tmp"           # 临时目录
 ::: details （3）自定义配置
 
 ```toml
+# This is the default configuration file of air v1.40.4 and is modified
 root = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
@@ -161,7 +168,7 @@ tmp_dir = "tmp"
   args_bin = []
   bin = "tmp\\main.exe"
   cmd = "go build -o ./tmp/main.exe ."
-  delay = 0                                                 # 根据实际情况修改
+  delay = 0                                                 # modified
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
   exclude_regex = ["_test.go"]
@@ -169,7 +176,7 @@ tmp_dir = "tmp"
   follow_symlink = false
   full_bin = ""
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml"]  # 根据实际情况修改
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml"]  # modified
   kill_delay = "0s"
   log = "build-errors.log"
   send_interrupt = false
@@ -183,13 +190,13 @@ tmp_dir = "tmp"
   watcher = "cyan"
 
 [log]
-  time = true                  # 推荐修改
+  time = true                  # modified
 
 [misc]
-  clean_on_exit = true         # 推荐修改
+  clean_on_exit = true         # modified
 
 [screen]
-  clear_on_rebuild = false     # 根据个人喜好修改
+  clear_on_rebuild = false
 ```
 
 :::
