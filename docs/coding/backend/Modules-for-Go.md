@@ -2107,7 +2107,7 @@ func main() {
 
 #### 2）多路径搜索
 
-::: details 有坑的代码
+::: details 避坑指南
 
 `config.json`
 
