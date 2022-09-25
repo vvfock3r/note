@@ -64,6 +64,8 @@
 
 Github：[https://github.com/cosmtrek/air](https://github.com/cosmtrek/air)
 
+<br />
+
 ### 安装
 
 **方式一：使用go install安装**
@@ -100,6 +102,8 @@ air -v
 这样使用虽然方便，但是定制性很差，更好的方式是：使用配置文件来控制`air`的各项参数
 
 ![image-20220925144449681](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220925144449681.png)
+
+<br />
 
 ### 配置文件
 
