@@ -2109,7 +2109,7 @@ func main() {
 
 ::: details 避坑指南
 
-`config.json`
+`config.json`（当前项目目录下）
 
 ```json
 {
@@ -2119,7 +2119,7 @@ func main() {
 }
 ```
 
-`/tmp/config.yaml`
+`/etc/config.yaml`
 
 ```yaml
 database:
@@ -2150,7 +2150,7 @@ func main() {
 	// 添加搜索路径，按添加顺序搜索
 	viper.AddConfigPath(".")           // 首先添加当前目录，默认不会搜索当前目录
 	viper.AddConfigPath("$HOME/.demo") // 其次添加家目录
-	viper.AddConfigPath("/tmp")        // 最后添加/etc目录
+	viper.AddConfigPath("/etc")        // 最后添加etc目录
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
@@ -2240,7 +2240,7 @@ viper.SupportedExts = []string{"yaml"}
 
 ```bash
 3306
-当前正在使用的配置文件:  /tmp/config.yaml
+当前正在使用的配置文件:  /etc/config.yaml
 ```
 
 :::
@@ -2268,7 +2268,7 @@ func main() {
         // 添加搜索路径，按添加顺序搜索
         viper.AddConfigPath(".")
         viper.AddConfigPath("$HOME/.demo")
-        viper.AddConfigPath("/tmp")
+        viper.AddConfigPath("/etc")
 
         // 设置默认值, database.port1是一个不存在的key
         viper.SetDefault("database.port1", "12345")
@@ -2291,7 +2291,7 @@ func main() {
 ```bash
 [root@localhost demo]# go run main.go
 12345
-当前正在使用的配置文件:  /tmp/config.yaml
+当前正在使用的配置文件:  /etc/config.yaml
 ```
 
 <br />
@@ -2319,7 +2319,7 @@ func main() {
         // 添加搜索路径，按添加顺序搜索
         viper.AddConfigPath(".")
         viper.AddConfigPath("$HOME/.demo")
-        viper.AddConfigPath("/tmp")
+        viper.AddConfigPath("/etc")
 
         // 读取配置文件
         if err := viper.ReadInConfig(); err != nil {
@@ -2352,8 +2352,8 @@ func main() {
 3306
 3306
 3306
-Config file changed: /tmp/config.yaml
-Config file changed: /tmp/config.yaml
+Config file changed: /etc/config.yaml
+Config file changed: /etc/config.yaml
 3308
 3308
 3308
