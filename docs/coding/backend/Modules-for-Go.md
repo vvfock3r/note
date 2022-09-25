@@ -2050,7 +2050,7 @@ go get github.com/spf13/viper
 
 :::tip
 
-以下代码会从**当前目录**下读取`config.yaml`文件，当前目录值得是：
+以下代码会从**当前目录**下读取`config.yaml`文件，当前目录指得是：
 
 执行命令时所在的目录，而不是命令所在的目录，所以也就意味着当执行命令时，我们的配置文件是非固定的，随着执行目录变化而变化
 
@@ -2082,7 +2082,7 @@ import (
 )
 
 func main() {
-	// 设置配置文件
+	// 设置配置文件路径
 	viper.SetConfigFile("config.yaml")
 
 	// 读取配置文件
@@ -2107,21 +2107,31 @@ func main() {
 
 #### 2）多路径搜索
 
-:::tip
+::: details 有坑的代码
 
-文件名和扩展名必须分开设置，才支持多路径搜索，即
+`config.json`
 
-```go
-// 此代码不支持多路径搜索，原因是要求这里的输入参数已经包含了路径和文件名，当我们没有写路径的时候，默认就是当前目录
-viper.SetConfigFile("config.yaml")
-
-// 要改成这种形式，才支持多路径搜索
-viper.SetConfigName("config.yaml")
+```json
+{
+  "database": {
+    "port": 3307
+  }
+}
 ```
 
-:::
+`/tmp/config.yaml`
 
-::: details 点击查看完整代码
+```yaml
+database:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: blog
+  dbname: blog
+  password: 123456
+```
+
+`main.go`
 
 ```go
 package main
@@ -2134,8 +2144,9 @@ import (
 
 func main() {
 	// 设置配置文件
-	viper.SetConfigName("config.yaml")	
-
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+    
 	// 添加搜索路径，按添加顺序搜索
 	viper.AddConfigPath(".")           // 首先添加当前目录，默认不会搜索当前目录
 	viper.AddConfigPath("$HOME/.demo") // 其次添加家目录
@@ -2152,15 +2163,87 @@ func main() {
 }
 ```
 
-:::
-
-输出结果
+**输出结果**
 
 ```bash
-[root@node-1 go]# go run main.go 
-3309
-当前正在使用的配置文件:  /root/.demo/config.yaml
+3307
+当前正在使用的配置文件:  /root/demo/config.json
 ```
+
+<br />
+
+**发现问题**
+
+我们指定了YAML格式的配置文件，怎么读取到`config.json`了？
+
+
+
+**查看相关源码**
+
+```go
+// SetConfigType sets the type of the configuration returned by the
+// remote source, e.g. "json".
+// 上面的意思是：指定远程配置文件的类型，而我们想当然的认为指定的是扩展名是错误的
+func SetConfigType(in string) { v.SetConfigType(in) }
+
+func (v *Viper) SetConfigType(in string) {
+	if in != "" {
+		v.configType = in
+	}
+}
+
+// 查看路径搜索源码
+
+var SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini"}
+
+func (v *Viper) searchInPath(in string) (filename string) {
+	v.logger.Debug("searching for config in path", "path", in)
+	for _, ext := range SupportedExts {
+		v.logger.Debug("checking if file exists", "file", filepath.Join(in, v.configName+"."+ext))
+        // 当 【 路径 + configName + "." + 扩展名 】 组成的配置文件，一旦找到便返回
+		if b, _ := exists(v.fs, filepath.Join(in, v.configName+"."+ext)); b {
+			v.logger.Debug("found file", "file", filepath.Join(in, v.configName+"."+ext))
+			return filepath.Join(in, v.configName+"."+ext)
+		}
+	}
+
+    // 当configType不为空时，且 【路径+configName】存在时，则返回【路径+configName】
+	if v.configType != "" {
+		if b, _ := exists(v.fs, filepath.Join(in, v.configName)); b {
+			return filepath.Join(in, v.configName)
+		}
+	}
+
+	return ""
+}
+```
+
+**解决办法1**
+
+```go
+// 配置文件指定上扩展名，同时设置配置文件类型，这样就走上面的第二段代码，返回 【路径 + 配置文件】
+viper.SetConfigName("config.yaml")
+viper.SetConfigType("yaml")
+
+// 这个代码看起来有点奇怪
+```
+
+**解决办法2**
+
+```go
+// 指定真正所使用的扩展名，可以写一个或多个，前面的扩展名优先被匹配
+viper.SetConfigName("config")
+viper.SupportedExts = []string{"yaml"}
+```
+
+**修正完以后查看输出结果**
+
+```bash
+3306
+当前正在使用的配置文件:  /tmp/config.yaml
+```
+
+:::
 
 <br />
 
@@ -2172,31 +2255,32 @@ func main() {
 package main
 
 import (
-	"fmt"
-	"github.com/spf13/viper"
-	"log"
+        "fmt"
+        "github.com/spf13/viper"
+        "log"
 )
 
 func main() {
-	// 设置配置文件
-	viper.SetConfigName("config.yaml")
+        // 设置配置文件
+        viper.SetConfigName("config")
+        viper.SupportedExts = []string{"yaml"}
 
-	// 添加搜索路径，按添加顺序搜索
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME/.demo")
-	viper.AddConfigPath("/tmp")
+        // 添加搜索路径，按添加顺序搜索
+        viper.AddConfigPath(".")
+        viper.AddConfigPath("$HOME/.demo")
+        viper.AddConfigPath("/tmp")
 
-	// 设置默认值, database.port1是一个不存在的key
-	viper.SetDefault("database.port1", "12345")
+        // 设置默认值, database.port1是一个不存在的key
+        viper.SetDefault("database.port1", "12345")
 
-	// 读取配置文件
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalln(err)
-	}
+        // 读取配置文件
+        if err := viper.ReadInConfig(); err != nil {
+                log.Fatalln(err)
+        }
 
-	// 获取值
-	fmt.Println(viper.Get("database.port1"))
-	fmt.Println("当前正在使用的配置文件: ", viper.ConfigFileUsed())
+        // 获取值
+        fmt.Println(viper.Get("database.port1"))
+        fmt.Println("当前正在使用的配置文件: ", viper.ConfigFileUsed())
 }
 ```
 
@@ -2205,9 +2289,9 @@ func main() {
 输出结果
 
 ```bash
-[root@node-1 go]# go run main.go 
+[root@localhost demo]# go run main.go
 12345
-当前正在使用的配置文件:  /root/go/config.yaml
+当前正在使用的配置文件:  /tmp/config.yaml
 ```
 
 <br />
@@ -2220,40 +2304,41 @@ func main() {
 package main
 
 import (
-	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/viper"
-	"log"
-	"time"
+        "fmt"
+        "github.com/fsnotify/fsnotify"
+        "github.com/spf13/viper"
+        "log"
+        "time"
 )
 
 func main() {
-	// 设置配置文件
-	viper.SetConfigName("config.yaml")
+        // 设置配置文件
+        viper.SetConfigName("config")
+        viper.SupportedExts = []string{"yaml"}
 
-	// 添加搜索路径，按添加顺序搜索
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME/.demo")
-	viper.AddConfigPath("/tmp")
+        // 添加搜索路径，按添加顺序搜索
+        viper.AddConfigPath(".")
+        viper.AddConfigPath("$HOME/.demo")
+        viper.AddConfigPath("/tmp")
 
-	// 读取配置文件
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalln(err)
-	}
+        // 读取配置文件
+        if err := viper.ReadInConfig(); err != nil {
+                log.Fatalln(err)
+        }
 
-	// 监听配置文件变化，需要注意的是：
-	// 1）一旦找到某个配置文件，只会监听这一个配置文件，对它进行改名等也不会自动寻找其他配置文件
-	// 2)对已经读取过的配置文件改名，不会影响到继续读取配置
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-	})
-	viper.WatchConfig()
+        // 监听配置文件变化，需要注意的是：
+        // 1）一旦找到某个配置文件，只会监听这一个配置文件，对它进行改名等也不会自动寻找其他配置文件
+        // 2)对已经读取过的配置文件改名，不会影响到继续读取配置
+        viper.OnConfigChange(func(e fsnotify.Event) {
+                fmt.Println("Config file changed:", e.Name)
+        })
+        viper.WatchConfig()
 
-	// 获取值
-	for {
-		fmt.Println(viper.Get("database.port"))
-		time.Sleep(time.Second)
-	}
+        // 获取值
+        for {
+                fmt.Println(viper.Get("database.port"))
+                time.Sleep(time.Second)
+        }
 }
 ```
 
@@ -2262,16 +2347,16 @@ func main() {
 输出结果
 
 ```bash
-[root@node-1 go]# go run main.go 
+[root@localhost demo]# go run main.go
 3306
 3306
 3306
 3306
-Config file changed: /root/go/config.yaml
-Config file changed: /root/go/config.yaml
-3307
-3307
-3307
+Config file changed: /tmp/config.yaml
+Config file changed: /tmp/config.yaml
+3308
+3308
+3308
 ```
 
 <br />
@@ -2345,7 +2430,8 @@ var err error
 
 func main() {
 	// 设置配置文件
-	viper.SetConfigName("config.yaml")
+	viper.SetConfigName("config")
+    viper.SupportedExts = []string{"yaml"}
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME")
 
