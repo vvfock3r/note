@@ -2112,12 +2112,11 @@ func main() {
 文件名和扩展名必须分开设置，才支持多路径搜索，即
 
 ```go
-// 此代码不支持多路径搜索
+// 此代码不支持多路径搜索，原因是要求这里的输入参数已经包含了路径和文件名，当我们没有写路径的时候，默认就是当前目录
 viper.SetConfigFile("config.yaml")
 
 // 要改成这种形式，才支持多路径搜索
-viper.SetConfigName("config")
-viper.SetConfigType("yaml")
+viper.SetConfigName("config.yaml")
 ```
 
 :::
@@ -2134,9 +2133,8 @@ import (
 )
 
 func main() {
-	// 设置配置文件，注意：文件名和扩展名必须分开设置，才支持多路径搜索
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	// 设置配置文件
+	viper.SetConfigName("config.yaml")	
 
 	// 添加搜索路径，按添加顺序搜索
 	viper.AddConfigPath(".")           // 首先添加当前目录，默认不会搜索当前目录
@@ -2181,8 +2179,7 @@ import (
 
 func main() {
 	// 设置配置文件
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigName("config.yaml")
 
 	// 添加搜索路径，按添加顺序搜索
 	viper.AddConfigPath(".")
@@ -2232,8 +2229,7 @@ import (
 
 func main() {
 	// 设置配置文件
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigName("config.yaml")
 
 	// 添加搜索路径，按添加顺序搜索
 	viper.AddConfigPath(".")
@@ -2349,8 +2345,7 @@ var err error
 
 func main() {
 	// 设置配置文件
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigName("config.yaml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME")
 
