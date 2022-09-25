@@ -66,7 +66,7 @@ Github：[https://github.com/cosmtrek/air](https://github.com/cosmtrek/air)
 
 ### 安装
 
-**使用go install安装**
+**方式一：使用go install安装**
 
 ```bash
 # 直接使用go install安装后查看不了版本号，需要通过-ldflags注入
@@ -80,7 +80,7 @@ air -v
 /_/--\ |_| |_| \_ , built with Go
 ```
 
-**直接下载二进制（推荐）**
+**方式二：直接下载二进制（推荐）**
 
 ```bash
 # 推荐到Github下载编译好的二进制文件
