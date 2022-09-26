@@ -82,7 +82,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 <br />
 
-## 基础使用
+## 示例
 
 ::: details （1）添加Prometheus数据源
 
@@ -109,3 +109,8 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 ![image-20220926154051454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926154051454.png)
 
 :::
+
+<br />
+
+## 仪表盘（Dashboards）
+
