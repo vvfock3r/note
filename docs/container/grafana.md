@@ -52,12 +52,35 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 ::: details 点击查看详情
 
 ```bash
-[root@localhost ~]# docker run --name=grafana \
-                               -p 3000:3000 \
-                               -v /var/lib/grafana:/var/lib/grafana \
-                               --restart=always \
-                               -d \
-                           grafana/grafana-enterprise:9.1.6
+# 先拷贝一份配置文件到本地
+[root@localhost ~]# mkdir /etc/grafana
+[root@localhost ~]# docker container run --name=get-grafana-config -d grafana/grafana-enterprise:9.1.6
+[root@localhost ~]# docker container cp get-grafana-config:/etc/grafana/grafana.ini /etc/grafana
+[root@localhost ~]# docker container rm -f get-grafana-config
+
+# 启动容器
+[root@localhost ~]# docker container run --name=grafana \
+                                         -p 3000:3000 \
+                                         -v /var/lib/grafana:/var/lib/grafana \
+                                         -v /etc/grafana/:/etc/grafana/ \
+                                         --user $(id -u) \
+                                         --restart=always \
+                                         -d \
+                                     grafana/grafana-enterprise:9.1.6
+
+# 浏览器访问：http://192.168.48.152:3000/
+# 默认账户：admin / admin
 ```
 
 :::
+
+<br />
+
+## 配置
+
+文档：[https://grafana.com/docs/grafana/v9.0/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v9.0/setup-grafana/configure-grafana/)
+
+<br />
+
+## 基础使用
+
