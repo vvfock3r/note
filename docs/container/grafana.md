@@ -84,3 +84,28 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 ## 基础使用
 
+::: details （1）添加Prometheus数据源
+
+![image-20220926152706930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152706930.png)
+
+![image-20220926152808857](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152808857.png)
+
+![image-20220926152933015](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152933015.png)
+
+![image-20220926153314413](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153314413.png)
+
+:::
+
+::: details （2）添加NodeExporter仪表盘
+
+![image-20220926153529584](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153529584.png)
+
+![image-20220926153855241](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153855241.png)
+
+这里我们输入`https://grafana.com/grafana/dashboards/13978` 或 `13978`
+
+成功导入后我们就可以看到数据了
+
+![image-20220926154051454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926154051454.png)
+
+:::
