@@ -112,5 +112,74 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 <br />
 
-## 仪表盘（Dashboards）
+## 仪表盘(Dashboards)
+
+### 设置(Settings)
+
+#### 通用设置(General)
+
+::: details （1）Editable：是否可编辑
+
+默认情况下是可编辑（`Editable`），如下图所示
+
+![image-20220926172925207](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926172925207.png)
+
+当设置成`Read-only`后：
+
+![image-20220926173228391](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926173228391.png)
+
+同时点击设置按钮后，会提示仪表盘不可编辑（还可以改回可编辑模式）
+
+![image-20220926173326423](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926173326423.png)
+
+:::
+
+::: details （2）修改自动刷新间隔时间
+
+`Auto refresh`默认为`5s,10s,30s,1m,5m,15m,30m,1h,2h,1d`，自动刷新时间最小的为5秒钟，
+
+当想加一个1秒钟的选项时是加不上去的（即使加上去了，Web界面也不会显示）
+
+这时候需要修改Grafana的配置文件
+
+```ini
+;min_refresh_interval = 5s
+min_refresh_interval = 1s
+```
+
+然后就可以选择1秒选项了
+
+![image-20220926174546300](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174546300.png)
+
+:::
+
+::: details （3）隐藏时间选择器
+
+将`Hide time picker`打开即可，对比下图即可发现区别
+
+![image-20220926174718775](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174718775.png)
+
+![image-20220926174752712](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174752712.png)
+
+:::
+
+::: details （4）Refresh live dashboards：这个不知道有啥用，略过
+
+:::
+
+::: details （5）面板选项
+
+**Default**
+
+![grafana_panel_default](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_default.gif)
+
+**Shared crosshair**
+
+![grafana_panel_crosshair](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_crosshair.gif)
+
+**Shared Tooltip**
+
+![grafana_panel_tooltip](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_tooltip.gif)
+
+:::
 
