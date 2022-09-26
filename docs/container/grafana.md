@@ -183,3 +183,34 @@ min_refresh_interval = 1s
 
 :::
 
+<br />
+
+#### 注释(Annotations)
+
+有一些数据更受事件驱动，不太适合图表 - 例如流程重新启动、配置重新加载或新版本的部署。
+
+它们往往发生的频率较低，如果为它们专门绘制图表，则大多数情况下您会看到一条平坦的线。然而，这些事件仍然值得监控并与图表相关联。例如，故障配置的配置重新加载可以解释请求下降。
+
+在 Grafana 中实现这一点的一个好方法是使用注释
+
+
+
+::: details 手动添加注释
+
+按时间点添加注释：鼠标单击图表即可
+
+按时间范围添加注释：按住`Ctrl`选中一段时间即可
+
+![image-20220926192417609](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926192417609.png)
+
+![image-20220926192550300](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926192550300.png)
+
+:::
+
+::: details 从数据源中查询来自动添加注释
+
+```bash
+ALERTS{alertstate="firing"}
+```
+
+:::
