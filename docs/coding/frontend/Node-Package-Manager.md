@@ -1,6 +1,6 @@
-# NodeJS包管理器
+## NodeJS包管理器
 
-## npm
+### npm
 
 CLI文档：[https://docs.npmjs.com/cli/v8/commands/npm](https://docs.npmjs.com/cli/v8/commands/npm)
 
@@ -8,7 +8,7 @@ CLI文档：[https://docs.npmjs.com/cli/v8/commands/npm](https://docs.npmjs.com/
 
 <br />
 
-### 项目初始化
+#### 项目初始化
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-init](https://docs.npmjs.com/cli/v8/commands/npm-init)
 
@@ -43,7 +43,7 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json:
 
 <br />
 
-### 管理配置文件
+#### 管理配置文件
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-config](https://docs.npmjs.com/cli/v8/commands/npm-config)
 
@@ -80,7 +80,7 @@ https://registry.npmmirror.com/
 
 <br />
 
-### 安装包
+#### 安装包
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-install](https://docs.npmjs.com/cli/v8/commands/npm-install)
 
@@ -115,7 +115,7 @@ npm install echarts --save
 
 <br />
 
-### 卸载包
+#### 卸载包
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-uninstall](https://docs.npmjs.com/cli/v8/commands/npm-uninstall)
 
@@ -123,7 +123,7 @@ npm install echarts --save
 
 <br />
 
-### 查看包
+#### 查看包
 
 查看全局都安装了哪些包
 
@@ -144,13 +144,13 @@ C:\Users\Administrator\AppData\Roaming\npm
 
 <br />
 
-## yarn
+### yarn
 
 yarn v1文档：[https://classic.yarnpkg.com/en/docs/](https://classic.yarnpkg.com/en/docs/)
 
 <br />
 
-### 安装
+#### 安装
 
 ```bash
 C:\Users\Administrator\Desktop>npm install yarn -g
@@ -162,19 +162,19 @@ C:\Users\Administrator\Desktop>yarn --version
 
 <br />
 
-### 用法
+#### 用法
 
 文档：[https://classic.yarnpkg.com/en/docs/usage](https://classic.yarnpkg.com/en/docs/usage)
 
 <br />
 
-## pnpm（推荐）
+### pnpm（推荐）
 
 官网：[https://pnpm.io/zh/](https://pnpm.io/zh/)
 
 <br />
 
-### 安装
+#### 安装
 
 文档：[https://pnpm.io/zh/installation](https://pnpm.io/zh/installation)
 
@@ -190,55 +190,51 @@ C:\Users\Administrator\Desktop\demo>pnpm --version
 
 <br />
 
-### 项目初始化
+#### 安装包
 
-文档：[https://pnpm.io/zh/cli/init](https://pnpm.io/zh/cli/init)
+文档：[https://pnpm.io/zh/cli/add](https://pnpm.io/zh/cli/add)
+
+| 命令                       | 说明                                              |
+| -------------------------- | ------------------------------------------------- |
+| `pnpm add element-plus`    | 保存到 `dependencies`                             |
+| `pnpm add -D element-plus` | 保存到 `devDependencies`                          |
+| `pnpm add -g element-plus` | 安装到全局（默认会安装到`当前目录/node_modules`） |
+
+<br />
+
+#### 移除包
+
+文档：[https://pnpm.io/zh/cli/remove](https://pnpm.io/zh/cli/remove)
 
 ```bash
-C:\Users\Administrator\Desktop\demo>pnpm init
-Wrote to C:\Users\Administrator\Desktop\demo\package.json
-
-{
-  "name": "demo",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
-}
+pnpm remove element-plus
 ```
 
 <br />
 
-### 安装包
-
-文档：[https://pnpm.io/zh/cli/add](https://pnpm.io/zh/cli/add)
-
-| 命令              | 说明                                              |
-| ----------------- | ------------------------------------------------- |
-| `pnpm add sax`    | 保存到 `dependencies`                             |
-| `pnpm add -D sax` | 保存到 `devDependencies`                          |
-| `pnpm add -g sax` | 安装到全局（默认会安装到`当前目录/node_modules`） |
-
-<br />
-
-### 安装项目所有依赖
+#### 安装项目所有依赖
 
 文档：[https://pnpm.io/zh/cli/install](https://pnpm.io/zh/cli/install)
 
 <br />
 
-## Vite
+## 脚手架工具
+
+<br />
+
+### Vite
 
 文档：[https://cn.vitejs.dev/](https://cn.vitejs.dev/)
 
-### 初始化项目
+#### 初始化项目
 
 ```bash
 pnpm create vite
+```
+
+#### 安装常用模块
+
+```bash
+pnpm add element-plus
 ```
 
