@@ -197,7 +197,7 @@ min_refresh_interval = 1s
 
 
 
-::: details 手动添加注释
+::: details （1）手动添加注释
 
 按时间点添加注释：鼠标单击图表即可
 
@@ -209,7 +209,50 @@ min_refresh_interval = 1s
 
 :::
 
-::: details 从数据源中查询来自动添加注释
+::: details （2）通过API请求添加注释
+
+（1）在`Service accounts`中创建一个token，大概长这个样子：`glsa_aGyWjmE0cN8Jb5mTeUotRLyDp4fEdTQS_40d0efdb`
+
+（2）仪表盘中新增注释
+
+![image-20220927140651723](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220927140651723.png)
+
+（3）通过curl发送HTTP请求
+
+```bash
+# 发送请求
+curl -XPOST 127.0.0.1:3000/api/annotations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer glsa_aGyWjmE0cN8Jb5mTeUotRLyDp4fEdTQS_40d0efdb" \
+  --data @- << EOF
+  {
+    "text": "发布新版本\n
+      <a href=\"https://https://github.com/grafana/grafana\">Gitlab (8ba7fb80)</a>\n
+      <a href=\"https://www.jenkins.io/\">Jenkins (#32)</a>",
+    "tags": [
+      "passport",
+      "prod",
+      "v1.0.5"
+    ]
+  }
+EOF
+
+# 正确返回结果如下所示
+{"id":25,"message":"Annotation added"}
+
+# 注意事项：
+# (1) Grafana地址替换为自己的
+# (2) Token替换为自己的
+# (3) tags.passport是我们在仪表盘中添加注释时匹配的那个tag，一定要和仪表盘中的一致，不然匹配不到
+```
+
+查看效果
+
+![image-20220927141506923](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220927141506923.png)
+
+:::
+
+::: details （3）从其他数据源中查询来自动添加注释：有点费劲后面再研究
 
 ```bash
 ALERTS{alertstate="firing"}
