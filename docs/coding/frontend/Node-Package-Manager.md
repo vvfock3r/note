@@ -8,7 +8,7 @@ CLI文档：[https://docs.npmjs.com/cli/v8/commands/npm](https://docs.npmjs.com/
 
 <br />
 
-### npm init - 项目初始化
+### 项目初始化
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-init](https://docs.npmjs.com/cli/v8/commands/npm-init)
 
@@ -43,7 +43,7 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json:
 
 <br />
 
-### npm config - 管理npm配置文件
+### 管理配置文件
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-config](https://docs.npmjs.com/cli/v8/commands/npm-config)
 
@@ -80,7 +80,7 @@ https://registry.npmmirror.com/
 
 <br />
 
-### npm install - 安装包/升级NPM
+### 安装包
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-install](https://docs.npmjs.com/cli/v8/commands/npm-install)
 
@@ -115,7 +115,7 @@ npm install echarts --save
 
 <br />
 
-### npm uninstall - 卸载包
+### 卸载包
 
 文档：[https://docs.npmjs.com/cli/v8/commands/npm-uninstall](https://docs.npmjs.com/cli/v8/commands/npm-uninstall)
 
@@ -123,7 +123,7 @@ npm install echarts --save
 
 <br />
 
-### npm ls - 查看包
+### 查看包
 
 查看全局都安装了哪些包
 
@@ -150,7 +150,7 @@ yarn v1文档：[https://classic.yarnpkg.com/en/docs/](https://classic.yarnpkg.c
 
 <br />
 
-### yarn安装
+### 安装
 
 ```bash
 C:\Users\Administrator\Desktop>npm install yarn -g
@@ -162,7 +162,7 @@ C:\Users\Administrator\Desktop>yarn --version
 
 <br />
 
-### yarn用法
+### 用法
 
 文档：[https://classic.yarnpkg.com/en/docs/usage](https://classic.yarnpkg.com/en/docs/usage)
 
@@ -190,7 +190,7 @@ C:\Users\Administrator\Desktop\demo>pnpm --version
 
 <br />
 
-### pnpm init - 项目初始化
+### 项目初始化
 
 文档：[https://pnpm.io/zh/cli/init](https://pnpm.io/zh/cli/init)
 
@@ -214,7 +214,7 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json
 
 <br />
 
-### pnpm add \<pkg\> - 安装包
+### 安装包
 
 文档：[https://pnpm.io/zh/cli/add](https://pnpm.io/zh/cli/add)
 
@@ -226,7 +226,19 @@ Wrote to C:\Users\Administrator\Desktop\demo\package.json
 
 <br />
 
-### pnpm install - 安装项目所有依赖
+### 安装项目所有依赖
 
 文档：[https://pnpm.io/zh/cli/install](https://pnpm.io/zh/cli/install)
+
+<br />
+
+## Vite
+
+文档：[https://cn.vitejs.dev/](https://cn.vitejs.dev/)
+
+### 初始化项目
+
+```bash
+pnpm create vite
+```
 

@@ -62,7 +62,7 @@ const navbar = [
                 text: '工程化',
                 children: [
                     {text: 'Vue', link: '/coding/frontend/vue'},
-                    {text: 'Node包管理器', link: '/coding/frontend/node-package-manager'},
+                    {text: 'Node包管理器和Vite脚手架', link: '/coding/frontend/node-package-manager'},
                     {text: 'TypeScript核心语法', link: '/coding/frontend/typeScript'},
                 ]
             },
