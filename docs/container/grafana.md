@@ -215,7 +215,7 @@ min_refresh_interval = 1s
 
 （2）仪表盘中新增注释
 
-![image-20220927140651723](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220927140651723.png)
+![image-20220927140651723](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220927140651723.png)
 
 （3）通过curl发送HTTP请求
 
@@ -259,3 +259,4 @@ ALERTS{alertstate="firing"}
 ```
 
 :::
+
