@@ -235,6 +235,9 @@ pnpm create vite
 #### 安装常用模块
 
 ```bash
+pnpm add vue-router
+pnpm add pinia
 pnpm add element-plus
+pnpm add axios
 ```
 
