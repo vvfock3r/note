@@ -1491,22 +1491,22 @@ Checking /etc/prometheus/rules/node.yml
 ```bash
 # 新增一条规则
 [root@localhost ~]# vim /etc/prometheus/rules/node.yml
-...
-- name: alert
+groups:
+  - name: alert
     rules:
-    - alert: InstanceDown     
-      expr: up == 0           
-      for: 1m
-      labels:                 
-        severity: page
-      annotations:
-        summary: "Instance {{ $labels.instance }} down"
-        description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
 
 # 检查配置文件
 [root@localhost rules]# promtool check rules /etc/prometheus/rules/*.yml
 Checking /etc/prometheus/rules/node.yml
-  SUCCESS: 2 rules found
+  SUCCESS: 1 rules found
 
 # 现在把node_exporter进程关闭，过几分钟查看Prometheus的报警状态
 [root@localhost rules]# systemctl stop node_exporter
