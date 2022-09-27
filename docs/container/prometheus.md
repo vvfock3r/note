@@ -1,4 +1,4 @@
-## Prometheus
+# Prometheus
 
 官网：[https://prometheus.io/](https://prometheus.io/)
 
@@ -10,11 +10,11 @@ AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/p
 
 <br />
 
-### 服务部署
+## 服务部署
 
 <br />
 
-#### Prometheus Server
+### Prometheus Server
 
 **部署方式1：二进制部署**
 
@@ -146,7 +146,7 @@ docker container run --name "prometheus" \
 
 <br />
 
-#### Node Exporter
+### Node Exporter
 
 **部署方式1：二进制部署**
 
@@ -240,7 +240,7 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 
 <br />
 
-#### AlertManager
+### AlertManager
 
 **部署方式1：二进制部署**
 
@@ -360,7 +360,7 @@ docker container rm -f get-alertmanager-config
 
 <br />
 
-#### Thanos
+### Thanos
 
 文档：[https://thanos.io/](https://thanos.io/)
 
@@ -564,7 +564,7 @@ EOF
 
 <br />
 
-#### 辅助脚本
+### 辅助脚本
 
 `watcher.sh`：在学习阶段会频繁修改配置文件，此脚本用于监听`Prometheus`配置文件，一旦发现被修改后就重启服务，避免重复操作
 
@@ -591,9 +591,9 @@ done
 
 <br />
 
-### 采集配置
+## 采集配置
 
-#### 添加目标
+### 添加目标
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
 
@@ -646,7 +646,7 @@ scrape_configs:
 
 <br />
 
-#### 服务发现：基于文件
+### 服务发现：基于文件
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
 
@@ -699,7 +699,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 服务发现：基于DNS
+### 服务发现：基于DNS
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config)
 
@@ -736,7 +736,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 服务发现：基于Docker
+### 服务发现：基于Docker
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config)
 
@@ -767,13 +767,13 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 服务发现：基于Kubernetes
+### 服务发现：基于Kubernetes
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config)
 
 <br />
 
-#### 添加标签
+### 添加标签
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
 
@@ -796,7 +796,7 @@ Checking /etc/prometheus/prometheus.yml
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
-#### 目标重新标记：relabel_config
+### 目标重新标记：relabel_config
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config)
 
@@ -978,7 +978,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 指标重新标记：metric_relabel_configs
+### 指标重新标记：metric_relabel_configs
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs)
 
@@ -1012,7 +1012,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 自动生成的时间序列
+### 自动生成的时间序列
 
 文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
 
@@ -1031,9 +1031,9 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### PromSQL
+## PromSQL
 
-#### Metrics
+### Metrics
 
 文档：[https://prometheus.io/docs/practices/naming/#metric-and-label-naming](https://prometheus.io/docs/practices/naming/#metric-and-label-naming)
 
@@ -1084,7 +1084,7 @@ Summary：百分位统计
 
 <br />
 
-#### 表达式数据类型
+### 表达式数据类型
 
 在 Prometheus 的表达式语言中，表达式或子表达式可以计算为以下四种类型之一：
 
@@ -1095,7 +1095,7 @@ Summary：百分位统计
 
 <br />
 
-#### 选择器：即时向量
+### 选择器：即时向量
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/basics/](https://prometheus.io/docs/prometheus/2.38/querying/basics/)
 
@@ -1113,7 +1113,7 @@ Summary：百分位统计
 
 <br />
 
-#### 选择器：范围向量
+### 选择器：范围向量
 
 ```bash
 # 这样查是查询当前的值
@@ -1130,7 +1130,7 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m]
 
 ![image-20220912112033373](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220912112033373.png)
 
-#### 选择器：时间偏移
+### 选择器：时间偏移
 
 ```bash
 # 查看1天前这个时间点的数据
@@ -1142,7 +1142,7 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m] offset 1d
 
 
 
-#### 选择器：@修饰符
+### 选择器：@修饰符
 
 ```bash
 # @修饰符允许我们查看某一个具体时间点的数据
@@ -1168,7 +1168,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-#### 运算符：二元运算符
+### 运算符：二元运算符
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
 
@@ -1198,15 +1198,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 (node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
 ```
 
-#### 运算符：向量匹配`on`和`ignoring`
+### 运算符：向量匹配`on`和`ignoring`
 
 待补充
 
-#### 运算符：组修饰符`group_left`和`group_right`
+### 运算符：组修饰符`group_left`和`group_right`
 
 待补充
 
-#### 运算符：聚合运算符
+### 运算符：聚合运算符
 
 - `sum`（计算维度总和）
 - `min`（选择最小尺寸）
@@ -1227,7 +1227,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 
 
-#### 运算符：函数
+### 运算符：函数
 
 文档：[https://prometheus.io/docs/prometheus/latest/querying/functions/](https://prometheus.io/docs/prometheus/latest/querying/functions/)
 
@@ -1238,11 +1238,11 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-### 存储配置
+## 存储配置
 
 文档：[https://prometheus.io/docs/prometheus/2.38/storage/](https://prometheus.io/docs/prometheus/2.38/storage/)
 
-#### 本地存储
+### 本地存储
 
 Prometheus内部实现了一个磁盘的时间序列数据库，常用参数有：
 
@@ -1254,7 +1254,7 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 <br />
 
-#### 外部存储
+### 外部存储
 
 支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
 
@@ -1262,9 +1262,9 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 <br />
 
-### 安全配置
+## 安全配置
 
-#### 配置Basic Auth
+### 配置Basic Auth
 
 文档：
 
@@ -1338,7 +1338,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 配置HTTPS协议
+### 配置HTTPS协议
 
 文档：
 
@@ -1426,9 +1426,9 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 报警配置
+## 报警配置
 
-#### 规则目录
+### 规则目录
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -1451,7 +1451,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-#### 记录规则
+### 记录规则
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/recording_rules/](https://prometheus.io/docs/prometheus/2.38/configuration/recording_rules/)
 
@@ -1482,7 +1482,7 @@ Checking /etc/prometheus/rules/node.yml
 
 <br />
 
-#### 报警记录
+### 报警记录
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/alerting_rules/](https://prometheus.io/docs/prometheus/2.38/configuration/alerting_rules/)
 
@@ -1518,7 +1518,7 @@ Checking /etc/prometheus/rules/node.yml
 
 <br />
 
-#### 配置Prometheus发送告警
+### 配置Prometheus发送告警
 
 配置Prometheus发送告警到AlertManager中
 
@@ -1529,7 +1529,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - localhost:9093     # 这里写alertmanager的地址
+          - "localhost:9093"     # 这里写alertmanager的地址
 
 # 检查配置文件
 [root@localhost ~]# promtool check config /etc/prometheus/prometheus.yml
@@ -1546,7 +1546,7 @@ Checking /etc/prometheus/rules/node.yml
 
 <br />
 
-#### 配置AlertManager发送告警
+### 配置AlertManager发送告警
 
 文档：[https://prometheus.io/docs/alerting/0.24/configuration/](https://prometheus.io/docs/alerting/0.24/configuration/)
 
@@ -1623,7 +1623,7 @@ Found:
 
 <br />
 
-#### 告警时间
+### 告警时间
 
 （1）告警发生以后持久多长时间才发送到AlertManager
 
@@ -1641,7 +1641,7 @@ route:
   ...
 ```
 
-#### 告警分组
+### 告警分组
 
 分组概念：分组可以将**类似性质的告警分类为单个通知**，在通知中我们可以看到有哪些服务实例受到了影响
 
@@ -1649,11 +1649,11 @@ route:
 
 <br />
 
-### NodeExporter
+## NodeExporter
 
 Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
 
-#### 收集器(Collector)：textfile
+### 收集器(Collector)：textfile
 
 参考脚本：[https://github.com/prometheus-community/node-exporter-textfile-collector-scripts](https://github.com/prometheus-community/node-exporter-textfile-collector-scripts)
 
@@ -1684,13 +1684,13 @@ role{role="application_server"} 2
 
 <br />
 
-### Exporter开发（Go）
+## Exporter开发（Go）
 
 支持的语言：[https://prometheus.io/docs/instrumenting/clientlibs/](https://prometheus.io/docs/instrumenting/clientlibs/)
 
 Go客户端库：[https://github.com/prometheus/client_golang](https://github.com/prometheus/client_golang)
 
-#### 安装
+### 安装
 
 ```bash
 # 要求Go版本 >= 1.17
@@ -1701,7 +1701,7 @@ go get github.com/prometheus/client_golang/prometheus/promhttp
 
 <br />
 
-#### 定义指标
+### 定义指标
 
 > 请注意，在我们下面的描述中，标签值和指标值是两个完全不一样概念
 
@@ -2005,7 +2005,7 @@ business_exporter_random_number_float64 0.4377141871869802
 
 <br />
 
-#### 数据采样
+### 数据采样
 
 **（1）采样数据更新方法**
 
@@ -2085,7 +2085,7 @@ type Summary interface {
 
 <br />
 
-#### 自定义注册指标
+### 自定义注册指标
 
 ::: details 点击查看完整代码
 
@@ -2179,7 +2179,7 @@ Collect is running
 
 :::
 
-#### 检查Metrics接口
+### 检查Metrics接口
 
 ```bash
 # 前提：需要确保以下地址是可以访问的
