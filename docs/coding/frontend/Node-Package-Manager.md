@@ -272,6 +272,22 @@ console.log(import.meta.env);   // 添加这一行
 
 ::: details （2）自定义环境变量
 
+注意：只有以 `VITE_` 为前缀的变量才会暴露给经过 vite
+
+`.env.development`
+
+```ini
+# 项目本地运行端口号
+VITE_PORT = 8080
+```
+
+`.env.production`
+
+```ini
+# 项目本地运行端口号
+VITE_PORT = 80
+```
+
 :::
 
 ## 
