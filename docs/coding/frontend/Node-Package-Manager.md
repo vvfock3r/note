@@ -285,18 +285,18 @@ VITE_HOST = 0.0.0.0
 VITE_PORT = 8887
 ```
 
+xxx环境配置文件：`.env.fat`
+
+```ini
+VITE_HOST = 0.0.0.0
+VITE_PORT = 8889
+```
+
 生产环境配置文件：`.env.pro`
 
 ```ini
 VITE_HOST = 0.0.0.0
 VITE_PORT = 8888
-```
-
-xxx环境配置文件：`.env.xxx`
-
-```ini
-VITE_HOST = 0.0.0.0
-VITE_PORT = 8889
 ```
 
 修改`vite.config.js`来加载上面的配置文件
@@ -322,13 +322,13 @@ export default ({command, mode, ssrBuild}) => {
 ```bash
 # 启动开发服务器
 vite --mode dev
+vite --mode fat
 vite --mode pro
-vite --mode xxx
 
 # 打包
 vite build --mode dev
+vite build --mode fat
 vite build --mode pro
-vite build --mode xxx
 ```
 
 修改`package.json`
@@ -336,11 +336,11 @@ vite build --mode xxx
 ```json
   "scripts": {
     "serve:dev": "vite serve --mode dev",
+    "serve:fat": "vite serve --mode fat",
     "serve:pro": "vite serve --mode pro",
-    "serve:xxx": "vite serve --mode xxx",
     "build:dev": "vite build --mode dev",
+    "build:fat": "vite build --mode fat",
     "build:pro": "vite build --mode pro",
-    "build:xxx": "vite build --mode xxx",
     "preview": "vite preview"
   },
 ```
@@ -393,7 +393,6 @@ createApp(App).use(router).mount('#app')
 
 ```vue
 <script setup>
-
 </script>
 
 <template>
@@ -401,7 +400,6 @@ createApp(App).use(router).mount('#app')
 </template>
 
 <style scoped>
-
 </style>
 ```
 
@@ -409,7 +407,6 @@ createApp(App).use(router).mount('#app')
 
 ```javascript
 import Home from './../components/Home.vue'
-
 
 const routes = [
     {
@@ -420,9 +417,17 @@ const routes = [
 ]
 ```
 
+<br />
 
+### axios
 
+文档：[https://axios-http.com/docs/intro](https://axios-http.com/docs/intro)
 
+#### 安装
+
+```bash
+pnpm add axios
+```
 
 
 
@@ -463,5 +468,34 @@ src
   store
   utils
   views
+```
+
+#### 环境配置
+
+`src/config/index.js`
+
+```javascript
+const mode = import.meta.env.MODE || 'pro';
+
+const modeConfig = {
+    dev: {
+        baseApi: '',
+        mockApi: '',
+    },
+    fat: {
+        baseApi: '',
+        mockApi: '',
+    },
+    pro: {
+        baseApi: '',
+        mockApi: '',
+    },
+}
+
+export default {
+    mode,
+    mock: true,
+    ...modeConfig[mode]
+}
 ```
 
