@@ -571,23 +571,15 @@ function request(options) {
     return instance(options);
 }
 
-// 单独抽离的get方法
-function get(options) {
-    return request({
-        method: 'get',
-        ...options
-    });
-}
+// 统一封装
+let http = {request};
+['get', 'post', 'put', 'delete'].forEach((method) => {
+    http[method] = (options) => {
+        delete options['method']
+        return request({method, ...options});
+    }
+})
 
-// 单独抽离的post方法
-function post(options) {
-    return request({
-        method: 'post',
-        ...options
-    });
-}
-
-const http = {request, get, post};
 export default http;
 ```
 
