@@ -285,7 +285,7 @@ VITE_HOST = 0.0.0.0
 VITE_PORT = 8887
 ```
 
-xxx环境配置文件：`.env.fat`
+测试环境配置文件：`.env.fat`
 
 ```ini
 VITE_HOST = 0.0.0.0
