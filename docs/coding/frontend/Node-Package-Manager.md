@@ -248,11 +248,11 @@ export default defineConfig({
 })
 ```
 
-### 环境变量
+### 环境变量和模式
 
 文档：[https://cn.vitejs.dev/guide/env-and-mode.html](https://cn.vitejs.dev/guide/env-and-mode.html)
 
-::: details （1）查看默认的环境变量
+::: details （1）应用内查看环境变量
 
 `main.js`
 
@@ -272,21 +272,80 @@ console.log(import.meta.env);   // 添加这一行
 
 ::: details （2）自定义环境变量
 
-注意：只有以 `VITE_` 为前缀的变量才会暴露给经过 vite
+> 注意：
+>
+> （1）只有以 `VITE_` 为前缀的变量才会暴露给经过 vite
+>
+> （2）`vite.config.js`文件中不能使用`import.meta.env`，若要读取配置可以使用`loadEnv`函数，但是只能读取到自定义的配置
 
-`.env.development`
-
-```ini
-# 项目本地运行端口号
-VITE_PORT = 8080
-```
-
-`.env.production`
+开发环境配置文件：`.env.dev`
 
 ```ini
-# 项目本地运行端口号
-VITE_PORT = 80
+VITE_HOST = 0.0.0.0
+VITE_PORT = 8887
 ```
+
+生产环境配置文件：`.env.pro`
+
+```ini
+VITE_HOST = 0.0.0.0
+VITE_PORT = 8888
+```
+
+xxx环境配置文件：`.env.xxx`
+
+```ini
+VITE_HOST = 0.0.0.0
+VITE_PORT = 8889
+```
+
+修改`vite.config.js`来加载上面的配置文件
+
+```javascript
+import {defineConfig, loadEnv} from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default ({command, mode, ssrBuild}) => {
+    const env = loadEnv(mode, process.cwd());
+    return defineConfig({
+        server: {
+            host: env.VITE_HOST,
+            port: env.VITE_PORT,
+        },
+        plugins: [vue()]
+    })
+}
+```
+
+使用vite命令测试
+
+```bash
+# 启动开发服务器
+vite --mode dev
+vite --mode pro
+vite --mode xxx
+
+# 打包
+vite build --mode dev
+vite build --mode pro
+vite build --mode xxx
+```
+
+修改`package.json`
+
+```json
+  "scripts": {
+    "serve:dev": "vite serve --mode dev",
+    "serve:pro": "vite serve --mode pro",
+    "serve:xxx": "vite serve --mode xxx",
+    "build:dev": "vite build --mode dev",
+    "build:pro": "vite build --mode pro",
+    "build:xxx": "vite build --mode xxx",
+    "preview": "vite preview"
+  },
+```
+
+用法示例：`pnpm serve:dev`
 
 :::
 
