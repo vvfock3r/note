@@ -503,16 +503,16 @@ const mode = import.meta.env.MODE || 'pro';
 
 const modeConfig = {
     dev: {
-        baseApi: '',
-        mockApi: '',
+        realApi: '/',
+        mockApi: 'https://www.fastmock.site/mock/c60f00e5eb0cbe6812d8c4750ad2030a/api',
     },
     fat: {
-        baseApi: '',
-        mockApi: '',
+        realApi: '/',
+        mockApi: 'https://www.fastmock.site/mock/c60f00e5eb0cbe6812d8c4750ad2030a/api',
     },
     pro: {
-        baseApi: '',
-        mockApi: '',
+        realApi: '/',
+        mockApi: 'https://www.fastmock.site/mock/c60f00e5eb0cbe6812d8c4750ad2030a/api',
     },
 }
 
@@ -560,11 +560,11 @@ function request(options) {
     }
 
     // 动态添加baseURL，这里必须使用defaults.baseURL
-    instance.defaults.baseURL = config.mock ? config.mockApi : config.baseApi;
+    instance.defaults.baseURL = config.mock ? config.mockApi : config.realApi;
 
     // 生产环境强制使用baseApi
     if (config.env === 'pro') {
-        instance.defaults.baseURL = config.baseApi;
+        instance.defaults.baseURL = config.realApi;
     }
 
     // 发送请求
