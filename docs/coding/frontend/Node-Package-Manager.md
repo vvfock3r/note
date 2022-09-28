@@ -429,29 +429,7 @@ const routes = [
 pnpm add axios
 ```
 
-#### 封装
 
-```javascript
-import axios from "axios";
-
-// 创建Axios实例
-const http = axios.create({
-    baseURL: "http://example.com/api/v1",
-    timeout: 3000,
-})
-
-// 请求拦截
-http.interceptors.request.use((req) => {
-    // todo
-    return req;
-})
-
-// 响应拦截
-http.interceptors.response.use((res) => {
-    // todo
-    return res;
-})
-```
 
 
 
@@ -533,8 +511,9 @@ import config from "../../config/index.js";
 
 // 创建Axios实例
 const instance = axios.create({
-    timeout: 3000
+    timeout: 3000,
 })
+
 
 // 请求拦截
 instance.interceptors.request.use((req) => {
@@ -548,21 +527,30 @@ instance.interceptors.response.use((res) => {
     return res;
 })
 
-// 请求核心函数
+// 请求核心函数, options参数可以为:
+//   (1) axios的配置参数
+//   (2) 我们自定义的mock: boolean属性
 function request(options) {
-    // 请求方法
+    // 设置默认的请求方法
     options.method = options.method || 'get';
 
     // axios get请求需要将参数传递到params中，而post请求需要将参数传递到data中
     // 这里我们统一request方法，不管是get请求还是post请求都使用data参数传递数据
     if (options.method.toLowerCase() === 'get') {
         options.params = options.data;
+        options.data = {};
     }
 
-    // 动态添加baseURL，这里必须使用defaults.baseURL
-    instance.defaults.baseURL = config.mock ? config.mockApi : config.realApi;
+    // 检查mock是否开启
+    let isMock = config.mock;
+    if (typeof options.mock !== "undefined") {
+        isMock = options.mock;
+    }
 
-    // 生产环境强制使用baseApi
+    // 动态添加baseURL，注意：axios实例的baseURL属性在defaults对象中
+    instance.defaults.baseURL = isMock ? config.mockApi : config.realApi;
+
+    // 生产环境即使开启了mock，也强制使用realApi
     if (config.env === 'pro') {
         instance.defaults.baseURL = config.realApi;
     }
