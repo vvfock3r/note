@@ -1,4 +1,4 @@
-## NodeJS包管理器
+## Node包管理器
 
 ### npm
 
@@ -216,15 +216,41 @@ pnpm remove element-plus
 
 文档：[https://pnpm.io/zh/cli/install](https://pnpm.io/zh/cli/install)
 
-<br />
+## 
 
-## 脚手架工具
-
-<br />
-
-### Vite
+## Vite脚手架
 
 文档：[https://cn.vitejs.dev/](https://cn.vitejs.dev/)
+
+### 初始化项目
+
+```bash
+pnpm create vite
+```
+
+<br />
+
+### 修改监听地址
+
+文档：[https://cn.vitejs.dev/config/server-options.html](https://cn.vitejs.dev/config/server-options.html)
+
+```javascript
+import {defineConfig} from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+    server: {
+        host: 'localhost',
+        port: 8080
+    },
+    plugins: [vue()]
+})
+```
+
+## 
+
+## 项目搭建
 
 #### 初始化项目
 
@@ -235,9 +261,29 @@ pnpm create vite
 #### 安装常用模块
 
 ```bash
+# 项目依赖
 pnpm add vue-router
 pnpm add pinia
 pnpm add element-plus
 pnpm add axios
+pnpm add echarts
+
+# 开发依赖
+pnpm add -D eslint
+pnpm add -D husky
+```
+
+#### 创建目录
+
+```bash
+src
+  api
+  assets
+  components
+  config
+  router
+  store
+  utils
+  views
 ```
 
