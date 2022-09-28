@@ -349,6 +349,83 @@ vite build --mode xxx
 
 :::
 
+## 常用模块
+
+### vue-router
+
+文档：[https://router.vuejs.org/zh/](https://router.vuejs.org/zh/)
+
+#### 安装
+
+```bash
+pnpm add vue-router
+```
+
+#### 初始化
+
+`src/router/index.js`
+
+```javascript
+import {createRouter, createWebHashHistory} from 'vue-router'
+
+const routes = []
+
+const router = createRouter({
+    history: createWebHashHistory(),
+    routes
+})
+
+export default router
+```
+
+`src/main.js`
+
+```javascript
+...
+import router from './router'
+
+createApp(App).use(router).mount('#app')
+```
+
+#### 添加第一个路由
+
+`src/components/Home.vue`
+
+```vue
+<script setup>
+
+</script>
+
+<template>
+  <h1>Hello Home</h1>
+</template>
+
+<style scoped>
+
+</style>
+```
+
+`src/router/index.js`
+
+```javascript
+import Home from './../components/Home.vue'
+
+
+const routes = [
+    {
+        name: 'home',
+        path: '/',
+        component: Home,
+    }
+]
+```
+
+
+
+
+
+
+
 ## 
 
 ## 项目搭建
