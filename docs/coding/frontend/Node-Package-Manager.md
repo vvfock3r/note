@@ -439,11 +439,13 @@ pnpm add axios
 
 #### 初始化
 
+（1）`vite`初始化项目
+
 ```bash
 pnpm create vite
 ```
 
-#### 常用模块
+（2）安装常用模块
 
 ```bash
 # 项目依赖
@@ -458,7 +460,7 @@ pnpm add -D eslint
 pnpm add -D husky
 ```
 
-#### 创建目录
+（3）创建项目目录
 
 ```bash
 src
@@ -571,3 +573,6 @@ let http = {request};
 export default http;
 ```
 
+<br />
+
+#### Storage封装
