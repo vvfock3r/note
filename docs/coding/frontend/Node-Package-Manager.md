@@ -248,6 +248,32 @@ export default defineConfig({
 })
 ```
 
+### 环境变量
+
+文档：[https://cn.vitejs.dev/guide/env-and-mode.html](https://cn.vitejs.dev/guide/env-and-mode.html)
+
+::: details （1）查看默认的环境变量
+
+`main.js`
+
+```javascript
+import {createApp} from 'vue'
+import './style.css'
+import App from './App.vue'
+
+createApp(App).mount('#app')
+
+console.log(import.meta.env);   // 添加这一行
+```
+
+![image-20220928094722169](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220928094722169.png)
+
+:::
+
+::: details （2）自定义环境变量
+
+:::
+
 ## 
 
 ## 项目搭建
