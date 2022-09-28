@@ -353,13 +353,13 @@ vite build --mode xxx
 
 ## 项目搭建
 
-#### 初始化项目
+#### 初始化
 
 ```bash
 pnpm create vite
 ```
 
-#### 安装常用模块
+#### 常用模块
 
 ```bash
 # 项目依赖
