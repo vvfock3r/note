@@ -349,6 +349,35 @@ vite build --mode pro
 
 :::
 
+### 添加别名
+
+`src/vite.config.js`
+
+```javascript
+import {resolve} from 'path';
+
+const srcPath = resolve(__dirname, './src');
+
+defineConfig({
+        server: {
+            host: env.VITE_HOST,
+            port: Number(env.VITE_PORT),
+        },
+
+        resolve: {
+            alias: {
+                '@': srcPath
+            }
+        },
+})
+
+// 以后我们就可以使用 @ 来指代src目录了
+```
+
+
+
+<br />
+
 ## 常用模块
 
 ### vue-router
@@ -733,4 +762,8 @@ import './style/reset.css'
 ```javascript
 import './style/index.css'
 ```
+
+<br />
+
+#### 路由配置
 
