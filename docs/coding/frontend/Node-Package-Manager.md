@@ -374,9 +374,9 @@ defineConfig({
 // 以后我们就可以使用 @ 来指代src目录了
 ```
 
-
-
 <br />
+
+
 
 ## 常用模块
 
@@ -767,3 +767,87 @@ import './style/index.css'
 
 #### 路由配置
 
+`router-view` 将显示与`url `对应的组件。你可以把它放在任何地方，以适应你的布局
+
+::: details 点击查看详情
+
+`src/App.vue`：Vue App组件中必须放置`router-view`，否则后面的路由都加载不出来
+
+```vue
+<script setup>
+</script>
+
+<template>
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped>
+</style>
+```
+
+`src/views/system/Home.vue`：Home是我们后台的基础架构，几乎所有页面都会用到的东西都放在这里，比如左侧菜单、面包屑、右上角用户相关等等
+
+```vue
+<script setup>
+
+</script>
+
+<template>
+  <div>Home</div>
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+`src/views/system/Dashboard.vue`：`Dashboard`是我们登录到后台后的首页，它是`Home`组件的一部分，会内嵌在Home组件中的`router-view`中
+
+```vue
+<script setup>
+
+</script>
+
+<template>
+  <div>Dashboard</div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+`src/router/index.js`：路由配置
+
+```javascript
+import {createRouter, createWebHashHistory} from 'vue-router'
+import Home from '@/views/system/Home.vue'
+
+const routes = [
+    {
+        name: 'home',
+        path: '/',
+        meta: {title: '首页'},
+        component: Home,
+        redirect: '/dashboard',
+        children: [
+            {
+                name: 'dashboard',
+                path: '/dashboard',
+                meta: {title: "仪表盘"},
+                component: () => import('@/views/system/Dashboard.vue')
+            }
+        ]
+    },
+]
+
+const router = createRouter({
+    history: createWebHashHistory(),
+    routes
+})
+
+export default router
+```
+
+:::
