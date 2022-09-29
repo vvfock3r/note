@@ -476,6 +476,8 @@ src
 
 #### 环境配置
 
+::: details 点击查看详情
+
 `src/config/index.js`
 
 ```javascript
@@ -503,7 +505,13 @@ export default {
 }
 ```
 
+:::
+
+<br />
+
 #### Axios封装
+
+::: details 点击查看详情
 
 `src/utils/http/index.js`
 
@@ -573,6 +581,58 @@ let http = {request};
 export default http;
 ```
 
+:::
+
 <br />
 
 #### Storage封装
+
+::: details 点击查看详情
+
+`src/utils/storage/index.js`
+
+```javascript
+import config from "../../config/index.js";
+
+class Storage {
+    constructor(namespace) {
+        this._namespace = namespace;
+    }
+
+    getStorage() {
+        return JSON.parse(window.localStorage.getItem(this._namespace) || '{}');
+    }
+
+    setItem(key, val) {
+        let storage = this.getStorage();
+        storage[key] = val;
+        window.localStorage.setItem(this._namespace, JSON.stringify(storage));
+    }
+
+    getItem(key) {
+        let storage = this.getStorage();
+        return storage[key];
+    }
+
+    cleanItem(key) {
+        let storage = this.getStorage();
+        delete storage[key];
+        window.localStorage.setItem(this._namespace, JSON.stringify(storage));
+    }
+
+    cleanAll() {
+        window.localStorage.clear();
+    }
+}
+
+function createStorage(namespace) {
+    return new Storage(namespace);
+}
+
+const defaultStorage = new Storage(config.namespace);
+
+export {defaultStorage, createStorage}
+```
+
+:::
+
