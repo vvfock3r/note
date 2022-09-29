@@ -429,7 +429,56 @@ const routes = [
 pnpm add axios
 ```
 
+<br />
 
+### ElementPlus 
+
+文档：[https://element-plus.org/zh-CN/](https://element-plus.org/zh-CN/)
+
+#### 安装
+
+```bash
+pnpm add element-plus
+```
+
+#### 自动按需引入
+
+文档：[https://element-plus.org/zh-CN/guide/quickstart.html](https://element-plus.org/zh-CN/guide/quickstart.html)
+
+（1）额外安装两款插件
+
+```bash
+pnpm add -D unplugin-vue-components unplugin-auto-import
+```
+
+（2）修改`vite.config.js`
+
+```javascript
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import {ElementPlusResolver} from 'unplugin-vue-components/resolvers'
+
+// 修改plugins
+        plugins: [
+            vue(),
+            AutoImport({
+                resolvers: [ElementPlusResolver()],
+            }),
+            Components({
+                resolvers: [ElementPlusResolver()],
+            }),
+        ]
+```
+
+（3）注册到App中，并将默认语言（英文）修改为中文
+
+```javascript
+import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+
+const app = createApp(App)
+app.use(ElementPlus, {locale: zhCn, size: 'small', zIndex: 3000})
+```
 
 
 
@@ -449,11 +498,13 @@ pnpm create vite
 
 ```bash
 # 项目依赖
-pnpm add vue-router
-pnpm add pinia
-pnpm add element-plus
-pnpm add axios
-pnpm add echarts
+pnpm add vue-router   # 路由
+pnpm add pinia        # 状态管理
+pnpm add axios        # HTTP客户端
+
+pnpm add element-plus # UI框架
+pnpm add reset.css    # CSS重置样式
+pnpm add echarts      # 图表组件
 
 # 开发依赖
 pnpm add -D eslint
