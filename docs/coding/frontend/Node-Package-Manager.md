@@ -486,6 +486,30 @@ app.use(ElementPlus, {locale: zhCn, size: 'small', zIndex: 3000})
 
 ## 项目搭建
 
+#### WebStorm配置
+
+::: details 自定义Vue组件模板
+
+![image-20220929180855179](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220929180855179.png)
+
+```vue
+<script setup>
+
+</script>
+
+<template>
+
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
 #### 初始化
 
 （1）`vite`初始化项目
@@ -509,6 +533,7 @@ pnpm add echarts      # 图表组件
 # 开发依赖
 pnpm add -D eslint
 pnpm add -D husky
+pnpm add -D scss
 ```
 
 （3）创建项目目录
