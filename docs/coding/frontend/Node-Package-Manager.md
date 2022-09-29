@@ -480,7 +480,7 @@ const app = createApp(App)
 app.use(ElementPlus, {locale: zhCn, size: 'small', zIndex: 3000})
 ```
 
-
+<br />
 
 ## 
 
@@ -527,7 +527,6 @@ pnpm add pinia        # 状态管理
 pnpm add axios        # HTTP客户端
 
 pnpm add element-plus # UI框架
-pnpm add reset.css    # CSS重置样式
 pnpm add echarts      # 图表组件
 
 # 开发依赖
@@ -546,6 +545,7 @@ src
   config
   router
   store
+  style
   utils
   views
 ```
@@ -711,4 +711,26 @@ export {defaultStorage, createStorage}
 ```
 
 :::
+
+<br />
+
+#### 全局样式
+
+（1）引入`ElementPlus`，参考上面文档
+
+（2）引入`reset.css`，修改`src/main.js`
+
+```javascript
+import './style/reset.css'
+```
+
+> `reset.css`可以在这里找到：[https://meyerweb.com/eric/tools/css/reset/](https://meyerweb.com/eric/tools/css/reset/)，也可以通过包管理器安装`pnpm add -D reset.css`，然后在引入
+>
+> `import 'reset.css'`，就可以找到本地所处的位置了
+
+（3）自定义全局样式，修改`src/main.js`
+
+```javascript
+import './style/index.css'
+```
 
