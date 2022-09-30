@@ -572,6 +572,7 @@ src
   assets
   components
   config
+  layout
   router
   store
   style
@@ -785,7 +786,7 @@ import './style/index.css'
 </style>
 ```
 
-`src/views/system/Home.vue`：Home是我们后台的基础架构，几乎所有页面都会用到的东西都放在这里，比如左侧菜单、面包屑、右上角用户相关等等
+`src/layout/Admin.vue`：Home是我们后台的基础架构，几乎所有页面都会用到的东西都放在这里，比如左侧菜单、面包屑、右上角用户相关等等
 
 ```vue
 <script setup>
@@ -793,7 +794,7 @@ import './style/index.css'
 </script>
 
 <template>
-  <div>Home</div>
+  <div>Admin</div>
   <router-view></router-view>
 </template>
 
@@ -802,7 +803,7 @@ import './style/index.css'
 </style>
 ```
 
-`src/views/system/Dashboard.vue`：`Dashboard`是我们登录到后台后的首页，它是`Home`组件的一部分，会内嵌在Home组件中的`router-view`中
+`src/views/Dashboard/Dashboard.vue`：`Dashboard`是我们登录到后台后的首页，它是`Home`组件的一部分，会内嵌在Home组件中的`router-view`中
 
 ```vue
 <script setup>
@@ -822,25 +823,26 @@ import './style/index.css'
 
 ```javascript
 import {createRouter, createWebHashHistory} from 'vue-router'
-import Home from '@/views/system/Home.vue'
+import Admin from '@/layout/Admin.vue'
 
 const routes = [
     {
         name: 'home',
         path: '/',
         meta: {title: '首页'},
-        component: Home,
+        component: Admin,
         redirect: '/dashboard',
         children: [
             {
                 name: 'dashboard',
                 path: '/dashboard',
                 meta: {title: "仪表盘"},
-                component: () => import('@/views/system/Dashboard.vue')
+                component: () => import('@/views/Dashboard/Dashboard.vue')
             }
         ]
     },
 ]
+
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -851,3 +853,12 @@ export default router
 ```
 
 :::
+
+<br />
+
+#### 页面布局
+
+
+
+
+
