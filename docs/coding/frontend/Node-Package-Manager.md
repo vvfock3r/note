@@ -764,6 +764,19 @@ import './style/reset.css'
 import './style/index.css'
 ```
 
+`src/style/index.css`
+
+```css
+html, body, #app {
+    height: 100%;
+    width: 100%;
+}
+
+*:not([class^='el-']) {
+    box-sizing: border-box;
+}
+```
+
 <br />
 
 #### 路由配置
