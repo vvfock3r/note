@@ -1,6 +1,31 @@
 # Go实用模块
 
-## 分组目录
+## 基本模块
+
+<table>
+    <thead>
+    <tr>
+        <th style="width: 15%;">分类说明</th>
+        <th style="width: 15%;">模块名称</th>
+        <th style="width: 20%;">测试版本</th>
+        <th style="width: 30%;">应用举例</th>
+        <th style="width: 30%;">备注</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>排序</td>
+        <td><a href="#sort" style="text-decoration:none;">Sort</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
+    </tbody>
+</table>
+
+
+
+## 实用模块
 
 <table>
     <thead>
@@ -57,7 +82,6 @@
     </tr>        
     </tbody>
 </table>
-
 <br />
 
 ## Air
@@ -5740,5 +5764,429 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
 ## Swagger
 
 文档：[https://swagger.io/](https://swagger.io/)
+
+<br />
+
+## Sort
+
+文档：[https://pkg.go.dev/sort](https://pkg.go.dev/sort)
+
+### 基本使用
+
+::: details （1）基本使用
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int切片排序
+	{
+		data := []int{4, 5, 3, 1, 2}
+		sort.Ints(data)
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.IntsAreSorted(data)) // 检查是否已排序
+	}
+
+	// float64切片排序
+	{
+		data := []float64{0.4, 0.5, 0.3, 0.1, 0.2}
+		sort.Float64s(data)
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.Float64sAreSorted(data)) // 检查是否已排序
+	}
+
+	// 字符串切片排序
+	{
+		data := []string{"H", "e", "l", "l", "o", " ", "W", "o", "r", "l", "d", "!"}
+		sort.Strings(data)
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.StringsAreSorted(data)) // 检查是否已排序
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+[]int{1, 2, 3, 4, 5}
+true
+[]float64{0.1, 0.2, 0.3, 0.4, 0.5}
+true
+[]string{" ", "!", "H", "W", "d", "e", "l", "l", "l", "o", "o", "r"}
+true
+```
+
+从上面可以看到：
+
+* 默认都是按升序排序，如何按照降序排序？
+* 默认不支持像`int32`、`float32`这种切片结构，该如何解决？
+* 排序函数是直接对数据进行操作的，如何返回一份新的排序好的数据？
+
+:::
+
+::: details （2）进一步探索
+
+查看源码
+
+```go
+// 查看sort.Ints源码
+func Ints(x []int) { Sort(IntSlice(x)) }
+
+// --------------------------------------------------------------------------------
+// 看一下IntSlice，他是一个自定义类型，且实现了一堆方法
+type IntSlice []int
+
+func (x IntSlice) Len() int           { return len(x) }
+func (x IntSlice) Less(i, j int) bool { return x[i] < x[j] }
+func (x IntSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x IntSlice) Sort() { Sort(x) }
+
+// --------------------------------------------------------------------------------
+// 看一下Sort函数，sort函数需要一个Interface类型的数据，Interface是一个接口，定义了3个方法
+func Sort(data Interface) {
+	n := data.Len()
+	if n <= 1 {
+		return
+	}
+	limit := bits.Len(uint(n))
+	pdqsort(data, 0, n, limit)
+}
+
+type Interface interface {
+	Len() int	
+	Less(i, j int) bool
+	Swap(i, j int)
+}
+
+// 我们来总结一下：
+//   (1) 函数内部会将int切片转为自定义类型IntSlice，该自定义类型实现了Interface接口，从而可以作为参数传到Sort函数中，Sort函数就是用来真正实现排序的
+//   (2) 对于sort.Float64s和sort.Strings，也是一样的套路
+
+// --------------------------------------------------------------------------------
+// 所以也可以写成下面这个样子
+
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int切片排序
+	data := []int{4, 5, 3, 1, 2}
+	sort.Sort(sort.IntSlice(data))
+	fmt.Printf("%#v\n", data)
+}
+```
+
+:::
+
+<br />
+
+### 解决问题
+
+这里我们来解决上面遗留的几个问题
+
+::: details （1）如何倒叙排序？
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int切片倒叙排序
+	{
+		data := []int{4, 5, 3, 1, 2}
+		sort.Sort(sort.Reverse(sort.IntSlice(data)))
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.IsSorted(sort.Reverse(sort.IntSlice(data)))) // 检查是否已降序排序
+	}
+
+	// float64切片排序
+	{
+		data := []float64{0.4, 0.5, 0.3, 0.1, 0.2}
+		sort.Sort(sort.Reverse(sort.Float64Slice(data)))
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.IsSorted(sort.Reverse(sort.Float64Slice(data)))) // 检查是否已降序排序
+	}
+
+	// 字符串切片排序
+	{
+		data := []string{"H", "e", "l", "l", "o", " ", "W", "o", "r", "l", "d", "!"}
+		sort.Sort(sort.Reverse(sort.StringSlice(data)))
+		fmt.Printf("%#v\n", data)
+		fmt.Println(sort.IsSorted(sort.Reverse(sort.StringSlice(data)))) // 检查是否已降序排序
+	}
+}
+
+// --------------------------------------------------------------------------------------------
+
+// 观察这段代码 sort.Sort(sort.Reverse(sort.IntSlice(data)))
+// 这里多了一层 sort.Reverse，这是什么意思呢？
+
+type reverse struct {
+	Interface
+}
+
+func (r reverse) Less(i, j int) bool {
+	return r.Interface.Less(j, i)      // 可以看到这里调换了i和j的顺序，从而实现倒序，非常巧妙
+}
+
+// 对于检查是否倒叙排序，我们也采用类似的方法就得到了如下的代码
+sort.IsSorted(sort.Reverse(sort.IntSlice(data)))
+```
+
+:::
+
+::: details （2）如何对类似于`int32`、`float32`这种切片结构排序？
+
+我们可以参考`[]int`实现像`IntSlice32`类型，但是这样做未免太麻烦了，有什么好的解决方案吗？
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int32切片排序：通过向sort.Slice传递自定义比较函数来实现排序
+	// 这里还需要注意2点：
+	//   (1) 查看sort.Slice源码，发现内部使用了反射，所以初步估计此函数效率会差一些
+	//   (2) 我们可以很方便的在自定义比较函数中控制><来实现正序或倒序排序
+	data := []int32{4, 5, 3, 1, 2}
+	sort.Slice(data, func(i, j int) bool {
+		return data[i] > data[j]
+	})
+	fmt.Printf("%#v\n", data)
+
+	// 是否已经排好序
+	fmt.Println(sort.SliceIsSorted(data, func(i, j int) bool {
+		return data[i] > data[j]
+	}))
+}
+
+// -----------------------------------------------------------------------
+
+// 我们可以做一下性能测试
+package main
+
+import (
+	"sort"
+	"testing"
+)
+
+func BenchmarkSortInts(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		data := []int{4, 5, 3, 1, 2}
+		sort.Ints(data)
+	}
+}
+
+func BenchmarkSortSlice(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		data := []int{4, 5, 3, 1, 2}
+		sort.Slice(data, func(i, j int) bool {
+			return data[i] < data[j]
+		})
+	}
+}
+
+// 输出结果
+D:\application\GoLand\demo>go test -bench .
+goos: windows
+goarch: amd64
+pkg: demo
+cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+BenchmarkSortInts-8      9327727               120.6 ns/op
+BenchmarkSortSlice-8     7123986               170.0 ns/op
+PASS
+ok      demo    2.670s
+```
+
+:::
+
+::: details （3）不直接修改数据，而是返回一份新的排好序的数据？
+
+`sort`包没有提供返回新数据的函数，所以这里只能将数据拷贝一份，然后在进行修改
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// 源数据
+	data := []int{4, 5, 3, 1, 2}
+
+	// 将源数据拷贝一份，需要特别注意深浅拷贝的区别
+	data2 := make([]int, len(data))
+	copy(data2, data)
+
+	// 对新数据进行排序
+	sort.Ints(data2)
+
+	// 查看新老数据
+	fmt.Println(data)
+	fmt.Println(data2)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+[4 5 3 1 2]
+[1 2 3 4 5]
+```
+
+:::
+
+<br />
+
+### 自定义结构体排序
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type Point struct {
+	x int
+	y int
+	z int
+}
+
+type PointSlice []Point
+
+func (p PointSlice) Len() int {
+	return len(p)
+}
+func (p PointSlice) Less(i, j int) bool {
+	return p[i].x < p[j].x
+}
+func (p PointSlice) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+func (p PointSlice) Sort() PointSlice {
+	sort.Sort(p)
+	return p
+}
+
+func (p PointSlice) SortWithReverse() PointSlice {
+	sort.Sort(sort.Reverse(p))
+	return p
+}
+
+func main() {
+	// 初始化
+	var points []Point
+	var RandInt = func(start, end int) int {
+		return start + rand.Intn(end-start) // 包含start,但是不包含end
+	}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成数据
+	for i := 0; i < 9; i++ {
+		point := Point{RandInt(10, 99), RandInt(10, 99), RandInt(10, 99)}
+		points = append(points, point)
+	}
+
+	// 查看数据
+	fmt.Println("排序前数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+
+	// 排序 - 方式一
+	//sort.Slice(points, func(i, j int) bool {
+	//	return points[i].x < points[j].x
+	//})
+
+	// 排序 - 方式二，自定义PointSlice类型，并实现Len、Less、Swap方法
+	//points2 := PointSlice(points) // 转为PointSlice对象
+	//sort.Sort(points2)            // 使用sort包排序
+	//points = points2              // 再转为[]Point结构
+
+	// 排序 - 方式二优化
+	//   (1) 给PointSlice增加了一个Sort方法，我们下面的代码看起来就简练很多了
+	//   (2) 增加了一个SortWithReverse,可以倒序排序
+	points = PointSlice(points).Sort()
+
+	// 查看数据
+	fmt.Println("排序后数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+排序前数据: 
+[1] {x:87 y:50 z:74}
+[2] {x:80 y:61 z:39}
+[3] {x:12 y:95 z:29}
+[4] {x:93 y:16 z:34}
+[5] {x:60 y:27 z:74}
+[6] {x:67 y:22 z:72}
+[7] {x:10 y:22 z:63}
+[8] {x:55 y:84 z:88}
+[9] {x:69 y:85 z:93}
+排序后数据:         
+[1] {x:10 y:22 z:63}
+[2] {x:12 y:95 z:29}
+[3] {x:55 y:84 z:88}
+[4] {x:60 y:27 z:74}
+[5] {x:67 y:22 z:72}
+[6] {x:69 y:85 z:93}
+[7] {x:80 y:61 z:39}
+[8] {x:87 y:50 z:74}
+[9] {x:93 y:16 z:34}
+```
+
+:::
+
+<br />
+
+### 稳定性的排序算法
+
+```go
+sort.Stable
+sort.SliceStable
+```
+
+<br />
+
+### 非切片类型排序
+
+<br />
+
+### 插入数据时排序
 
 <br />
