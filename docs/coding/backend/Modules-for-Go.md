@@ -5890,7 +5890,7 @@ func main() {
 
 <br />
 
-### 解决问题
+### 解决遗留的问题
 
 这里我们来解决上面遗留的几个问题
 
@@ -6168,6 +6168,74 @@ D:\application\GoLand\demo>go run main.go
 [7] {x:80 y:61 z:39}
 [8] {x:87 y:50 z:74}
 [9] {x:93 y:16 z:34}
+```
+
+:::
+
+<br />
+
+### 包含多个排序条件
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type Point struct {
+	x int
+	y int
+	z int
+}
+
+func main() {
+	// 初始化
+	var points []Point
+	var RandInt = func(start, end int) int {
+		return start + rand.Intn(end-start) // 包含start,但是不包含end
+	}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成数据
+	for i := 0; i < 9; i++ {
+		point := Point{RandInt(10, 15), RandInt(10, 15), RandInt(10, 15)}
+		points = append(points, point)
+	}
+
+	// 查看数据
+	fmt.Println("排序前数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+
+	// 排序
+	sort.Slice(points, func(i, j int) bool {
+		// 第一条件: 按照x升序排序
+		if points[i].x != points[j].x {
+			return points[i].x < points[j].x
+		}
+
+		// 第二条件：按照y降序排序
+		if points[i].y != points[j].y {
+			return points[i].y > points[j].y
+		}
+
+		// 第三条件：按照z降序排序
+		return points[i].z < points[j].z
+	})
+
+	// 查看数据
+	fmt.Println("排序后数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+}
 ```
 
 :::
