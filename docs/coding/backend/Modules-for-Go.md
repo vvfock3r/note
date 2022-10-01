@@ -5894,7 +5894,7 @@ func main() {
 
 这里我们来解决上面遗留的几个问题
 
-::: details （1）如何倒叙排序？
+::: details （1）如何倒序排序？
 
 ```go
 package main
@@ -5949,7 +5949,7 @@ sort.IsSorted(sort.Reverse(sort.IntSlice(data)))
 
 :::
 
-::: details （2）如何对类似于`int32`、`float32`这种切片结构排序？
+::: details （2）如何对类似于int32、float32这种切片结构排序？
 
 我们可以参考`[]int`实现像`IntSlice32`类型，但是这样做未免太麻烦了，有什么好的解决方案吗？
 
@@ -6121,7 +6121,7 @@ func main() {
 		fmt.Printf("[%d] %+v\n", i+1, points[i])
 	}
 
-	// 排序 - 方式一
+	// 排序 - 方式一，因为用了反射，性能差点意思，但是胜在简单，推荐使用
 	//sort.Slice(points, func(i, j int) bool {
 	//	return points[i].x < points[j].x
 	//})
@@ -6214,7 +6214,7 @@ func main() {
 		fmt.Printf("[%d] %+v\n", i+1, points[i])
 	}
 
-	// 排序
+	// 排序：按照多条件排序
 	sort.Slice(points, func(i, j int) bool {
 		// 第一条件: 按照x升序排序
 		if points[i].x != points[j].x {
