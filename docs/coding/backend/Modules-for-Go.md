@@ -6061,7 +6061,131 @@ D:\application\GoLand\demo>go run main.go
 
 ### 自定义结构体排序
 
-::: details 点击查看完整代码
+::: details 方式1：sort.Slice
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type Point struct {
+	x int
+	y int
+	z int
+}
+
+func main() {
+	// 初始化
+	var points []Point
+	var RandInt = func(start, end int) int {
+		return start + rand.Intn(end-start) // 包含start,但是不包含end
+	}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成数据
+	for i := 0; i < 9; i++ {
+		point := Point{RandInt(10, 99), RandInt(10, 99), RandInt(10, 99)}
+		points = append(points, point)
+	}
+
+	// 查看数据
+	fmt.Println("排序前数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+
+	// 排序 - 方式一，因为用了反射，性能差点意思，但是胜在简单/灵活，推荐使用
+	sort.Slice(points, func(i, j int) bool {
+		return points[i].x < points[j].x
+	})
+
+	// 查看数据
+	fmt.Println("排序后数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+}
+
+```
+
+:::
+
+::: details 方式2：自定义PointSlice类型，并实现Len、Less、Swap方法
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type Point struct {
+	x int
+	y int
+	z int
+}
+
+type PointSlice []Point
+
+func (p PointSlice) Len() int {
+	return len(p)
+}
+func (p PointSlice) Less(i, j int) bool {
+	return p[i].x < p[j].x
+}
+func (p PointSlice) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+func (p PointSlice) Sort() PointSlice {
+	sort.Sort(p)
+	return p
+}
+
+func main() {
+	// 初始化
+	var points []Point
+	var RandInt = func(start, end int) int {
+		return start + rand.Intn(end-start) // 包含start,但是不包含end
+	}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成数据
+	for i := 0; i < 9; i++ {
+		point := Point{RandInt(10, 99), RandInt(10, 99), RandInt(10, 99)}
+		points = append(points, point)
+	}
+
+	// 查看数据
+	fmt.Println("排序前数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+
+	// 排序 - 方式二，自定义PointSlice类型，并实现Len、Less、Swap方法
+	points2 := PointSlice(points) // 转为PointSlice对象
+	sort.Sort(points2)            // 使用sort包排序
+	points = points2              // 再转为[]Point结构
+
+	// 查看数据
+	fmt.Println("排序后数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+}
+```
+
+:::
+
+::: details 方式2的第一次优化：简化代码
 
 ```go
 package main
@@ -6121,19 +6245,9 @@ func main() {
 		fmt.Printf("[%d] %+v\n", i+1, points[i])
 	}
 
-	// 排序 - 方式一，因为用了反射，性能差点意思，但是胜在简单，推荐使用
-	//sort.Slice(points, func(i, j int) bool {
-	//	return points[i].x < points[j].x
-	//})
-
-	// 排序 - 方式二，自定义PointSlice类型，并实现Len、Less、Swap方法
-	//points2 := PointSlice(points) // 转为PointSlice对象
-	//sort.Sort(points2)            // 使用sort包排序
-	//points = points2              // 再转为[]Point结构
-
-	// 排序 - 方式二优化
-	//   (1) 给PointSlice增加了一个Sort方法，我们下面的代码看起来就简练很多了
-	//   (2) 增加了一个SortWithReverse,可以倒序排序
+	// 排序 - 方式二的第一次优化
+	//  (1) 给PointSlice增加了一个Sort方法，我们下面的代码看起来就简练很多了
+	//  (2) 并且赠送了一个SortWithReverse,用来倒序排序
 	points = PointSlice(points).Sort()
 
 	// 查看数据
@@ -6144,30 +6258,84 @@ func main() {
 }
 ```
 
-输出结果
+:::
 
-```bash
-D:\application\GoLand\demo>go run main.go
-排序前数据: 
-[1] {x:87 y:50 z:74}
-[2] {x:80 y:61 z:39}
-[3] {x:12 y:95 z:29}
-[4] {x:93 y:16 z:34}
-[5] {x:60 y:27 z:74}
-[6] {x:67 y:22 z:72}
-[7] {x:10 y:22 z:63}
-[8] {x:55 y:84 z:88}
-[9] {x:69 y:85 z:93}
-排序后数据:         
-[1] {x:10 y:22 z:63}
-[2] {x:12 y:95 z:29}
-[3] {x:55 y:84 z:88}
-[4] {x:60 y:27 z:74}
-[5] {x:67 y:22 z:72}
-[6] {x:69 y:85 z:93}
-[7] {x:80 y:61 z:39}
-[8] {x:87 y:50 z:74}
-[9] {x:93 y:16 z:34}
+::: details 方式2的第二次优化：支持自定义比较函数
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type Point struct {
+	x int
+	y int
+	z int
+}
+
+type PointSort struct {
+	pslice []Point
+	less   func(i, j Point) bool // 这里是重点，这里是我们自定义的比较函数
+}
+
+func (p PointSort) Len() int {
+	return len(p.pslice)
+}
+
+// 这里是重点
+func (p PointSort) Less(i, j int) bool {
+	return p.less(p.pslice[i], p.pslice[j])
+}
+
+func (p PointSort) Swap(i, j int) {
+	p.pslice[i], p.pslice[j] = p.pslice[j], p.pslice[i]
+}
+
+func main() {
+	// 初始化
+	var points []Point
+	var RandInt = func(start, end int) int {
+		return start + rand.Intn(end-start) // 包含start,但是不包含end
+	}
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成数据
+	for i := 0; i < 9; i++ {
+		point := Point{RandInt(10, 99), RandInt(10, 99), RandInt(10, 99)}
+		points = append(points, point)
+	}
+
+	// 查看数据
+	fmt.Println("排序前数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+
+	// 排序
+	psort := PointSort{
+		pslice: points,
+		less: func(i, j Point) bool {
+			return i.x < j.x
+		},
+	}
+	sort.Sort(psort)
+	points = psort.pslice
+
+	// 查看数据
+	fmt.Println("排序后数据: ")
+	for i := 0; i < len(points); i++ {
+		fmt.Printf("[%d] %+v\n", i+1, points[i])
+	}
+}
+
+// 总结：
+//   (1) 如果是单纯为了排序，这种方法不可取，因为太复杂了，但是，
+//   (2) 如果本身就有一个这样的结构体，要给他增加一个排序方法，这种方式就很好用了
 ```
 
 :::
@@ -6268,11 +6436,30 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 稳定性的排序算法
+### 稳定和不稳定排序
+
+因为代码不容出测试出结果，我们直接举个假象的例子来说明
 
 ```go
-sort.Stable
-sort.SliceStable
+// 排序规则：仅按照x的值来进行排序
+
+// 排序前数据:
+{x:26 y:45 z:16}
+{x:37 y:19 z:45}
+{x:26 y:36 z:94}
+
+// 排序后数据:
+{x:26 y:36 z:94}
+{x:26 y:45 z:16}
+{x:37 y:19 z:45}
+
+// 发现什么问题了吗？
+// (1) 首先，的确是按照x值进行排序了
+// (2) 其次，我们看y值的数据，原始数据中y=45为第一条数据，排序后变成第二条数据了，
+//          它其实放到第一条顺序也是可以的，同样满足按照x值排序
+//          像这种 => 可能会发生排序后的顺序与原始顺序不一致的情况，我们就称为不稳定排序，反之称为稳定排序
+// (3) sort.Sort和sort.Slice是不稳定排序
+// (4) sort.Stable和sort.SliceStable是对应的稳定排序
 ```
 
 <br />
