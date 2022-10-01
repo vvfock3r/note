@@ -6226,7 +6226,7 @@ func main() {
 			return points[i].y > points[j].y
 		}
 
-		// 第三条件：按照z降序排序
+		// 第三条件：按照z升序排序
 		return points[i].z < points[j].z
 	})
 
