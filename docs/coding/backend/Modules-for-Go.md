@@ -5771,6 +5771,8 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
 
 文档：[https://pkg.go.dev/sort](https://pkg.go.dev/sort)
 
+<br />
+
 ### 基本使用
 
 ::: details （1）基本使用
@@ -5822,17 +5824,15 @@ true
 true
 ```
 
+:::
+
 从上面可以看到：
 
 * 默认都是按升序排序，如何按照降序排序？
 * 默认不支持像`int32`、`float32`这种切片结构，该如何解决？
 * 排序函数是直接对数据进行操作的，如何返回一份新的排序好的数据？
 
-:::
-
-::: details （2）进一步探索
-
-查看源码
+::: details （2）简单看一下源码
 
 ```go
 // 查看sort.Ints源码
