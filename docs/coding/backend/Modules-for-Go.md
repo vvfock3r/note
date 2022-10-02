@@ -6565,13 +6565,13 @@ func main() {
 	reference := []int{5, 4, 3, 2, 1, 0, 9, 8, 7, 6}
 
 	// 索引函数
-	getIndex := func(reference []int, value int) int {
-		for i, v := range reference {
-			if v == value {
+	getIndex := func(r []int, v int) int {
+		for i := range r {
+			if r[i] == v {
 				return i
 			}
 		}
-		return len(reference)
+		return len(r)
 	}
 
 	// 按指定数据进行排序
@@ -6582,6 +6582,12 @@ func main() {
 	// 查看排序后的结果
 	fmt.Printf("%+v\n", data)
 }
+
+// 需要注意的点:
+//   (1) 排序数据(reference)中是否包含原始数据的所有种类?
+//   (2) 不包含时我们的排序结果是如何分布的? 如何修改分布情况?
+//
+// 总结: 这里面学问还是比较大的,建议在包含原始数据种类的情况下可以大胆使用
 ```
 
 输出结果
