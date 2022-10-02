@@ -6545,7 +6545,7 @@ D:\application\GoLand\demo>go run main.go
 
 ### 按照指定顺序排序
 
-::: details 点击查看完整代码
+::: details （1）基础版本
 
 ```go
 package main
@@ -6588,6 +6588,62 @@ func main() {
 //   (2) 不包含时我们的排序结果是如何分布的? 如何修改分布情况?
 //
 // 总结: 这里面学问还是比较大的,建议在包含原始数据种类的情况下可以大胆使用
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+[5 4 3 2 1 1 0 0 9 9 8 7]
+```
+
+:::
+
+::: details （2）优化版本，增加一层缓存，减少遍历次数
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// 功能解释: 将 data 按照 reference 中的元素顺序来排序
+
+	// 原始数据
+	data := []int{7, 1, 3, 9, 0, 4, 1, 8, 9, 0, 2, 5}
+
+	// 排序数据
+	reference := []int{5, 4, 3, 2, 1, 0, 9, 8, 7, 6}
+
+	// 索引函数
+	getIndex := func(r map[int]int, v int) int {
+		if index, ok := r[v]; ok {
+			return index
+		}
+		return len(r)
+	}
+
+	// 对排序数据生成缓存
+	makeCache := func(r []int) map[int]int {
+		m := make(map[int]int, len(r))
+		for k, v := range r {
+			m[v] = k
+		}
+		return m
+	}
+	cache := makeCache(reference)
+
+	// 按指定数据进行排序
+	sort.Slice(data, func(i, j int) bool {
+		return getIndex(cache, data[i]) < getIndex(cache, data[j])
+	})
+
+	// 查看排序后的结果
+	fmt.Printf("%+v\n", data)
+}
 ```
 
 输出结果
