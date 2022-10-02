@@ -6750,7 +6750,7 @@ func main() {
 
 #### 进一步使用
 
-::: details 点击查看详情
+::: details （1）使用sort.Search
 
 ```go
 package main
@@ -6823,3 +6823,83 @@ func main() {
 
 若未找到会返回`n`的值，即返回`sort.Search`第一个参数的值
 
+（3）`sort.Search`始终都会返回一个索引值（`int`），通常我们还要和`len(a)`做一次判断，来检查返回的索引是否存在。有办法简化这一步骤吗？
+
+可以，使用`sort.Find`
+
+::: details （2）使用sort.Find
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int切片
+	a := []int32{1, 3, 28, 10, 21, 15, 45, 6, 55, 36}
+	fmt.Printf("原始数据: %v\n", a)
+
+	{
+		// 升序排序
+		sort.Slice(a, func(i, j int) bool {
+			return a[i] < a[j]
+		})
+		fmt.Printf("\n升序排序: %v\n", a)
+
+		// 检查切片中是否有 >= 11的值
+		index, found := sort.Find(len(a), func(i int) int {
+			if a[i] >= 11 {
+				return 0 // 若找到返回0
+			}
+			return 1 // 若没找到,升序切片,返回>0的值
+		})
+		fmt.Printf("是否找到: %v\n", found)
+		fmt.Printf("索引是啥: %v\n", index)
+		fmt.Printf("索引的值: %v\n", a[index]) // 若没找到,这里会索引越界报错
+	}
+
+	{
+		// 按降序排序
+		sort.Slice(a, func(i, j int) bool {
+			return a[i] > a[j]
+		})
+		fmt.Printf("\n降序排序: %+v\n", a)
+
+		// 检查切片中是否有 <= 11的值
+		index, found := sort.Find(len(a), func(i int) int {
+			if a[i] <= 11 {
+				return 0 // 若找到返回0
+			}
+			return 1 // 若没找到,降序切片,返回>0的值
+		})
+		fmt.Printf("是否找到: %v\n", found)
+		fmt.Printf("索引是啥: %v\n", index)
+		fmt.Printf("索引的值: %v\n", a[index]) // 若没找到,这里会索引越界报错
+	}
+
+	// 总结:
+	// (1) 不管是升序还是降序,若找到了返回0,若没找到返回>0的值
+	// (2) 若没找到的话,还是和sort.Search一样,索引的值为n,即len(a)
+}
+```
+
+输出结果
+
+```bash
+原始数据: [1 3 28 10 21 15 45 6 55 36]
+
+升序排序: [1 3 6 10 15 21 28 36 45 55]
+是否找到: true                        
+索引是啥: 4                           
+索引的值: 15                          
+                                      
+降序排序: [55 45 36 28 21 15 10 6 3 1]
+是否找到: true                        
+索引是啥: 6                           
+索引的值: 10
+```
+
+:::
