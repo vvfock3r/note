@@ -6629,10 +6629,8 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 非切片类型排序
-
-<br />
-
 ### 插入数据时排序
+
+
 
 <br />
