@@ -6827,7 +6827,7 @@ func main() {
 
 可以，使用`sort.Find`
 
-::: details （2）使用sort.Find
+::: details （2）使用sort.Find：sort.Search的升级版本
 
 ```go
 package main
