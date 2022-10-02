@@ -5773,7 +5773,9 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
 
 <br />
 
-### 基本使用
+### 排序
+
+#### 基本使用
 
 ::: details （1）基本使用
 
@@ -5890,7 +5892,7 @@ func main() {
 
 <br />
 
-### 解决遗留问题
+#### 解决遗留问题
 
 这里我们来解决上面遗留的几个问题
 
@@ -6059,7 +6061,7 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 自定义结构体排序
+#### 自定义结构体排序
 
 ::: details 方式1：sort.Slice（推荐）
 
@@ -6449,7 +6451,7 @@ func main() {
 
 <br />
 
-### 包含多个排序条件
+#### 包含多个排序条件
 
 ::: details 点击查看完整代码
 
@@ -6543,7 +6545,7 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 按照指定顺序排序
+#### 按照指定顺序排序
 
 ::: details （1）基础版本
 
@@ -6657,7 +6659,7 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 稳定和不稳定排序
+#### 稳定和不稳定排序
 
 因为代码不容出测试出结果，我们直接举个假想的例子来说明
 
@@ -6685,8 +6687,139 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-### 插入数据时排序
-
-
+#### 扩展：插入数据时排序
 
 <br />
+
+### 二分查找
+
+二分查找有一个前提：<span style="color: red; font-weight: bold;">数据必须是已经排好序的，可以是升序或者降序</span>
+
+#### 基本使用
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	{
+		// int切片,已经按升序排好序
+		a := []int{1, 3, 6, 10, 15, 21, 28, 36, 45, 55}
+
+		// 返回切片中>=11的第一个元素的索引
+		fmt.Println(sort.SearchInts(a, 11))
+	}
+
+	{
+		// float64切片,已经按升序排好序
+		a := []float64{1.0, 2.0, 3.3, 4.6, 6.1, 7.2, 8.0}
+
+		// 返回切片中>=2.1的第一个元素的索引
+		fmt.Println(sort.SearchFloat64s(a, 2.1))
+	}
+
+	{
+		// 字符串切片,已经按第一个字符升序排好序
+		a := []string{"bob", "jack", "xiaoming"}
+
+		// 返回切片中第一个字符>=j的第一个元素的索引
+		fmt.Println(sort.SearchStrings(a, "j"))
+	}
+}
+```
+
+输出结果
+
+```bash
+4
+2
+1
+```
+
+这里的套路和排序一致，我们在后面看一下如何降序搜索等
+
+:::
+
+<br />
+
+#### 进一步使用
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// int切片
+	a := []int32{1, 3, 28, 10, 21, 15, 45, 6, 55, 36}
+	fmt.Printf("原始数据: %v\n\n", a)
+
+	{
+		// 升序排序
+		sort.Slice(a, func(i, j int) bool {
+			return a[i] < a[j]
+		})
+		fmt.Printf("升序排序: %v\n", a)
+
+		// 返回切片中>=11的第一个元素的索引
+		i := sort.Search(len(a), func(i int) bool {
+			return a[i] >= 11
+		})
+		fmt.Printf("找到索引: %v\n\n", i)
+
+		// 总结: 在升序排序中,查找时需要使用>或>=
+	}
+
+	{
+		// 按降序排序
+		sort.Slice(a, func(i, j int) bool {
+			return a[i] > a[j]
+		})
+		fmt.Printf("降序排序: %+v\n", a)
+
+		// 返回切片中>=11的第一个元素的索引
+		i := sort.Search(len(a), func(i int) bool {
+			return a[i] <= 11
+		})
+		fmt.Printf("找到索引: %v\n\n", i)
+
+		// 总结: 在降序排序中,查找时需要使用<或<=
+	}
+}
+```
+
+输出结果
+
+```bash
+原始数据: [1 3 28 10 21 15 45 6 55 36]
+
+升序排序: [1 3 6 10 15 21 28 36 45 55]
+找到索引: 4                           
+                                      
+降序排序: [55 45 36 28 21 15 10 6 3 1]
+找到索引: 6
+```
+
+:::
+
+**引出问题**
+
+（1）`sort.Search`的第一个参数`n`是什么意思？
+
+第一个参数代表索引结束范围，使用`len(a)`，拿到最大索引，也就意味着允许查找整个切片
+
+（2）若未找到的话会返回什么值？
+
+若未找到会返回`n`的值，即返回`sort.Search`第一个参数的值
+
