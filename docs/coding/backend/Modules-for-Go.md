@@ -6687,10 +6687,6 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-#### 扩展：插入数据时排序
-
-<br />
-
 ### 二分查找
 
 二分查找有一个前提：<span style="color: red; font-weight: bold;">数据必须是已经排好序的，可以是升序或者降序</span>
