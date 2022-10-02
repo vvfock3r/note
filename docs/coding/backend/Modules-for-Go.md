@@ -5890,7 +5890,7 @@ func main() {
 
 <br />
 
-### 解决遗留的问题
+### 解决遗留问题
 
 这里我们来解决上面遗留的几个问题
 
@@ -6278,22 +6278,34 @@ type Point struct {
 	z int
 }
 
-type PointSort struct {
+type PointList struct {
 	pslice []Point
-	less   func(i, j Point) bool // 这里是重点，这里是我们自定义的比较函数
+	less   func(i, j Point) bool // 这里是重点，这里是我们自定义的比较函数,内部字段
 }
 
-func (p PointSort) Len() int {
+func (p PointList) Len() int {
 	return len(p.pslice)
 }
 
 // 这里是重点
-func (p PointSort) Less(i, j int) bool {
+func (p PointList) Less(i, j int) bool {
 	return p.less(p.pslice[i], p.pslice[j])
 }
 
-func (p PointSort) Swap(i, j int) {
+func (p PointList) Swap(i, j int) {
 	p.pslice[i], p.pslice[j] = p.pslice[j], p.pslice[i]
+}
+
+// 支持自定义比较函数的排序函数
+func (p PointList) SortFunc(less func(i, j Point) bool) PointList {
+	p.less = less
+	sort.Stable(p)
+	return p
+}
+
+// 构造函数
+func NewPointList(pslice []Point) PointList {
+	return PointList{pslice: pslice}
 }
 
 func main() {
@@ -6317,14 +6329,10 @@ func main() {
 	}
 
 	// 排序
-	psort := PointSort{
-		pslice: points,
-		less: func(i, j Point) bool {
-			return i.x < j.x
-		},
-	}
-	sort.Sort(psort)
-	points = psort.pslice
+	pointSort := NewPointList(points)
+	pointSort.SortFunc(func(i, j Point) bool {
+		return i.z < j.z
+	})
 
 	// 查看数据
 	fmt.Println("排序后数据: ")
@@ -6430,6 +6438,58 @@ D:\application\GoLand\demo>go run main.go
 [7] {x:17 y:19 z:16}
 [8] {x:17 y:11 z:18}
 [9] {x:18 y:19 z:17}
+```
+
+:::
+
+<br />
+
+### 按照指定顺序排序
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// 功能解释: 将 data 按照 reference 中的元素顺序来排序
+
+	// 原始数据
+	data := []int{7, 1, 3, 9, 0, 4, 1, 8, 9, 0, 2, 5}
+
+	// 排序数据
+	reference := []int{5, 4, 3, 2, 1, 0, 9, 8, 7, 6}
+
+	// 索引函数
+	getIndex := func(reference []int, value int) int {
+		for i, v := range reference {
+			if v == value {
+				return i
+			}
+		}
+		return len(reference)
+	}
+
+	// 按指定数据进行排序
+	sort.Slice(data, func(i, j int) bool {
+		return getIndex(reference, data[i]) < getIndex(reference, data[j])
+	})
+
+	// 查看排序后的结果
+	fmt.Printf("%+v\n", data)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+[5 4 3 2 1 1 0 0 9 9 8 7]
 ```
 
 :::
