@@ -6334,7 +6334,7 @@ func main() {
 
 :::
 
-::: details 方式2的第二次优化：支持自定义比较函数
+::: details 方式2的第二次优化：支持自定义比较函数（推荐）
 
 ```go
 package main
