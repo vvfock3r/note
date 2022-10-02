@@ -6618,14 +6618,6 @@ func main() {
 	// 排序数据
 	reference := []int{5, 4, 3, 2, 1, 0, 9, 8, 7, 6}
 
-	// 索引函数
-	getIndex := func(r map[int]int, v int) int {
-		if index, ok := r[v]; ok {
-			return index
-		}
-		return len(r)
-	}
-
 	// 对排序数据生成缓存
 	makeCache := func(r []int) map[int]int {
 		m := make(map[int]int, len(r))
@@ -6635,6 +6627,14 @@ func main() {
 		return m
 	}
 	cache := makeCache(reference)
+
+	// 索引函数,修改为从缓存中读取
+	getIndex := func(r map[int]int, v int) int {
+		if index, ok := r[v]; ok {
+			return index
+		}
+		return len(r)
+	}
 
 	// 按指定数据进行排序
 	sort.Slice(data, func(i, j int) bool {
