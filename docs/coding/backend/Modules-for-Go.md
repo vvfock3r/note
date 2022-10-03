@@ -7121,8 +7121,40 @@ func main() {
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
   ```
 
+* 我们所有的参数和 https://jwt.io/ 上的保持一致，但是token却不一样，这是为什么呢？
+
+  原因在于`payload`中的数据顺序不一致，我们修改一下官网中`payload`数据顺序
+
+  ![image-20221003185834897](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221003185834897.png)
+
+  
+
 :::
 
+### Payload
+
+文档：[https://jwt.io/introduction](https://jwt.io/introduction)
+
+这里主要说一下 [Registered claims](https://tools.ietf.org/html/rfc7519#section-4.1)，他是一组已经提前预定义好的claims，包括以下7个字段
+
+* `iss`（Issuer）：签发人
+* `sub`（Subject）：主题
+* `aud`（Audience）：受众
+* `exp`（Expiration Time）：过期时间
+* `nbf`（Not Before）：生效时间
+* `iat`（Issued At）：签发时间
+* `jti`（JWT ID）: JWT ID
+
+我们也可以自定义字段，比如
+
+```json
+{
+    "admin": true
+}
+```
+
 ### 签发Token
+
+
 
 ### 解析Token
