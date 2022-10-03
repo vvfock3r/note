@@ -6972,7 +6972,7 @@ func main() {
 	fmt.Println()
 	hashedSlice := strings.Split(hashed, "$")
 	fmt.Printf("提权密文算法标识符: %s\n", hashedSlice[1])
-	fmt.Printf("提取密文随机盐的值: %s\n", hashedSlice[3][:22])
+	fmt.Printf("提取密文随机盐的值: %s\n", hashedSlice[3][:22]) // 随机盐22位
 
 }
 ```
