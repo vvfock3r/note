@@ -7016,5 +7016,11 @@ Cost取值范围: 4 - 31 (default: 10)
 
 官网：[https://jwt.io/](https://jwt.io/)
 
-推荐使用的Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
+Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
+
+### 安装
+
+```bash
+go get -u github.com/golang-jwt/jwt/v4
+```
 
