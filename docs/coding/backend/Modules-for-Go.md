@@ -7024,3 +7024,102 @@ Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-j
 go get -u github.com/golang-jwt/jwt/v4
 ```
 
+### 示例
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang-jwt/jwt/v4"
+)
+
+func main() {
+	// 填入第一段信息（Header信息）
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// 填入第二段信息（Payload信息）
+	token.Claims = jwt.MapClaims{"sub": "1234567890", "name": "John Doe", "iat": 1516239022}
+
+	// 组合第一段和第二段信息，下面3段代码是一样的，输出结果也是一样的
+	{
+		sig, err := token.SigningString()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("组合第一和第二段信息: %s\n", sig)
+	}
+	{
+		sig, err := token.SigningString()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("组合第一和第二段信息: %s\n", sig)
+	}
+	{
+		sig, err := token.SigningString()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("组合第一和第二段信息: %s\n", sig)
+	}
+
+	// 计算签名，下面3段代码是一样的，key一样，所以输出结果也是一样的
+	fmt.Println()
+	{
+		t, err := token.SignedString([]byte("hello world!"))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("通过以上信息计算签名: %s\n", t)
+	}
+	{
+		t, err := token.SignedString([]byte("hello world!"))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("通过以上信息计算签名: %s\n", t)
+	}
+	{
+		t, err := token.SignedString([]byte("hello world!"))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("通过以上信息计算签名: %s\n", t)
+	}
+
+	// 查看JWT
+	fmt.Println()
+	fmt.Printf("查看JWT第一段: Header   : %#v\n", token.Header)
+	fmt.Printf("查看JWT第二段: Payload  : %#v\n", token.Claims)
+	fmt.Printf("查看JWT第三段: Signature: %#v\n", token.Signature)
+}
+```
+
+输出结果
+
+![image-20221003172743697](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221003172743697.png)
+
+发现了什么？
+
+* `JWT`中`Payload`在库中称为`Claims`
+
+* `Token.SigningString()`仅仅是用来组合第一段和第二段信息的
+
+* `Token.SignedString(key interface{})`才是签发`token`的方法，参数必须是`[]byte`，否则会报错 `key is of invalid type`
+
+* 生成`token`以后并不会存储在`Token.Signature`中；在解析`token`时才会使用这个字段存储
+
+* 也可以在实例化时填入`Payload`：
+
+  ```go
+  // 填入第一段和第二段信息（Header和Payload信息）
+  claims := jwt.MapClaims{"sub": "1234567890", "name": "John Doe", "iat": 1516239022}
+  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+  ```
+
+:::
+
