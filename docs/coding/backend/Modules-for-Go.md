@@ -87,9 +87,17 @@
         <td><li><code>Go 1.19</code></li><li><code>Casbin v2.55.0</code></li></td>
         <td>Harbor、Docker ...</td>
         <td></td>
-    </tr>        
+    </tr>
+    <tr>
+        <td>Token</td>
+        <td><a href="#jwt" style="text-decoration:none;">JWT</a></td>
+        <td><li><code>Go 1.19</code></li><li><code></code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
+
 <br />
 
 ## Air
@@ -7001,3 +7009,12 @@ Cost取值范围: 4 - 31 (default: 10)
   当加密用户登录密码时，避免因为`cost`过大导致加解密缓慢从而影响用户体验
 
 * 对同一个密码多次进行加密会得到不同的密文，因为 随机盐 存储在了密文中
+
+<br />
+
+## JWT
+
+官网：[https://jwt.io/](https://jwt.io/)
+
+推荐使用的Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
+
