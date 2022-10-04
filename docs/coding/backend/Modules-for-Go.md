@@ -7395,6 +7395,10 @@ go get github.com/json-iterator/go
 
 看一下有没有传说中的神奇？
 
+* OS：`Window 10`
+* Go：`1.19`
+* jsoniter：`v1.1.12`
+
 ::: details 点击查看详情
 
 `main_test.go`
@@ -7473,7 +7477,7 @@ cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
 BenchmarkJsoniterMarshal-8       3549688               340.4 ns/op
 BenchmarkJsoniterUnmarshal-8     1790677               662.8 ns/op
 BenchmarkJsonMarshal-8           2914536               384.1 ns/op
-BenchmarkJsonUnmarshal-8          664804               1643 ns/op
+BenchmarkJsonUnmarshal-8          664804               1643  ns/op
 PASS
 ok      demo    6.336s
 ```
