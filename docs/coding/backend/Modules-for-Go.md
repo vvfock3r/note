@@ -7180,8 +7180,172 @@ type RegisteredClaims struct {
 }
 ```
 
-### 签发Token
+### 签发和验证Token
 
+::: details 点击查看详情
 
+```go
+package main
 
-### 解析Token
+import (
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+)
+
+type Claims struct {
+	RegisteredClaims
+	PrivateClaims
+}
+
+type RegisteredClaims = jwt.RegisteredClaims
+
+type PrivateClaims struct {
+	UserName string `json:"username,omitempty"`
+	NickName string `json:"nickname,omitempty"`
+}
+
+// 核心结构体
+type JsonWebToken struct {
+	secretKey string
+}
+
+// 签发token字符串
+func (j *JsonWebToken) CreateToken(c Claims) (string, error) {
+	// 实例化Token对象
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+
+	// 签发token
+	return token.SignedString([]byte(j.secretKey))
+}
+
+// 解析token字符串
+func (j *JsonWebToken) ParseToken(tokenString string) (*Claims, error) {
+	// 解析token字符串
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(j.secretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 验证token是否有效
+	if !token.Valid {
+		return nil, err
+	}
+
+	// 类型断言
+	if claims, ok := token.Claims.(*Claims); ok {
+		return claims, nil
+	} else {
+		return nil, errors.New("type Assertion error for JsonWebToken.Claims")
+	}
+}
+
+// 签发token字符串（先使用base64对密钥编码）
+func (j *JsonWebToken) CreateTokenWithBase64(c Claims) (string, error) {
+	// 实例化Token对象
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+
+	// secret使用base64编码
+	secretKeyBase64 := base64.StdEncoding.EncodeToString([]byte(j.secretKey))
+
+	// 签发token
+	return token.SignedString([]byte(secretKeyBase64))
+}
+
+// 解析token字符串（先使用base64对密钥编码）
+func (j *JsonWebToken) ParseTokenWithBase64(tokenString string) (*Claims, error) {
+	// 解析token字符串
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// secret使用base64编码
+		secretKeyBase64 := base64.StdEncoding.EncodeToString([]byte(j.secretKey))
+		return []byte(secretKeyBase64), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 验证token是否有效
+	if !token.Valid {
+		return nil, err
+	}
+
+	// 类型断言
+	if claims, ok := token.Claims.(*Claims); ok {
+		return claims, nil
+	} else {
+		return nil, errors.New("type Assertion error for JsonWebToken.Claims")
+	}
+}
+
+// 构造函数
+func NewJsonWebToken(secretKey string) *JsonWebToken {
+	return &JsonWebToken{secretKey}
+}
+
+func main() {
+	// 实例化Jwt对象
+	j := NewJsonWebToken("3E9yQqWT8F52hnIS")
+
+	// 创建Claims对象
+	claims := Claims{
+		RegisteredClaims: RegisteredClaims{
+			// 签发人
+			Issuer: "https://jinhui.dev",
+			// 主题
+			Subject: "User Access Token",
+			// 签发时间
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+			// 生效时间，这里指定1秒后才会生效，若报错 token is not valid yet 说明还未生效
+			NotBefore: jwt.NewNumericDate(time.Now().Add(time.Second * 1)),
+			// 过期时间，这里指定生效以后2小时后就过期，若报错 token is expired by 2.9s 说明已经过期
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 1).Add(time.Hour * 2)),
+		},
+		PrivateClaims: PrivateClaims{
+			UserName: "admin",
+			NickName: "自由女神跃长空【中文测试】",
+		},
+	}
+
+	// 生成tokenString
+	tokenString, err := j.CreateToken(claims)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Token   : ", tokenString)
+
+	// 等待Token生效
+	time.Sleep(time.Second)
+
+	// 解析tokenString为Claims结构体
+	c, err := j.ParseToken(tokenString)
+	if err != nil {
+		panic(err)
+	}
+
+	// 查看数据
+	fmt.Printf("签发人  : %s\n", c.RegisteredClaims.Issuer)
+	fmt.Printf("主题    : %s\n", c.RegisteredClaims.Subject)
+	fmt.Printf("签发时间: %s\n", c.RegisteredClaims.IssuedAt)
+	fmt.Printf("生效时间: %s\n", c.RegisteredClaims.NotBefore)
+	fmt.Printf("过期时间: %s\n", c.RegisteredClaims.ExpiresAt)
+}
+```
+
+输出结果
+
+```bash
+Token   :  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2ppbmh1aS5kZXYiLCJzdWIiOiJVc2VyIEFjY2VzcyBUb2tlbiIsImV4cCI6MTY2NDg3MTU0OSwibmJmIjoxNjY0ODY0MzQ5LCJpYXQiOjE2NjQ4NjQzNDgsInVzZXJuYW1lIjoiYWRtaW4iLCJuaWNrbmFtZSI6IuiH
+queUseWls-elnui3g-mVv-epuuOAkOS4reaWh-a1i-ivleOAkSJ9.Euo2G2lFsPdjA-eZU26OxBIX6rbk0MHPyz_Saa2tKz0
+签发人  : https://jinhui.dev
+主题    : User Access Token
+签发时间: 2022-10-04 14:19:08 +0800 CST
+生效时间: 2022-10-04 14:19:09 +0800 CST
+过期时间: 2022-10-04 16:19:09 +0800 CST
+```
+
+:::
