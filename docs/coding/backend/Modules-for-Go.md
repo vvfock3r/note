@@ -7393,7 +7393,7 @@ go get github.com/json-iterator/go
 
 **简单性能测试**
 
-看一下有没有传说中的神奇？
+看一下有没有传说中的神奇？这里只做一个极简单的测试
 
 * OS：`Window 10`
 * Go：`1.19`
