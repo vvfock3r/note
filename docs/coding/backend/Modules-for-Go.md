@@ -15,14 +15,21 @@
     <tbody>
     <tr>
         <td>排序</td>
-        <td><a href="#sort" style="text-decoration:none;">Sort</a></td>
+        <td><a href="#sort" style="text-decoration:none;">sort</a></td>
         <td><li><code>Go 1.19</code></li></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>加密</td>
-        <td><a href="#bcrypt" style="text-decoration:none;">Bcrypt</a></td>
+        <td><a href="#bcrypt" style="text-decoration:none;">bcrypt</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>序列化和反序列化</td>
+        <td><a href="#json" style="text-decoration:none;">json</a></td>
         <td><li><code>Go 1.19</code></li></td>
         <td></td>
         <td></td>
@@ -7479,7 +7486,7 @@ ok      demo    6.336s
 
 <br />
 
-### 序列化
+### 基础使用
 
 ::: details 点击查看详情
 
@@ -7504,6 +7511,7 @@ func main() {
 		Name:   "Reds",
 		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
 	}
+	groupString := []byte(`{"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}`)
 
 	// 序列化：struct --> []byte
 	{
@@ -7513,13 +7521,20 @@ func main() {
 		}
 		fmt.Println(string(byteData))
 	}
-	// 序列化：struct --> []byte，格式化输出
 	{
-		byteData, err := json.MarshalIndent(group, "", "  ")
+		byteData, err := json.MarshalIndent(group, "", "    ") // 4个空格，这里会格式化输出
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(string(byteData))
+	}
+	// 反序列化：string --> struct
+	{
+		var group ColorGroup
+		if err := json.Unmarshal(groupString, &group); err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", group)
 	}
 }
 ```
@@ -7529,16 +7544,17 @@ func main() {
 ```bash
 D:\application\GoLand\demo>go run main.go
 {"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}
-{                
-  "ID": 1,       
-  "Name": "Reds",
-  "Colors": [    
-    "Crimson",   
-    "Red",       
-    "Ruby",      
-    "Maroon"     
-  ]              
-}
+{                                                                                      
+    "ID": 1,                                                                           
+    "Name": "Reds",                                                                    
+    "Colors": [                                                                        
+        "Crimson",                                                                     
+        "Red",                                                                         
+        "Ruby",                                                                        
+        "Maroon"                                                                       
+    ]                                                                                  
+}                                                                                      
+main.ColorGroup{ID:1, Name:"Reds", Colors:[]string{"Crimson", "Red", "Ruby", "Maroon"}}
 ```
 
 :::
