@@ -27,13 +27,6 @@
         <td></td>
         <td></td>
     </tr>
-    <tr>
-        <td>序列化</td>
-        <td><a href="#json" style="text-decoration:none;">Json</a></td>
-        <td><li><code>Go 1.19</code></li></td>
-        <td></td>
-        <td></td>
-    </tr>
     </tbody>
 </table>
 
@@ -7483,4 +7476,3 @@ ok      demo    6.336s
 ```
 
 :::
-
