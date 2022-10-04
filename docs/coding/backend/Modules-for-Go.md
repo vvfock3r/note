@@ -7498,43 +7498,50 @@ import (
 	"fmt"
 )
 
-type ColorGroup struct {
-	ID     int
-	Name   string
-	Colors []string
+type User struct {
+	ID          int
+	UserName    string
+	NickName    string
+	Sex         string
+	Age         int
+	Description string
+	Hobbies     []string
 }
 
 func main() {
-	// 实例化结构体
-	group := ColorGroup{
-		ID:     1,
-		Name:   "Reds",
-		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
+	// 准备数据
+	user := User{
+		ID:       1,
+		UserName: "Bob",
+		NickName: "鲍勃",
+		Sex:      "man",
+		Age:      18,
+		Hobbies:  []string{"play", "play", "play"},
 	}
-	groupString := []byte(`{"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}`)
+	userJson := []byte(`{"ID":1,"UserName":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Description":"","Hobbies":["play","play","play"]}`)
 
 	// 序列化：struct --> []byte
 	{
-		byteData, err := json.Marshal(group)
+		byteData, err := json.Marshal(user)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(string(byteData))
 	}
 	{
-		byteData, err := json.MarshalIndent(group, "", "    ") // 4个空格，这里会格式化输出
+		byteData, err := json.MarshalIndent(user, "", "    ") // 这里会格式化输出
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(string(byteData))
 	}
-	// 反序列化：string --> struct
+	// 反序列化：[]byte --> struct
 	{
-		var group ColorGroup
-		if err := json.Unmarshal(groupString, &group); err != nil {
+		var user User
+		if err := json.Unmarshal(userJson, &user); err != nil {
 			panic(err)
 		}
-		fmt.Printf("%#v\n", group)
+		fmt.Printf("%#v\n", user)
 	}
 }
 ```
@@ -7543,18 +7550,26 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-{"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}
-{                                                                                      
-    "ID": 1,                                                                           
-    "Name": "Reds",                                                                    
-    "Colors": [                                                                        
-        "Crimson",                                                                     
-        "Red",                                                                         
-        "Ruby",                                                                        
-        "Maroon"                                                                       
-    ]                                                                                  
-}                                                                                      
-main.ColorGroup{ID:1, Name:"Reds", Colors:[]string{"Crimson", "Red", "Ruby", "Maroon"}}
+{"ID":1,"UserName":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Description":"","Hobbies":["play","play","play"]}
+{                                                                                                                            
+    "ID": 1,                                                                                                                 
+    "UserName": "Bob",                                                                                                       
+    "NickName": "鲍勃",                                                                                                      
+    "Sex": "man",                                                                                                            
+    "Age": 18,                                                                                                               
+    "Description": "",                                                                                                       
+    "Hobbies": [                                                                                                             
+        "play",                                                                                                              
+        "play",                                                                                                              
+        "play"                                                                                                               
+    ]                                                                                                                        
+}                                                                                                                            
+main.User{ID:1, UserName:"Bob", NickName:"鲍勃", Sex:"man", Age:18, Description:"", Hobbies:[]string{"play", "play", "play"}}
 ```
 
 :::
+
+<br />
+
+### 使用Tag
+
