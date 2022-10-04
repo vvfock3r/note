@@ -7506,6 +7506,7 @@ type User struct {
 	Age         int
 	Description string
 	Hobbies     []string
+	salary      string
 }
 
 func main() {
@@ -7517,6 +7518,7 @@ func main() {
 		Sex:      "man",
 		Age:      18,
 		Hobbies:  []string{"play", "play", "play"},
+		salary:   "30k",
 	}
 	userJson := []byte(`{"ID":1,"UserName":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Description":"","Hobbies":["play","play","play"]}`)
 
@@ -7551,21 +7553,25 @@ func main() {
 ```bash
 D:\application\GoLand\demo>go run main.go
 {"ID":1,"UserName":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Description":"","Hobbies":["play","play","play"]}
-{                                                                                                                            
-    "ID": 1,                                                                                                                 
-    "UserName": "Bob",                                                                                                       
-    "NickName": "鲍勃",                                                                                                      
-    "Sex": "man",                                                                                                            
-    "Age": 18,                                                                                                               
-    "Description": "",                                                                                                       
-    "Hobbies": [                                                                                                             
-        "play",                                                                                                              
-        "play",                                                                                                              
-        "play"                                                                                                               
-    ]                                                                                                                        
-}                                                                                                                            
-main.User{ID:1, UserName:"Bob", NickName:"鲍勃", Sex:"man", Age:18, Description:"", Hobbies:[]string{"play", "play", "play"}}
+{
+    "ID": 1,
+    "UserName": "Bob",
+    "NickName": "鲍勃",
+    "Sex": "man",
+    "Age": 18,
+    "Description": "",
+    "Hobbies": [
+        "play",
+        "play",
+        "play"
+    ]
+}
+main.User{ID:1, UserName:"Bob", NickName:"鲍勃", Sex:"man", Age:18, Description:"", Hobbies:[]string{"play", "play", "play"}, salary:""}
 ```
+
+注意事项
+
+* 序列化时需要结构体为可导出字段，在这个例子中`salary`并没有被序列化
 
 :::
 
