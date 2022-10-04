@@ -90,7 +90,7 @@
     <tr>
         <td>Token</td>
         <td><a href="#jwt" style="text-decoration:none;">JWT</a></td>
-        <td><li><code>Go 1.19</code></td>
+        <td><li><code>Go 1.19</code></li></td>
         <td></td>
         <td></td>
     </tr>
