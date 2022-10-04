@@ -7356,4 +7356,9 @@ queUseWls-elnui3g-mVv-epuuOAkOS4reaWh-a1i-ivleOAkSJ9.Euo2G2lFsPdjA-eZU26OxBIX6rb
 过期时间: 2022-10-04 16:19:09 +0800 CST
 ```
 
+说明
+
+* 这里并没有对`aud`（受众）测试
+* 封装以后并没有暴露`jwt`内部对象（比如`Token`），如果有需要可以再修改一下代码
+
 :::
