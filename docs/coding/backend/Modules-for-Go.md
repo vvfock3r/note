@@ -7018,11 +7018,15 @@ Cost取值范围: 4 - 31 (default: 10)
 
 Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
 
+<br />
+
 ### 安装
 
 ```bash
 go get -u github.com/golang-jwt/jwt/v4
 ```
+
+<br />
 
 ### 示例
 
@@ -7131,6 +7135,8 @@ func main() {
 
 :::
 
+<br />
+
 ### Payload
 
 文档：[https://jwt.io/introduction](https://jwt.io/introduction)
@@ -7179,6 +7185,8 @@ type RegisteredClaims struct {
 	ID string `json:"jti,omitempty"`
 }
 ```
+
+<br />
 
 ### 签发和验证Token
 
