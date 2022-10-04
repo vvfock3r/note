@@ -27,9 +27,15 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>序列化</td>
+        <td><a href="#json" style="text-decoration:none;">Json</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
-
 
 
 
@@ -91,7 +97,7 @@
     <tr>
         <td>Token</td>
         <td><a href="#jwt" style="text-decoration:none;">JWT</a></td>
-        <td><li><code>Go 1.19</code></li><li><code></code></li></td>
+        <td><li><code>Go 1.19</code></td>
         <td></td>
         <td></td>
     </tr>
@@ -7362,3 +7368,115 @@ queUseWls-elnui3g-mVv-epuuOAkOS4reaWh-a1i-ivleOAkSJ9.Euo2G2lFsPdjA-eZU26OxBIX6rb
 * 封装以后并没有暴露`jwt`内部对象（比如`Token`），如果有需要可以再修改一下代码
 
 :::
+
+<br />
+
+## json
+
+文档：[https://pkg.go.dev/encoding/json](https://pkg.go.dev/encoding/json)
+
+<br />
+
+### json vs jsoniter
+
+`jsoniter`是一个第三方库,其特点是：快，更快
+
+* 文档：[https://jsoniter.com/](https://jsoniter.com/)
+
+* Github：[https://github.com/json-iterator/go](https://github.com/json-iterator/go)
+
+**安装**
+
+```bash
+go get github.com/json-iterator/go
+```
+
+**简单性能测试**
+
+看一下有没有传说中的神奇？
+
+::: details 点击查看详情
+
+`main_test.go`
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"testing"
+
+	jsoniter "github.com/json-iterator/go"
+)
+
+type ColorGroup struct {
+	ID     int
+	Name   string
+	Colors []string
+}
+
+// 结构体
+var groupStruct = ColorGroup{
+	ID:     1,
+	Name:   "Reds",
+	Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
+}
+
+// Json字符串
+var groupJson = []byte(`{"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}`)
+
+func BenchmarkJsoniterMarshal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := jsoniter.Marshal(groupStruct)
+		if err != nil {
+			b.Error("Marshal error")
+		}
+	}
+}
+
+func BenchmarkJsoniterUnmarshal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		g := new(ColorGroup)
+		if err := jsoniter.Unmarshal(groupJson, g); err != nil {
+			b.Error("Unmarshal error")
+		}
+	}
+}
+
+func BenchmarkJsonMarshal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(groupStruct)
+		if err != nil {
+			b.Error("Marshal error")
+		}
+	}
+}
+
+func BenchmarkJsonUnmarshal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		g := new(ColorGroup)
+		if err := json.Unmarshal(groupJson, g); err != nil {
+			b.Error("Unmarshal error")
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go test --bench .
+goos: windows
+goarch: amd64
+pkg: demo
+cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+BenchmarkJsoniterMarshal-8       3549688               340.4 ns/op
+BenchmarkJsoniterUnmarshal-8     1790677               662.8 ns/op
+BenchmarkJsonMarshal-8           2914536               384.1 ns/op
+BenchmarkJsonUnmarshal-8          664804               1643 ns/op
+PASS
+ok      demo    6.336s
+```
+
+:::
+
