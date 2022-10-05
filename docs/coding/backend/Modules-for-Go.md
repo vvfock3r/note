@@ -7579,3 +7579,226 @@ main.User{ID:1, UserName:"Bob", NickName:"鲍勃", Sex:"man", Age:18, Descriptio
 
 ### 使用Tag
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type User struct {
+	ID          int    `json:"id"`       // 序列化后json中会显示id，反序列化也一样
+	UserName    string `json:"username"` // 序列化后json中会显示username，反序列化也一样
+	NickName    string
+	Sex         string
+	Age         int
+	Description string   `json:"description,omitempty"` // 序列化后json中会显示description，反序列化也一样；如果该字段没有显示传值，不显示零值，而是忽略这个字段
+	Hobbies     []string // 键改名的位置也可以不传，就变成了这样： `json:",omitempty"`
+	Salary string `json:"-"` // 序列化时忽略此字段， 如果改成 "-," 那么就是序列化后键为-，注意有没有逗号的区别
+}
+
+func main() {
+	// 准备数据
+	user := User{
+		ID:       1,
+		UserName: "Bob",
+		NickName: "鲍勃",
+		Sex:      "man",
+		Age:      18,
+		Hobbies:  []string{"play", "play", "play"},
+		Salary:   "30k",
+	}
+	userJson := []byte(`{"id":1,"username":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Hobbies":["play","play","play"]}`)
+
+	// 序列化：struct --> []byte
+	{
+		byteData, err := json.Marshal(user)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(byteData))
+	}
+	{
+		byteData, err := json.MarshalIndent(user, "", "    ") // 这里会格式化输出
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(byteData))
+	}
+	// 反序列化：[]byte --> struct
+	{
+		var user User
+		if err := json.Unmarshal(userJson, &user); err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+{"id":1,"username":"Bob","NickName":"鲍勃","Sex":"man","Age":18,"Hobbies":["play","play","play"]}
+{                                                                                                                              
+    "id": 1,                                                                                                                     
+    "username": "Bob",                                                                                                           
+    "NickName": "鲍勃",                                                                                                           
+    "Sex": "man",                                                                                                               
+    "Age": 18,                                                                                                                   
+    "Hobbies": [                                                                                                                 
+        "play",                                                                                                                 
+        "play",                                                                                                                 
+        "play"                                                                                                                   
+    ]                                                                                                                           
+}                                                                                                                               
+main.User{ID:1, UserName:"Bob", NickName:"鲍勃", Sex:"man", Age:18, Description:"", Hobbies:[]string{"play", "play", "play"}, Salary:""}
+```
+
+:::
+
+<br />
+
+### 默认编码类型
+
+JSON 和 Go 类型不是一对一匹配的。下表描述了编码和解码时的类型关系
+
+| Go类型                   | JSON类型  |
+| ------------------------ | --------- |
+| `bool`                   | `boolean` |
+| `float64`                | `number`  |
+| `string`                 | `string`  |
+| `[]interface{}`          | `arrays`  |
+| `map[string]interface{}` | `objects` |
+| `nil`                    | `null`    |
+
+序列化时很少会遇到错误，但反序列化往往会导致错误，下面我们来一一演示
+
+::: details （1）错误示例：类型不匹配类报错：JSON为字符串类型的数字，Go为int
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type User struct {
+	ID int `json:"id"`
+}
+
+func main() {
+	// 准备数据，注意下面的1是字符串，而不是数字类型
+	userJson := []byte(`{"id": "1"}`)
+
+	// 反序列化
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", user)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+panic: json: cannot unmarshal string into Go struct field User.id of type int
+                                                                             
+goroutine 1 [running]:                                                       
+main.main()                                                                  
+        D:/application/GoLand/demo/main.go:19 +0xdd                          
+exit status 2
+```
+
+:::
+
+::: details （2）错误示例：溢出类报错：JSON为数字256，Go为uint8类型
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type User struct {
+	ID uint8 `json:"id"` // uint8范围为0-255
+}
+
+func main() {
+	// 准备数据，注意下面
+	userJson := []byte(`{"id": 256}`)
+
+	// 反序列化
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Println(user.ID)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go                                    
+panic: json: cannot unmarshal number 256 into Go struct field User.id of type uint8
+                                                                                   
+goroutine 1 [running]:                                                             
+main.main()                                                                        
+        D:/application/GoLand/demo/main.go:19 +0xda                                
+exit status 2
+```
+
+:::
+
+::: details （3）注意null和nil
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type User struct {
+	ID1 int  `json:"id1"`
+	ID2 *int `json:"id2"`
+}
+
+func main() {
+	// 准备数据
+	userJson := []byte(`{"id1": null, "id2": null}`)
+
+	// 反序列化
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Println(user.ID1)
+	fmt.Println(user.ID2)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+0
+<nil>
+```
+
+:::
+
+::: details （4）time.Time
+
+:::
