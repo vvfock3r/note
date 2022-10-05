@@ -7486,7 +7486,7 @@ ok      demo    6.336s
 
 <br />
 
-### 基础使用
+### 示例
 
 序列化：将Go对象转为JSO格式的数据
 
@@ -7805,7 +7805,9 @@ D:\application\GoLand\demo>go run main.go
 
 :::
 
-::: details （4）time.Time时间格式研究
+### 实现自己的序列化方法
+
+::: details （1）我们先来研究一下time.Time是如何序列化和反序列化的
 
 ```go
 package main
@@ -7848,7 +7850,7 @@ func main() {
 	}
 	fmt.Printf("\n反序列化：\n%#v\n", user)
 
-	//
+	// time.Time
 	fmt.Printf("\ntime.Time格式研究：\n")
 	fmt.Println(time.Now().Format(time.RFC3339Nano)) // 序列化后的时间格式
 	fmt.Println(user.CreatedAt)                      // 这个是结构体中存储的时间，也是反序列化后的时间
@@ -7875,6 +7877,181 @@ time.Time格式研究：
 2022-10-05T12:07:17.1244844+08:00
 2022-10-05 12:07:15.1143662 +0800 CST
 2022-10-05 12:07:17.1249966 +0800 CST
+```
+
+:::
+
+::: details （2）重写序列化方法 - 1
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+type User struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+}
+
+// 实现 json.Marshaler 接口
+func (u User) MarshalJSON() ([]byte, error) {
+	return []byte(`{"a":1,"b":"2"}`), nil
+}
+
+func GetTimePtr(t time.Time) *time.Time {
+	return &t
+}
+
+func main() {
+	// 准备数据
+	userStruct := User{
+		CreatedAt: time.Now().Add(time.Second * -2),
+		UpdatedAt: time.Now().Add(time.Second * -1),
+		DeletedAt: GetTimePtr(time.Now()),
+	}
+
+	// 序列化
+	userJson, err := json.MarshalIndent(userStruct, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("序列化：\n%s\n", string(userJson))
+
+	// 反序列化
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Printf("\n反序列化：\n%#v\n", user)
+	fmt.Println(user.CreatedAt)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+序列化：    
+{           
+    "a": 1, 
+    "b": "2"
+}           
+
+反序列化：
+main.User{CreatedAt:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), UpdatedAt:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), DeletedAt:<nil>}
+0001-01-01 00:00:00 +0000 UTC
+```
+
+说明
+
+直接在结构体上重写序列化方法并不好，因为我们要兼顾所有的字段，更好的方法是仅修改time.Time序列化方式
+
+:::
+
+::: details （3）重写序列化方法 - 2
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+)
+
+var (
+	timeLayout = "2006-01-02 15:04:05 -0700 MST"
+)
+
+type User struct {
+	CreatedAt Time  `json:"created_at"`
+	UpdatedAt Time  `json:"updated_at"`
+	DeletedAt *Time `json:"deleted_at"`
+}
+
+type Time time.Time
+
+// 序列化：实现 json.Marshaler 接口
+// 注意事项：如果返回前的字符串不加双引号会报错：json: error calling MarshalJSON for type main.Time: invalid character '-' after top-level value
+func (t Time) MarshalJSON() ([]byte, error) {
+	s := time.Time(t).Format(timeLayout)
+	//return []byte(s), nil
+	return []byte(`"` + s + `"`), nil
+}
+
+// 反序列化：实现 json.Unmarshaler 接口
+// 注意事项：(1)删除双引号 (2) 这里是指针方法
+func (t *Time) UnmarshalJSON(data []byte) error {
+	// 同样这里要删除字符串中的双引号，不然也会报错
+	timeString := strings.ReplaceAll(string(data), `"`, "")
+
+	// 解析为time.Time对象
+	timeObj, err := time.ParseInLocation(timeLayout, timeString, time.Local)
+	if err != nil {
+		return err
+	}
+
+	// 转为Time对象并赋值
+	*t = Time(timeObj)
+	return nil
+}
+
+// 获取指针
+func GetTimePtr(t time.Time) *Time {
+	newT := Time(t)
+	return &newT
+}
+
+func main() {
+	// 准备数据
+	userStruct := User{
+		CreatedAt: Time(time.Now().Add(time.Second * -2)),
+		UpdatedAt: Time(time.Now().Add(time.Second * -1)),
+		DeletedAt: GetTimePtr(time.Now()),
+	}
+
+	// 序列化
+	fmt.Println("序列化：")
+	userJson, err := json.MarshalIndent(userStruct, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%s\n", string(userJson))
+
+	// 反序列化
+	fmt.Println("反序列化：")
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", user)
+	fmt.Println(time.Time(user.CreatedAt))
+	fmt.Println(time.Time(user.UpdatedAt))
+	fmt.Println(time.Time(*user.DeletedAt))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+序列化：
+{                                                                                                                               
+    "created_at": "2022-10-05 19:07:02 +0800 CST",                                                                               
+    "updated_at": "2022-10-05 19:07:03 +0800 CST",                                                                               
+    "deleted_at": "2022-10-05 19:07:04 +0800 CST"                                                                               
+}                                                                                                                                                                                                              
+反序列化：                                                                                                                         
+main.User{CreatedAt:main.Time{wall:0x0, ext:63800564822, loc:(*time.Location)(0x3ade80)}, UpdatedAt:main.Time{wall:0x0, ext:63800564823, loc:(*time.Location)(0x3ade80)}, DeletedAt:(*main.Time)(0xc000008168)}
+2022-10-05 19:07:02 +0800 CST
+2022-10-05 19:07:03 +0800 CST
+2022-10-05 19:07:04 +0800 CST
 ```
 
 :::
