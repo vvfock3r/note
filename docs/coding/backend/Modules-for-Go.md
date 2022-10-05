@@ -7488,6 +7488,12 @@ ok      demo    6.336s
 
 ### 基础使用
 
+序列化：将Go对象转为JSO格式的数据
+
+反序列化：将JSON格式的数据转为Go对象
+
+Go对象最常用的就是`Struct`，也支持像`map[string]any`这种结构
+
 ::: details 点击查看详情
 
 ```go
@@ -7799,6 +7805,76 @@ D:\application\GoLand\demo>go run main.go
 
 :::
 
-::: details （4）time.Time
+::: details （4）time.Time时间格式研究
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+type User struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+}
+
+func GetTimePtr(t time.Time) *time.Time {
+	return &t
+}
+
+func main() {
+	// 准备数据
+	userStruct := User{
+		CreatedAt: time.Now().Add(time.Second * -2),
+		UpdatedAt: time.Now().Add(time.Second * -1),
+		DeletedAt: GetTimePtr(time.Now()),
+	}
+
+	// 序列化
+	userJson, err := json.MarshalIndent(userStruct, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("序列化：\n%s\n", string(userJson))
+
+	// 反序列化
+	var user User
+	if err := json.Unmarshal(userJson, &user); err != nil {
+		panic(err)
+	}
+	fmt.Printf("\n反序列化：\n%#v\n", user)
+
+	//
+	fmt.Printf("\ntime.Time格式研究：\n")
+	fmt.Println(time.Now().Format(time.RFC3339Nano)) // 序列化后的时间格式
+	fmt.Println(user.CreatedAt)                      // 这个是结构体中存储的时间，也是反序列化后的时间
+	fmt.Println(time.Now().Local())                  // 这个和上面一样
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+序列化：
+{
+    "CreatedAt": "2022-10-05T12:07:15.1143662+08:00",
+    "UpdatedAt": "2022-10-05T12:07:16.1143662+08:00",
+    "DeletedAt": "2022-10-05T12:07:17.1143662+08:00"
+}
+
+反序列化：
+main.User{CreatedAt:time.Date(2022, time.October, 5, 12, 7, 15, 114366200, time.Local), UpdatedAt:time.Date(2022, time.October, 5, 12, 7, 16, 114366200, time.Local), DeletedAt:time.Date(2022, time.October, 5, 12, 7, 17, 114366200, t
+ime.Local)}
+
+time.Time格式研究：
+2022-10-05T12:07:17.1244844+08:00
+2022-10-05 12:07:15.1143662 +0800 CST
+2022-10-05 12:07:17.1249966 +0800 CST
+```
 
 :::
