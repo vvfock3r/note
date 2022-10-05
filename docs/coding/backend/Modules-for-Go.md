@@ -7881,7 +7881,7 @@ time.Time格式研究：
 
 :::
 
-::: details （2）重写序列化方法 - 1
+::: details （2）重写序列化方法 1：直接给结构体写序列化方法
 
 ```go
 package main
@@ -7953,7 +7953,7 @@ main.User{CreatedAt:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Updated
 
 :::
 
-::: details （3）重写序列化方法 - 2
+::: details （3）重写序列化方法2：为自定义类型编写序列化和反序列化方法
 
 ```go
 package main
