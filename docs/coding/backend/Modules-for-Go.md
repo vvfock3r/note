@@ -7805,7 +7805,7 @@ D:\application\GoLand\demo>go run main.go
 
 :::
 
-### 实现自己的序列化方法
+### 自定义序列化和反序列化
 
 ::: details （1）我们先来研究一下time.Time是如何序列化和反序列化的
 
@@ -8055,3 +8055,204 @@ main.User{CreatedAt:main.Time{wall:0x0, ext:63800564822, loc:(*time.Location)(0x
 ```
 
 :::
+
+<br />
+
+### 流式序列化和反序列化
+
+::: details （1）基础示例：将用户输入的JSON转为Go对象，并添加一个id字段，然后输出到标准输出
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+)
+
+func main() {
+	var id int
+
+	// 自定义解码器和编码器
+	for {
+		// 解码器（NewDecoder）：从输入中(这里是os.Stdint)读取数据，反序列化并存储到&v中
+		v := map[string]any{}
+		err := json.NewDecoder(os.Stdin).Decode(&v)
+
+		// 输入完成：使用 echo {"id": 1} | go run main.go 这种格式时err会有io.EOF错误，代表输入已经结束
+		// 这会在下一次for循环才会读取到这个错误，所以这里直接退出循环即可
+		if err == io.EOF {
+			fmt.Println("Complete!")
+			break
+		}
+
+		// 反序列化错误
+		if err != nil {
+			fmt.Println("Decode Error: ", err)
+			continue
+		}
+
+		// 添加一个id
+        id++
+		v["id"] = id
+        
+		// NewEncoder（编码器）：将&v的数据序列化为JSON并写入到输出中(这里是os.Stdout)
+		if err := json.NewEncoder(os.Stdout).Encode(&v); err != nil {
+			fmt.Println("Encode Error: ", err)
+			continue
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+# 交互式输入
+D:\application\GoLand\demo>go run main.go
+{}									# => 用户输入
+{"id":1}
+{"name": "bob"} 					# => 用户输入
+{"id":2,"name":"bob"}
+{"name": "bob", "sex": "man"} 		# => 用户输入
+{"id":3,"name":"bob","sex":"man"}
+Complete!
+exit status 0xc000013a
+
+# 使用管道输入
+D:\application\GoLand\demo>echo {"name": "bob"} | go run main.go 
+{"id":1,"name":"bob"}
+Complete!
+
+# 错误用法示例
+D:\application\GoLand\demo>go run main.go                        
+a			   # => 用户输入
+Decode Error:  invalid character 'a' looking for beginning of value
+{a: 1} 		   # => 用户输入
+Decode Error:  invalid character 'a' looking for beginning of object key string
+"{"a": 1}"	   # => 用户输入
+Decode Error:  json: cannot unmarshal string into Go value of type map[string]interface {}
+Complete!
+```
+
+可以看到，我们的程序可以正确执行，但是仍然有很大的改善空间
+
+* 所输入的JSON不能包含双引号，兼容性不够好
+* 输出时不能格式化输出
+
+:::
+
+::: details （2）改善程序
+
+```go
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+)
+
+func main() {
+	id := 0
+
+	// 自定义解码器和编码器
+	for {
+		// 从标准输入读取输入，按行读取
+		reader := bufio.NewReader(os.Stdin)
+		data, err := reader.ReadString('\n')
+		if err == io.EOF {
+			fmt.Println("Read Complete!")
+			break
+		}
+		if err != nil {
+			fmt.Println("Read Error: ", err)
+		}
+
+		// 删除输入中行首和行尾的双引号和单引号
+		// 注意：因为不知道行首是单引号还是双引号，所以需要将他们写两次
+		for _, v := range []string{`"`, `'`, `"`, `'`} {
+			data = strings.Trim(data, v)
+		}
+
+		// 反序列化
+		v := map[string]any{}
+		err = json.NewDecoder(strings.NewReader(data)).Decode(&v)
+
+		if err == io.EOF {
+			fmt.Println("Decoder Complete!")
+			break
+		}
+
+		// 反序列化错误
+		if err != nil {
+			fmt.Println("Decode Error: ", err)
+			continue
+		}
+
+		// 添加一个id
+		id++
+		v["id"] = id
+
+		// 序列化，并格式化输出
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "    ")
+		if err := encoder.Encode(&v); err != nil {
+			fmt.Println("Encode Error: ", err)
+			continue
+		}
+
+	}
+}
+```
+
+输出结果
+
+```bash
+# 测试1
+D:\application\GoLand\demo>echo '{"name": "bob"}' | go run main.go   
+{                
+    "id": 1,     
+    "name": "bob"
+}                
+Read Complete!
+
+D:\application\GoLand\demo>echo "{"name": "bob"}" | go run main.go 
+{                
+    "id": 1,     
+    "name": "bob"
+}                
+Read Complete!
+
+D:\application\GoLand\demo>echo {"name": "bob"} | go run main.go   
+{                
+    "id": 1,     
+    "name": "bob"
+}                
+Read Complete!
+
+# 测试2
+D:\application\GoLand\demo>go run main.go
+{}
+{          
+    "id": 1
+}          
+"{}" 
+{          
+    "id": 2
+}          
+"{"name": "bob"}" 
+{                
+    "id": 3,     
+    "name": "bob"
+}                
+Read Complete!
+```
+
+:::
+
