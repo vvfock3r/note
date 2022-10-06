@@ -1,5 +1,12 @@
 # Go实用模块
 
+## 资料
+
+* [https://pkg.go.dev/](https://pkg.go.dev/)
+* [https://github.com/avelino/awesome-go](https://github.com/avelino/awesome-go)
+
+<br />
+
 ## 基本模块
 
 <table>
@@ -34,9 +41,17 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>正则</td>
+        <td><a href="#regexp" style="text-decoration:none;">regexp</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
+<br />
 
 
 ## 实用模块
@@ -8324,3 +8339,134 @@ Read Complete!
 
 :::
 
+<br />
+
+## regexp
+
+文档：[https://pkg.go.dev/regexp](https://pkg.go.dev/regexp)
+
+### Match* - 匹配
+
+Match系列函数用于 **匹配是否包含指定模式的子字符串**，返回 **布尔值** 用于告知是否匹配
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+func main() {
+	// 数据
+	str := "Mankind was born on Earth. It was never meant to die here."
+	zh := "达摩克利斯之剑"
+
+	// 字符串匹配
+	{
+		matched, err := regexp.MatchString(`(mankind)(.*)(earth)`, strings.ToLower(str))
+		fmt.Println(matched, err)
+	}
+	{
+		matched, err := regexp.MatchString(`(达摩).*(剑)`, zh)
+		fmt.Println(matched, err)
+	}
+	// 字节匹配
+	{
+		matched, err := regexp.Match(`(mankind)(.*)(earth)`, []byte(strings.ToLower(str)))
+		fmt.Println(matched, err)
+	}
+	{
+		matched, err := regexp.Match(`(达摩).*(剑)`, []byte(zh))
+		fmt.Println(matched, err)
+	}
+
+	// io.RuneReader接口匹配
+	{
+		matched, err := regexp.MatchReader(`(mankind)(.*)(earth)`, strings.NewReader(strings.ToLower(str)))
+		fmt.Println(matched, err)
+	}
+	{
+		matched, err := regexp.MatchReader(`(达摩).*(剑)`, strings.NewReader(zh))
+		fmt.Println(matched, err)
+	}
+}
+```
+
+输出 结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+true <nil>
+true <nil>
+true <nil>
+true <nil>
+true <nil>
+true <nil>
+```
+
+:::
+
+### \*Compile* - 提前编译正则
+
+::: details （1）基础示例：regexp.Compile：编译正则时会校验是否有error，而匹配时不再返回error
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+func main() {
+	// 数据
+	str := "Mankind was born on Earth. It was never meant to die here."
+	zh := "达摩克利斯之剑"
+
+	// 提前编译正则，可以获得更好的性能
+	strReg, err := regexp.Compile(`(mankind)(.*)(earth)`)
+	if err != nil {
+		panic(err)
+	}
+	zhReg, err := regexp.Compile(`(达摩).*(剑)`)
+	if err != nil {
+		panic(err)
+	}
+
+	// 字符串匹配
+	{
+		matched := strReg.MatchString(strings.ToLower(str))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.MatchString(zh)
+		fmt.Println(matched)
+	}
+	// 字节匹配
+	{
+		matched := strReg.Match([]byte(strings.ToLower(str)))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.Match([]byte(zh))
+		fmt.Println(matched)
+	}
+
+	// io.RuneReader接口匹配
+	{
+		matched := strReg.MatchReader(strings.NewReader(strings.ToLower(str)))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.MatchReader(strings.NewReader(zh))
+		fmt.Println(matched)
+	}
+}
+```
+
+:::
