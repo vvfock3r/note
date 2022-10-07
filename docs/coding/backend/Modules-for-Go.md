@@ -8343,9 +8343,12 @@ Read Complete!
 
 ## regexp
 
-文档：[https://pkg.go.dev/regexp](https://pkg.go.dev/regexp)
+文档：
 
-### Match* - 匹配
+* [https://pkg.go.dev/regexp](https://pkg.go.dev/regexp)
+* [https://pkg.go.dev/regexp/syntax](https://pkg.go.dev/regexp/syntax)
+
+### 匹配测试 - Match*
 
 Match系列函数用于 **匹配是否包含指定模式的子字符串**，返回 **布尔值** 用于告知是否匹配
 
@@ -8412,7 +8415,7 @@ true <nil>
 
 <br />
 
-### \*Compile* - 提前编译正则（推荐）
+### 提前编译 - \*Compile*
 
 `*Compile*`系列函数让我们提前编译正则表达式，避免使用时临时编译，可以获得更好的性能：
 
@@ -8618,6 +8621,73 @@ foo
 foobar
 foobar
 foobar
+```
+
+:::
+
+<br />
+
+### 提取子串 - Find*
+
+Find*系列用于提取子串，有4、5种类函数，又互相组合成大概有十几个函数
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+)
+
+func main() {
+	// 原始数据
+	data := "To be, or not to be, that is the question."
+
+	// 编译正则表达式 (?i)代表不区分大小写，同时不参与分组
+	re := regexp.MustCompile(`(?i)(to)(\s)(be)`)
+
+	// Find        提取子字符串，输入和输出都是字节切片
+	// FindString  提取子字符串，输入和输出都是字符串
+	// 根据实际情况使用字节版本的还是字符串版本的
+	fmt.Println(string(re.Find([]byte(data)))) // To be
+	fmt.Println(re.FindString(data))           // To be
+
+	// FindIndex       返回匹配的索引范围，输入字节切片,输出int切片
+	// FindStringIndex 返回匹配的索引范围，输入字符串,输出int切片
+	fmt.Println(re.FindIndex([]byte(data))) // [0 5]
+	fmt.Println(re.FindStringIndex(data))   // [0 5]
+
+	// FindSubmatch 返回一个二维字节切片，第一个元素为匹配的子字符串，后面的元素为分组数据(默认情况下一个括号是一个分组),分组是从1开始计数的
+	//              也就是说 FindSubmatch比Find要高级一点，返回的数据种类多一些，可以根据需要来选择哪些数据
+	fmt.Println(string(re.FindSubmatch([]byte(data))[0])) // To be
+	fmt.Println(string(re.FindSubmatch([]byte(data))[3])) // be，怎么来的呢？因为第3个分组匹配的是be
+
+	// FindAllString 提取所有符合的子字符串，第二个参数代表提取几个，<0的值代表提取所有
+	fmt.Printf("%#v\n", re.FindAllString(data, -1)) // []string{"To be", "to be"}
+
+	// FindAllStringSubmatchIndex 提取所有的 匹配的字符串和分组数据 的索引
+	// 这个就比较牛逼了, 输出结果是：[[0 5 0 2 2 3 3 5] [14 19 14 16 16 17 17 19]]，下面来解释一下
+	// (1) 因为是FindAllxx且个数为-1，所以会提取出所有符合条件的，对应上面 切片的2个元素(同样也是切片)
+	// (2) 第一个切片中，0,5代表匹配元素的索引范围， 0,2代表第一个分组的索引范围，2,3代表第二个分组的索引范文，3,5代表第三个分组的索引范围
+	// (3) 第二个切片同理
+	fmt.Println(re.FindAllStringSubmatchIndex(data, -1))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+To be
+To be                                        
+[0 5]                                        
+[0 5]                                        
+To be                                        
+be                                           
+[]string{"To be", "to be"}                   
+[[0 5 0 2 2 3 3 5] [14 19 14 16 16 17 17 19]]
 ```
 
 :::
