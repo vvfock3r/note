@@ -8364,36 +8364,26 @@ import (
 )
 
 func main() {
-	// 数据
-	str := "Mankind was born on Earth. It was never meant to die here."
-	zh := "达摩克利斯之剑"
+	// 原始数据
+	data := "To be, or not to be, that is the question."
+
+	// 正则表达式 (?i)代表不区分大小写，同时不参与分组
+	re := `(?i)(to)(\s)(be)`
 
 	// 字符串匹配
 	{
-		matched, err := regexp.MatchString(`(mankind)(.*)(earth)`, strings.ToLower(str))
-		fmt.Println(matched, err)
-	}
-	{
-		matched, err := regexp.MatchString(`(达摩).*(剑)`, zh)
+		matched, err := regexp.MatchString(re, data)
 		fmt.Println(matched, err)
 	}
 	// 字节匹配
 	{
-		matched, err := regexp.Match(`(mankind)(.*)(earth)`, []byte(strings.ToLower(str)))
-		fmt.Println(matched, err)
-	}
-	{
-		matched, err := regexp.Match(`(达摩).*(剑)`, []byte(zh))
+		matched, err := regexp.Match(re, []byte(data))
 		fmt.Println(matched, err)
 	}
 
 	// io.RuneReader接口匹配
 	{
-		matched, err := regexp.MatchReader(`(mankind)(.*)(earth)`, strings.NewReader(strings.ToLower(str)))
-		fmt.Println(matched, err)
-	}
-	{
-		matched, err := regexp.MatchReader(`(达摩).*(剑)`, strings.NewReader(zh))
+		matched, err := regexp.MatchReader(re, strings.NewReader(data))
 		fmt.Println(matched, err)
 	}
 }
@@ -8403,9 +8393,6 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-true <nil>
-true <nil>
-true <nil>
 true <nil>
 true <nil>
 true <nil>
@@ -8450,46 +8437,29 @@ import (
 )
 
 func main() {
-	// 数据
-	str := "Mankind was born on Earth. It was never meant to die here."
-	zh := "达摩克利斯之剑"
+	// 原始数据
+	data := "To be, or not to be, that is the question."
 
 	// 提前编译正则，可以获得更好的性能
-	strReg, err := regexp.Compile(`(mankind)(.*)(earth)`)
-	if err != nil {
-		panic(err)
-	}
-	zhReg, err := regexp.Compile(`(达摩).*(剑)`)
+	re, err := regexp.Compile(`(?i)(to)(\s)(be)`)
 	if err != nil {
 		panic(err)
 	}
 
 	// 字符串匹配
 	{
-		matched := strReg.MatchString(strings.ToLower(str))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.MatchString(zh)
+		matched := re.MatchString(data)
 		fmt.Println(matched)
 	}
 	// 字节匹配
 	{
-		matched := strReg.Match([]byte(strings.ToLower(str)))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.Match([]byte(zh))
+		matched := re.Match([]byte(data))
 		fmt.Println(matched)
 	}
 
 	// io.RuneReader接口匹配
 	{
-		matched := strReg.MatchReader(strings.NewReader(strings.ToLower(str)))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.MatchReader(strings.NewReader(zh))
+		matched := re.MatchReader(strings.NewReader(data))
 		fmt.Println(matched)
 	}
 }
@@ -8499,9 +8469,6 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-true
-true
-true
 true
 true
 true
@@ -8521,40 +8488,27 @@ import (
 )
 
 func main() {
-	// 数据
-	str := "Mankind was born on Earth. It was never meant to die here."
-	zh := "达摩克利斯之剑"
+	// 原始数据
+	data := "To be, or not to be, that is the question."
 
+	// 提前编译正则，可以获得更好的性能
 	// MustCompile：不返回错误，而是当有错误时直接panic
-	strReg := regexp.MustCompile(`(mankind)(.*)(earth)`)
-	zhReg := regexp.MustCompile(`(达摩).*(剑)`)
+	re := regexp.MustCompile(`(?i)(to)(\s)(be)`)
 
 	// 字符串匹配
 	{
-		matched := strReg.MatchString(strings.ToLower(str))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.MatchString(zh)
+		matched := re.MatchString(data)
 		fmt.Println(matched)
 	}
 	// 字节匹配
 	{
-		matched := strReg.Match([]byte(strings.ToLower(str)))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.Match([]byte(zh))
+		matched := re.Match([]byte(data))
 		fmt.Println(matched)
 	}
 
 	// io.RuneReader接口匹配
 	{
-		matched := strReg.MatchReader(strings.NewReader(strings.ToLower(str)))
-		fmt.Println(matched)
-	}
-	{
-		matched := zhReg.MatchReader(strings.NewReader(zh))
+		matched := re.MatchReader(strings.NewReader(data))
 		fmt.Println(matched)
 	}
 }
@@ -8564,9 +8518,6 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-true
-true
-true
 true
 true
 true
@@ -8691,3 +8642,8 @@ be
 ```
 
 :::
+
+<br />
+
+### 正则替换 - Replace*
+
