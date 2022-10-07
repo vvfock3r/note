@@ -8694,8 +8694,22 @@ func main() {
 		return re.ReplaceAllString(s, "TO BE")
 	}))
 
+	// 仅替换最后N次（为了避免与上面的变量有冲突，这里将代码放到一个单独的块中）
+	{
+		counter := 0                          // 计数器,无须修改
+		matches := re.FindAllString(data, -1) // 匹配项切片
+		matchedNumber := len(matches) - 1     // 倒着数，我们要修改前N项，这里就-N，这里修改最后一项匹配，所以-1
+		fmt.Println("(6) ", re.ReplaceAllStringFunc(data, func(s string) string {
+			if counter >= matchedNumber {
+				return re.ReplaceAllString(s, "TO BE")
+			}
+			counter++
+			return s
+		}))
+	}
+
 	// 查看原始数据
-	fmt.Println("(6) ", data)
+	fmt.Println("(7) ", data)
 }
 ```
 
@@ -8709,7 +8723,8 @@ D:\application\GoLand\demo>go run main.go
 (3)  ${1}, or not ${1}, that is the question.  
 (4)  TO BE, or not TO BE, that is the question.
 (5)  TO BE, or not to be, that is the question.
-(6)  To be, or not to be, that is the question.
+(6)  To be, or not TO BE, that is the question.
+(7)  To be, or not to be, that is the question.
 ```
 
 :::
