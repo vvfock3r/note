@@ -8410,9 +8410,25 @@ true <nil>
 
 :::
 
-### \*Compile* - 提前编译正则
+<br />
 
-::: details （1）基础示例：regexp.Compile：编译正则时会校验是否有error，而匹配时不再返回error
+### \*Compile* - 提前编译正则（推荐）
+
+`*Compile*`系列函数让我们提前编译正则表达式，避免使用时临时编译，可以获得更好的性能：
+
+* `regexp.Compile`：编译正则表达式，返回`*Regexp`和`error`
+* `regexp.MustCompile`：编译正则表达式，返回`*Regexp`，当编译遇到错误时它会直接`panic`
+
+<br />
+
+上面两个函数都有对应的`POSIX`函数：
+
+* `regexp.CompilePOSIX`：与`Compile`类似，但是是最左最长匹配
+* `regexp.MustCompilePOSIX`：与`MustCompile`l类似，但是是最左最长匹配
+
+<br />
+
+::: details （1）regexp.Compile：编译正则时会校验是否有error，正则匹配时不返回error
 
 ```go
 package main
@@ -8467,6 +8483,134 @@ func main() {
 		fmt.Println(matched)
 	}
 }
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+true
+true
+true
+true
+true
+true
+```
+
+:::
+
+::: details （2）regexp.MustCompile：不返回错误，而是当编译正则表达式有错误时直接panic；正则匹配时不返回error
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+func main() {
+	// 数据
+	str := "Mankind was born on Earth. It was never meant to die here."
+	zh := "达摩克利斯之剑"
+
+	// MustCompile：不返回错误，而是当有错误时直接panic
+	strReg := regexp.MustCompile(`(mankind)(.*)(earth)`)
+	zhReg := regexp.MustCompile(`(达摩).*(剑)`)
+
+	// 字符串匹配
+	{
+		matched := strReg.MatchString(strings.ToLower(str))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.MatchString(zh)
+		fmt.Println(matched)
+	}
+	// 字节匹配
+	{
+		matched := strReg.Match([]byte(strings.ToLower(str)))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.Match([]byte(zh))
+		fmt.Println(matched)
+	}
+
+	// io.RuneReader接口匹配
+	{
+		matched := strReg.MatchReader(strings.NewReader(strings.ToLower(str)))
+		fmt.Println(matched)
+	}
+	{
+		matched := zhReg.MatchReader(strings.NewReader(zh))
+		fmt.Println(matched)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+true
+true
+true
+true
+true
+true
+```
+
+:::
+
+::: details （3）Compile 和 CompilePOSIX 的区别
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+)
+
+func main() {
+	// 定义数据
+	str := "foobarbat"
+
+	// (1) 第一个例子
+	{
+		// 编译正则表达式
+		pattern := "foo|foobar"
+		rPCRE, _ := regexp.Compile(pattern)
+		rPOSIX, _ := regexp.CompilePOSIX(pattern)
+
+		// 查看输出结果有什么不同
+		fmt.Println(rPCRE.FindString(str))  // "foo"
+		fmt.Println(rPOSIX.FindString(str)) // "foobar"
+	}
+
+	// (2) 这里修改正则为 (foobar|foo)
+	{
+		// 编译正则表达式
+		pattern := "foobar|foo"
+		rPCRE, _ := regexp.Compile(pattern)
+		rPOSIX, _ := regexp.CompilePOSIX(pattern)
+
+		// 查看输出结果有什么不同
+		fmt.Println(rPCRE.FindString(str))  // "foobar"
+		fmt.Println(rPOSIX.FindString(str)) // "foobar"
+	}
+}
+```
+
+输出结果
+
+```bash
+foo
+foobar
+foobar
+foobar
 ```
 
 :::
