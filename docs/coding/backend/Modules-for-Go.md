@@ -8348,6 +8348,8 @@ Read Complete!
 * [https://pkg.go.dev/regexp](https://pkg.go.dev/regexp)
 * [https://pkg.go.dev/regexp/syntax](https://pkg.go.dev/regexp/syntax)
 
+<br />
+
 ### 匹配测试 - Match*
 
 Match系列函数用于 **匹配是否包含指定模式的子字符串**，返回 **布尔值** 用于告知是否匹配
@@ -8404,23 +8406,19 @@ true <nil>
 
 ### 提前编译 - \*Compile*
 
-`*Compile*`系列函数让我们提前编译正则表达式，避免使用时临时编译，可以获得更好的性能：
+**`*Compile*`系列函数让我们提前编译正则表达式，避免使用时临时编译，可以获得更好的性能：**
 
 * `regexp.Compile`：编译正则表达式，返回`*Regexp`和`error`
 * `regexp.MustCompile`：编译正则表达式，返回`*Regexp`，当编译遇到错误时它会直接`panic`
 
-<br />
-
-上面两个函数都有对应的`POSIX`函数：
+**上面两个函数都有对应的`POSIX`函数**
 
 * `regexp.CompilePOSIX`：与`Compile`类似，但是是最左最长匹配
 * `regexp.MustCompilePOSIX`：与`MustCompile`l类似，但是是最左最长匹配
 
-<br />
+**其他说明**
 
-其他说明：
-
-* 推荐使用：（1）可以获得更好的性能 （2）避免编写重复的正则表达式
+* 推荐使用：可以获得更好的性能
 * 注意事项：在代码编译阶段（go build），它不能发现正则表达式中的错误
 
 <br />
