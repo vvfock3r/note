@@ -8643,5 +8643,74 @@ be
 
 <br />
 
-### 正则替换 - Replace*
+### 正则替换 - ReplaceAll*
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+func main() {
+	// 原始数据
+	data := "To be, or not to be, that is the question."
+
+	// 提前编译正则，可以获得更好的性能
+	re := regexp.MustCompile(`(?i)(to)(\s)(be)`)
+
+	// 注意事项
+	//   (1) ReplaceAll*替换不会修改原数据
+	//   (2) 只有ReplaceAll这一系列函数，意味着只能全部替换; 若要指定替换N次，请看最后面的解决方案
+
+	// (1) ReplaceAll: 全部替换，输入和输出都是字节切片
+	fmt.Println("(1) ", string(re.ReplaceAll([]byte(data), []byte("TO BE"))))
+
+	// (2) ReplaceAllString: 全部替换，输入和输出都是字符串
+	fmt.Println("(2) ", re.ReplaceAllString(data, "TO BE"))
+
+	// (3) ReplaceAllLiteralString：带Literal字眼的不支持使用分组，请看下面示例
+	fmt.Println("(3) ", re.ReplaceAllString(data, "${1}"))        // 这里的${1}指代匹配到的值，可能是to、TO、To、tO, $1代表原值
+	fmt.Println("(3) ", re.ReplaceAllLiteralString(data, "${1}")) // 带Literal字眼的不支持使用分组
+
+	// (4) ReplaceAllStringFunc: 带Func字眼的可以让我们传入一个函数，指定要替换的值
+	//     不支持${1}
+	fmt.Println("(4) ", re.ReplaceAllStringFunc(data, func(s string) string {
+		return strings.ToUpper(s) // s代表匹配到的值
+	}))
+
+	// 替换N次
+	counter := 0       // 这是一个计数器,无须修改
+	replaceNumber := 1 // 指定替换几次，根据实际情况修改
+	fmt.Println("(5) ", re.ReplaceAllStringFunc(data, func(s string) string {
+		if counter >= replaceNumber {
+			return s
+		}
+		counter++
+		return re.ReplaceAllString(s, "TO BE")
+	}))
+
+	// 查看原始数据
+	fmt.Println("(6) ", data)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+(1)  TO BE, or not TO BE, that is the question.
+(2)  TO BE, or not TO BE, that is the question.
+(3)  To, or not to, that is the question.      
+(3)  ${1}, or not ${1}, that is the question.  
+(4)  TO BE, or not TO BE, that is the question.
+(5)  TO BE, or not to be, that is the question.
+(6)  To be, or not to be, that is the question.
+```
+
+:::
 
