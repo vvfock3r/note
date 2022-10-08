@@ -21,6 +21,13 @@
     </thead>
     <tbody>
     <tr>
+        <td>时间</td>
+        <td><a href="#time" style="text-decoration:none;">time</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
         <td>排序</td>
         <td><a href="#sort" style="text-decoration:none;">sort</a></td>
         <td><li><code>Go 1.19</code></li></td>
@@ -50,6 +57,7 @@
     </tr>
     </tbody>
 </table>
+
 
 <br />
 
@@ -5801,6 +5809,87 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act || r.sub == "root"
 ## Swagger
 
 文档：[https://swagger.io/](https://swagger.io/)
+
+<br />
+
+## Time
+
+文档：[https://pkg.go.dev/time](https://pkg.go.dev/time)
+
+### 概念
+
+**协调世界时 UTC**
+
+协调世界时（Coordinated Universal Time，UTC） 是最主要的世界时间标准，由原子钟报时，与时区无关
+
+<br />
+
+**Unix时间戳**
+
+Unix时间戳指的是UTC时间 `1970-01-01 00:00:00` 到现在所经过的时间，是一个整数，与时区无关，可以分为*秒级时间戳*、*毫秒级时间戳*、*纳秒级时间戳*等
+
+<br />
+
+**时区**
+
+<br />
+
+### 时间点
+
+#### 结构体
+
+`time.Time` 结构体表示一个具有**纳秒精度**的时间点
+
+```go
+type Time struct {
+	wall uint64
+	ext  int64
+	loc *Location
+}
+```
+
+<br />
+
+#### 当前时间
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 获取当前时间（默认为本地系统时区）
+	fmt.Println(time.Now())
+
+	// 获取当前时间（不管之前的时区是什么，将Time对象显示转为本地系统时区）
+	fmt.Println(time.Now().Local())
+
+	// 获取当前时间（0时区，也就是UTC时间）
+	fmt.Println(time.Now().UTC())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+2022-10-08 12:02:51.8149117 +0800 CST m=+0.002145601
+2022-10-08 12:02:51.8260779 +0800 CST
+2022-10-08 04:02:51.8260779 +0000 UTC
+```
+
+这里有一行`m=+0.002145601`是什么意思？
+
+我们将在下一节详细说明
+
+:::
+
+
 
 <br />
 
