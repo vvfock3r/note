@@ -5830,11 +5830,18 @@ Unix时间戳指的是UTC时间 `1970-01-01 00:00:00` 到现在所经过的时�
 
 **时区**
 
+中国处于东八区，东记为正，西记为负，中国时间也就是`+0800`,也就是说 中国时间比UTC时间快8小时，举例如下：    
+
+```bash
+中国的时间  = UTC      + (+0800)
+12:00:00  = 04:00:00 + 8
+```
+
 <br />
 
 ### 时间点
 
-#### 结构体
+#### 1）结构体
 
 `time.Time` 结构体表示一个具有**纳秒精度**的时间点
 
@@ -5848,7 +5855,7 @@ type Time struct {
 
 <br />
 
-#### 当前时间
+#### 2）获取当前时间
 
 ::: details 点击查看完整代码
 
@@ -5889,7 +5896,7 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-#### 挂钟和单调时钟
+#### 3）挂钟和单调时钟
 
 **我们的计算机有两种不同类型的时钟**
 
@@ -6027,7 +6034,7 @@ import (
 )
 
 func main() {
-	// 计时开始时间（此时间为挂钟时间，没有携带单调时钟信息）
+	// 计时开始时间（此时间携带单调时钟信息）
 	start := time.Now()
 	fmt.Println("开始运行:", start)
 
@@ -6048,6 +6055,146 @@ func main() {
 ![go_time_monotonic_clock_right](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//go_time_monotonic_clock_right.gif)
 
 :::
+
+<br />
+
+#### 4）自定义时间
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// time.Date 自定义时间，年-月-日-时-分-秒-纳秒-时区, 返回Time对象
+	{
+		t := time.Date(2030, 1, 1, 12, 01, 02, 0, time.Local)
+		fmt.Println("1)", t)
+	}
+
+	// time.Parse 解析字符串时间，新时间的时区为UTC
+	{
+		t, err := time.Parse("2006-01-02 15:04:05", "2030-01-01 12:01:02")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("2)", t)
+	}
+	// time.ParseInLocation 解析字符串时间，可以指定新时间的时区
+	{
+		t, err := time.ParseInLocation("2006-01-02 15:04:05", "2030-01-01 12:01:02", time.Local)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("3)", t)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+1) 2030-01-01 12:01:02 +0800 CST
+2) 2030-01-01 12:01:02 +0000 UTC
+3) 2030-01-01 12:01:02 +0800 CST
+```
+
+:::
+
+<br />
+
+#### 5）格式化和序列化
+
+::: details （1）输出格式化的字符串
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 输出基本格式化的字符串
+	fmt.Println("基本用法: ", time.Now().Format("2006-01-02 15:04:05"))
+
+	// 输出携带时区信息的字符串
+	fmt.Println("携带时区: ", time.Now().Format("2006-01-02 15:04:05 MST -0700"))
+
+	// 输出携带单调时钟信息的字符串
+	fmt.Println("单调时钟: ", time.Now().String())
+
+	// Go预定义格式化,等等还有很多
+	// time.RFC3339 是一种国际标准, T用于分隔日期和时间，Z表示0时区(即UTC时间)
+	fmt.Println("RFC3339 : ", time.Now().Format(time.RFC3339))
+	fmt.Println("RFC3339 : ", time.Now().UTC().Format(time.RFC3339))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+基本用法:  2022-10-09 15:34:07
+携带时区:  2022-10-09 15:34:07 CST +0800
+单调时钟:  2022-10-09 15:34:07.5789496 +0800 CST m=+0.012733901
+RFC3339 :  2022-10-09T15:34:07+08:00
+RFC3339 :  2022-10-09T07:34:07Z
+```
+
+:::
+
+::: details （2）序列化和反序列化
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 序列化：使用的是纳秒级别的RFC3339格式，即RFC3339Nano
+	timeJson, err := time.Now().MarshalJSON()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(timeJson))
+
+	// 反序列化
+	var t time.Time
+	err = json.Unmarshal([]byte(timeJson), &t)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(t)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+"2022-10-09T15:38:34.8018945+08:00"
+2022-10-09 15:38:34.8018945 +0800 CST
+```
+
+说明
+
+默认的JSON序列化方式可读性比较差，若要定制JSON序列化字符串，可以参考 JSON模块
+
+:::
+
+
 
 <br />
 
@@ -8234,9 +8381,9 @@ var (
 )
 
 type User struct {
-	CreatedAt Time  `json:"created_at"`
-	UpdatedAt Time  `json:"updated_at"`
-	DeletedAt *Time `json:"deleted_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt Time      `json:"updated_at"`
+	DeletedAt *Time     `json:"deleted_at"`
 }
 
 type Time time.Time
@@ -8266,6 +8413,11 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// 用于格式化输出
+func (t Time) GoString() string {
+	return time.Time(t).GoString()
+}
+
 // 获取指针
 func GetTimePtr(t time.Time) *Time {
 	newT := Time(t)
@@ -8275,7 +8427,7 @@ func GetTimePtr(t time.Time) *Time {
 func main() {
 	// 准备数据
 	userStruct := User{
-		CreatedAt: Time(time.Now().Add(time.Second * -2)),
+		CreatedAt: time.Now().Add(time.Second * -2),
 		UpdatedAt: Time(time.Now().Add(time.Second * -1)),
 		DeletedAt: GetTimePtr(time.Now()),
 	}
@@ -8306,16 +8458,16 @@ func main() {
 ```bash
 D:\application\GoLand\demo>go run main.go
 序列化：
-{                                                                                                                               
-    "created_at": "2022-10-05 19:07:02 +0800 CST",                                                                               
-    "updated_at": "2022-10-05 19:07:03 +0800 CST",                                                                               
-    "deleted_at": "2022-10-05 19:07:04 +0800 CST"                                                                               
-}                                                                                                                                                                                                              
-反序列化：                                                                                                                         
-main.User{CreatedAt:main.Time{wall:0x0, ext:63800564822, loc:(*time.Location)(0x3ade80)}, UpdatedAt:main.Time{wall:0x0, ext:63800564823, loc:(*time.Location)(0x3ade80)}, DeletedAt:(*main.Time)(0xc000008168)}
-2022-10-05 19:07:02 +0800 CST
-2022-10-05 19:07:03 +0800 CST
-2022-10-05 19:07:04 +0800 CST
+{
+    "created_at": "2022-10-09T15:51:57.0971573+08:00",
+    "updated_at": "2022-10-09 15:51:58 +0800 CST",
+    "deleted_at": "2022-10-09 15:51:59 +0800 CST"
+}
+反序列化：
+main.User{CreatedAt:time.Date(2022, time.October, 9, 15, 51, 57, 97157300, time.Local), UpdatedAt:time.Date(2022, time.October, 9, 15, 51, 58, 0, time.Local), DeletedAt:time.Date(2022, time.October, 9, 15, 51, 59, 0, time.Local)}
+2022-10-09 15:51:57.0971573 +0800 CST
+2022-10-09 15:51:58 +0800 CST
+2022-10-09 15:51:59 +0800 CST
 ```
 
 :::
