@@ -57,8 +57,6 @@
     </tr>
     </tbody>
 </table>
-
-
 <br />
 
 
@@ -5885,11 +5883,171 @@ D:\application\GoLand\demo>go run main.go
 
 这里有一行`m=+0.002145601`是什么意思？
 
-我们将在下一节详细说明
+其实他是记录了**单调时钟**的信息，我们将在后面的章节详细介绍
 
 :::
 
+<br />
 
+#### 挂钟和单调时钟
+
+**我们的计算机有两种不同类型的时钟**
+
+* 挂钟（*a wall clock*）：挂钟是我们平常所看到的系统时间，通常与NTP（网络时间协议）服务器同步。
+* 单调时钟（*a monotonic clock*）：单调时钟提供了一个始终向前的时间。
+
+**两者的不同**
+
+* 挂钟可能会由用户或其他程序调整而改变，单调时钟不会受到用户或其他程序调整而改变
+* 一般规则是挂钟是用来报时的，而单调钟是用来测量时间的
+
+**应用场景举例**
+
+* 当测量一项任务需要多长时间，应使用单调时钟（若使用挂钟，在测量过程中时间发生改变，则测量可能不准确）
+
+**Go语言中挂钟和单调时钟**
+
+```go
+// fmt.Println(time.Now()) 
+// m=+0.002145601代表此Time结构体包含有单调时钟的信息
+2022-10-08 12:02:51.8149117 +0800 CST m=+0.002145601  
+
+// fmt.Println(time.Now().Local())
+// 这里没有m=±<value>的信息，所以这个结构体并不包含单调时钟的信息
+2022-10-08 12:02:51.8260779 +0800 CST
+
+// 在 time.Now().String() 方法注释中，我们也可以找到一部分关于这方面的信息
+// String returns the time formatted using the format string
+//
+//	"2006-01-02 15:04:05.999999999 -0700 MST"
+//
+// If the time has a monotonic clock reading, the returned string
+// includes a final field "m=±<value>", where value is the monotonic
+// clock reading formatted as a decimal number of seconds.
+//
+// The returned string is meant for debugging; for a stable serialized
+// representation, use t.MarshalText, t.MarshalBinary, or t.Format
+// with an explicit format string.
+```
+
+官网上的参考信息：[https://pkg.go.dev/time#hdr-Monotonic_Clocks](https://pkg.go.dev/time#hdr-Monotonic_Clocks)
+
+
+
+::: details 辅助脚本：用于调整或重置系统时间，仅适用于Linux
+
+```bash
+[root@localhost ~]# cat modify_system_time.sh 
+#!/bin/bash
+set -euo pipefail
+
+# 显示帮助
+function ShowUsage(){
+  echo "Usage: $0 reset"
+  echo "Usage: $0 add [+-]Number"
+}
+
+# 修改系统时间
+function ModifySystemTime(){
+    add_seconds="${1:-0}"
+    timestamp_now=$(date +"%s")
+    timestamp_new=$((timestamp_now + ${add_seconds}))
+    time_new="$(date -d @${timestamp_new} +"%Y-%m-%d %H:%M:%S")"
+    date -s "${time_new}" +"%Y-%m-%d %H:%M:%S"
+}
+
+# 重置系统时间
+function ResetSystemTime(){
+    ntpdate time.windows.com   
+}
+
+# 执行入口
+function main(){
+    action="${1:-help}"
+    if [[ "${action}" == "reset" ]];then
+      ResetSystemTime && exit 0 || exit 1
+    fi
+
+    if [[ "${action}" == "add" ]];then
+        if [[ -n $(echo "$2" | tr -d '[\-,+,0-9]') ]];then
+            ShowUsage; exit 0
+        fi
+      ModifySystemTime "$2" && exit 0 || exit 1
+    fi
+
+    ShowUsage
+}
+
+main "$@"
+```
+
+:::
+
+::: details （1）使用挂钟测量程序运行时间演示：若测量过程中时间改变，【测量结果将不准确】
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 计时开始时间（此时间为挂钟时间，没有携带单调时钟信息）
+	start := time.Now().Local()
+	fmt.Println("开始运行:", start)
+
+	// 模拟程序运行N秒
+	time.Sleep(time.Second * 5)
+
+	// 运行结束（这里携带或不携带单调时钟都可以）
+	end := time.Now().Local()
+	fmt.Println("运行结束:", end)
+
+	// 统计计时
+	fmt.Printf("运行耗时: %.2f秒\n", end.Sub(start).Seconds())
+}
+```
+
+输出结果
+
+![go_wall_clock_error](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//go_wall_clock_error.gif)
+
+:::
+
+::: details （2）使用单调时钟测量程序运行时间演示：若测量过程中时间改变，【测量结果依旧准确】
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 计时开始时间（此时间为挂钟时间，没有携带单调时钟信息）
+	start := time.Now()
+	fmt.Println("开始运行:", start)
+
+	// 模拟程序运行N秒
+	time.Sleep(time.Second * 5)
+
+	// 运行结束
+	end := time.Now()
+	fmt.Println("运行结束:", end)
+
+	// 统计计时
+	fmt.Printf("运行耗时: %.2f秒\n", end.Sub(start).Seconds())
+}
+```
+
+输出结果
+
+![go_time_monotonic_clock_right](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//go_time_monotonic_clock_right.gif)
+
+:::
 
 <br />
 
