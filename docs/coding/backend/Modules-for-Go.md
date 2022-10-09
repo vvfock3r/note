@@ -8413,7 +8413,12 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// 用于格式化输出
+// 用于直接fmt.Println时的格式化输出
+func (t Time) String() string {
+	return time.Time(t).String()
+}
+
+// 用于Time内嵌到结构体，fmt.Println(结构体)时格式化输出
 func (t Time) GoString() string {
 	return time.Time(t).GoString()
 }
