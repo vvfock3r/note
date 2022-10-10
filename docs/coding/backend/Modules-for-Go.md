@@ -6541,6 +6541,20 @@ true
 
 <br />
 
+### 时间段
+
+#### 1）结构体
+
+```go
+type Duration int64
+```
+
+<br />
+
+#### 2）
+
+<br />
+
 ## Sort
 
 文档：[https://pkg.go.dev/sort](https://pkg.go.dev/sort)
