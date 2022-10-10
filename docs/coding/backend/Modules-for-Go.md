@@ -5874,7 +5874,7 @@ func main() {
 	// 获取当前时间（不管之前的时区是什么，将Time对象显示转为本地系统时区）
 	fmt.Println(time.Now().Local())
 
-	// 获取当前时间（0时区，也就是UTC时间）
+	// 获取当前时间（不管之前的时区是什么，将Time对象显示转为UTC时间，也可以理解成是0时区）
 	fmt.Println(time.Now().UTC())
 }
 ```
@@ -6058,7 +6058,7 @@ func main() {
 
 <br />
 
-#### 4）自定义时间
+#### 4）自定义和解析时间
 
 ::: details 点击查看完整代码
 
@@ -6193,6 +6193,155 @@ D:\application\GoLand\demo>go run main.go
 默认的JSON序列化方式可读性比较差，若要定制JSON序列化字符串，可以参考 JSON模块
 
 :::
+
+<br />
+
+#### 6）时间戳转换
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 时间 -> 时间戳
+	// 1秒   == 1000毫秒
+	// 1毫秒 == 1000微妙
+	// 1微妙 == 1000纳秒
+	fmt.Printf("秒级时间戳   ：%d\n", time.Now().Unix())
+	fmt.Printf("毫秒级时间戳 ：%d\n", time.Now().UnixMilli())
+	fmt.Printf("微秒级时间戳 ：%d\n", time.Now().UnixMicro())
+	fmt.Printf("纳秒级时间戳 ：%d\n", time.Now().UnixNano())
+
+	//  时间戳  -> 转为本地时区的时间
+	fmt.Println(time.Unix(1665371603, 1572000000)) // 第一个参数为秒级时间戳，第二个参数为纳秒（一般设置为0即可）,两个值相加得出最终的时间戳
+	fmt.Println(time.UnixMilli(1665371603572))     // 毫秒级时间戳转为时间对象
+	fmt.Println(time.UnixMicro(1665371603572000))  // 微秒级时间戳转为时间对象
+	//fmt.Println(time.Unix(16653716030000000000000000000, 0)) // 当传递的值过大时候会报错
+}
+```
+
+输出结果
+
+```bash
+秒级时间戳   ：1665372429
+毫秒级时间戳 ：1665372429883      
+微秒级时间戳 ：1665372429883642   
+纳秒级时间戳 ：1665372429883642700
+2022-10-10 11:13:24.572 +0800 CST 
+2022-10-10 11:13:23.572 +0800 CST 
+2022-10-10 11:13:23.572 +0800 CST
+```
+
+:::
+
+<br />
+
+#### 7）时间分段获取
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 基本信息
+	fmt.Println("时间: ", time.Now())
+	fmt.Println("年份: ", time.Now().Year())
+	fmt.Println("月份: ", int(time.Now().Month()))
+	fmt.Println("日期: ", time.Now().Day())
+	fmt.Println("小时: ", time.Now().Hour())
+	fmt.Println("分钟: ", time.Now().Minute())
+	fmt.Println("秒数: ", time.Now().Second())
+	fmt.Println("周几: ", time.Now().Weekday())
+
+	// 今天是今年的第几天
+	fmt.Println("今天是今年的第几天: ", time.Now().YearDay())
+
+	// 本周是今年的第几周
+	year, week := time.Now().ISOWeek()
+	year = year
+	fmt.Println("本周是今年的第几周: ", week)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+时间:  2022-10-10 12:02:10.6335263 +0800 CST m=+0.002770701
+年份:  2022
+月份:  10  
+日期:  10  
+小时:  12  
+分钟:  2   
+秒数:  10
+周几:  Monday
+今天是今年的第几天:  283
+本周是今年的第几周:  41
+```
+
+:::
+
+<br />
+
+#### 8）比较操作
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 小于（早）比较，判断 当前时间 < 当前时间+1秒，输出 true
+	fmt.Println(time.Now().Before(time.Now().Add(time.Second)))
+
+	// 晚于(迟)比较，输出false
+	fmt.Println(time.Now().After(time.Now().Add(time.Second)))
+
+	// 等于比较，输出true
+	t1 := time.Date(2030, 10, 1, 8, 0, 0, 0, time.Local)
+	t2 := time.Date(2030, 10, 1, 0, 0, 0, 0, time.UTC)
+	fmt.Println(t1.Equal(t2))
+
+	// 判断Time对象是否为空
+	var t time.Time
+	fmt.Println(t.IsZero())          // true
+	fmt.Println(time.Now().IsZero()) // false
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+true
+false
+true 
+true 
+false
+```
+
+:::
+
+<br />
+
+#### 9）加减操作
 
 
 
