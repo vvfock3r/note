@@ -6263,7 +6263,7 @@ func main() {
 	fmt.Println("小时: ", time.Now().Hour())
 	fmt.Println("分钟: ", time.Now().Minute())
 	fmt.Println("秒数: ", time.Now().Second())
-	fmt.Println("周几: ", time.Now().Weekday())
+	fmt.Println("周几: ", time.Now().Weekday()) // 周日是0，周一是1，以此类推
 
 	// 今天是今年的第几天
 	fmt.Println("今天是今年的第几天: ", time.Now().YearDay())
@@ -6272,6 +6272,30 @@ func main() {
 	year, week := time.Now().ISOWeek()
 	year = year
 	fmt.Println("本周是今年的第几周: ", week)
+
+	// 本周第一天和最后一天
+	var weekday int
+	if time.Now().Weekday() == 0 {
+		weekday = 7
+	} else {
+		weekday = int(time.Now().Weekday())
+	}
+	weekFirst := time.Now().AddDate(0, 0, -weekday+1)
+	weekLast := time.Now().AddDate(0, 0, 7-weekday)
+	fmt.Println("本周正数第一天：", weekFirst)
+	fmt.Println("本周倒数第一天：", weekLast)
+
+	// 本月第一天和最后一天
+	monthFirst := time.Now().AddDate(0, 0, -time.Now().Day()+1)
+	monthLast := time.Now().AddDate(0, 1, -time.Now().Day())
+	fmt.Println("本月正数第一天：", monthFirst)
+	fmt.Println("本月倒数第一天：", monthLast)
+
+	// 本年第一天和最后一天
+	yearFirst := time.Now().AddDate(0, 0, time.Now().YearDay()*-1+1)
+	yearLast := yearFirst.AddDate(1, 0, -1)
+	fmt.Println("本年正数第一天：", yearFirst)
+	fmt.Println("本年倒数第一天：", yearLast)
 }
 ```
 
@@ -6279,16 +6303,22 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-时间:  2022-10-10 12:02:10.6335263 +0800 CST m=+0.002770701
+时间:  2022-10-10 18:32:37.3697933 +0800 CST m=+0.003243701
 年份:  2022
-月份:  10  
-日期:  10  
-小时:  12  
-分钟:  2   
-秒数:  10
+月份:  10
+日期:  10
+小时:  18
+分钟:  32
+秒数:  37
 周几:  Monday
 今天是今年的第几天:  283
 本周是今年的第几周:  41
+本周正数第一天： 2022-10-10 18:32:37.3839166 +0800 CST
+本周倒数第一天： 2022-10-16 18:32:37.3839166 +0800 CST
+本月正数第一天： 2022-10-01 18:32:37.3839166 +0800 CST
+本月倒数第一天： 2022-10-31 18:32:37.3839166 +0800 CST
+本年正数第一天： 2022-01-01 18:32:37.3839166 +0800 CST
+本年倒数第一天： 2022-12-31 18:32:37.3839166 +0800 CST
 ```
 
 :::
@@ -6343,7 +6373,171 @@ false
 
 #### 9）加减操作
 
+::: details 点击查看完整代码
 
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 当前时间
+	now := time.Now()
+
+	// 加减一段时间，传入time.Duration对象，返回time.Time对象
+	fmt.Println("当前时间: ", now)
+	fmt.Println("加一小时: ", now.Add(time.Hour))
+	fmt.Println("减一小时: ", now.Add(time.Hour*-1)) // 减法就是加一个负数
+	fmt.Println("加一整年: ", now.AddDate(1, 0, 0))  // 这个丢失了单调时钟的信息
+
+	// 两个时间相减，传入time.Time对象，返回time.Duration对象
+	fmt.Println(time.Now().Sub(now))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+当前时间:  2022-10-10 13:14:09.7330677 +0800 CST m=+0.003207701
+加一小时:  2022-10-10 14:14:09.7330677 +0800 CST m=+3600.003207701
+减一小时:  2022-10-10 12:14:09.7330677 +0800 CST m=-3599.996792299
+加一整年:  2023-10-10 13:14:09.7330677 +0800 CST
+11.5312ms
+```
+
+:::
+
+<br />
+
+#### 10）其他操作
+
+::: details （1）时间截断
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 当前时间
+	fmt.Println("当前时间: ", time.Now())
+
+	// 当前时间截断
+	fmt.Println("保留到时: ", time.Now().Truncate(time.Hour))        // 保留到小时，小时后面的(分钟、秒、毫秒、微妙、纳秒等)置为0
+	fmt.Println("保留到分: ", time.Now().Truncate(time.Minute))      // 保留到分钟，分钟后面的(秒、毫秒、微妙、纳秒等)置为0
+	fmt.Println("保留到秒: ", time.Now().Truncate(time.Second))      // 保留到秒，秒后面的(毫秒、微妙、纳秒)等置为0
+	fmt.Println("保留毫秒: ", time.Now().Truncate(time.Millisecond)) // 保留到毫秒，毫秒后面的(微妙、纳秒)等置为0
+	fmt.Println("保留微妙: ", time.Now().Truncate(time.Microsecond)) // 保留到微妙，微妙后面的(纳秒)等置为0
+	fmt.Println("保留纳秒: ", time.Now().Truncate(time.Nanosecond))  // 保留到纳秒
+
+	// 相当于在原来截断的基础上，时间再往后推 3 -1 = 2小时
+	fmt.Println("截三小时: ", time.Now().Truncate(time.Hour*3)) // 保留到秒，秒后面的(毫秒、微妙、纳秒)等置为0
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+当前时间:  2022-10-10 13:38:19.9412653 +0800 CST m=+0.002712201
+保留到时:  2022-10-10 13:00:00 +0800 CST
+保留到分:  2022-10-10 13:38:00 +0800 CST
+保留到秒:  2022-10-10 13:38:19 +0800 CST
+保留毫秒:  2022-10-10 13:38:19.951 +0800 CST
+保留微妙:  2022-10-10 13:38:19.951616 +0800 CST
+保留纳秒:  2022-10-10 13:38:19.9516164 +0800 CST
+截三小时:  2022-10-10 11:00:00 +0800 CST
+```
+
+:::
+
+::: details （2）四舍五入
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 当前时间
+	fmt.Println("当前时间         : ", time.Now())
+
+	// 当前时间四舍五入
+	fmt.Println("四舍五入-保留到秒：", time.Now().Round(time.Second)) // 保留秒，根据后面的四舍五入
+	fmt.Println("四舍五入-保留到分：", time.Now().Round(time.Minute)) // 保留分钟，根据后面的四舍五入
+	fmt.Println("四舍五入-保留到时：", time.Now().Round(time.Hour))   // 保留小时，根据后面的四舍五入
+
+	fmt.Println("四舍五入-保留到时：", time.Now().Round(time.Minute*1)) // 保留小时，根据后面的四舍五入
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+当前时间       :  2022-10-10 13:40:51.5158079 +0800 CST m=+0.002765001
+四舍五入-保留到秒： 2022-10-10 13:40:52 +0800 CST
+四舍五入-保留到分： 2022-10-10 13:41:00 +0800 CST
+四舍五入-保留到时： 2022-10-10 14:00:00 +0800 CST
+```
+
+:::
+
+::: details （3）拷贝副本
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 当前时间
+	now := time.Now()
+
+	// 休眠5秒钟
+	time.Sleep(time.Second * 5)
+
+	// 创建now的副本，第一个参数为时区，可以使用被拷贝对象的时区，也可以使用其他时区
+	nowReplica := now.In(now.Location())
+	nowReplicaUTC := now.In(time.UTC)
+	nowReplicaLocal := now.In(time.Local)
+
+	// 比较一下时间是否相等
+	fmt.Println(now)
+	fmt.Println(nowReplica)
+	fmt.Println(nowReplicaUTC)
+	fmt.Println(nowReplicaLocal)
+
+	// 比较
+	fmt.Println(now.Equal(nowReplicaUTC))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+2022-10-10 18:17:28.5551063 +0800 CST m=+0.002784801
+2022-10-10 18:17:28.5551063 +0800 CST
+2022-10-10 10:17:28.5551063 +0000 UTC
+2022-10-10 18:17:28.5551063 +0800 CST
+true
+```
+
+:::
 
 <br />
 
