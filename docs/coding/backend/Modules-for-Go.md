@@ -6750,7 +6750,7 @@ func main() {
 	fmt.Println(time.Now().Zone())
 	fmt.Println(date.Zone())
 
-	// 将当前时间转为另一个时区的时间
+	// 将一个时区的时间转为另一个时区的时间
 	fmt.Println(time.Now())
 	fmt.Println(time.Now().In(loc))
 }
