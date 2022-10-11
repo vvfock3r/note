@@ -6526,6 +6526,7 @@ func main() {
 	time.Sleep(time.Second * 5)
 
 	// 创建now的副本，第一个参数为时区，可以使用被拷贝对象的时区，也可以使用其他时区
+    // 这可以达到 同一时间在不同时区的转换 效果
 	nowReplica := now.In(now.Location())
 	nowReplicaUTC := now.In(time.UTC)
 	nowReplicaLocal := now.In(time.Local)
@@ -6547,7 +6548,7 @@ func main() {
 D:\application\GoLand\demo>go run main.go
 2022-10-10 18:17:28.5551063 +0800 CST m=+0.002784801
 2022-10-10 18:17:28.5551063 +0800 CST
-2022-10-10 10:17:28.5551063 +0000 UTC
+2022-10-10 10:17:28.5551063 +0000 UTC   # UTC比CST慢8小时
 2022-10-10 18:17:28.5551063 +0800 CST
 true
 ```
@@ -6640,6 +6641,15 @@ func main() {
 		}
 		fmt.Println("加一小时: ", date.Add(dura).Format(layout))
 	}
+
+	// 加 1小时2分钟30秒400毫秒500微妙600纳秒
+	{
+		dura, err := time.ParseDuration("1h2m30s400ms500us600ns")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("组合形式: ", date.Add(dura).Format(layout))
+	}
 }
 ```
 
@@ -6654,6 +6664,7 @@ D:\application\GoLand\demo>go run main.go
 加一秒钟:  2030-01-01 00:00:01.000000000 +0000 UTC
 加一分钟:  2030-01-01 00:01:00.000000000 +0000 UTC
 加一小时:  2030-01-01 01:00:00.000000000 +0000 UTC
+组合形式:  2030-01-01 01:02:30.400500600 +0000 UTC
 ```
 
 :::
@@ -6685,6 +6696,83 @@ func main() {
 ```
 
 :::
+
+<br />
+
+### 时区
+
+#### 1）结构体
+
+```go
+type Location struct {
+	name string
+	zone []zone
+	tx   []zoneTrans
+
+	extend string
+
+	cacheStart int64
+	cacheEnd   int64
+	cacheZone  *zone
+}
+
+// UTC时区
+var UTC *Location = &utcLoc
+var utcLoc = Location{name: "UTC"}
+
+// 本地时区
+var Local *Location = &localLoc
+var localLoc Location
+```
+
+<br />
+
+#### 2）自定义时区
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 自定义时区，第一个参数为时区名称（这里的CSE是我随手取的名字，并代表真实的时区），第二个参数为UTC时间秒级偏移量
+	loc := time.FixedZone("CSE", 7*3600)
+
+	// 使用自定义时区构造一个时间
+	date := time.Date(2030, 1, 1, 12, 0, 0, 0, loc)
+
+	// 查看 时区名称 和 秒级偏移量
+	fmt.Println(time.Now().Zone())
+	fmt.Println(date.Zone())
+
+	// 将当前时间转为另一个时区的时间
+	fmt.Println(time.Now())
+	fmt.Println(time.Now().In(loc))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+CST 28800
+CSE 25200                                           
+2022-10-11 19:34:23.1582417 +0800 CST m=+0.013138201
+2022-10-11 18:34:23.1588336 +0700 CSE                # 这里慢一个小时
+```
+
+:::
+
+<br />
+
+#### 3）读取已有时区
+
+
 
 <br />
 
