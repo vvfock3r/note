@@ -6551,7 +6551,97 @@ type Duration int64
 
 <br />
 
-#### 2）
+#### 2）解析时间段
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 先构造一个指定的时间
+	layout := "2006-01-02 15:04:05.000000000 -0700 MST"
+	date := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	fmt.Println("原始时间: ", date.Format(layout))
+
+	// 解析字符串时间段，有效的单位：
+	// ns       纳秒
+	// us or µs 微妙
+	// ms       毫秒
+	// s        秒
+	// m        分钟
+	// h        小时
+
+	// 加1纳秒
+	{
+		dura, err := time.ParseDuration("1ns")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一纳秒: ", date.Add(dura).Format(layout))
+	}
+	// 加1微秒
+	{
+		dura, err := time.ParseDuration("1us")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一微秒: ", date.Add(dura).Format(layout))
+	}
+	// 加1毫秒
+	{
+		dura, err := time.ParseDuration("1ms")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一毫秒: ", date.Add(dura).Format(layout))
+	}
+	// 加1秒
+	{
+		dura, err := time.ParseDuration("1s")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一秒钟: ", date.Add(dura).Format(layout))
+	}
+	// 加1分钟
+	{
+		dura, err := time.ParseDuration("1m")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一分钟: ", date.Add(dura).Format(layout))
+	}
+	// 加1小时
+	{
+		dura, err := time.ParseDuration("1h")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("加一小时: ", date.Add(dura).Format(layout))
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+原始时间:  2030-01-01 00:00:00.000000000 +0000 UTC
+加一纳秒:  2030-01-01 00:00:00.000000001 +0000 UTC
+加一微秒:  2030-01-01 00:00:00.000001000 +0000 UTC
+加一毫秒:  2030-01-01 00:00:00.001000000 +0000 UTC
+加一秒钟:  2030-01-01 00:00:01.000000000 +0000 UTC
+加一分钟:  2030-01-01 00:01:00.000000000 +0000 UTC
+加一小时:  2030-01-01 01:00:00.000000000 +0000 UTC
+```
+
+:::
 
 <br />
 
