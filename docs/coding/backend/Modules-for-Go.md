@@ -6819,6 +6819,21 @@ type Ticker struct {
 	C <-chan Time   // 只读的Channel（Time类型）,缓冲区长度为1（后面会讲到）
 	r runtimeTimer  // 
 }
+
+// Interface to timers implemented in package runtime.
+// Must be in sync with ../runtime/time.go:/^type timer
+type runtimeTimer struct {
+	pp       uintptr
+	when     int64
+	period   int64
+	f        func(any, uintptr) // NOTE: must not be closure
+	arg      any
+	seq      uintptr
+	nextwhen int64
+	status   uint32
+}
+
+// 可以看到runtimeTimer相关的实现其实都在runtime/time.go中
 ```
 
 <br />
@@ -6847,7 +6862,7 @@ func main() {
 		fmt.Println("读取数据: ", <-ticker.C)
 		fmt.Println("读取数据: ", <-ticker.C)
 
-		// 关闭定时器		
+		// 关闭定时器
 		// 若关闭后再读取会报错: fatal error: all goroutines are asleep - deadlock!
 		fmt.Println("停止定时器...")
 		ticker.Stop()
@@ -6866,11 +6881,24 @@ func main() {
 	{
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
-		for next := range ticker.C {
-			fmt.Println(next)
+		for t := range ticker.C {
+			fmt.Println(t)
+		}
+	}
+
+	// 或者这样用
+	{
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case t := <-ticker.C:
+				fmt.Println(t)
+			}
 		}
 	}
 }
+
 ```
 
 输出结果
@@ -6965,7 +6993,7 @@ func main() {
 输出结果
 
 ```bash
-D:\application\GoLand\demo>go1.19.2 run main.go
+D:\application\GoLand\demo>go run main.go
 当前时间:  2022-10-12 19:19:15.5927709 +0800 CST m=+0.002690501      # 当前时间秒数为15
 读取数据:  2022-10-12 19:19:16.5975755 +0800 CST m=+1.007495101      # 休眠10秒钟后，第一次读取数据为16秒，因为计数器在休眠前就已经开始了
 读取数据:  2022-10-12 19:19:26.5967247 +0800 CST m=+11.006644301     # 第二次读取数据为26秒，这是当前的时间
@@ -6978,7 +7006,77 @@ D:\application\GoLand\demo>go1.19.2 run main.go
 
 <br />
 
-#### 4）ticker.Stop()
+#### 4）并发读取
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+func main() {
+	// 实例化一个Ticker对象，指定时间间隔为1秒
+	ticker := time.NewTicker(time.Second)
+    defer ticker.Stop()
+    
+	// 并发读取
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(i int) {
+			fmt.Printf("[%d] Running...\n", i)
+			fmt.Printf("[%d] %s\n", i, <-ticker.C)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+[9] Running...
+[0] Running...
+[5] Running...
+[2] Running...
+[3] Running...
+[4] Running...
+[7] Running...
+[6] Running...
+[1] Running...
+[8] Running...
+[9] 2022-10-12 19:55:09.0201071 +0800 CST m=+1.010990501
+[0] 2022-10-12 19:55:10.0252197 +0800 CST m=+2.016103101
+[5] 2022-10-12 19:55:11.0185944 +0800 CST m=+3.009477801
+[2] 2022-10-12 19:55:12.0152827 +0800 CST m=+4.006166101
+[3] 2022-10-12 19:55:13.0191294 +0800 CST m=+5.010012801
+[4] 2022-10-12 19:55:14.0186506 +0800 CST m=+6.009534001
+[7] 2022-10-12 19:55:15.0193323 +0800 CST m=+7.010215701
+[6] 2022-10-12 19:55:16.0189496 +0800 CST m=+8.009833001
+[1] 2022-10-12 19:55:17.0230555 +0800 CST m=+9.013938901
+[8] 2022-10-12 19:55:18.0146137 +0800 CST m=+10.00549701
+```
+
+:::
+
+<br />
+
+#### 5）ticker.Stop()
+
+* `Stop()`并不会关闭`Ticker`中的Channel，而是将其标记为*已删除*
+* `Stop()`函数实现在`runtime/time.go`中，对应函数为`stopTimer`，内容太多就不看了
+
+```go
+
+```
 
 <br />
 
