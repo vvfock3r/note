@@ -6816,14 +6816,169 @@ Asia/Shanghai
 
 ```go
 type Ticker struct {
-	C <-chan Time   // 只读的Channel（Time类型）,缓冲区长度为1
+	C <-chan Time   // 只读的Channel（Time类型）,缓冲区长度为1（后面会讲到）
 	r runtimeTimer  // 
 }
 ```
 
 <br />
 
-#### 2）
+#### 2）基础用法
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 先来用一下各种方法
+	{
+		// 实例化一个Ticker对象，指定时间间隔为1秒
+		ticker := time.NewTicker(time.Second)
+
+		// 读取Channel中的数据
+		// 大多数情况下我们在意的并不是读出来的数据，而是每次读取数据之间间隔的1秒钟，
+		// 比如我们将其放到for循环中，每秒执行一些操作，就很好使
+		fmt.Println("读取数据: ", <-ticker.C)
+		fmt.Println("读取数据: ", <-ticker.C)
+
+		// 关闭定时器		
+		// 若关闭后再读取会报错: fatal error: all goroutines are asleep - deadlock!
+		fmt.Println("停止定时器...")
+		ticker.Stop()
+		//fmt.Println("读取数据: ", <-ticker.C)
+
+		// 重置时间间隔
+		fmt.Println("重置时间为3秒钟...")
+		ticker.Reset(time.Second * 3)
+		fmt.Println("读取数据: ", <-ticker.C)
+		fmt.Println("读取数据: ", <-ticker.C)
+
+		// 运行结束
+		fmt.Println("Execution completed")
+	}
+	// 通常情况下我们会这样用
+	{
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for next := range ticker.C {
+			fmt.Println(next)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+读取数据:  2022-10-12 19:18:29.0027248 +0800 CST m=+1.011503901
+读取数据:  2022-10-12 19:18:30.0037176 +0800 CST m=+2.012496701
+停止定时器...     
+重置时间为3秒钟...
+读取数据:  2022-10-12 19:18:33.0189901 +0800 CST m=+5.027769201
+读取数据:  2022-10-12 19:18:36.019283 +0800 CST m=+8.028062101
+Execution completed
+2022-10-12 19:18:37.0341358 +0800 CST m=+9.042914901
+2022-10-12 19:18:38.0341197 +0800 CST m=+10.042898801
+2022-10-12 19:18:39.024688 +0800 CST m=+11.033467101
+2022-10-12 19:18:40.0196224 +0800 CST m=+12.028401501
+...
+```
+
+:::
+
+<br />
+
+#### 3）NewTicker
+
+源码
+
+```go
+func NewTicker(d Duration) *Ticker {
+	if d <= 0 {
+		panic(errors.New("non-positive interval for NewTicker"))
+	}
+	// Give the channel a 1-element time buffer.
+	// If the client falls behind while reading, we drop ticks
+	// on the floor until the client catches up.
+	c := make(chan Time, 1)
+	t := &Ticker{
+		C: c,
+		r: runtimeTimer{
+			when:   when(d),
+			period: int64(d),
+			f:      sendTime,
+			arg:    c,
+		},
+	}
+	startTimer(&t.r)
+	return t
+}
+
+func sendTime(c any, seq uintptr) {
+	select {
+	case c.(chan Time) <- Now():
+	default:
+	}
+}
+```
+
+说明
+
+* `NewTicker`中定义了Channel缓冲区长度为1
+* `NewTicker`中使用了`sendTime`函数，用于向Channel中写入数据，可以看到会将当前时间写入Channel中，若写满了就什么也不做
+* `NewTicker`函数返回前就开始计时了，对应源码中`startTimer`函数调用
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// 实例化一个Ticker对象，指定时间间隔为1秒
+	ticker := time.NewTicker(time.Second)
+
+	// 休眠N秒钟
+	fmt.Println("当前时间: ", time.Now())
+	time.Sleep(time.Second * 10)
+
+	// 读取Channel中的数据
+	fmt.Println("读取数据: ", <-ticker.C)
+	fmt.Println("读取数据: ", <-ticker.C)
+	fmt.Println("读取数据: ", <-ticker.C)
+	fmt.Println("读取数据: ", <-ticker.C)
+	fmt.Println("读取数据: ", <-ticker.C)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go1.19.2 run main.go
+当前时间:  2022-10-12 19:19:15.5927709 +0800 CST m=+0.002690501      # 当前时间秒数为15
+读取数据:  2022-10-12 19:19:16.5975755 +0800 CST m=+1.007495101      # 休眠10秒钟后，第一次读取数据为16秒，因为计数器在休眠前就已经开始了
+读取数据:  2022-10-12 19:19:26.5967247 +0800 CST m=+11.006644301     # 第二次读取数据为26秒，这是当前的时间
+读取数据:  2022-10-12 19:19:27.5976074 +0800 CST m=+12.007527001
+读取数据:  2022-10-12 19:19:28.5970446 +0800 CST m=+13.006964201
+读取数据:  2022-10-12 19:19:29.5969086 +0800 CST m=+14.006828201
+```
+
+:::
+
+<br />
+
+#### 4）ticker.Stop()
 
 <br />
 
