@@ -6772,7 +6772,58 @@ CSE 25200
 
 #### 3）读取已有时区
 
+::: details 点击查看详情
 
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+	//_ "time/tzdata"
+)
+
+func main() {
+	// 读取时区,会从以下4个地方读取
+	// 1) ZONEINFO环境变量指向的目录或未压缩的zip文件
+	// 2) Unix系统上的时区文件信息，一般是 /usr/share/zoneinfo 目录下
+	// 3) $GOROOT/lib/time/zoneinfo.zip
+	// 4) time/tzdata模块（若该模块已在代码中导入）
+	zoneShangHai, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(zoneShangHai)
+
+	// 综上所述，time.LoadLocation依赖于tzdata数据库
+	// 需要注意的是，在windows系统上（没有安装go语言），以上代码将会报错，解决办法是：将以上代码import部分的注释打开，导入 time/tzdata数据库
+}
+```
+
+输出结果
+
+```bash
+Asia/Shanghai
+```
+
+:::
+
+<br />
+
+### 定时器
+
+#### 1）结构体
+
+```go
+type Ticker struct {
+	C <-chan Time   // 只读的Channel（Time类型）,缓冲区长度为1
+	r runtimeTimer  // 
+}
+```
+
+<br />
+
+#### 2）
 
 <br />
 
