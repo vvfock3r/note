@@ -7074,9 +7074,111 @@ D:\application\GoLand\demo>go run main.go
 * `Stop()`并不会关闭`Ticker`中的Channel，而是将其标记为*已删除*
 * `Stop()`函数实现在`runtime/time.go`中，对应函数为`stopTimer`，内容太多就不看了
 
-```go
+<br />
 
+#### 6）time.Tick
+
+源码
+
+```go
+func Tick(d Duration) <-chan Time {
+	if d <= 0 {
+		return nil
+	}
+	return NewTicker(d).C
+}
 ```
+
+说明
+
+* `time.Tick`是`time.NewTicker`的一层包装
+* 如果传递的参数<=0返回`nil`，而`time.NewTicker`会抛出`panic`
+* <span style="color: red; font-weight: bold;">`time.Tick`因为没有提供关闭(`Stop`)的操作，有可能会引起资源泄露，应当避免使用这个方法</span>
+
+::: details （1）time.Tick引起资源泄露示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func tickerLoop(wg *sync.WaitGroup, quit chan struct{}) {
+	defer wg.Done()
+	select {
+	case <-time.Tick(time.Millisecond * 100):
+	case <-quit:
+		return
+	}
+}
+
+func main() {
+	// 初始化
+	n := 100000
+	wg := new(sync.WaitGroup)
+	quit := make(chan struct{})
+
+	// 开启N个Goroutine
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go tickerLoop(wg, quit)
+	}
+	fmt.Printf("Making %d tickers\n", n)
+
+	// 休眠1秒钟
+	time.Sleep(1 * time.Second)
+
+	// 发送关闭Goroutine信号
+	close(quit)
+	fmt.Printf("Signalling close\n")
+
+	// 等待所有的Goroutine运行完成
+	wg.Wait()
+
+	// 用于hang住程序
+	fmt.Printf("Sleeping - examine CPU activity for this process (eg top)\n")
+	time.Sleep(time.Hour)
+}
+```
+
+输出结果
+
+```bash
+# 编译、执行
+root@ap-hongkang ~]# go build main.go
+[root@ap-hongkang ~]# ./main 
+Making 100000 tickers
+Signalling close
+Sleeping - examine CPU activity for this process (eg top)
+```
+
+![image-20221013140753891](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221013140753891.png)
+
+:::
+
+::: details （2）使用time.NewTicker进行修复
+
+只需要修改`tickerLoop`函数即可
+
+```go
+func tickerLoop(wg *sync.WaitGroup, quit chan struct{}) {
+	defer wg.Done()
+	ticker := time.NewTicker(time.Millisecond * 100)
+	defer ticker.Stop()
+	select {
+	case <-ticker.C:
+	case <-quit:
+		return
+	}
+}
+```
+
+![image-20221013191512953](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221013191512953.png)
+
+:::
 
 <br />
 
