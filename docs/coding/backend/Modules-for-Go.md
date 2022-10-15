@@ -55,8 +55,16 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>信号</td>
+        <td><a href="#signal" style="text-decoration:none;">signal</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
+
 <br />
 
 
@@ -10236,4 +10244,10 @@ D:\application\GoLand\demo>go run main.go
 ```
 
 :::
+
+<br />
+
+## signal
+
+文档：[https://pkg.go.dev/os/signal](https://pkg.go.dev/os/signal)
 
