@@ -56,7 +56,7 @@
         <td></td>
     </tr>
     <tr>
-        <td>信号</td>
+        <td>系统信号</td>
         <td><a href="#signal" style="text-decoration:none;">signal</a></td>
         <td><li><code>Go 1.19</code></li></td>
         <td></td>
@@ -10250,4 +10250,15 @@ D:\application\GoLand\demo>go run main.go
 ## signal
 
 文档：[https://pkg.go.dev/os/signal](https://pkg.go.dev/os/signal)
+
+### 接口
+
+接口定义在`os.Signal`
+
+```go
+type Signal interface {
+	String() string
+	Signal() // to distinguish from other Stringers
+}
+```
 
