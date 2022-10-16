@@ -10470,3 +10470,46 @@ signal.Ignored(syscall.SIGINT)                 // 检查是否忽略SIGINT信号
 
 <br />
 
+### NotifyContext
+
+::: details 点击查看详情（代码有问题，问题在于Context可以读取多次，导致一直接收到某个信号）
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+func main() {
+	// 输出当前进程id
+	fmt.Println("pid: ", os.Getpid())
+
+	// 信号和Context绑定
+	// (1) ctx.Done会在收到信号后触发
+	// (2) stop函数用于取消注册信号行为，就像信号重置一样
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGINT,  // kill -2 or Ctrl+C
+		syscall.SIGQUIT, // kill -3 or Ctrl+\
+		syscall.SIGTERM, // kill -15
+	)
+	defer stop()
+
+	// 监听信号
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Received interrupt signal")
+			time.Sleep(time.Second)
+		}
+	}
+}
+```
+
+:::
