@@ -10534,3 +10534,366 @@ Github：[https://github.com/go-playground/validator](https://github.com/go-play
 go get github.com/go-playground/validator/v10
 ```
 
+<br />
+
+### 数据类型
+
+#### 验证变量
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// validate.Var：验证单个变量
+	{
+		// 定义变量
+		password := "123456"
+
+		// 验证password是否符合规范
+		// (1) 多个tag使用逗号连接，并且不能有空格,会panic
+		err := validate.Var(password, "required,min=8")
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// validate.VarWithValue：验证两个变量之间的关系
+	{
+		s1 := "abcd"
+		s2 := "abce"
+		err := validate.VarWithValue(s1, s2, "eqcsfield") // eqcsfield这个tag的意思是：s1是否等于s2
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// 其他
+	// validate.Var内部调用的是 validate.VarCtx
+	// validate.VarWithValue内部调用的是 validate.VarWithValueCtx
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+Key: '' Error:Field validation for '' failed on the 'min' tag
+Key: '' Error:Field validation for '' failed on the 'eqcsfield' tag
+```
+
+:::
+
+<br />
+
+#### 验证结构体
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type person struct {
+	Name                string `validate:"required,min=4,max=15"`
+	Email               string `validate:"required,email"`
+	Age                 int    `validate:"required,numeric,min=18"`
+	DriverLicenseNumber string `validate:"omitempty,len=12,numeric"`
+}
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 创建一个person对象
+	p := person{
+		Name:                "Bob",
+		Email:               "test@example.com",
+		Age:                 0,
+		DriverLicenseNumber: "",
+	}
+
+	// validate.Struct：对结构体进行验证，需要满足以下几点才会进行验证
+	// 1) 要求字段必须是可导出的
+	// 2) 要求带有validate标签
+	// 3) 要求没有忽略验证此字段，即 `validate: "-"` 会忽略验证
+	{
+		// 验证
+		fmt.Printf("validate.Struct:\n")
+		err := validate.Struct(p)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// validate.StructExcept: 忽略某些字段
+	{
+		fmt.Printf("\nvalidate.StructExcept:\n")
+		err := validate.StructExcept(p, "Age")
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// validate.StructPartial: 只验证某些字段
+	{
+		fmt.Printf("\nvalidate.StructPartial:\n")
+		err := validate.StructPartial(p, "Name")
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// validate.StructFiltered: 使用自定义函数过滤需要排除哪些字段，返回true时排除该字段，返回false会验证该字段
+	{
+		fmt.Printf("\nvalidate.StructFiltered:\n")
+		err := validate.StructFiltered(p, func(ns []byte) bool {
+			if string(ns) == "person.Age" { // 对Age字段不验证
+				return true
+			}
+			return false // 其他字段默认会验证
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// 其他
+	// 以上函数内部均使用的是 xxCtx，我们也可以自己调用
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+validate.Struct:
+Key: 'person.Name' Error:Field validation for 'Name' failed on the 'min' tag   
+Key: 'person.Age' Error:Field validation for 'Age' failed on the 'required' tag
+                                                                               
+validate.StructExcept:                                                         
+Key: 'person.Name' Error:Field validation for 'Name' failed on the 'min' tag   
+                                                                               
+validate.StructPartial:                                                        
+Key: 'person.Name' Error:Field validation for 'Name' failed on the 'min' tag   
+                                                                               
+validate.StructFiltered:                                                       
+Key: 'person.Name' Error:Field validation for 'Name' failed on the 'min' tag
+```
+
+:::
+
+<br />
+
+### 关于错误
+
+#### 错误类型
+
+* 如果是 **标签写法类** 等错误，那么`validator`会直接 `panic`
+* 如果是 **函数用法类** 等错误，那么`validator`会返回 `InvalidValidationError`
+* 如果是 **校验失败类** 等错误，那么`validator`会返回 `ValidationErrors`
+
+::: details 标签写法有错时产生panic
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 定义变量
+	password := "123456"
+
+	// 验证password是否符合规范, 我们可以故意写错标签，以使validator产生panic
+	// 1) 标签之间的逗号后面加个空格
+	// 2) 写一个不支持的标签，比如 required1
+	err := validate.Var(password, "required1,min=8")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+::: details 函数使用错误返回InvalidValidationError
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type person struct {
+	Name                string `validate:"required,min=4,max=15"`
+	Email               string `validate:"required,email"`
+	Age                 int    `validate:"required,numeric,min=18"`
+	DriverLicenseNumber string `validate:"omitempty,len=12,numeric"`
+}
+
+// 创建一个person对象
+var p = person{
+	Name:                "Bob",
+	Email:               "test@example.com",
+	Age:                 0,
+	DriverLicenseNumber: "",
+}
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 对结构体进行验证，但是却传了一个nil
+	{
+		err := validate.Struct(nil)
+		if err != nil {
+			fmt.Printf("%T\n", err)
+		}
+	}
+
+	// 对结构体进行验证，但是却传了一个字符串
+	{
+		err := validate.Struct("haha")
+		if err != nil {
+			fmt.Printf("%T\n", err)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+*validator.InvalidValidationError
+*validator.InvalidValidationError
+```
+
+:::
+
+::: details 校验失败返回ValidationErrors
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type person struct {
+	Name                string `validate:"required,min=4,max=15"`
+	Email               string `validate:"required,email"`
+	Age                 int    `validate:"required,numeric,min=18"`
+	DriverLicenseNumber string `validate:"omitempty,len=12,numeric"`
+}
+
+// 创建一个person对象
+var p = person{
+	Name:                "Bob",
+	Email:               "test@example.com",
+	Age:                 0,
+	DriverLicenseNumber: "",
+}
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 对结构体进行验证
+	err := validate.Struct(p)
+
+	// 检查错误
+	if err != nil {
+		// 输出错误类型
+		fmt.Printf("%T\n", err)
+		fmt.Printf("%+v\n\n", err)
+
+		// InvalidValidationError，一般是函数用法不对等
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			fmt.Println(err)
+		}
+
+		// ValidationErrors，一般是真的验证失败了，通过断言我们可以获取到一些详情
+		if errs, ok := err.(validator.ValidationErrors); ok {
+			for _, err := range errs {
+				fmt.Println("Namespace      : ", err.Namespace())
+				fmt.Println("Field          : ", err.Field())
+				fmt.Println("StructNamespace: ", err.StructNamespace())
+				fmt.Println("StructField    : ", err.StructField())
+				fmt.Println("Tag            : ", err.Tag())
+				fmt.Println("ActualTag      : ", err.ActualTag())
+				fmt.Println("Kind           : ", err.Kind())
+				fmt.Println("Type           : ", err.Type())
+				fmt.Println("Value          : ", err.Value())
+				fmt.Println("Param          : ", err.Param())
+				fmt.Println()
+			}
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+validator.ValidationErrors
+Key: 'person.Name' Error:Field validation for 'Name' failed on the 'min' tag   
+Key: 'person.Age' Error:Field validation for 'Age' failed on the 'required' tag
+                                                                               
+Namespace      :  person.Name                                                  
+Field          :  Name                                                         
+StructNamespace:  person.Name                                                  
+StructField    :  Name                                                         
+Tag            :  min                                                          
+ActualTag      :  min                                                          
+Kind           :  string                                                       
+Type           :  string                                                       
+Value          :  Bob                                                          
+Param          :  4                                                            
+                                                                               
+Namespace      :  person.Age                                                   
+Field          :  Age                                                          
+StructNamespace:  person.Age                                                   
+StructField    :  Age                                                          
+Tag            :  required                                                     
+ActualTag      :  required                                                     
+Kind           :  int                                                          
+Type           :  int                                                          
+Value          :  0                                                            
+Param          :    
+```
+
+:::
+
+<br />
+
+#### 自定义错误信息
+
