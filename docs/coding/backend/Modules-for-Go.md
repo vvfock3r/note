@@ -64,7 +64,6 @@
     </tr>
     </tbody>
 </table>
-
 <br />
 
 
@@ -126,10 +125,17 @@
     <tr>
         <td>Token</td>
         <td><a href="#jwt" style="text-decoration:none;">JWT</a></td>
-        <td><li><code>Go 1.19</code></li></td>
+        <td><li><code>Go 1.19</code></li><li><code>JWT v4.4.2</code></li></td>
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>验证器</td>
+        <td><a href="#validator" style="text-decoration:none;">Validator</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Validator v10.11.1</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>        
     </tbody>
 </table>
 
@@ -10513,3 +10519,18 @@ func main() {
 ```
 
 :::
+
+<br />
+
+## validator
+
+Github：[https://github.com/go-playground/validator](https://github.com/go-playground/validator)
+
+文档：[https://pkg.go.dev/github.com/go-playground/validator](https://pkg.go.dev/github.com/go-playground/validator)
+
+### 安装
+
+```bash
+go get github.com/go-playground/validator/v10
+```
+
