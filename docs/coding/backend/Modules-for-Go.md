@@ -11046,7 +11046,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 定义结构体
+// 定义结构体,注意需要将 validate 修改为 binding
 type person struct {
 	Name                string `json:"name" binding:"required,min=4,max=15"`
 	Email               string `json:"email" binding:"required,email"`
