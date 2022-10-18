@@ -10814,17 +10814,17 @@ type person struct {
 	DriverLicenseNumber string `validate:"omitempty,len=12,numeric"`
 }
 
-// 创建一个person对象
-var p = person{
-	Name:                "Bob",
-	Email:               "test@example.com",
-	Age:                 0,
-	DriverLicenseNumber: "",
-}
-
 func main() {
 	// 实例化validator对象
 	validate := validator.New()
+
+	// 创建一个person对象
+	var p = person{
+		Name:                "Bob",
+		Email:               "test@example.com",
+		Age:                 0,
+		DriverLicenseNumber: "",
+	}
 
 	// 对结构体进行验证
 	err := validate.Struct(p)
@@ -10840,21 +10840,25 @@ func main() {
 			fmt.Println(err)
 		}
 
+		// err包含以下3个值：
+		//   nil
+		//   InvalidValidationError
+		//   ValidationErrors
+		// 前两个我们都处理了，所以这里留下来的错误只能是ValidationErrors
 		// ValidationErrors，一般是真的验证失败了，通过断言我们可以获取到一些详情
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, err := range errs {
-				fmt.Println("Namespace      : ", err.Namespace())
-				fmt.Println("Field          : ", err.Field())
-				fmt.Println("StructNamespace: ", err.StructNamespace())
-				fmt.Println("StructField    : ", err.StructField())
-				fmt.Println("Tag            : ", err.Tag())
-				fmt.Println("ActualTag      : ", err.ActualTag())
-				fmt.Println("Kind           : ", err.Kind())
-				fmt.Println("Type           : ", err.Type())
-				fmt.Println("Value          : ", err.Value())
-				fmt.Println("Param          : ", err.Param())
-				fmt.Println()
-			}
+		errs := err.(validator.ValidationErrors)
+		for _, err := range errs {
+			fmt.Println("Namespace      : ", err.Namespace())
+			fmt.Println("Field          : ", err.Field())
+			fmt.Println("StructNamespace: ", err.StructNamespace())
+			fmt.Println("StructField    : ", err.StructField())
+			fmt.Println("Tag            : ", err.Tag())
+			fmt.Println("ActualTag      : ", err.ActualTag())
+			fmt.Println("Kind           : ", err.Kind())
+			fmt.Println("Type           : ", err.Type())
+			fmt.Println("Value          : ", err.Value())
+			fmt.Println("Param          : ", err.Param())
+			fmt.Println()
 		}
 	}
 }
@@ -10897,3 +10901,191 @@ Param          :
 
 #### 自定义错误信息
 
+::: details 先创建一个文件，用于编写错误翻译函数
+
+`validator.go`
+
+```go
+package main
+
+import "github.com/go-playground/validator/v10"
+
+// ValidatorEntry 错误条目
+type ValidatorEntry map[string]string
+
+// ValidatorTranslate 错误翻译器
+func ValidatorTranslate(e error, f func() map[string]string) []ValidatorEntry {
+	// 检查nil值
+	if e == nil {
+		return []ValidatorEntry{}
+	}
+
+	// 初始化
+	field := "Field"       // 字段名
+	message := "Message"   // 消息主体名
+	m := f()               // 映射
+	var s []ValidatorEntry // 返回值
+
+	// InvalidValidationError 一般是函数用法不对,比如 validate.Struct(nil)
+	if _, ok := e.(*validator.InvalidValidationError); ok {
+		if v, ok := m["InvalidValidationError"]; ok {
+			s = append(s, ValidatorEntry{field: "InvalidValidationError", message: v})
+		} else {
+			s = append(s, ValidatorEntry{field: "InvalidValidationError", message: e.Error()})
+		}
+		return s
+	}
+
+	// ValidationErrors，一般是真的验证失败了，通过断言我们可以获取到一些详情
+	if errs, ok := e.(validator.ValidationErrors); ok {
+		for _, err := range errs {
+			key := err.Field() + "." + err.Tag()
+			if v, ok := m[key]; ok {
+				s = append(s, ValidatorEntry{field: err.Field(), message: v})
+			} else {
+				s = append(s, ValidatorEntry{field: err.Field(), message: err.Error()})
+			}
+		}
+		return s
+	}
+	return []ValidatorEntry{{field: "UnknownValidationError", message: e.Error()}}
+}
+```
+
+:::
+
+::: details （1）普通结构体测试
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+// 定义结构体
+type person struct {
+	Name                string `validate:"required,min=4,max=15"`
+	Email               string `validate:"required,email"`
+	Age                 int    `validate:"required,numeric,min=18"`
+	DriverLicenseNumber string `validate:"omitempty,len=12,numeric"`
+}
+
+// Validator 定义翻译接口，可以定义为结构体方法，也可以单独定义一个方法
+func (p person) Validator() map[string]string {
+	return map[string]string{
+		"InvalidValidationError": "验证参数无效",
+		"Name.required":          "用户名为必填项",
+		"Name.min":               "用户名最少4个字符",
+		"Name.max":               "用户名最多15个字符",
+		"Age.required":           "年龄为必填项",
+	}
+}
+
+func main() {
+	// 创建一个person对象
+	var p = person{
+		Name:                "Bob",
+		Email:               "test#example.com",
+		Age:                 0,
+		DriverLicenseNumber: "",
+	}
+
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 对结构体进行验证
+	err := validate.Struct(p)
+
+	// 翻译错误，返回一个map切片
+	errMessage := ValidatorTranslate(err, p.Validator)
+
+	// 格式化输出
+	msg, err := json.MarshalIndent(errMessage, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(msg))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run .
+[
+    {
+        "Field": "Name",
+        "Message": "用户名最少4个字符"
+    },
+    {
+        "Field": "Email",
+        "Message": "Key: 'person.Email' Error:Field validation for 'Email' failed on the 'email' tag"
+    },
+    {
+        "Field": "Age",
+        "Message": "年龄为必填项"
+    }
+]
+```
+
+:::
+
+::: details （2）Gin参数绑定测试
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+// 定义结构体
+type person struct {
+	Name                string `json:"name" binding:"required,min=4,max=15"`
+	Email               string `json:"email" binding:"required,email"`
+	Age                 int    `json:"age" binding:"required,numeric,min=18"`
+	DriverLicenseNumber string `json:"driverLicenseNumber" binding:"omitempty,len=12,numeric"`
+}
+
+// Validator 定义翻译接口，可以定义为结构体方法，也可以单独定义一个方法
+func (p person) Validator() map[string]string {
+	return map[string]string{
+		"InvalidValidationError": "验证参数无效",
+		"Name.required":          "用户名为必填项",
+		"Name.min":               "用户名最少4个字符",
+		"Name.max":               "用户名最多15个字符",
+		"Age.required":           "年龄为必填项",
+	}
+}
+
+func main() {
+	r := gin.Default()
+	r.POST("/", func(c *gin.Context) {
+		// Gin参数绑定
+		var p person
+		err := c.ShouldBind(&p)
+
+		// 翻译错误，返回一个map切片
+		errMessage := ValidatorTranslate(err, p.Validator)
+
+		// 返回响应
+		c.JSON(http.StatusOK, errMessage)
+	})
+	log.Fatalln(r.Run("0.0.0.0:6666"))
+}
+```
+
+输出结果
+
+![image-20221018165811618](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221018165811618.png)
+
+![image-20221018165918108](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221018165918108.png)
+
+:::
