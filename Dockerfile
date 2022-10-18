@@ -1,7 +1,7 @@
 FROM node:18-alpine as builder
 WORKDIR /build
 COPY . .
-RUN yarn install && yarn docs:build
+RUN yarn install --network-timeout 300000 && yarn docs:build
 
 FROM nginx:stable-alpine as runner
 MAINTAINER vvfock3r

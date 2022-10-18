@@ -47,7 +47,7 @@ jobs:
           cache: "pip"
 
       - name: 安装Python依赖
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt --timeout 300
 
       - name: 添加防火墙白名单
         run: |
