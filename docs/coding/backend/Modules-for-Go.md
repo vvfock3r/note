@@ -11182,5 +11182,13 @@ Key: 'User.Password' Error:Field validation for 'Password' failed on the 'eqfiel
 
 :::
 
+<br />
+
+#### 网络验证
+
+文档：[https://github.com/go-playground/validator#network](https://github.com/go-playground/validator#network)
+
+
+
 
 
