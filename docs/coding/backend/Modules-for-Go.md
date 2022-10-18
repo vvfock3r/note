@@ -11089,3 +11089,33 @@ func main() {
 ![image-20221018165918108](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221018165918108.png)
 
 :::
+
+<br />
+
+### 各类验证
+
+#### 字段验证
+
+文档：[https://github.com/go-playground/validator#fields](https://github.com/go-playground/validator#fields)
+
+| 标签       | 描述                             |
+| ---------- | -------------------------------- |
+| eqcsfield  | 要求字段等于另一个字段           |
+| eqfield    | 要求字段等于另一个字段           |
+|            |                                  |
+| gtcsfield  | 要求字段值大于另一个字段值       |
+| gtfield    | 要求字段值大于另一个字段值       |
+|            |                                  |
+| gtecsfield | 要求字段值大于或等于另一个字段值 |
+| gtefield   | 要求字段值大于或等于另一个字段值 |
+|            |                                  |
+| ltcsfield  | 要求字段值小于另一个字段值       |
+| ltfield    | 要求字段值小于另一个字段值       |
+|            |                                  |
+| ltecsfield | 要求字段值小于或等于另一个字段值 |
+| ltefield   | 要求字段值小于或等于另一个字段值 |
+|            |                                  |
+| necsfield  | 要求字段值不等于另一个字段值     |
+| nefield    | 要求字段值不等于另一个字段值     |
+
+语法：**比较符号 + 是否跨Struct(cross struct) + field**
