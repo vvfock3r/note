@@ -1,8 +1,7 @@
 FROM node:18-alpine as builder
 WORKDIR /build
 COPY . .
-RUN yarn install || yarn install || yarn install
-RUN yarn docs:build
+RUN for ((i=0;i<9;i++)); do yarn install && break; done && yarn docs:build
 
 FROM nginx:stable-alpine as runner
 MAINTAINER vvfock3r
