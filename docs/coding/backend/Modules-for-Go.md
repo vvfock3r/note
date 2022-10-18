@@ -11098,6 +11098,8 @@ func main() {
 
 文档：[https://github.com/go-playground/validator#fields](https://github.com/go-playground/validator#fields)
 
+**字段**
+
 | 标签       | 描述                             |
 | ---------- | -------------------------------- |
 | eqcsfield  | 要求字段等于另一个字段           |
@@ -11118,4 +11120,67 @@ func main() {
 | necsfield  | 要求字段值不等于另一个字段值     |
 | nefield    | 要求字段值不等于另一个字段值     |
 
-语法：**比较符号 + 是否跨Struct(cross struct) + field**
+**说明**
+
+* 标签组成：比较符号 + 是否跨Struct(cross struct) + field
+* 测试时发现，即使使用不带`cs`的也可以跨结构体验证，不知道是理解的不对还是用法不对？
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type User struct {
+	Name            string `validate:"eqcsfield=UserInfo.ChineseName"`
+	Password        string `validate:"eqfield=ConfirmPassword"`
+	ConfirmPassword string
+	UserInfo
+}
+
+type UserInfo struct {
+	ChineseName string
+	EnglishName string
+}
+
+func main() {
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 创建对象
+	userInfo := UserInfo{
+		ChineseName: "李四",
+		EnglishName: "Bob",
+	}
+	user := User{
+		Name:            "张三",
+		Password:        "123456",
+		ConfirmPassword: "1234567",
+		UserInfo:        userInfo,
+	}
+
+	// 验证
+	err := validate.Struct(user)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+Key: 'User.Name' Error:Field validation for 'Name' failed on the 'eqcsfield' tag      
+Key: 'User.Password' Error:Field validation for 'Password' failed on the 'eqfield' tag
+```
+
+:::
+
+
+
