@@ -11302,6 +11302,8 @@ Key: 'User.LastName' Error:Field validation for 'LastName' failed on the 'max' t
 
 ::: details （2）Gin注册使用示例
 
+参考：[https://gin-gonic.com/docs/examples/custom-validators/](https://gin-gonic.com/docs/examples/custom-validators/)
+
 ```go
 package main
 
