@@ -11246,7 +11246,7 @@ D:\application\GoLand\demo>go run main.go
 
 #### 自定义验证失败时结构体字段名称
 
-::: details 点击查看详情
+::: details （1）普通结构体使用示例
 
 ```go
 package main
@@ -11300,7 +11300,77 @@ Key: 'User.LastName' Error:Field validation for 'LastName' failed on the 'max' t
 
 :::
 
+::: details （2）Gin注册使用示例
 
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+	"reflect"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+)
+
+// 定义结构体,注意需要将 validate 修改为 binding
+type person struct {
+	Name                string `json:"name" binding:"required,min=4,max=15"`
+	Email               string `json:"email" binding:"required,email"`
+	Age                 int    `json:"age" binding:"required,numeric,min=18"`
+	DriverLicenseNumber string `json:"driverLicenseNumber" binding:"omitempty,len=12,numeric"`
+}
+
+// Validator 定义翻译接口，可以定义为结构体方法，也可以单独定义一个方法
+// 原先的字段名称Name修改未json定义的name和age
+func (p person) Validator() map[string]string {
+	return map[string]string{
+		"InvalidValidationError": "验证参数无效",
+		"name.required":          "用户名为必填项",
+		"name.min":               "用户名最少4个字符",
+		"name.max":               "用户名最多15个字符",
+		"age.required":           "年龄为必填项",
+	}
+}
+
+func main() {
+	// Gin初始化
+	r := gin.Default()
+
+	// 自定义验证失败时结构体字段名称
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterTagNameFunc(func(field reflect.StructField) string {
+			name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+			if name == "" {
+				return field.Name
+			}
+			return name
+		})
+	}
+
+	r.POST("/", func(c *gin.Context) {
+		// Gin参数绑定
+		var p person
+		err := c.ShouldBind(&p)
+
+		// 翻译错误，返回一个map切片
+		errMessage := ValidatorTranslate(err, p.Validator)
+
+		// 返回响应
+		c.JSON(http.StatusOK, errMessage)
+	})
+	log.Fatalln(r.Run("0.0.0.0:6666"))
+}
+```
+
+输出结果
+
+![image-20221019193400519](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221019193400519.png)
+
+:::
 
 
 
