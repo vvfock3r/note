@@ -11240,6 +11240,68 @@ D:\application\GoLand\demo>go run main.go
 
 :::
 
+<br />
+
+### 注册自定义函数
+
+#### 自定义验证失败时结构体字段名称
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type User struct {
+	FirstName string `validate:"max=1" json:"firstName" `
+	LastName  string `validate:"max=1"`
+	Age       uint8
+}
+
+func main() {
+	// 实例化User对象
+	user := User{
+		FirstName: "龙城",
+		LastName:  "慕容",
+	}
+
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 在校验发生错误时，修改错误中的Tag名称
+	// 下面的代码会使用json的值代替默认的结构体字段名称，若未定义json则继续使用原字段名称
+	validate.RegisterTagNameFunc(func(field reflect.StructField) string {
+		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+		if name == "" {
+			return field.Name
+		}
+		return name
+	})
+
+	// 验证
+	fmt.Println(validate.Struct(user))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+Key: 'User.firstName' Error:Field validation for 'firstName' failed on the 'max' tag  # 注意这里是firstName而不是FirstName
+Key: 'User.LastName' Error:Field validation for 'LastName' failed on the 'max' tag
+```
+
+:::
+
+
+
 
 
 
