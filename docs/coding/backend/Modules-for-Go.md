@@ -62,8 +62,16 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>随机数</td>
+        <td><a href="#math/rand" style="text-decoration:none;">math/rand</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
+
 <br />
 
 
@@ -11489,5 +11497,104 @@ Key: 'User.Age' Error:Field validation for 'Age' failed on the 'min2' tag
 
 :::
 
+<br />
 
+## math/rand
+
+文档：[https://pkg.go.dev/math/rand](https://pkg.go.dev/math/rand)
+
+### 随机数种子
+
+::: details （1）错误示例：使用初始的随机数种子
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+func main() {
+	for i := 0; i < 9; i++ {
+		fmt.Println(rand.Intn(100)) // 获取 0 - 100之间的随机数，包含0，不包含100
+	}
+}
+```
+
+输出结果
+
+```bash
+# 如下所示，执行两次，输出的随机数居然一样？
+# 总结一下就是：对于一次执行来说是随机的，对于多次执行来说是非随机的
+D:\application\GoLand\demo>go run main.go
+81
+87
+47
+59
+81
+18
+25
+40
+56
+
+D:\application\GoLand\demo>go run main.go
+81
+87
+47
+59
+81
+18
+25
+40
+56
+```
+
+:::
+
+说明
+
+（1）伪随机数和真随机数
+
+通常我们使用的是<span style="color: red; font-weight: bold;">伪随机数</span>，特点是生成速度快，缺点是不够安全（下面会讲到），而<span style="color: red; font-weight: bold;">真正的随机数</span>是使用物理现象产生的：比如掷钱币、骰子、转轮、使用电子元件的噪音、核裂变等。对于计算机来说，可以通过读取硬件信息来产生真随机数或更加接近真随机数的数字
+
+（2）随机数种子
+
+我们所使用的`math/rand`是通过特定的算法来产生伪随机数，比如说下面这个算法
+
+```c++
+RAND_SEED = (RAND_SEED * 123 + 59 ) % 65536;
+```
+
+1. `RAND_SEED`是随机数种子，本质上就是一个数字
+
+2. 通常它会有一个初始值，带入公式后我们会得到一个随机数，同时会把这个随机数作为种子，用于下次产生随机数
+
+3. 这会产生一种现象：只要初始随机数种子确定，那么它所产生的前N项随机数就是确定的，也就是说多次运行程序产生的前N项随机数就是确定的，
+
+   这就解释了我们上面所看到的现象
+
+4. 那么`math/rand`包中初始的随机数种子是多少呢？查看一下`rand.Seed`函数
+
+   ```go
+   // Seed uses the provided seed value to initialize the default Source to a
+   // deterministic state. If Seed is not called, the generator behaves as
+   // if seeded by Seed(1). Seed values that have the same remainder when
+   // divided by 2³¹-1 generate the same pseudo-random sequence.
+   // Seed, unlike the Rand.Seed method, is safe for concurrent use.
+   func Seed(seed int64) { globalRand.Seed(seed) }
+   ```
+
+   可以很清楚的看到初始随机数种子是1。为了验证，我们使用1和2作为种子测试一下，是否符合我们猜想，这里就不贴结果了
+
+   ```go
+   func main() {
+   	rand.Seed(1)
+   	for i := 0; i < 9; i++ {
+   		fmt.Println(rand.Intn(100)) // 获取 0 - 100之间的随机数，包含0，不包含100
+   	}
+   }
+   ```
+
+   
 
