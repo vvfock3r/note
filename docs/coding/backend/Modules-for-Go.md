@@ -11423,7 +11423,7 @@ func main() {
 		// 获取结构体字段类型：fl.Field().Type()
 		// 获取结构体字段值：  fl.Field().Interface()
 
-		// 获取标记值，并转为int类型
+		// 获取标记值，并转为uint64类型
 		tagValue, err := strconv.ParseUint(fl.Param(), 10, 64)
 		if err != nil {
 			return false
