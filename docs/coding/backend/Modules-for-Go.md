@@ -11250,6 +11250,12 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
+#### 常用验证标记
+
+待补充
+
+<br />
+
 ### 注册自定义函数
 
 #### 自定义验证失败时结构体字段名称
