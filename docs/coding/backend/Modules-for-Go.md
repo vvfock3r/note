@@ -11386,7 +11386,100 @@ func main() {
 
 #### 自定义验证标记
 
+这里仿照`min`的效果来写一个`min2`
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/go-playground/validator/v10"
+)
+
+type User struct {
+	Name string `validate:"min2=4"`
+	Age  uint8  `validate:"min2=4"`
+}
+
+func main() {
+	// 实例化User对象
+	user := User{
+		Name: "bob",
+		Age:  3,
+	}
+
+	// 实例化validator对象
+	validate := validator.New()
+
+	// 自定义验证标记, 返回值true代表验证通过，false代表验证未通过
+	min2 := func(fl validator.FieldLevel) bool {
+		// 获取标记名：       fl.GetTag()
+		// 获取标记值：       fl.Param()
+		// 获取结构体字段名：  fl.FieldName()
+		// 获取结构体字段类型：fl.Field().Type()
+		// 获取结构体字段值：  fl.Field().Interface()
+
+		// 获取标记值，并转为int类型
+		tagValue, err := strconv.ParseUint(fl.Param(), 10, 64)
+		if err != nil {
+			return false
+		}
+
+		// 定义字段长度
+		// 1) 验证标记 若只需要 支持一种数据类型，直接断言即可
+		// 2) 我们这里使用查询来让它支持多种基础类型, 不能直接写成 case int, int8,后面使用uint64(v)会报错
+		var fieldValueOrLength uint64
+		switch v := fl.Field().Interface().(type) {
+		case string:
+			fieldValueOrLength = uint64(len(v))
+		case int:
+			fieldValueOrLength = uint64(v)
+		case int8:
+			fieldValueOrLength = uint64(v)
+		case int16:
+			fieldValueOrLength = uint64(v)
+		case int32:
+			fieldValueOrLength = uint64(v)
+		case int64:
+			fieldValueOrLength = uint64(v)
+		case uint:
+			fieldValueOrLength = uint64(v)
+		case uint8:
+			fieldValueOrLength = uint64(v)
+		case uint16:
+			fieldValueOrLength = uint64(v)
+		case uint32:
+			fieldValueOrLength = uint64(v)
+		default:
+			return false // 不支持的类型
+		}
+
+		// 字段长度满足标记最小长度返回true,否则返回false
+		return fieldValueOrLength >= tagValue
+	}
+	err := validate.RegisterValidation("min2", min2)
+	if err != nil {
+		panic(err)
+	}
+
+	// 验证
+	fmt.Println(validate.Struct(user))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+Key: 'User.Name' Error:Field validation for 'Name' failed on the 'min' tag
+Key: 'User.Age' Error:Field validation for 'Age' failed on the 'min' tag
+```
+
+:::
 
 
 
