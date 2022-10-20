@@ -11503,6 +11503,8 @@ Key: 'User.Age' Error:Field validation for 'Age' failed on the 'min2' tag
 
 文档：[https://pkg.go.dev/math/rand](https://pkg.go.dev/math/rand)
 
+<br />
+
 ### 随机数种子
 
 ::: details 错误示例（1）：使用初始的随机数种子
@@ -11550,8 +11552,6 @@ D:\application\GoLand\demo>go run main.go
 # 如上所示，执行两次，输出的随机数居然一样？
 # 总结一下就是：对于一次执行来说是随机的，对于多次执行来说是非随机的
 ```
-
-:::
 
 说明
 
@@ -11604,6 +11604,8 @@ RAND_SEED = (RAND_SEED * 123 + 59 ) % 65536;
    }
    ```
 
+:::
+
 ::: details 错误示例（2）：多次初始化随机数种子，且使用相同的随机数种子
 
 ```go
@@ -11651,8 +11653,6 @@ D:\application\GoLand\demo>go run main.go
 # 这...怎么这么多重复的？这好像不是随机数吧？
 ```
 
-:::
-
 说明
 
 首先，初始随机数种子不应该多次初始化。
@@ -11661,3 +11661,54 @@ D:\application\GoLand\demo>go run main.go
 
 因为`for`循环运行的特别快，所以导致多次循环中都获取到了同一纳秒的时间戳，并且使用相同的值重新初始化了随机数种子，那么就相当于随机数算法又从头开始计算随机数了，算出来的随机数都是算法中第一个数字，所以就会导致重复了
 
+:::
+
+::: details 正确示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 初始随机数种子设置为一个动态的值，且只设置一次，避免算法又从头开始计算导致的重复
+	rand.Seed(time.Now().UnixNano())
+
+	// 产生随机数
+	for i := 0; i < 9; i++ {
+		fmt.Println(rand.Intn(100)) // 获取 0 - 100之间的随机数，包含0，不包含100
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+91
+32
+84
+11
+47
+76
+84
+79
+42
+
+D:\application\GoLand\demo>go run main.go
+47
+42
+19
+27
+72
+38
+88
+63
+73
+```
+
+:::
