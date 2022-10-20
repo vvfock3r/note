@@ -11475,8 +11475,8 @@ func main() {
 
 ```bash
 D:\application\GoLand\demo>go run main.go
-Key: 'User.Name' Error:Field validation for 'Name' failed on the 'min' tag
-Key: 'User.Age' Error:Field validation for 'Age' failed on the 'min' tag
+Key: 'User.Name' Error:Field validation for 'Name' failed on the 'min2' tag
+Key: 'User.Age' Error:Field validation for 'Age' failed on the 'min2' tag
 ```
 
 :::
