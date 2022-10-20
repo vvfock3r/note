@@ -64,7 +64,7 @@
     </tr>
     <tr>
         <td>随机数</td>
-        <td><a href="#math/rand" style="text-decoration:none;">math/rand</a></td>
+        <td><a href="#math-rand" style="text-decoration:none;">math/rand</a></td>
         <td><li><code>Go 1.19</code></li></td>
         <td></td>
         <td></td>
