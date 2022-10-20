@@ -11461,6 +11461,8 @@ func main() {
 		// 字段长度满足标记最小长度返回true,否则返回false
 		return fieldValueOrLength >= tagValue
 	}
+    
+    // 注册自定义验证标记
 	err := validate.RegisterValidation("min2", min2)
 	if err != nil {
 		panic(err)
