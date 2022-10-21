@@ -809,6 +809,8 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 
 **相同点**
 
+* 都是在容器运行时生效，而不是在构建镜像层时生效
+
 * 可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
 
 * 都支持Exec和Shell语法格式
@@ -825,7 +827,7 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 
   :::
 
-* `docker container run`时可以覆盖镜像中的`CMD`或`ENTRYPOINT`命令
+* `docker container run`时可以覆盖镜像中的`CMD`和`ENTRYPOINT`命令
 
 **不同点**
 
@@ -2052,7 +2054,7 @@ Docker进程启动时，会在主机上创建一个名为`docker0`的虚拟网�
 
    Docker将另一端放在主机中，以veth*这样类似的名字命名，并将这个网络设备加入到docker0网桥中
 
-3. 从`docker0`子网中分配一个IP给容器使用，并设置docker0的IP地址为容器的默认网关
+3. 从`docker0`子网中分配一个IP给容器使用，并设置容器的默认网关为docker0的IP地址
 
 <br />
 
@@ -2664,8 +2666,6 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 （3）我们修改默认网桥，其实是对`docker0`做一些配置，比如定义子网等
 
-
-
 ::: details 修改子网和默认网关
 
 ```bash
@@ -2991,6 +2991,8 @@ Github：[https://github.com/containerd/containerd](https://github.com/container
 Created symlink /etc/systemd/system/multi-user.target.wants/containerd.service → /usr/lib/systemd/system/containerd.service.
 ```
 
+<br />
+
 ### 二进制安装
 
 下载地址：[https://github.com/containerd/containerd/releases](https://github.com/containerd/containerd/releases)
@@ -3050,7 +3052,7 @@ Created symlink /etc/systemd/system/multi-user.target.wants/containerd.service �
 ./opt/cni/bin/ptp
 ```
 
-
+<br />
 
 ### 配置文件
 
@@ -3109,6 +3111,8 @@ disabled_plugins = ["cri"]
 [root@ap-hongkang ~]# containerd config default > /etc/containerd/config.toml
 [root@ap-hongkang ~]# systemctl restart containerd.service
 ```
+
+<br />
 
 ### 客户端命令：ctr
 
@@ -3181,7 +3185,7 @@ GLOBAL OPTIONS:
 >
 > （1）`ctr image ls`、`ctr images ls`、`ctr i ls` 这三个命令是一样的，其他子命令也类似
 
-
+<br />
 
 ### 镜像管理
 
@@ -3243,6 +3247,8 @@ docker.io/library/nginx:1.21.6
 
 :::
 
+<br />
+
 ### 命名空间（重要）
 
 ```bash
@@ -3252,6 +3258,8 @@ NAME    LABELS
 default         # 默认的命名空间，若不指定命名空间，则所有操作都在这个命名空间下
 moby            # 这个是Docker Engine的命名空间，如果将Docker服务卸载，此命名空间消失，服务安装上命名空间又会出来
 ```
+
+<br />
 
 ### 容器管理
 
