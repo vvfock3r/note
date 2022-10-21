@@ -3067,6 +3067,10 @@ Are you sure you want to continue? [y/N]
 WARNING! This will remove all local volumes not used by at least one container.
 Are you sure you want to continue? [y/N] y
 Total reclaimed space: 0B
+
+# 还可以这样：
+[root@ap-hongkang ~]# docker image rm -f $(docker image ls -f dangling=true -q)
+Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
 ```
 
 :::
