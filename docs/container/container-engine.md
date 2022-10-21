@@ -68,6 +68,8 @@ sudo docker run hello-world
 
 :::
 
+<br />
+
 #### 运行容器
 
 ::: details 运行容器示例
@@ -226,7 +228,11 @@ d06b76d850c934bfe02785bbd52045694b238f6d40677d1f8eebf7738c07e718
 
 :::
 
+<br />
+
 #### 设置名称
+
+::: details 点击查看详情
 
 ```bash
 # 默认Docker会随机分配名称给新创建的，这时候我们可以手动指定一个名称
@@ -243,7 +249,13 @@ c873d90fc350   centos:7   "/bin/bash"   About a minute ago   Up About a minute  
 node1
 ```
 
+:::
+
+<br />
+
 #### 进入容器
+
+::: details 点击查看详情
 
 ```bash
 # exec子命令：在容器中运行指定的命令，在这里我们执行的命令是sh，并添加-it，hang住容器
@@ -267,6 +279,10 @@ root         15  0.0  0.0  51732  1704 pts/0    R+   06:17   0:00 ps aux
 # 这时候如果我们使用Ctrl+D或exit命令退出，会导致容器退出
 [root@6dc924686c87 /]#
 ```
+
+:::
+
+<br />
 
 #### 重启策略
 
@@ -498,9 +514,13 @@ Successfully tagged centos:demo
 
 :::
 
+<br />
+
 #### 自动删除
 
 我们可以控制容器退出后自动删除，注意与`--restart`选项互斥
+
+::: details 点击查看详情
 
 ```bash
 # 启动3个容器
@@ -521,6 +541,10 @@ Successfully tagged centos:demo
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 
+:::
+
+<br />
+
 ### Docker镜像
 
 #### 修改镜像源
@@ -536,6 +560,8 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 <br />
 
 #### 添加代理服务器
+
+::: details 点击查看详情
 
 ```bash
 # 先找到 docker.service 所在的路径，一般是 /usr/lib/systemd/system/docker.service
@@ -560,6 +586,8 @@ docker info | grep -i proxy
  HTTPS Proxy: http://192.168.0.102:7890
  No Proxy: 127.0.0.1,localhost
 ```
+
+:::
 
 <br />
 
@@ -592,6 +620,8 @@ docker info | grep -i proxy
 
 
 **查看镜像分层结构**
+
+::: details 点击查看详情
 
 ```bash
 # 方式一：下载镜像时可以看到该镜像有几个分层
@@ -650,6 +680,8 @@ docker.io/library/nginx:latest
 
 ![image-20220510152343911](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220510152343911.png)
 
+:::
+
 <br />
 
 #### 镜像导出和导入
@@ -664,6 +696,8 @@ docker.io/library/nginx:latest
   * `docker import`：导入文件系统镜像
 
 **镜像导出和导**
+
+::: details 点击查看详情
 
 ```bash
 # 查看本地镜像
@@ -683,7 +717,11 @@ Untagged: nginx:1.21.6
 Loaded image: nginx:1.21.6
 ```
 
+:::
+
 **容器文件系统导出和导入**
+
+::: details 点击查看详情
 
 ```bash
 # 启动一个容器
@@ -730,6 +768,8 @@ See 'docker run --help'.
 ...
 10
 ```
+
+:::
 
 <br />
 
