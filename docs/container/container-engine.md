@@ -1877,6 +1877,8 @@ DRIVER    VOLUME NAME
 
 默认Docker是不限制容器所使用的内存、CPU等资源
 
+<br />
+
 #### 内存限制
 
 | 选项                  | 说明                                                         |
@@ -1886,6 +1888,8 @@ DRIVER    VOLUME NAME
 | `--memory-swappiness` | 当物理内存剩余N时就开始使用交换分区，可设置范围在0到100之间， 单位百分比<br />不设置此值则默认使用系统设置的值,一般为30（当剩余物理内存小于30%时开始使用交换分区） |
 | `--oom-kill-disable`  | 禁用OOM Killer                                               |
 
+<br />
+
 #### CPU限制
 
 | 选项            | 说明                                   |
@@ -1894,7 +1898,24 @@ DRIVER    VOLUME NAME
 | `--cpuset-cpus` | 限制容器使用特定的CPU核心，比如0-3,1等 |
 | `--cpu-shares`  | CPU共享（相对权重）                    |
 
+<br />
 
+#### 查看容器资源使用率
+
+::: details 点击查看详情
+
+```bash
+# 下面的命令会持续监控监控正在运行的容器资源使用率
+# 如果只想获取一下结果后退出，添加 --no-stream
+[root@ap-hongkang ~]# docker container stats
+CONTAINER ID   NAME           CPU %     MEM USAGE / LIMIT   MEM %     NET I/O          BLOCK I/O    PIDS
+92385f451ae0   stoic_leakey   0.00%     456KiB / 1.774GiB   0.02%     74B / 0B         0B / 0B      1
+a1c45e35b8df   jinhui.dev     0.00%     3.164MiB / 1GiB     0.31%     29.1kB / 903kB   627kB / 0B   3
+```
+
+:::
+
+<br />
 
 ### Docker网络
 
@@ -2931,6 +2952,71 @@ Conn.  characterset:    utf8mb4
 docker container rm -f ${ContainerName}  # 删除容器
 rm -rf $(dirname ${LocalHostConfPath})   # 删除宿主机上的配置(请先确认目录是否正确)
 rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请先确认目录是否正确)
+```
+
+:::
+
+<br />
+
+### 运维管理
+
+#### 修改存储目录
+
+::: details 点击查看详情
+
+```bash
+# 先看一下默认的存储目录，一般是/var/lib/docker
+[root@ap-hongkang ~]# docker info | grep 'Docker Root Dir'
+ Docker Root Dir: /var/lib/docker
+
+# 修改存储目录
+[root@ap-hongkang ~]# vim /etc/docker/daemon.json 
+{
+   "data-root": "/data/dockerd"
+}
+[root@ap-hongkang ~]# mkdir -p /data/dockerd
+
+# 重启Docker
+[root@ap-hongkang ~]# systemctl restart docker.service
+
+# 再次查看存储目录
+[root@ap-hongkang ~]# docker info | grep 'Docker Root Dir'
+ Docker Root Dir: /data/dockerd
+```
+
+请注意：Docker并不会帮我们自动迁移已存在的数据
+
+:::
+
+<br />
+
+#### 清理资源空间
+
+::: details 点击查看详情
+
+```bash
+# 主要有两条命令，根据实际情况选择使用
+
+[root@ap-hongkang ~]# docker system prune
+WARNING! This will remove:
+  - all stopped containers
+  - all networks not used by at least one container
+  - all dangling images
+  - all dangling build cache
+
+Are you sure you want to continue? [y/N] y
+Deleted Containers:
+c261af9e460f953c013b8175e73179bd4b9f29c8f6fc6520b39a6711f588baee
+e8fa00f9c9ee44123a1481eff81b069d1289ec75d8829741c6c4095e2fedb759
+137f3dea25914bebe448c20de7f4fdcbb5b283289d790bf938f0c346802cb9fa
+
+Total reclaimed space: 5B
+
+
+[root@ap-hongkang ~]# docker image prune
+WARNING! This will remove all dangling images.
+Are you sure you want to continue? [y/N] y
+Total reclaimed space: 0B
 ```
 
 :::
