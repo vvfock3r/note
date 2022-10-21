@@ -3075,6 +3075,81 @@ Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
 
 :::
 
+### Docker SDK
+
+文档：[https://docs.docker.com/engine/api/](https://docs.docker.com/engine/api/)
+
+#### 安装说明
+
+文档：[https://docs.docker.com/engine/api/sdk/](https://docs.docker.com/engine/api/sdk/)
+
+* Docker提供了Go和Python两种SDK和 RESTful API
+* SDK和API都有自己的版本号，SDK本质就是对API的一层封装，所以我们最终应该以API版本号为准
+* 我们应当使用和Docker Engine相同的API版本
+
+::: details （1）先使用最新版SDK写一段简单的代码（该代码不连接Docker Engine）
+
+1、先安装最新版SDK
+
+```bash
+go get github.com/docker/docker/client
+```
+
+2、编写`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/docker/docker/client"
+)
+
+func main() {
+	cli, err := client.NewClientWithOpts()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("API version: ", cli.ClientVersion())
+}
+```
+
+3、Go依赖整理
+
+```bash
+D:\application\GoLand\demo>go mod tidy
+```
+
+这一步不是必须要做的，但是可以让我们的`go.mod`文件看起来更清爽，对比下面两张图观察差异
+
+![image-20221021202343228](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221021202343228.png)
+
+![image-20221021202200246](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221021202200246.png)
+
+
+
+4、执行代码
+
+```bash
+D:\application\GoLand\demo>go run main.go
+API version:  1.41
+```
+
+5、总结
+
+1）`go.mod`文件中可以看到SDK的版本为：`v20.10.20+incompatible`
+
+（+incompatible代表该库不符合Go对大于等于v2版本时的使用规范时给它打的一个标记，对我们使用者来说无影响）
+
+2）通过代码输出SDK中API的版本为：`1.41`
+
+:::
+
+::: details （2）更新SDK为和Docker Engine一样的版本 
+
+:::
+
 ## 
 
 ## Containerd
