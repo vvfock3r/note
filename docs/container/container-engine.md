@@ -1900,7 +1900,7 @@ DRIVER    VOLUME NAME
 
 <br />
 
-#### 限制Volume大小
+#### 限制Volume大小（未解决）
 
 ::: details 点击查看详情
 
@@ -1922,6 +1922,8 @@ sh-4.2# seq 100000000000000000 > 1.txt
 # 再开一个终端，查看数据大小
 [root@ap-hongkang ~]# docker exec -it demo ls -lh /data/1.txt
 -rw-r--r-- 1 root root 10M Oct 21 10:30 /data/1.txt
+
+# 按道理，写数据到10M以后会报错 设备空间不足，但是却没有报错？啥情况？
 ```
 
 :::
