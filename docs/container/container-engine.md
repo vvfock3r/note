@@ -1900,6 +1900,34 @@ DRIVER    VOLUME NAME
 
 <br />
 
+#### 限制Volume大小
+
+::: details 点击查看详情
+
+```bash
+# 创建Volume，并指定大小，需要注意：
+# 1) tmpfs是内存文件系统，容器一旦重启数据将丢失
+# 2) 而官网只给了tmpfs、nfs等有限的几种，如果我就是想创建一个普通的volume，然后额外给他加上大小限制，下面这些参数该如何改呢？
+[root@ap-hongkang ~]# docker volume create data --opt type=tmpfs --opt device=tmpfs --opt o=size=10m
+
+# 创建容器，并挂载Volume
+[root@ap-hongkang ~]# docker container run --name demo -itd -v data:/data centos:7
+967e027e4da63831f410a98c49c3df0c6e3c8342bc66658231a429a01a928495
+
+# 写数据
+[root@ap-hongkang ~]# docker container exec -it demo sh
+sh-4.2# cd /data
+sh-4.2# seq 100000000000000000 > 1.txt
+
+# 再开一个终端，查看数据大小
+[root@ap-hongkang ~]# docker exec -it demo ls -lh /data/1.txt
+-rw-r--r-- 1 root root 10M Oct 21 10:30 /data/1.txt
+```
+
+:::
+
+<br />
+
 #### 查看容器资源使用率
 
 ::: details 点击查看详情
@@ -2995,7 +3023,7 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 ::: details 点击查看详情
 
 ```bash
-# 主要有两条命令，根据实际情况选择使用
+# 主要有以下几条命令，根据实际情况选择使用
 
 # 命令1
 [root@ap-hongkang ~]# docker system prune
@@ -3031,6 +3059,12 @@ WARNING! This will remove:
   - all build cache
 
 Are you sure you want to continue? [y/N]
+
+# 命令3
+[root@ap-hongkang ~]# docker volume prune 
+WARNING! This will remove all local volumes not used by at least one container.
+Are you sure you want to continue? [y/N] y
+Total reclaimed space: 0B
 ```
 
 :::
