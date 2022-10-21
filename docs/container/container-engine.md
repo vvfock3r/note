@@ -589,6 +589,8 @@ docker info | grep -i proxy
  Storage Driver: overlay2
 ```
 
+
+
 **查看镜像分层结构**
 
 ```bash
@@ -607,22 +609,41 @@ Status: Downloaded newer image for nginx:latest
 docker.io/library/nginx:latest
 
 # 方式二：查看已存在的镜像分层
-[root@localhost ~]# docker image inspect nginx:1.21.6 | grep -i layers -A 20
-            "Type": "layers",
-            "Layers": [
-                "sha256:9c1b6dd6c1e6be9fdd2b1987783824670d3b0dd7ae8ad6f57dc3cea5739ac71e",
-                "sha256:4b7fffa0f0a4a72b2f901c584c1d4ffb67cce7f033cc7969ee7713995c4d2610",
-                "sha256:f5ab86d69014270bcf4d5ce819b9f5c882b35527924ffdd11fecf0fc0dde81a4",
-                "sha256:c876aa251c80272eb01eec011d50650e1b8af494149696b80a606bbeccf03d68",
-                "sha256:7046505147d7f3edbf7c50c02e697d5450a2eebe5119b62b7362b10662899d85",
-                "sha256:b6812e8d56d65d296e21a639b786e7e793e8b969bd2b109fd172646ce5ebe951"
-            ]
-        },
-        "Metadata": {
-            "LastTagTime": "0001-01-01T00:00:00Z"
-        }
-    }
-] 
+[root@ap-hongkang ~]# docker image inspect nginx:1.21.6 | jq '{RootFS:.[0].RootFS}'
+{
+  "RootFS": {
+    "Type": "layers",
+    "Layers": [
+      "sha256:ad6562704f3759fb50f0d3de5f80a38f65a85e709b77fd24491253990f30b6be",
+      "sha256:58354abe5f0e9e8cf3849a697cd86bfefb8448b9deb74e3d13aa3e4c98dd3665",
+      "sha256:53ae81198b641f2911dfc469313edde2fe690bf230efaa823a4aa836d08336e0",
+      "sha256:57d3fc88cb3f95fe3daac8591dabe1c161af0fcfd4cf099aa3f994c888ac7877",
+      "sha256:747b7a567071ddb822a072c4dadc2ef50ef6d1bf35ce477e9a559f1df1b7c571",
+      "sha256:33e3df466e11254954ba3b06301c93c066a1f699e2ddd80f0214340236d57935"
+    ]
+  }
+}
+
+# --------------------------------------------------------------------------------------------------
+
+# 查看联合文件系统
+[root@ap-hongkang ~]# docker image inspect nginx:1.21.6 | jq '{GraphDriver:.[0].GraphDriver}'
+{
+  "GraphDriver": {
+    "Data": {
+      "LowerDir": "/var/lib/docker/overlay2/64dca49f0a50bdbdb50fa392038eaff6d325e9b828e949dc09951063aa6a4186/diff:/var/lib/docker/overlay2/734b0828e53e2b5fc1735d383ee4fc6e456841b5a06cff42d6e0ed24ea5084c4/diff:/var/lib/docker/overlay2/9c6c4eabcebd0b6a8341087fec14a2dbddc42acb46eb974acba0798e8284fddc/diff:/var/lib/docker/overlay2/de9c8d969dfcfbe52b7fe5d18427477508185f1f566bcd7d8c7013691ec7d370/diff:/var/lib/docker/overlay2/1be8bf5f5670e155b31753cb91d7464460be62048e2a4ea48701fc75e75bab6c/diff",
+      "MergedDir": "/var/lib/docker/overlay2/2f166a11e8b5ab64456b6dd144c6e4162e385e3a1809beb78ff3dbed0fd60413/merged",
+      "UpperDir": "/var/lib/docker/overlay2/2f166a11e8b5ab64456b6dd144c6e4162e385e3a1809beb78ff3dbed0fd60413/diff",
+      "WorkDir": "/var/lib/docker/overlay2/2f166a11e8b5ab64456b6dd144c6e4162e385e3a1809beb78ff3dbed0fd60413/work"
+    },
+    "Name": "overlay2"
+  }
+}
+
+# LowerDir:  镜像层，只读
+# WorkDir:   先写入WorkDir，再移动到UpperDir
+# UpperDir:  容器曾，读写
+# MergedDir: 用于将以上所有层合并，提供一个统一的视图
 ```
 
 还可以通过第三方工具`dive`来查看更具体一些的信息，Github：[https://github.com/wagoodman/dive](https://github.com/wagoodman/dive)
