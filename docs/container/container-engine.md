@@ -2997,6 +2997,7 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 ```bash
 # 主要有两条命令，根据实际情况选择使用
 
+# 命令1
 [root@ap-hongkang ~]# docker system prune
 WARNING! This will remove:
   - all stopped containers
@@ -3012,11 +3013,24 @@ e8fa00f9c9ee44123a1481eff81b069d1289ec75d8829741c6c4095e2fedb759
 
 Total reclaimed space: 5B
 
-
+# 命令2
 [root@ap-hongkang ~]# docker image prune
 WARNING! This will remove all dangling images.
 Are you sure you want to continue? [y/N] y
 Total reclaimed space: 0B
+
+# 特别说明
+# 1) dangling images是指<none>的镜像，而非是未使用的镜像
+# 2) 如果想删除的更彻底一些，可以添加-a参数，这将会把未使用的镜像也删掉，可以看一下下面的文字说明也变了
+
+[root@ap-hongkang ~]# docker system prune -a
+WARNING! This will remove:
+  - all stopped containers
+  - all networks not used by at least one container
+  - all images without at least one container associated to them  # 未使用的镜像
+  - all build cache
+
+Are you sure you want to continue? [y/N]
 ```
 
 :::
