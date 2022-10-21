@@ -3180,6 +3180,14 @@ API version:  1.41
 
 #### 连接远程Docker Engine
 
+Docker Engine默认是不允许远程连接的，那么我们在本地Goland中编写的代码是无法连接到Docker Engine的（除非它是在本地部署的），那么该如何解决呢？
+
+方法1：使用Goland的SFTP功能，自动同步代码到服务器中，在本地连接Docker Engine
+
+方法2：将Docker Engine暴露出来，所有人可连接（当然这会存在很大的安全问题）
+
+方法1是比较好的，但是我们在学习阶段，方法2显然开发体验更好，所以我们这里基于方法2来操作
+
 
 
 ## 
