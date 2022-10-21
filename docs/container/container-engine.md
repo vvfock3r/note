@@ -3148,7 +3148,37 @@ API version:  1.41
 
 ::: details （2）更新SDK为和Docker Engine一样的版本 
 
+![image-20221021203610770](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221021203610770.png)
+
+查看Docker Engine版本后（上图），发现API版本一致，但是SDK版本不一致，其实这就可以了，但是如果我们想保持强一致的话，可以更新一下SDK版本
+
+修改`go.mod`中的版本号：
+
+```go
+require github.com/docker/docker v20.10.15+incompatible // 这里修改为v20.10.15
+```
+
+然后进行依赖整理：
+
+```bash
+D:\application\GoLand\demo>go mod tidy
+go: downloading github.com/docker/docker v20.10.15+incompatible
+```
+
+再次执行代码，确保降低了SDK版本后依旧与API版本一致
+
+```bash
+D:\application\GoLand\demo>go run main.go
+API version:  1.41
+```
+
 :::
+
+<br />
+
+#### 连接远程Docker Engine
+
+
 
 ## 
 
