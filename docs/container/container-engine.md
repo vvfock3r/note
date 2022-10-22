@@ -3083,7 +3083,7 @@ Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
 
 <br />
 
-### Docker SDK
+### Docker Engine SDK
 
 文档：[https://docs.docker.com/engine/api/](https://docs.docker.com/engine/api/)
 
@@ -3184,7 +3184,7 @@ API version:  1.41
 
 <br />
 
-#### 连接远程Docker Engine
+#### 远程连接
 
 Docker Engine默认是不允许远程连接的，那么我们在本地Goland中编写的代码是无法连接到Docker Engine的（除非它是在本地部署的），那么该如何解决呢？
 
@@ -3194,7 +3194,180 @@ Docker Engine默认是不允许远程连接的，那么我们在本地Goland中�
 
 方法1是比较好的，但是我们在学习阶段，方法2显然开发体验更好，所以我们这里基于方法2来操作
 
+::: details Docker Engine允许远程连接
 
+```bash
+# 修改配置
+[root@ap-hongkang ~]# vim /usr/lib/systemd/system/docker.service
+...
+#ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock  # 这是默认的配置，将其注释掉
+ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2375 --containerd=/run/containerd/containerd.sock  # 新增一行
+...
+
+# 重启Docker
+[root@ap-hongkang ~]# systemctl daemon-reload
+[root@ap-hongkang ~]# systemctl restart docker.service
+
+# 查看,最后面有一个WARNING，我们不用管他
+[root@ap-hongkang ~]# docker info
+...
+WARNING: API is accessible on http://0.0.0.0:2375 without encryption.
+         Access to the remote API is equivalent to root access on the host. Refer
+         to the 'Docker daemon attack surface' section in the documentation for
+         more information: https://docs.docker.com/go/attack-surface/
+         
+# 连接测试
+[root@ap-hongkang ~]# docker -H tcp://43.154.36.151 container ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED        STATUS         PORTS                                         NAMES
+83680b8e9e1b   note:latest   "/docker-entrypoint.…"   21 hours ago   Up 2 minutes   0.0.0.0:6665->80/tcp, 0.0.0.0:6666->443/tcp   jinhui.dev
+```
+
+:::
+
+::: details Go远程连接Docker Engine
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/docker/docker/client"
+)
+
+var err error
+
+func main() {
+	// Docker Engine连接参数
+	host := "tcp://jinhui.dev:2375" // 若Docker Engine部署在本地，将host设置为空字符串即可
+	timeout := "1s"                 // 超时包括从开始连接到读取响应总共的时间
+
+	// 连接参数初始化
+	err = os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
+	if err != nil {
+		panic(err)
+	}
+	t, err := time.ParseDuration(strings.TrimSpace(timeout))
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化Context
+	ctx := context.Background()
+
+	// 初始化 Client
+	// WithAPIVersionNegotiation启用自动API版本协商，
+	// 意味着我们可以使用高版本的SDK连接低版本的Docker Engine，不过不推荐重度依赖此功能
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithTimeout(t), client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+	defer cli.Close()
+
+	// 查看服务端信息（这一步会发起真正连接）
+	start := time.Now()
+	serverVersion, err := cli.ServerVersion(ctx)
+	fmt.Printf("请求耗时: %.2fs\n", time.Now().Sub(start).Seconds())
+	if err != nil {
+		panic(err)
+	}
+
+	// Json序列化
+	serverVersionJson, err := json.MarshalIndent(serverVersion, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionJson))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+请求耗时: 0.59s
+{                                                                  
+    "Platform": {                                                  
+        "Name": "Docker Engine - Community"                        
+    },                                                             
+    "Components": [                                                
+        {                                                          
+            "Name": "Engine",                                      
+            "Version": "20.10.15",                                 
+            "Details": {                                           
+                "ApiVersion": "1.41",                              
+                "Arch": "amd64",                                   
+                "BuildTime": "2022-05-05T13:14:10.000000000+00:00",
+                "Experimental": "false",                           
+                "GitCommit": "4433bf6",                            
+                "GoVersion": "go1.17.9",                           
+                "KernelVersion": "4.18.0-348.7.1.el8_5.x86_64",    
+                "MinAPIVersion": "1.12",                           
+                "Os": "linux"
+            }
+        },
+        {
+            "Name": "containerd",
+            "Version": "1.6.6",
+            "Details": {
+                "GitCommit": "10c12954828e7c7c9b6e0ea9b0c02b01407d3ae1"
+            }
+        },
+        {
+            "Name": "runc",
+            "Version": "1.1.2",
+            "Details": {
+                "GitCommit": "v1.1.2-0-ga916309"
+            }
+        },
+        {
+            "Name": "docker-init",
+            "Version": "0.19.0",
+            "Details": {
+                "GitCommit": "de40ad0"
+            }
+        }
+    ],
+    "Version": "20.10.15",
+    "ApiVersion": "1.41",
+    "MinAPIVersion": "1.12",
+    "GitCommit": "4433bf6",
+    "GoVersion": "go1.17.9",
+    "Os": "linux",
+    "Arch": "amd64",
+    "KernelVersion": "4.18.0-348.7.1.el8_5.x86_64",
+    "BuildTime": "2022-05-05T13:14:10.000000000+00:00"
+}
+
+# 当我把Docker Engine关闭后，再次执行代码时：怎么超时变成2秒钟了呢？
+D:\application\GoLand\demo>go run main.go
+请求耗时: 2.02s
+panic: Cannot connect to the Docker daemon at tcp://jinhui.dev:2375. Is the docker daemon running?
+
+goroutine 1 [running]:
+main.main()
+        D:/application/GoLand/demo/main.go:48 +0x44c
+exit status 2
+
+# 于是我又把代码放到服务器上执行
+[root@ap-hongkang demo]# go run main.go 
+请求耗时: 0.00s
+panic: Cannot connect to the Docker daemon at tcp://jinhui.dev:2375. Is the docker daemon running?
+
+goroutine 1 [running]:
+main.main()
+        /root/demo/main.go:48 +0x44c
+exit status 2
+
+# 超时是设置的双倍时间，这个之前遇到过，原因是同一个域名解析到了两个IP上，但我这里只解析到了一个IP上，并且我使用IP测试也是2秒钟超时，暂时还不清楚原因
+```
+
+:::
 
 ## 
 
