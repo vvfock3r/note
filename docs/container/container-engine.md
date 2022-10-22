@@ -3368,6 +3368,129 @@ exit status 2
 
 :::
 
+<br />
+
+#### 超时问题
+
+在前面的代码中，实际的超时时间是设置的两倍，这是因为我们启用**自动API版本协商**，查看源码的注释有这样一句话：
+
+```go
+// 只显示关键注释
+API version negotiation is performed on the first request; subsequent requests will not re-negotiate.
+在发送第一个请求时会进行API版本协商；后续请求将不会重新协商
+func WithAPIVersionNegotiation() Opt {
+	return func(c *Client) error {
+		c.negotiateVersion = true
+		return nil
+	}
+}
+
+// 在API协商时会向/ping发送请求，并且还忽略了错误，所以导致第二次请求也执行了，并且两次请求全部超时，就变成了双倍超时时间
+// 当手动协商时不再进行自动协商，也就说不会重复协商，这样协商时超时时间就不会变为2倍
+func (cli *Client) NegotiateAPIVersion(ctx context.Context) {
+	if !cli.manualOverride {
+		ping, _ := cli.Ping(ctx)
+		cli.negotiateAPIVersionPing(ping)
+	}
+}
+
+// 解决办法1：关闭自动API版本协商
+// 解决办法2：手动进行API版本协商（手动协商时不会导致双倍超时）
+```
+
+::: details 解决办法2：手动进行API版本协商（手动协商时不会导致双倍超时）
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/docker/docker/client"
+)
+
+func main() {
+	// Docker Engine连接参数
+	host := "tcp://jinhui.dev:2375" // 若Docker Engine部署在本地，将host设置为空字符串即可
+	timeout := "1s"                 // 超时包括从开始连接到读取响应总共的时间
+
+	// 连接参数初始化
+	err := os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
+	if err != nil {
+		panic(err)
+	}
+	t, err := time.ParseDuration(strings.TrimSpace(timeout))
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化Context
+	ctx := context.Background()
+
+	// 初始化 Client
+	// WithAPIVersionNegotiation启用自动API版本协商，
+	// 意味着我们可以使用高版本的SDK连接低版本的Docker Engine，不过不推荐重度依赖此功能
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithTimeout(t), client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+	defer cli.Close()
+
+	// 添加下面这一段代码，其他都不变
+	// 手动进行API版本协商（手动协商时不会导致双倍超时）
+	// 避免在后续的第一次请求中进行协商，因为在协商过程中会忽略错误，会导致超时时间变为原来的2倍
+	pingStart := time.Now()
+	_, err = cli.Ping(ctx)
+	fmt.Printf("请求耗时: %.2fs\n", time.Now().Sub(pingStart).Seconds())
+	if err != nil {
+		log.Println(err)
+	}
+
+	// 查看服务端信息（这一步会发起真正连接）
+	start := time.Now()
+	serverVersion, err := cli.ServerVersion(ctx)
+	fmt.Printf("请求耗时: %.2fs\n", time.Now().Sub(start).Seconds())
+	if err != nil {
+		panic(err)
+	}
+
+	// Json序列化
+	serverVersionJson, err := json.MarshalIndent(serverVersion, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionJson))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\demo>go run main.go
+请求耗时: 1.01s
+2022/10/22 20:49:24 Cannot connect to the Docker daemon at tcp://jinhui.dev:2375. Is the docker daemon running?
+请求耗时: 2.03s
+panic: Cannot connect to the Docker daemon at tcp://jinhui.dev:2375. Is the docker daemon running?
+                                                                                                  
+goroutine 1 [running]:                                                                            
+main.main()                                                                                       
+        D:/application/GoLand/demo/main.go:57 +0x56c                                              
+exit status 2
+
+# 可以看到协商时的超时时间是对的，因为我们协商没有成功，而我们也没有退出程序，所以第二次发送求时依旧会协商，所以还是2秒
+# 在实际应用中，手动协商报错后直接return或panic了，这里我们只是演示，所以并没有退出程序
+```
+
+:::
+
+
+
 ## 
 
 <br />
