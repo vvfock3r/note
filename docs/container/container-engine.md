@@ -3240,15 +3240,13 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var err error
-
 func main() {
 	// Docker Engine连接参数
 	host := "tcp://jinhui.dev:2375" // 若Docker Engine部署在本地，将host设置为空字符串即可
 	timeout := "1s"                 // 超时包括从开始连接到读取响应总共的时间
 
 	// 连接参数初始化
-	err = os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
+	err := os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
 	if err != nil {
 		panic(err)
 	}
