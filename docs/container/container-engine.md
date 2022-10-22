@@ -3489,7 +3489,86 @@ exit status 2
 
 :::
 
+<br />
 
+#### 简单封装
+
+我们简单封装一个函数，用于简化`main`函数
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/docker/docker/client"
+)
+
+func NewDockerClient(host, timeout string) (*client.Client, error) {
+	// 连接参数初始化
+	err := os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
+	if err != nil {
+		return nil, err
+	}
+	t, err := time.ParseDuration(strings.TrimSpace(timeout))
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化 Client
+	// WithAPIVersionNegotiation启用自动API版本协商，
+	// 意味着我们可以使用高版本的SDK连接低版本的Docker Engine，不过不推荐重度依赖此功能
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithTimeout(t), client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+
+	// 手动进行API版本协商，避免在后续的第一次请求中进行协商，因为在协商过程中会忽略错误，会导致超时时间变为原来的2倍
+	_, err = cli.Ping(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return cli, nil
+}
+
+func main() {
+	// Docker Engine连接参数
+	host := "tcp://jinhui.dev:2375" // 若Docker Engine部署在本地，将host设置为空字符串即可
+	timeout := "1s"                 // 超时包括从开始连接到读取响应总共的时间
+
+	// 初始化Context
+	ctx := context.Background()
+
+	// 初始化客户端（这一步会发起真正连接进行API版本协商）
+	cli, err := NewDockerClient(host, timeout)
+	if err != nil {
+		panic(err)
+	}
+
+	// 查看服务端信息
+	serverVersion, err := cli.ServerVersion(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	// Json序列化
+	serverVersionJson, err := json.MarshalIndent(serverVersion, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionJson))
+}
+```
+
+:::
 
 ## 
 
