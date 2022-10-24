@@ -29,6 +29,8 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 | `kube-proxy`                    | 网络代理，在集群中每个节点（node)上运行，负责集群内部或外部的网络会话与 Pod 进行网络通信 |
 | 容器运行时（Container Runtime） | 比如`Docker`（目前已经不支持）、`Containerd`、`CRI-O`等      |
 
+<br />
+
 ## 演示版本
 
 ```bash
@@ -62,6 +64,72 @@ serverVersion:
   major: "1"
   minor: "23"
   platform: linux/amd64
+```
+
+<br />
+
+## 系统信息
+
+```bash
+# 查看都有哪些资源
+[root@node-1 ~]# kubectl api-resources
+NAME                               SHORTNAMES      APIVERSION                             NAMESPACED   KIND
+bindings                                           v1                                     true         Binding
+componentstatuses                  cs              v1                                     false        ComponentStatus
+configmaps                         cm              v1                                     true         ConfigMap
+endpoints                          ep              v1                                     true         Endpoints
+events                             ev              v1                                     true         Event
+limitranges                        limits          v1                                     true         LimitRange
+namespaces                         ns              v1                                     false        Namespace
+nodes                              no              v1                                     false        Node
+persistentvolumeclaims             pvc             v1                                     true         PersistentVolumeClaim
+persistentvolumes                  pv              v1                                     false        PersistentVolume
+pods                               po              v1                                     true         Pod
+podtemplates                                       v1                                     true         PodTemplate
+replicationcontrollers             rc              v1                                     true         ReplicationController
+resourcequotas                     quota           v1                                     true         ResourceQuota
+secrets                                            v1                                     true         Secret
+serviceaccounts                    sa              v1                                     true         ServiceAccount
+services                           svc             v1                                     true         Service
+...
+
+# 输出控制平面和群集服务的地址
+[root@node-1 ~]# kubectl cluster-info
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+KubeDNSUpstream is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns-upstream:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+# 查看集群详细信息（输出内容非常多）
+[root@node-1 ~]# kubectl cluster-info dump
+{
+    "kind": "NodeList",
+    "apiVersion": "v1",
+    "metadata": {
+        "resourceVersion": "852954"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "node-1",
+                "uid": "d9d1becb-7dab-4dd0-ba72-42b36e33c06f",
+                "resourceVersion": "852395",
+                "creationTimestamp": "2022-08-22T15:20:33Z",
+                "labels": {
+                    "beta.kubernetes.io/arch": "amd64",
+                    "beta.kubernetes.io/os": "linux",
+                    "kubernetes.io/arch": "amd64",
+                    "kubernetes.io/hostname": "node-1",
+                    "kubernetes.io/os": "linux"
+                },
+                "annotations": {
+                    "node.alpha.kubernetes.io/ttl": "0",
+                    "projectcalico.org/IPv4Address": "192.168.48.142/24",
+                    "projectcalico.org/IPv4IPIPTunnelAddr": "10.200.84.128",
+                    "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+                }
+            },
 ```
 
 ## 
@@ -5332,3 +5400,8 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 ```
 
 :::
+
+<br />
+
+## RBAC
+
