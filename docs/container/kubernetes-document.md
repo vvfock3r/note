@@ -5403,5 +5403,23 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 
 <br />
 
-## RBAC
+## 访问控制
+
+文档：[https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/)
+
+### 用户
+
+在Kubernetes中，用户分为两类：
+
+* 服务账号（ServiceAccount）：Kubernetes内部所使用的用户，比如：Pod调用Kubernetes API
+* 普通用户（Normal Users）：Kubernetes外部所使用的用户，比如kubectl访问ApiServer
+
+下面来对比一下两种用户
+
+| 类目         | 普通用户                     | 服务账号                                                     |
+| ------------ | ---------------------------- | ------------------------------------------------------------ |
+| 针对对象     | 人                           | Pod                                                          |
+| 生效范围     | 集群内全局生效（集群内唯一） | 某个Namespace下<br />（不同Namespace下相同的Service Account会被认为是不同的账号/资源） |
+| 主要认证方法 | Basic认证、X509证书认证      | Service Account token                                        |
+| 举例         | kubectl                      | Pod                                                          |
 
