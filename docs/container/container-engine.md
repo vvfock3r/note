@@ -3576,19 +3576,105 @@ func main() {
 
 文档：[https://docs.docker.com/engine/api/sdk/examples/](https://docs.docker.com/engine/api/sdk/examples/)
 
-::: details 拉取镜像
+::: details 拉取镜像（多进度条功能需要优化）
 
 ```go
+package main
 
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/docker/docker/api/types"
+
+	"github.com/docker/docker/client"
+)
+
+func NewDockerClient(host, timeout string) (*client.Client, error) {
+	// 连接参数初始化
+	err := os.Setenv("DOCKER_HOST", strings.TrimSpace(host))
+	if err != nil {
+		return nil, err
+	}
+	t, err := time.ParseDuration(strings.TrimSpace(timeout))
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化 Client
+	// WithAPIVersionNegotiation启用自动API版本协商，
+	// 意味着我们可以使用高版本的SDK连接低版本的Docker Engine，不过不推荐重度依赖此功能
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithTimeout(t), client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+
+	// 手动进行API版本协商，避免在后续的第一次请求中进行协商，因为在协商过程中会忽略错误，会导致超时时间变为原来的2倍
+	_, err = cli.Ping(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return cli, nil
+}
+
+type ImagePullResponse struct {
+	Status         string `json:"status"`
+	Id             string `json:"id"`
+	Progress       string `json:"progress"`
+	ProgressDetail struct {
+		Current int `json:"current"`
+		Total   int `json:"total"`
+	} `json:"progressDetail"`
+}
+
+func main() {
+	// Docker Engine连接参数
+	host := "tcp://jinhui.dev:2375" // 若Docker Engine部署在本地，将host设置为空字符串即可
+	timeout := "15s"                // 超时包括从开始连接到读取响应总共的时间
+
+	// 初始化Context
+	ctx := context.Background()
+
+	// 初始化客户端（这一步会发起真正连接进行API版本协商）
+	cli, err := NewDockerClient(host, timeout)
+	if err != nil {
+		panic(err)
+	}
+
+	// 拉取镜像
+	reader, err := cli.ImagePull(ctx, "docker.io/library/nginx:1.22", types.ImagePullOptions{})
+	if err != nil {
+		panic(err)
+	}
+	defer reader.Close()
+
+	// 解码数据流
+	var imagePullResponse ImagePullResponse
+	decoder := json.NewDecoder(reader)
+	for {
+		err := decoder.Decode(&imagePullResponse)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(imagePullResponse)
+	}
+}
 ```
 
 :::
 
-
+<br />
 
 ## 
-
-<br />
 
 ## Containerd
 
