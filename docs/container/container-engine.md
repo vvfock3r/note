@@ -3576,7 +3576,9 @@ func main() {
 
 文档：[https://docs.docker.com/engine/api/sdk/examples/](https://docs.docker.com/engine/api/sdk/examples/)
 
-::: details 拉取镜像（多进度条功能需要优化）
+::: details 拉取镜像
+
+说明：多进度条功能需要优化，可以参考mbp的实现原理：[https://github.com/vbauerster/mpb/blob/master/_examples/complex/main.go](https://github.com/vbauerster/mpb/blob/master/_examples/complex/main.go)
 
 ```go
 package main
