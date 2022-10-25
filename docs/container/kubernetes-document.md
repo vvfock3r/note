@@ -5407,7 +5407,9 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 
 文档：[https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/)
 
-### 用户
+### 用户分类
+
+**概述**
 
 在Kubernetes中，用户分为两类：
 
@@ -5422,4 +5424,93 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 | 生效范围     | 集群内全局生效（集群内唯一） | 某个Namespace下<br />（不同Namespace下相同的Service Account会被认为是不同的账号/资源） |
 | 主要认证方法 | Basic认证、X509证书认证      | Service Account token                                        |
 | 举例         | kubectl                      | Pod                                                          |
+
+<br />
+
+### 服务账号
+
+以下三个独立组件协作完成服务账号相关的自动化：
+
+- `ServiceAccount` 准入控制器
+- `Token `控制器
+- `ServiceAccount` 控制器
+
+::: details  （1）获取当前命名空间下的服务账号
+
+```bash
+# 获取当前命名空间下的服务账号
+[root@node-1 ~]# kubectl get sa
+NAME      SECRETS   AGE
+default   0         63d
+
+# 查看详情，这里看到它是ServiceAccount
+[root@node-1 ~]# kubectl get sa default -o yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2022-08-22T12:38:32Z"
+  name: default
+  namespace: default
+  resourceVersion: "254"
+  uid: 3a35a907-1b29-4259-841d-571dbe5adb8c
+```
+
+:::
+
+::: details  （2）当新建Namespace时会自动创建服务账号
+
+```bash
+# 创建一个新的命名空间
+[root@node-1 ~]# kubectl create namespace demo
+namespace/demo created
+[root@node-1 ~]# kubectl create namespace demo
+Error from server (AlreadyExists): namespaces "demo" already exists
+
+# 我们发现自动创建了一个ServiceAccount
+[root@node-1 ~]# kubectl -n demo get sa
+NAME      SECRETS   AGE
+default   0         24s
+
+# 查看详情
+[root@node-1 ~]# kubectl -n demo get sa default -o yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2022-10-25T01:53:05Z"
+  name: default
+  namespace: demo
+  resourceVersion: "875344"
+  uid: 61764636-badd-4732-9b47-a2bd817e12f4
+```
+
+:::
+
+::: details  （3）删除服务账号又会自动创建
+
+```bash
+[root@node-1 ~]# kubectl -n demo delete sa default && kubectl -n demo get sa
+serviceaccount "default" deleted
+NAME      SECRETS   AGE
+default   0         1s
+```
+
+:::
+
+::: details  （4）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
+
+![image-20221025103255863](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221025103255863.png)
+
+:::
+
+::: details  （5）xxx自动化工作由ServiceAccount准入控制器来完成
+
+```bash
+# disable-admission-plugins标志接受一个（以逗号分隔的）准入控制插件列表，用于开启准入控制器
+[root@node-1 ~]# cat /etc/systemd/system/kube-apiserver.service | \
+                             grep -i 'enable-admission-plugins' | \
+                             grep -i ServiceAccount
+  --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
+  
+# disable-admission-plugins 标志，会将传入的（以逗号分隔的） 准入控制插件列表禁用，即使是默认启用的插件也会被禁用
+```
 
