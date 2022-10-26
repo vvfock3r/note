@@ -7786,3 +7786,35 @@ Build time:          2022-09-04 22:51:19 CST +0800
 OS/Arch:             linux/amd64
 ```
 
+<br />
+
+## 其他
+
+### 多进度条实现原理
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+const (
+	PreviousLineClear = "\033[F" // 光标回到上一行行首并清空行
+	CurrentLineClear  = "\033[K" // 光标回到当前行行首并清空行
+)
+
+func main() {
+	for i := 11; i >= 1; i-- {
+		if i != 11 {
+			fmt.Printf(PreviousLineClear)
+			fmt.Printf(PreviousLineClear)
+		}
+		fmt.Printf("%s%d\n", CurrentLineClear, i)
+		fmt.Printf("%s%d\n", CurrentLineClear, i)
+		time.Sleep(time.Millisecond * 500)
+	}
+}
+```
+
