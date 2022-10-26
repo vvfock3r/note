@@ -8,10 +8,6 @@ Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd
 
 
 
-
-
-
-
 ## 前置知识
 
 ### 声明关键字
