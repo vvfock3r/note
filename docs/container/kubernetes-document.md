@@ -5435,10 +5435,10 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 - `Token `控制器
 - `ServiceAccount` 控制器
 
-::: details  （1）获取当前命名空间下的服务账号
+::: details  （1）基础信息
 
 ```bash
-# 获取当前命名空间下的服务账号
+# (1) 获取当前命名空间下的服务账号
 [root@node-1 ~]# kubectl get sa
 NAME      SECRETS   AGE
 default   0         63d
@@ -5453,13 +5453,8 @@ metadata:
   namespace: default
   resourceVersion: "254"
   uid: 3a35a907-1b29-4259-841d-571dbe5adb8c
-```
-
-:::
-
-::: details  （2）当新建Namespace时会自动创建服务账号
-
-```bash
+  
+# (2) 当新建Namespace时会自动创建服务账号  
 # 创建一个新的命名空间
 [root@node-1 ~]# kubectl create namespace demo
 namespace/demo created
@@ -5481,28 +5476,19 @@ metadata:
   namespace: demo
   resourceVersion: "875344"
   uid: 61764636-badd-4732-9b47-a2bd817e12f4
-```
-
-:::
-
-::: details  （3）删除服务账号又会自动创建
-
-```bash
+  
+# (3) 删除服务账号又会自动创建
 [root@node-1 ~]# kubectl -n demo delete sa default && kubectl -n demo get sa
 serviceaccount "default" deleted
 NAME      SECRETS   AGE
 default   0         1s
 ```
 
-:::
-
-::: details  （4）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
+（4）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
 
 ![image-20221025103255863](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221025103255863.png)
 
-:::
-
-::: details  （5）xxx自动化工作由ServiceAccount准入控制器来完成
+（5）xxx自动化工作由ServiceAccount准入控制器来完成
 
 ```bash
 # disable-admission-plugins标志接受一个（以逗号分隔的）准入控制插件列表，用于开启准入控制器
@@ -5513,4 +5499,6 @@ default   0         1s
   
 # disable-admission-plugins 标志，会将传入的（以逗号分隔的） 准入控制插件列表禁用，即使是默认启用的插件也会被禁用
 ```
+
+:::
 
