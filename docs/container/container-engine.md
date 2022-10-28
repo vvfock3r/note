@@ -3079,7 +3079,47 @@ Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
 
 #### Live Restore
 
-待补充
+文档：[https://docs.docker.com/config/containers/live-restore/](https://docs.docker.com/config/containers/live-restore/)
+
+Live Restore可以使得在Docker Engine不可用的时候，继续保持容器运行，这样就减少了在Docker Engine进行升级或者出现问题的时候容器的停机时间
+
+<br />
+
+但是也会有一些限制：
+
+1、Docker版本升级限制
+
+Live Restore仅支持Docker补丁版本升级时可用，也就是 YY.MM.x 最后一位发生变化的升级，而不支持大版本的升级。在进行大版本升级后，可能会导致Daemon无法重新连接到运行中容器的问题，这时候需要手动停止运行的容器。
+
+2、Daemon选项变更
+
+也就是说Live Restore仅仅在某些Daemon级别的配置选项不发生改变的情况工作，例如Bridge的IP地址，存储驱动类型等。如果在重启Daemon时候，这些选项发生了改变，则可能会到Daemon无法重新连接运行中的容器，这时也需要手动停止这些容器
+
+3、影响容器的日志输出
+
+如果Daemon长时间停止，会影响运行容器的日志输出。因为默认情况下，日志管道的缓冲区大小为64k，当缓冲写满之后，必须启动Daemon来刷新缓冲区
+
+4、不支持Docker Swarm
+
+Live Restore只是独立Docker引擎的特性，而Swarm的服务是由Swarm管理器管理的。当Swarm管理器不可用时，Swarm服务是可以在工作节点上继续运行的，只是不同通过Swarm管理器进行管理，直到Swarm管理恢复工作
+
+<br />
+
+启用步骤
+
+```bash
+# 修改配置文件
+vim /etc/docker/daemon.json
+{
+  "live-restore": true
+}
+
+# Docker Engine重新加载配置
+systemctl restart docker.service
+
+# oh~
+# 在我的测试中，docker engine进程起不来了，不知道是啥原因
+```
 
 <br />
 
