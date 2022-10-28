@@ -157,7 +157,7 @@ class CommandCallback:
     def get_current_ip(ctx, param, value) -> Union[str, None]:
         """获取当前外网出口IP"""
         if value == "CurrentIP":
-            urls = ["https://api-ipv4.ip.sb/ip"]
+            urls = ["https://ip.jinhui.dev", "https://api-ipv4.ip.sb/ip"]
             headers = {
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
             }
