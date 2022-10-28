@@ -3123,6 +3123,63 @@ systemctl restart docker.service
 
 <br />
 
+#### 遇上Crontab
+
+::: details 在Crontab中执行docker container run命令
+
+```bash
+# 先来测试一条简单的Docker命令
+[root@ap-hongkang ~]# docker container run --name demo_$(date +"%Y-%m-%d-%H%M%S") -it centos:7 seq 9
+1
+2
+3
+4
+5
+6
+7
+8
+9
+[root@ap-hongkang ~]# docker container run --name demo_$(date +"%Y-%m-%d-%H%M%S") -it centos:7 seq 9 > 1.txt
+[root@ap-hongkang ~]# cat 1.txt 
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+# 然后我们将他放入到Crontab中执行，并捕获输出 (注意需要对%进行转义)
+[root@ap-hongkang ~]# crontab -e
+* * * * * * * * * * docker container run --name demo_$(date +"\%Y-\%m-\%d-\%H\%M\%S") -it centos:7 seq 9 &> /tmp/demo.txt
+
+# 静静等待几分钟，查看日志输出
+[root@ap-hongkang ~]# cat /tmp/demo.txt
+the input device is not a TTY           # 报错了，这是什么鬼?
+
+# 分析
+# tty不就是终端嘛，在上面的命令中和终端有关系的就是-t参数，用于分配一个伪终端，那我们把-t去掉，再等几分钟查看结果
+[root@ap-hongkang ~]# cat /tmp/demo.txt
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+# 执行成功了
+# 到这里其实就可以结束了，但是我们知道-i和-t通常会连用，-i用于开启标准输入hang住进程，在这里我们的seq并不支持标准输入，所以-i也可以去掉，当前不去也可以
+```
+
+:::
+
+<br />
+
 ### Namespace
 
 Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行隔离
