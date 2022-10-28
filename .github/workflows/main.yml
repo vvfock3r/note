@@ -64,7 +64,7 @@ jobs:
 
       - name: 构建镜像并导出
         run: |          
-          docker image build -f deploy/Dockerfile --tag ${imageName}:${imageTag}
+          docker image build . -f deploy/Dockerfile --tag ${imageName}:${imageTag}
           docker image save ${imageName}:${imageTag} | gzip -6 > ${imageName}-${imageTag}.gz
 
       # https://github.com/marketplace/actions/scp-command-to-transfer-files
