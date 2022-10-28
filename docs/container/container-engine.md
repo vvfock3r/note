@@ -3153,7 +3153,7 @@ systemctl restart docker.service
 
 # 然后我们将他放入到Crontab中执行，并捕获输出 (注意需要对%进行转义)
 [root@ap-hongkang ~]# crontab -e
-* * * * * * * * * * docker container run --name demo_$(date +"\%Y-\%m-\%d-\%H\%M\%S") -it centos:7 seq 9 &> /tmp/demo.txt
+* * * * * docker container run --name demo_$(date +"\%Y-\%m-\%d-\%H\%M\%S") -it centos:7 seq 9 &> /tmp/demo.txt
 
 # 静静等待几分钟，查看日志输出
 [root@ap-hongkang ~]# cat /tmp/demo.txt
