@@ -23,7 +23,7 @@ RUN set -xeuo pipefail && \
       apk del tzdata
 WORKDIR /
 COPY --from=builder /build/docs/.vuepress/dist/ /usr/share/nginx/note/
-COPY ./nginx/ /etc/nginx/
+COPY ./deploy/nginx/ /etc/nginx/
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
