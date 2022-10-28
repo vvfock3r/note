@@ -5435,7 +5435,7 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 - `Token `控制器
 - `ServiceAccount` 控制器
 
-::: details  （1）基础信息
+::: details  （1）默认的ServiceAccount账号：default
 
 ```bash
 # (1) 获取当前命名空间下的服务账号
@@ -5482,13 +5482,21 @@ metadata:
 serviceaccount "default" deleted
 NAME      SECRETS   AGE
 default   0         1s
+
+# (4) 进入Pod查看ServiceAccount详情
+[root@node-1 ~]# kubectl exec -it pod-1 -- sh
+/ # ls -l /var/run/secrets/kubernetes.io/serviceaccount/
+total 0
+lrwxrwxrwx    1 root     root  13 Oct 27 06:54 ca.crt -> ..data/ca.crt       # 根证书
+lrwxrwxrwx    1 root     root  16 Oct 27 06:54 namespace -> ..data/namespace # 识这个service-account-token的作用域空间
+lrwxrwxrwx    1 root     root  12 Oct 27 06:54 token -> ..data/token         # 使用API Server私钥签名的JWT，用于访问API Server时验证
 ```
 
-（4）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
+（5）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
 
 ![image-20221025103255863](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221025103255863.png)
 
-（5）xxx自动化工作由ServiceAccount准入控制器来完成
+（6）xxx自动化工作由ServiceAccount准入控制器来完成
 
 ```bash
 # disable-admission-plugins标志接受一个（以逗号分隔的）准入控制插件列表，用于开启准入控制器
@@ -5501,4 +5509,77 @@ default   0         1s
 ```
 
 :::
+
+::: details  （2）创建自定义ServiceAccount账号（报错了~）
+
+```bash
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-service-account
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: my-service-account
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: "my-service-account"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  namespace: demo
+  labels:
+    app: pod-1
+spec:
+  serviceAccountName: my-service-account
+  containers:
+  - name: pod-1-busybox
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+```
+
+:::
+
+<br />
+
+### 普通用户
+
+我们以`kubectl`客户端所使用的用户来讲解
+
+```bash
+# 查看默认的kubectl配置，此输出的内容等同于~/.kube/config，不同之处在于对一些私密的数据进行了隐藏显示
+[root@node-1 k8s]# kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://127.0.0.1:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: admin
+  name: default
+current-context: default
+kind: Config
+preferences: {}
+users:
+- name: admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+
+# 说明
+clusters		集群列表
+users			用户列表
+contexts		kubelet的可用上下文列表，由用户列表中的某特定用户名称和集群列表中的某特定集群名称组合而成。
+current-context	kubelet当前使用的上下文名称，即上下文列表中的某个特定项
+
+可以看到所使用的用户是admin
+```
 

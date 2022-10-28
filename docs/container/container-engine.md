@@ -3083,6 +3083,29 @@ Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
 
 <br />
 
+### Namespace
+
+Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行隔离
+
+::: tip  Mount Namespace的特殊之处
+
+只有对容器进行挂载之后进程才会看到新的文件系统，否则还是宿主机的文件系统。
+
+解决的办法是进程启动以后，挂载一个完整操作系统的文件系统，这就是所谓的 **容器镜像**
+
+:::
+
+| Namespace | 系统调用参数  | 隔离内容                   |
+| --------- | ------------- | -------------------------- |
+| UTS       | CLONE_NEWUTS  | 主机名和域名               |
+| IPC       | CLONE_NEWIPC  | 信号量、消息队列和共享内存 |
+| PID       | CLONE_NEWPID  | 进程ID                     |
+| Network   | CLONE_NEWNET  | 网络设置、网络栈、端口等   |
+| Mount     | CLONE_NEWNS   | 挂载点（文件系统）         |
+| User      | CLONE_NEWUSER | 用户和用户组               |
+
+<br />
+
 ### Docker Engine SDK
 
 文档：[https://docs.docker.com/engine/api/](https://docs.docker.com/engine/api/)
