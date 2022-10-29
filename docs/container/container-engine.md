@@ -672,7 +672,7 @@ docker.io/library/nginx:latest
 
 # LowerDir:  镜像层，只读
 # WorkDir:   先写入WorkDir，再移动到UpperDir
-# UpperDir:  容器曾，读写
+# UpperDir:  容器层，读写
 # MergedDir: 用于将以上所有层合并，提供一个统一的视图
 ```
 
@@ -3365,7 +3365,48 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 <br />
 
+### Cgroup
 
+待补充
+
+<br />
+
+### Union FS
+
+#### 模拟联合挂载
+
+::: details  模拟联合挂载
+
+```bash
+# 先创建必要的目录(下面这几个目录都是空目录)
+[root@ap-hongkang ~]# mkdir lower upper worker merged
+
+# 对镜像层lower、读写层upper写入数据，both.txt用于测试当文件名有冲突时最终以哪个层的数据生效
+[root@ap-hongkang ~]# echo "lower" > lower/lower.txt && \
+                      echo "upper" > upper/upper.txt && \
+                      echo "lower" > lower/both.txt  && \
+                      echo "upper" > upper/both.txt
+
+# 执行挂载操作，挂载点为当前的merged目录
+[root@ap-hongkang ~]# mount -t overlay overlay -o lowerdir=./lower,upperdir=./upper,workdir=./worker ./merged
+
+# 检查联合挂载后的数据
+[root@ap-hongkang ~]# ll merged/
+total 12
+-rw-r--r-- 1 root root 6 Oct 29 16:49 both.txt
+-rw-r--r-- 1 root root 6 Oct 29 16:49 lower.txt
+-rw-r--r-- 1 root root 6 Oct 29 16:49 upper.txt
+[root@ap-hongkang ~]# cat merged/lower.txt 
+lower
+[root@ap-hongkang ~]# cat merged/upper.txt 
+upper
+[root@ap-hongkang ~]# cat merged/both.txt 
+upper
+```
+
+:::
+
+<br />
 
 ### Docker Engine SDK
 
