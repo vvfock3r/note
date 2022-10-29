@@ -3321,7 +3321,7 @@ OCI runtime exec failed: exec failed: unable to start container process: exec: "
        valid_lft forever preferred_lft forever
 
 # 4.但是使用这种方法也有缺陷,看下面的示例，ps命令需要依赖NET、PID和MNT命名空间，但是一旦使用了MNT命名空间就不再使用宿主机的ps命令了
-[root@ap-hongkang ~]# sudo nsenter --target 1770224 --mount --net --pid ps aux
+[root@ap-hongkang ~]# sudo nsenter -t 1770224 --mount --net --pid ps aux
 nsenter: failed to execute ps: No such file or directory
 
 # 5.在容器中安装ps命令，再试一次
@@ -3336,12 +3336,29 @@ nginx         30  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker
 root          35  0.0  0.0   2484   516 pts/0    Ss   05:04   0:00 sh
 root         376  0.0  0.1   6760  2944 pts/0    R+   05:04   0:00 ps aux
 
-[root@ap-hongkang ~]# sudo nsenter --target 1770224 --mount --net --pid ps aux
+[root@ap-hongkang ~]# sudo nsenter -t 1770224 --mount --net --pid ps aux
 USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 root           1  0.0  0.2   8932  5492 ?        Ss   05:01   0:00 nginx: master process nginx -g daemon off;
 nginx         29  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
 nginx         30  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
 root         377  0.0  0.1   6760  2868 ?        R+   05:04   0:00 ps aux
+```
+
+:::
+
+::: details （4）在新的命名空间中执行命令
+
+```bash
+# 这里我们需要使用到unshare命令，意思是：与父进程不共享命名空间
+
+# --fork:        fork子进程，在子进程中执行命令
+# --pid:         创建新的PID命名空间
+# --mount-proc:  自动挂载/proc 文件系统，无需我们手动执行 mount -t proc proc /proc
+[root@ap-hongkang ~]# unshare --fork --pid --mount-proc bash
+[root@ap-hongkang ~]# ps aux
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.2  27776  5476 pts/0    S    13:28   0:00 bash
+root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 ```
 
 :::
