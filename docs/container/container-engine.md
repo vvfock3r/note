@@ -3403,6 +3403,32 @@ upper
 [root@ap-hongkang ~]# cat merged/both.txt 
 upper
 
+# 修改和删除操作
+[root@ap-hongkang ~]# echo "lower modify" > merged/lower.txt 
+[root@ap-hongkang ~]# echo "upper modify" > merged/upper.txt 
+[root@ap-hongkang ~]# rm -vf merged/both.txt
+
+# 检查原始目录: lower数据并未修改
+[root@ap-hongkang ~]# ll lower/
+total 8
+-rw-r--r-- 1 root root 6 Oct 29 16:49 both.txt
+-rw-r--r-- 1 root root 6 Oct 29 16:49 lower.txt
+[root@ap-hongkang ~]# cat lower/lower.txt 
+lower
+
+# 检查原始目录: upper数据发生变化
+[root@ap-hongkang ~]# ll upper/
+total 8
+c--------- 2 root root 0, 0 Oct 29 17:07 both.txt
+-rw-r--r-- 1 root root   13 Oct 29 17:08 lower.txt
+-rw-r--r-- 1 root root   13 Oct 29 17:08 upper.txt
+[root@ap-hongkang ~]# cat upper/upper.txt                    # 数据发生变化
+upper modify
+[root@ap-hongkang ~]# cat upper/lower.txt                    # 数据发生变化
+lower modify
+[root@ap-hongkang ~]# ls -l upper/both.txt                   # 标记删除
+c--------- 2 root root 0, 0 Oct 29 17:07 upper/both.txt
+
 # 卸载并检查数据
 [root@ap-hongkang ~]# umount ./merged
 [root@ap-hongkang ~]# ll merged/
