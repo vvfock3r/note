@@ -800,6 +800,7 @@ Dockerrfile中每一个指令都会创建一个镜像层，上层依赖于下层
 | EXPOSE     | 显式地指定容器中的进程会监听某个端口<br />（1）并不会直接将端口自动和宿主机某个端口建立映射关系<br />（2）如果docker run指定-P参数（自动映射）会将所有暴露的端口随机映射到宿主机的高阶端口<br />（3）如果docker run 指定了--net=host（宿主机模式），容器中 EXPOSE 指令暴露的端口会直接使用宿主机对应的端口 |
 | VOLUME     | 将文件或目录声明为volume                                     |
 | RUN        | 在容器中运行指定的命令，通常用于安装应用和软件包             |
+| LABEL      | 打标签，示例：`LABEL key="123" value="456"`；<br />后续可以使用`docker image ls --filter label=key="123" `来进行过滤镜像 |
 | ENTRYPOINT | 设置容器启动时运行的命令<br />（2）CMD或之后的参数会被当做参数传递给ENTRYPOINT |
 | CMD        | 设置容器启动时运行的命令<br />（2）CMD命令可以被docker run之后的参数替换 |
 
