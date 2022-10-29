@@ -3185,9 +3185,11 @@ the input device is not a TTY           # 报错了，这是什么鬼?
 
 ### Namespace
 
+#### 介绍
+
 Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行隔离
 
-::: tip  Mount Namespace的特殊之处
+::: tip  Mnt Namespace的特殊之处
 
 只有对容器进行挂载之后进程才会看到新的文件系统，否则还是宿主机的文件系统。
 
@@ -3200,11 +3202,149 @@ Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行
 | UTS       | CLONE_NEWUTS  | 主机名和域名               |
 | IPC       | CLONE_NEWIPC  | 信号量、消息队列和共享内存 |
 | PID       | CLONE_NEWPID  | 进程ID                     |
-| Network   | CLONE_NEWNET  | 网络设置、网络栈、端口等   |
-| Mount     | CLONE_NEWNS   | 挂载点（文件系统）         |
-| User      | CLONE_NEWUSER | 用户和用户组               |
+| NET       | CLONE_NEWNET  | 网络设置、网络栈、端口等   |
+| MNT       | CLONE_NEWNS   | 挂载点（文件系统）         |
+| USER      | CLONE_NEWUSER | 用户和用户组               |
 
 <br />
+
+#### 相关命令
+
+::: details （1）查看当前系统上所有的命名空间
+
+```bash
+[root@ap-hongkang ~]# lsns
+        NS TYPE   NPROCS     PID USER   COMMAND
+4026531835 cgroup    116       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531836 pid       112       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531837 user      116       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531838 uts       112       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531839 ipc       112       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531840 mnt       106       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531860 mnt         1      23 root   kdevtmpfs
+4026531992 net       112       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026532122 mnt         1     675 root   /usr/lib/systemd/systemd-udevd
+4026532207 mnt         2     763 root   /sbin/auditd
+4026532208 mnt         1     862 chrony /usr/sbin/chronyd
+4026532209 mnt         1    1017 root   /usr/sbin/NetworkManager --no-daemon
+4026532212 mnt         3 1750396 root   nginx: master process nginx -g daemon off;
+4026532213 uts         3 1750396 root   nginx: master process nginx -g daemon off;
+4026532214 ipc         3 1750396 root   nginx: master process nginx -g daemon off;
+4026532215 pid         3 1750396 root   nginx: master process nginx -g daemon off;
+4026532217 net         3 1750396 root   nginx: master process nginx -g daemon off;
+4026532276 mnt         1 1749094 root   ./server
+4026532277 uts         1 1749094 root   ./server
+4026532278 ipc         1 1749094 root   ./server
+4026532279 pid         1 1749094 root   ./server
+4026532281 net         1 1749094 root   ./server
+
+# 指定类型(只查看某一类型命名空间)
+[root@ap-hongkang ~]# lsns -t mnt
+        NS TYPE NPROCS     PID USER   COMMAND
+4026531840 mnt     106       1 root   /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+4026531860 mnt       1      23 root   kdevtmpfs
+4026532122 mnt       1     675 root   /usr/lib/systemd/systemd-udevd
+4026532207 mnt       2     763 root   /sbin/auditd
+4026532208 mnt       1     862 chrony /usr/sbin/chronyd
+4026532209 mnt       1    1017 root   /usr/sbin/NetworkManager --no-daemon
+4026532212 mnt       3 1750396 root   nginx: master process nginx -g daemon off;
+4026532276 mnt       1 1749094 root   ./server
+```
+
+:::
+
+::: details （2）查看某个进程的命名空间
+
+```bash
+# 语法: /proc/<pid>/ns
+[root@ap-hongkang ~]# ls -l /proc/1749094/ns
+total 0
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 cgroup -> 'cgroup:[4026531835]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 ipc -> 'ipc:[4026532278]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 mnt -> 'mnt:[4026532276]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 net -> 'net:[4026532281]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 pid -> 'pid:[4026532279]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:21 pid_for_children -> 'pid:[4026532279]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:21 time -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:21 time_for_children -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 user -> 'user:[4026531837]'
+lrwxrwxrwx 1 root root 0 Oct 29 11:07 uts -> 'uts:[4026532277]'
+```
+
+:::
+
+::: details （3）在某个Namespace下执行宿主机命令
+
+```bash
+# 语法: nsenter -t <pid> <某个Namespace> [command]
+
+# (1) 启动一个Nginx容器
+[root@ap-hongkang ~]# docker container run --name demo --rm -d nginx:latest
+
+# (2) 测试一下常用的命令，很多都没有
+[root@ap-hongkang ~]# docker container exec -it demo ping
+OCI runtime exec failed: exec failed: unable to start container process: exec: "ping": not found in $PATH: unknown
+[root@ap-hongkang ~]# docker container exec -it demo telnet
+OCI runtime exec failed: exec failed: unable to start container process: exec: "telnet": not found in $PATH: unknown
+[root@ap-hongkang ~]# docker container exec -it demo curl
+curl: try 'curl --help' or 'curl --manual' for more information
+
+# (3) 为了能在容器中使用某些命令，一般情况下我们可以在容器中安装对应的包，比如说：在nginx镜像中安装ping命令
+[root@ap-hongkang ~]# docker container exec -it demo sh
+# apt update
+# apt install inetutils-ping
+# ping
+ping: missing host operand
+Try 'ping --help' or 'ping --usage' for more information.
+
+# ---------------------------------------------------------------------------------------------------------------
+
+# (4) 现在可以换一个思路，使用宿主机已有的命令，去指定的Namespace中执行，这里使用ip命令举例  
+
+# 1.测试一下, 确定容器中没有此命令
+[root@ap-hongkang ~]# docker container exec -it demo ip addr                      
+OCI runtime exec failed: exec failed: unable to start container process: exec: "ip": not found in $PATH: unknown
+
+ # 2.通过容器名称找到其在宿主机中的Pid
+[root@ap-hongkang ~]# docker container inspect demo -f {{.State.Pid}}
+1770224
+
+# 3.在宿主机上Pid是1770224的进程的NET命名空间中执行ip addr命令 (-n代表的是net命名空间)
+[root@ap-hongkang ~]# nsenter -t 1770224 -n ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+961: eth0@if962: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:11:00:04 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.17.0.4/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+
+# 4.但是使用这种方法也有缺陷,看下面的示例，ps命令需要依赖NET、PID和MNT命名空间，但是一旦使用了MNT命名空间就不再使用宿主机的ps命令了
+[root@ap-hongkang ~]# sudo nsenter --target 1770224 --mount --net --pid ps aux
+nsenter: failed to execute ps: No such file or directory
+
+# 5.在容器中安装ps命令，再试一次
+[root@ap-hongkang ~]# docker container exec -it demo sh
+# apt update
+# apt-get install procps
+# ps aux
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.2   8932  5492 ?        Ss   05:01   0:00 nginx: master process nginx -g daemon off;
+nginx         29  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
+nginx         30  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
+root          35  0.0  0.0   2484   516 pts/0    Ss   05:04   0:00 sh
+root         376  0.0  0.1   6760  2944 pts/0    R+   05:04   0:00 ps aux
+
+[root@ap-hongkang ~]# sudo nsenter --target 1783590 --mount --net --pid ps aux
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.2   8932  5492 ?        Ss   05:01   0:00 nginx: master process nginx -g daemon off;
+nginx         29  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
+nginx         30  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
+root         377  0.0  0.1   6760  2868 ?        R+   05:04   0:00 ps aux
+```
+
+:::
 
 ### Docker Engine SDK
 
