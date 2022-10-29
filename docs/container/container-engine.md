@@ -3336,7 +3336,7 @@ nginx         30  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker
 root          35  0.0  0.0   2484   516 pts/0    Ss   05:04   0:00 sh
 root         376  0.0  0.1   6760  2944 pts/0    R+   05:04   0:00 ps aux
 
-[root@ap-hongkang ~]# sudo nsenter --target 1783590 --mount --net --pid ps aux
+[root@ap-hongkang ~]# sudo nsenter --target 1770224 --mount --net --pid ps aux
 USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 root           1  0.0  0.2   8932  5492 ?        Ss   05:01   0:00 nginx: master process nginx -g daemon off;
 nginx         29  0.0  0.1   9320  2560 ?        S    05:01   0:00 nginx: worker process
