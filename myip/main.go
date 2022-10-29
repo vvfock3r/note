@@ -9,13 +9,20 @@ import (
 
 // 处理器
 func ipHandler(w http.ResponseWriter, req *http.Request) {
-	var realIp string
+	// 输出请求头
+	log.Println("A request was received")
+	for k, v := range req.Header {
+		log.Printf("%-18s: %#v\n", k, v)
+	}
+	fmt.Println()
 
+	// 获取真实IP
+	var realIp string
 	if ip := req.Header.Get("X-Real-IP"); ip != "" {
 		realIp = ip
 	} else if ips := req.Header.Get("X-Forwarded-For"); ips != "" {
 		ipList := strings.Split(ips, ",")
-		realIp = ipList[len(ipList)-1]
+		realIp = ipList[0]
 	} else {
 		if ip := strings.Split(req.RemoteAddr, ":")[0]; ip != "" {
 			realIp = ip
