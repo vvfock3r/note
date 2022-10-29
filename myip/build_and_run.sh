@@ -11,4 +11,4 @@ docker image build . -t ${imageName}
 docker container inspect ${containerName} &>/dev/null && docker container rm -f ${containerName} &>/dev/null
 
 # 创建容器
-docker container run --name ${containerName} -p 7777:7777 --restart always --cpus 200m --memory 200m -d ${imageName}
+docker container run --name ${containerName} -p 7777:7777 --restart always --cpus 0.2 --memory 200m -d ${imageName}
