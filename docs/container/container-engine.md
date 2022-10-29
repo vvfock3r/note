@@ -3367,7 +3367,7 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 ### Cgroup
 
-待补充
+#### 待补充
 
 <br />
 
@@ -3402,6 +3402,11 @@ lower
 upper
 [root@ap-hongkang ~]# cat merged/both.txt 
 upper
+
+# 卸载并检查数据
+[root@ap-hongkang ~]# umount ./merged
+[root@ap-hongkang ~]# ll merged/
+total 0
 ```
 
 :::
