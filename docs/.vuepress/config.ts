@@ -17,10 +17,11 @@ const navbar = [
         text: '容器',
         children: [
             {
-                text: '容器基础',
+                text: '容器引擎',
                 children: [
-                    {text: '容器概念', link: '/container/container'},
-                    {text: '容器引擎', link: '/container/container-engine'},
+                    {text: '容器简介', link: '/container/container'},
+                    {text: 'Docker', link: '/container/docker'},
+					{text: 'Containerd', link: '/container/containerd'},
                 ]
             },
             {
@@ -30,7 +31,7 @@ const navbar = [
                 ]
             },
             {
-                text: '容器编排工具',
+                text: '容器编排',
                 children: [
                     {text: 'Docker Compose', link: '/container/docker-compose'},
                     {text: 'Kubernetes：二进制包部署', link: '/container/kubernetes-deploy-binary'},
