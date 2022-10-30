@@ -2787,7 +2787,118 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 <br />
 
-### 6）部署常用服务
+### 6）安全
+
+#### （1）特权模式
+
+* 创建容器时添加`--privileged=true`可以开启特权模式
+* 特权模式下允许容器内的root拥有近似于宿主机root的权利，在后面我们会看到一些具体的示例
+* 非必要情况下建议不要使用特权模式
+
+::: details 环境准备：准备两个容器，一个不开启特权模式，另一个开启特权模式
+
+```bash
+# 为了避免频繁切换，所以这里开启了两个终端，分别执行下面的命令
+[root@ap-hongkang ~]# docker run --rm -it --privileged=false --hostname privilege-false centos:7
+[root@ap-hongkang ~]# docker run --rm -it --privileged=true  --hostname privilege-true  centos:7
+```
+
+:::
+
+::: details 特权模式与非特权模式有哪些不同
+
+```bash
+# (1) 可以看到的设备不同
+[root@privilege-false /]# ls -l /dev
+total 0
+crw--w---- 1 root tty  136, 0 Oct 30 09:36 console
+lrwxrwxrwx 1 root root     11 Oct 30 09:31 core -> /proc/kcore
+lrwxrwxrwx 1 root root     13 Oct 30 09:31 fd -> /proc/self/fd
+crw-rw-rw- 1 root root   1, 7 Oct 30 09:31 full
+drwxrwxrwt 2 root root     40 Oct 30 09:31 mqueue
+crw-rw-rw- 1 root root   1, 3 Oct 30 09:31 null
+lrwxrwxrwx 1 root root      8 Oct 30 09:31 ptmx -> pts/ptmx
+drwxr-xr-x 2 root root      0 Oct 30 09:31 pts
+crw-rw-rw- 1 root root   1, 8 Oct 30 09:31 random
+drwxrwxrwt 2 root root     40 Oct 30 09:31 shm
+lrwxrwxrwx 1 root root     15 Oct 30 09:31 stderr -> /proc/self/fd/2
+lrwxrwxrwx 1 root root     15 Oct 30 09:31 stdin -> /proc/self/fd/0
+lrwxrwxrwx 1 root root     15 Oct 30 09:31 stdout -> /proc/self/fd/1
+crw-rw-rw- 1 root root   5, 0 Oct 30 09:31 tty
+crw-rw-rw- 1 root root   1, 9 Oct 30 09:31 urandom
+crw-rw-rw- 1 root root   1, 5 Oct 30 09:31 zero
+
+[root@privilege-true /]# ls -l /dev
+total 0
+crw-r--r-- 1 root root     10, 235 Oct 30 09:31 autofs
+drwxr-xr-x 2 root root          60 Oct 30 09:31 bsg
+drwxr-xr-x 3 root root          60 Oct 30 09:31 bus
+crw--w---- 1 root tty     136,   0 Oct 30 09:37 console
+lrwxrwxrwx 1 root root          11 Oct 30 09:31 core -> /proc/kcore
+...这里有超级多的输出
+brw-rw---- 1 root disk    253,   0 Oct 30 09:31 vda
+brw-rw---- 1 root disk    253,   1 Oct 30 09:31 vda1
+drwxr-xr-x 2 root root          60 Oct 30 09:31 vfio
+crw------- 1 root root     10,  63 Oct 30 09:31 vga_arbiter
+crw------- 1 root root     10, 137 Oct 30 09:31 vhci
+crw------- 1 root root     10, 238 Oct 30 09:31 vhost-net
+crw------- 1 root root     10, 241 Oct 30 09:31 vhost-vsock
+crw-rw-rw- 1 root root      1,   5 Oct 30 09:31 zero
+
+# (2) 等您补充
+```
+
+:::
+
+::: details 特权模式下的容器逃逸示例：访问宿主机文件系统
+
+```bash
+# 为了演示方便，我们在宿主机上查看一下挂载点/对应的设备
+[root@ap-hongkang ~]# df -hT | awk '$NF=="/"{print $0}'
+/dev/vda1      ext4       30G   13G   16G  44% /
+
+# 特权模式下挂载宿主机设备，这使得我们可以访问宿主机文件系统
+[root@privilege-true ~]# mkdir host
+[root@privilege-true ~]# mount -t ext4 /dev/vda1 ./host
+[root@privilege-true ~]# cd host/
+[root@privilege-true host]# ll
+total 100
+lrwxrwxrwx    1 root root     7 Jun 22  2021 bin -> usr/bin
+dr-xr-xr-x.   5 root root  4096 Jan 22  2022 boot
+drwxr-xr-x    3 root root  4096 Oct 21 09:54 data
+drwxr-xr-x    3 root root  4096 Aug 16 08:52 data1
+drwxr-xr-x.   2 root root  4096 Nov 26  2019 dev
+drwxr-xr-x. 106 root root 12288 Oct 29 08:57 etc
+drwxr-xr-x.   3 root root  4096 Jun 22  2021 home
+lrwxrwxrwx    1 root root     7 Jun 22  2021 lib -> usr/lib
+lrwxrwxrwx    1 root root     9 Jun 22  2021 lib64 -> usr/lib64
+drwxr-x---    2 root root  4096 Oct 29 05:31 log
+drwx------.   2 root root 16384 Nov 26  2019 lost+found
+drwxr-xr-x.   2 root root  4096 Jun 22  2021 media
+drwxr-xr-x.   2 root root  4096 Jun 22  2021 mnt
+drwxr-xr-x.   3 root root  4096 May  9 06:42 opt
+drwxr-xr-x.   2 root root  4096 Nov 26  2019 proc
+dr-xr-x---.  12 root root  4096 Oct 30 09:34 root
+drwxr-xr-x.   2 root root  4096 Nov 26  2019 run
+lrwxrwxrwx    1 root root     8 Jun 22  2021 sbin -> usr/sbin
+drwxr-xr-x.   2 root root  4096 Jun 22  2021 srv
+drwx--x--x    3 root root  4096 Oct 21 08:09 store
+drwxr-xr-x.   2 root root  4096 Nov 26  2019 sys
+drwxrwxrwt.   8 root root  4096 Oct 30 09:35 tmp
+drwxr-xr-x.  14 root root  4096 Jan 22  2022 usr
+drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
+[root@privilege-true host]# touch i-am-created-by-containerd.txt
+
+# 回到宿主机，检查文件
+[root@ap-hongkang ~]# ls -l /i-am-created-by-containerd.txt 
+-rw-r--r-- 1 root root 0 Oct 30 17:46 /i-am-created-by-containerd.txt
+```
+
+:::
+
+<br />
+
+### 7）部署常用服务
 
 部署常用服务用于**开发环境**
 
@@ -3000,7 +3111,7 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 
 <br />
 
-### 7）杂项汇总
+### 8）杂项汇总
 
 #### 修改存储目录
 
