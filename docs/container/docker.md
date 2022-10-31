@@ -3312,7 +3312,7 @@ the input device is not a TTY           # 报错了，这是什么鬼?
 
 ### 1）Namespace
 
-#### 介绍
+#### 简介
 
 Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行隔离
 
@@ -3492,9 +3492,30 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 <br />
 
-### 2）Cgroup
+### 2）Cgroups
 
-#### 待补充
+#### 简介
+
+* Cgroups（Control Groups）是Linux下用于对一个或一组进程进行资源限制和监控的机制
+* Cgroups可以对CPU、内存、磁盘I/O等进行所需要的资源进行限制，不同资源的的具体工作由对应的Cgroups子系统（Subsystem）来实现
+* Cgroups在不同的资源管理子系统中以层级树（Hierarchy）的方式来组织管理：每个Cgroup都可以包含其他的子Cgroup，因此子Cgroup能使用的资源除了受本Cgroup配置的资源限制外，还受到父Cgroup配置的资源限制
+* Cgroups分为 v1 和 v2 两个版本且差异比较大：`CentOS 7/8` 默认使用的是v1，`CentOS 9` 则默认使用v2版本，在后面我们会介绍如何查看版本
+
+<br />
+
+#### 查看版本
+
+参考文档：[https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version)
+
+```bash
+# 输出tmpfs则为Cgroup v1
+[root@ap-hongkang ~]# stat -fc %T /sys/fs/cgroup/
+tmpfs
+
+# 输出cgroup2fs则为Cgroup v2
+[root@localhost ~]# stat -fc %T /sys/fs/cgroup/
+cgroup2fs
+```
 
 <br />
 
