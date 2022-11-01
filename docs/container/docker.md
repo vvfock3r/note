@@ -3788,7 +3788,9 @@ Pid: 729679
 
 :::
 
-::: details （4）Cgroup v2：文件介绍
+<br />
+
+::: details （1）Cgroup v2：文件介绍
 
 ```bash
 # 通过以下操作可以看到，Cgroup v2和v1版本目录结构差别还是挺大的
@@ -3885,7 +3887,7 @@ max 100000
 
 :::
 
-::: details （5）Cgroup v2：限制进程CPU使用率
+::: details （2）Cgroup v2：限制进程CPU使用率
 
 :::
 
