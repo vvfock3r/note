@@ -3519,6 +3519,175 @@ cgroup2fs
 
 <br />
 
+#### v1版本
+
+**限制方式1**
+
+`cpu.cfs_period_us`：用来配置时间周期长度，单位为us（微秒），默认值为10万
+
+`cpu.cfs_quota_us`：用来配置当前Cgroup在`cpu.cfs_period_us`时间内最多能使用的CPU时间长度，单位为us（微秒），默认为-1（即不限制）
+
+<br />
+
+**限制方式2**
+
+`cpu.shares`：可出让的能获得CPU使用时间的相对值
+
+![image-20221101181739945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221101181739945.png)
+
+<br />
+
+**其他参数**
+
+`cpu.stat`：进程所用CPU时间统计
+
+`nr_periods`：经过`cpu.cfs_period_us`的时间周期数量
+
+`nr_throttled`：在经过的周期内，有多少次因为进程在指定的周期内用光了配额时间而受到限制
+
+`throttled_time`：进程被限制使用CPU的总用时，单位为ns（纳秒）
+
+::: details （1）手工限制进程CPU使用率
+
+`main.go`：这是一个能将系统所有逻辑CPU核心跑满的Go程序
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"runtime"
+	"time"
+)
+
+func main() {
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			for {
+				time.Sleep(time.Nanosecond)
+			}
+		}()
+	}
+	fmt.Printf("Pid: %d\n", os.Getpid())
+	select {}
+}
+```
+
+先将程序跑起来
+
+```bash
+[root@ap-hongkang ~]# go run main.go
+Pid: 698452
+
+# 2核的CPU已经跑满了
+[root@ap-hongkang ~]# top
+top - 17:33:01 up 3 days, 36 min,  3 users,  load average: 4.19, 3.28, 2.04
+Tasks: 116 total,   3 running, 113 sleeping,   0 stopped,   0 zombie
+%Cpu0  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   1816.9 total,     82.6 free,    405.4 used,   1329.0 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1256.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 698452 root      20   0  711260   2924    788 R 200.0   0.2   1:31.35 main
+```
+
+使用Cgroup限制CPU使用率
+
+```bash
+# 先创建一个目录，用于专门管理我们的程序
+[root@ap-hongkang ~]# mkdir /sys/fs/cgroup/cpu/demo
+[root@ap-hongkang ~]# cd /sys/fs/cgroup/cpu/demo
+
+# 看一下默认值
+[root@ap-hongkang demo]# cat cpu.cfs_period_us 
+100000
+[root@ap-hongkang demo]# cat cpu.cfs_quota_us 
+-1
+[root@ap-hongkang demo]# cat tasks
+
+# 重点1: 我们需要将所有的线程ID写入tasks,这样Cgroup才能知道去限制哪些系统线程。可以通过top -H -p <pid>来查看指定进程的线程ID
+[root@ap-hongkang ~]# top -H -p 698452
+Threads:   4 total,   3 running,   1 sleeping,   0 stopped,   0 zombie
+%Cpu(s):100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   1816.9 total,     83.3 free,    416.2 used,   1317.3 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1245.9 avail Mem
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                                   
+ 698452 root      20   0  711260   9032    788 R  99.9   0.5  13:28.26 main                                                     
+ 698455 root      20   0  711260   9032    788 R  83.3   0.5  13:28.63 main                                                     
+ 698453 root      20   0  711260   9032    788 R   0.0   0.5   0:00.25 main                                                     
+ 698456 root      20   0  711260   9032    788 S   0.0   0.5   0:00.00 main
+ 
+[root@ap-hongkang demo]# echo 698452 >> tasks
+[root@ap-hongkang demo]# echo 698455 >> tasks
+[root@ap-hongkang demo]# echo 698453 >> tasks
+[root@ap-hongkang demo]# echo 698456 >> tasks
+[root@ap-hongkang demo]# cat tasks
+698452
+698453
+698455
+698456
+
+# 重点2: 设置CPU使用率
+# (1) 计算公式：限制使用x核CPU = cpu.cfs_quota_us / cpu.cfs_period_us(默认为10万)
+# (2) 假设我们想让它使用50% CPU，即0.5核CPU，代入公式得到：0.5 = 5万 / 10万, 即 cpu.cfs_quota_us 设置为5万
+[root@ap-hongkang demo]# echo 50000 > cpu.cfs_quota_us
+
+# 检查使用率
+top - 17:53:49 up 3 days, 56 min,  3 users,  load average: 3.78, 3.68, 3.52
+Tasks: 116 total,   2 running, 114 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 25.5 us,  0.3 sy,  0.0 ni, 74.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   1816.9 total,     82.4 free,    416.4 used,   1318.1 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1245.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 698452 root      20   0  711260   9032    788 R  50.5   0.5  42:43.29 main
+ 
+# 同理，若限制使用1.5核CPU，那么只需要将cpu.cfs_quota_us 设置为15万即可
+[root@ap-hongkang demo]# echo 150000 > cpu.cfs_quota_us
+```
+
+取消Cgroup限制
+
+```bash
+# 若不想限制了，将cpu.cfs_quota_us设置为-1即可，但这样/sys/fs/cgroup/cpu还会有我们创建的目录，时间长了免不了会有大量垃圾目录
+[root@ap-hongkang demo]# echo -1 > cpu.cfs_quota_us
+
+# 若想清理的更加彻底一点，我想将限制某个程序的Cgroup目录删掉，直接删是删不掉的
+[root@ap-hongkang ~]# rm -rf /sys/fs/cgroup/cpu/demo/
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cgroup.procs': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.cfs_period_us': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.stat': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_percpu_sys': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.shares': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_percpu': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.stat': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.cfs_quota_us': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/tasks': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_sys': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_all': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_percpu_user': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.rt_runtime_us': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/notify_on_release': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpu.rt_period_us': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cgroup.clone_children': Operation not permitted
+rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_user': Operation not permitted
+
+# 若将进程停止(tasks文件中会自动删除我们填写的线程ID)，然后可以使用rmdir来删除
+[root@ap-hongkang ~]# rmdir sys/fs/cgroup/cpu/demo/
+
+# 若将进程尚未停止，可以使用cgdelete命令来删除
+[root@ap-hongkang ~]# yum -y install libcgroup-tools
+[root@ap-hongkang ~]# cgdelete cpu:/demo    # 第一个参数指定Cgroup子系统名称，第二个参数指定相对路径
+```
+
+:::
+
+<br />
+
 ### 3）Union FS
 
 #### 模拟联合挂载
