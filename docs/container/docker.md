@@ -3525,33 +3525,7 @@ cgroup2fs
 
 #### CPU限制
 
-**限制方式1**
-
-`cpu.cfs_period_us`：用来配置时间周期长度，单位为us（微秒），默认值为10万
-
-`cpu.cfs_quota_us`：用来配置当前Cgroup在`cpu.cfs_period_us`时间内最多能使用的CPU时间长度，单位为us（微秒），默认为-1（即不限制）
-
-<br />
-
-**限制方式2**
-
-`cpu.shares`：可出让的能获得CPU使用时间的相对值
-
-![image-20221101181739945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221101181739945.png)
-
-<br />
-
-**其他参数**
-
-`cpu.stat`：进程所用CPU时间统计
-
-`nr_periods`：经过`cpu.cfs_period_us`的时间周期数量
-
-`nr_throttled`：在经过的周期内，有多少次因为进程在指定的周期内用光了配额时间而受到限制
-
-`throttled_time`：进程被限制使用CPU的总用时，单位为ns（纳秒）
-
-::: details （1）Cgroup v1：手工限制进程CPU使用率
+::: details 准备一个能消耗CPU的程序：main.go
 
 `main.go`：这是一个能将系统所有逻辑CPU核心跑满的Go程序
 
@@ -3577,6 +3551,82 @@ func main() {
 	select {}
 }
 ```
+
+:::
+
+::: details （1）Cgroup v1：文件介绍
+
+```bash
+[root@ap-hongkang ~]# cd /sys/fs/cgroup/
+[root@ap-hongkang cgroup]# ll
+total 0
+dr-xr-xr-x 6 root root  0 Oct 29 16:57 blkio
+lrwxrwxrwx 1 root root 11 Oct 29 16:57 cpu -> cpu,cpuacct
+lrwxrwxrwx 1 root root 11 Oct 29 16:57 cpuacct -> cpu,cpuacct
+dr-xr-xr-x 8 root root  0 Oct 29 16:57 cpu,cpuacct
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 cpuset
+dr-xr-xr-x 6 root root  0 Oct 29 16:57 devices
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 freezer
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 hugetlb
+dr-xr-xr-x 7 root root  0 Oct 29 16:57 memory
+lrwxrwxrwx 1 root root 16 Oct 29 16:57 net_cls -> net_cls,net_prio
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 net_cls,net_prio
+lrwxrwxrwx 1 root root 16 Oct 29 16:57 net_prio -> net_cls,net_prio
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 perf_event
+dr-xr-xr-x 6 root root  0 Oct 29 16:57 pids
+dr-xr-xr-x 3 root root  0 Oct 29 16:57 rdma
+dr-xr-xr-x 6 root root  0 Oct 29 16:57 systemd
+
+[root@ap-hongkang cgroup]# cd cpu
+[root@ap-hongkang cpu]# ll
+total 0
+-rw-r--r--  1 root root 0 Nov  1 19:29 cgroup.clone_children
+-rw-r--r--  1 root root 0 Nov  1 19:29 cgroup.procs
+-r--r--r--  1 root root 0 Nov  1 19:29 cgroup.sane_behavior
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.stat
+-rw-r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_all
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_percpu
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_percpu_sys
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_percpu_user
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_sys
+-r--r--r--  1 root root 0 Nov  1 19:29 cpuacct.usage_user
+
+# 用来配置时间周期长度，单位为us（微秒），默认值为10万
+-rw-r--r--  1 root root 0 Nov  1 19:29 cpu.cfs_period_us    
+
+# 用来配置当前Cgroup在cpu.cfs_period_us时间内最多能使用的CPU时间长度,单位为us（微秒），默认为-1（即不限制）
+-rw-r--r--  1 root root 0 Nov  1 19:22 cpu.cfs_quota_us
+
+-rw-r--r--  1 root root 0 Nov  1 19:22 cpu.rt_period_us
+-rw-r--r--  1 root root 0 Nov  1 19:29 cpu.rt_runtime_us
+
+# 可出让的能获得CPU使用时间的相对值, 参考下图
+-rw-r--r--  1 root root 0 Nov  1 19:22 cpu.shares
+
+# 进程所用CPU时间统计
+# nr_periods     经过cpu.cfs_period_us的时间周期数量
+# nr_throttled   在经过的周期内，有多少次因为进程在指定的周期内用光了配额时间而受到限制
+# throttled_time 进程被限制使用CPU的总用时，单位为ns（纳秒）
+-r--r--r--  1 root root 0 Nov  1 19:29 cpu.stat
+
+# docker容器限制目录
+drwxr-xr-x  4 root root 0 Oct 29 16:57 docker
+
+drwxr-xr-x  2 root root 0 Nov  1 19:29 init.scope
+-rw-r--r--  1 root root 0 Nov  1 19:29 notify_on_release
+-rw-r--r--  1 root root 0 Nov  1 19:29 release_agent
+drwxr-xr-x 80 root root 0 Nov  1 19:22 system.slice
+-rw-r--r--  1 root root 0 Nov  1 19:16 tasks
+drwxr-xr-x  2 root root 0 Nov  1 19:22 user.slice
+drwxr-xr-x  3 root root 0 Nov  1 19:29 YunJing
+```
+
+![image-20221101181739945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221101181739945.png)
+
+:::
+
+::: details （2）Cgroup v1：手工限制进程CPU使用率
 
 先将程序跑起来
 
@@ -3692,7 +3742,7 @@ rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_user': Operation not pe
 
 :::
 
-::: details （2）Cgroup v1：使用命令限制进程CPU使用率
+::: details （3）Cgroup v1：使用libcgroup-tools工具限制进程CPU使用率
 
 安装依赖包
 
@@ -3735,6 +3785,107 @@ Pid: 729679
 # 删除Cgroup目录，同时也会取消限制
 [root@ap-hongkang ~]# cgdelete cpu:/demo
 ```
+
+:::
+
+::: details （4）Cgroup v2：文件介绍
+
+```bash
+# 通过以下操作可以看到，Cgroup v2和v1版本目录结构差别还是挺大的
+
+[root@localhost ~]# cd /sys/fs/cgroup/
+[root@localhost cgroup]# ll
+total 0
+-r--r--r--  1 root root 0 Nov  1 18:55 cgroup.controllers
+-rw-r--r--  1 root root 0 Nov  1 19:30 cgroup.max.depth
+-rw-r--r--  1 root root 0 Nov  1 19:30 cgroup.max.descendants
+-rw-r--r--  1 root root 0 Nov  1 18:55 cgroup.procs
+-r--r--r--  1 root root 0 Nov  1 19:30 cgroup.stat
+-rw-r--r--  1 root root 0 Nov  1 18:55 cgroup.subtree_control
+-rw-r--r--  1 root root 0 Nov  1 19:30 cgroup.threads
+-rw-r--r--  1 root root 0 Nov  1 19:30 cpu.pressure
+-r--r--r--  1 root root 0 Nov  1 18:55 cpuset.cpus.effective
+-r--r--r--  1 root root 0 Nov  1 18:55 cpuset.mems.effective
+-r--r--r--  1 root root 0 Nov  1 19:30 cpu.stat
+drwxr-xr-x  2 root root 0 Nov  1 19:31 demo
+drwxr-xr-x  2 root root 0 Nov  1 18:55 dev-hugepages.mount
+drwxr-xr-x  2 root root 0 Nov  1 18:55 dev-mqueue.mount
+drwxr-xr-x  2 root root 0 Nov  1 18:55 init.scope
+-rw-r--r--  1 root root 0 Nov  1 19:30 io.pressure
+-r--r--r--  1 root root 0 Nov  1 19:30 io.stat
+-r--r--r--  1 root root 0 Nov  1 19:30 memory.numa_stat
+-rw-r--r--  1 root root 0 Nov  1 19:30 memory.pressure
+-r--r--r--  1 root root 0 Nov  1 19:30 memory.stat
+-r--r--r--  1 root root 0 Nov  1 19:30 misc.capacity
+drwxr-xr-x  2 root root 0 Nov  1 18:55 sys-fs-fuse-connections.mount
+drwxr-xr-x  2 root root 0 Nov  1 18:55 sys-kernel-config.mount
+drwxr-xr-x  2 root root 0 Nov  1 18:55 sys-kernel-debug.mount
+drwxr-xr-x  2 root root 0 Nov  1 18:55 sys-kernel-tracing.mount
+drwxr-xr-x 27 root root 0 Nov  1 19:19 system.slice
+drwxr-xr-x  3 root root 0 Nov  1 19:19 user.slice
+
+[root@localhost cgroup]# mkdir demo
+[root@localhost cgroup]# cd demo
+[root@localhost cgroup]# ll
+total 0
+-r--r--r-- 1 root root 0 Nov  1 19:45 cgroup.controllers
+-r--r--r-- 1 root root 0 Nov  1 19:45 cgroup.events
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.freeze
+--w------- 1 root root 0 Nov  1 19:45 cgroup.kill
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.max.depth
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.max.descendants
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.procs
+-r--r--r-- 1 root root 0 Nov  1 19:45 cgroup.stat
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.subtree_control
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.threads
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cgroup.type
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.idle
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.max
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.max.burst
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.pressure
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpuset.cpus
+-r--r--r-- 1 root root 0 Nov  1 19:45 cpuset.cpus.effective
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpuset.cpus.partition
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpuset.mems
+-r--r--r-- 1 root root 0 Nov  1 19:45 cpuset.mems.effective
+-r--r--r-- 1 root root 0 Nov  1 19:45 cpu.stat
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.weight
+-rw-r--r-- 1 root root 0 Nov  1 19:45 cpu.weight.nice
+-rw-r--r-- 1 root root 0 Nov  1 19:45 io.bfq.weight
+-rw-r--r-- 1 root root 0 Nov  1 19:45 io.latency
+-rw-r--r-- 1 root root 0 Nov  1 19:45 io.max
+-rw-r--r-- 1 root root 0 Nov  1 19:45 io.pressure
+-r--r--r-- 1 root root 0 Nov  1 19:45 io.stat
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.current
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.events
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.events.local
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.high
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.low
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.max
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.min
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.numa_stat
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.oom.group
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.pressure
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.stat
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.swap.current
+-r--r--r-- 1 root root 0 Nov  1 19:45 memory.swap.events
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.swap.high
+-rw-r--r-- 1 root root 0 Nov  1 19:45 memory.swap.max
+-r--r--r-- 1 root root 0 Nov  1 19:45 pids.current
+-r--r--r-- 1 root root 0 Nov  1 19:45 pids.events
+-rw-r--r-- 1 root root 0 Nov  1 19:45 pids.max
+
+# 重点
+# (0) Cgroup v2版本中的cpu.max文件类似于在Cgroup v1版本中cpu.cfs_period_us和cpu.cfs_quota_us的值的汇总
+# (1) cpu.max第一个参数：用来配置在一个时间周期内(第二个参数的值)最多能使用的CPU时间长度,单位为us（微秒），默认为max（即不限制）
+# (2) cpu.max第二个参数：用来配置时间周期长度，单位为us（微秒），默认值为10万
+[root@localhost demo]# cat cpu.max
+max 100000
+```
+
+:::
+
+::: details （5）Cgroup v2：限制进程CPU使用率
 
 :::
 
