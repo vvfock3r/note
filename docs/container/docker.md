@@ -3500,10 +3500,14 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 * Cgroups可以对CPU、内存、磁盘I/O等进行所需要的资源进行限制，不同资源的的具体工作由对应的Cgroups子系统（Subsystem）来实现
 * Cgroups在不同的资源管理子系统中以层级树（Hierarchy）的方式来组织管理：每个Cgroup都可以包含其他的子Cgroup，因此子Cgroup能使用的资源除了受本Cgroup配置的资源限制外，还受到父Cgroup配置的资源限制
 * Cgroups分为 v1 和 v2 两个版本且差异比较大：`CentOS 7/8` 默认使用的是v1，`CentOS 9` 则默认使用v2版本，在后面我们会介绍如何查看版本
+* 对于资源有一些点需要明确认识：
+  * CPU属于可压缩资源，若CPU不够用只会导致程序运行缓慢而不会宕机
+  * 内存属于不压缩资源，若内存不够用会触发`OOM`
+
 
 <br />
 
-#### 查看版本
+#### 检查版本
 
 参考文档：[https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version)
 
@@ -3519,7 +3523,7 @@ cgroup2fs
 
 <br />
 
-#### v1版本
+#### CPU限制
 
 **限制方式1**
 
@@ -3547,7 +3551,7 @@ cgroup2fs
 
 `throttled_time`：进程被限制使用CPU的总用时，单位为ns（纳秒）
 
-::: details （1）手工限制进程CPU使用率
+::: details （1）Cgroup v1：手工限制进程CPU使用率
 
 `main.go`：这是一个能将系统所有逻辑CPU核心跑满的Go程序
 
@@ -3593,7 +3597,7 @@ MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1256.7 avail Mem
  698452 root      20   0  711260   2924    788 R 200.0   0.2   1:31.35 main
 ```
 
-使用Cgroup限制CPU使用率
+限制CPU使用率
 
 ```bash
 # 先创建一个目录，用于专门管理我们的程序
@@ -3684,6 +3688,52 @@ rm: cannot remove '/sys/fs/cgroup/cpu/demo/cpuacct.usage_user': Operation not pe
 # 若将进程尚未停止，可以使用cgdelete命令来删除
 [root@ap-hongkang ~]# yum -y install libcgroup-tools
 [root@ap-hongkang ~]# cgdelete cpu:/demo    # 第一个参数指定Cgroup子系统名称，第二个参数指定相对路径
+```
+
+:::
+
+::: details （2）Cgroup v1：使用命令限制进程CPU使用率
+
+安装依赖包
+
+```bash
+# 首先需要安装libcgroup-tools
+[root@ap-hongkang ~]# yum -y install libcgroup-tools
+
+# 查看它都提供了哪些命令
+[root@ap-hongkang ~]# rpm -ql libcgroup-tools | grep bin
+/usr/bin/cgclassify
+/usr/bin/cgcreate
+/usr/bin/cgdelete
+/usr/bin/cgexec
+/usr/bin/cgget
+/usr/bin/cgset
+/usr/bin/cgsnapshot
+/usr/bin/lscgroup
+/usr/bin/lssubsys
+/usr/sbin/cgclear
+/usr/sbin/cgconfigparser
+```
+
+基础用法
+
+```bash
+# 创建cgroup目录
+[root@ap-hongkang ~]# cgcreate -g cpu:/demo  # 等同于 mkdir /sys/fs/cgroup/cpu/demo
+
+# 限制CPU使用率为50%
+[root@ap-hongkang ~]# cgset -r cpu.cfs_period_us=100000 /demo
+[root@ap-hongkang ~]# cgset -r cpu.cfs_quota_us=50000   /demo
+
+# 添加进程
+[root@ap-hongkang ~]# cgclassify -g cpu:/demo 729187
+
+# 也可以在进程启动时自动添加
+[root@ap-hongkang ~]# cgexec -g cpu:/demo ./main
+Pid: 729679
+
+# 删除Cgroup目录，同时也会取消限制
+[root@ap-hongkang ~]# cgdelete cpu:/demo
 ```
 
 :::
