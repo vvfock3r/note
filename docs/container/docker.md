@@ -3607,7 +3607,9 @@ MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1256.7 avail Mem
 -1
 [root@ap-hongkang demo]# cat tasks
 
-# 重点1: 我们需要将所有的线程ID写入tasks,这样Cgroup才能知道去限制哪些系统线程。可以通过top -H -p <pid>来查看指定进程的线程ID
+# 重点1
+# (1) 我们需要将所有的线程ID写入tasks文件中,这样Cgroup才能知道去限制哪些系统线程。可以通过top -H -p <pid>来查看指定进程的线程ID
+# (2) 我们也可以将进程ID写入cgroup.procs文件中，系统会自动将进程的所有线程ID写入tasks文件中(推荐使用这种方式)
 [root@ap-hongkang ~]# top -H -p 698452
 Threads:   4 total,   3 running,   1 sleeping,   0 stopped,   0 zombie
 %Cpu(s):100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
