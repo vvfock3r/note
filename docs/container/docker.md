@@ -2898,6 +2898,14 @@ drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
 
 <br />
 
+#### （2）进程用户
+
+* Docker Daemon进程一般使用root来启动，也可以使用non-root来启动，参考文档：[https://docs.docker.com/engine/security/rootless/](https://docs.docker.com/engine/security/rootless/)
+* Docker启动的容器一般也是root权限
+* 默认情况下容器内的进程用户也是root权限，若想使用non-root，可以在启动容器时添加`--user`参数，需要注意的是这里是容器内的用户而非宿主机用户
+
+<br />
+
 ### 7）部署常用服务
 
 部署常用服务用于**开发环境**
