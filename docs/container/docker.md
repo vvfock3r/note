@@ -3937,7 +3937,7 @@ max 100000
 [root@localhost demo]# echo max 100000 > cpu.max
 
 # 若要删除cgroup目录，没有太好的办法，因为libcgroup-tools只适合Cgroup v1, Cgroup v2版本的系统已经不提供该包了
-# 只有等进程停止后才能删除目录
+# 只有等进程停止后(cgroup.procs和cgroup.threads中的ID会自动被系统删除)才能删除目录
 [root@localhost ~]# rmdir /sys/fs/cgroup/demo
 ```
 
