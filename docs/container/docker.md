@@ -3520,6 +3520,8 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 参考文档：[https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version)
 
+检查系统当前启用的Cgroup版本
+
 ```bash
 # 输出tmpfs则为Cgroup v1
 [root@ap-hongkang ~]# stat -fc %T /sys/fs/cgroup/
