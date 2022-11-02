@@ -3494,6 +3494,15 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 ### 2）Cgroups
 
+文档：
+
+* Cgroup v1：[https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v1/index.html](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v1/index.html)
+* Cgroup v2：[https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
+
+> 若想查看指定内核的版本文档，修改latest为指定版本，比如v5.19
+
+<br />
+
 #### 简介
 
 * Cgroups（Control Groups）是Linux下用于对一个或一组进程进行资源限制和监控的机制
@@ -3552,7 +3561,28 @@ func main() {
 }
 ```
 
+先将程序跑起来
+
+```bash
+[root@ap-hongkang ~]# go run main.go
+Pid: 698452
+
+# 2核的CPU已经跑满了
+[root@ap-hongkang ~]# top
+top - 17:33:01 up 3 days, 36 min,  3 users,  load average: 4.19, 3.28, 2.04
+Tasks: 116 total,   3 running, 113 sleeping,   0 stopped,   0 zombie
+%Cpu0  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   1816.9 total,     82.6 free,    405.4 used,   1329.0 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1256.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 698452 root      20   0  711260   2924    788 R 200.0   0.2   1:31.35 main
+```
+
 :::
+
+<br />
 
 ::: details （1）Cgroup v1：文件介绍
 
@@ -3627,25 +3657,6 @@ drwxr-xr-x  3 root root 0 Nov  1 19:29 YunJing
 :::
 
 ::: details （2）Cgroup v1：手工限制进程CPU使用率
-
-先将程序跑起来
-
-```bash
-[root@ap-hongkang ~]# go run main.go
-Pid: 698452
-
-# 2核的CPU已经跑满了
-[root@ap-hongkang ~]# top
-top - 17:33:01 up 3 days, 36 min,  3 users,  load average: 4.19, 3.28, 2.04
-Tasks: 116 total,   3 running, 113 sleeping,   0 stopped,   0 zombie
-%Cpu0  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-MiB Mem :   1816.9 total,     82.6 free,    405.4 used,   1329.0 buff/cache
-MiB Swap:      0.0 total,      0.0 free,      0.0 used.   1256.7 avail Mem 
-
-    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
- 698452 root      20   0  711260   2924    788 R 200.0   0.2   1:31.35 main
-```
 
 限制CPU使用率
 
@@ -3888,6 +3899,39 @@ max 100000
 :::
 
 ::: details （2）Cgroup v2：限制进程CPU使用率
+
+```bash
+[root@localhost ~]# mkdir /sys/fs/cgroup/demo
+[root@localhost ~]# cd /sys/fs/cgroup/demo
+[root@localhost demo]# cat cpu.max
+max 100000
+[root@localhost demo]# cat cgroup.procs
+
+# 重点1：将我们的进程ID写入cgroup.procs
+[root@localhost demo]# echo 1119 > cgroup.procs
+[root@localhost demo]# cat cgroup.threads         # 类似于Cgroup v1中的tasks
+1119
+1120
+1121
+1122
+1123
+
+# 重点2：修改cpu.max文件
+# 假设我们想限制CPU使用率为50%，即0.5核 = 5W / 10w,即修改cpu.max的值为: 50000 100000
+[root@localhost demo]# echo 50000 100000 > cpu.max
+[root@localhost demo]# cat cpu.max
+50000 100000
+# 若想使CPU使用率为120%，即1.2核，那么修改cpu.max的值为: 120000 100000
+[root@localhost demo]# echo 120000 100000 > cpu.max
+[root@localhost demo]# cat cpu.max
+120000 100000
+
+# 若取消限制，则修改第一个参数为max即可
+[root@localhost demo]# echo max 100000 > cpu.max
+
+# 若要删除cgroup目录，没有太好的办法，只有等进程停止后才能删除目录
+[root@localhost ~]# rmdir /sys/fs/cgroup/demo
+```
 
 :::
 
