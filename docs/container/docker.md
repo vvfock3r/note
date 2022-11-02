@@ -3508,7 +3508,12 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 * Cgroups（Control Groups）是Linux下用于对一个或一组进程进行资源限制和监控的机制
 * Cgroups可以对CPU、内存、磁盘I/O等进行所需要的资源进行限制，不同资源的的具体工作由对应的Cgroups子系统（Subsystem）来实现
 * Cgroups在不同的资源管理子系统中以层级树（Hierarchy）的方式来组织管理：每个Cgroup都可以包含其他的子Cgroup，因此子Cgroup能使用的资源除了受本Cgroup配置的资源限制外，还受到父Cgroup配置的资源限制
-* Cgroups分为 v1 和 v2 两个版本且差异比较大：`CentOS 7/8` 默认使用的是v1，`CentOS 9` 则默认使用v2版本，在后面我们会介绍如何查看版本
+
+* Cgroups分为 v1 和 v2 两个版本且差异较大：
+  * `CentOS 7/8` 默认使用的是v1，`CentOS 9` 则默认使用v2版本
+  * Cgroup v1和v2目录结构和文件名发生较大的变化
+  * Cgroup v1可以使用libcgroup-tools工具包来操控，Cgroup v2不能再使用该包来操作
+
 * 对于资源有一些点需要明确认识：
   * CPU属于可压缩资源，若CPU不够用只会导致程序运行缓慢而不会宕机
   * 内存属于不压缩资源，若内存不够用会触发`OOM`
