@@ -2,7 +2,7 @@
 
 文档：[https://etcd.io/docs/v3.5/](https://etcd.io/docs/v3.5/)
 
-Github：https://github.com/etcd-io/etcd
+Github：[https://github.com/etcd-io/etcd](https://github.com/etcd-io/etcd)
 
 <br />
 
@@ -46,15 +46,15 @@ drwxr-xr-x 3 528287 89939 4096 Sep 15 20:03 /usr/local/etcd-v3.5.5-linux-amd64
 
 （2）启动参数说明
 
-| 参数                            | 说明                                             | 注意事项                                                     | 默认值                          |
-| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------ | ------------------------------- |
-| `--name`                        | 节点名称                                         |                                                              | `default`                       |
-| `--listen-client-urls`          | 用于【客户端与服务端通信】的监听地址             | 若要监听所有端口可以设置为0.0.0.0                            | `http://localhost:2379`         |
-| `--listen-peer-urls`            | 用于【服务端与服务端通信】的监听地址             | 若要监听所有端口可以监听0.0.0.0                              | `http://localhost:2380`         |
-| `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址 | 不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
-| `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址 | 不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
-| `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点             | 注意这里的key必须要和etcd节点名称保持一致                    | `default=http://localhost:2380` |
-| `--data-dir`                    | 数据存储目录                                     |                                                              | `${name}.etcd`                  |
+| 参数                            | 说明                                                         | 默认值                          |
+| ------------------------------- | ------------------------------------------------------------ | ------------------------------- |
+| `--name`                        | 节点名称                                                     | `default`                       |
+| `--listen-client-urls`          | 用于【客户端与服务端通信】的监听地址，<br />若要监听所有端口可以设置为0.0.0.0 | `http://localhost:2379`         |
+| `--listen-peer-urls`            | 用于【服务端与服务端通信】的监听地址，<br />若要监听所有端口可以监听0.0.0.0 | `http://localhost:2380`         |
+| `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
+| `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
+| `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
+| `--data-dir`                    | 数据存储目录                                                 | `${name}.etcd`                  |
 
 （3）编写Systemd服务
 
