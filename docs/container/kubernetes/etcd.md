@@ -580,8 +580,6 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 * 备份时只需要对集群某一个节点备份即可
 * 恢复时候要将备份恢复到集群的所有节点
 
-<br />
-
 ::: details 备份前先写点数据
 
 ```bash
