@@ -544,20 +544,161 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
 ```bash
 # 为了后续使用方便，给他设置一个别名
 [root@ap-hongkang ~]# vim ~/.bashrc
-alias etcdctl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 --cacert=/etc/etcd/pki/ca.pem --cert=/etc/etcd/pki/etcd.pem --key=/etc/etcd/pki/etcd-key.pem'
+alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 --cacert=/etc/etcd/pki/ca.pem --cert=/etc/etcd/pki/etcd.pem --key=/etc/etcd/pki/etcd-key.pem'
 
 # 使当前终端生效
 [root@ap-hongkang ~]# source ~/.bashrc
 
 # 测试
-[root@ap-hongkang ~]# etcdctl endpoint health
-https://10.0.8.4:12379 is healthy: successfully committed proposal: took = 14.364471ms
-https://10.0.8.4:32379 is healthy: successfully committed proposal: took = 14.394457ms
-https://10.0.8.4:22379 is healthy: successfully committed proposal: took = 22.875255ms
+[root@ap-hongkang ~]# ectl --write-out=table endpoint health
++------------------------+--------+-------------+-------+
+|        ENDPOINT        | HEALTH |    TOOK     | ERROR |
++------------------------+--------+-------------+-------+
+| https://10.0.8.4:12379 |   true | 16.105903ms |       |
+| https://10.0.8.4:32379 |   true | 16.139586ms |       |
+| https://10.0.8.4:22379 |   true | 19.738679ms |       |
++------------------------+--------+-------------+-------+
+
+# 在整篇笔记中不会使用别名，目的是为了让笔记不让人产生疑惑，让笔记更完整；
+# 在实际使用时可以使用别名来代替
 ```
 
 :::
 
 <br />
 
-## 使用
+## 备份和恢复
+
+文档：
+
+* 备份：[https://etcd.io/docs/v3.5/op-guide/recovery/#snapshotting-the-keyspace](https://etcd.io/docs/v3.5/op-guide/recovery/#snapshotting-the-keyspace)
+
+* 恢复：[https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster)
+
+说明：
+
+* 备份时只需要对集群某一个节点备份即可
+* 恢复时候要将备份恢复到集群的所有节点
+
+<br />
+
+::: details 备份前先写点数据
+
+```bash
+# 在备份前写一点数据
+for i in `seq 100`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      put /itops/test/write-before-backup/${i} ${i}
+done
+```
+
+:::
+
+::: details（1）备份key-value数据
+
+```bash
+# 定义变量
+BACKUP_TIME=$(date +"%Y-%m-%d-%H%M%S")
+
+# 备份方式1：通过endpoint来备份，注意endpoints只能指定一个节点地址，不能指定多个节点地址（推荐此种备份方式）
+[root@ap-hongkang ~]# etcdctl \
+                        --endpoints=https://10.0.8.4:12379 \
+                        --cacert=/etc/etcd/pki/ca.pem \
+                        --cert=/etc/etcd/pki/etcd.pem \
+                        --key=/etc/etcd/pki/etcd-key.pem \
+                      snapshot save snapshot_from_endpoint_${BACKUP_TIME}.db
+
+# 备份方式2：直接复制某个节点的member/snap/db文件进行备份
+[root@ap-hongkang ~]# cp -ra /var/lib/etcd-1/member/snap/db snapshot_from_copyfile_${BACKUP_TIME}.db
+
+# 查看备份文件(根据实际情况选择其中一种方式即可)
+[root@ap-hongkang ~]# ll
+total 124
+-rw------- 1 root root 61440 Nov  5 19:37 snapshot_from_copyfile_2022-11-05-193738.db
+-rw------- 1 root root 61472 Nov  5 19:37 snapshot_from_endpoint_2022-11-05-193738.db
+```
+
+:::
+
+::: details（2）恢复key-value数据
+
+如果是直接`copy`文件做的备份，那么该备份并没有快照完整性哈希，所以在恢复时候需要添加`--skip-hash-check`参数，用于跳过快照完整性哈希验证。
+
+```bash
+# 1、将所有的etcd节点停掉
+docker container stop etcd-1
+docker container stop etcd-2
+docker container stop etcd-3
+
+# 2、下一步操作，实现了两个功能：
+#    1) 将当前的数据目录备份一下
+#    2) 恢复数据时要使用一个空目录，所以这里正好可以使用我们原来的数据目录
+BACKUP_TIME=$(date +"%Y-%m-%d-%H%M%S")
+mv /var/lib/etcd-1 /var/lib/etcd-1_${BACKUP_TIME}
+mv /var/lib/etcd-2 /var/lib/etcd-2_${BACKUP_TIME}
+mv /var/lib/etcd-3 /var/lib/etcd-3_${BACKUP_TIME}
+
+# 3、定义备份文件名变量
+BACKUP_FILE=snapshot_from_endpoint_2022-11-05-193738.db
+
+# 4、恢复etcd-1节点数据
+etcdutl snapshot restore ${BACKUP_FILE} \
+  --data-dir /var/lib/etcd-1/ \
+  --name etcd-1 \
+    --initial-advertise-peer-urls https://10.0.8.4:12380 \
+  --initial-cluster etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+
+# 5、恢复etcd-2节点数据
+etcdutl snapshot restore ${BACKUP_FILE} \
+  --data-dir /var/lib/etcd-2/ \
+  --name etcd-2 \
+  --initial-advertise-peer-urls https://10.0.8.4:22380 \
+  --initial-cluster etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+
+# 6、恢复etcd-3节点数据
+etcdutl snapshot restore ${BACKUP_FILE} \
+  --data-dir /var/lib/etcd-3/ \
+  --name etcd-3 \
+  --initial-advertise-peer-urls https://10.0.8.4:32380 \
+  --initial-cluster etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+
+# 7、启动服务
+docker container start etcd-1
+docker container start etcd-2
+docker container start etcd-3
+
+# 8、检查集群状态
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  member list
+
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  endpoint health
+
+# 9、检查数据是否已恢复
+for i in `seq 100`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      get /itops/test/write-before-backup/${i}
+done
+```
+
+:::
