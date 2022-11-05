@@ -21,7 +21,25 @@ Etcd是CoreOS基于Raft协议开发的分布式key-value存储，可用于服务
 
 ## 部署
 
+### 配置说明
+
 配置项：[https://etcd.io/docs/v3.5/op-guide/configuration/](https://etcd.io/docs/v3.5/op-guide/configuration/)
+
+（2）启动参数说明
+
+| 参数                            | 说明                                                         | 默认值                          |
+| ------------------------------- | ------------------------------------------------------------ | ------------------------------- |
+| `--name`                        | 节点名称                                                     | `default`                       |
+| `--listen-client-urls`          | 用于【客户端与服务端通信】的监听地址，<br />若要监听所有端口可以设置为0.0.0.0 | `http://localhost:2379`         |
+| `--listen-peer-urls`            | 用于【服务端与服务端通信】的监听地址，<br />若要监听所有端口可以监听0.0.0.0 | `http://localhost:2380`         |
+| `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
+| `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
+| `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
+| `--initial-cluster-state`       | 初始化集群状态，`new`：新集群，`existing`：已存在的集群      | `new`                           |
+| `--initial-cluster-token`       | 初始集群令牌，当所在网络配置了多个etcd集群，<br />为了避免意外发生，最好使用此参数为每一集群单独配置一个token认证 | `etcd-cluster`                  |
+| `--data-dir`                    | 数据存储目录                                                 | `${name}.etcd`                  |
+
+<br />
 
 ### 单节点 + HTTP
 
@@ -46,21 +64,7 @@ drwxr-xr-x 3 528287 89939 4096 Sep 15 20:03 /usr/local/etcd-v3.5.5-linux-amd64
 [root@ap-hongkang ~]# mkdir -p /var/lib/etcd && chmod 700 /var/lib/etcd
 ```
 
-（2）启动参数说明
-
-| 参数                            | 说明                                                         | 默认值                          |
-| ------------------------------- | ------------------------------------------------------------ | ------------------------------- |
-| `--name`                        | 节点名称                                                     | `default`                       |
-| `--listen-client-urls`          | 用于【客户端与服务端通信】的监听地址，<br />若要监听所有端口可以设置为0.0.0.0 | `http://localhost:2379`         |
-| `--listen-peer-urls`            | 用于【服务端与服务端通信】的监听地址，<br />若要监听所有端口可以监听0.0.0.0 | `http://localhost:2380`         |
-| `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
-| `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
-| `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
-| `--initial-cluster-state`       | 初始化集群状态，`new`：新集群，`existing`：已存在的集群      | `new`                           |
-| `--initial-cluster-token`       | 初始集群令牌，当所在网络配置了多个etcd集群，<br />为了避免意外发生，最好使用此参数为每一集群单独配置一个token认证 | `etcd-cluster`                  |
-| `--data-dir`                    | 数据存储目录                                                 | `${name}.etcd`                  |
-
-（3）编写Systemd服务
+（2）编写Systemd服务
 
 ```bash
 [root@ap-hongkang ~]# vim /etc/systemd/system/etcd.service
@@ -93,7 +97,7 @@ WantedBy=multi-user.target
                       systemctl status etcd.service
 ```
 
-（4）客户端测试
+（3）客户端测试
 
 ```bash
 # (1)
@@ -149,6 +153,8 @@ WantedBy=multi-user.target
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:12380 \
                                            --initial-cluster etcd-1=http://${NODE_IP}:12380 \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd
 
 # 客户端连接测试 - 容器内
@@ -727,3 +733,157 @@ done
 
 文档：[https://etcd.io/docs/v3.5/tutorials/how-to-deal-with-membership/](https://etcd.io/docs/v3.5/tutorials/how-to-deal-with-membership/)
 
+::: details （1）移除成员
+
+```bash
+# 查看所有成员, 重点关注ID
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  member list
+
++------------------+---------+--------+------------------------+------------------------+------------+
+|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |
++------------------+---------+--------+------------------------+------------------------+------------+
+| 9e284eda82a7e8e7 | started | etcd-2 | https://10.0.8.4:22380 | https://10.0.8.4:22379 |      false |
+| d095f9673bd60ca8 | started | etcd-1 | https://10.0.8.4:12380 | https://10.0.8.4:12379 |      false |
+| d5c1cf5d0aabe186 | started | etcd-3 | https://10.0.8.4:32380 | https://10.0.8.4:32379 |      false |
++------------------+---------+--------+------------------------+------------------------+------------+
+
+# 通过ID移除成员，这里移除etcd-2
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  member remove 9e284eda82a7e8e7
+
+Member 9e284eda82a7e8e7 removed from cluster f135e15f0e441f3d
+
+# 再次查看一下成员列表
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  member list
+
++------------------+---------+--------+------------------------+------------------------+------------+
+|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |
++------------------+---------+--------+------------------------+------------------------+------------+
+| d095f9673bd60ca8 | started | etcd-1 | https://10.0.8.4:12380 | https://10.0.8.4:12379 |      false |
+| d5c1cf5d0aabe186 | started | etcd-3 | https://10.0.8.4:32380 | https://10.0.8.4:32379 |      false |
++------------------+---------+--------+------------------------+------------------------+------------+
+```
+
+:::
+
+::: details （2）添加新成员
+
+参数修改：
+
+* `--endpoints`：去掉移除的成员
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  member add etcd-4 \
+    --peer-urls=https://10.0.8.4:42380
+
+{"level":"warn","ts":"2022-11-05T22:41:49.970+0800","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc000032c40/10.0.8.4:12379","attempt":0,"error":"rpc error: code = Unknown desc = etcdserver: re-configuration failed due to not enough started members"}
+Error: etcdserver: re-configuration failed due to not enough started members
+```
+
+:::
+
+::: details （3）新成员启动etcd服务
+
+注意需要修改以下参数：
+
+* `--initial-cluster-state existing`
+
+```bash
+# (1) 协议修改为HTTPS
+ETCD_VER=v3.5.5
+NODE_IP=10.0.8.4
+CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-3=https://${NODE_IP}:32380,etcd-4=https://${NODE_IP}:42380
+
+# 启动容器 - 节点4
+[root@ap-hongkang ~]# docker container run --name etcd-4 \
+                                           -p 42379:2379 \
+                                           -p 42380:2380 \
+                                           -v /var/lib/etcd-4:/var/lib/etcd \
+                                           -v /etc/etcd/pki:/etc/etcd/pki \
+                                           -d \
+                                           --restart always \
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
+                                           --name etcd-4 \
+                                           --listen-client-urls https://0.0.0.0:2379 \
+                                           --advertise-client-urls https://${NODE_IP}:42379 \
+                                           --listen-peer-urls https://0.0.0.0:2380 \
+                                           --initial-advertise-peer-urls https://${NODE_IP}:42380 \
+                                           --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state existing \
+                                           --initial-cluster-token etcd-cluster \
+                                           --data-dir=/var/lib/etcd \
+                                           --cert-file=/etc/etcd/pki/etcd.pem \
+                                           --key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --client-cert-auth \
+                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --auto-tls \
+                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
+                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --peer-client-cert-auth \
+                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --peer-auto-tls
+
+# 查看集群状态
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379,https://10.0.8.4:42379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  member list
+
++------------------+---------+--------+------------------------+------------------------+------------+
+|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |
++------------------+---------+--------+------------------------+------------------------+------------+
+| 98ebd0c2bdb8b97a | started | etcd-4 | https://10.0.8.4:42380 | https://10.0.8.4:42379 |      false |
+| d095f9673bd60ca8 | started | etcd-1 | https://10.0.8.4:12380 | https://10.0.8.4:12379 |      false |
+| d5c1cf5d0aabe186 | started | etcd-3 | https://10.0.8.4:32380 | https://10.0.8.4:32379 |      false |
++------------------+---------+--------+------------------------+------------------------+------------+
+
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379,https://10.0.8.4:42379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
+  endpoint health
+
++------------------------+--------+-------------+-------+
+|        ENDPOINT        | HEALTH |    TOOK     | ERROR |
++------------------------+--------+-------------+-------+
+| https://10.0.8.4:12379 |   true | 14.153337ms |       |
+| https://10.0.8.4:42379 |   true | 15.743446ms |       |
+| https://10.0.8.4:32379 |   true | 22.582329ms |       |
++------------------------+--------+-------------+-------+
+```
+
+:::
+
+::: details （4）更新所有成员的启动参数（非必须，只是为了启动参数与实际情况统一）
+
+```bash
+# 停止容器并删除，重新创建即可
+```
+
+:::
