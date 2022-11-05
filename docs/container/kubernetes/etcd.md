@@ -280,7 +280,7 @@ CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-
 * [https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.md](https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.md)
 * [https://etcd.io/docs/v3.5/op-guide/security/#basic-setup](https://etcd.io/docs/v3.5/op-guide/security/#basic-setup)
 
-::: details（1）安装cfssl证书生成工具
+::: details （1）安装cfssl证书生成工具
 
 ```bash
 # 下载二进制工具
@@ -299,7 +299,7 @@ Runtime: go1.12.12
 
 :::
 
-::: details（2）生成CA证书
+::: details （2）生成CA证书
 
 ```bash
 # 创建证书配置文件目录
@@ -370,7 +370,7 @@ total 20
 
 :::
 
-::: details（3）生成etcd所有通信公共证书
+::: details （3）生成etcd所有通信公共证书
 
 ```bash
 [root@ap-hongkang pki]# cat > etcd-csr.json <<EOF
@@ -419,7 +419,7 @@ EOF
 
 :::
 
-::: details（4）启动etcd节点
+::: details （4）启动etcd节点
 
 ```bash
 # 定义变量
@@ -517,7 +517,7 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
 
 :::
 
-::: details（5）客户端连接测试
+::: details （5）客户端连接测试
 
 ```bash
 [root@ap-hongkang pki]# etcdctl \
@@ -539,7 +539,7 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
 
 :::
 
-::: details（6）设置别名
+::: details （6）设置别名
 
 ```bash
 # 为了后续使用方便，给他设置一个别名
@@ -599,7 +599,7 @@ done
 
 :::
 
-::: details（1）备份key-value数据
+::: details （1）备份key-value数据
 
 ```bash
 # 定义变量
@@ -625,7 +625,7 @@ total 124
 
 :::
 
-::: details（2）恢复key-value数据
+::: details （2）恢复key-value数据
 
 如果是直接`copy`文件做的备份，那么该备份并没有快照完整性哈希，所以在恢复时候需要添加`--skip-hash-check`参数，用于跳过快照完整性哈希验证。
 
