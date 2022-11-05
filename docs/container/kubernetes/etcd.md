@@ -21,6 +21,8 @@ Etcd是CoreOS基于Raft协议开发的分布式key-value存储，可用于服务
 
 ## 部署
 
+配置项：[https://etcd.io/docs/v3.5/op-guide/configuration/](https://etcd.io/docs/v3.5/op-guide/configuration/)
+
 ### 单节点 + HTTP
 
 ::: details （1）二进制部署
@@ -54,6 +56,8 @@ drwxr-xr-x 3 528287 89939 4096 Sep 15 20:03 /usr/local/etcd-v3.5.5-linux-amd64
 | `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
 | `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
 | `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
+| `--initial-cluster-state`       | 初始化集群状态，`new`：新集群，`existing`：已存在的集群      | `new`                           |
+| `--initial-cluster-token`       | 初始集群令牌，当所在网络配置了多个etcd集群，<br />为了避免意外发生，最好使用此参数为每一集群单独配置一个token认证 | `etcd-cluster`                  |
 | `--data-dir`                    | 数据存储目录                                                 | `${name}.etcd`                  |
 
 （3）编写Systemd服务
@@ -73,6 +77,8 @@ ExecStart=/usr/local/bin/etcd \
   --listen-peer-urls http://0.0.0.0:2380 \
   --initial-advertise-peer-urls http://10.0.8.4:2380 \
   --initial-cluster etcd-1=http://10.0.8.4:2380 \
+  --initial-cluster-state new \
+  --initial-cluster-token etcd-cluster \
   --data-dir=/var/lib/etcd
 Restart=on-failure
 RestartSec=5
@@ -193,6 +199,8 @@ CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:12380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd
 
 # 启动容器 - 节点2
@@ -209,6 +217,8 @@ CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:22380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd
 
 # 启动容器 - 节点3
@@ -225,6 +235,8 @@ CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:32380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd
 # 客户端连接测试 - 容器内
 [root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
@@ -448,6 +460,8 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
                                            --listen-peer-urls https://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls https://${NODE_IP}:12380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd \
                                            --cert-file=/etc/etcd/pki/etcd.pem \
                                            --key-file=/etc/etcd/pki/etcd-key.pem \
@@ -475,6 +489,8 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
                                            --listen-peer-urls https://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls https://${NODE_IP}:22380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd \
                                            --cert-file=/etc/etcd/pki/etcd.pem \
                                            --key-file=/etc/etcd/pki/etcd-key.pem \
@@ -502,6 +518,8 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
                                            --listen-peer-urls https://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls https://${NODE_IP}:32380 \
                                            --initial-cluster ${CLUSTER_LIST} \
+                                           --initial-cluster-state new \
+                                           --initial-cluster-token etcd-cluster \
                                            --data-dir=/var/lib/etcd \
                                            --cert-file=/etc/etcd/pki/etcd.pem \
                                            --key-file=/etc/etcd/pki/etcd-key.pem \
@@ -567,7 +585,9 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 
 <br />
 
-## 备份和恢复
+## 集群管理
+
+### 备份和恢复
 
 文档：
 
@@ -700,3 +720,10 @@ done
 ```
 
 :::
+
+<br />
+
+### 添加或移除成员
+
+文档：[https://etcd.io/docs/v3.5/tutorials/how-to-deal-with-membership/](https://etcd.io/docs/v3.5/tutorials/how-to-deal-with-membership/)
+
