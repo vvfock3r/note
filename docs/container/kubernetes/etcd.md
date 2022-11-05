@@ -21,7 +21,7 @@ Etcd是CoreOS基于Raft协议开发的分布式key-value存储，可用于服务
 
 ## 部署
 
-### 单节点
+### 单节点 + HTTP
 
 ::: details （1）二进制部署
 
@@ -91,7 +91,7 @@ WantedBy=multi-user.target
 
 ```bash
 # (1)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://127.0.0.1:2379 member list --write-out=table
+[root@ap-hongkang ~]# etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -99,7 +99,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+----------------------+----------------------+------------+
 
 # (2)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 member list --write-out=table
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 --write-out=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -107,7 +107,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+----------------------+----------------------+------------+
 
 # (3)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2380 member list --write-out=table
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2380 --write-out=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -126,7 +126,7 @@ WantedBy=multi-user.target
 # 定义变量
 [root@ap-hongkang ~]# ETCD_VER=v3.5.5 && NODE_IP=10.0.8.4
 
-# 下载镜像
+# 下载镜像(需科学上网)
 [root@ap-hongkang ~]# docker pull quay.io/coreos/etcd:${ETCD_VER}
 
 # 启动容器
@@ -146,7 +146,7 @@ WantedBy=multi-user.target
                                            --data-dir=/var/lib/etcd
 
 # 客户端连接测试 - 容器内
-[root@ap-hongkang ~]# docker container exec -it etcd etcdctl --endpoints=http://127.0.0.1:2379 member list --write-out=table
+[root@ap-hongkang ~]# docker container exec -it etcd etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -154,7 +154,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
 # 客户端连接测试 - 容器外
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 member list --write-out=table
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -166,20 +166,18 @@ WantedBy=multi-user.target
 
 <br />
 
-### 多节点
+### 多节点 + HTTP
 
 ::: details （1）Docker部署
 
 ```bash
-# 定义基础变量
-[root@ap-hongkang ~]# ETCD_VER=v3.5.5
+# 定义变量
+ETCD_VER=v3.5.5
+NODE_IP=10.0.8.4
+CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-3=http://${NODE_IP}:32380
 
 # 下载镜像
 [root@ap-hongkang ~]# docker pull quay.io/coreos/etcd:${ETCD_VER}
-
-# 定义启动参数
-[root@ap-hongkang ~]# Node_IP=10.0.8.4
-[root@ap-hongkang ~]# Cluster_List=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-3=http://${NODE_IP}:32380
 
 # 启动容器 - 节点1
 [root@ap-hongkang ~]# docker container run --name etcd-1 \
@@ -194,7 +192,7 @@ WantedBy=multi-user.target
                                            --advertise-client-urls http://${NODE_IP}:12379 \
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:12380 \
-                                           --initial-cluster ${Cluster_List} \
+                                           --initial-cluster ${CLUSTER_LIST} \
                                            --data-dir=/var/lib/etcd
 
 # 启动容器 - 节点2
@@ -210,7 +208,7 @@ WantedBy=multi-user.target
                                            --advertise-client-urls http://${NODE_IP}:22379 \
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:22380 \
-                                           --initial-cluster ${Cluster_List} \
+                                           --initial-cluster ${CLUSTER_LIST} \
                                            --data-dir=/var/lib/etcd
 
 # 启动容器 - 节点3
@@ -226,10 +224,10 @@ WantedBy=multi-user.target
                                            --advertise-client-urls http://${NODE_IP}:32379 \
                                            --listen-peer-urls http://0.0.0.0:2380 \
                                            --initial-advertise-peer-urls http://${NODE_IP}:32380 \
-                                           --initial-cluster ${Cluster_List} \
+                                           --initial-cluster ${CLUSTER_LIST} \
                                            --data-dir=/var/lib/etcd
 # 客户端连接测试 - 容器内
-[root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 member list --write-out=table
+[root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -239,7 +237,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
 # 客户端连接测试 - 容器外
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 member list --write-out=table
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -248,7 +246,25 @@ WantedBy=multi-user.target
 | c3f540d198990d14 | started | etcd-1 | http://10.0.8.4:12380 | http://10.0.8.4:12379 |      false |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
-# 多节点部署和单节点部署的不同
+# 多节点的情况下，endpoints最好指定所有节点，有什么区别可以参考下面执行的命令
+
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table endpoint health
++-----------------------+--------+------------+-------+
+|       ENDPOINT        | HEALTH |    TOOK    | ERROR |
++-----------------------+--------+------------+-------+
+| http://10.0.8.4:12379 |   true | 1.807196ms |       |
++-----------------------+--------+------------+-------+
+
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379,http://10.0.8.4:22379,http://10.0.8.4:32379 --write-out=table endpoint health
++-----------------------+--------+------------+-------+
+|       ENDPOINT        | HEALTH |    TOOK    | ERROR |
++-----------------------+--------+------------+-------+
+| http://10.0.8.4:12379 |   true | 3.648426ms |       |
+| http://10.0.8.4:32379 |   true | 5.401349ms |       |
+| http://10.0.8.4:22379 |   true | 5.330076ms |       |
++-----------------------+--------+------------+-------+
+
+# 多节点和单节点部署的不同
 # (1) 容器名称、节点名称、宿主机监听端口、宿主机存储目录等节点个性化的配置不同
 # (2) --initial-cluster中填写所有节点列表
 ```
@@ -257,9 +273,291 @@ WantedBy=multi-user.target
 
 <br />
 
+### 多节点 + HTTPS（推荐）
+
+参考
+
+* [https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.md](https://github.com/coreos/docs/blob/master/os/generate-self-signed-certificates.md)
+* [https://etcd.io/docs/v3.5/op-guide/security/#basic-setup](https://etcd.io/docs/v3.5/op-guide/security/#basic-setup)
+
+::: details（1）安装cfssl证书生成工具
+
+```bash
+# 下载二进制工具
+[root@node-1 ~]# wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64 -O /usr/local/bin/cfssl && \
+                 wget https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64 -O /usr/local/bin/cfssljson && \
+                 chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+
+# 查看版本
+[root@node-1 ~]# cfssl version && echo && cfssljson --version
+Version: 1.6.1
+Runtime: go1.12.12
+
+Version: 1.6.1
+Runtime: go1.12.12
+```
+
+:::
+
+::: details（2）生成CA证书
+
+```bash
+# 创建证书配置文件目录
+[root@ap-hongkang ~]# mkdir -p /etc/etcd/pki
+[root@ap-hongkang ~]# cd /etc/etcd/pki
+
+# 创建根证书配置文件并修改
+# 过期时间 876000h/24/365 = 100年
+[root@ap-hongkang pki]# cat > ca-config.json <<EOF
+{
+  "signing": {
+    "default": {
+      "expiry": "876000h"
+    },
+    "profiles": {
+      "etcd": {
+        "expiry": "876000h",
+        "usages": [
+          "signing",
+          "key encipherment",
+          "server auth",
+          "client auth"
+        ]
+      }
+    }
+  }
+}
+EOF
+
+# 创建根证书签名请求文件并修改
+[root@ap-hongkang pki]# cat > ca-csr.json <<EOF
+{
+  "CN": "etcd",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "BeiJing",
+      "ST": "BeiJing",
+      "O": "etcd",
+      "OU": "CA"
+    }
+  ]
+}
+EOF
 
 
+# 生成根证书和私钥
+[root@ap-hongkang pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+2022/11/05 13:34:58 [INFO] generating a new CA key and certificate from CSR
+2022/11/05 13:34:58 [INFO] generate received request
+2022/11/05 13:34:58 [INFO] received CSR
+2022/11/05 13:34:58 [INFO] generating key: rsa-2048
+2022/11/05 13:34:58 [INFO] encoded CSR
+2022/11/05 13:34:58 [INFO] signed certificate with serial number 360574348178025029527009896015499554984194220196
 
+[root@ap-hongkang pki]# ll
+total 20
+-rw-r--r-- 1 root root  286 Nov  5 11:50 ca-config.json
+-rw-r--r-- 1 root root  989 Nov  5 11:52 ca.csr
+-rw-r--r-- 1 root root  199 Nov  5 11:51 ca-csr.json
+-rw------- 1 root root 1675 Nov  5 11:52 ca-key.pem      # CA证书私钥
+-rw-r--r-- 1 root root 1285 Nov  5 11:52 ca.pem          # CA证书
+```
 
+:::
 
+::: details（3）生成etcd所有通信公共证书
 
+```bash
+[root@ap-hongkang pki]# cat > etcd-csr.json <<EOF
+{
+  "CN": "etcd",
+  "hosts": [
+    "127.0.0.1",
+    "172.17.0.1",
+    "10.0.8.4"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "BeiJing",
+      "ST": "BeiJing",
+      "O": "etcd",
+      "OU": "CA"
+    }
+  ]
+}
+EOF
+
+[root@ap-hongkang pki]# cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=ca-config.json \
+      -profile=etcd \
+  etcd-csr.json | cfssljson -bare etcd
+
+2022/11/05 13:42:59 [INFO] generate received request
+2022/11/05 13:42:59 [INFO] received CSR
+2022/11/05 13:42:59 [INFO] generating key: rsa-2048
+2022/11/05 13:43:00 [INFO] encoded CSR
+2022/11/05 13:43:00 [INFO] signed certificate with serial number 79193579881579928774490617214954833293879197290
+
+[root@ap-hongkang pki]# ll etcd*
+-rw-r--r-- 1 root root 1041 Nov  5 13:43 etcd.csr
+-rw-r--r-- 1 root root  249 Nov  5 13:42 etcd-csr.json
+-rw------- 1 root root 1679 Nov  5 13:43 etcd-key.pem
+-rw-r--r-- 1 root root 1359 Nov  5 13:43 etcd.pem
+```
+
+:::
+
+::: details（4）启动etcd节点
+
+```bash
+# 定义变量
+# (1) 协议修改为HTTPS
+ETCD_VER=v3.5.5
+NODE_IP=10.0.8.4
+CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etcd-3=https://${NODE_IP}:32380
+
+# 容器参数修改
+# (1) 挂载证书目录到容器
+# (2) 协议修改为HTTPS
+# (3) 增加各种通信所用证书
+
+# 启动容器 - 节点1
+[root@ap-hongkang ~]# docker container run --name etcd-1 \
+                                           -p 12379:2379 \
+                                           -p 12380:2380 \
+                                           -v /var/lib/etcd-1:/var/lib/etcd \
+                                           -v /etc/etcd/pki:/etc/etcd/pki \
+                                           -d \
+                                           --restart always \
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
+                                           --name etcd-1 \
+                                           --listen-client-urls https://0.0.0.0:2379 \
+                                           --advertise-client-urls https://${NODE_IP}:12379 \
+                                           --listen-peer-urls https://0.0.0.0:2380 \
+                                           --initial-advertise-peer-urls https://${NODE_IP}:12380 \
+                                           --initial-cluster ${CLUSTER_LIST} \
+                                           --data-dir=/var/lib/etcd \
+                                           --cert-file=/etc/etcd/pki/etcd.pem \
+                                           --key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --client-cert-auth \
+                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --auto-tls \
+                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
+                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --peer-client-cert-auth \
+                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --peer-auto-tls
+
+# 启动容器 - 节点2
+[root@ap-hongkang ~]# docker container run --name etcd-2 \
+                                           -p 22379:2379 \
+                                           -p 22380:2380 \
+                                           -v /var/lib/etcd-2:/var/lib/etcd \
+                                           -v /etc/etcd/pki:/etc/etcd/pki \
+                                           -d \
+                                           --restart always \
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
+                                           --name etcd-2 \
+                                           --listen-client-urls https://0.0.0.0:2379 \
+                                           --advertise-client-urls https://${NODE_IP}:22379 \
+                                           --listen-peer-urls https://0.0.0.0:2380 \
+                                           --initial-advertise-peer-urls https://${NODE_IP}:22380 \
+                                           --initial-cluster ${CLUSTER_LIST} \
+                                           --data-dir=/var/lib/etcd \
+                                           --cert-file=/etc/etcd/pki/etcd.pem \
+                                           --key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --client-cert-auth \
+                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --auto-tls \
+                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
+                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --peer-client-cert-auth \
+                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --peer-auto-tls
+
+# 启动容器 - 节点3
+[root@ap-hongkang ~]# docker container run --name etcd-3 \
+                                           -p 32379:2379 \
+                                           -p 32380:2380 \
+                                           -v /var/lib/etcd-3:/var/lib/etcd \
+                                           -v /etc/etcd/pki:/etc/etcd/pki \
+                                           -d \
+                                           --restart always \
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
+                                           --name etcd-3 \
+                                           --listen-client-urls https://0.0.0.0:2379 \
+                                           --advertise-client-urls https://${NODE_IP}:32379 \
+                                           --listen-peer-urls https://0.0.0.0:2380 \
+                                           --initial-advertise-peer-urls https://${NODE_IP}:32380 \
+                                           --initial-cluster ${CLUSTER_LIST} \
+                                           --data-dir=/var/lib/etcd \
+                                           --cert-file=/etc/etcd/pki/etcd.pem \
+                                           --key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --client-cert-auth \
+                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --auto-tls \
+                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
+                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
+                                           --peer-client-cert-auth \
+                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
+                                           --peer-auto-tls
+```
+
+:::
+
+::: details（5）客户端连接测试
+
+```bash
+[root@ap-hongkang pki]# etcdctl \
+  	--endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+  	--cacert=/etc/etcd/pki/ca.pem \
+	--cert=/etc/etcd/pki/etcd.pem \
+	--key=/etc/etcd/pki/etcd-key.pem \
+  	--write-out=table \
+  member list
+
++------------------+---------+--------+------------------------+------------------------+------------+
+|        ID        | STATUS  |  NAME  |       PEER ADDRS       |      CLIENT ADDRS      | IS LEARNER |
++------------------+---------+--------+------------------------+------------------------+------------+
+| 9e284eda82a7e8e7 | started | etcd-2 | https://10.0.8.4:22380 | https://10.0.8.4:22379 |      false |
+| d095f9673bd60ca8 | started | etcd-1 | https://10.0.8.4:12380 | https://10.0.8.4:12379 |      false |
+| d5c1cf5d0aabe186 | started | etcd-3 | https://10.0.8.4:32380 | https://10.0.8.4:32379 |      false |
++------------------+---------+--------+------------------------+------------------------+------------+
+```
+
+:::
+
+::: details（6）设置别名
+
+```bash
+# 为了后续使用方便，给他设置一个别名
+[root@ap-hongkang ~]# vim ~/.bashrc
+alias etcdctl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 --cacert=/etc/etcd/pki/ca.pem --cert=/etc/etcd/pki/etcd.pem --key=/etc/etcd/pki/etcd-key.pem'
+
+# 使当前终端生效
+[root@ap-hongkang ~]# source ~/.bashrc
+
+# 测试
+[root@ap-hongkang ~]# etcdctl endpoint health
+https://10.0.8.4:12379 is healthy: successfully committed proposal: took = 14.364471ms
+https://10.0.8.4:32379 is healthy: successfully committed proposal: took = 14.394457ms
+https://10.0.8.4:22379 is healthy: successfully committed proposal: took = 22.875255ms
+```
+
+:::
+
+<br />
+
+## 使用
