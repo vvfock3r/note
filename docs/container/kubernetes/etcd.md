@@ -1051,16 +1051,6 @@ etcdctl \
 
 :::
 
-```bash
-etcdctl \
-    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379,https://10.0.8.4:42379 \
-    --cacert=/etc/etcd/pki/ca.pem \
-    --cert=/etc/etcd/pki/etcd.pem \
-    --key=/etc/etcd/pki/etcd-key.pem \
-  member add etcd-2 \
-    --peer-urls=https://10.0.8.4:22380
-```
-
 <br />
 
 ### 基准测试
@@ -1133,6 +1123,7 @@ Use "benchmark [command] --help" for more information about a command.
 # --key-size            key大小,单位字节
 # --val-size            value大小,单位字节
 
+# write to all members
 benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
           --cacert=/etc/etcd/pki/ca.pem \
           --cert=/etc/etcd/pki/etcd.pem \
@@ -1148,5 +1139,121 @@ benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0
 
 :::
 
+::: details （3）读取测试
+
+```bash
+# --conns               gRPC连接数
+# --clients             gRPC客户端数
+# --consistency=l       线性化(Linearizable)读取请求要通过集群成员的法定人数来获取最新的数据
+#                       串行化(Serializable)读取请求通过任意单台etcd服务器来提供服务,而不是成员的法定人数,读取效率更高,代价是可能提供过期数据
+# --total=100000        读取请求总次数
+        
+# Many concurrent read requests
+benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+          --cacert=/etc/etcd/pki/ca.pem \
+          --cert=/etc/etcd/pki/etcd.pem \
+          --key=/etc/etcd/pki/etcd-key.pem \
+          --conns=100 \
+          --clients=1000 \
+    range / --consistency=l --total=100000
+
+benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+          --cacert=/etc/etcd/pki/ca.pem \
+          --cert=/etc/etcd/pki/etcd.pem \
+          --key=/etc/etcd/pki/etcd-key.pem \
+          --conns=100 \
+          --clients=1000 \
+    range / --consistency=s --total=100000
+```
+
+:::
+
 <br />
 
+### 数据压缩和碎片整理
+
+::: details （1）写入数据
+
+```bash
+# 对于同一个key，不断写入新数据，以覆盖老数据
+for i in `seq 100000`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      put /itops/test/write-before-backup/${i} ${i}
+done
+
+for i in `seq 100000`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      put /itops/test/write-before-backup/${i} a
+done
+
+for i in `seq 100000`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      put /itops/test/write-before-backup/${i} b
+done
+
+# 写入完成后,检查磁盘大小
+[root@ap-hongkang ~]# du -sh /var/lib/etcd-*
+162M    /var/lib/etcd-1
+162M    /var/lib/etcd-2
+162M    /var/lib/etcd-3
+```
+
+:::
+
+::: details （2）压缩和数据整理
+
+```bash
+# 获取最新的revision: revision是etcd全局修订编号,每次数据修改(put, del)都会导致revision加1
+# 对于刚搭建完的集群它的返回值是1
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=json \
+  endpoint status | grep -Eo '"revision":[0-9]*' | grep -Eo '[0-9].*' | sort -u
+
+# 压缩所有旧版本(这一步操作并不会释放空间)
+# 136747是上条命令输出的结果
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  compact 136747
+
+# 碎片整理(这一步操作才会释放空间)
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  defrag
+
+Finished defragmenting etcd member[https://10.0.8.4:12379]
+Finished defragmenting etcd member[https://10.0.8.4:22379]
+Finished defragmenting etcd member[https://10.0.8.4:32379]
+
+# 再次检查磁盘大小
+[root@ap-hongkang ~]# du -sh /var/lib/etcd-*
+125M    /var/lib/etcd-1
+125M    /var/lib/etcd-2
+125M    /var/lib/etcd-3
+```
+
+:::
