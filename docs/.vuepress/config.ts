@@ -33,7 +33,6 @@ const navbar = [
             {
                 text: '容器编排',
                 children: [
-                    {text: 'Docker Compose', link: '/container/docker-compose'},
                     {text: 'Kubernetes：二进制包部署', link: '/container/kubernetes-deploy-binary'},
                     {text: 'Kubernetes：其他方式部署', link: '/container/kubernetes-deploy-other'},
                     {text: 'Kubernetes：使用文档详解', link: '/container/kubernetes-document'},
@@ -45,6 +44,13 @@ const navbar = [
                     {text: 'Prometheus', link: '/container/prometheus'},
                     {text: 'Grafana', link: '/container/grafana'},
                     {text: 'Kube Prometheus Stack', link: '/container/kube-prometheus-stack'},
+                ]
+            },
+            {
+                text: '其他组件',
+                children: [
+                    {text: 'Docker Compose', link: '/container/docker-compose'},
+                    {text: 'Etcd', link: '/container/kubernetes/etcd'},
                 ]
             },
         ]
