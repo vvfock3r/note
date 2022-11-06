@@ -707,9 +707,7 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 
 ### 查看集群信息
 
-::: details 点击查看详情
-
-（1）查看成员列表
+::: details （1）查看成员列表
 
 ```bash
 # 对于一个正常的集群，我们只需要指定一个endpoint即可列出所有的成员，当然了指定全部endpoint也是可以的
@@ -724,7 +722,9 @@ etcdctl \
 
 ![image-20221106153408152](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106153408152.png)
 
-（2）查看成员详情 - 简略信息
+:::
+
+::: details （2）查看成员详情 - 简略信息
 
 ```bash
 etcdctl \
@@ -738,7 +738,9 @@ etcdctl \
 
 ![image-20221106151948039](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106151948039.png)
 
-（3）查看成员详情 - 详细信息
+:::
+
+::: details （3）查看成员详情 - 详细信息
 
 ```bash
 etcdctl \
@@ -752,7 +754,9 @@ etcdctl \
 
 ![image-20221106154156717](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106154156717.png)
 
-（3）查看成员健康状态
+:::
+
+::: details （4）查看成员健康状态
 
 ```bash
 etcdctl \
@@ -766,7 +770,9 @@ etcdctl \
 
 ![image-20221106152346384](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106152346384.png)
 
-（4）查看成员KV哈希
+:::
+
+::: details （5）查看成员KV哈希
 
 ```bash
 etcdctl \
@@ -780,7 +786,9 @@ etcdctl \
 
 ![image-20221106152756051](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106152756051.png)
 
-（5）查看成员全局修订编号（Revision）
+:::
+
+::: details （6）查看成员全局修订编号（Revision）
 
 * Revision是etcd全局修订编号，每次数据修改(put, del)都会导致Revision加1
 * 对于刚创建的空集群，该值应该为1
