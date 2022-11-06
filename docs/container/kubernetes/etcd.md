@@ -1314,8 +1314,7 @@ done
 ::: details （2）压缩和数据整理
 
 ```bash
-# 获取最新的revision: revision是etcd全局修订编号,每次数据修改(put, del)都会导致revision加1
-# 对于刚搭建完的集群它的返回值是1
+# 获取最新的Revision
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
     --cacert=/etc/etcd/pki/ca.pem \
