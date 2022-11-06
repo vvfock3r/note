@@ -890,7 +890,7 @@ drwx------ 4 root root 4096 Nov  6 11:10 member
 ::: details （2）删除key-value数据
 
 ```bash
-# 在备份前写一点数据
+# 删除备份前的数据
 for i in `seq 100`
 do
     etcdctl \
