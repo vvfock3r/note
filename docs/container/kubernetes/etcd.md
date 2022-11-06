@@ -23,9 +23,13 @@ Etcd是CoreOS基于Raft协议开发的分布式key-value存储，可用于服务
 
 ### 配置说明
 
-配置项：[https://etcd.io/docs/v3.5/op-guide/configuration/](https://etcd.io/docs/v3.5/op-guide/configuration/)
+文档：
 
-（2）启动参数说明
+* 配置参数：[https://etcd.io/docs/v3.5/op-guide/configuration/](https://etcd.io/docs/v3.5/op-guide/configuration/)
+
+* 配置文件：[https://github.com/etcd-io/etcd/blob/main/etcd.conf.yml.sample](https://github.com/etcd-io/etcd/blob/main/etcd.conf.yml.sample)
+
+启动参数说明
 
 | 参数                            | 说明                                                         | 默认值                          |
 | ------------------------------- | ------------------------------------------------------------ | ------------------------------- |
@@ -753,11 +757,50 @@ BACKUP_TIME=$(date +"%Y-%m-%d-%H%M%S")
 total 124
 -rw------- 1 root root 61440 Nov  5 19:37 snapshot_from_copyfile_2022-11-05-193738.db
 -rw------- 1 root root 61472 Nov  5 19:37 snapshot_from_endpoint_2022-11-05-193738.db
+
+# --------------------------------------------------------------------------------------------------------
+
+# 备份方式3：使用etcdutl进行备份
+#  1) 需要先停止要备份的etcd节点，否则备份会报错: timed out waiting to acquire lock
+#  2) 备份出来是一个目录，和etcd存储目录结构一样
+#  3) 这个备份命令还没搞明白是怎么回事,不推荐使用
+[root@ap-hongkang ~]# etcdutl backup --with-v3 --data-dir /var/lib/etcd-1 --backup-dir .
+2022-11-06T11:10:13+08:00       info    etcdutl/backup_command.go:231   ignoring member attribute update on     {"entry": "Term:2 Index:5 Data:\"\\010\\201\\244\\227\\205\\256\\211\\241\\324\\014\\022\\003PUT\\032&/0/members/d095f9673bd60ca8/attributes\\\"9{\\\"name\\\":\\\"etcd-1\\\",\\\"clientURLs\\\":[\\\"https://10.0.8.4:12379\\\"]}(\\0002\\0008\\000H\\000P\\000X\\000`\\000h\\000p\\000x\\000\\200\\001\\000\" ", "v2Req.Path": "/0/members/d095f9673bd60ca8/attributes"}
+2022-11-06T11:10:13+08:00       info    etcdutl/backup_command.go:231   ignoring member attribute update on     {"entry": "Term:2 Index:6 Data:\"\\010\\202\\372\\247\\205\\256\\211\\241\\303\\341\\001\\022\\003PUT\\032&/0/members/d5c1cf5d0aabe186/attributes\\\"9{\\\"name\\\":\\\"etcd-3\\\",\\\"clientURLs\\\":[\\\"https://10.0.8.4:32379\\\"]}(\\0002\\0008\\000H\\000P\\000X\\000`\\000h\\000p\\000x\\000\\200\\001\\000\" ", "v2Req.Path": "/0/members/d5c1cf5d0aabe186/attributes"}
+2022-11-06T11:10:13+08:00       info    etcdutl/backup_command.go:231   ignoring member attribute update on     {"entry": "Term:2 Index:7 Data:\"\\010\\201\\304\\242\\205\\256\\211\\341\\363\\350\\001\\022\\003PUT\\032&/0/members/9e284eda82a7e8e7/attributes\\\"9{\\\"name\\\":\\\"etcd-2\\\",\\\"clientURLs\\\":[\\\"https://10.0.8.4:22379\\\"]}(\\0002\\0008\\000H\\000P\\000X\\000`\\000h\\000p\\000x\\000\\200\\001\\000\" ", "v2Req.Path": "/0/members/9e284eda82a7e8e7/attributes"}
+2022-11-06T11:10:14+08:00       info    membership/store.go:141 Trimming membership information from the backend...
+
+[root@ap-hongkang ~]# ll
+total 4
+drwx------ 4 root root 4096 Nov  6 11:10 member
+
+[root@ap-hongkang ~]# du -sh member
+206M    member
+
+[root@ap-hongkang ~]# du -sh /var/lib/etcd-1
+206M    /var/lib/etcd-1
 ```
 
 :::
 
-::: details （2）恢复key-value数据
+::: details （2）删除key-value数据
+
+```bash
+# 在备份前写一点数据
+for i in `seq 100`
+do
+    etcdctl \
+        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+        --cacert=/etc/etcd/pki/ca.pem \
+        --cert=/etc/etcd/pki/etcd.pem \
+        --key=/etc/etcd/pki/etcd-key.pem \
+      del /itops/test/write-before-backup/${i} ${i}
+done
+```
+
+:::
+
+::: details （3）恢复key-value数据
 
 如果是直接`copy`文件做的备份，那么该备份并没有快照完整性哈希，所以在恢复时候需要添加`--skip-hash-check`参数，用于跳过快照完整性哈希验证。
 
@@ -782,7 +825,7 @@ BACKUP_FILE=snapshot_from_endpoint_2022-11-05-193738.db
 etcdutl snapshot restore ${BACKUP_FILE} \
   --data-dir /var/lib/etcd-1/ \
   --name etcd-1 \
-    --initial-advertise-peer-urls https://10.0.8.4:12380 \
+  --initial-advertise-peer-urls https://10.0.8.4:12380 \
   --initial-cluster etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
 
 # 5、恢复etcd-2节点数据
@@ -1007,3 +1050,103 @@ etcdctl \
 * 修改配置文件`initial-cluster`参数，并重启容器即可
 
 :::
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379,https://10.0.8.4:42379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  member add etcd-2 \
+    --peer-urls=https://10.0.8.4:22380
+```
+
+<br />
+
+### 基准测试
+
+文档：[https://etcd.io/docs/v3.5/faq/#performance](https://etcd.io/docs/v3.5/faq/#performance)
+
+::: details （1）编译并安装benchmark命令
+
+```bash
+# 克隆代码
+[root@ap-hongkang ~]# git clone https://github.com/etcd-io/etcd.git
+[root@ap-hongkang ~]# cd etcd
+
+# 编译并安装benchmark命令
+# (1) 这会将二进制命令安装在$GOPATH/bin下,
+# (2) 请确保该目录在PATH中，否则需要指定完整的路径才可以执行benchmark命令
+# (3) 通过go env GOPATH可以查看GOPATH路径
+[root@ap-hongkang etcd]# go install -v ./tools/benchmark
+
+# 查看帮助
+[root@ap-hongkang etcd]# benchmark -h
+benchmark is a low-level benchmark tool for etcd3.
+It uses gRPC client directly and does not depend on
+etcd client library.
+
+Usage:
+  benchmark [command]
+
+Available Commands:
+  completion      Generate the autocompletion script for the specified shell
+  help            Help about any command
+  lease-keepalive Benchmark lease keepalive
+  mvcc            Benchmark mvcc
+  put             Benchmark put
+  range           Benchmark range
+  stm             Benchmark STM
+  txn-mixed       Benchmark a mixed load of txn-put & txn-range.
+  txn-put         Benchmark txn-put
+  watch           Benchmark watch
+  watch-get       Benchmark watch with get
+  watch-latency   Benchmark watch latency
+
+Flags:
+      --auto-sync-interval duration   AutoSyncInterval is the interval to update endpoints with its latest members
+      --cacert string                 verify certificates of HTTPS-enabled servers using this CA bundle
+      --cert string                   identify HTTPS client using this SSL certificate file
+      --clients uint                  Total number of gRPC clients (default 1)
+      --conns uint                    Total number of gRPC connections (default 1)
+      --dial-timeout duration         dial timeout for client connections
+      --endpoints strings             gRPC endpoints (default [127.0.0.1:2379])
+  -h, --help                          help for benchmark
+      --key string                    identify HTTPS client using this SSL key file
+      --precise                       use full floating point precision
+      --sample                        'true' to sample requests for every second
+      --target-leader                 connect only to the leader node
+      --user string                   provide username[:password] and prompt if password is not supplied.
+
+Use "benchmark [command] --help" for more information about a command.
+```
+
+:::
+
+::: details （2）写入测试
+
+```bash
+# --conns               gRPC连接数
+# --clients             gRPC客户端数
+# --total               写入请求总次数，即key的总数
+# --sequential-keys     使用顺序key
+# --key-size            key大小,单位字节
+# --val-size            value大小,单位字节
+
+benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+          --cacert=/etc/etcd/pki/ca.pem \
+          --cert=/etc/etcd/pki/etcd.pem \
+          --key=/etc/etcd/pki/etcd-key.pem \
+          --conns=100 \
+          --clients=1000 \
+    put \
+          --total=100000 \
+          --sequential-keys \
+          --key-size=8 \
+          --val-size=256
+```
+
+:::
+
+<br />
+
