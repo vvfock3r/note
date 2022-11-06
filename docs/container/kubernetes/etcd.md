@@ -996,7 +996,7 @@ etcdctl \
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
-    --write-out=table \
+    -w=table \
   member list
 
 +------------------+---------+--------+------------------------+------------------------+------------+
@@ -1023,7 +1023,7 @@ etcdctl \
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
-    --write-out=table \
+    -w=table \
   member list
 
 +------------------+---------+--------+------------------------+------------------------+------------+
