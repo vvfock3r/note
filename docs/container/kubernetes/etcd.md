@@ -115,7 +115,7 @@ WantedBy=multi-user.target
 
 ```bash
 # (1)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://127.0.0.1:2379 -w=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -123,7 +123,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+----------------------+----------------------+------------+
 
 # (2)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 -w=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -131,7 +131,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+----------------------+----------------------+------------+
 
 # (3)
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2380 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2380 -w=table member list
 +------------------+---------+--------+----------------------+----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS      |     CLIENT ADDRS     | IS LEARNER |
 +------------------+---------+--------+----------------------+----------------------+------------+
@@ -188,7 +188,7 @@ initial-cluster-token: etcd-cluster
                           quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 客户端连接测试 - 容器内
-[root@ap-hongkang ~]# docker container exec -it etcd etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
+[root@ap-hongkang ~]# docker container exec -it etcd etcdctl --endpoints=http://127.0.0.1:2379 -w=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -196,7 +196,7 @@ initial-cluster-token: etcd-cluster
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
 # 客户端连接测试 - 容器外
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 -w=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -312,7 +312,7 @@ initial-cluster-token: etcd-cluster
                           quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 客户端连接测试 - 容器内
-[root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
+[root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 -w=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -322,7 +322,7 @@ initial-cluster-token: etcd-cluster
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
 # 客户端连接测试 - 容器外
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 -w=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -333,14 +333,14 @@ initial-cluster-token: etcd-cluster
 
 # 多节点的情况下，endpoints最好指定所有节点，有什么区别可以参考下面执行的命令
 
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table endpoint health
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 -w=table endpoint health
 +-----------------------+--------+------------+-------+
 |       ENDPOINT        | HEALTH |    TOOK    | ERROR |
 +-----------------------+--------+------------+-------+
 | http://10.0.8.4:12379 |   true | 1.807196ms |       |
 +-----------------------+--------+------------+-------+
 
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379,http://10.0.8.4:22379,http://10.0.8.4:32379 --write-out=table endpoint health
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379,http://10.0.8.4:22379,http://10.0.8.4:32379 -w=table endpoint health
 +-----------------------+--------+------------+-------+
 |       ENDPOINT        | HEALTH |    TOOK    | ERROR |
 +-----------------------+--------+------------+-------+
@@ -661,7 +661,7 @@ peer-transport-security:
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
-    --write-out=table \
+    -w=table \
   member list
 
 +------------------+---------+--------+------------------------+------------------------+------------+
@@ -686,7 +686,7 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 [root@ap-hongkang ~]# source ~/.bashrc
 
 # 测试
-[root@ap-hongkang ~]# ectl --write-out=table endpoint health
+[root@ap-hongkang ~]# ectl -w=table endpoint health
 +------------------------+--------+-------------+-------+
 |        ENDPOINT        | HEALTH |    TOOK     | ERROR |
 +------------------------+--------+-------------+-------+
@@ -704,6 +704,102 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 <br />
 
 ## 集群管理
+
+### 查看集群信息
+
+::: details 点击查看详情
+
+（1）查看成员列表
+
+```bash
+# 对于一个正常的集群，我们只需要指定一个endpoint即可列出所有的成员，当然了指定全部endpoint也是可以的
+etcdctl \
+    --endpoints=https://10.0.8.4:12379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  member list
+```
+
+![image-20221106153408152](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106153408152.png)
+
+（2）查看成员详情 - 简略信息
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint status
+```
+
+![image-20221106151948039](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106151948039.png)
+
+（3）查看成员详情 - 详细信息
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w json \
+  endpoint status | jq
+```
+
+![image-20221106154156717](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106154156717.png)
+
+（3）查看成员健康状态
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint health
+```
+
+![image-20221106152346384](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106152346384.png)
+
+（4）查看成员KV哈希
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint hashkv
+```
+
+![image-20221106152756051](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106152756051.png)
+
+（5）查看成员全局修订编号（Revision）
+
+* Revision是etcd全局修订编号，每次数据修改(put, del)都会导致Revision加1
+* 对于刚创建的空集群，该值应该为1
+
+```bash
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w json \
+  endpoint status | jq '[ .[] | { Endpoint: .Endpoint, revision: .Status.header.revision }]'
+```
+
+![image-20221106155851997](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221106155851997.png)
+
+:::
+
+<br />
 
 ### 备份和恢复
 
@@ -1225,7 +1321,7 @@ etcdctl \
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
-    --write-out=json \
+    -w=json \
   endpoint status | grep -Eo '"revision":[0-9]*' | grep -Eo '[0-9].*' | sort -u
 
 # 压缩所有旧版本(这一步操作并不会释放空间)
