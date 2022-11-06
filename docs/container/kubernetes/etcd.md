@@ -1302,11 +1302,22 @@ do
       put /itops/test/write-before-backup/${i} b
 done
 
-# 写入完成后,检查磁盘大小
+# 等待写入完成后
+
+# 检查磁盘大小
 [root@ap-hongkang ~]# du -sh /var/lib/etcd-*
 162M    /var/lib/etcd-1
 162M    /var/lib/etcd-2
 162M    /var/lib/etcd-3
+
+# 检查数据大小,重点看DB SIZE
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint status
 ```
 
 :::
@@ -1349,6 +1360,15 @@ Finished defragmenting etcd member[https://10.0.8.4:32379]
 125M    /var/lib/etcd-1
 125M    /var/lib/etcd-2
 125M    /var/lib/etcd-3
+
+# 检查数据大小,重点看DB SIZE
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint status
 ```
 
 :::
