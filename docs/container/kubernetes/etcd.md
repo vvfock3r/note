@@ -1394,7 +1394,7 @@ etcdctl \
 # 默认情况下认证是关闭的
 [root@ap-hongkang ~]# ectl auth status
 Authentication Status: false
-AuthRevision: 5
+AuthRevision: 2
 
 # 默认情况下不存在任何用户和角色,以下输出都为空
 [root@ap-hongkang ~]# ectl user list
@@ -1416,7 +1416,7 @@ User admin created
 [root@ap-hongkang ~]# ectl role add admin
 Role admin created
 
-# 授权admin角色给用户admin
+# 授权admin角色给admin用户
 [root@ap-hongkang ~]# ectl user grant-role admin admin
 Role admin is granted to user admin
 
@@ -1435,13 +1435,25 @@ Role admin updated
 User: admin
 Roles: admin
 
-# 查看角色拥有哪些权限， admio是什么鬼???
+# 查看角色拥有哪些权限，需要注意一下这个：[/admin, /admio)
+#   1) 这表示了一个范围，该范围包含/admin，但不包含/admio, 前包后不包，在编程语言中类似的写法很常见,比如Python
+#   2) 为啥是/admio呢? 因为26个字母中n后面的就是o
 [root@ap-hongkang ~]# ectl role get admin
 Role admin
 KV Read:
         [/admin, /admio) (prefix /admin)
 KV Write:
         [/admin, /admio) (prefix /admin)
+        
+# ====================================================================================
+
+# 撤销用户的某个角色
+[root@ap-hongkang ~]# ectl user revoke-role admin admin
+Role admin is revoked from user admin
+
+# 撤销角色的某个权限
+[root@ap-hongkang ~]# ectl role revoke-permission admin /admin --prefix=true
+Permission of range [/admin, /admio) is revoked from role admin
 ```
 
 :::
@@ -1450,7 +1462,7 @@ KV Write:
 
 ```bash
 # root用户是必须要创建的
-# root角色可以不用提前创建，在开启认证时会自动创建，但是会打印warn级别日志，所以根据自己的爱好来搞
+# root角色可以不用提前创建，在开启认证时会自动创建，但是会打印warn级别日志，所以如果不想看到提醒日志就提前创建一下
 
 # 创建root用户，并设置密码
 [root@ap-hongkang ~]# ectl user add root
