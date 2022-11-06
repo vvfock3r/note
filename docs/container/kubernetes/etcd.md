@@ -1161,14 +1161,14 @@ etcdctl \
 
 文档：[https://etcd.io/docs/v3.5/faq/#performance](https://etcd.io/docs/v3.5/faq/#performance)
 
-::: details （1）编译并安装benchmark命令
+::: details （1）编译安装benchmark命令
 
 ```bash
 # 克隆代码
 [root@ap-hongkang ~]# git clone https://github.com/etcd-io/etcd.git
 [root@ap-hongkang ~]# cd etcd
 
-# 编译并安装benchmark命令
+# 编译安装benchmark命令
 # (1) 这会将二进制命令安装在$GOPATH/bin下,
 # (2) 请确保该目录在PATH中，否则需要指定完整的路径才可以执行benchmark命令
 # (3) 通过go env GOPATH可以查看GOPATH路径
