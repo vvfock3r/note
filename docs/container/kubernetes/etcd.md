@@ -675,17 +675,21 @@ peer-transport-security:
 
 :::
 
-::: details （6）设置别名
+<br />
+
+## 集群管理
+
+### 设置命令别名: ectl
 
 ```bash
-# 为了后续使用方便，给他设置一个别名
+# 为了后续使用方便，不用每次都输入一长串的参数，我们这里设置一个别名
 [root@ap-hongkang ~]# vim ~/.bashrc
 alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 --cacert=/etc/etcd/pki/ca.pem --cert=/etc/etcd/pki/etcd.pem --key=/etc/etcd/pki/etcd-key.pem'
 
 # 使当前终端生效
 [root@ap-hongkang ~]# source ~/.bashrc
 
-# 测试
+# 测试别名
 [root@ap-hongkang ~]# ectl -w=table endpoint health
 +------------------------+--------+-------------+-------+
 |        ENDPOINT        | HEALTH |    TOOK     | ERROR |
@@ -695,15 +699,10 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 | https://10.0.8.4:22379 |   true | 19.738679ms |       |
 +------------------------+--------+-------------+-------+
 
-# 在整篇笔记中不会使用别名，目的是为了不让人在查看笔记时产生疑惑，让笔记更完整；
-# 在实际使用时可以使用别名来代替一长串的命令
+# ectl这个别名不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含非必须的信息，比如 -w=table
 ```
 
-:::
-
 <br />
-
-## 集群管理
 
 ### 查看集群信息
 
@@ -1384,3 +1383,127 @@ etcdctl \
 总结：经过测试，当`key`的旧版本数量越多时，压缩和碎片整理的效果越好
 
 <br />
+
+### 认证和授权
+
+文档：[https://etcd.io/docs/v3.5/op-guide/authentication/](https://etcd.io/docs/v3.5/op-guide/authentication/)
+
+::: details （1）默认的认证配置
+
+```bash
+# 默认情况下认证是关闭的
+[root@ap-hongkang ~]# ectl auth status
+Authentication Status: false
+AuthRevision: 5
+
+# 默认情况下不存在任何用户和角色,以下输出都为空
+[root@ap-hongkang ~]# ectl user list
+[root@ap-hongkang ~]# ectl role list
+```
+
+:::
+
+::: details （2）用户、角色、授权操作
+
+```bash
+# 添加一个用户 admin
+[root@ap-hongkang ~]# ectl user add admin
+Password of admin: 
+Type password of admin again for confirmation: 
+User admin created
+
+# 添加一个角色 admin
+[root@ap-hongkang ~]# ectl role add admin
+Role admin created
+
+# 授权admin角色给用户admin
+[root@ap-hongkang ~]# ectl user grant-role admin admin
+Role admin is granted to user admin
+
+# 对角色进行授权
+#   只读权限 read
+#   只写权限 write
+#   读写权限 readwrite
+# 下面的命令代表对admin角色授权以/admin开头的所有key读写权限
+[root@ap-hongkang ~]# ectl role grant-permission admin readwrite /admin --prefix=true
+Role admin updated
+
+# ====================================================================================
+
+# 查看用户拥有哪些角色
+[root@ap-hongkang ~]# ectl user get admin
+User: admin
+Roles: admin
+
+# 查看角色拥有哪些权限， admio是什么鬼???
+[root@ap-hongkang ~]# ectl role get admin
+Role admin
+KV Read:
+        [/admin, /admio) (prefix /admin)
+KV Write:
+        [/admin, /admio) (prefix /admin)
+```
+
+:::
+
+::: details （3）开启身份认证准备工作
+
+```bash
+# root用户是必须要创建的
+# root角色可以不用提前创建，在开启认证时会自动创建，但是会打印warn级别日志，所以根据自己的爱好来搞
+
+# 创建root用户，并设置密码
+[root@ap-hongkang ~]# ectl user add root
+Password of root: 
+Type password of root again for confirmation: 
+User root created
+
+# 创建root角色，不需要对该角色设置权限
+[root@ap-hongkang ~]# ectl role add root
+Role root created
+
+# 授权root角色给用户root
+[root@ap-hongkang ~]# ectl user grant-role root root
+Role admin is granted to user admin
+```
+
+:::
+
+::: details （4）开启身份认证和关闭认证
+
+```bash
+# 开启认证
+[root@ap-hongkang ~]# ectl auth enable
+Authentication Enabled
+
+# 匿名用户测试: 写数据
+[root@ap-hongkang ~]# ectl put a b
+{"level":"warn","ts":"2022-11-06T19:24:51.006+0800","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0000328c0/10.0.8.4:12379","attempt":0,"error":"rpc error: code = PermissionDenied desc = etcdserver: permission denied"}
+Error: etcdserver: permission denied
+
+# 匿名用户测试: 查看集群状态
+[root@ap-hongkang ~]# ectl endpoint status
+https://10.0.8.4:12379, d095f9673bd60ca8, 3.5.5, 59 MB, true, false, 2, 641204, 641204, 
+https://10.0.8.4:22379, 9e284eda82a7e8e7, 3.5.5, 59 MB, false, false, 2, 641204, 641204, 
+https://10.0.8.4:32379, d5c1cf5d0aabe186, 3.5.5, 59 MB, false, false, 2, 641207, 641207,
+
+# 命名用户测试: 写数据
+[root@ap-hongkang ~]# ectl --user root:123456 put /a b
+OK
+[root@ap-hongkang ~]# ectl --user root:123456 put /admin/c d
+OK
+
+# 命名用户测试: 权限测试
+[root@ap-hongkang ~]# ectl --user admin:123456 get /a
+{"level":"warn","ts":"2022-11-06T19:27:01.466+0800","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc000032540/10.0.8.4:12379","attempt":0,"error":"rpc error: code = PermissionDenied desc = etcdserver: permission denied"}
+Error: etcdserver: permission denied
+[root@ap-hongkang ~]# ectl --user admin:123456 get /admin/c
+/admin/c
+d
+
+# 关闭认证
+[root@ap-hongkang ~]# ectl --user root:123456 auth disable
+```
+
+:::
+
