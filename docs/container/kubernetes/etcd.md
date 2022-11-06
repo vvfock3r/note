@@ -34,7 +34,7 @@ Etcd是CoreOS基于Raft协议开发的分布式key-value存储，可用于服务
 | `--listen-peer-urls`            | 用于【服务端与服务端通信】的监听地址，<br />若要监听所有端口可以监听0.0.0.0 | `http://localhost:2380`         |
 | `--advertise-client-urls`       | 用于在集群中暴露【客户端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2379`         |
 | `--initial-advertise-peer-urls` | 用于在集群中暴露【服务端与服务端通信】的监听地址，<br />不要设置localhost或0.0.0.0, 因为这些地址无法从远程计算机访问 | `http://localhost:2380`         |
-| `--initial-cluster`             | 集群初始化，这里将列出所有的集群节点，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
+| `--initial-cluster`             | 集群初始化，填写集群所有节点的`advertise-peer-urls`地址，<br />注意这里的key必须要和etcd节点名称保持一致 | `default=http://localhost:2380` |
 | `--initial-cluster-state`       | 初始化集群状态，`new`：新集群，`existing`：已存在的集群      | `new`                           |
 | `--initial-cluster-token`       | 初始集群令牌，当所在网络配置了多个etcd集群，<br />为了避免意外发生，最好使用此参数为每一集群单独配置一个token认证 | `etcd-cluster`                  |
 | `--data-dir`                    | 数据存储目录                                                 | `${name}.etcd`                  |
@@ -59,12 +59,31 @@ drwxr-xr-x 3 528287 89939 4096 Sep 15 20:03 /usr/local/etcd-v3.5.5-linux-amd64
 [root@ap-hongkang ~]# ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcd    /usr/local/bin/etcd    && \
                       ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
                       ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdutl /usr/local/bin/etcdutl
-
-# 创建配置文件和数据目录
-[root@ap-hongkang ~]# mkdir -p /var/lib/etcd && chmod 700 /var/lib/etcd
 ```
 
-（2）编写Systemd服务
+（2）初始化配置文件和数据目录
+
+```yaml
+# 创建配置文件和数据目录
+[root@ap-hongkang ~]# mkdir -p /var/lib/etcd /etc/etcd
+
+# 编写配置文件
+[root@ap-hongkang ~]# vim /etc/etcd/etcd.conf
+# Member
+name: etcd
+data-dir: /var/lib/etcd
+listen-client-urls: http://0.0.0.0:2379
+listen-peer-urls: http://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: http://10.0.8.4:2379
+initial-advertise-peer-urls: http://10.0.8.4:2380
+initial-cluster: etcd=http://10.0.8.4:2380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+```
+
+（3）编写Systemd服务
 
 ```bash
 [root@ap-hongkang ~]# vim /etc/systemd/system/etcd.service
@@ -74,16 +93,7 @@ Documentation=https://etcd.io/docs/
 
 [Service]
 Type=notify
-ExecStart=/usr/local/bin/etcd \
-  --name etcd-1 \
-  --listen-client-urls http://0.0.0.0:2379 \
-  --advertise-client-urls http://10.0.8.4:2379 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --initial-advertise-peer-urls http://10.0.8.4:2380 \
-  --initial-cluster etcd-1=http://10.0.8.4:2380 \
-  --initial-cluster-state new \
-  --initial-cluster-token etcd-cluster \
-  --data-dir=/var/lib/etcd
+ExecStart=/usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 Restart=on-failure
 RestartSec=5
 
@@ -97,7 +107,7 @@ WantedBy=multi-user.target
                       systemctl status etcd.service
 ```
 
-（3）客户端测试
+（4）客户端测试
 
 ```bash
 # (1)
@@ -132,30 +142,46 @@ WantedBy=multi-user.target
 
 ::: details （2）Docker部署
 
+（1）编写配置文件
+
+```yaml
+# 创建配置文件和数据目录
+[root@ap-hongkang ~]# mkdir -p /var/lib/etcd /etc/etcd
+
+# 编写配置文件
+[root@ap-hongkang ~]# vim /etc/etcd/etcd.conf
+# Member
+name: etcd
+data-dir: /var/lib/etcd
+listen-client-urls: http://0.0.0.0:2379
+listen-peer-urls: http://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: http://10.0.8.4:2379
+initial-advertise-peer-urls: http://10.0.8.4:2380
+initial-cluster: etcd=http://10.0.8.4:2380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+```
+
+（2）启动容器
+
 ```bash
 # 定义变量
-[root@ap-hongkang ~]# ETCD_VER=v3.5.5 && NODE_IP=10.0.8.4
+[root@ap-hongkang ~]# ETCD_VER=v3.5.5
 
 # 下载镜像(需科学上网)
 [root@ap-hongkang ~]# docker pull quay.io/coreos/etcd:${ETCD_VER}
 
 # 启动容器
 [root@ap-hongkang ~]# docker container run --name etcd \
-                                           -p 12379:2379 \
-                                           -p 12380:2380 \
+                                           -p 2379:2379 \
+                                           -p 2380:2380 \
+                                           -v /etc/etcd/:/etc/etcd/ \
                                            -v /var/lib/etcd:/var/lib/etcd \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd \
-                                           --listen-client-urls http://0.0.0.0:2379 \
-                                           --advertise-client-urls http://${NODE_IP}:12379 \
-                                           --listen-peer-urls http://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls http://${NODE_IP}:12380 \
-                                           --initial-cluster etcd-1=http://${NODE_IP}:12380 \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 客户端连接测试 - 容器内
 [root@ap-hongkang ~]# docker container exec -it etcd etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
@@ -166,7 +192,7 @@ WantedBy=multi-user.target
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 
 # 客户端连接测试 - 容器外
-[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:12379 --write-out=table member list
+[root@ap-hongkang ~]# etcdctl --endpoints=http://10.0.8.4:2379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
 |        ID        | STATUS  |  NAME  |      PEER ADDRS       |     CLIENT ADDRS      | IS LEARNER |
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -182,11 +208,71 @@ WantedBy=multi-user.target
 
 ::: details （1）Docker部署
 
+（1）初始化配置文件和数据目录
+
+```yaml
+# 创建配置文件和数据目录
+mkdir -p /var/lib/etcd-1 /etc/etcd-1
+mkdir -p /var/lib/etcd-2 /etc/etcd-2
+mkdir -p /var/lib/etcd-3 /etc/etcd-3
+
+# -------------------------------------------------
+
+# etcd-1配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-1/etcd.conf
+# Member
+name: etcd-1
+data-dir: /var/lib/etcd
+listen-client-urls: http://0.0.0.0:2379
+listen-peer-urls: http://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: http://10.0.8.4:12379
+initial-advertise-peer-urls: http://10.0.8.4:12380
+initial-cluster: etcd-1=http://10.0.8.4:12380,etcd-2=http://10.0.8.4:22380,etcd-3=http://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+
+# -------------------------------------------------
+
+# etcd-2配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-2/etcd.conf
+# Member
+name: etcd-2
+data-dir: /var/lib/etcd
+listen-client-urls: http://0.0.0.0:2379
+listen-peer-urls: http://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: http://10.0.8.4:22379
+initial-advertise-peer-urls: http://10.0.8.4:22380
+initial-cluster: etcd-1=http://10.0.8.4:12380,etcd-2=http://10.0.8.4:22380,etcd-3=http://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+
+# -------------------------------------------------
+
+# etcd-3配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-3/etcd.conf
+# Member
+name: etcd-3
+data-dir: /var/lib/etcd
+listen-client-urls: http://0.0.0.0:2379
+listen-peer-urls: http://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: http://10.0.8.4:32379
+initial-advertise-peer-urls: http://10.0.8.4:32380
+initial-cluster: etcd-1=http://10.0.8.4:12380,etcd-2=http://10.0.8.4:22380,etcd-3=http://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+```
+
+（2）启动容器
+
 ```bash
 # 定义变量
-ETCD_VER=v3.5.5
-NODE_IP=10.0.8.4
-CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-3=http://${NODE_IP}:32380
+[root@ap-hongkang ~]# ETCD_VER=v3.5.5
 
 # 下载镜像
 [root@ap-hongkang ~]# docker pull quay.io/coreos/etcd:${ETCD_VER}
@@ -195,55 +281,32 @@ CLUSTER_LIST=etcd-1=http://${NODE_IP}:12380,etcd-2=http://${NODE_IP}:22380,etcd-
 [root@ap-hongkang ~]# docker container run --name etcd-1 \
                                            -p 12379:2379 \
                                            -p 12380:2380 \
+                                           -v /etc/etcd-1/:/etc/etcd/ \
                                            -v /var/lib/etcd-1:/var/lib/etcd \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-1 \
-                                           --listen-client-urls http://0.0.0.0:2379 \
-                                           --advertise-client-urls http://${NODE_IP}:12379 \
-                                           --listen-peer-urls http://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls http://${NODE_IP}:12380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 启动容器 - 节点2
 [root@ap-hongkang ~]# docker container run --name etcd-2 \
                                            -p 22379:2379 \
                                            -p 22380:2380 \
+                                           -v /etc/etcd-2/:/etc/etcd/ \
                                            -v /var/lib/etcd-2:/var/lib/etcd \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-2 \
-                                           --listen-client-urls http://0.0.0.0:2379 \
-                                           --advertise-client-urls http://${NODE_IP}:22379 \
-                                           --listen-peer-urls http://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls http://${NODE_IP}:22380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 启动容器 - 节点3
 [root@ap-hongkang ~]# docker container run --name etcd-3 \
                                            -p 32379:2379 \
                                            -p 32380:2380 \
+                                           -v /etc/etcd-3/:/etc/etcd/ \
                                            -v /var/lib/etcd-3:/var/lib/etcd \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-3 \
-                                           --listen-client-urls http://0.0.0.0:2379 \
-                                           --advertise-client-urls http://${NODE_IP}:32379 \
-                                           --listen-peer-urls http://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls http://${NODE_IP}:32380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
+
 # 客户端连接测试 - 容器内
 [root@ap-hongkang ~]# docker container exec -it etcd-1 etcdctl --endpoints=http://127.0.0.1:2379 --write-out=table member list
 +------------------+---------+--------+-----------------------+-----------------------+------------+
@@ -321,8 +384,7 @@ Runtime: go1.12.12
 
 ```bash
 # 创建证书配置文件目录
-[root@ap-hongkang ~]# mkdir -p /etc/etcd/pki
-[root@ap-hongkang ~]# cd /etc/etcd/pki
+[root@ap-hongkang ~]# mkdir -p /etc/etcd/pki && cd /etc/etcd/pki
 
 # 创建根证书配置文件并修改
 # 过期时间 876000h/24/365 = 100年
@@ -437,106 +499,152 @@ EOF
 
 :::
 
+::: details （4）初始化配置文件和数据目录
+
+```bash
+# 创建配置文件和数据目录
+mkdir -p /var/lib/etcd-1 /etc/etcd-1
+mkdir -p /var/lib/etcd-2 /etc/etcd-2
+mkdir -p /var/lib/etcd-3 /etc/etcd-3
+
+# -------------------------------------------------
+
+# 将证书软连接到各个Member节点的配置目录中
+cp -ra /etc/etcd/pki /etc/etcd-1/
+cp -ra /etc/etcd/pki /etc/etcd-2/
+cp -ra /etc/etcd/pki /etc/etcd-3/
+
+# -------------------------------------------------
+
+# etcd-1配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-1/etcd.conf
+# Member
+name: etcd-1
+data-dir: /var/lib/etcd
+listen-client-urls: https://0.0.0.0:2379
+listen-peer-urls: https://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: https://10.0.8.4:12379
+initial-advertise-peer-urls: https://10.0.8.4:12380
+initial-cluster: etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+
+# Security
+client-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+peer-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+
+# -------------------------------------------------
+
+# etcd-2配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-2/etcd.conf
+# Member
+name: etcd-2
+data-dir: /var/lib/etcd
+listen-client-urls: https://0.0.0.0:2379
+listen-peer-urls: https://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: https://10.0.8.4:22379
+initial-advertise-peer-urls: https://10.0.8.4:22380
+initial-cluster: etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+
+# Security
+client-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+peer-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+
+# -------------------------------------------------
+
+# etcd-3配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-3/etcd.conf
+# Member
+name: etcd-3
+data-dir: /var/lib/etcd
+listen-client-urls: https://0.0.0.0:2379
+listen-peer-urls: https://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: https://10.0.8.4:32379
+initial-advertise-peer-urls: https://10.0.8.4:32380
+initial-cluster: etcd-1=https://10.0.8.4:12380,etcd-2=https://10.0.8.4:22380,etcd-3=https://10.0.8.4:32380
+initial-cluster-state: new
+initial-cluster-token: etcd-cluster
+
+# Security
+client-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+peer-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+```
+
+:::
+
 ::: details （4）启动etcd节点
 
 ```bash
 # 定义变量
-# (1) 协议修改为HTTPS
-ETCD_VER=v3.5.5
-NODE_IP=10.0.8.4
-CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etcd-3=https://${NODE_IP}:32380
-
-# 容器参数修改
-# (1) 挂载证书目录到容器
-# (2) 协议修改为HTTPS
-# (3) 增加各种通信所用证书
+[root@ap-hongkang ~]# ETCD_VER=v3.5.5
 
 # 启动容器 - 节点1
 [root@ap-hongkang ~]# docker container run --name etcd-1 \
                                            -p 12379:2379 \
                                            -p 12380:2380 \
+                                           -v /etc/etcd-1:/etc/etcd \
                                            -v /var/lib/etcd-1:/var/lib/etcd \
-                                           -v /etc/etcd/pki:/etc/etcd/pki \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-1 \
-                                           --listen-client-urls https://0.0.0.0:2379 \
-                                           --advertise-client-urls https://${NODE_IP}:12379 \
-                                           --listen-peer-urls https://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls https://${NODE_IP}:12380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd \
-                                           --cert-file=/etc/etcd/pki/etcd.pem \
-                                           --key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --client-cert-auth \
-                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --auto-tls \
-                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
-                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --peer-client-cert-auth \
-                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --peer-auto-tls
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 启动容器 - 节点2
 [root@ap-hongkang ~]# docker container run --name etcd-2 \
                                            -p 22379:2379 \
                                            -p 22380:2380 \
+                                           -v /etc/etcd-2:/etc/etcd \
                                            -v /var/lib/etcd-2:/var/lib/etcd \
-                                           -v /etc/etcd/pki:/etc/etcd/pki \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-2 \
-                                           --listen-client-urls https://0.0.0.0:2379 \
-                                           --advertise-client-urls https://${NODE_IP}:22379 \
-                                           --listen-peer-urls https://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls https://${NODE_IP}:22380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd \
-                                           --cert-file=/etc/etcd/pki/etcd.pem \
-                                           --key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --client-cert-auth \
-                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --auto-tls \
-                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
-                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --peer-client-cert-auth \
-                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --peer-auto-tls
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 
 # 启动容器 - 节点3
 [root@ap-hongkang ~]# docker container run --name etcd-3 \
                                            -p 32379:2379 \
                                            -p 32380:2380 \
+                                           -v /etc/etcd-3:/etc/etcd \
                                            -v /var/lib/etcd-3:/var/lib/etcd \
-                                           -v /etc/etcd/pki:/etc/etcd/pki \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-3 \
-                                           --listen-client-urls https://0.0.0.0:2379 \
-                                           --advertise-client-urls https://${NODE_IP}:32379 \
-                                           --listen-peer-urls https://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls https://${NODE_IP}:32380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state new \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd \
-                                           --cert-file=/etc/etcd/pki/etcd.pem \
-                                           --key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --client-cert-auth \
-                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --auto-tls \
-                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
-                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --peer-client-cert-auth \
-                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --peer-auto-tls
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 ```
 
 :::
@@ -544,12 +652,12 @@ CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-2=https://${NODE_IP}:22380,etc
 ::: details （5）客户端连接测试
 
 ```bash
-[root@ap-hongkang pki]# etcdctl \
-  	--endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
-  	--cacert=/etc/etcd/pki/ca.pem \
-	--cert=/etc/etcd/pki/etcd.pem \
-	--key=/etc/etcd/pki/etcd-key.pem \
-  	--write-out=table \
+[root@ap-hongkang ~]# etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    --write-out=table \
   member list
 
 +------------------+---------+--------+------------------------+------------------------+------------+
@@ -797,8 +905,11 @@ etcdctl \
   member add etcd-4 \
     --peer-urls=https://10.0.8.4:42380
 
-{"level":"warn","ts":"2022-11-05T22:41:49.970+0800","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc000032c40/10.0.8.4:12379","attempt":0,"error":"rpc error: code = Unknown desc = etcdserver: re-configuration failed due to not enough started members"}
-Error: etcdserver: re-configuration failed due to not enough started members
+# 输出结果
+ETCD_NAME="etcd-4"
+ETCD_INITIAL_CLUSTER="etcd-1=https://10.0.8.4:12380,etcd-3=https://10.0.8.4:32380,etcd-4=https://10.0.8.4:42380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="https://10.0.8.4:42380"
+ETCD_INITIAL_CLUSTER_STATE="existing"
 ```
 
 :::
@@ -810,40 +921,51 @@ Error: etcdserver: re-configuration failed due to not enough started members
 * `--initial-cluster-state existing`
 
 ```bash
-# (1) 协议修改为HTTPS
-ETCD_VER=v3.5.5
-NODE_IP=10.0.8.4
-CLUSTER_LIST=etcd-1=https://${NODE_IP}:12380,etcd-3=https://${NODE_IP}:32380,etcd-4=https://${NODE_IP}:42380
+# 创建配置文件和数据目录
+mkdir -p /var/lib/etcd-4 /etc/etcd-4
+
+# 将证书拷贝接到各个Member节点的配置目录中
+cp -ra /etc/etcd/pki /etc/etcd-4/
+
+# etcd-4配置文件
+[root@ap-hongkang ~]# vim /etc/etcd-4/etcd.conf
+# Member
+name: etcd-4
+data-dir: /var/lib/etcd
+listen-client-urls: https://0.0.0.0:2379
+listen-peer-urls: https://0.0.0.0:2380
+
+# Clustering
+advertise-client-urls: https://10.0.8.4:42379
+initial-advertise-peer-urls: https://10.0.8.4:42380
+initial-cluster: etcd-1=https://10.0.8.4:12380,etcd-3=https://10.0.8.4:32380,etcd-4=https://10.0.8.4:42380
+initial-cluster-state: existing
+initial-cluster-token: etcd-cluster
+
+# Security
+client-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
+peer-transport-security:
+  client-cert-auth: true
+  auto-tls: true
+  cert-file: /etc/etcd/pki/etcd.pem
+  key-file: /etc/etcd/pki/etcd-key.pem
+  trusted-ca-file: /etc/etcd/pki/ca.pem
 
 # 启动容器 - 节点4
+[root@ap-hongkang ~]# ETCD_VER=v3.5.5
 [root@ap-hongkang ~]# docker container run --name etcd-4 \
                                            -p 42379:2379 \
                                            -p 42380:2380 \
+                                           -v /etc/etcd-4:/etc/etcd \
                                            -v /var/lib/etcd-4:/var/lib/etcd \
-                                           -v /etc/etcd/pki:/etc/etcd/pki \
                                            -d \
                                            --restart always \
-                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd \
-                                           --name etcd-4 \
-                                           --listen-client-urls https://0.0.0.0:2379 \
-                                           --advertise-client-urls https://${NODE_IP}:42379 \
-                                           --listen-peer-urls https://0.0.0.0:2380 \
-                                           --initial-advertise-peer-urls https://${NODE_IP}:42380 \
-                                           --initial-cluster ${CLUSTER_LIST} \
-                                           --initial-cluster-state existing \
-                                           --initial-cluster-token etcd-cluster \
-                                           --data-dir=/var/lib/etcd \
-                                           --cert-file=/etc/etcd/pki/etcd.pem \
-                                           --key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --client-cert-auth \
-                                           --trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --auto-tls \
-                                           --peer-cert-file=/etc/etcd/pki/etcd.pem \
-                                           --peer-key-file=/etc/etcd/pki/etcd-key.pem \
-                                           --peer-client-cert-auth \
-                                           --peer-trusted-ca-file=/etc/etcd/pki/ca.pem \
-                                           --peer-auto-tls
-
+                          quay.io/coreos/etcd:${ETCD_VER} /usr/local/bin/etcd --config-file /etc/etcd/etcd.conf
 # 查看集群状态
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:32379,https://10.0.8.4:42379 \
@@ -882,8 +1004,6 @@ etcdctl \
 
 ::: details （4）更新所有成员的启动参数（非必须，只是为了启动参数与实际情况统一）
 
-```bash
-# 停止容器并删除，重新创建即可
-```
+* 修改配置文件`initial-cluster`参数，并重启容器即可
 
 :::
