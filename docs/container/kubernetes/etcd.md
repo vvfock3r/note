@@ -1257,3 +1257,7 @@ Finished defragmenting etcd member[https://10.0.8.4:32379]
 ```
 
 :::
+
+总结：经过测试，当`key`的旧版本数量越多时，压缩和碎片整理的效果越好
+
+<br />
