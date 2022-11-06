@@ -681,6 +681,8 @@ peer-transport-security:
 
 ### 设置命令别名: ectl
 
+::: details 点击查看详情
+
 ```bash
 # 为了后续使用方便，不用每次都输入一长串的参数，我们这里设置一个别名
 [root@ap-hongkang ~]# vim ~/.bashrc
@@ -701,6 +703,8 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 
 # ectl这个别名不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含非必须的信息，比如 -w=table
 ```
+
+:::
 
 <br />
 
