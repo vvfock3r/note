@@ -1175,7 +1175,7 @@ benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0
 ::: details （1）写入数据
 
 ```bash
-# 对于同一个key，不断写入新数据，以覆盖老数据
+# 对于同一个key,不断写入新数据覆盖老数据,使其产生旧版本
 for i in `seq 100000`
 do
     etcdctl \
