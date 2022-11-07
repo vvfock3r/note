@@ -1303,32 +1303,8 @@ do
       put /itops/test/write-before-backup/${i} a
 done
 
-for i in `seq 100000`
-do
-    etcdctl \
-        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
-        --cacert=/etc/etcd/pki/ca.pem \
-        --cert=/etc/etcd/pki/etcd.pem \
-        --key=/etc/etcd/pki/etcd-key.pem \
-      put /itops/test/write-before-backup/${i} b
-done
-
-# 等待写入完成后
-
-# 检查磁盘大小
-[root@ap-hongkang ~]# du -sh /var/lib/etcd-*
-162M    /var/lib/etcd-1
-162M    /var/lib/etcd-2
-162M    /var/lib/etcd-3
-
-# 检查数据大小,重点看DB SIZE
-etcdctl \
-    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
-    --cacert=/etc/etcd/pki/ca.pem \
-    --cert=/etc/etcd/pki/etcd.pem \
-    --key=/etc/etcd/pki/etcd-key.pem \
-    -w table \
-  endpoint status
+# 在本次测试中，总共开了10个终端，执行了10段for循环代码
+# 等待写入完成
 ```
 
 :::
@@ -1336,6 +1312,21 @@ etcdctl \
 ::: details （2）压缩和数据整理
 
 ```bash
+# 检查磁盘大小
+[root@ap-hongkang ~]# du -sh /var/lib/etcd-*
+335M    /var/lib/etcd-1
+336M    /var/lib/etcd-2
+335M    /var/lib/etcd-3
+
+# 检查数据大小,重点看DB SIZE，每个endpoint都是 95 MB
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+    -w table \
+  endpoint status
+  
 # 获取最新的Revision
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
@@ -1346,13 +1337,13 @@ etcdctl \
   endpoint status | grep -Eo '"revision":[0-9]*' | grep -Eo '[0-9].*' | sort -u
 
 # 压缩所有旧版本(这一步操作并不会释放空间)
-# 136747是上条命令输出的结果
+# 1000000 是上条命令输出的结果
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
-  compact 136747
+  compact 1000000
 
 # 碎片整理(这一步操作才会释放空间)
 etcdctl \
@@ -1368,11 +1359,11 @@ Finished defragmenting etcd member[https://10.0.8.4:32379]
 
 # 再次检查磁盘大小
 [root@ap-hongkang ~]# du -sh /var/lib/etcd-*
-125M    /var/lib/etcd-1
-125M    /var/lib/etcd-2
-125M    /var/lib/etcd-3
+254M    /var/lib/etcd-1
+254M    /var/lib/etcd-2
+254M    /var/lib/etcd-3
 
-# 检查数据大小,重点看DB SIZE
+# 检查数据大小,重点看DB SIZE，每个endpoint都是 9.6 MB
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
     --cacert=/etc/etcd/pki/ca.pem \
@@ -1384,7 +1375,7 @@ etcdctl \
 
 :::
 
-总结：经过测试，当`key`的旧版本数量越多时，压缩和碎片整理的效果越好
+总结：经过多次测试，当`key`的旧版本数量越多时，压缩和碎片整理的效果越好
 
 <br />
 
