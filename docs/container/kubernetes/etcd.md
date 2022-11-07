@@ -1514,9 +1514,9 @@ d
 
 ## 使用指南
 
-### 增删改查
+### 写入数据
 
-::: details （1）写入数据
+::: details （1）写入数据：基础
 
 ```bash
 # (1) 写入数据：若数据已存在则会覆盖
@@ -1555,7 +1555,19 @@ OK
 
 :::
 
-::: details （2）读取数据：返回单个kv和一组kv
+::: details （2）写入数据：设置租约
+
+```bash
+
+```
+
+:::
+
+<br />
+
+### 读取数据
+
+::: details （1）读取数据：返回单个kv和一组kv
 
 ```bash
 # 返回单个kv
@@ -1605,7 +1617,7 @@ da
 
 :::
 
-::: details （3）读取数据：返回值处理：limit、sort、order、count ...
+::: details （2）读取数据：返回值处理：limit、sort、order、count ...
 
 ```bash
 # (1) limit: 限制返回数量
@@ -1679,7 +1691,7 @@ foo
 
 :::
 
-::: details （4）读取数据：全局修订编号 Revision
+::: details （3）读取数据：全局修订编号 Revision
 
 ```bash
 # 设置一些值
@@ -1746,7 +1758,11 @@ alice
 
 :::
 
-::: details （5）删除数据
+<br />
+
+### 删除数据
+
+::: details 点击查看详情
 
 ```bash
 # 删除指定kv
