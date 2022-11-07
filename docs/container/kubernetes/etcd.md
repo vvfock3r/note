@@ -886,6 +886,16 @@ drwx------ 4 root root 4096 Nov  6 11:10 member
 
 [root@ap-hongkang ~]# du -sh /var/lib/etcd-1
 206M    /var/lib/etcd-1
+
+# --------------------------------------------------------------------------------------------------------
+
+# 查看快照元数据
+[root@ap-hongkang ~]# etcdutl -w table snapshot status snapshot_from_endpoint_2022-11-07-101235.db
++----------+----------+------------+------------+
+|   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
++----------+----------+------------+------------+
+| 5f52d1de |  1018634 |     130773 |      12 MB |
++----------+----------+------------+------------+
 ```
 
 :::
@@ -1500,3 +1510,237 @@ d
 
 :::
 
+<br />
+
+## 使用指南
+
+### 增删改查
+
+::: details （1）写入数据
+
+```bash
+# (1) 写入数据：若数据已存在则会覆盖
+[root@ap-hongkang ~]# ectl put foo bar1
+OK
+[root@ap-hongkang ~]# ectl put foo bar2
+OK
+
+# 读取数据
+[root@ap-hongkang ~]# ectl get foo 
+foo
+bar2
+
+# (2) 写入数据：--prev-kv 用于返回被覆盖之前的key和value，若之前不存在则不返回
+[root@ap-hongkang ~]# ectl put non-key non-value --prev-kv
+OK
+[root@ap-hongkang ~]# ectl put non-key non-value --prev-kv
+OK
+non-key
+non-value
+[root@ap-hongkang ~]# ectl put foo bar3 --prev-kv
+OK
+foo
+bar2
+
+# (3) 写入数据：通过管道写入数据
+[root@ap-hongkang ~]# echo bar | ectl put foo
+OK
+
+# (4) 写入数据：当值以-开头时会被解释为选项，解决方法是在值前面插入 --
+[root@ap-hongkang ~]# ectl put -- foo -bar  # 方法1
+OK
+[root@ap-hongkang ~]# ectl put foo -- -bar  # 方法2
+OK
+```
+
+:::
+
+::: details （2）读取数据：返回单个kv和一组kv
+
+```bash
+# 返回单个kv
+[root@ap-hongkang ~]# ectl get foo
+foo
+-bar
+
+# -------------------------------------------------------------
+# 返回一组kv
+[root@ap-hongkang ~]# ectl put a1 1 && \
+                      ectl put a2 2 && \
+                      ectl put b2 2 && \
+                      ectl put c3 3 && \
+                      ectl put da 4
+
+# (1) 方式一：指定范围
+[root@ap-hongkang ~]# ectl get a            # key不存在,返回空
+[root@ap-hongkang ~]# ectl get a1           # key存在,返回value
+a1
+1
+[root@ap-hongkang ~]# ectl get a c          # 指定范围 [a,c]，包含a但不包含c
+a1
+1
+a2
+2
+b2
+2
+
+# (2) 方式二：指定前缀
+[root@ap-hongkang ~]# ectl get a --prefix   # 返回所有以a为前缀的kv
+a1
+1
+a2
+2
+[root@ap-hongkang ~]# ectl get "" --prefix  # 获取所有kv
+
+# (3) 方式三：返回等于或大于指定key的kv
+[root@ap-hongkang ~]# ectl get b --from-key
+b2
+2
+c3
+3
+da
+4
+[root@ap-hongkang ~]# ectl get "" --from-key  # 获取所有kv
+```
+
+:::
+
+::: details （3）读取数据：返回值处理：limit、sort、order、count ...
+
+```bash
+# (1) limit: 限制返回数量
+[root@ap-hongkang ~]# ectl get "" --prefix --limit 2
+/a
+b
+/admin/c
+d
+
+# (2) 按照某个字段排序
+[root@ap-hongkang ~]# ectl put foo3 foo3val && \
+                      ectl put foo1 foo1val && \
+                      ectl put foo2 foo2val
+[root@ap-hongkang ~]# ectl get foo foo4                   # 不排序的情况下
+foo1
+foo1val
+foo2
+foo2val
+foo3
+foo3val
+[root@ap-hongkang ~]# ectl get foo foo4 --sort-by=CREATE  # 按照 创建时间+升序 排序
+foo3
+foo3val
+foo1
+foo1val
+foo2
+foo2val
+
+# (3) order: 按照 升序(ASCEND,默认) 或 降序(DESCEND) 排序
+# 下面的命令是先排序，然后再返回前2个
+[root@ap-hongkang ~]# ectl get "" --prefix --limit 2
+/a
+b
+/admin/c
+d
+[root@ap-hongkang ~]# ectl get "" --prefix --limit 2 --order DESCEND
+z
+26
+y
+25
+
+# (4) 统计key数量
+#  注意：不能单独使用 --count-only, 必须还要加上 -w=fields
+[root@ap-hongkang ~]# ectl get a --prefix                          # 以a开头的有两个key
+a1
+1
+a2
+2
+[root@ap-hongkang ~]# ectl get a --prefix --count-only -w=fields   # 统计一下数量
+"ClusterID" : 17381046135283785533
+"MemberID" : 15402820199101751686
+"Revision" : 1126237
+"RaftTerm" : 5
+"More" : false
+"Count" : 2
+[root@ap-hongkang ~]# ectl get "" --prefix --count-only -w=fields   # 统计一下所有key的数量
+"ClusterID" : 17381046135283785533
+"MemberID" : 15030193553199729832
+"Revision" : 1126237
+"RaftTerm" : 5
+"More" : false
+"Count" : 100040
+
+# (5) 仅返回key或value，若kv不存在则什么也不返回
+[root@ap-hongkang ~]# ectl get foo --keys-only
+foo
+
+[root@ap-hongkang ~]# ectl get foo --print-value-only
+-bar
+```
+
+:::
+
+::: details （4）读取数据：全局修订编号 Revision
+
+```bash
+# 设置一些值
+[root@ap-hongkang ~]# ectl del name     && \
+                      ectl del age      && \
+                      ectl put name bob && \
+                      ectl put age 18   && \
+                      ectl put name jack && \
+                      ectl put age 20 && \
+                      ectl put name alice && \
+                      ectl put age 26
+
+# 因为旧值被覆盖的原因，我们只能获取到最新值
+[root@ap-hongkang ~]# ectl get name
+name
+alice
+[root@ap-hongkang ~]# ectl get age
+age
+26
+
+# 通过输出json格式的数据,可以看到一些详细信息
+[root@ap-hongkang ~]# ectl get name -w json | jq
+{
+  "header": {
+    "cluster_id": 17381046135283786000,
+    "member_id": 15030193553199730000,
+    "revision": 1126267,          # member_id代表的节点的全局修订编号
+    "raft_term": 5
+  },
+  "kvs": [
+    {
+      "key": "bmFtZQ==",           # key, base64编码
+      "create_revision": 1126262,  # 此key创建的全局修订编号
+      "mod_revision": 1126266,     # 此key最后一次更新的全局修订编号
+      "version": 3,                # 此key有3个版本,首次创建(1) + 修改(2)
+      "value": "YWxpY2U="          # value, base64编码
+    }
+  ],
+  "count": 1                       # 代表key的个数是1
+}
+
+# (1) 解码出上面的base64
+[root@ap-hongkang ~]# echo bmFtZQ== | base64 -d ; echo
+name
+[root@ap-hongkang ~]# echo YWxpY2U= | base64 -d ; echo
+alice
+
+# (2) 通过首次修改的全局修订编号获取第一次设置的值
+[root@ap-hongkang ~]# ectl get name --rev=1126262
+name
+bob
+
+# (3) 通过最后一次修改的全局修订编号获取第一次设置的值
+[root@ap-hongkang ~]# ectl get name --rev=1126266
+name
+alice
+
+# (4) 问题???
+# 中间部分的全局修订编号，不知道咋获取
+# 最后一次的全局修订编号获取了也没啥价值
+# 搞了半天，就只能获取首次的全局修订编号
+```
+
+:::
