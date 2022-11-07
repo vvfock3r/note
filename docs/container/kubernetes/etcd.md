@@ -1283,27 +1283,13 @@ benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0
 
 ```bash
 # 对于同一个key,不断写入新数据覆盖老数据,使其产生旧版本
-for i in `seq 100000`
-do
-    etcdctl \
-        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
-        --cacert=/etc/etcd/pki/ca.pem \
-        --cert=/etc/etcd/pki/etcd.pem \
-        --key=/etc/etcd/pki/etcd-key.pem \
-      put /itops/test/write-before-backup/${i} ${i}
+for i in `seq 100000`; do
+  for j in `seq 10`
+  do
+    ectl put /itops/test/write-before-backup/${i} ${j}
+  done
 done
 
-for i in `seq 100000`
-do
-    etcdctl \
-        --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
-        --cacert=/etc/etcd/pki/ca.pem \
-        --cert=/etc/etcd/pki/etcd.pem \
-        --key=/etc/etcd/pki/etcd-key.pem \
-      put /itops/test/write-before-backup/${i} a
-done
-
-# 在本次测试中，总共开了10个终端，执行了10段for循环代码
 # 等待写入完成
 ```
 
