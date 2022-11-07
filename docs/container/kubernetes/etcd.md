@@ -1619,7 +1619,7 @@ d
 [root@ap-hongkang ~]# ectl put foo3 foo3val && \
                       ectl put foo1 foo1val && \
                       ectl put foo2 foo2val
-[root@ap-hongkang ~]# ectl get foo foo4                   # 不排序的情况下
+[root@ap-hongkang ~]# ectl get foo foo4                   # 默认按照升序排序
 foo1
 foo1val
 foo2
@@ -1741,6 +1741,26 @@ alice
 # 中间部分的全局修订编号，不知道咋获取
 # 最后一次的全局修订编号获取了也没啥价值
 # 搞了半天，就只能获取首次的全局修订编号
+# 但是,获取历史数据,用处在哪里？而且如果有碎片整理的操作,会删除历史数据
+```
+
+:::
+
+::: details （5）删除数据
+
+```bash
+# 删除指定kv
+[root@ap-hongkang ~]# ectl get a1
+a1
+1
+[root@ap-hongkang ~]# ectl del a1
+1
+[root@ap-hongkang ~]# ectl get a1
+
+# 删除所有kv
+[root@ap-hongkang ~]# ectl del "" --prefix
+6
+[root@ap-hongkang ~]# ectl get "" --prefix
 ```
 
 :::
