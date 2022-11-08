@@ -679,19 +679,27 @@ peer-transport-security:
 
 ## 集群管理
 
-### 设置命令别名: ectl
+### 客户端封装: ectl
 
 ::: details 点击查看详情
 
 ```bash
-# 为了后续使用方便，不用每次都输入一长串的参数，我们这里设置一个别名
-[root@ap-hongkang ~]# vim ~/.bashrc
-alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 --cacert=/etc/etcd/pki/ca.pem --cert=/etc/etcd/pki/etcd.pem --key=/etc/etcd/pki/etcd-key.pem'
+# 为了后续使用方便，不用每次都输入一长串的参数，我们这里新创建一个脚本
+# 注意: 也可以使用alias别名，但是在某些情况下会有问题：(1)Shell脚本中无法直接调用别名,必须使用source xx.sh执行 (2) 分布式锁章节无法使用别名
+[root@ap-hongkang ~]# vim /usr/local/bin/ectl
+#!/bin/bash
 
-# 使当前终端生效
-[root@ap-hongkang ~]# source ~/.bashrc
+etcdctl \
+    --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
+    --cacert=/etc/etcd/pki/ca.pem \
+    --cert=/etc/etcd/pki/etcd.pem \
+    --key=/etc/etcd/pki/etcd-key.pem \
+  $*
 
-# 测试别名
+# 添加权限
+[root@ap-hongkang ~]# chmod 755 /usr/local/bin/ectl
+
+# 测试
 [root@ap-hongkang ~]# ectl -w=table endpoint health
 +------------------------+--------+-------------+-------+
 |        ENDPOINT        | HEALTH |    TOOK     | ERROR |
@@ -701,7 +709,7 @@ alias ectl='etcdctl --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,ht
 | https://10.0.8.4:22379 |   true | 19.738679ms |       |
 +------------------------+--------+-------------+-------+
 
-# ectl这个别名不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含非必须的信息，比如 -w=table
+# ectl这个封装不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含非必须的信息，比如 -w=table
 ```
 
 :::
@@ -1893,8 +1901,7 @@ main "$@"
 
 ```bash
 # 创建一个10秒的租约，并写入键值对 name: bob
-# 因为脚本内部使用了别名ectl,所以这里使用sorce来执行
-[root@ap-hongkang ~]# source lease.sh name bob 10
+[root@ap-hongkang ~]# bash lease.sh name bob 10
 2022-11-08 14:31:32 创建租约成功: 0ca884501036f1b7
 2022-11-08 14:31:32 写入数据成功: name bob
 2022-11-08 14:31:33 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 9s  # 912124403946811800是lease的ID
@@ -1915,7 +1922,7 @@ main "$@"
 
 ```bash
 # 终端1
-[root@ap-hongkang ~]# source lease.sh name bob 100
+[root@ap-hongkang ~]# bash lease.sh name bob 100
 2022-11-08 14:37:20 创建租约成功: 68e78450103011ab
 2022-11-08 14:37:20 写入数据成功: name bob
 2022-11-08 14:37:20 监控键值租约: name bob 68e78450103011ab 7559155978968502000 99s
@@ -1945,3 +1952,77 @@ OK
 
 <br />
 
+### 使用事务
+
+文档：[https://etcd.io/docs/v3.5/tutorials/how-to-transactional-write/](https://etcd.io/docs/v3.5/tutorials/how-to-transactional-write/)
+
+::: details 点击查看详情
+
+```bash
+# -i用于开启标准输入
+# 假设Alice和Bob初始资金都为200，现在Alice要想Bob转账100,那么可以用如下的命令表示
+[root@ap-hongkang ~]# ectl txn -i
+compares:
+value("Alice") = "200"            # 我们输入的
+value("Bob") = "200"              # 我们输入的
+                                  # 回车
+success requests (get, put, del):
+put Alice 100                     # 我们输入的
+put Bob 300                       # 我们输入的
+                                  # 回车
+failure requests (get, put, del):
+put Alice 200                     # 我们输入的
+put Bob 200                       # 我们输入的
+                                  # 回车
+
+# 以下是输出结果
+FAILURE
+
+OK
+
+OK
+
+# 查看一下各自的金额
+[root@ap-hongkang ~]# ectl get Alice
+Alice
+100
+[root@ap-hongkang ~]# ectl get Bob
+Bob
+300
+```
+
+:::
+
+<br />
+
+### 使用分布式锁
+
+文档：[https://etcd.io/docs/v3.5/tutorials/how-to-create-locks/](https://etcd.io/docs/v3.5/tutorials/how-to-create-locks/)
+
+::: details 点击查看详情
+
+```bash
+# 语法格式：etcdctl lock <lockname> [exec-command arg1 arg2 ...] [flags]
+
+# --------------------------------------------------------------------------
+# 基础使用1
+# 终端1：尝试获取一个叫做mutext1的分布式锁，因为该锁还没有任何人拿到，所以这里可以看到获取成功
+[root@ap-hongkang ~]# ectl lock mutex1 
+mutex1/68e78450103014b7
+
+# 终端2：同样尝试获取一个叫做mutext1的分布式锁，它会一直卡在这里
+# 当终端1释放锁后，终端2可立即获取到锁
+[root@ap-hongkang ~]# ectl lock mutex1
+
+# --------------------------------------------------------------------------
+# 基础使用2
+# mutex1后面的部分是我们要执行的命令，即 ectl put foo bar
+[root@ap-hongkang ~]# ectl lock mutex1 ectl put foo bar
+OK
+
+# --------------------------------------------------------------------------
+# 关于超时
+# 有一个ttl参数，但是没搞明白如何用
+```
+
+:::
