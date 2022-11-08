@@ -679,25 +679,42 @@ peer-transport-security:
 
 ## 集群管理
 
-### 客户端封装: ectl
+### 命令封装: ectl
+
+参考：[https://github.com/etcd-io/etcd/tree/main/etcdctl](https://github.com/etcd-io/etcd/tree/main/etcdctl)
 
 ::: details 点击查看详情
 
 ```bash
-# 为了后续使用方便，不用每次都输入一长串的参数，我们这里新创建一个脚本
-# 注意: 也可以使用alias别名，但是在某些情况下会有问题：(1)Shell脚本中无法直接调用别名,必须使用source xx.sh执行 (2) 分布式锁章节无法使用别名
+# 为了后续使用方便，不用每次都输入一长串的参数，我们可以对etcdctl做一次简单的封装
+
+# --------------------------------------------------------------------------------------
+# 方法1：使用别名(不推荐), 因为在某些情况下会有问题
+#  (1)Shell脚本中无法直接调用别名,必须使用source xx.sh执行 
+#  (2) 分布式锁章节无法使用别名
+
+# --------------------------------------------------------------------------------------
+# 方法2：创建一个脚本(推荐)
+# ectl这个脚本不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含可选的信息，比如 -w=table
 [root@ap-hongkang ~]# vim /usr/local/bin/ectl
 #!/bin/bash
-
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
     --cacert=/etc/etcd/pki/ca.pem \
     --cert=/etc/etcd/pki/etcd.pem \
     --key=/etc/etcd/pki/etcd-key.pem \
   $*
-
-# 添加权限
 [root@ap-hongkang ~]# chmod 755 /usr/local/bin/ectl
+
+# --------------------------------------------------------------------------------------
+# 方法3：使用环境变量(推荐)
+[root@ap-hongkang ~]# vim ~/.bashrc
+export ETCDCTL_ENDPOINTS=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379
+export ETCDCTL_CACERT=/etc/etcd/pki/ca.pem
+export ETCDCTL_CERT=/etc/etcd/pki/etcd.pem
+export ETCDCTL_KEY=/etc/etcd/pki/etcd-key.pem
+
+# --------------------------------------------------------------------------------------
 
 # 测试
 [root@ap-hongkang ~]# ectl -w=table endpoint health
@@ -709,7 +726,14 @@ etcdctl \
 | https://10.0.8.4:22379 |   true | 19.738679ms |       |
 +------------------------+--------+-------------+-------+
 
-# ectl这个封装不管具体的参数是什么,它应该只包含必须的连接信息，而不应该包含非必须的信息，比如 -w=table
+[root@ap-hongkang ~]# etcdctl -w=table endpoint health
++------------------------+--------+-------------+-------+
+|        ENDPOINT        | HEALTH |    TOOK     | ERROR |
++------------------------+--------+-------------+-------+
+| https://10.0.8.4:22379 |   true | 16.205112ms |       |
+| https://10.0.8.4:32379 |   true | 16.426918ms |       |
+| https://10.0.8.4:12379 |   true | 16.266127ms |       |
++------------------------+--------+-------------+-------+
 ```
 
 :::
@@ -1989,6 +2013,20 @@ Alice
 [root@ap-hongkang ~]# ectl get Bob
 Bob
 300
+```
+
+:::
+
+<br />
+
+### 监听机制
+
+文档：[https://etcd.io/docs/v3.5/tutorials/how-to-watch-keys/](https://etcd.io/docs/v3.5/tutorials/how-to-watch-keys/)
+
+::: details 点击查看详情
+
+```bash
+
 ```
 
 :::
