@@ -1555,123 +1555,6 @@ OK
 
 :::
 
-::: details （2）写入数据：使用租约（Lease）设置key超时功能
-
-```bash
-# 创建一个30秒的租约
-[root@ap-hongkang ~]# ectl lease grant 30
-lease 61868450102ec17f granted with TTL(30s)
-
-# 查看租约剩余时间
-[root@ap-hongkang ~]# ectl lease timetolive 61868450102ec17f
-lease 61868450102ec17f granted with TTL(30s), remaining(22s)
-
-# 写入数据并设置租约，当租约到期后(在这里是30秒),key和value会被删除
-[root@ap-hongkang ~]# ectl put foo bar --lease 61868450102ec17f
-```
-
-写一个脚本来测试一下租约
-
-`demo.sh`
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-# 当前时间
-function Now(){
-    echo -n $(date +"%Y-%m-%d %H:%M:%S")
-}
-
-# 创建租约
-function CreateLease(){
-    ttl=$1
-    lease=$(ectl lease grant ${ttl} | sed -r "s/(lease )([a-zA-Z0-9]+)( granted.*)/\2/")
-    if [[ -n ${lease} ]];then
-        echo "$(Now) 创建租约成功: ${lease}"
-    else
-        echo "$(Now) 创建租约失败: ${lease}"
-        exit 1
-    fi
-}
-
-# 写入数据
-function PutKeyValue(){
-    key="$1"
-    value="$2"
-    status=$(ectl put ${key} ${value} --lease ${lease} | grep -E '^OK$')
-    if [[ -n ${status} ]];then
-        echo "$(Now) 写入数据成功: ${key} ${value}"
-    else
-        echo "$(Now) 写入数据失败: ${key} ${value}"
-        exit 1
-    fi
-}
-
-# 查询数据
-function LoopUntilKeyNonExists(){
-    key="$1"
-    while [ true ]
-    do
-        value=$(ectl get ${key} --print-value-only)
-        # 如果值为空,那么检查key是否存在,若不存在则将key置为空
-        if [[ ${value} == "" ]];then
-            count=$(ectl get ${key} -w fields | grep "Count" | awk '{print $3}')
-            if [[ ${count} -eq 0 ]];then
-                key=""
-            fi
-        fi
-        info=$(ectl lease timetolive ${lease} | sed -r 's/(.*)(remaining)(.*)/\3/' | tr -d '()')
-        echo "$(Now) 监控键值租约: ${key} ${value} ${info}"
-        if [[ ${info} =~ "already expired" ]];then
-          return 0
-        fi
-        sleep 1
-    done
-}
-
-function main(){
-    ttl="$1"
-    key="$2"
-    value="$3"
-    CreateLease           "${ttl}"
-    PutKeyValue           "${key}" "${value}"
-    LoopUntilKeyNonExists "${key}"
-}
-
-main "$@"
-```
-
-输出结果
-
-```bash
-# 创建一个10秒的租约，并写入键值对 name: bob
-[root@ap-hongkang ~]# source demo.sh 10 name bob
-2022-11-08 12:58:42 创建租约成功: 0ca884501036ef5b
-2022-11-08 12:58:42 写入数据成功: name bob
-2022-11-08 12:58:42 监控键值租约: name bob 9s
-2022-11-08 12:58:43 监控键值租约: name bob 8s
-2022-11-08 12:58:44 监控键值租约: name bob 7s
-2022-11-08 12:58:46 监控键值租约: name bob 6s
-2022-11-08 12:58:47 监控键值租约: name bob 5s
-2022-11-08 12:58:48 监控键值租约: name bob 4s
-2022-11-08 12:58:49 监控键值租约: name bob 3s
-2022-11-08 12:58:50 监控键值租约: name bob 2s
-2022-11-08 12:58:51 监控键值租约: name bob 1s
-2022-11-08 12:58:52 监控键值租约: name bob 0s
-2022-11-08 12:58:53 监控键值租约:   lease 0ca884501036ef5b already expired
-```
-
-:::
-
-::: details （3）写入数据：put关于租约其他选项
-
-```bash
-
-```
-
-:::
-
 <br />
 
 ### 读取数据
@@ -1886,6 +1769,176 @@ a1
 [root@ap-hongkang ~]# ectl del "" --prefix
 6
 [root@ap-hongkang ~]# ectl get "" --prefix
+```
+
+:::
+
+<br />
+
+### 使用租约
+
+::: details （1）租约（Lease）基础使用
+
+```bash
+# 创建一个30秒的租约
+[root@ap-hongkang ~]# ectl lease grant 30
+lease 61868450102ec17f granted with TTL(30s)
+
+# 查看租约剩余时间
+[root@ap-hongkang ~]# ectl lease timetolive 61868450102ec17f
+lease 61868450102ec17f granted with TTL(30s), remaining(22s)
+
+# 写入数据并设置租约，当租约到期后(在这里是30秒),key和value会被删除
+[root@ap-hongkang ~]# ectl put foo bar --lease 61868450102ec17f
+```
+
+:::
+
+::: details （2）监控租约的 Shell 脚本
+
+`lease.sh`
+
+```bash
+#!/bin/bash
+
+# 当前时间
+function Now(){
+    echo -n $(date +"%Y-%m-%d %H:%M:%S")
+}
+
+# 创建租约
+function CreateLease(){
+    ttl=$1
+    lease=$(ectl lease grant ${ttl} | sed -r "s/(lease )([a-zA-Z0-9]+)( granted.*)/\2/")
+    if [[ -n ${lease} ]];then
+        echo "$(Now) 创建租约成功: ${lease}"
+    else
+        echo "$(Now) 创建租约失败: ${lease}"
+        exit 1
+    fi
+}
+
+# 写入数据
+function PutKeyValue(){
+    key="$1"
+    value="$2"
+    status=$(ectl put ${key} ${value} --lease ${lease} | grep -E '^OK$')
+    if [[ -n ${status} ]];then
+        echo "$(Now) 写入数据成功: ${key} ${value}"
+    else
+        echo "$(Now) 写入数据失败: ${key} ${value}"
+        exit 1
+    fi
+}
+
+# 监控租约
+function LoopUntilKeyNonExists(){
+    key="$1"
+    while [ true ]
+    do
+        # 获取key的lease ID
+        lease_id=$(ectl get ${key} -w json | jq .kvs[0].lease)
+
+        # 因为key的lease可能会变动，所以这里根据key的lease id动态找到当前所使用的lease
+        for line in $(ectl lease list | grep -Ev 'found')
+        do
+            id=$(ectl lease timetolive $line -w json | jq .id)
+            if [[ ${id} == ${lease_id} ]];then
+                lease=${line}
+                break
+            fi
+        done        
+        # 获取lease详情
+        lease_info=$(ectl lease timetolive ${lease} | sed -r 's/(.*)(remaining)(.*)/\3/' | tr -d '()')
+
+        # ---------------------------------------------------------------------------------------
+
+        # 如果value为空,那么检查key是否存在,若不存在则将key置为空
+        value=$(ectl get ${key} --print-value-only)
+        if [[ ${value} == "" ]];then
+            count=$(ectl get ${key} -w fields | grep "Count" | awk '{print $3}')
+            if [[ ${count} -eq 0 ]];then
+                key=""
+            fi
+        fi
+
+        # --------------------------------------------------------------------------------------
+
+        # 输出信息
+        echo "$(Now) 监控键值租约: ${key} ${value} ${lease} ${lease_id} ${lease_info}"
+
+        # --------------------------------------------------------------------------------------
+
+        # key不存在或lease过期时退出,否则休眠1秒钟
+        if [[ ${key} == "" ]] || [[ ${lease_info} =~ "already expired" ]];then
+          return 0
+        fi
+        sleep 1
+    done
+}
+
+function main(){
+    key="$1"
+    value="$2"
+    ttl="$3"
+    CreateLease           "${ttl}"
+    PutKeyValue           "${key}" "${value}"
+    LoopUntilKeyNonExists "${key}"
+}
+
+main "$@"
+```
+
+输出结果
+
+```bash
+# 创建一个10秒的租约，并写入键值对 name: bob
+# 因为脚本内部使用了别名ectl,所以这里使用sorce来执行
+[root@ap-hongkang ~]# source lease.sh name bob 10
+2022-11-08 14:31:32 创建租约成功: 0ca884501036f1b7
+2022-11-08 14:31:32 写入数据成功: name bob
+2022-11-08 14:31:33 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 9s  # 912124403946811800是lease的ID
+2022-11-08 14:31:34 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 8s
+2022-11-08 14:31:35 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 7s
+2022-11-08 14:31:36 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 6s
+2022-11-08 14:31:37 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 5s
+2022-11-08 14:31:38 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 4s
+2022-11-08 14:31:39 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 2s
+2022-11-08 14:31:41 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 1s
+2022-11-08 14:31:42 监控键值租约: name bob 0ca884501036f1b7 912124403946811800 0s
+2022-11-08 14:31:43 监控键值租约:   0ca884501036f1b7 null lease 0ca884501036f1b7 already expired
+```
+
+:::
+
+::: details （3）若key-value已经存在，再进行覆盖，会使用新租约
+
+```bash
+# 终端1
+[root@ap-hongkang ~]# source lease.sh name bob 100
+2022-11-08 14:37:20 创建租约成功: 68e78450103011ab
+2022-11-08 14:37:20 写入数据成功: name bob
+2022-11-08 14:37:20 监控键值租约: name bob 68e78450103011ab 7559155978968502000 99s
+2022-11-08 14:37:21 监控键值租约: name bob 68e78450103011ab 7559155978968502000 98s
+2022-11-08 14:37:22 监控键值租约: name bob 68e78450103011ab 7559155978968502000 97s
+2022-11-08 14:37:23 监控键值租约: name bob 68e78450103011ab 7559155978968502000 96s
+2022-11-08 14:37:25 监控键值租约: name bob 68e78450103011ab 7559155978968502000 95s
+2022-11-08 14:37:26 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 8s      # 注意观察这里，value和租约已经改变了
+2022-11-08 14:37:27 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 7s
+2022-11-08 14:37:28 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 6s
+2022-11-08 14:37:29 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 5s
+2022-11-08 14:37:30 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 4s
+2022-11-08 14:37:32 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 3s
+2022-11-08 14:37:33 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 1s
+2022-11-08 14:37:34 监控键值租约: name abc 0ca884501036f1d7 912124403946811900 0s
+2022-11-08 14:37:35 监控键值租约:   0ca884501036f1d7 null lease 0ca884501036f1d7 already expired
+
+
+# 终端2
+[root@ap-hongkang ~]# ectl put name abc --lease `ectl lease grant 10 | awk '{print $2}'`
+OK
+
+# 同理，如果将lease设置为0,那么key将不会过期
 ```
 
 :::
