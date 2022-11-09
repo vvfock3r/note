@@ -1548,6 +1548,8 @@ d
 
 ## 使用指南
 
+文档：[https://github.com/etcd-io/etcd/blob/main/etcdctl/README.md](https://github.com/etcd-io/etcd/blob/main/etcdctl/README.md)
+
 ### 写入数据
 
 ::: details （1）写入数据：基础
@@ -2112,4 +2114,10 @@ Leadership transferred from d095f9673bd60ca8 to d5c1cf5d0aabe186
 ![image-20221109101948352](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221109101948352.png)
 
 :::
+
+<br />
+
+## Official SDK for Go
+
+Github：[https://github.com/etcd-io/etcd/tree/main/client/v3](https://github.com/etcd-io/etcd/tree/main/client/v3)
 
