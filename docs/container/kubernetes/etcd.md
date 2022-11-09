@@ -2121,3 +2121,136 @@ Leadership transferred from d095f9673bd60ca8 to d5c1cf5d0aabe186
 
 Github：[https://github.com/etcd-io/etcd/tree/main/client/v3](https://github.com/etcd-io/etcd/tree/main/client/v3)
 
+### 安装
+
+```bash
+go get go.etcd.io/etcd/client/v3
+```
+
+<br />
+
+### 连接
+
+::: details 准备工作
+
+etcd证书中需要增加外网IP或域名，意思是可以通过此地址连接到etcd
+
+```bash
+# 修改hosts
+[root@ap-hongkang ~]# vim /etc/etcd/pki/etcd-csr.json
+{
+  "CN": "etcd",
+  "hosts": [
+    "127.0.0.1",
+    "172.17.0.1",
+    "10.0.8.4",
+    "43.154.36.151",      
+    "jinhui.dev"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "BeiJing",
+      "ST": "BeiJing",
+      "O": "etcd",
+      "OU": "CA"
+    }
+  ]
+}
+
+# 重新签发证书并进行替换步骤省略
+```
+
+:::
+
+::: details （1）基础示例
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"time"
+
+	etcdTransport "go.etcd.io/etcd/client/pkg/v3/transport"
+	etcdClient "go.etcd.io/etcd/client/v3"
+)
+
+func NewEtcdClient() (*etcdClient.Client, error) {
+	// 定义变量
+	var (
+		certFile      = "etcd.pem"
+		keyFile       = "etcd-key.pem"
+		trustedCAFile = "ca.pem"
+		endpoints     = []string{"jinhui.dev:12379", "jinhui.dev:22379", "jinhui.dev:32379"}
+		dialTimeout   = time.Second * 3
+	)
+
+	// 生成TLS配置
+	tlsInfo := etcdTransport.TLSInfo{
+		CertFile:      certFile,
+		KeyFile:       keyFile,
+		TrustedCAFile: trustedCAFile,
+	}
+	tlsConfig, err := tlsInfo.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化客户端配置
+	config := etcdClient.Config{
+		Endpoints:   endpoints,
+		TLS:         tlsConfig,
+		DialTimeout: dialTimeout, // 这个在哪里生效?
+	}
+
+	return etcdClient.New(config)
+}
+
+func main() {
+	// 初始化Client,这一步并不会去连接etcd
+	client, err := NewEtcdClient()
+	if err != nil {
+		panic(err)
+	}
+	defer client.Close()
+
+	// 写入kv数据
+	key, value := "a", "b"
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	defer cancel()
+	_, err = client.Put(ctx, key, value)
+	if err != nil {
+		log.Fatalln(err)
+	} else {
+		log.Printf("Put {%s:%s} succeed\n", key, value)
+	}
+}
+```
+
+执行结果
+
+```bash
+# 成功结果
+2022/11/09 20:27:39 Put {a:b} succeed
+
+# 失败结果
+{"level":"warn","ts":"2022-11-09T20:28:24.383+0800","logger":"etcd-client","caller":"v3@v3.5.5/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0001e5500/43.154.36.151:12379","attemp
+t":0,"error":"rpc error: code = DeadlineExceeded desc = context deadline exceeded"}
+2022/11/09 20:28:24 context deadline exceeded
+```
+
+:::
+
+::: details （2）优化：使用自定义Logger
+
+```go
+
+```
+
+:::
