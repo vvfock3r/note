@@ -734,6 +734,8 @@ export ETCDCTL_KEY=/etc/etcd/pki/etcd-key.pem
 | https://10.0.8.4:32379 |   true | 16.426918ms |       |
 | https://10.0.8.4:12379 |   true | 16.266127ms |       |
 +------------------------+--------+-------------+-------+
+
+# 注意：方法2和方法3不能同时使用
 ```
 
 :::
@@ -2026,7 +2028,30 @@ Bob
 ::: details 点击查看详情
 
 ```bash
+# 终端1：监听一个名叫name的key (key存在与否没关系)
+[root@ap-hongkang ~]# ectl watch name
+[root@ap-hongkang ~]# ectl watch name
+PUT
+name
+bob
+DELETE
+name
 
+PUT
+name
+jack
+DELETE
+name
+
+# 终端2：对name进行操作
+[root@ap-hongkang ~]# ectl put name bob
+OK
+[root@ap-hongkang ~]# ectl del name 
+1
+[root@ap-hongkang ~]# ectl lease grant 20
+lease 68e7845010301542 granted with TTL(20s)
+[root@ap-hongkang ~]# ectl put name jack --lease 68e7845010301542
+OK
 ```
 
 :::
@@ -2064,3 +2089,27 @@ OK
 ```
 
 :::
+
+<br />
+
+### 移动Leader
+
+::: details 点击查看详情
+
+```bash
+# 我们先来看一下哪个节点是Leader
+# 然后我们随便挑一个Follower节点(既不是LEADER也不是LEARNER的节点),记录下ID
+[root@ap-hongkang ~]# ectl endpoint status -w table
+
+# 让我们挑选的Follower节点变成Leader
+[root@ap-hongkang ~]# ectl move-leader d5c1cf5d0aabe186
+Leadership transferred from d095f9673bd60ca8 to d5c1cf5d0aabe186
+
+# 再次查看Leader节点
+[root@ap-hongkang ~]# ectl endpoint status -w table
+```
+
+![image-20221109101948352](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221109101948352.png)
+
+:::
+
