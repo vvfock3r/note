@@ -16,17 +16,17 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 | 名称                      | 说明                                                         |
 | ------------------------- | ------------------------------------------------------------ |
-| `kube-apiserver`          | 集群入口，以`RESTful API`提供接口服务，所有资源的增删改查都会提交给`kube-apiserver` |
-| `kube-scheduler`          | `Pod`调度器                                                  |
-| `kube-controller-manager` | 控制器管理器，一个资源对应一个控制器，`kube-controller-manager`就是管理这些控制器的 |
-| `etcd`                    | 兼顾一致性与高可用性的键值数据库，作为保存 Kubernetes 所有集群数据的后台数据库<br />只有``kube-apiserver``会向`etcd`写入/查询数据 |
+| `kube-apiserver`          | 集群统一入口，提供`RESTful API`接口服务<br />所有资源的增删改查都会提交给`kube-apiserver`<br />从微服务的角度来说，它充当着API网关的角色，包含的功能有：认证、授权、准入 |
+| `etcd`                    | 它是一个第三方的组件<br />它是基于Raft实现的高度一致的分布式键值存储<br />用于长久保存 Kubernetes API对象<br />只有``kube-apiserver``会向`etcd`写入/查询数据 |
+| `kube-controller-manager` | 控制器管理器<br />一个资源对应一个控制器，`kube-controller-manager`就是管理这些控制器的 |
+| `kube-scheduler`          | `Pod`调度器，监控新建的`Pod`并将其分配给节点                 |
 
 **Node 组件**
 
 | 名称                            | 说明                                                         |
 | ------------------------------- | ------------------------------------------------------------ |
-| `kubelet`                       | Agent，在集群中每个节点（node)上运行，管理本地容器的生命周期，比如创建容器、挂载数据卷、销毁容器等 |
-| `kube-proxy`                    | 网络代理，在集群中每个节点（node)上运行，负责集群内部或外部的网络会话与 Pod 进行网络通信 |
+| `kubelet`                       | Agent，在集群中每个节点（Noede)上运行，管理本地容器的生命周期，比如创建容器、挂载数据卷、销毁容器等 |
+| `kube-proxy`                    | 网络代理，在集群中每个节点（Node)上运行，<br />负责集群内部或外部的网络会话与 Pod 进行网络通信<br />它还负责对正在服务的Pods进行负载均衡 |
 | 容器运行时（Container Runtime） | 比如`Docker`（目前已经不支持）、`Containerd`、`CRI-O`等      |
 
 <br />
