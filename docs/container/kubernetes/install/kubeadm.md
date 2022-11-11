@@ -757,12 +757,6 @@ node-2   Ready      control-plane   4m54s   v1.25.3
 node-3   Ready      <none>          36s     v1.25.3
 ```
 
-### 部署高可用ApiServer
-
-```bash
-
-```
-
 ### 安装Etcd客户端工具
 
 ```bash
@@ -792,7 +786,7 @@ drwxr-xr-x 3 528287 89939 163 Apr 24  2022 /usr/local/etcd-v3.5.4-linux-amd64
 | 4d41869ad6a15c0e | started | node-1 | https://192.168.48.151:2380 | https://192.168.48.151:2379 |      false |
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
 
-# 查看所有成员状态
+# 查看所有成员状态, 结果见下图
 # 我们的etcd并不能算是一个集群,因为它只有2个节点
 [root@node-1 ~]# etcdctl \
     --endpoints=https://192.168.48.151:2379,https://192.168.48.152:2379 \
@@ -801,6 +795,36 @@ drwxr-xr-x 3 528287 89939 163 Apr 24  2022 /usr/local/etcd-v3.5.4-linux-amd64
     --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
     -w table \
   endpoint status
+  
+# 设置环境变量
+[root@node-1 ~]# vim ~/.bashrc
+export ETCDCTL_ENDPOINTS=https://192.168.48.151:2379,https://192.168.48.152:2379
+export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt
+export ETCDCTL_CERT=/etc/kubernetes/pki/apiserver-etcd-client.crt
+export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
+
+[root@node-1 ~]# source ~/.bashrc
+[root@node-1 ~]# etcdctl member list -w table
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
+|        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
+| 40687c68b8fd2df1 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
+| 4d41869ad6a15c0e | started | node-1 | https://192.168.48.151:2380 | https://192.168.48.151:2379 |      false |
++------------------+---------+--------+-----------------------------+-----------------------------+------------+  
 ```
 
 ![image-20221111174304487](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221111174304487.png)
+
+### 部署高可用Etcd集群
+
+```bash
+
+```
+
+### 部署高可用ApiServer
+
+```bash
+```
+
+
+
