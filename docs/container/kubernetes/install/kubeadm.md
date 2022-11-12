@@ -235,7 +235,7 @@ bridge                151336  1 br_netfilter
 
 ```bash
 [root@localhost ~]# yum -y install yum-utils \
-	vim curl wget rsync git \
+	vim curl telnet wget rsync git \
 	socat conntrack ipvsadm ipset \
 	sysstat iptables libseccomp \
 	lrzsz
@@ -500,6 +500,7 @@ done
 # 设置Master地址
 # (1) 为了以后做高可用，这里需要设置负载均衡的IP或域名，建议设置域名而不是IP
 # (2) 我们现在还没有任何的负载均衡，所以可以先利用hosts文件劫持，先做非高可用的，后面再切换成高可用的
+# (3) 非高可用模式下: api.k8s.local域名始终指向一个地址: 192.168.48.151
 
 # Master-1
 [root@node-1 ~]# vim /etc/hosts
@@ -507,10 +508,10 @@ done
 
 # Master-2
 [root@node-2 ~]# vim /etc/hosts
-192.168.48.152 api.k8s.local
+192.168.48.151 api.k8s.local
 
 # Worker-1
-[root@node-2 ~]# vim /etc/hosts
+[root@node-3 ~]# vim /etc/hosts
 192.168.48.151 api.k8s.local
 ```
 
@@ -859,7 +860,11 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 在每一个Master节点上：将APIServer地址解析为本地地址
 
 ```bash
-# (1) 将APIServer地址解析为本地地址
+# Master-1
+[root@node-1 ~]# vim /etc/hosts
+192.168.48.151 api.k8s.local
+
+# Master-2
 [root@node-2 ~]# vim /etc/hosts
 192.168.48.152 api.k8s.local
 ```
@@ -932,7 +937,7 @@ stream {
   }
 
   server {
-    listen        127.0.0.1:6443;
+    listen        6443;
     proxy_pass    kube_apiserver;
     proxy_timeout 10m;
     proxy_connect_timeout 1s;
@@ -968,10 +973,14 @@ http {
 [root@node-3 ~]# systemctl restart kubelet.service
 
 # (4) 在Master上查看状态
-[root@node-1 manifests]# kubectl get pods -A -o wide | grep kube-apiserver-front-proxy
+[root@node-1 ~]# kubectl get pods -A -o wide | grep kube-apiserver-front-proxy
 kube-system   kube-apiserver-front-proxy-node-3  1/1 Running   0 15m    192.168.48.153   node-3   <none>  <none>
 
-# (5) 将APIServer地址解析为本地地址
+# (5) 检查端口
+[root@node-3 ~]# netstat -atlnpu | grep -i listen | grep :6443
+tcp        0      0 0.0.0.0:6443            0.0.0.0:*               LISTEN      1865/nginx: master 
+
+# (6) 将APIServer地址解析为本地地址
 [root@node-3 ~]# vim /etc/hosts
 192.168.48.153 api.k8s.local
 ```
