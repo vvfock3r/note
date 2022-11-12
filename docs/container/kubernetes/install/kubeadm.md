@@ -353,7 +353,7 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 **所有节点执行**
 
 ```bash
-[root@node-1 ~]# mkdir -p /opt/kubernetes/cri && cd /opt/kubernetes/cri
+[root@node-1 ~]# mkdir -p /usr/local/kubernetes/cri && cd /usr/local/kubernetes/cri
 [root@node-1 cri]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
 [root@node-1 cri]# yum -y install cri-dockerd-0.2.6-3.el7.x86_64.rpm
 
@@ -404,8 +404,9 @@ kubelet.x86_64                       1.25.3-0                         kubernetes
 [root@node-1 ~]# yum install kubeadm-${Version} kubelet-${Version} kubectl-${Version}
 
 # (4) 设置kubelet开机自启动
+[root@node-1 ~]# systemctl enable kubelet.service
 
-# (4) 测试一下crictl工具是否正常，发现抱错了
+# (5) 测试一下crictl工具是否正常，发现抱错了
 [root@node-1 ~]# crictl ps
 WARN[0000] runtime connect using default endpoints: [unix:///var/run/dockershim.sock unix:///run/containerd/containerd.sock unix:///run/crio/crio.sock unix:///var/run/cri-dockerd.sock]. As the default settings are now deprecated, you should set the endpoint instead. 
 ERRO[0000] unable to determine runtime API version: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial unix /var/run/dockershim.sock: connect: no such file or directory" 
@@ -414,7 +415,7 @@ ERRO[0000] unable to determine image API version: rpc error: code = Unavailable 
 E1111 14:58:05.277676    2329 remote_runtime.go:557] "ListContainers with filter from runtime service failed" err="rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" filter="&ContainerFilter{Id:,State:&ContainerStateValue{State:CONTAINER_RUNNING,},PodSandboxId:,LabelSelector:map[string]string{},}"
 FATA[0000] listing containers: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService
 
-# (5) 修复crictl错误
+# (6) 修复crictl错误
 [root@node-1 ~]# vim /etc/crictl.yaml
 runtime-endpoint: unix:///var/run/cri-dockerd.sock
 timeout: 10
@@ -481,7 +482,7 @@ done
 -rw-r--r-- 1 root root 206M Nov 11 14:01 kubernetes-images-v1.25.3-.tar.gz
 
 # 将镜像上传到K8S所有节点中,并导入镜像
-[root@node-1 ~]# mkdir -p /opt/kubernetes/kubeadm && cd /opt/kubernetes/kubeadm
+[root@node-1 ~]# mkdir -p /usr/local/kubernetes/kubeadm && cd /usr/local/kubernetes/kubeadm
 [root@node-1 ~]# cat images.txt | while read line
 do
     name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
@@ -493,12 +494,32 @@ done
 
 ## 安装kubernetes
 
+### 设置Master访问地址
+
+```bash
+# 设置Master地址
+# (1) 为了以后做高可用，这里需要设置负载均衡的IP或域名，建议设置域名而不是IP
+# (2) 我们现在还没有任何的负载均衡，所以可以先利用hosts文件劫持，先做非高可用的，后面再切换成高可用的
+
+# Master-1
+[root@node-1 ~]# vim /etc/hosts
+192.168.48.151 api.k8s.local
+
+# Master-2
+[root@node-2 ~]# vim /etc/hosts
+192.168.48.152 api.k8s.local
+
+# Worker-1
+[root@node-2 ~]# vim /etc/hosts
+192.168.48.151 api.k8s.local
+```
+
 ### 初始化第一个Master
 
 ```bash
 # (1) 初始化第一个Master
 [root@node-1 ~]# kubeadm init \
-    --control-plane-endpoint=192.168.48.151:6443 \
+    --control-plane-endpoint=api.k8s.local:6443 \
     --kubernetes-version=v1.25.3 \
     --pod-network-cidr=10.233.0.0/16 \
     --service-cidr=10.200.0.0/16 \
@@ -514,7 +535,7 @@ done
 [certs] Using certificateDir folder "/etc/kubernetes/pki"
 [certs] Generating "ca" certificate and key
 [certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.151]
+[certs] apiserver serving cert is signed for DNS names [api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.151]
 [certs] Generating "apiserver-kubelet-client" certificate and key
 [certs] Generating "front-proxy-ca" certificate and key
 [certs] Generating "front-proxy-client" certificate and key
@@ -540,15 +561,15 @@ done
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 9.003093 seconds
+[apiclient] All control plane components are healthy after 8.004335 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
-23db096089fbe3acbd48f58469216fbc5fc20080ae8386659c7f09318c7ba9f1
+977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14
 [mark-control-plane] Marking the node node-1 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node node-1 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: dxrde1.5bl5mhztkjbmxltj
+[bootstrap-token] Using token: 5nml0o.5i6ia7lzgtrsj79l
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -577,9 +598,9 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 You can now join any number of the control-plane node running the following command on each as root:
 
-  kubeadm join 192.168.48.151:6443 --token dxrde1.5bl5mhztkjbmxltj \
-        --discovery-token-ca-cert-hash sha256:6d37c313cacb2916e655cd08cd37fe97691d562b950b07422a74b4fc2c9cd933 \
-        --control-plane --certificate-key 23db096089fbe3acbd48f58469216fbc5fc20080ae8386659c7f09318c7ba9f1
+  kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
+        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
+        --control-plane --certificate-key 977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14
 
 Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
@@ -587,8 +608,8 @@ As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you c
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 192.168.48.151:6443 --token dxrde1.5bl5mhztkjbmxltj \
-        --discovery-token-ca-cert-hash sha256:6d37c313cacb2916e655cd08cd37fe97691d562b950b07422a74b4fc2c9cd933
+kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
+        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a
 
 # (2) 若初始化失败,执行如下命令重置
 [root@node-1 ~]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
@@ -607,11 +628,11 @@ node-1   NotReady   control-plane   20s    v1.25.3
 
 ### 部署网络插件Calico
 
-**所有节点执行**
+**镜像需要在所有节点安装，部署仅需要在任意节点即可**
 
 ```bash
 # (1) 下载YAML文件
-[root@node-1 ~]# mkdir -p /opt/kubernetes/cni && cd /opt/kubernetes/cni
+[root@node-1 ~]# mkdir -p /usr/local/kubernetes/cni && cd /usr/local/kubernetes/cni
 [root@node-1 cni]# curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
 
 # (2) 查看一下所需的镜像
@@ -633,24 +654,23 @@ done
 
 # (5) 查看
 [root@node-1 cni]# kubectl get pods -A | grep calico
-kube-system   calico-kube-controllers-798cc86c47-25wlk   1/1     Running   0             22s
-kube-system   calico-node-g29rv                          1/1     Running   0             22s
-kube-system   calico-node-nr92j                          1/1     Running   0             22s
-kube-system   calico-node-ppkkj                          1/1     Running   0             22s
+kube-system   calico-kube-controllers-798cc86c47-2sjxr   1/1     Running   0          90s
+kube-system   calico-node-8q444                          1/1     Running   0          90s
 
 # 查看Node状态
 [root@node-1 cni]# kubectl get node
-NAME     STATUS   ROLES           AGE   VERSION
-node-1   Ready    control-plane   24m   v1.25.3
+NAME     STATUS   ROLES           AGE     VERSION
+node-1   Ready    control-plane   2m57s   v1.25.3
 ```
 
 ### 初始化第二个Master节点
 
 ```bash
+# (1) 初始化第二个Master
 # 需要添加--cri-socket参数
-[root@node-2 ~]# kubeadm join 192.168.48.151:6443 --token dxrde1.5bl5mhztkjbmxltj \
-        --discovery-token-ca-cert-hash sha256:6d37c313cacb2916e655cd08cd37fe97691d562b950b07422a74b4fc2c9cd933 \
-        --control-plane --certificate-key 23db096089fbe3acbd48f58469216fbc5fc20080ae8386659c7f09318c7ba9f1 \
+[root@node-2 ~]# kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
+        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
+        --control-plane --certificate-key 977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14 \
         --cri-socket unix:///run/cri-dockerd.sock
 
 [preflight] Running pre-flight checks
@@ -721,18 +741,25 @@ Run 'kubectl get nodes' to see this node join the cluster.
 [root@node-1 ~]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # (4) 测试kubectl
-[root@node-2 ~]# kubectl get node
-NAME     STATUS     ROLES           AGE     VERSION
-node-1   Ready      control-plane   9m19s   v1.25.3
-node-2   Ready      control-plane   105s    v1.25.3
+[root@node-2 cni]# kubectl get node
+NAME     STATUS   ROLES           AGE    VERSION
+node-1   Ready    control-plane   7m3s   v1.25.3
+node-2   Ready    control-plane   36s    v1.25.3
+
+# (5) 修改高可用地址为本地IP
+[root@node-2 ~]# vim /etc/hosts
+192.168.48.152 api.k8s.local
 ```
 
 ### 初始化第一个Node节点
 
+**初始化Node节点**
+
 ```bash
+# (1) 部署第一个Node节点
 # 需要添加--cri-socket参数
-[root@node-3 ~]# kubeadm join 192.168.48.151:6443 --token dxrde1.5bl5mhztkjbmxltj \
-        --discovery-token-ca-cert-hash sha256:6d37c313cacb2916e655cd08cd37fe97691d562b950b07422a74b4fc2c9cd933 \
+[root@node-3 ~]# kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
+        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
         --cri-socket unix:///run/cri-dockerd.sock
 
 [preflight] Running pre-flight checks
@@ -749,12 +776,18 @@ This node has joined the cluster:
 
 Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 
-# 在任意一个Master上执行
-[root@node-2 ~]# kubectl get nodes
-NAME     STATUS     ROLES           AGE     VERSION
-node-1   Ready      control-plane   12m     v1.25.3
-node-2   Ready      control-plane   4m54s   v1.25.3
-node-3   Ready      <none>          36s     v1.25.3
+# (2) 在任意一个Master上执行
+[root@node-1 ~]# kubectl get nodes
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   28m   v1.25.3
+node-2   Ready    control-plane   21m   v1.25.3
+node-3   Ready    <none>          30s   v1.25.3
+```
+
+**部署APIServer代理**
+
+```bash
+
 ```
 
 ### 安装Etcd客户端工具
@@ -821,9 +854,126 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 
 ```
 
-### 部署高可用ApiServer
+### 部署高可用APIServer
+
+在每一个Master节点上：将APIServer地址解析为本地地址
 
 ```bash
+# (1) 将APIServer地址解析为本地地址
+[root@node-2 ~]# vim /etc/hosts
+192.168.48.152 api.k8s.local
+```
+
+在每一个Worker节点上：使用静态Pod的方式部署Ningx反向代理和负载均衡到APIServer，将APIServer地址解析为本地地址
+
+```bash
+# (1) 创建静态Pod
+[root@node-3 ~]# vim /etc/kubernetes/manifests/kube-apiserver-front-proxy.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-apiserver-front-proxy
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  nodeSelector:
+    kubernetes.io/os: linux
+  priorityClassName: system-node-critical
+  containers:
+  - name: kube-apiserver-front-proxy
+    image: docker.io/library/nginx:1.23.2
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 25m
+        memory: 50M
+    securityContext:
+      privileged: true
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+    volumeMounts:
+    - name: etc
+      mountPath: /etc/nginx
+      readOnly: true
+  volumes:
+  - name: etc
+    hostPath:
+      path: /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy
+
+# (2) 创建配置文件
+[root@node-3 ~]# mkdir -p /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy/
+[root@node-3 ~]# vim /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy/nginx.conf
+error_log stderr notice;
+
+worker_processes 2;
+worker_rlimit_nofile 130048;
+worker_shutdown_timeout 10s;
+
+events {
+  multi_accept on;
+  use epoll;
+  worker_connections 16384;
+}
+
+stream {
+  upstream kube_apiserver {
+    least_conn;
+    server 192.168.48.151:6443;
+    server 192.168.48.152:6443;
+  }
+
+  server {
+    listen        127.0.0.1:6443;
+    proxy_pass    kube_apiserver;
+    proxy_timeout 10m;
+    proxy_connect_timeout 1s;
+  }
+}
+
+http {
+  aio threads;
+  aio_write on;
+  tcp_nopush on;
+  tcp_nodelay on;
+
+  keepalive_timeout 5m;
+  keepalive_requests 100;
+  reset_timedout_connection on;
+  server_tokens off;
+  autoindex off;
+
+  server {
+    listen 8081;
+    location /healthz {
+      access_log off;
+      return 200;
+    }
+    location /stub_status {
+      stub_status on;
+      access_log off;
+    }
+  }
+}
+
+# (3) 重启kubelet
+[root@node-3 ~]# systemctl restart kubelet.service
+
+# (4) 在Master上查看状态
+[root@node-1 manifests]# kubectl get pods -A -o wide | grep kube-apiserver-front-proxy
+kube-system   kube-apiserver-front-proxy-node-3  1/1 Running   0 15m    192.168.48.153   node-3   <none>  <none>
+
+# (5) 将APIServer地址解析为本地地址
+[root@node-3 ~]# vim /etc/hosts
+192.168.48.153 api.k8s.local
 ```
 
 
