@@ -119,7 +119,8 @@ command_warnings      = False
       marker: "# {mark} Ansible Managed Block"
       marker_begin: "Begin"
       marker_end: "End"
-      block: |        
+      block: |
+        # kubernetes
         43.154.36.151 node-1
         43.154.36.152 node-2
         43.154.36.153 node-3
@@ -205,7 +206,9 @@ command_warnings      = False
 [root@localhost ansible]# seq 1000 > /tmp/abc/abc.txt
 
 # (3) 被控制端安装rsync
-[root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='yum -y install rsync'"
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install rsync'"
 
 # --------------------------------------------------------------------------------------------------
 # 测试文件或目录推送: src目录必须存在,dest目录不需要存在,会自动创建
@@ -250,21 +253,21 @@ command_warnings      = False
 
 ```bash
 # 更新系统
-[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum -y install epel-release'"
 
-[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum -y update'"
 
 # 重启系统
-[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='reboot'"
 
 # 查看版本
-[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='cat /etc/redhat-release'"
 ```
@@ -273,7 +276,7 @@ command_warnings      = False
 
 ```bash
 # 测试一下命令
-[root@localhost ~]# timedatectl
+[root@localhost ansible]# timedatectl
       Local time: Fri 2022-08-19 15:02:02 CST
   Universal time: Fri 2022-08-19 07:02:02 UTC
         RTC time: Fri 2022-08-19 07:02:00
@@ -294,7 +297,7 @@ NTP synchronized: no
     -e "shell='timedatectl | grep \'Asia/Shanghai (CST, +0800)\''"
 
 # 配置时区为东八区
-[root@ap-hongkang ansible]# ansible-playbook play_shell.yaml \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='timedatectl set-timezone Asia/Shanghai'"
 ```
@@ -369,19 +372,23 @@ PING www.a.shifen.com (39.156.66.14) 56(84) bytes of data.
 rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 ```
 
-### （5）同步服务器时间
+### （5）服务器时间同步
 
 ```bash
-# 安装chrony
-[root@localhost ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='yum -y install chrony'"
+# (1) 安装chrony
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install chrony'"
 
-# 修改ntp服务器地址,这里使用默认的
-[root@localhost ~]# vi /etc/chrony.conf
+# (2) 修改ntp服务器地址,这里使用默认的
+[root@localhost ansible]# vi /etc/chrony.conf
 
-# 启动服务
-[root@localhost ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='systemctl start chronyd && systemctl enable chronyd'"
+# (3) 启动服务
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl start chronyd && systemctl enable chronyd'"
 
-# 检查状态
+# (4) 检查状态
 [root@localhost ansible]# chronyc tracking
 Reference ID    : 8BC7D6CA (139.199.214.202)
 Stratum         : 3
@@ -405,36 +412,37 @@ Leap status     : Normal         # 这里为Normal表示服务正常
 ### （6）配置主机名
 
 ```bash
-# 配置主机名
+# (1) 配置主机名
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='hostnamectl set-hostname {{ inventory_hostname }}'"
 
-# 查看主机名
+# (2) 查看主机名
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='echo {{ inventory_hostname }}'"
 
-# 添加主机名解析
+# (3) 添加主机名解析
 [root@localhost ansible]# vim play_hosts.yaml
       block: |
         # kubernetes
         192.168.48.151 node-1
         192.168.48.152 node-2
         192.168.48.153 node-3
-        
+        192.168.48.154 node-4
+
 [root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
 ### （7）关闭某些服务
 
 ```bash
-# 关闭防火墙firewalld
+# (1)关闭防火墙Firewalld
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl stop firewalld && systemctl disable firewalld'"
 
-# 关闭SeLinux
+# (2) 关闭SeLinux
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='setenforce 0 ; \
@@ -443,7 +451,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
                grep -E '^SELINUX=disabled' /etc/selinux/config
        '"
 
-# 设置iptables规则
+# (3) 设置iptables规则
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='iptables -F && \
@@ -453,7 +461,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
                iptables -nL
        '"
 
-# 关闭swap
+# (4) 关闭Swap
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='swapoff -a && free && \
@@ -465,8 +473,8 @@ Leap status     : Normal         # 这里为Normal表示服务正常
 ### （8）调整内核参数
 
 ```bash
-# 创建内核参数文件
-[root@localhost ansible]# cat > kubernetes.conf <<EOF
+# (1) 创建内核参数文件
+[root@localhost ansible]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_nonlocal_bind = 1
@@ -475,20 +483,20 @@ vm.swappiness = 0
 vm.overcommit_memory = 1
 EOF
 
-# 将文件推送至所有主机
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=./kubernetes.conf dest=/etc/sysctl.d/kubernetes.conf"
+# (2) 将文件推送至所有主机
+ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/etc/sysctl.d/kubernetes.conf" \
+    -e "dest=/etc/sysctl.d/"
 
-# 加载内核参数
+# (3) 加载内核参数
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='sysctl -p /etc/sysctl.d/kubernetes.conf'"
-```
 
-::: warning
-
-若出现如下报错
-
-```bash
+# -------------------------------------------------------------------------------
+# 若出现如下报错
 [root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
 sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file or directory
 sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
@@ -496,16 +504,19 @@ net.ipv4.ip_nonlocal_bind = 1
 net.ipv4.ip_forward = 1
 vm.swappiness = 0
 vm.overcommit_memory = 1
-```
 
-解决办法
+# -------------------------------------------------------------------------------
+# 解决办法如下：
 
-```bash
 # 检查模块是否已经加载（输出为空代表模块没有加载）
-[root@localhost ~]# lsmod | grep br_netfilter
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='lsmod | grep br_netfilter'"
 
 # 临时加载模块(重启后还需要重新加载)
-[root@localhost ~]# modprobe br_netfilter
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='modprobe br_netfilter'"
 
 # 再次查看
 [root@localhost ~]# lsmod | grep br_netfilter
@@ -513,10 +524,10 @@ br_netfilter           22256  0
 bridge                151336  1 br_netfilter
 
 # 设置开启自加载模块
-[root@localhost ~]# echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='echo br_netfilter > /etc/modules-load.d/br_netfilter.conf'"
 ```
-
-:::
 
 ### （9）安装常用软件包
 
