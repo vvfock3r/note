@@ -8,74 +8,88 @@
 
 为了减少使用成本，这里并不会使用`Playbook`方式来执行命令；而是使用`Ad-Hoc`方式是把`Ansible`当作一个批量执行工具
 
+任意找一台主机即可，这里使用的用作k8s-master-1的主机
+
 ### 1）安装Ansible
 
 ```bash
-# (1) 安装Ansible
+# (1) 安装epel源和vim
+[root@localhost ~]# yum install -y epel-release vim
+
+# (2) 设置vim
+[root@localhost ~]# vim ~/.vimrc
+set paste
+
+# (3) 安装Ansible,推荐安装较新的版本
 [root@localhost ~]# yum install ansible             # 方式1
 [root@localhost ~]# pip install ansible             # 方式2
-[root@localhost ansible]# ansible --version
-ansible [core 2.11.12] 
-  config file = /usr/local/ansible/ansible.cfg
-  configured module search path = ['/root/.ansible/plugins/modules', '/usr/share/ansible/plugins/modules']
-  ansible python module location = /usr/local/lib/python3.6/site-packages/ansible
-  ansible collection location = /root/.ansible/collections:/usr/share/ansible/collections
-  executable location = /usr/local/bin/ansible
-  python version = 3.6.8 (default, Sep 10 2021, 09:13:53) [GCC 8.5.0 20210514 (Red Hat 8.5.0-3)]
-  jinja version = 3.0.3
-  libyaml = True
+[root@localhost ~]# ansible --version
+ansible 2.9.27
+  config file = /etc/ansible/ansible.cfg
+  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python2.7/site-packages/ansible
+  executable location = /usr/bin/ansible
+  python version = 2.7.5 (default, Aug  4 2017, 00:39:18) [GCC 4.8.5 20150623 (Red Hat 4.8.5-16)]
+```
 
-# (2) 创建一个目录专门放Ansible所有的文件
-[root@localhost ~]# mkdir -p /usr/local/kubernetes/ansible
-[root@localhost ~]# cd /usr/local/kubernetes/ansible
+### 2）配置Ansible
 
-# (3) 新建inventory文件
+```bash
+# (4) 创建kubernetes专门放Ansible所有的文件目录
+[root@localhost ~]# mkdir -p /usr/local/kubernetes/ansible && cd /usr/local/kubernetes/ansible
+
+# (5) 新建inventory文件
+#     组名不建议使用-,会报提醒, 比如k8s-master建议写成k8s_master
 [root@localhost ansible]# vim hosts.ini
-[k8s-master]
+[k8s_master]
 node-1  ansible_ssh_host=192.168.48.151  ansible_ssh_pass=123456
 node-2  ansible_ssh_host=192.168.48.152  ansible_ssh_pass=123456
 node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
 
-[k8s-worker]
+[k8s_worker]
 node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
 node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 
-# (4) 编辑配置文件
+# (6) 编辑配置文件
 # 若是使用yum安装的ansible:
 #     默认配置文件是/etc/ansible/ansible.cfg
 # 若是使用pip安装的ansible, 默认不带配置文件, 可以到指定版本的GitHub上去找配置文件,如下所示：
 #     https://github.com/ansible/ansible/blob/v2.11.12/examples/ansible.cfg
 # 当前目录下的配置文件优先级高于默认的配置文件(/etc目录下)
-[root@localhost-1 ansible]# vim ansible.cfg
+[root@localhost ansible]# cp /etc/ansible/ansible.cfg .
+[root@localhost ansible]# vim ansible.cfg
 [defaults]
 inventory             = ./hosts.ini
+log_path              = ./ansible.log
+forks                 = 5
 host_key_checking     = False
-deprecation_warnings  = False
 display_skipped_hosts = False
+deprecation_warnings  = False
+command_warnings      = False
 ```
 
-### 2）测试执行Shell命令
+### 3）测试执行Shell命令
 
 ```bash
 # (1) 编写playbook文件
 [root@localhost ansible]# vim play_shell.yaml
 ---
-- name: Ad-Hoc Shortcuts
+- name: "Ad-Hoc Shortcuts"
   hosts: "{{ host }}"
-  gather_facts: no
+  gather_facts: "no"
 
   tasks:
-    - name: Shell
+    - name: "Execute shell commands"
       shell: "{{ shell }}"
       register: output
 
-    - name: Display stdout
+    - name: "Display stdout"
       debug:
         #msg: "{{ output.stdout_lines }}"
         msg: "{{ output.stdout_lines | regex_replace('\"', '') }}"
       when: output.stdout != ""
 
-    - name: Display stderr
+    - name: "Display stderr"
       debug:
         #msg: "{{ output.stderr_lines }}"
         msg: "{{ output.stderr_lines | regex_replace('\"', '') }}"
@@ -85,55 +99,31 @@ display_skipped_hosts = False
 [root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='cat /etc/os-release'"
 ```
 
-### 3）测试文件推送和拉取
-
-```bash
-# 前提
-# (1) 需要对端主机安装rsync
-# (2) 需要本地可以解析inventory中的主机名
-
-# 文件或目录推送: src目录必须存在,dest目录不需要存在,会自动创建
-
-# 方式1：将/tmp/abc推送至对端/tmp/目录下
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/tmp/abc dest=/tmp/"
-
-# 方式2：将/tmp/abc推送至对端,并重命名为/tmp/def
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/tmp/abc/ dest=/tmp/def"
-
-# --------------------------------------------------------------------------------------------------
-
-# 文件或目录拉取：src目录必须存在,dest目录不需要存在,会自动创建
-
-# 方式2：将对端/tmp/abc拉取至本地/tmp目录下
-[root@localhost ansible]# ansible all -m synchronize -a "mode=pull src=/tmp/abc dest=/tmp/"
-
-# 方式2：将对端/tmp/abc拉取至本地,并重命名为/tmp/def
-[root@localhost ansible]# ansible all -m synchronize -a "mode=pull src=/tmp/abc/ dest=/tmp/def"
-```
-
 ### 4）测试文件修改：/etc/hosts
 
 ```bash
-# 新建playbook
+# 新建playbook, 注意block内容根据实际情况修改
 [root@localhost ansible]# vim play_hosts.yaml
 ---
 - name: "Ad-Hoc Shortcuts"
   hosts: "{{ host }}"
-  gather_facts: no
+  gather_facts: "no"
   vars:
-    target: "/etc/security/limits.conf"
+    target: "/etc/hosts"
     
   tasks:
-  - name: "Modify /etc/hosts"
+  - name: "Modify {{ target }}"
     blockinfile:
       path: "{{ target }}"
-      backup: "yes"
+      backup: "no"
       marker: "# {mark} Ansible Managed Block"
       marker_begin: "Begin"
       marker_end: "End"
-      block: |
-        127.0.0.1     node-1
-        43.154.36.151 node-2
+      block: |        
+        43.154.36.151 node-1
+        43.154.36.152 node-2
+        43.154.36.153 node-3
+        43.154.36.154 node-4
 
   - name: "Insert blank lines before block"
     lineinfile:
@@ -153,15 +143,15 @@ display_skipped_hosts = False
 ---
 - name: "Ad-Hoc Shortcuts"
   hosts: "{{ host }}"
-  gather_facts: no
+  gather_facts: "no"
   vars:
     target: "/etc/security/limits.conf"
 
   tasks:
-  - name: "Modify /etc/hosts"
+  - name: "Modify {{ target }}"
     blockinfile:
       path: "{{ target }}"
-      backup: "yes"
+      backup: "no"
       marker: "# {mark} Ansible Managed Block"
       marker_begin: "Begin"
       marker_end: "End"
@@ -173,6 +163,7 @@ display_skipped_hosts = False
         # max number of processes
         * soft nproc  102400
         * hard nproc  102400
+
   - name: "Insert blank lines before block"
     lineinfile:
       dest: "{{ target }}"
@@ -181,6 +172,74 @@ display_skipped_hosts = False
 
 # 执行playbook
 [root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
+```
+
+### 6）测试文件推送和拉取
+
+```bash
+# 这里使用的是synchronize模块
+# 前置条件:
+# (1) 需要对端主机安装rsync
+# (2) 需要本地可以解析inventory中的主机名
+# 注意事项:
+# (1) 在src或dest中写路径的时候需要注意是否带尾斜杠/, 否则结果可能与预期不一样
+#     因为synchronize本质是调用rsync命令，所以这与rsync的路径使用方式保持一致
+
+# (1) 新建playbook
+[root@localhost ansible]# vim play_rsync.yaml
+---
+- name: "Ad-Hoc Shortcuts"
+  hosts: "{{ host }}"
+  gather_facts: "no"
+
+  tasks:
+    - name: "Transfer files using rsync"
+      synchronize:
+        mode: "{{ mode }}"
+        src: "{{ src }}"
+        dest: "{{ dest }}"
+
+# --------------------------------------------------------------------------------------------------
+# (2) 创建测试文件
+[root@localhost ansible]# mkdir /tmp/abc
+[root@localhost ansible]# seq 1000 > /tmp/abc/abc.txt
+
+# (3) 被控制端安装rsync
+[root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='yum -y install rsync'"
+
+# --------------------------------------------------------------------------------------------------
+# 测试文件或目录推送: src目录必须存在,dest目录不需要存在,会自动创建
+
+# 方式1：将/tmp/abc推送至对端/tmp/目录下
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/tmp/abc" \
+    -e "dest=/tmp/"
+
+# 方式2：将/tmp/abc/下的所有文件推送至对端/tmp/def目录下
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/tmp/abc/" \
+    -e "dest=/tmp/def"
+
+# --------------------------------------------------------------------------------------------------
+# 测试文件或目录拉取：src目录必须存在,dest目录不需要存在,会自动创建
+
+# 方式1：将对端/tmp/abc目录拉取至本地/tmp/<对端主机名>/目录下
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=pull" \
+    -e "src=/tmp/abc" \
+    -e "dest=/tmp/{{ inventory_hostname }}"
+
+# 方式2：将对端/tmp/abc/下的所有文件拉取至本地/tmp/<对端主机名>/目录下
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=pull" \
+    -e "src=/tmp/abc/" \
+    -e "dest=/tmp/{{ inventory_hostname }}"
 ```
 
 <br />
