@@ -1091,16 +1091,18 @@ node-2   Ready    control-plane   36s    v1.25.3
 192.168.48.152 api.k8s.local
 ```
 
-### 初始化第一个Node节点
+### 初始化所有Node节点
 
 **初始化Node节点**
 
 ```bash
-# (1) 部署第一个Node节点
+# (1) 初始化所有Node节点
 # 需要添加--cri-socket参数
-[root@node-3 ~]# kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s-worker'" \
+    -e "shell='kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
         --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
-        --cri-socket unix:///run/cri-dockerd.sock
+        --cri-socket unix:///run/cri-dockerd.sock'"
 
 [preflight] Running pre-flight checks
 [preflight] Reading configuration from the cluster...
@@ -1128,24 +1130,31 @@ node-3   Ready    <none>          30s   v1.25.3
 
 ```bash
 # 下载和解压软件包
-[root@node-1 ~]# ETCD_VER=v3.5.4
-[root@node-1 ~]# wget -c https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz
+[root@localhost ansible]# ETCD_VER=v3.5.4
+[root@localhost ansible]# wget -c https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz
 [root@node-1 ~]# tar zxf etcd-${ETCD_VER}-linux-amd64.tar.gz -C /usr/local/
-[root@node-1 ~]# ls -ld /usr/local/etcd*
-drwxr-xr-x 3 528287 89939 163 Apr 24  2022 /usr/local/etcd-v3.5.4-linux-amd64
 
-# 软连接二进制文件,这里我们只需要软连接客户端工具即可,服务端不需要软连接
-[root@ap-hongkang ~]# ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
+# 分发软件包
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/etcd-${ETCD_VER}-linux-amd64 dest=/usr/local/"
+
+# 制作软连接,这里我们只需要软连接客户端工具即可,服务端不需要软连接
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s-worker'" \
+    -e "shell='ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
                       ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdutl /usr/local/bin/etcdutl
+    '"
 
 # 查看etcd所有成员
-[root@node-1 ~]# etcdctl \
-    --endpoints=https://192.168.48.151:2379 \
-    --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-    --cert=/etc/kubernetes/pki/apiserver-etcd-client.crt \
-    --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
-    -w table \
-  member list
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s-worker'" \
+    -e "shell='etcdctl \
+                   --endpoints=https://192.168.48.151:2379 \
+                   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+                   --cert=/etc/kubernetes/pki/apiserver-etcd-client.crt \
+                   --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
+                   -w table \
+               member list
+    '"
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
 |        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
