@@ -584,16 +584,26 @@ docker-ce.x86_64          3:20.10.15-3.el7          docker-ce-stable	# 这里是
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum install -y docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin'"
-    
-# (6) 启动Docker Daemon
+
+# (6) 所有节点创建Docker配置文件
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='mkdir -p /etc/docker ; touch /etc/docker/daemon.json'"
+
+# (7) 启动Docker Daemon
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl start docker.service && systemctl enable docker.service'"
     
-# (7) 测试Docker Daemon
+# (8) 测试Docker Daemon
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='docker container run hello-world'"
+
+# (9) 删除hello-world镜像
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker image rm hello-world'"
 ```
 
 ### 安装 cri-dockerd
@@ -638,9 +648,9 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 **所有节点执行**
 
 ```bash
-# (1) 设置yum源
+# (1) Ansible主控节点执行：创建kubernetes.repo
 # 默认的kubernetes源需要科学上网，所以这里使用阿里云的源来代替,并且将签名验证关闭，否则后面的命令执行时会报错
-[root@node-1 ~]# cat > /etc/yum.repos.d/kubernetes.repo <<EOF
+[root@localhost ansible]# cat > /etc/yum.repos.d/kubernetes.repo <<EOF
 [kubernetes]
 name=Kubernetes
 baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
@@ -650,7 +660,7 @@ repo_gpgcheck=0
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
 
-# (2) 查看软件包版本
+# (2) Ansible主控节点执行：查看软件包版本
 [root@node-1 ~]# yum list --showduplicates kubeadm kubelet kubectl | grep '1.25'
 kubeadm.x86_64                       1.25.0-0                         kubernetes
 kubeadm.x86_64                       1.25.1-0                         kubernetes
@@ -665,16 +675,27 @@ kubelet.x86_64                       1.25.1-0                         kubernetes
 kubelet.x86_64                       1.25.2-0                         kubernetes
 kubelet.x86_64                       1.25.3-0                         kubernetes
 
-# (3) 安装软件包: kubeadm、kubelet、kubectl
+# (3) 确认没问题后，将源推送到所有节点
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/yum.repos.d/kubernetes.repo dest=/etc/yum.repos.d/"
+
+# (4) 安装软件包: kubeadm、kubelet、kubectl
 #     注意这还会安装两个依赖包: cri-tools、kubernetes-cni
-[root@node-1 ~]# Version=1.25.3-0
-[root@node-1 ~]# yum install kubeadm-${Version} kubelet-${Version} kubectl-${Version}
+[root@localhost ansible]# Version=1.25.3-0
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum install -y kubeadm-${Version} kubelet-${Version} kubectl-${Version}'"
 
-# (4) 设置kubelet开机自启动
-[root@node-1 ~]# systemctl enable kubelet.service
+# (5) 设置kubelet开机自启动
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl enable kubelet.service'"
 
-# (5) 测试一下crictl工具是否正常，发现抱错了
-[root@node-1 ~]# crictl ps
+# (6) 测试一下crictl工具是否正常，发现报错了
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='crictl ps'"
+
+[root@localhost ansible]# crictl ps
 WARN[0000] runtime connect using default endpoints: [unix:///var/run/dockershim.sock unix:///run/containerd/containerd.sock unix:///run/crio/crio.sock unix:///var/run/cri-dockerd.sock]. As the default settings are now deprecated, you should set the endpoint instead. 
 ERRO[0000] unable to determine runtime API version: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial unix /var/run/dockershim.sock: connect: no such file or directory" 
 WARN[0000] image connect using default endpoints: [unix:///var/run/dockershim.sock unix:///run/containerd/containerd.sock unix:///run/crio/crio.sock unix:///var/run/cri-dockerd.sock]. As the default settings are now deprecated, you should set the endpoint instead. 
@@ -682,7 +703,7 @@ ERRO[0000] unable to determine image API version: rpc error: code = Unavailable 
 E1111 14:58:05.277676    2329 remote_runtime.go:557] "ListContainers with filter from runtime service failed" err="rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" filter="&ContainerFilter{Id:,State:&ContainerStateValue{State:CONTAINER_RUNNING,},PodSandboxId:,LabelSelector:map[string]string{},}"
 FATA[0000] listing containers: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService
 
-# (6) 修复crictl错误
+# (7) 修复crictl错误
 [root@node-1 ~]# vim /etc/crictl.yaml
 runtime-endpoint: unix:///var/run/cri-dockerd.sock
 timeout: 10
@@ -690,6 +711,14 @@ debug: false
 
 [root@node-1 ~]# crictl ps
 CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
+
+# (8) 推送文件到所有节点
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/crictl.yaml dest=/etc/"
+
+# (9) 再次测试
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='crictl ps'"
 ```
 
 ### 配置 cgroup驱动
@@ -699,20 +728,32 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 **所有节点执行**
 
 ```bash
-# 修改Docker的cgroup驱动修改
-[root@node-1 ~]# mkdir -p /etc/docker
-[root@node-1 ~]# vim /etc/docker/daemon.json
+# (1) 查看Docker的cgroup驱动
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker info | grep Cgroup'"
+    
+# (2) Ansible主控节点执行：修改Docker的cgroup驱动修改
+[root@localhost ansible]# vim /etc/docker/daemon.json
 {
     "exec-opts": ["native.cgroupdriver=systemd"]
 }
 
-# 重启服务
-[root@node-1 ~]# systemctl restart docker.service
-# 这个也必须重启一下，否则后面初始化Master的时候发现大量处于Created的pause容器
-[root@node-1 ~]# systemctl restart cri-docker.service
-[root@node-1 ~]# docker info | grep Cgroup
- Cgroup Driver: systemd
- Cgroup Version: 1
+# (3) 推送文件到所有节点
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/docker/daemon.json dest=/etc/docker/"
+
+# (4) 所有节点重启服务
+#     cri-docker也必须重启一下，否则后面初始化Master的时候发现大量处于Created的pause容器
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl restart docker.service && \
+               systemctl restart cri-docker.service
+    '"
+
+# (5) 再次查看
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker info | grep \'Cgroup Driver: systemd\''"
 
 # kubelet默认使用systemd驱动,无需修改
 ```
@@ -724,7 +765,7 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 **所有节点执行**
 
 ```bash
-# 查看都需要哪些镜像
+# (1) 查看都需要哪些镜像
 [root@node-1 ~]# kubeadm config images list
 registry.k8s.io/kube-apiserver:v1.25.3
 registry.k8s.io/kube-controller-manager:v1.25.3
@@ -737,7 +778,7 @@ registry.k8s.io/coredns/coredns:v1.9.3
 # 请注意: kubelet实际使用的是pause:3.6的版本,可以通过上面的文档中来查询,所以上面的文件需要再添加一行
 registry.k8s.io/pause:3.6
 
-# 将以上镜像列表保存到images.txt文件，并在一台可以科学上网的机器上执行如下命令
+# (2) 将以上镜像列表保存到images.txt文件，并在一台可以科学上网的机器上执行如下命令
 [root@ap-hongkang ~]# cat images.txt | while read line
 do
     name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
@@ -755,6 +796,20 @@ do
     name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
     docker image load -i ${name}.tar
 done
+
+# 使用Ansible同步镜像到所有的节点并导入
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/kubernetes/kubeadm dest=/usr/local/kubernetes/"
+
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker image load -i /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-scheduler-v1.25.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.25.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.4-0.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/coredns-v1.9.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/pause-v3.6.tar
+    '"
 ```
 
 <br />
@@ -769,24 +824,23 @@ done
 # (2) 我们现在还没有任何的负载均衡，所以可以先利用hosts文件劫持，先做非高可用的，后面再切换成高可用的
 # (3) 非高可用模式下: api.k8s.local域名始终指向一个地址: 192.168.48.151
 
-# Master-1
-[root@node-1 ~]# vim /etc/hosts
-192.168.48.151 api.k8s.local
-
-# Master-2
-[root@node-2 ~]# vim /etc/hosts
-192.168.48.151 api.k8s.local
-
-# Worker-1
-[root@node-3 ~]# vim /etc/hosts
-192.168.48.151 api.k8s.local
+# 添加主机名解析
+[root@localhost ansible]# vim play_hosts.yaml
+      block: |
+        # kubernetes
+        192.168.48.151 api.k8s.local
+        192.168.48.151 node-1
+        192.168.48.152 node-2
+        192.168.48.153 node-3
+        
+[root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
 ### 初始化第一个Master
 
 ```bash
 # (1) 初始化第一个Master
-[root@node-1 ~]# kubeadm init \
+[root@localhost ansible]# kubeadm init \
     --control-plane-endpoint=api.k8s.local:6443 \
     --kubernetes-version=v1.25.3 \
     --pod-network-cidr=10.233.0.0/16 \
@@ -900,16 +954,24 @@ node-1   NotReady   control-plane   20s    v1.25.3
 
 ```bash
 # (1) 下载YAML文件
-[root@node-1 ~]# mkdir -p /usr/local/kubernetes/cni && cd /usr/local/kubernetes/cni
-[root@node-1 cni]# curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
+[root@localhost ansible]# wget -c https://projectcalico.docs.tigera.io/manifests/calico.yaml
 
-# (2) 查看一下所需的镜像
+# (2) 所有节点创建cni目录
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='mkdir -p /usr/local/kubernetes/cni'"
+
+# (3) 推送配置文件到所有节点，非必须，仅是为了做一个备份
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=./calico.yaml dest=/usr/local/kubernetes/cni/"
+
+# (4) 查看一下所需的镜像
 [root@node-1 cni]# cat calico.yaml | grep -i 'image:' | sort -u
           image: docker.io/calico/cni:v3.24.5
           image: docker.io/calico/kube-controllers:v3.24.5
           image: docker.io/calico/node:v3.24.5
 
-# (3) 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
+
+# (5) 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
 # 本地下载太慢了，这里依旧使用科学上网方式下载，打包、下载、导入过程略
 [root@node-1 cni]# cat calico.yaml | grep -i 'image:' | sort -u | awk '{print $2}' | while read line; do
   name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
@@ -917,21 +979,31 @@ node-1   NotReady   control-plane   20s    v1.25.3
   docker image save ${line} -o ${name}.tar
 done
 
-# (4) 部署
-[root@node-1 cni]# kubectl apply -f calico.yaml
 
-# (5) 查看
+# (6) 使用Ansible同步镜像到所有的节点并导入
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/kubernetes/cni dest=/usr/local/kubernetes/"
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker image load -i /usr/local/kubernetes/cni/calico/cni-v3.24.5.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico/kube-controllers-v3.24.5.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico/node-v3.24.5.tar
+    '"
+
+# (7) 部署
+[root@localhost ansible]# kubectl apply -f calico.yaml
+
+# (8) 查看
 [root@node-1 cni]# kubectl get pods -A | grep calico
 kube-system   calico-kube-controllers-798cc86c47-2sjxr   1/1     Running   0          90s
 kube-system   calico-node-8q444                          1/1     Running   0          90s
 
-# 查看Node状态
+# (9) 查看Node状态
 [root@node-1 cni]# kubectl get node
 NAME     STATUS   ROLES           AGE     VERSION
 node-1   Ready    control-plane   2m57s   v1.25.3
 ```
 
-### 初始化第二个Master节点
+### 初始化其他Master节点
 
 ```bash
 # (1) 初始化第二个Master
@@ -1050,12 +1122,6 @@ NAME     STATUS   ROLES           AGE   VERSION
 node-1   Ready    control-plane   28m   v1.25.3
 node-2   Ready    control-plane   21m   v1.25.3
 node-3   Ready    <none>          30s   v1.25.3
-```
-
-**部署APIServer代理**
-
-```bash
-
 ```
 
 ### 安装Etcd客户端工具
