@@ -603,12 +603,28 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 **所有节点执行**
 
 ```bash
-[root@node-1 ~]# mkdir -p /usr/local/kubernetes/cri && cd /usr/local/kubernetes/cri
-[root@node-1 cri]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
-[root@node-1 cri]# yum -y install cri-dockerd-0.2.6-3.el7.x86_64.rpm
+# Ansible主控节点执行：下载RPM包
+[root@localhost ansible]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
+[root@localhost ansible]# 
+[root@localhost ansible]# mv cri-dockerd-0.2.6-3.el7.x86_64.rpm /usr/local/kubernetes/cri/
+
+# 将RPM包分发到所有节点
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='mkdir -p /usr/local/kubernetes/cri'"
+
+[root@ap-hongkang ansible]# ansible all -m synchronize \
+     -a "mode=push src=/usr/local/ansible/cri-dockerd-0.2.6-3.el7.x86_64.rpm dest=/usr/local/kubernetes/cri/"
+
+# 所有节点安装RPM包
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install /usr/local/kubernetes/cri/cri-dockerd-0.2.6-3.el7.x86_64.rpm'"
 
 # 启动服务
-[root@node-1 cri]# systemctl start cri-docker.service && systemctl enable cri-docker.service
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl start cri-docker.service && systemctl enable cri-docker.service'"
 ```
 
 ### 安装 kube*
