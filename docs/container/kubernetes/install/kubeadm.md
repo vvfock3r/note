@@ -611,7 +611,7 @@ EOF
 ```bash
 # (1) 如果已经安装了老版本的Docker，那么卸载它
 #     此命令执行是安全的，因为新版本的名称已经改变了
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum remove -y docker \
                              docker-client \
@@ -624,7 +624,7 @@ EOF
     '"
 
 # (2) 安装docker-ce仓库(Docker CE是Docker免费版产品的新名称)
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum install -y yum-utils && \
                yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -637,52 +637,49 @@ Loading mirror speeds from cached hostfile
 Loaded plugins: fastestmirror
  * extras: mirrors.tuna.tsinghua.edu.cn
 ...
-docker-ce.x86_64          3:20.10.2-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.3-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.4-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.5-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.6-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.7-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.8-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.9-3.el7           docker-ce-stable
-docker-ce.x86_64          3:20.10.10-3.el7          docker-ce-stable
-docker-ce.x86_64          3:20.10.11-3.el7          docker-ce-stable
-docker-ce.x86_64          3:20.10.12-3.el7          docker-ce-stable
-docker-ce.x86_64          3:20.10.13-3.el7          docker-ce-stable
-docker-ce.x86_64          3:20.10.14-3.el7          docker-ce-stable
-docker-ce.x86_64          3:20.10.15-3.el7          docker-ce-stable	# 这里是最新的
+docker-ce.x86_64          3:20.10.20-3.el7          docker-ce-stable
+docker-ce.x86_64          3:20.10.21-3.el7          docker-ce-stable	# 这里是最新的
 
 # (4) 安装最新版
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin'"
 
-# (5) 安装指定版本
+# (5) 安装指定版本, 推荐
 # 语法：yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io docker-compose-plugin
 # 示例: yum install docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# Version=20.10.21
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='yum install -y docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin'"
+    -e "shell='yum install -y docker-ce-${Version} \
+                              docker-ce-cli-${Version} \
+                              containerd.io \
+                              docker-compose-plugin
+    '"
 
 # (6) 所有节点创建Docker配置文件
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='mkdir -p /etc/docker ; touch /etc/docker/daemon.json'"
+    -e "shell='mkdir -p /etc/docker ; \
+               echo {} > /etc/docker/daemon.json
+    '"
 
 # (7) 启动Docker Daemon
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='systemctl start docker.service && systemctl enable docker.service'"
+    -e "shell='systemctl start docker.service && \
+               systemctl enable docker.service
+    '"
     
 # (8) 测试Docker Daemon
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker container run hello-world'"
+    -e "shell='docker container run --rm hello-world:latest'"
 
 # (9) 删除hello-world镜像
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker image rm hello-world'"
+    -e "shell='docker image rm hello-world:latest'"
 ```
 
 ### 安装 cri-dockerd
@@ -692,29 +689,32 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 **所有节点执行**
 
 ```bash
-# Ansible主控节点执行：下载RPM包
-[root@localhost ansible]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
+# (1) Ansible主控节点执行：下载RPM包
+[root@node-1 ansible]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
 
-# 将RPM包分发到所有节点
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+# (2) 将RPM包分发到所有节点
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='mkdir -p /usr/local/kubernetes/cri'"
 
-[root@ap-hongkang ansible]# ansible all -m synchronize \
-     -a "mode=push src=/usr/local/ansible/cri-dockerd-0.2.6-3.el7.x86_64.rpm dest=/usr/local/kubernetes/cri/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/usr/local/ansible/cri-dockerd-0.2.6-3.el7.x86_64.rpm" \
+    -e "dest=/usr/local/kubernetes/cri/"
 
-# 所有节点安装RPM包
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+# (3) 所有节点安装RPM包
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum -y install /usr/local/kubernetes/cri/cri-dockerd-0.2.6-3.el7.x86_64.rpm'"
 
-# 启动服务
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+# (4) 启动服务
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl start cri-docker.service && systemctl enable cri-docker.service'"
     
-# Ansible主控节点执行：删除RPM包
-[root@localhost ansible]# rm -vf cri-dockerd-0.2.6-3.el7.x86_64.rpm
+# (5) Ansible主控节点执行：删除RPM包
+[root@node-1 ansible]# rm -vf cri-dockerd-0.2.6-3.el7.x86_64.rpm
 ```
 
 ### 安装 kube*
