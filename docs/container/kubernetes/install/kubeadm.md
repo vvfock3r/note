@@ -145,7 +145,7 @@ display_skipped_hosts = False
 [root@ap-hongkang ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
-### 5）测试文件修改：/etc/security/limits.conf
+### 5）测试文件修改：limits.conf
 
 ```bash
 # 新建playbook
@@ -605,8 +605,6 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 ```bash
 # Ansible主控节点执行：下载RPM包
 [root@localhost ansible]# wget -c https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el7.x86_64.rpm
-[root@localhost ansible]# 
-[root@localhost ansible]# mv cri-dockerd-0.2.6-3.el7.x86_64.rpm /usr/local/kubernetes/cri/
 
 # 将RPM包分发到所有节点
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -625,6 +623,9 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl start cri-docker.service && systemctl enable cri-docker.service'"
+    
+# Ansible主控节点执行：删除RPM包
+[root@localhost ansible]# rm -vf cri-dockerd-0.2.6-3.el7.x86_64.rpm
 ```
 
 ### 安装 kube*
