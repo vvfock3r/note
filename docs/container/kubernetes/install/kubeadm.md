@@ -2,24 +2,216 @@
 
 文档：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubeadm/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubeadm/)
 
+## 设置主控端
+
+使用Ansible进行批量管理主机
+
+为了减少使用成本，这里并不会使用`Playbook`方式来执行命令；而是使用`Ad-Hoc`方式是把`Ansible`当作一个批量执行工具
+
+**安装Ansible**
+
+```bash
+# (1) 安装Ansible
+[root@localhost ~]# yum install ansible             # 方式1
+[root@localhost ~]# pip install ansible             # 方式2
+[root@localhost ansible]# ansible --version
+ansible [core 2.11.12] 
+  config file = /usr/local/ansible/ansible.cfg
+  configured module search path = ['/root/.ansible/plugins/modules', '/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/local/lib/python3.6/site-packages/ansible
+  ansible collection location = /root/.ansible/collections:/usr/share/ansible/collections
+  executable location = /usr/local/bin/ansible
+  python version = 3.6.8 (default, Sep 10 2021, 09:13:53) [GCC 8.5.0 20210514 (Red Hat 8.5.0-3)]
+  jinja version = 3.0.3
+  libyaml = True
+
+# (2) 创建一个目录专门放Ansible所有的文件
+[root@localhost ~]# mkdir -p /usr/local/kubernetes/ansible
+[root@localhost ~]# cd /usr/local/kubernetes/ansible
+
+# (3) 新建inventory文件
+[root@localhost ansible]# vim hosts.ini
+[k8s]
+node-1  ansible_ssh_host=192.168.48.151  ansible_ssh_pass=123456
+node-2  ansible_ssh_host=192.168.48.152  ansible_ssh_pass=123456
+node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
+
+# (4) 编辑配置文件
+# 若是使用yum安装的ansible:
+#     默认配置文件是/etc/ansible/ansible.cfg
+# 若是使用pip安装的ansible, 默认不带配置文件, 可以到指定版本的GitHub上去找配置文件,如下所示：
+#     https://github.com/ansible/ansible/blob/v2.11.12/examples/ansible.cfg
+# 当前目录下的配置文件优先级高于默认的配置文件(/etc目录下)
+[root@localhost-1 ansible]# vim ansible.cfg
+[defaults]
+inventory             = ./hosts.ini
+host_key_checking     = False
+deprecation_warnings  = False
+display_skipped_hosts = False
+```
+
+**测试Shell命令**
+
+```bash
+# (1) 编写playbook文件
+[root@localhost ansible]# vim play_shell.yaml
+---
+- name: Ad-Hoc Shortcuts
+  hosts: "{{ host }}"
+  gather_facts: no
+
+  tasks:
+    - name: Shell
+      shell: "{{ shell }}"
+      register: output
+
+    - name: Display stdout
+      debug:
+        #msg: "{{ output.stdout_lines }}"
+        msg: "{{ output.stdout_lines | regex_replace('\"', '') }}"
+      when: output.stdout != ""
+
+    - name: Display stderr
+      debug:
+        #msg: "{{ output }}"
+        msg: "{{ output.stderr_lines | regex_replace('\"', '') }}"
+      when: output.stderr != ""
+
+# (2) 测试
+[root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='cat /etc/os-release'"
+```
+
+**测试文件推送和拉取**
+
+```bash
+# 前提
+# (1) 需要对端主机安装rsync
+# (2) 需要本地可以解析inventory中的主机名
+
+# 文件或目录推送: src目录必须存在,dest目录不需要存在,会自动创建
+
+# 方式1：将/tmp/abc推送至对端/tmp/目录下
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/tmp/abc dest=/tmp/"
+
+# 方式2：将/tmp/abc推送至对端,并重命名为/tmp/def
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/tmp/abc/ dest=/tmp/def"
+
+# --------------------------------------------------------------------------------------------------
+
+# 文件或目录拉取：src目录必须存在,dest目录不需要存在,会自动创建
+
+# 方式2：将对端/tmp/abc拉取至本地/tmp目录下
+[root@localhost ansible]# ansible all -m synchronize -a "mode=pull src=/tmp/abc dest=/tmp/"
+
+# 方式2：将对端/tmp/abc拉取至本地,并重命名为/tmp/def
+[root@localhost ansible]# ansible all -m synchronize -a "mode=pull src=/tmp/abc/ dest=/tmp/def"
+```
+
+**测试/etc/hosts文件修改**
+
+```bash
+# 新建playbook
+[root@localhost ansible]# vim play_hosts.yaml
+---
+- name: "Ad-Hoc Shortcuts"
+  hosts: "{{ host }}"
+  gather_facts: no
+  vars:
+    target: "/etc/security/limits.conf"
+    
+  tasks:
+  - name: "Modify /etc/hosts"
+    blockinfile:
+      path: "{{ target }}"
+      backup: "yes"
+      marker: "# {mark} Ansible Managed Block"
+      marker_begin: "Begin"
+      marker_end: "End"
+      block: |
+        127.0.0.1     node-1
+        43.154.36.151 node-2
+
+  - name: "Insert blank lines before block"
+    lineinfile:
+      dest: "{{ target }}"
+      insertbefore: "^# Begin Ansible Managed Block$"
+      line: " "
+
+# 执行playbook
+[root@ap-hongkang ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
+```
+
+**测试/etc/security/limits.conf文件修改**
+
+```bash
+# 新建playbook
+[root@localhost ansible]# vim play_limits.yaml
+---
+- name: "Ad-Hoc Shortcuts"
+  hosts: "{{ host }}"
+  gather_facts: no
+  vars:
+    target: "/etc/security/limits.conf"
+
+  tasks:
+  - name: "Modify /etc/hosts"
+    blockinfile:
+      path: "{{ target }}"
+      backup: "yes"
+      marker: "# {mark} Ansible Managed Block"
+      marker_begin: "Begin"
+      marker_end: "End"
+      block: |
+        # max number of open file descriptors
+        * soft nofile 102400
+        * hard nofile 102400
+
+        # max number of processes
+        * soft nproc  102400
+        * hard nproc  102400
+  - name: "Insert blank lines before block"
+    lineinfile:
+      dest: "{{ target }}"
+      insertbefore: "^# Begin Ansible Managed Block$"
+      line: " "
+
+# 执行playbook
+[root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
+```
+
+
+
+<br />
+
 ## 系统初始化
 
 ### （1）更新系统
 
 ```bash
-# 更新系统并重启
-[root@localhost ~]# yum -y install epel-release
-[root@localhost ~]# yum -y update && reboot
+# 更新系统
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install epel-release'"
 
-# 查看系统版本
-[root@localhost ~]# cat /etc/redhat-release
-CentOS Linux release 7.9.2009 (Core)
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y update'"
+
+# 重启系统
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='reboot'"
+
+# 查看版本
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='cat /etc/redhat-release'"
 ```
 
 ### （2）配置时区（可选）
 
 ```bash
-# 先检查一下当前的时区是否正确
+# 测试一下命令
 [root@localhost ~]# timedatectl
       Local time: Fri 2022-08-19 15:02:02 CST
   Universal time: Fri 2022-08-19 07:02:02 UTC
@@ -29,9 +221,21 @@ CentOS Linux release 7.9.2009 (Core)
 NTP synchronized: no
  RTC in local TZ: no
       DST active: n/a
+      
+# 查看当前的时区
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='timedatectl | grep \'Time zone\''"
 
-# 配置为东八区
-[root@localhost ~]# timedatectl set-timezone "Asia/Shanghai"
+# 检查时区是否是东八区
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='timedatectl | grep \'Asia/Shanghai (CST, +0800)\''"
+
+# 配置时区为东八区
+[root@ap-hongkang ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='timedatectl set-timezone Asia/Shanghai'"
 ```
 
 ### （3）配置24小时制（可选）
@@ -108,16 +312,16 @@ rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 
 ```bash
 # 安装chrony
-[root@localhost ~]# yum -y install chrony
+[root@localhost ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='yum -y install chrony'"
 
 # 修改ntp服务器地址,这里使用默认的
 [root@localhost ~]# vi /etc/chrony.conf
 
 # 启动服务
-[root@localhost ~]# systemctl start chronyd && systemctl enable chronyd
+[root@localhost ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='systemctl start chronyd && systemctl enable chronyd'"
 
 # 检查状态
-[root@localhost ~]# chronyc tracking
+[root@localhost ansible]# chronyc tracking
 Reference ID    : 8BC7D6CA (139.199.214.202)
 Stratum         : 3
 Ref time (UTC)  : Fri Nov 11 06:12:14 2022
@@ -131,55 +335,77 @@ Root delay      : 0.050717305 seconds
 Root dispersion : 0.011452827 seconds
 Update interval : 64.6 seconds
 Leap status     : Normal         # 这里为Normal表示服务正常
+
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='chronyc tracking | grep  \'Leap status     : Normal\''"
 ```
 
 ### （6）配置主机名
 
 ```bash
 # 配置主机名
-[root@localhost ~]# hostnamectl set-hostname node-1
-[root@localhost ~]# hostnamectl set-hostname node-2
-[root@localhost ~]# hostnamectl set-hostname node-3
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='hostnamectl set-hostname {{ inventory_hostname }}'"
+
+# 查看主机名
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='echo {{ inventory_hostname }}'"
 
 # 添加主机名解析
-[root@localhost ~]# cat >> /etc/hosts <<EOF
-
-# kubernetes
-192.168.48.151 node-1
-192.168.48.152 node-2
-192.168.48.153 node-3
-EOF
+[root@localhost ansible]# vim play_hosts.yaml
+      block: |
+        # kubernetes
+        192.168.48.151 node-1
+        192.168.48.152 node-2
+        192.168.48.153 node-3
+        
+[root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
 ### （7）关闭某些服务
 
 ```bash
-# 关闭防火墙
-[root@localhost ~]# systemctl stop firewalld && systemctl disable firewalld
+# 关闭防火墙firewalld
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl stop firewalld && systemctl disable firewalld'"
 
-# 关闭selinux
-[root@localhost ~]# setenforce 0 && \
-	getenforce && \
-	sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
-	grep -E '^SELINUX=' /etc/selinux/config
+# 关闭SeLinux
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='setenforce 0 ; \
+               getenforce   && \
+               sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
+               grep -E '^SELINUX=disabled' /etc/selinux/config
+       '"
 
 # 设置iptables规则
-[root@localhost ~]# iptables -F && \
-	iptables -X && \
-	iptables -F -t nat && \
-	iptables -X -t nat && \
-	iptables -P FORWARD ACCEPT
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='iptables -F && \
+               iptables -F -t nat && \
+	           iptables -X -t nat && \
+               iptables -P FORWARD ACCEPT && \
+               iptables -nL
+       '"
 
 # 关闭swap
-[root@localhost ~]# swapoff -a && free
-[root@localhost ~]# sed -ri '/(^[^#])(.*)[[:blank:]]swap[[:blank:]](.*)/s/^/#/' /etc/fstab && \
-                    grep swap /etc/fstab
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='swapoff -a && free && \
+               sed -ri '/(^[^#])(.*)[[:blank:]]swap[[:blank:]](.*)/s/^/#/' /etc/fstab && \
+               grep swap /etc/fstab || echo ""
+       '"
 ```
 
 ### （8）调整内核参数
 
 ```bash
-[root@localhost ~]# cat > /etc/sysctl.d/kubernetes.conf <<EOF
+# 创建内核参数文件
+[root@localhost ansible]# cat > kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_nonlocal_bind = 1
@@ -188,13 +414,13 @@ vm.swappiness = 0
 vm.overcommit_memory = 1
 EOF
 
-[root@localhost ~]# sysctl -p /etc/sysctl.d/kubernetes.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_nonlocal_bind = 1
-net.ipv4.ip_forward = 1
-vm.swappiness = 0
-vm.overcommit_memory = 1
+# 将文件推送至所有主机
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=./kubernetes.conf dest=/etc/sysctl.d/kubernetes.conf"
+
+# 加载内核参数
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='sysctl -p /etc/sysctl.d/kubernetes.conf'"
 ```
 
 ::: warning
@@ -234,23 +460,26 @@ bridge                151336  1 br_netfilter
 ### （9）安装常用软件包
 
 ```bash
-[root@localhost ~]# yum -y install yum-utils \
-	vim curl telnet wget rsync git \
-	socat conntrack ipvsadm ipset \
-	sysstat iptables libseccomp \
-	lrzsz
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install yum-utils \
+               vim curl telnet wget rsync git \
+               socat conntrack ipvsadm ipset \
+               sysstat iptables libseccomp \
+               lrzsz
+    '"
 ```
 
 ### （10）调整ulimit
 
 ```bash
+# 手动执行命令
+# --------------------------------------------------------------------------
+
 # 检查当前配置
 [root@localhost ~]# ulimit -a | grep -E 'open files|max user processes'
 open files                      (-n) 1024
 max user processes              (-u) 7184
-
-# 临时设置
-[root@localhost ~]# ulimit -n 102400 && ulimit -u 102400
 
 # 永久设置
 [root@localhost ~]# cat >>/etc/security/limits.conf <<EOF
@@ -262,31 +491,35 @@ max user processes              (-u) 7184
 * soft nproc  102400
 * hard nproc  102400
 EOF
+
+# --------------------------------------------------------------------------
+# 批量执行命令
+
+# 检查当前配置
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='ulimit -a | grep -E \'open files|max user processes\''"
+
+# 临时设置
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='ulimit -n 102400 && ulimit -u 102400'"
+
+# 永久设置
+[root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
 ```
 
 ### （11）重启系统再次检查
 
 ```bash
-[root@localhost ~]# reboot
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='reboot'"
 ```
 
 <br />
 
 ## 安装前的准备工作
-
-### 设置中转节点
-
-为了方便文件的分发，我们选择一个中转节点（随便一个节点，可以是集群中的也可以是非集群中的），配置好跟其他所有节点的免密登录
-
-```bash
-# 生成密钥对
-[root@node-1 ~]# ssh-keygen -t rsa
-
-# 配置免密登录
-[root@node-1 ~]# ssh-copy-id root@node-1
-[root@node-1 ~]# ssh-copy-id root@node-2
-[root@node-1 ~]# ssh-copy-id root@node-3
-```
 
 ### 安装 docker
 
@@ -849,11 +1082,11 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 
 ![image-20221111174304487](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221111174304487.png)
 
-### 部署高可用Etcd集群
+### 部署Etcd高可用集群
 
-```bash
+需要保证至少3个Etcd节点，解决方案是再部署一套Master节点
 
-```
+
 
 ### 部署高可用APIServer
 
