@@ -291,15 +291,15 @@ NTP synchronized: no
     -e "host='all'" \
     -e "shell='timedatectl | grep \'Time zone\''"
 
-# 检查时区是否是东八区
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='all'" \
-    -e "shell='timedatectl | grep \'Asia/Shanghai (CST, +0800)\''"
-
 # 配置时区为东八区
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='timedatectl set-timezone Asia/Shanghai'"
+
+# 检查时区是否是东八区
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='timedatectl | grep \'Asia/Shanghai (CST, +0800)\''"
 ```
 
 ### （3）配置24小时制（可选）
@@ -381,12 +381,14 @@ rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
     -e "shell='yum -y install chrony'"
 
 # (2) 修改ntp服务器地址,这里使用默认的
-[root@localhost ansible]# vi /etc/chrony.conf
+[root@localhost ansible]# vim /etc/chrony.conf
 
 # (3) 启动服务
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='systemctl start chronyd && systemctl enable chronyd'"
+    -e "shell='systemctl start chronyd && \
+               systemctl enable chronyd
+       '"
 
 # (4) 检查状态
 [root@localhost ansible]# chronyc tracking
@@ -464,9 +466,10 @@ Leap status     : Normal         # 这里为Normal表示服务正常
 # (4) 关闭Swap
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='swapoff -a && free && \
+    -e "shell='swapoff -a && \
                sed -ri '/(^[^#])(.*)[[:blank:]]swap[[:blank:]](.*)/s/^/#/' /etc/fstab && \
-               grep swap /etc/fstab || echo ""
+               grep swap /etc/fstab || echo "" && \
+               free
        '"
 ```
 
@@ -484,7 +487,7 @@ vm.overcommit_memory = 1
 EOF
 
 # (2) 将文件推送至所有主机
-ansible-playbook play_rsync.yaml \
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
     -e "host='all'" \
     -e "mode=push" \
     -e "src=/etc/sysctl.d/kubernetes.conf" \
@@ -511,7 +514,7 @@ vm.overcommit_memory = 1
 # 检查模块是否已经加载（输出为空代表模块没有加载）
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='lsmod | grep br_netfilter'"
+    -e "shell='lsmod | grep br_netfilter || echo""'"
 
 # 临时加载模块(重启后还需要重新加载)
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -519,14 +522,20 @@ vm.overcommit_memory = 1
     -e "shell='modprobe br_netfilter'"
 
 # 再次查看
-[root@localhost ~]# lsmod | grep br_netfilter
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='lsmod | grep br_netfilter'"
+
+# 输出类似于如下所示
 br_netfilter           22256  0 
 bridge                151336  1 br_netfilter
 
 # 设置开启自加载模块
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='echo br_netfilter > /etc/modules-load.d/br_netfilter.conf'"
+    -e "shell='echo br_netfilter > /etc/modules-load.d/br_netfilter.conf && \
+               cat /etc/modules-load.d/br_netfilter.conf | grep br_netfilter
+    '"
 ```
 
 ### （9）安装常用软件包
@@ -545,8 +554,8 @@ bridge                151336  1 br_netfilter
 ### （10）调整ulimit
 
 ```bash
-# 手动执行命令
 # --------------------------------------------------------------------------
+# 手动检查
 
 # 检查当前配置
 [root@localhost ~]# ulimit -a | grep -E 'open files|max user processes'
