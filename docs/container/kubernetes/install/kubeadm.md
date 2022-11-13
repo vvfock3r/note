@@ -8,7 +8,7 @@
 
 为了减少使用成本，这里并不会使用`Playbook`方式来执行命令；而是使用`Ad-Hoc`方式是把`Ansible`当作一个批量执行工具
 
-**安装Ansible**
+### 1）安装Ansible
 
 ```bash
 # (1) 安装Ansible
@@ -31,10 +31,14 @@ ansible [core 2.11.12]
 
 # (3) 新建inventory文件
 [root@localhost ansible]# vim hosts.ini
-[k8s]
+[k8s-master]
 node-1  ansible_ssh_host=192.168.48.151  ansible_ssh_pass=123456
 node-2  ansible_ssh_host=192.168.48.152  ansible_ssh_pass=123456
 node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
+
+[k8s-worker]
+node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
+node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 
 # (4) 编辑配置文件
 # 若是使用yum安装的ansible:
@@ -50,7 +54,7 @@ deprecation_warnings  = False
 display_skipped_hosts = False
 ```
 
-**测试Shell命令**
+### 2）测试执行Shell命令
 
 ```bash
 # (1) 编写playbook文件
@@ -73,7 +77,7 @@ display_skipped_hosts = False
 
     - name: Display stderr
       debug:
-        #msg: "{{ output }}"
+        #msg: "{{ output.stderr_lines }}"
         msg: "{{ output.stderr_lines | regex_replace('\"', '') }}"
       when: output.stderr != ""
 
@@ -81,7 +85,7 @@ display_skipped_hosts = False
 [root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='cat /etc/os-release'"
 ```
 
-**测试文件推送和拉取**
+### 3）测试文件推送和拉取
 
 ```bash
 # 前提
@@ -107,7 +111,7 @@ display_skipped_hosts = False
 [root@localhost ansible]# ansible all -m synchronize -a "mode=pull src=/tmp/abc/ dest=/tmp/def"
 ```
 
-**测试/etc/hosts文件修改**
+### 4）测试文件修改：/etc/hosts
 
 ```bash
 # 新建playbook
@@ -141,7 +145,7 @@ display_skipped_hosts = False
 [root@ap-hongkang ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
-**测试/etc/security/limits.conf文件修改**
+### 5）测试文件修改：/etc/security/limits.conf
 
 ```bash
 # 新建playbook
@@ -178,8 +182,6 @@ display_skipped_hosts = False
 # 执行playbook
 [root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
 ```
-
-
 
 <br />
 
@@ -528,21 +530,28 @@ EOF
 **所有节点执行**
 
 ```bash
-# 卸载老版本(如果有)
-sudo yum remove docker \
-                  docker-client \
-                  docker-client-latest \
-                  docker-common \
-                  docker-latest \
-                  docker-latest-logrotate \
-                  docker-logrotate \
-                  docker-engine
+# (1) 如果已经安装了老版本的Docker，那么卸载它
+#     此命令执行是安全的，因为新版本的名称已经改变了
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum remove -y docker \
+                             docker-client \
+                             docker-client-latest \
+                             docker-common \
+                             docker-latest \
+                             docker-latest-logrotate \
+                             docker-logrotate \
+                             docker-engine
+    '"
 
-# 安装Docker仓库
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+# (2) 安装docker-ce仓库(Docker CE是Docker免费版产品的新名称)
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum install -y yum-utils && \
+               yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    '"
     
-# 查看docker-ce所有可安装版本（Docker CE是Docker免费版产品的新名称）
+# (3) 查看docker-ce所有可安装版本
 yum list docker-ce --showduplicates
  * updates: mirrors.tuna.tsinghua.edu.cn
 Loading mirror speeds from cached hostfile
@@ -564,19 +573,27 @@ docker-ce.x86_64          3:20.10.13-3.el7          docker-ce-stable
 docker-ce.x86_64          3:20.10.14-3.el7          docker-ce-stable
 docker-ce.x86_64          3:20.10.15-3.el7          docker-ce-stable	# 这里是最新的
 
-# 安装最新版
-sudo yum install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# (4) 安装最新版
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin'"
 
-# 安装指定版本
-# 语法：sudo yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io docker-compose-plugin
-sudo yum install docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin
-
-# 启动Docker Engine
-sudo systemctl start docker.service
-sudo systemctl enable docker.service
-
-# 测试Docker Engine
-sudo docker run hello-world
+# (5) 安装指定版本
+# 语法：yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io docker-compose-plugin
+# 示例: yum install docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum install -y docker-ce-20.10.14 docker-ce-cli-20.10.14 containerd.io docker-compose-plugin'"
+    
+# (6) 启动Docker Daemon
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='systemctl start docker.service && systemctl enable docker.service'"
+    
+# (7) 测试Docker Daemon
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker container run hello-world'"
 ```
 
 ### 安装 cri-dockerd
