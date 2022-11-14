@@ -33,9 +33,8 @@ const navbar = [
             {
                 text: '容器编排',
                 children: [
-                    {text: 'Kubernetes：二进制包部署', link: '/container/kubernetes-deploy-binary'},
-                    {text: 'Kubernetes：其他方式部署', link: '/container/kubernetes-deploy-other'},
-                    {text: 'Kubernetes：使用文档详解', link: '/container/kubernetes-document'},
+                    {text: 'Kubernetes部署', link: '/container/kubernetes/deploy'},                    
+                    {text: 'Kubernetes使用', link: '/container/kubernetes/document'},
                 ]
             },
             {
