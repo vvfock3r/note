@@ -248,7 +248,7 @@ command_warnings      = False
 
 ## 系统初始化
 
-### （1）更新系统
+### 1）更新系统
 
 ```bash
 # 更新系统
@@ -271,7 +271,7 @@ command_warnings      = False
     -e "shell='cat /etc/redhat-release'"
 ```
 
-### （2）配置时区（可选）
+### 2）配置时区（可选）
 
 ```bash
 # 测试一下命令
@@ -301,7 +301,7 @@ NTP synchronized: no
     -e "shell='timedatectl | grep \'Asia/Shanghai (CST, +0800)\''"
 ```
 
-### （3）配置24小时制（可选）
+### 3）配置24小时制（可选）
 
 :::tip
 
@@ -324,7 +324,7 @@ root@ubuntu:~# date
 Sun Aug 14 22:23:33 CST 2022  # 已修改为22点
 ```
 
-### （4）配置静态IP（可选）
+### 4）配置静态IP（可选）
 
 :::tip
 
@@ -371,7 +371,7 @@ PING www.a.shifen.com (39.156.66.14) 56(84) bytes of data.
 rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 ```
 
-### （5）服务器时间同步
+### 5）服务器时间同步
 
 ```bash
 # (1) 安装chrony
@@ -386,8 +386,7 @@ rtt min/avg/max/mdev = 23.975/30.612/43.163/7.406 ms
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl start chronyd && \
-               systemctl enable chronyd
-       '"
+               systemctl enable chronyd'"
 
 # (4) 检查状态
 [root@localhost ansible]# chronyc tracking
@@ -410,7 +409,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
     -e "shell='chronyc tracking | grep  \'Leap status     : Normal\''"
 ```
 
-### （6）配置主机名
+### 6）配置主机名
 
 ```bash
 # (1) 配置主机名
@@ -421,7 +420,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
 # (2) 查看主机名
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='echo {{ inventory_hostname }}'"
+    -e "shell='hostname'"
 
 # (3) 添加主机名解析
 [root@localhost ansible]# vim play_hosts.yaml
@@ -435,13 +434,14 @@ Leap status     : Normal         # 这里为Normal表示服务正常
 [root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
-### （7）关闭某些服务
+### 7）关闭某些服务
 
 ```bash
 # (1)关闭防火墙Firewalld
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='systemctl stop firewalld && systemctl disable firewalld'"
+    -e "shell='systemctl stop firewalld && \
+               systemctl disable firewalld'"
 
 # (2) 关闭SeLinux
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -449,8 +449,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
     -e "shell='setenforce 0 ; \
                getenforce   && \
                sed -ri 's/(^SELINUX=)(.*)/\1disabled/' /etc/selinux/config && \
-               grep -E '^SELINUX=disabled' /etc/selinux/config
-       '"
+               grep -E '^SELINUX=disabled' /etc/selinux/config'"
 
 # (3) 设置iptables规则
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -459,8 +458,7 @@ Leap status     : Normal         # 这里为Normal表示服务正常
                iptables -F -t nat && \
 	           iptables -X -t nat && \
                iptables -P FORWARD ACCEPT && \
-               iptables -nL
-       '"
+               iptables -nL'"       
 
 # (4) 关闭Swap
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -468,11 +466,10 @@ Leap status     : Normal         # 这里为Normal表示服务正常
     -e "shell='swapoff -a && \
                sed -ri '/(^[^#])(.*)[[:blank:]]swap[[:blank:]](.*)/s/^/#/' /etc/fstab && \
                grep swap /etc/fstab || echo "" && \
-               free
-       '"
+               free'"
 ```
 
-### （8）调整内核参数
+### 8）调整内核参数
 
 ```bash
 # (1) 创建内核参数文件
@@ -533,11 +530,10 @@ bridge                151336  1 br_netfilter
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='echo br_netfilter > /etc/modules-load.d/br_netfilter.conf && \
-               cat /etc/modules-load.d/br_netfilter.conf | grep br_netfilter
-    '"
+               cat /etc/modules-load.d/br_netfilter.conf | grep br_netfilter'"    
 ```
 
-### （9）安装常用软件包
+### 9）安装常用软件包
 
 ```bash
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -546,11 +542,10 @@ bridge                151336  1 br_netfilter
                vim curl telnet wget rsync git \
                socat conntrack ipvsadm ipset \
                sysstat iptables libseccomp \
-               lrzsz
-    '"
+               lrzsz'"
 ```
 
-### （10）调整ulimit
+### 10）调整ulimit
 
 ```bash
 # --------------------------------------------------------------------------
@@ -589,7 +584,7 @@ EOF
 [root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
 ```
 
-### （11）重启系统再次检查
+### 11）重启系统再次检查
 
 ```bash
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -619,16 +614,14 @@ EOF
                              docker-latest \
                              docker-latest-logrotate \
                              docker-logrotate \
-                             docker-engine
-    '"
+                             docker-engine'"
 
 # (2) 安装docker-ce仓库(Docker CE是Docker免费版产品的新名称)
 [root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum install -y yum-utils && \
-               yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    '"
-    
+               yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo'"
+
 # (3) 查看docker-ce所有可安装版本
 yum list docker-ce --showduplicates
  * updates: mirrors.tuna.tsinghua.edu.cn
@@ -653,22 +646,19 @@ docker-ce.x86_64          3:20.10.21-3.el7          docker-ce-stable	# 这里是
     -e "shell='yum install -y docker-ce-${Version} \
                               docker-ce-cli-${Version} \
                               containerd.io \
-                              docker-compose-plugin
-    '"
+                              docker-compose-plugin'"
 
 # (6) 所有节点创建Docker配置文件
 [root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='mkdir -p /etc/docker ; \
-               echo {} > /etc/docker/daemon.json
-    '"
+               echo {} > /etc/docker/daemon.json'"
 
 # (7) 启动Docker Daemon
 [root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl start docker.service && \
-               systemctl enable docker.service
-    '"
+               systemctl enable docker.service'"
     
 # (8) 测试Docker Daemon
 [root@node-1 ansible]# ansible-playbook play_shell.yaml \
