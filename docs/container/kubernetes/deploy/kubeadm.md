@@ -1269,6 +1269,10 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
 ```
 
+<br />
+
+## 组件高可用配置
+
 ### 部署高可用Etcd集群
 
 需要保证至少3个Etcd节点即可
@@ -1407,7 +1411,86 @@ tcp        0      0 0.0.0.0:6443            0.0.0.0:*               LISTEN      
 # (6) 将APIServer地址解析为本地地址
 [root@node-3 ~]# vim /etc/hosts
 192.168.48.153 api.k8s.local
+
+# (7) 测试
 ```
 
+### 部署高可用Calico服务
 
+```bash
+# 看一下当前calico服务分布状态，calico-kube-controllers只有1个
+[root@node-1 ~]# kubectl get pods -A -o wide | grep -E 'NAME|calico'
+NAMESPACE     NAME                      READY STATUS  RESTARTS    AGE  IP             NODE   NOMINATED NODE READINESS GATES
+kube-system   calico-kube-controllers-x 1/1   Running 2 (11m ago) 6h8m 10.233.84.136  node-1 <none>         <none>
+kube-system   calico-node-6kfqh         1/1   Running 2 (11m ago) 6h8m 192.168.48.151 node-1 <none>         <none>
+kube-system   calico-node-97h56         1/1   Running 1 (33m ago) 6h5m 192.168.48.154 node-4 <none>         <none>
+kube-system   calico-node-rkdft         1/1   Running 1 (33m ago) 6h8m 192.168.48.152 node-2 <none>         <none>
+kube-system   calico-node-s8wcb         1/1   Running 1 (33m ago) 6h7m 192.168.48.153 node-3 <none>         <none>
 
+# 看一下deployment
+[root@node-1 ~]# kubectl -n kube-system get deploy
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+calico-kube-controllers   1/1     1            1           6h12m
+coredns                   3/3     3            3           6h14m
+
+# 修改副本为3个或更多
+[root@node-1 ~]# kubectl -n kube-system edit deploy calico-kube-controllers
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+```
+
+### 部署高可用DNS服务
+
+```bash
+# 看一下当前dns服务分布状态，两个全部启动在node-1上了
+[root@node-1 ~]# kubectl -n kube-system get pods -o wide | grep -E 'NAME\b|dns'
+NAME                      READY   STATUS    RESTARTS      AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+coredns-565d847f94-4pxrr  1/1     Running   1 (20m ago)   5h58m   10.233.84.132    node-1   <none>           <none>
+coredns-565d847f94-6jwjd  1/1     Running   1 (20m ago)   5h58m   10.233.84.134    node-1   <none>           <none>
+
+# 看一下deployment
+[root@node-1 ~]# kubectl -n kube-system get deploy
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+calico-kube-controllers   0/1     1            0           6h2m
+coredns                   1/3     3            1           6h4m
+
+# 修改副本为3个或更多
+[root@node-1 ~]# kubectl -n kube-system edit deploy coredns
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+```
+
+### 最终高可用状态检查
+
+```bash
+[root@node-1 ~]# kubectl get pods -A -o wide
+NAMESPACE     NAME                           READY   STATUS    RESTARTS      AGE     IP               NODE  
+kube-system   calico-kube-controllers-798cc8 1/1     Running   0             49s     10.233.139.65    node-3
+kube-system   calico-kube-controllers-798cc8 1/1     Running   2 (16m ago)   6h14m   10.233.84.136    node-1
+kube-system   calico-kube-controllers-798cc8 1/1     Running   0             7m47s   10.233.217.65    node-4
+kube-system   calico-node-6kfqh              1/1     Running   2 (16m ago)   6h14m   192.168.48.151   node-1
+kube-system   calico-node-97h56              1/1     Running   1 (38m ago)   6h10m   192.168.48.154   node-4
+kube-system   calico-node-rkdft              1/1     Running   1 (38m ago)   6h13m   192.168.48.152   node-2
+kube-system   calico-node-s8wcb              1/1     Running   1 (38m ago)   6h12m   192.168.48.153   node-3
+kube-system   coredns-565d847f94-4pxrr       1/1     Running   2 (16m ago)   6h16m   10.233.84.137    node-1
+kube-system   coredns-565d847f94-6jwjd       1/1     Running   2 (16m ago)   6h16m   10.233.84.135    node-1
+kube-system   coredns-565d847f94-dfhmg       1/1     Running   0             12m     10.233.247.1     node-2
+kube-system   etcd-node-1                    1/1     Running   2 (16m ago)   6h16m   192.168.48.151   node-1
+kube-system   etcd-node-2                    1/1     Running   1 (38m ago)   6h13m   192.168.48.152   node-2
+kube-system   etcd-node-3                    1/1     Running   1 (38m ago)   6h12m   192.168.48.153   node-3
+kube-system   kube-apiserver-node-1          1/1     Running   2 (16m ago)   6h16m   192.168.48.151   node-1
+kube-system   kube-apiserver-node-2          1/1     Running   1 (38m ago)   6h12m   192.168.48.152   node-2
+kube-system   kube-apiserver-node-3          1/1     Running   1 (38m ago)   6h12m   192.168.48.153   node-3
+kube-system   kube-controller-manager-node-1 1/1     Running   2 (16m ago)   6h16m   192.168.48.151   node-1
+kube-system   kube-controller-manager-node-2 1/1     Running   1 (38m ago)   6h11m   192.168.48.152   node-2
+kube-system   kube-controller-manager-node-3 1/1     Running   1 (38m ago)   6h11m   192.168.48.153   node-3
+kube-system   kube-proxy-2b9cn               1/1     Running   1 (38m ago)   6h12m   192.168.48.153   node-3
+kube-system   kube-proxy-dxrld               1/1     Running   2 (16m ago)   6h16m   192.168.48.151   node-1
+kube-system   kube-proxy-rcjvq               1/1     Running   1 (38m ago)   6h13m   192.168.48.152   node-2
+kube-system   kube-proxy-vldd5               1/1     Running   1 (38m ago)   6h10m   192.168.48.154   node-4
+kube-system   kube-scheduler-node-1          1/1     Running   3 (16m ago)   6h16m   192.168.48.151   node-1
+kube-system   kube-scheduler-node-2          1/1     Running   1 (38m ago)   6h13m   192.168.48.152   node-2
+kube-system   kube-scheduler-node-3          1/1     Running   1 (38m ago)   6h12m   192.168.48.153   node-3
+```
