@@ -34,8 +34,8 @@ const navbar = [
             {
                 text: '容器编排',
                 children: [
-                    {text: 'Kubernetes: 部署', link: '/container/kubernetes/deploy'},                    
-                    {text: 'Kubernetes: 使用', link: '/container/kubernetes/document'},
+                    {text: 'Kubernetes: 部署', link: '/container/kubernetes/deploy.html'},
+                    {text: 'Kubernetes: 使用', link: '/container/kubernetes/document.html'},
                     {text: 'Etcd', link: '/container/kubernetes/etcd'},
                 ]
             },
