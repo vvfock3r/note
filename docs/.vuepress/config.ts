@@ -36,7 +36,7 @@ const navbar = [
                 children: [
                     {text: 'Kubernetes: 部署', link: '/container/kubernetes/deploy.html'},
                     {text: 'Kubernetes: 使用', link: '/container/kubernetes/document.html'},
-                    {text: 'Etcd', link: '/container/kubernetes/etcd'},
+                    {text: 'Kubernetes: Etcd', link: '/container/kubernetes/etcd'},
                 ]
             },
             {
