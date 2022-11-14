@@ -47,7 +47,6 @@ node-2  ansible_ssh_host=192.168.48.152  ansible_ssh_pass=123456
 node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
 
 [k8s_worker]
-node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
 node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 
 # (6) 编辑配置文件
@@ -700,7 +699,7 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 [root@localhost ansible]# ansible-playbook play_rsync.yaml \
     -e "host='all'" \
     -e "mode=push" \
-    -e "src=/usr/local/ansible/cri-dockerd-0.2.6-3.el7.x86_64.rpm" \
+    -e "src=./cri-dockerd-0.2.6-3.el7.x86_64.rpm" \
     -e "dest=/usr/local/kubernetes/cri/"
 
 # (3) 所有节点安装RPM包
@@ -711,7 +710,10 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
 # (4) 启动服务
 [root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='systemctl start cri-docker.service && systemctl enable cri-docker.service'"
+    -e "shell='systemctl start cri-docker.service && \
+               systemctl enable cri-docker.service && \
+               systemctl status cri-docker.service
+    '"
     
 # (5) Ansible主控节点执行：删除RPM包
 [root@node-1 ansible]# rm -vf cri-dockerd-0.2.6-3.el7.x86_64.rpm
@@ -745,24 +747,33 @@ kubeadm.x86_64                       1.25.0-0                         kubernetes
 kubeadm.x86_64                       1.25.1-0                         kubernetes
 kubeadm.x86_64                       1.25.2-0                         kubernetes
 kubeadm.x86_64                       1.25.3-0                         kubernetes
+kubeadm.x86_64                       1.25.4-0                         kubernetes
 kubectl.x86_64                       1.25.0-0                         kubernetes
 kubectl.x86_64                       1.25.1-0                         kubernetes
 kubectl.x86_64                       1.25.2-0                         kubernetes
 kubectl.x86_64                       1.25.3-0                         kubernetes
+kubectl.x86_64                       1.25.4-0                         kubernetes
 kubelet.x86_64                       1.25.0-0                         kubernetes
 kubelet.x86_64                       1.25.1-0                         kubernetes
 kubelet.x86_64                       1.25.2-0                         kubernetes
 kubelet.x86_64                       1.25.3-0                         kubernetes
+kubelet.x86_64                       1.25.4-0                         kubernetes
 
 # (3) 确认没问题后，将源推送到所有节点
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/yum.repos.d/kubernetes.repo dest=/etc/yum.repos.d/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/etc/yum.repos.d/kubernetes.repo" \
+    -e "dest=/etc/yum.repos.d/"
 
 # (4) 安装软件包: kubeadm、kubelet、kubectl
 #     注意这还会安装两个依赖包: cri-tools、kubernetes-cni
-[root@localhost ansible]# Version=1.25.3-0
+[root@localhost ansible]# Version=1.25.4
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='yum install -y kubeadm-${Version} kubelet-${Version} kubectl-${Version}'"
+    -e "shell='yum install -y kubeadm-${Version} \
+                              kubelet-${Version} \
+                              kubectl-${Version}'"
 
 # (5) 设置kubelet开机自启动
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -792,7 +803,11 @@ debug: false
 CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 
 # (8) 推送文件到所有节点
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/crictl.yaml dest=/etc/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/etc/crictl.yaml" \
+    -e "dest=/etc/"
 
 # (9) 再次测试
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -819,15 +834,18 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 }
 
 # (3) 推送文件到所有节点
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/etc/docker/daemon.json dest=/etc/docker/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/etc/docker/daemon.json" \
+    -e "dest=/etc/docker/"
 
 # (4) 所有节点重启服务
 #     cri-docker也必须重启一下，否则后面初始化Master的时候发现大量处于Created的pause容器
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='systemctl restart docker.service && \
-               systemctl restart cri-docker.service
-    '"
+               systemctl restart cri-docker.service'"
 
 # (5) 再次查看
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
@@ -844,51 +862,54 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 **所有节点执行**
 
 ```bash
-# (1) 查看都需要哪些镜像
+# 查看都需要哪些镜像
 [root@node-1 ~]# kubeadm config images list
-registry.k8s.io/kube-apiserver:v1.25.3
-registry.k8s.io/kube-controller-manager:v1.25.3
-registry.k8s.io/kube-scheduler:v1.25.3
-registry.k8s.io/kube-proxy:v1.25.3
+registry.k8s.io/kube-apiserver:v1.25.4
+registry.k8s.io/kube-controller-manager:v1.25.4
+registry.k8s.io/kube-scheduler:v1.25.4
+registry.k8s.io/kube-proxy:v1.25.4
 registry.k8s.io/pause:3.8
-registry.k8s.io/etcd:3.5.4-0
+registry.k8s.io/etcd:3.5.5-0
 registry.k8s.io/coredns/coredns:v1.9.3
 
-# 请注意: kubelet实际使用的是pause:3.6的版本,可以通过上面的文档中来查询,所以上面的文件需要再添加一行
-registry.k8s.io/pause:3.6
-
-# (2) 将以上镜像列表保存到images.txt文件，并在一台可以科学上网的机器上执行如下命令
+# --------------------------------------------------------------------------------
+# 下载和打包镜像
+# 将以上镜像列表保存到images.txt文件，并在一台可以科学上网的机器上执行如下命令
 [root@ap-hongkang ~]# cat images.txt | while read line
 do
     name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
     docker image pull ${line}
     docker image save ${line} -o ${name}.tar
 done
-[root@ap-hongkang ~]# tar zcf kubernetes-images-v1.25.3-.tar.gz ./*.tar
-[root@ap-hongkang ~]# ls -lh kubernetes-images-v1.25.3-.tar.gz
--rw-r--r-- 1 root root 206M Nov 11 14:01 kubernetes-images-v1.25.3-.tar.gz
+[root@ap-hongkang ~]# tar zcf kubernetes-images-v1.25.4.tar.gz ./*.tar
+[root@ap-hongkang ~]# ls -lh kubernetes-images-v1.25.4.tar.gz
+-rw-r--r-- 1 root root 206M Nov 14 09:08 kubernetes-images-v1.25.4.tar.gz
 
-# 将镜像上传到K8S所有节点中,并导入镜像
-[root@node-1 ~]# mkdir -p /usr/local/kubernetes/kubeadm && cd /usr/local/kubernetes/kubeadm
-[root@node-1 ~]# cat images.txt | while read line
-do
-    name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
-    docker image load -i ${name}.tar
-done
+# Ansible主控节点拉取镜像，镜像放到下面这个目录中
+[root@node-1 ~]# mkdir -p /usr/local/kubernetes/kubeadm
 
-# 使用Ansible同步镜像到所有的节点并导入
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/kubernetes/kubeadm dest=/usr/local/kubernetes/"
-
+# --------------------------------------------------------------------------------
+# 同步镜像到所有的节点
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/usr/local/kubernetes/kubeadm" \
+    -e "dest=/usr/local/kubernetes/"
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker image load -i /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-scheduler-v1.25.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.25.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.4-0.tar && \
+    -e "shell='cd /usr/local/kubernetes/kubeadm/ && \
+               tar zxf *.tar.gz'"
+    
+# 所有节点导入镜像
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='docker image load -i /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-scheduler-v1.25.4.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.25.4.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar && \
                docker image load -i /usr/local/kubernetes/kubeadm/coredns-v1.9.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/pause-v3.6.tar
-    '"
+               docker image load -i /usr/local/kubernetes/kubeadm/pause-3.8.tar'"
 ```
 
 <br />
@@ -911,6 +932,7 @@ done
         192.168.48.151 node-1
         192.168.48.152 node-2
         192.168.48.153 node-3
+        192.168.48.154 node-4
         
 [root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
@@ -918,17 +940,43 @@ done
 ### 初始化第一个Master
 
 ```bash
-# (1) 初始化第一个Master
-[root@localhost ansible]# kubeadm init \
+# (1) 初始化第一个Master,输出结果参考最下方
+[root@node-1 ansible]# kubeadm init \
     --control-plane-endpoint=api.k8s.local:6443 \
-    --kubernetes-version=v1.25.3 \
+    --kubernetes-version=v1.25.4 \
     --pod-network-cidr=10.233.0.0/16 \
     --service-cidr=10.200.0.0/16 \
     --token-ttl=0 \
     --cri-socket unix:///var/run/cri-dockerd.sock \
     --upload-certs
 
-[init] Using Kubernetes version: v1.25.3
+# (2) 若初始化失败,执行如下命令重置
+[root@node-1 ansible]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
+[root@node-1 ansible]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
+
+# (3) 创建kubectl配置文件
+[root@node-1 ansible]# mkdir -p $HOME/.kube
+[root@node-1 ansible]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+[root@node-1 ansible]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# (4) 测试kubectl
+[root@node-1 ansible]# kubectl get node
+NAME     STATUS     ROLES           AGE   VERSION
+node-1   NotReady   control-plane   45s   v1.25.4
+```
+
+输出结果
+
+```bash
+[root@node-1 ansible]# kubeadm init \
+>     --control-plane-endpoint=api.k8s.local:6443 \
+>     --kubernetes-version=v1.25.4 \
+>     --pod-network-cidr=10.233.0.0/16 \
+>     --service-cidr=10.200.0.0/16 \
+>     --token-ttl=0 \
+>     --cri-socket unix:///var/run/cri-dockerd.sock \
+>     --upload-certs
+[init] Using Kubernetes version: v1.25.4
 [preflight] Running pre-flight checks
 [preflight] Pulling images required for setting up a Kubernetes cluster
 [preflight] This might take a minute or two, depending on the speed of your internet connection
@@ -962,15 +1010,15 @@ done
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 8.004335 seconds
+[apiclient] All control plane components are healthy after 17.008909 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
-977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14
+97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848
 [mark-control-plane] Marking the node node-1 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node node-1 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: 5nml0o.5i6ia7lzgtrsj79l
+[bootstrap-token] Using token: ux3g6s.n9fg2n9755jeaq6w
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -999,9 +1047,9 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 You can now join any number of the control-plane node running the following command on each as root:
 
-  kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
-        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
-        --control-plane --certificate-key 977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14
+  kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
+        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6 \
+        --control-plane --certificate-key 97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848
 
 Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
@@ -1009,22 +1057,8 @@ As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you c
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
-        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a
-
-# (2) 若初始化失败,执行如下命令重置
-[root@node-1 ~]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
-[root@node-1 ~]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
-
-# (3) 创建kubectl配置文件
-[root@node-1 ~]# mkdir -p $HOME/.kube
-[root@node-1 ~]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-[root@node-1 ~]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# (4) 测试kubectl
-[root@node-1 ~]# kubectl get node
-NAME     STATUS     ROLES           AGE    VERSION
-node-1   NotReady   control-plane   20s    v1.25.3
+kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
+        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6
 ```
 
 ### 部署网络插件Calico
@@ -1032,54 +1066,64 @@ node-1   NotReady   control-plane   20s    v1.25.3
 **镜像需要在所有节点安装，部署仅需要在任意节点即可**
 
 ```bash
-# (1) 下载YAML文件
-[root@localhost ansible]# wget -c https://projectcalico.docs.tigera.io/manifests/calico.yaml
-
-# (2) 所有节点创建cni目录
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
+# (1) 所有节点创建cni目录
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='mkdir -p /usr/local/kubernetes/cni'"
 
-# (3) 推送配置文件到所有节点，非必须，仅是为了做一个备份
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=./calico.yaml dest=/usr/local/kubernetes/cni/"
+# (2) 下载YAML文件
+[root@node-1 ansible]# wget -c https://projectcalico.docs.tigera.io/manifests/calico.yaml
 
-# (4) 查看一下所需的镜像
-[root@node-1 cni]# cat calico.yaml | grep -i 'image:' | sort -u
+# (3) 查看一下所需的镜像
+[root@node-1 ansible]# cat calico.yaml | grep -i 'image:' | sort -u
           image: docker.io/calico/cni:v3.24.5
           image: docker.io/calico/kube-controllers:v3.24.5
           image: docker.io/calico/node:v3.24.5
 
+# ----------------------------------------------------------------------------------------
 
-# (5) 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
-# 本地下载太慢了，这里依旧使用科学上网方式下载，打包、下载、导入过程略
-[root@node-1 cni]# cat calico.yaml | grep -i 'image:' | sort -u | awk '{print $2}' | while read line; do
-  name=$(echo $line | awk -F/ '{print $NF}' | tr ':' '-')
-  docker image pull ${line}
-  docker image save ${line} -o ${name}.tar
-done
+# (4) 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
+# 本地下载太慢了，这里依旧使用科学上网方式进行处理
+[root@ap-hongkang ~]# docker image pull calico/cni:v3.24.5
+[root@ap-hongkang ~]# docker image pull calico/kube-controllers:v3.24.5
+[root@ap-hongkang ~]# docker image pull calico/node:v3.24.5
 
+[root@ap-hongkang ~]# docker image save calico/cni:v3.24.5 -o calico-cni-v3.24.5.tar
+[root@ap-hongkang ~]# docker image save calico/kube-controllers:v3.24.5 -o calico-kube-controllers-v3.24.5.tar
+[root@ap-hongkang ~]# docker image save calico/node:v3.24.5 -o calico-node-v3.24.5.tar
+
+[root@ap-hongkang ~]# tar zcf calico.tar.gz ./calico-*.tar
 
 # (6) 使用Ansible同步镜像到所有的节点并导入
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/kubernetes/cni dest=/usr/local/kubernetes/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/usr/local/kubernetes/cni" \
+    -e "dest=/usr/local/kubernetes/"
+
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='cd /usr/local/kubernetes/cni && tar zxf calico.tar.gz'"
+    
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker image load -i /usr/local/kubernetes/cni/calico/cni-v3.24.5.tar && \
-               docker image load -i /usr/local/kubernetes/cni/calico/kube-controllers-v3.24.5.tar && \
-               docker image load -i /usr/local/kubernetes/cni/calico/node-v3.24.5.tar
-    '"
+    -e "shell='docker image load -i /usr/local/kubernetes/cni/calico-cni-v3.24.5.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico-kube-controllers-v3.24.5.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico-node-v3.24.5.tar'"
 
 # (7) 部署
 [root@localhost ansible]# kubectl apply -f calico.yaml
 
 # (8) 查看
-[root@node-1 cni]# kubectl get pods -A | grep calico
-kube-system   calico-kube-controllers-798cc86c47-2sjxr   1/1     Running   0          90s
-kube-system   calico-node-8q444                          1/1     Running   0          90s
+[root@node-1 ansible]# kubectl get pods -A | grep -E 'NAME\b|calico'
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS        AGE
+kube-system   calico-kube-controllers-798cc86c47-xtdx5   1/1     Running   0               58s
+kube-system   calico-node-jsml2                          1/1     Running   0               58s
 
 # (9) 查看Node状态
-[root@node-1 cni]# kubectl get node
-NAME     STATUS   ROLES           AGE     VERSION
-node-1   Ready    control-plane   2m57s   v1.25.3
+[root@node-1 ansible]# kubectl get node
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   28m   v1.25.4
 ```
 
 ### 初始化其他Master节点
@@ -1087,87 +1131,26 @@ node-1   Ready    control-plane   2m57s   v1.25.3
 ```bash
 # (1) 初始化第二个Master
 # 需要添加--cri-socket参数
-[root@node-2 ~]# kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
-        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
-        --control-plane --certificate-key 977de5a916c8cfd00dc4ceb6bb65605fb05135ba2fce727aae66101358a38c14 \
+[root@node-2 ~]# kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
+        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6 \
+        --control-plane --certificate-key 97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848 \
         --cri-socket unix:///run/cri-dockerd.sock
 
-[preflight] Running pre-flight checks
-[preflight] Reading configuration from the cluster...
-[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
-[preflight] Running pre-flight checks before initializing the new control plane instance
-[preflight] Pulling images required for setting up a Kubernetes cluster
-[preflight] This might take a minute or two, depending on the speed of your internet connection
-[preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
-[download-certs] Downloading the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
-[certs] Using certificateDir folder "/etc/kubernetes/pki"
-[certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [localhost node-2] and IPs [192.168.48.152 127.0.0.1 ::1]
-[certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [localhost node-2] and IPs [192.168.48.152 127.0.0.1 ::1]
-[certs] Generating "etcd/healthcheck-client" certificate and key
-[certs] Generating "apiserver-etcd-client" certificate and key
-[certs] Generating "front-proxy-client" certificate and key
-[certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-2] and IPs [10.200.0.1 192.168.48.152 192.168.48.151]
-[certs] Generating "apiserver-kubelet-client" certificate and key
-[certs] Valid certificates and keys now exist in "/etc/kubernetes/pki"
-[certs] Using the existing "sa" key
-[kubeconfig] Generating kubeconfig files
-[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
-[kubeconfig] Writing "admin.conf" kubeconfig file
-[kubeconfig] Writing "controller-manager.conf" kubeconfig file
-[kubeconfig] Writing "scheduler.conf" kubeconfig file
-[control-plane] Using manifest folder "/etc/kubernetes/manifests"
-[control-plane] Creating static Pod manifest for "kube-apiserver"
-[control-plane] Creating static Pod manifest for "kube-controller-manager"
-[control-plane] Creating static Pod manifest for "kube-scheduler"
-[check-etcd] Checking that the etcd cluster is healthy
-[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
-[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
-[kubelet-start] Starting the kubelet
-[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap...
-[etcd] Announced new etcd member joining to the existing etcd cluster
-[etcd] Creating static Pod manifest for "etcd"
-[etcd] Waiting for the new etcd member to join the cluster. This can take up to 40s
-The 'update-status' phase is deprecated and will be removed in a future release. Currently it performs no operation
-[mark-control-plane] Marking the node node-2 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
-[mark-control-plane] Marking the node node-2 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-
-This node has joined the cluster and a new control plane instance was created:
-
-* Certificate signing request was sent to apiserver and approval was received.
-* The Kubelet was informed of the new secure connection details.
-* Control plane label and taint were applied to the new node.
-* The Kubernetes control plane instances scaled up.
-* A new etcd member was added to the local/stacked etcd cluster.
-
-To start administering your cluster from this node, you need to run the following as a regular user:
-
-        mkdir -p $HOME/.kube
-        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-Run 'kubectl get nodes' to see this node join the cluster.
-
 # (2) 若初始化失败,执行如下命令重置
-[root@node-1 ~]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
-[root@node-1 ~]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
+[root@node-2 ~]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
+[root@node-2 ~]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
 
 # (3) 创建kubectl配置文件
-[root@node-1 ~]# mkdir -p $HOME/.kube
-[root@node-1 ~]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-[root@node-1 ~]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+[root@node-2 ~]# mkdir -p $HOME/.kube
+[root@node-2 ~]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+[root@node-2 ~]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # (4) 测试kubectl
-[root@node-2 cni]# kubectl get node
+[root@node-2 ~]# kubectl get node
 NAME     STATUS   ROLES           AGE    VERSION
-node-1   Ready    control-plane   7m3s   v1.25.3
-node-2   Ready    control-plane   36s    v1.25.3
-
-# (5) 修改高可用地址为本地IP
-[root@node-2 ~]# vim /etc/hosts
-192.168.48.152 api.k8s.local
+node-1   Ready    control-plane   31m    v1.25.4
+node-2   Ready    control-plane   105s   v1.25.4
+node-3   Ready    control-plane   56s    v1.25.4
 ```
 
 ### 初始化所有Node节点
@@ -1178,9 +1161,9 @@ node-2   Ready    control-plane   36s    v1.25.3
 # (1) 初始化所有Node节点
 # 需要添加--cri-socket参数
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='k8s-worker'" \
-    -e "shell='kubeadm join api.k8s.local:6443 --token 5nml0o.5i6ia7lzgtrsj79l \
-        --discovery-token-ca-cert-hash sha256:51d615bea06817c532cef6434d2ae7922dbd40737fbedcf549182642bf41253a \
+    -e "host='k8s_worker'" \
+    -e "shell='kubeadm join api.k8s.local:6443 --token doz43s.r2z121ly1ees92h7 \
+        --discovery-token-ca-cert-hash sha256:eee4ce68dfe7be29bdffd78482116cca97b9bc5bf9a0e709cb14d8f4bfbfa891 \
         --cri-socket unix:///run/cri-dockerd.sock'"
 
 [preflight] Running pre-flight checks
@@ -1197,7 +1180,13 @@ This node has joined the cluster:
 
 Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 
-# (2) 在任意一个Master上执行
+# (2) 若初始化失败,执行如下命令重置
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_worker'" \
+    -e "shell='kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock && \
+               rm -rf /etc/cni/net.d/  \$HOME/.kube/config'"
+
+# (3) 在任意一个Master上执行
 [root@node-1 ~]# kubectl get nodes
 NAME     STATUS   ROLES           AGE   VERSION
 node-1   Ready    control-plane   28m   v1.25.3
@@ -1209,18 +1198,18 @@ node-3   Ready    <none>          30s   v1.25.3
 
 ```bash
 # 下载和解压软件包
-[root@localhost ansible]# ETCD_VER=v3.5.4
-[root@localhost ansible]# wget -c https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz
-[root@node-1 ~]# tar zxf etcd-${ETCD_VER}-linux-amd64.tar.gz -C /usr/local/
+[root@localhost ansible]# Version=v3.5.4
+[root@localhost ansible]# wget -c https://github.com/etcd-io/etcd/releases/download/${Version}/etcd-${Version}-linux-amd64.tar.gz
+[root@node-1 ~]# tar zxf etcd-${Version}-linux-amd64.tar.gz -C /usr/local/
 
 # 分发软件包
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/etcd-${ETCD_VER}-linux-amd64 dest=/usr/local/"
+[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/etcd-${Version}-linux-amd64 dest=/usr/local/"
 
 # 制作软连接,这里我们只需要软连接客户端工具即可,服务端不需要软连接
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='k8s-worker'" \
-    -e "shell='ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
-                      ln -s /usr/local/etcd-${ETCD_VER}-linux-amd64/etcdutl /usr/local/bin/etcdutl
+    -e "host='k8s_worker'" \
+    -e "shell='ln -s /usr/local/etcd-${Version}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
+                      ln -s /usr/local/etcd-${Version}-linux-amd64/etcdutl /usr/local/bin/etcdutl
     '"
 
 # 查看etcd所有成员
@@ -1270,11 +1259,9 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 
 ![image-20221111174304487](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221111174304487.png)
 
-### 部署Etcd高可用集群
+### 部署高可用Etcd集群
 
-需要保证至少3个Etcd节点，解决方案是再部署一套Master节点
-
-
+需要保证至少3个Etcd节点即可
 
 ### 部署高可用APIServer
 
@@ -1288,6 +1275,10 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 # Master-2
 [root@node-2 ~]# vim /etc/hosts
 192.168.48.152 api.k8s.local
+
+# Master-3
+[root@node-3 ~]# vim /etc/hosts
+192.168.48.153 api.k8s.local
 ```
 
 在每一个Worker节点上：使用静态Pod的方式部署Ningx反向代理和负载均衡到APIServer，将APIServer地址解析为本地地址
