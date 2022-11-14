@@ -120,10 +120,10 @@ command_warnings      = False
       marker_end: "End"
       block: |
         # kubernetes
-        43.154.36.151 node-1
-        43.154.36.152 node-2
-        43.154.36.153 node-3
-        43.154.36.154 node-4
+        192.168.48.151 node-1
+        192.168.48.152 node-2
+        192.168.48.153 node-3
+        192.168.48.154 node-4
 
   - name: "Insert blank lines before block"
     lineinfile:
@@ -702,8 +702,7 @@ Github：[https://github.com/Mirantis/cri-dockerd](https://github.com/Mirantis/c
     -e "host='all'" \
     -e "shell='systemctl start cri-docker.service && \
                systemctl enable cri-docker.service && \
-               systemctl status cri-docker.service
-    '"
+               systemctl status cri-docker.service'"
     
 # (5) Ansible主控节点执行：删除RPM包
 [root@node-1 ansible]# rm -vf cri-dockerd-0.2.6-3.el7.x86_64.rpm
@@ -862,6 +861,9 @@ registry.k8s.io/pause:3.8
 registry.k8s.io/etcd:3.5.5-0
 registry.k8s.io/coredns/coredns:v1.9.3
 
+# 在实际测试中，kubelet所使用的pause镜像并不和kubeadm输出的强一致,所以建议在上面再添加一个版本
+registry.k8s.io/pause:3.6
+
 # --------------------------------------------------------------------------------
 # 下载和打包镜像
 # 将以上镜像列表保存到images.txt文件，并在一台可以科学上网的机器上执行如下命令
@@ -885,6 +887,7 @@ done
     -e "mode=push" \
     -e "src=/usr/local/kubernetes/kubeadm" \
     -e "dest=/usr/local/kubernetes/"
+
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='cd /usr/local/kubernetes/kubeadm/ && \
@@ -1177,81 +1180,100 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
                rm -rf /etc/cni/net.d/  \$HOME/.kube/config'"
 
 # (3) 在任意一个Master上执行
-[root@node-1 ~]# kubectl get nodes
-NAME     STATUS   ROLES           AGE   VERSION
-node-1   Ready    control-plane   28m   v1.25.3
-node-2   Ready    control-plane   21m   v1.25.3
-node-3   Ready    <none>          30s   v1.25.3
+[root@node-1 ansible]# kubectl get nodes
+NAME     STATUS   ROLES           AGE     VERSION
+node-1   Ready    control-plane   7m23s   v1.25.4
+node-2   Ready    control-plane   4m26s   v1.25.4
+node-3   Ready    control-plane   3m58s   v1.25.4
+node-4   Ready    <none>          97s     v1.25.4
 ```
 
 ### 安装Etcd客户端工具
 
 ```bash
+# 查看版本
+[root@node-1 ansible]# cat /etc/kubernetes/manifests/etcd.yaml  | grep 'image:'
+    image: registry.k8s.io/etcd:3.5.5-0
+    
 # 下载和解压软件包
-[root@localhost ansible]# Version=v3.5.4
+[root@localhost ansible]# Version=v3.5.5
 [root@localhost ansible]# wget -c https://github.com/etcd-io/etcd/releases/download/${Version}/etcd-${Version}-linux-amd64.tar.gz
 [root@node-1 ~]# tar zxf etcd-${Version}-linux-amd64.tar.gz -C /usr/local/
+[root@node-1 ansible]# rm -vf etcd-${Version}-linux-amd64.tar.gz
 
 # 分发软件包
-[root@localhost ansible]# ansible all -m synchronize -a "mode=push src=/usr/local/etcd-${Version}-linux-amd64 dest=/usr/local/"
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='k8s_master'" \
+    -e "mode=push" \
+    -e "src=/usr/local/etcd-${Version}-linux-amd64" \
+    -e "dest=/usr/local/"
 
 # 制作软连接,这里我们只需要软连接客户端工具即可,服务端不需要软连接
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='k8s_worker'" \
+    -e "host='k8s_master'" \
     -e "shell='ln -s /usr/local/etcd-${Version}-linux-amd64/etcdctl /usr/local/bin/etcdctl && \
-                      ln -s /usr/local/etcd-${Version}-linux-amd64/etcdutl /usr/local/bin/etcdutl
-    '"
+               ln -s /usr/local/etcd-${Version}-linux-amd64/etcdutl /usr/local/bin/etcdutl'"
 
-# 查看etcd所有成员
+# 查看版本
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='k8s-worker'" \
-    -e "shell='etcdctl \
-                   --endpoints=https://192.168.48.151:2379 \
-                   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-                   --cert=/etc/kubernetes/pki/apiserver-etcd-client.crt \
-                   --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
-                   -w table \
-               member list
-    '"
-+------------------+---------+--------+-----------------------------+-----------------------------+------------+
-|        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
-+------------------+---------+--------+-----------------------------+-----------------------------+------------+
-| 40687c68b8fd2df1 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
-| 4d41869ad6a15c0e | started | node-1 | https://192.168.48.151:2380 | https://192.168.48.151:2379 |      false |
-+------------------+---------+--------+-----------------------------+-----------------------------+------------+
+    -e "host='k8s_master'" \
+    -e "shell='etcdctl version && etcdutl version'"
 
-# 查看所有成员状态, 结果见下图
-# 我们的etcd并不能算是一个集群,因为它只有2个节点
+# ------------------------------------------------------------------------------------------------
+
+# 测试CLI工具
 [root@node-1 ~]# etcdctl \
-    --endpoints=https://192.168.48.151:2379,https://192.168.48.152:2379 \
+    --endpoints=https://192.168.48.151:2379 \
     --cacert=/etc/kubernetes/pki/etcd/ca.crt \
     --cert=/etc/kubernetes/pki/apiserver-etcd-client.crt \
     --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
     -w table \
-  endpoint status
-  
+  member list
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
+|        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
+| 4d41869ad6a15c0e | started | node-1 | https://192.168.48.151:2380 | https://192.168.48.151:2379 |      false |
+| 5282584c0a01e65c | started | node-3 | https://192.168.48.153:2380 | https://192.168.48.153:2379 |      false |
+| b9512e7f3523e451 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
+
+# 批量测试CLI工具
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_master'" \
+    -e "shell='etcdctl \
+                   --endpoints=https://127.0.0.1:2379 \
+                   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+                   --cert=/etc/kubernetes/pki/apiserver-etcd-client.crt \
+                   --key=/etc/kubernetes/pki/apiserver-etcd-client.key \
+                   -w table \
+               member list'"
+
+# ------------------------------------------------------------------------------------------------
+
 # 设置环境变量
 [root@node-1 ~]# vim ~/.bashrc
-export ETCDCTL_ENDPOINTS=https://192.168.48.151:2379,https://192.168.48.152:2379
+export ETCDCTL_ENDPOINTS=https://192.168.48.151:2379,https://192.168.48.152:2379,https://192.168.48.153:2379
 export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt
 export ETCDCTL_CERT=/etc/kubernetes/pki/apiserver-etcd-client.crt
 export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 
 [root@node-1 ~]# source ~/.bashrc
 [root@node-1 ~]# etcdctl member list -w table
+[root@node-1 ansible]# etcdctl member list -w table
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
 |        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
-| 40687c68b8fd2df1 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
 | 4d41869ad6a15c0e | started | node-1 | https://192.168.48.151:2380 | https://192.168.48.151:2379 |      false |
-+------------------+---------+--------+-----------------------------+-----------------------------+------------+  
+| 5282584c0a01e65c | started | node-3 | https://192.168.48.153:2380 | https://192.168.48.153:2379 |      false |
+| b9512e7f3523e451 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
++------------------+---------+--------+-----------------------------+-----------------------------+------------+
 ```
-
-![image-20221111174304487](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221111174304487.png)
 
 ### 部署高可用Etcd集群
 
 需要保证至少3个Etcd节点即可
+
+
 
 ### 部署高可用APIServer
 
