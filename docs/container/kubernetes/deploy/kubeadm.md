@@ -533,19 +533,7 @@ bridge                151336  1 br_netfilter
                cat /etc/modules-load.d/br_netfilter.conf | grep br_netfilter'"    
 ```
 
-### 9）安装常用软件包
-
-```bash
-[root@localhost ansible]# ansible-playbook play_shell.yaml \
-    -e "host='all'" \
-    -e "shell='yum -y install yum-utils \
-               vim curl telnet wget rsync git \
-               socat conntrack ipvsadm ipset \
-               sysstat iptables libseccomp \
-               lrzsz'"
-```
-
-### 10）调整ulimit
+### 9）调整ulimit
 
 ```bash
 # --------------------------------------------------------------------------
@@ -582,6 +570,18 @@ EOF
 
 # 永久设置
 [root@ap-hongkang ansible]# ansible-playbook play_limits.yaml -e "host='all'"
+```
+
+### 10）安装常用软件包
+
+```bash
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install yum-utils \
+               vim curl telnet wget rsync git \
+               socat conntrack \
+               sysstat iptables libseccomp \
+               lrzsz'"
 ```
 
 ### 11）重启系统再次检查
@@ -1188,6 +1188,89 @@ node-3   Ready    control-plane   3m58s   v1.25.4
 node-4   Ready    <none>          97s     v1.25.4
 ```
 
+### 优化Kube-Proxy为ipvs模式
+
+```bash
+# 查看当前是否加载了ipvs模块
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='lsmod | grep -E 'ip_vs|ip_vs_rr|ip_vs_wrr|ip_vs_sh|nf_conntrack_ipv4''"
+
+# 统计加载的模块数量是否一致, grep后面的数字根据实际情况修改
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='lsmod | \
+               awk \'{print \$1}\' | \
+               grep -E 'ip_vs|ip_vs_rr|ip_vs_wrr|ip_vs_sh|nf_conntrack_ipv4' | \
+               wc -l | \
+               grep 5'"
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 手动加载ipvs模块
+[root@node-1 ansible]# cat > /etc/sysconfig/modules/ipvs.modules <<EOF
+#!/bin/bash
+modprobe ip_vs
+modprobe ip_vs_rr
+modprobe ip_vs_wrr
+modprobe ip_vs_sh
+modprobe nf_conntrack_ipv4
+EOF
+[root@node-1 ansible]# chmod 755 /etc/sysconfig/modules/ipvs.modules
+[root@node-1 ansible]# bash /etc/sysconfig/modules/ipvs.modules
+[root@node-1 ansible]# lsmod | awk '{print $1}' | grep -E 'ip_vs|ip_vs_rr|ip_vs_wrr|ip_vs_sh|nf_conntrack_ipv4'
+
+# 同步到所有节点
+[root@node-1 ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='all'" \
+    -e "mode=push" \
+    -e "src=/etc/sysconfig/modules/ipvs.modules" \
+    -e "dest=/etc/sysconfig/modules/ipvs.modules"
+
+# 加载
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='chmod 755 /etc/sysconfig/modules/ipvs.modules && \
+               bash /etc/sysconfig/modules/ipvs.modules'"
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 修改Kube-Proxy ConfigMap配置
+[root@node-1 ansible]# kubectl -n kube-system edit configmap kube-proxy
+mode: "ipvs"
+
+# 先看一下所有的kube-proxy服务
+[root@node-1 ansible]# kubectl -n kube-system get pods | grep -E 'NAME|kube-proxy'
+NAME                                       READY   STATUS    RESTARTS        AGE
+kube-proxy-dpt2z                           1/1     Running   0               141m
+kube-proxy-g2jv6                           1/1     Running   0               141m
+kube-proxy-h9xcw                           1/1     Running   0               141m
+kube-proxy-hjf8q                           1/1     Running   0               141m
+
+# 重启
+[root@node-1 ansible]# kubectl -n kube-system get pods | grep -E 'kube-proxy' | awk '{print $1}' | while read line
+    do kubectl -n kube-system delete pod ${line}
+done
+pod "kube-proxy-dpt2z" deleted
+pod "kube-proxy-g2jv6" deleted
+pod "kube-proxy-h9xcw" deleted
+pod "kube-proxy-hjf8q" deleted
+
+# 查看日志
+[root@node-1 ansible]# kubectl -n kube-system get pods | grep -E 'NAME|kube-proxy'
+NAME                                       READY   STATUS    RESTARTS        AGE
+kube-proxy-lm47p                           1/1     Running   0               12s
+kube-proxy-mxhdb                           1/1     Running   0               11s
+kube-proxy-vgvhk                           1/1     Running   0               9s
+kube-proxy-x56mt                           1/1     Running   0               11s
+
+[root@node-1 ansible]# kubectl -n kube-system logs kube-proxy-lm47p | grep ipvs
+I1115 04:12:51.946768       1 server_others.go:269] "Using ipvs Proxier"
+I1115 04:12:51.946815       1 server_others.go:271] "Creating dualStackProxier for ipvs"
+```
+
+<br />
+
+## 安装客户端工具
+
 ### 安装Etcd客户端工具
 
 ```bash
@@ -1201,7 +1284,7 @@ node-4   Ready    <none>          97s     v1.25.4
 [root@node-1 ~]# tar zxf etcd-${Version}-linux-amd64.tar.gz -C /usr/local/
 [root@node-1 ansible]# rm -vf etcd-${Version}-linux-amd64.tar.gz
 
-# 分发软件包
+# 分发到所有Master节点
 [root@localhost ansible]# ansible-playbook play_rsync.yaml \
     -e "host='k8s_master'" \
     -e "mode=push" \
@@ -1267,6 +1350,49 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 | 5282584c0a01e65c | started | node-3 | https://192.168.48.153:2380 | https://192.168.48.153:2379 |      false |
 | b9512e7f3523e451 | started | node-2 | https://192.168.48.152:2380 | https://192.168.48.152:2379 |      false |
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
+```
+
+<br />
+
+### 安装ipvs客户端工具
+
+```bash
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='yum -y install ipvsadm ipset'"
+```
+
+### 安装Calico客户端工具
+
+```bash
+# 查看一下版本
+[root@node-1 ansible]# kubectl -n kube-system get deploy calico-kube-controllers -o yaml | grep image:
+        image: docker.io/calico/kube-controllers:v3.24.5
+
+# 下载客户端
+[root@node-1 ansible]# wget -c https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+[root@node-1 ansible]# mv calicoctl-linux-amd64 /usr/local/bin/calicoctl
+[root@node-1 ansible]# chmod 755 /usr/local/bin/calicoctl
+
+# 测试
+[root@node-1 ~]# calicoctl get nodes
+NAME     
+node-1   
+node-2   
+node-3   
+node-4 
+
+# 分发到所有Master节点
+[root@localhost ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='k8s_master'" \
+    -e "mode=push" \
+    -e "src=/usr/local/bin/calicoctl" \
+    -e "dest=/usr/local/bin/calicoctl"
+    
+# 测试
+[root@localhost ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_master'" \
+    -e "shell='calicoctl get nodes'"
 ```
 
 <br />
