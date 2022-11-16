@@ -943,9 +943,9 @@ done
 * 可以使用命令行方式配置参数，也可以输出默认配置文件并修改来配置参数
 * 推荐使用配置文件方式，因为执行某些命令的时候命令行模式并不完全支持，比如重新创建`certificate-key`
 
+**方式一：命令行模式**
+
 ```bash
-# ------------------------------------------------------------------------------------
-# 命令行模式
 # 初始化第一个Master,输出结果参考最下方
 [root@node-1 ansible]# kubeadm init \
     --control-plane-endpoint=api.k8s.local:6443 \
@@ -955,11 +955,15 @@ done
     --cri-socket unix:///var/run/cri-dockerd.sock \
     --upload-certs \
     --token-ttl=24h
+```
 
-# ------------------------------------------------------------------------------------
-# 配置文件模式
+**方式二：配置文件模式**
+
+```bash
+# (1) 输出默认的配置文件
 [root@node-1 ansible]# kubeadm config print init-defaults > kubeadm-init.yaml
 
+# (2) 修改配置
 [root@node-1 ansible]# vim kubeadm-init.yaml
 apiVersion: kubeadm.k8s.io/v1beta3
 bootstrapTokens:
@@ -979,7 +983,7 @@ nodeRegistration:
   imagePullPolicy: IfNotPresent
   #name: node                                               # (4) 手动指定节点名称,在这里我们把它注释掉,会自动填充为节点主机名
   taints: null
-certificateKey: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd3248" # (5) 指定一个密钥
+certificateKey: null                                        # (5) 指定一个密钥,在这里设置为null,会自动填充
 ---
 apiServer:
   timeoutForControlPlane: 4m0s
@@ -1001,24 +1005,25 @@ networking:
   podSubnet: 10.100.0.0/16                                  # (8) 新增一行,修改pod网段
 scheduler: {}
 
+# (3) 我们也可以做一个更精简的配置文件
+[root@node-1 ansible]# cat kubeadm-init.yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+nodeRegistration:
+  criSocket: unix:///var/run/cri-dockerd.sock
+certificateKey: null
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: 1.25.4
+controlPlaneEndpoint: api.k8s.local
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.200.0.0/16
+  podSubnet: 10.100.0.0/16
+
+# 初始化
 [root@node-1 ansible]# kubeadm init --config kubeadm-init.yaml --upload-certs
-
-# ------------------------------------------------------------------------------------
-# (1) 若初始化失败,执行如下命令重置
-[root@node-1 ansible]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
-[root@node-1 ansible]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
-
-# ------------------------------------------------------------------------------------
-# 后续操作
-# (2) 创建kubectl配置文件
-mkdir -p $HOME/.kube
-sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# (4) 测试kubectl
-[root@node-1 ansible]# kubectl get node
-NAME     STATUS     ROLES           AGE   VERSION
-node-1   NotReady   control-plane   45s   v1.25.4
 ```
 
 ::: details 输出结果
@@ -1112,6 +1117,26 @@ kubeadm join api.k8s.local:6443 --token bir3pd.431cg64i7x6nlv2s \
 
 :::
 
+**后续操作**
+
+```bash
+# (1) 若初始化失败,执行如下命令重置
+[root@node-1 ansible]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
+[root@node-1 ansible]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
+
+# (2) 创建kubectl配置文件
+mkdir -p $HOME/.kube
+sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# (3) 测试kubectl
+[root@node-1 ansible]# kubectl get node
+NAME     STATUS     ROLES           AGE   VERSION
+node-1   NotReady   control-plane   45s   v1.25.4
+```
+
+<br />
+
 ### 初始化Master参数解析
 
 **token**
@@ -1151,7 +1176,7 @@ b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
 #     这个值若丢失了，则比较棘手，需要创建配置文件，再重新上传证书得到certificateKey
 #     但是这个配置文件怎么获取呢?
 
-[root@node-1 ansible]# kubeadm init phase upload-certs --upload-certs --config kube-init.yaml
+[root@node-1 ansible]# kubeadm init phase upload-certs --upload-certs --config kubeadm-init.yaml
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
 348eee20b73183d2398843b0e63b8c1e37a2386478318615efc9be9f24298cf5
@@ -1312,6 +1337,7 @@ node-4   Ready    <none>          97s     v1.25.4
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 手动加载ipvs模块
+# 对于Linux kernel 4.19或更高版本，使用 nf_conntrack 代替 nf_conntrack_ipv4
 [root@node-1 ansible]# cat > /etc/sysconfig/modules/ipvs.modules <<EOF
 #!/bin/bash
 modprobe ip_vs
