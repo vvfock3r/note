@@ -578,7 +578,7 @@ EOF
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum -y install yum-utils \
-               vim curl telnet wget rsync git \
+               vim curl telnet wget rsync git rsync jq\
                socat conntrack \
                sysstat iptables libseccomp \
                lrzsz'"
@@ -932,25 +932,88 @@ done
 
 ### 初始化第一个Master
 
+文档：
+
+* 初始化工作流程：[https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#init-workflow](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#init-workflow)
+
+* 配置文件文档：[https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta3/#resource-types](https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta3/#resource-types)
+
+初始化方式：
+
+* 可以使用命令行方式配置参数，也可以输出默认配置文件并修改来配置参数
+* 推荐使用配置文件方式，因为执行某些命令的时候命令行模式并不完全支持，比如重新创建`certificate-key`
+
 ```bash
-# (1) 初始化第一个Master,输出结果参考最下方
+# ------------------------------------------------------------------------------------
+# 命令行模式
+# 初始化第一个Master,输出结果参考最下方
 [root@node-1 ansible]# kubeadm init \
     --control-plane-endpoint=api.k8s.local:6443 \
     --kubernetes-version=v1.25.4 \
-    --pod-network-cidr=10.233.0.0/16 \
+    --pod-network-cidr=10.100.0.0/16 \
     --service-cidr=10.200.0.0/16 \
-    --token-ttl=0 \
     --cri-socket unix:///var/run/cri-dockerd.sock \
-    --upload-certs
+    --upload-certs \
+    --token-ttl=24h
 
-# (2) 若初始化失败,执行如下命令重置
+# ------------------------------------------------------------------------------------
+# 配置文件模式
+[root@node-1 ansible]# kubeadm config print init-defaults > kubeadm-init.yaml
+
+[root@node-1 ansible]# vim kubeadm-init.yaml
+apiVersion: kubeadm.k8s.io/v1beta3
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  #token: abcdef.0123456789abcdef                           # (1) 手动指定一个token,在这里我们把它注释掉,会自动生成
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  #advertiseAddress: 1.2.3.4                                # (2) 手动指定节点在集群中的暴露地址,在这里我们把它注释掉,会自动填充本节点IP
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///var/run/cri-dockerd.sock               # (3) 修改为cri-docker的socket地址
+  imagePullPolicy: IfNotPresent
+  #name: node                                               # (4) 手动指定节点名称,在这里我们把它注释掉,会自动填充为节点主机名
+  taints: null
+certificateKey: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd3248" # (5) 指定一个密钥
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta3
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns: {}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kind: ClusterConfiguration
+kubernetesVersion: 1.25.4                                   # (5) 修改版本
+controlPlaneEndpoint: api.k8s.local                         # (6) 新增一行,指定全局的endpoint
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.200.0.0/16                              # (7) 修改service网段
+  podSubnet: 10.100.0.0/16                                  # (8) 新增一行,修改pod网段
+scheduler: {}
+
+[root@node-1 ansible]# kubeadm init --config kubeadm-init.yaml --upload-certs
+
+# ------------------------------------------------------------------------------------
+# (1) 若初始化失败,执行如下命令重置
 [root@node-1 ansible]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock
 [root@node-1 ansible]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
 
-# (3) 创建kubectl配置文件
-[root@node-1 ansible]# mkdir -p $HOME/.kube
-[root@node-1 ansible]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-[root@node-1 ansible]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+# ------------------------------------------------------------------------------------
+# 后续操作
+# (2) 创建kubectl配置文件
+mkdir -p $HOME/.kube
+sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # (4) 测试kubectl
 [root@node-1 ansible]# kubectl get node
@@ -958,17 +1021,10 @@ NAME     STATUS     ROLES           AGE   VERSION
 node-1   NotReady   control-plane   45s   v1.25.4
 ```
 
-输出结果
+::: details 输出结果
 
 ```bash
-[root@node-1 ansible]# kubeadm init \
->     --control-plane-endpoint=api.k8s.local:6443 \
->     --kubernetes-version=v1.25.4 \
->     --pod-network-cidr=10.233.0.0/16 \
->     --service-cidr=10.200.0.0/16 \
->     --token-ttl=0 \
->     --cri-socket unix:///var/run/cri-dockerd.sock \
->     --upload-certs
+[root@node-1 ansible]# kubeadm init --config kubeadm-init.yaml --upload-certs
 [init] Using Kubernetes version: v1.25.4
 [preflight] Running pre-flight checks
 [preflight] Pulling images required for setting up a Kubernetes cluster
@@ -1003,15 +1059,15 @@ node-1   NotReady   control-plane   45s   v1.25.4
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 17.008909 seconds
+[apiclient] All control plane components are healthy after 6.503308 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
-97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848
+68eb36f60615d95c34cfbab939cce2e4e6b7c83bd8edeb3a1a3b7f856e74ef64
 [mark-control-plane] Marking the node node-1 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node node-1 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: ux3g6s.n9fg2n9755jeaq6w
+[bootstrap-token] Using token: bir3pd.431cg64i7x6nlv2s
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -1040,9 +1096,9 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 You can now join any number of the control-plane node running the following command on each as root:
 
-  kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
-        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6 \
-        --control-plane --certificate-key 97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848
+  kubeadm join api.k8s.local:6443 --token bir3pd.431cg64i7x6nlv2s \
+        --discovery-token-ca-cert-hash sha256:a89e201d0e40ea5d0a8e37eee20301bfe569159beaada24878cc2efe3250eccc \
+        --control-plane --certificate-key 68eb36f60615d95c34cfbab939cce2e4e6b7c83bd8edeb3a1a3b7f856e74ef64
 
 Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
@@ -1050,8 +1106,55 @@ As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you c
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
-        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6
+kubeadm join api.k8s.local:6443 --token bir3pd.431cg64i7x6nlv2s \
+        --discovery-token-ca-cert-hash sha256:a89e201d0e40ea5d0a8e37eee20301bfe569159beaada24878cc2efe3250eccc
+```
+
+:::
+
+### 初始化Master参数解析
+
+**token**
+
+```bash
+# 查看当前的token
+[root@node-1 ansible]# kubeadm token list
+
+# 若token过期，也可以手动创建新的token,并输出node节点加入集群的命令
+[root@node-1 ~]# kubeadm token create \
+    --ttl 24h \
+    --print-join-command \
+    --description "The default bootstrap token generated by 'kubeadm init'."
+```
+
+![image-20221116141825458](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221116141825458.png)
+
+**discovery-token-ca-cert-hash**
+
+```bash
+# discovery-token-ca-cert-hash如何获取?
+[root@node-1 ~]# openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+    openssl rsa -pubin -outform der 2>/dev/null | \
+    openssl dgst -sha256 -hex | sed 's/^.* //'
+
+# 输出结果
+b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
+```
+
+**certificate-key：私钥**
+
+```bash
+# 若以后要新加入Master节点:
+# (1) --control-plane 需要添加该参数
+# (2) --certificate-key xx 参数可能需要添加也可能不需要添加，如何判断？
+#     默认命令行下初始化的Master的需要添加该参数，配置文件下若添加了 certificateKey，则也需要添加
+#     这个值若丢失了，则比较棘手，需要创建配置文件，再重新上传证书得到certificateKey
+#     但是这个配置文件怎么获取呢?
+
+[root@node-1 ansible]# kubeadm init phase upload-certs --upload-certs --config kube-init.yaml
+[upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
+[upload-certs] Using certificate key:
+348eee20b73183d2398843b0e63b8c1e37a2386478318615efc9be9f24298cf5
 ```
 
 ### 部署网络插件Calico
@@ -1124,10 +1227,12 @@ node-1   Ready    control-plane   28m   v1.25.4
 ```bash
 # (1) 初始化第二个Master
 # 需要添加--cri-socket参数
-[root@node-2 ~]# kubeadm join api.k8s.local:6443 --token ux3g6s.n9fg2n9755jeaq6w \
-        --discovery-token-ca-cert-hash sha256:b5c6946a3ac3f42e8107058b35338c901374d719c40c17fd08b07bca1677f7d6 \
-        --control-plane --certificate-key 97b0efe4192be716c467b3e38d8aa45ee02b5d80cce06b6704d4774c441f7848 \
-        --cri-socket unix:///run/cri-dockerd.sock
+[root@node-2 ~]# kubeadm join api.k8s.local:6443 \
+    --token 37r7wk.wce2bbomhbrmmb9r \
+    --discovery-token-ca-cert-hash sha256:59d269d6b2727cbd3ddb718f88f16b9114094d72dbd1872f1f057fb096ddd008 \
+    --certificate-key 228a578836d137856bbb34c011b1652b26d25c993a958e60a15605cf04bdc2a2 \
+    --control-plane \
+    --cri-socket unix:///run/cri-dockerd.sock
 
 # (2) 若初始化失败,执行如下命令重置
 [root@node-2 ~]# kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock

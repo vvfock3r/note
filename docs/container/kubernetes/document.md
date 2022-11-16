@@ -2185,6 +2185,8 @@ Events:
 
 `iptables`和`ipvs`
 
+若`kube-proxy`使用`iptables`模型则不可以使用`ping`来测试通信，若使用`ipvs`模型则支持`ping`来测试通信
+
 
 
 **关键字段说明**
@@ -2519,8 +2521,6 @@ E0611 11:12:15.485961       1 proxier.go:377] "Can't set sysctl, kernel version 
 Cluster IP A记录格式
 
 `<service-name>.<namespace-name>.svc.cluster.local`
-
-
 
 ::: details  同一个NameSpace下Service DNS通信
 
