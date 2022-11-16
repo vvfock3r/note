@@ -98,6 +98,10 @@ command_warnings      = False
 
 # (2) 测试
 [root@localhost-1 ansible]# ansible-playbook play_shell.yaml -e "host='all'" -e "shell='cat /etc/os-release'"
+
+# 温馨提示：
+# (1) Ansible会根据Shell命令退出码是否为0来判断执行是否成功
+# (2) grep命令若未返回结果则退出码为非0, 如果想一直保持成功状态则 "xx | grep xx; echo" 即可
 ```
 
 ### 4）测试文件修改：/etc/hosts
