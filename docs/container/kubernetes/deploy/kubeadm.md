@@ -2,6 +2,8 @@
 
 文档：[https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubeadm/](https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubeadm/)
 
+<br />
+
 ## 设置主控端
 
 使用Ansible进行批量管理主机
@@ -132,7 +134,7 @@ command_warnings      = False
       line: " "
 
 # 执行playbook
-[root@ap-hongkang ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
+[root@localhost ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
 ```
 
 ### 5）测试文件修改：limits.conf
@@ -960,11 +962,14 @@ done
 **方式二：配置文件模式**
 
 ```bash
-# (1) 输出默认的配置文件
-[root@node-1 ansible]# kubeadm config print init-defaults > kubeadm-init.yaml
+# (1) 先创建一个目录
+[root@node-1 ansible]# mkdir kubeadm_config
 
-# (2) 修改配置
-[root@node-1 ansible]# vim kubeadm-init.yaml
+# (2) 输出默认的配置文件
+[root@node-1 ansible]# kubeadm config print init-defaults > kubeadm_config/kubeadm_init.yaml
+
+# (3) 修改配置
+[root@node-1 ansible]# vim kubeadm_config/kubeadm_init.yaml
 apiVersion: kubeadm.k8s.io/v1beta3
 bootstrapTokens:
 - groups:
@@ -1005,8 +1010,8 @@ networking:
   podSubnet: 10.100.0.0/16                                  # (8) 新增一行,修改pod网段
 scheduler: {}
 
-# (3) 我们也可以做一个更精简的配置文件
-[root@node-1 ansible]# cat kubeadm-init.yaml
+# (4) 我们也可以做一个更精简的配置文件
+[root@node-1 ansible]# cat kubeadm_config/kubeadm_init.yaml
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 nodeRegistration:
@@ -1022,14 +1027,15 @@ networking:
   serviceSubnet: 10.200.0.0/16
   podSubnet: 10.100.0.0/16
 
-# 初始化
-[root@node-1 ansible]# kubeadm init --config kubeadm-init.yaml --upload-certs
+# (5) 执行初始化
+[root@node-1 ansible]# kubeadm init --config kubeadm_config/kubeadm_init.yaml --upload-certs
 ```
 
 ::: details 输出结果
 
 ```bash
-[root@node-1 ansible]# kubeadm init --config kubeadm-init.yaml --upload-certs
+[root@node-1 ansible]# kubeadm init --config kubeadm_config/kubeadm_init.yaml --upload-certs
+
 [init] Using Kubernetes version: v1.25.4
 [preflight] Running pre-flight checks
 [preflight] Pulling images required for setting up a Kubernetes cluster
@@ -1064,15 +1070,15 @@ networking:
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 6.503308 seconds
+[apiclient] All control plane components are healthy after 9.006465 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
-68eb36f60615d95c34cfbab939cce2e4e6b7c83bd8edeb3a1a3b7f856e74ef64
+9b5125ce11141499ea536f236d90995e2cdf76eec5c2e1da559872a938192623
 [mark-control-plane] Marking the node node-1 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node node-1 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: bir3pd.431cg64i7x6nlv2s
+[bootstrap-token] Using token: zg2cxd.ouzbd77knv3ukpcb
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -1101,9 +1107,9 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 You can now join any number of the control-plane node running the following command on each as root:
 
-  kubeadm join api.k8s.local:6443 --token bir3pd.431cg64i7x6nlv2s \
-        --discovery-token-ca-cert-hash sha256:a89e201d0e40ea5d0a8e37eee20301bfe569159beaada24878cc2efe3250eccc \
-        --control-plane --certificate-key 68eb36f60615d95c34cfbab939cce2e4e6b7c83bd8edeb3a1a3b7f856e74ef64
+  kubeadm join api.k8s.local:6443 --token zg2cxd.ouzbd77knv3ukpcb \
+        --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4 \
+        --control-plane --certificate-key 9b5125ce11141499ea536f236d90995e2cdf76eec5c2e1da559872a938192623
 
 Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
@@ -1111,8 +1117,8 @@ As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you c
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join api.k8s.local:6443 --token bir3pd.431cg64i7x6nlv2s \
-        --discovery-token-ca-cert-hash sha256:a89e201d0e40ea5d0a8e37eee20301bfe569159beaada24878cc2efe3250eccc
+kubeadm join api.k8s.local:6443 --token zg2cxd.ouzbd77knv3ukpcb \
+        --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4
 ```
 
 :::
@@ -1132,7 +1138,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # (3) 测试kubectl
 [root@node-1 ansible]# kubectl get node
 NAME     STATUS     ROLES           AGE   VERSION
-node-1   NotReady   control-plane   45s   v1.25.4
+node-1   NotReady   control-plane   37s   v1.25.4
 ```
 
 <br />
@@ -1253,10 +1259,10 @@ node-1   Ready    control-plane   28m   v1.25.4
 # (1) 初始化第二个Master
 # 需要添加--cri-socket参数
 [root@node-2 ~]# kubeadm join api.k8s.local:6443 \
-    --token 37r7wk.wce2bbomhbrmmb9r \
-    --discovery-token-ca-cert-hash sha256:59d269d6b2727cbd3ddb718f88f16b9114094d72dbd1872f1f057fb096ddd008 \
-    --certificate-key 228a578836d137856bbb34c011b1652b26d25c993a958e60a15605cf04bdc2a2 \
+    --token zg2cxd.ouzbd77knv3ukpcb \
+    --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4 \
     --control-plane \
+    --certificate-key 9b5125ce11141499ea536f236d90995e2cdf76eec5c2e1da559872a938192623 \
     --cri-socket unix:///run/cri-dockerd.sock
 
 # (2) 若初始化失败,执行如下命令重置
@@ -1264,9 +1270,9 @@ node-1   Ready    control-plane   28m   v1.25.4
 [root@node-2 ~]# rm -rf /etc/cni/net.d/  $HOME/.kube/config
 
 # (3) 创建kubectl配置文件
-[root@node-2 ~]# mkdir -p $HOME/.kube
-[root@node-2 ~]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-[root@node-2 ~]# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+mkdir -p $HOME/.kube
+sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # (4) 测试kubectl
 [root@node-2 ~]# kubectl get node
@@ -1285,9 +1291,10 @@ node-3   Ready    control-plane   56s    v1.25.4
 # 需要添加--cri-socket参数
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='k8s_worker'" \
-    -e "shell='kubeadm join api.k8s.local:6443 --token doz43s.r2z121ly1ees92h7 \
-        --discovery-token-ca-cert-hash sha256:eee4ce68dfe7be29bdffd78482116cca97b9bc5bf9a0e709cb14d8f4bfbfa891 \
-        --cri-socket unix:///run/cri-dockerd.sock'"
+    -e "shell='kubeadm join api.k8s.local:6443 \
+                  --token zg2cxd.ouzbd77knv3ukpcb \
+                  --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4 \
+                  --cri-socket unix:///run/cri-dockerd.sock'"
 
 [preflight] Running pre-flight checks
 [preflight] Reading configuration from the cluster...
@@ -1538,27 +1545,22 @@ node-4
 
 ### 部署高可用APIServer
 
-在每一个Master节点上：将APIServer地址解析为本地地址
+思路：
+
+* 在每一个Master节点上：将APIServer地址解析为本地地址
+
+* 在每一个Worker节点上：使用静态Pod的方式部署Ningx代理到APIServer，将APIServer地址解析为本地地址
+
+**在Worker上部署静态Pod**
+
+::: details (1) 创建静态Pod配置文件
 
 ```bash
-# Master-1
-[root@node-1 ~]# vim /etc/hosts
-192.168.48.151 api.k8s.local
+# 创建一个专门的目录
+[root@node-1 ansible]# mkdir kube-apiserver-front-proxy
 
-# Master-2
-[root@node-2 ~]# vim /etc/hosts
-192.168.48.152 api.k8s.local
-
-# Master-3
-[root@node-3 ~]# vim /etc/hosts
-192.168.48.153 api.k8s.local
-```
-
-在每一个Worker节点上：使用静态Pod的方式部署Ningx反向代理和负载均衡到APIServer，将APIServer地址解析为本地地址
-
-```bash
-# (1) 创建静态Pod
-[root@node-3 ~]# vim /etc/kubernetes/manifests/kube-apiserver-front-proxy.yaml
+# (1) 创建静态Pod配置文件
+[root@node-1 ansible]# vim kube-apiserver-front-proxy/kube-apiserver-front-proxy.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1597,11 +1599,15 @@ spec:
   volumes:
   - name: etc
     hostPath:
-      path: /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy
+      path: /etc/kubernetes/kube-apiserver-front-proxy
+```
 
-# (2) 创建配置文件
-[root@node-3 ~]# mkdir -p /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy/
-[root@node-3 ~]# vim /etc/kubernetes/static-pod-config/kube-apiserver-front-proxy/nginx.conf
+:::
+
+::: details (2) 创建所需的Nginx配置文件
+
+```bash
+[root@node-1 ansible]# vim kube-apiserver-front-proxy/nginx.conf
 error_log stderr notice;
 
 worker_processes 2;
@@ -1619,6 +1625,7 @@ stream {
     least_conn;
     server 192.168.48.151:6443;
     server 192.168.48.152:6443;
+    server 192.168.48.153:6443;
   }
 
   server {
@@ -1653,23 +1660,77 @@ http {
     }
   }
 }
+```
 
-# (3) 重启kubelet
-[root@node-3 ~]# systemctl restart kubelet.service
+:::
+
+::: details (3) 部署APIServer代理
+
+```bash
+# (1) 同步配置
+[root@node-1 ansible]# ansible-playbook play_rsync.yaml \
+    -e "host='k8s_worker'" \
+    -e "mode=push" \
+    -e "src=./kube-apiserver-front-proxy" \
+    -e "dest=/etc/kubernetes/"
+
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_worker'" \
+    -e "shell='ln -s /etc/kubernetes/kube-apiserver-front-proxy/kube-apiserver-front-proxy.yaml /etc/kubernetes/manifests/'"
+
+# (2) 重启kubelet
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_worker'" \
+    -e "shell='systemctl restart kubelet.service'"
+
+# (3) 检查端口
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='k8s_worker'" \
+    -e "shell='netstat -atlnpu | grep -i listen | grep :6443'"
 
 # (4) 在Master上查看状态
-[root@node-1 ~]# kubectl get pods -A -o wide | grep kube-apiserver-front-proxy
-kube-system   kube-apiserver-front-proxy-node-3  1/1 Running   0 15m    192.168.48.153   node-3   <none>  <none>
+[root@node-1 ansible]# kubectl get pods -A -o wide | grep -E 'NAME|kube-apiserver-front-proxy'
+NAMESPACE     NAME                              READY   STATUS    RESTARTS      AGE   IP               NODE
+kube-system   kube-apiserver-front-proxy-node-4 1/1     Running   1 (41s ago)   37s   192.168.48.154   node-4
+```
 
-# (5) 检查端口
-[root@node-3 ~]# netstat -atlnpu | grep -i listen | grep :6443
-tcp        0      0 0.0.0.0:6443            0.0.0.0:*               LISTEN      1865/nginx: master 
+:::
 
-# (6) 将APIServer地址解析为本地地址
-[root@node-3 ~]# vim /etc/hosts
-192.168.48.153 api.k8s.local
+::: details (4) 修改所有主机的/etc/hosts
 
-# (7) 测试
+```bash
+# (1) 增加一个主机变量
+[root@node-1 ansible]# vim hosts.ini
+[k8s_master]
+node-1  ansible_ssh_host=192.168.48.151  ansible_ssh_pass=123456 apiserver_ip=192.168.48.151
+node-2  ansible_ssh_host=192.168.48.152  ansible_ssh_pass=123456 apiserver_ip=192.168.48.152
+node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456 apiserver_ip=192.168.48.153
+
+[k8s_worker]
+node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456 apiserver_ip=192.168.48.154
+
+# (2) 修改一下playbook
+[root@node-1 ansible]# vim play_hosts.yaml
+      block: |
+        # kubernetes
+        {{ apiserver_ip}} api.k8s.local  ==> 修改这里
+        192.168.48.151 node-1
+        192.168.48.152 node-2
+        192.168.48.153 node-3
+        192.168.48.154 node-4
+
+# (3) 在同步hosts文件前，再确认一遍所有主机本地是否监听6443端口
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='netstat -atlnpu | grep -i listen | grep :6443'"
+
+# (4) 同步hosts文件
+[root@node-1 ansible]# ansible-playbook play_hosts.yaml -e "host='all'"
+
+# (5) 检查
+[root@node-1 ansible]# ansible-playbook play_shell.yaml \
+    -e "host='all'" \
+    -e "shell='grep api.k8s.local /etc/hosts'"
 ```
 
 ### 部署高可用Calico服务
