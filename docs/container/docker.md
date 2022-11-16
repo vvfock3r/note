@@ -2910,6 +2910,8 @@ drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
 
 部署常用服务用于**开发环境**
 
+#### TIP：生成密码
+
 :::tip
 
 可以使用如下命令生成`16`位随机密码，若不想要某个字母在`tr -d`后面添加
@@ -2924,6 +2926,34 @@ QiNqg[l.%;H>>rO9
 ```
 
 :::
+
+<br />
+
+#### Nginx
+
+```bash
+# (1) 创建本地持久化目录
+[root@ap-hongkang ~]# mkdir -p /etc/nginx/conf.d 
+[root@ap-hongkang ~]# mkdir -p /etc/nginx/pki
+[root@ap-hongkang ~]# mkdir -p /usr/share/nginx
+
+# (2) 随便启动一个容器用于拷贝默认的配置文件
+[root@ap-hongkang ~]# docker container run --name get_nginx_config -d nginx:latest
+[root@ap-hongkang ~]# docker container cp /etc/nginx/conf.d/default /etc/nginx/conf.d/
+[root@ap-hongkang ~]# docker container rm -f get_nginx_config
+
+# (3) 启动容器
+[root@ap-hongkang ~]# docker container run \
+    --name project \
+    -p 443:443 \
+    -p 80:80 \
+    -v /etc/nginx/conf.d:/etc/nginx/conf.d \
+    -v /etc/nginx/pki:/etc/nginx/pki \
+    -v /usr/share/nginx:/usr/share/nginx \
+    -d \
+    --restart=always \
+  nginx:latest
+```
 
 <br />
 

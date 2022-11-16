@@ -4,7 +4,7 @@ sidebar: off
 
 <br />
 
-**Kubeadm部署**
+**Kubeadm部署（推荐）**
 
 [https://jinhui.dev/container/kubernetes/deploy/kubeadm.html](https://jinhui.dev/container/kubernetes/deploy/kubeadm.html)
 
