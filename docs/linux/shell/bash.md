@@ -1,91 +1,99 @@
-## Bash
+# Shell
 
-### Shell类型
+## 类型
 
 Shell是一个应用程序，它是作系统与外部交互最主要的接口式。
 
 Shell的实现有很多方式，这里我们主要说Bash，操作系统使用的是CentOS7
 
-* 查看系统中已有得Shell类型
+::: details （1）查看系统中已有得Shell类型
 
-  ```bash
-  # 方法1
-  [root@localhost ~]# cat /etc/shells 
-  /bin/sh
-  /bin/bash
-  /sbin/nologin
-  /usr/bin/sh
-  /usr/bin/bash
-  /usr/sbin/nologin
-  /bin/zsh
-  
-  # 方法2
-  [root@localhost ~]# chsh -l
-  /bin/sh
-  /bin/bash
-  /sbin/nologin
-  /usr/bin/sh
-  /usr/bin/bash
-  /usr/sbin/nologin
-  /bin/zsh
-  ```
+```bash
+# 方法1
+[root@localhost ~]# cat /etc/shells 
+/bin/sh
+/bin/bash
+/sbin/nologin
+/usr/bin/sh
+/usr/bin/bash
+/usr/sbin/nologin
+/bin/zsh
 
-* 查看当当前用户所使用的默认Shell类型
+# 方法2
+[root@localhost ~]# chsh -l
+/bin/sh
+/bin/bash
+/sbin/nologin
+/usr/bin/sh
+/usr/bin/bash
+/usr/sbin/nologin
+/bin/zsh
+```
 
-  ```bash
-  [root@localhost ~]# echo $SHELL
-  /bin/bash
-  
-  [root@localhost ~]# bash --version
-  bash --version
-  GNU bash, version 4.2.46(2)-release (x86_64-redhat-linux-gnu)
-  Copyright (C) 2011 Free Software Foundation, Inc.
-  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-  
-  This is free software; you are free to change and redistribute it.
-  There is NO WARRANTY, to the extent permitted by law.
-  ```
+:::
 
-  > 有时候会使用sh命令，这通常是Bash的软连接
-  >
-  > ```bash
-  > [root@localhost ~]# ls -l `which sh`
-  > lrwxrwxrwx. 1 root root 4 May 21  2021 /usr/bin/sh -> bash
-  > ```
+::: details （2）查看当当前用户所使用的默认Shell类型
 
-* 修改当前用户所使用的默认Shell为zsh
+```bash
+[root@localhost ~]# echo $SHELL
+/bin/bash
 
-  ```bash
-  # 修改当前用户所使用的默认Shell
-  [root@localhost ~]# chsh -s /bin/zsh
-  Changing shell for root.
-  Shell changed.
-  
-  # 退出当前终端，重新连接
-  
-  # 再次查看当前所使用的Shell
-  [root@localhost]~# echo $SHELL
-  /bin/zsh
-  ```
+[root@localhost ~]# bash --version
+bash --version
+GNU bash, version 4.2.46(2)-release (x86_64-redhat-linux-gnu)
+Copyright (C) 2011 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 
-  > 原理其实就是修改了/etc/passwd文件
-  >
-  > ```bash
-  > [root@localhost]~# cat /etc/passwd | grep -E "^root"
-  > root:x:0:0:root:/root:/bin/zsh
-  > ```
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+```
 
+> 有时候会使用sh命令，这通常是Bash的软连接
+>
+> ```bash
+> [root@localhost ~]# ls -l `which sh`
+> lrwxrwxrwx. 1 root root 4 May 21  2021 /usr/bin/sh -> bash
+> ```
 
+:::
 
-### 获取Bash帮助文档
+::: details （3）修改当前用户所使用的默认Shell为zsh
 
-可以通过`man bash`来查询详细文档，本文档中大部分信息都可以通过这种方式获取到
+```bash
+# 修改当前用户所使用的默认Shell
+[root@localhost ~]# chsh -s /bin/zsh
+Changing shell for root.
+Shell changed.
 
+# 退出当前终端，重新连接
 
+# 再次查看当前所使用的Shell
+[root@localhost]~# echo $SHELL
+/bin/zsh
+```
+
+> 原理其实就是修改了/etc/passwd文件
+>
+> ```bash
+> [root@localhost]~# cat /etc/passwd | grep -E "^root"
+> root:x:0:0:root:/root:/bin/zsh
+> ```
+
+:::
+
+<br />
+
+## Bash
+
+### 帮助文档
+
+在线文档：[https://www.gnu.org/software/bash/manual/](https://www.gnu.org/software/bash/manual/)
+
+终端文档：`man bash`
+
+<br />
 
 ### 变量
-
-
 
 #### 环境变量
 
@@ -109,8 +117,6 @@ Shell的实现有很多方式，这里我们主要说Bash，操作系统使用�
 | HOSTNAME     | 主机名                                           |
 | RANDOM       | 产生一个范围在0-32767的随机数                    |
 
-
-
 使用`env`命令可以查看终端所有的环境变量
 
 使用`locale`命令可以输出语言相关的详细变量
@@ -132,7 +138,7 @@ SSH_USE_STRONG_RNG=0
 
 使用`export k=v`可以设置环境变量，也可以单独使用`export`显示环境变量
 
-
+<br />
 
 #### 本地变量
 
@@ -140,7 +146,7 @@ SSH_USE_STRONG_RNG=0
 
 使用`set`命令显示本地变量，使用`unset`可以删除本地变量
 
-
+<br />
 
 #### 变量继承性差异
 
@@ -166,7 +172,7 @@ SSH_USE_STRONG_RNG=0
 
 > pstree命令安装：yum -y install psmisc
 
-
+<br />
 
 #### 内部域分隔符IFS
 
@@ -200,7 +206,7 @@ hello world
 hello:world
 ```
 
-
+<br />
 
 #### 变量引用
 
@@ -213,7 +219,7 @@ year=23
 echo i am ${year}years old.  # 如果不加{}，它会把$yearyears当做一个整体
 ```
 
-
+<br />
 
 #### 变量默认值
 
@@ -232,7 +238,7 @@ echo i am ${year}years old.  # 如果不加{}，它会把$yearyears当做一个�
 100
 ```
 
-
+<br />
 
 #### 位置参数变量
 
@@ -263,6 +269,8 @@ echo ${array[2]}
 [root@localhost ~]# bash demo.sh 10 9 8
 9
 ```
+
+<br />
 
 #### 变量操作
 
@@ -367,6 +375,8 @@ EE
 [EE]
 ```
 
+<br />
+
 #### 巧读配置文件
 
 ```bash
@@ -386,6 +396,8 @@ echo "The Host is ${HOST}:${PORT}"
 [root@localhost ~]# bash demo.sh
 The Host is 0.0.0.0:55555
 ```
+
+<br />
 
 #### 变量安全性
 
@@ -475,8 +487,6 @@ demo.sh: line 5: a: command not found
 1
 ```
 
-
-
 **总结**
 
 推荐使用下面这种写法
@@ -488,13 +498,11 @@ set -euo pipefail
 
 > 还有一种方法也能达到同样的效果，`bash -euxo pipefail demo.sh`，但是你不能保证调用时永远会记得添加`-euxo pipefail`选项，所以并不推荐
 
-
-
-
+<br />
 
 ### 语句
 
-#### 测试语句
+#### 测试
 
 测试语句可以使用 [ 比较语句 ] 和 [[ 比较语句 ]]，注意语句和前后中括号都有一个空格 也可以用test
 
@@ -591,9 +599,9 @@ else
 fi
 ```
 
+<br />
 
-
-#### if语句
+#### if
 
 ```bash
 if 表达式;then
@@ -606,7 +614,9 @@ fi
 #elif和else都不是必须的
 ```
 
-#### while语句
+<br />
+
+#### while
 
 ```bash
 while 表达式;do
@@ -614,7 +624,9 @@ while 表达式;do
 done
 ```
 
-#### for语句
+<br />
+
+#### for
 
 ```bash
 结构一：
@@ -659,7 +671,52 @@ done
 echo
 ```
 
-#### case语句
+<br />
+
+#### for和while的区别
+
+```bash
+# (1) 看下面两条语句，执行效果，但是他们一样吗？
+[root@ap-hongkang ~]# for line in $(seq 5); do echo $line; done
+1
+2
+3
+4
+5
+[root@ap-hongkang ~]# seq 5 | while read line; do echo $line; done
+1
+2
+3
+4
+5
+
+# (2) 看一下不一样的地方
+[root@ap-hongkang ~]# sum=0; for i in $(seq 10); do sum=$(echo "${sum} + ${i}" | bc); done; echo ${sum}
+55
+
+[root@ap-hongkang ~]# sum=0; seq 10 | while read i; do sum=$(echo "${sum} + ${i}" | bc); done; echo $sum
+0
+
+# (3) 让我们在while循环中输出sum的值
+[root@ap-hongkang ~]# sum=0; seq 10 | while read i; do sum=$(echo "${sum} + ${i}" | bc); echo ${sum}; done; echo $sum
+1
+3
+6
+10
+15
+21
+28
+36
+45
+55
+0
+
+# 总结：如果要在循环内修改外部的变量，不要在 while read line; do xxx; done 中修改
+```
+
+<br />
+
+#### case
 
 ```bash
 #!/bin/bash
@@ -678,6 +735,8 @@ case $number in
         echo '输入的不是数字!';;
 esac
 ```
+
+<br />
 
 #### continue和break 
 
@@ -710,6 +769,8 @@ echo $sum
 5050
 ```
 
+<br />
+
 #### eval将字符串作为语句执行
 
 ```bash
@@ -733,6 +794,8 @@ echo "最后一个参数是:"$(eval echo "\$$#")
 10
 ```
 
+<br />
+
 #### exec执行命令后退出当前终端
 
 ```bash
@@ -742,6 +805,8 @@ ping -i 0.1  -c 10 www.baidu.com &>/dev/null || exec  echo "Network is unreachab
 # 检测用户
 if [ `id -u` -ne 0 ];then exec echo "Must be root can run it"; fi
 ```
+
+<br />
 
 #### getopts命令行参数处理
 
@@ -778,6 +843,3 @@ option is s,the value is S
 option is x ,the value is X
 option is v ,the value is V
 ```
-
-
-

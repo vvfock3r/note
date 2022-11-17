@@ -10,7 +10,7 @@ const navbar = [
     {
         text: 'Linux',
         children: [
-            {text: 'Bash脚本', link: '/linux/Bash'},
+            {text: 'Bash', link: '/linux/shell/bash'},
         ]
     },
     {
