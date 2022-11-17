@@ -54,9 +54,13 @@ node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 # (6) 编辑配置文件
 # 若是使用yum安装的ansible:
 #     默认配置文件是/etc/ansible/ansible.cfg
+
 # 若是使用pip安装的ansible, 默认不带配置文件, 可以到指定版本的GitHub上去找配置文件,如下所示：
 #     https://github.com/ansible/ansible/blob/v2.11.12/examples/ansible.cfg
+
 # 当前目录下的配置文件优先级高于默认的配置文件(/etc目录下)
+
+# 修改配置文件,forks根据实际情况修改
 [root@localhost ansible]# cp /etc/ansible/ansible.cfg .
 [root@localhost ansible]# vim ansible.cfg
 [defaults]
@@ -908,6 +912,7 @@ done
                docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.25.4.tar && \
                docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar && \
                docker image load -i /usr/local/kubernetes/kubeadm/coredns-v1.9.3.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/pause-3.6.tar && \
                docker image load -i /usr/local/kubernetes/kubeadm/pause-3.8.tar'"
 ```
 
