@@ -37,10 +37,10 @@ ansible 2.9.27
 ### 2）配置Ansible
 
 ```bash
-# (4) 创建kubernetes专门放Ansible所有的文件目录
+# (1) 创建kubernetes专门放Ansible所有的文件目录
 [root@localhost ~]# mkdir -p /usr/local/kubernetes/ansible && cd /usr/local/kubernetes/ansible
 
-# (5) 新建inventory文件
+# (2) 新建inventory文件
 #     组名不建议使用-,会报提醒, 比如k8s-master建议写成k8s_master
 [root@localhost ansible]# vim hosts.ini
 [k8s_master]
@@ -51,7 +51,7 @@ node-3  ansible_ssh_host=192.168.48.153  ansible_ssh_pass=123456
 [k8s_worker]
 node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 
-# (6) 编辑配置文件
+# (3) 拷贝默认的配置文件
 # 若是使用yum安装的ansible:
 #     默认配置文件是/etc/ansible/ansible.cfg
 
@@ -60,7 +60,7 @@ node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456
 
 # 当前目录下的配置文件优先级高于默认的配置文件(/etc目录下)
 
-# 修改配置文件,forks根据实际情况修改
+# (4) 修改配置文件,forks根据实际情况修改
 [root@localhost ansible]# cp /etc/ansible/ansible.cfg .
 [root@localhost ansible]# vim ansible.cfg
 [defaults]
@@ -71,6 +71,9 @@ host_key_checking     = False
 display_skipped_hosts = False
 deprecation_warnings  = False
 command_warnings      = False
+
+# (5) 测试
+[root@localhost ansible]# ansible all -m ping
 ```
 
 ### 3）测试执行Shell命令
