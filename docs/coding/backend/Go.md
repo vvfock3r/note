@@ -6657,108 +6657,6 @@ func main() {
 
 <br />
 
-### 数据竞争
-
-并发读写共享资源的时候会出现数据竞争`（data race）`，所以需要像锁等机制来进行保护
-
-<br />
-
-在编译`(cmpile)`、测试`（test）`、运行`（run）`前使用`-race`选项能检测数据竞争问题，
-
-他的原理是：在程序运行以后，会监控程序对内存地址访问，并打印出提示
-
-注意事项：
-
-* 如果程序在以后会访问某个资源，此时使用`-race`是检测不到的
-* 开启了`-race`不要部署到线上，因为会有性能问题，测试期间可以开启`-race`
-
-
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"sync"
-)
-
-func main() {
-	var data int = 0
-	var wg sync.WaitGroup
-
-	for i := 0; i < 10000; i++ {
-		wg.Add(1)
-		go func() {
-			data++
-			wg.Done()
-		}()
-	}
-
-	wg.Wait()
-	fmt.Println(data)
-}
-
-// 每次运行结果都不一样，大概在为9600左右，原理是产生了数据竞争，data++不是一个原子操作，操作是可以被打断的
-// 比如说 有2个协程同时拿到了data为100，那么协程1给data+1=101，协程2也给data+1=101，经过这俩协程一番操作，data只增长了1，
-// 所以我们虽然循环了一万次，其实结果要<=10000，如果将上面的循环次数修改为100次，那么结果是正确的，但其实是还是有问题的
-```
-
-下面开启`--race`检测数据竞争
-
-```bash
-Goroutine 8 (running) created at:
-  main.main()
-      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
-
-Goroutine 7 (finished) created at:
-  main.main()
-      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
-==================
-10000
-Found 1 data race(s)	# 发现1个数据竞争
-exit status 66
-```
-
-最常用的办法就是使用锁，来看一下代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"sync"
-)
-
-func main() {
-	var data int = 0
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-
-	for i := 0; i < 10000; i++ {
-		wg.Add(1)
-		go func() {
-			mu.Lock()
-			data++
-			mu.Unlock()
-			wg.Done()
-		}()
-	}
-
-	wg.Wait()
-	fmt.Println(data)
-}
-
-// 运行并开启--race检测
-// go run -race main.go  
-// 10000
-```
-
-:::
-
-<br />
-
 ### Sync
 
 官方文档：[https://pkg.go.dev/sync](https://pkg.go.dev/sync)
@@ -6888,11 +6786,9 @@ func main() {
 
 <br />
 
-#### 案例：并发安全的Map的3种实现
+#### 并发安全的Map的3种实现
 
-##### （1）原生Map+读写锁
-
-::: details 点击查看完整代码
+::: details （1）原生Map+读写锁
 
 ```go
 package main
@@ -7005,13 +6901,11 @@ func main() {
 
 :::
 
-##### （2）标准库 sync.Map
+::: details （2）标准库 sync.Map
 
 `sync.Map`是Go为我们提供的并发安全的`Map`，适用于读多写少的场景
 
 （适用场景与原生`map` + `sync.RWMutex`类似，相比而言`sync.Map`读的性能更好写的性能更差）
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -7057,7 +6951,7 @@ func main() {
 
 :::
 
-##### （3）第三方库：`map`分片
+::: details 第三方库：通过`map`分片实现
 
 `Github`地址：[https://github.com/orcaman/concurrent-map](https://github.com/orcaman/concurrent-map)
 
@@ -7067,10 +6961,6 @@ func main() {
 
 * 默认对`map`分了32片（每一片是一个结构体，每个结构体包含原生Map和读写锁），所有分片存储在一个切片中`[]*ConcurrentMapShared`
 * 每次操作时(增删改查)，先通过`GetShard(key)`获取`key`所在的分片，然后对分片加锁后再操作
-
-示例代码
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -7184,7 +7074,7 @@ func main() {
 
 <br />
 
-#### 临时缓存池Pool
+#### 临时缓存池
 
 `sync.Pool`是一个临时缓存池，并发安全
 
@@ -7267,13 +7157,11 @@ func main() {
 
 <br />
 
-#### 案例：并发安全的字节池的2种实现
+#### 并发安全的字节池的2种实现
 
-##### （1）`sync.Pool`实现
+::: details （1）sync.Pool实现
 
 代码来自`Hugo`：[https://github.com/gohugoio/hugo](https://github.com/gohugoio/hugo)
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -7324,11 +7212,9 @@ func main() {
 
 :::
 
-##### （2）使用channel实现
+::: details （2）使用channel实现
 
 代码来自minio：[https://github.com/minio/minio](https://github.com/minio/minio)
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -7414,72 +7300,67 @@ func main() {
 
 :::
 
-##### （3）可能需要的注意事项
+::: details（3）注意事项：内存泄漏问题
 
-* 内存泄漏问题：
+描述：当`byte`很大的时候，再放入池子，就会引起内存泄漏
 
-  * 描述：当`byte`很大的时候，再放入池子，就会引起内存泄漏
-  * 解决：放回池子时判断`Byte`大小，如果很大就直接丢弃
+解决：放回池子时判断`Byte`大小，如果很大就直接丢弃
 
-  * 参考实现
+参考：
 
-    ::: details 点击查看参考代码
+```go
+// fmt包print.go文件
 
-    ```go
-    // fmt包print.go文件
-    
-    // 定义池子
-    var ppFree = sync.Pool{
-    	New: func() any { return new(pp) },
-    }
-    
-    // 放回池子操作
-    func (p *pp) free() {
-    	// Proper usage of a sync.Pool requires each entry to have approximately
-    	// the same memory cost. To obtain this property when the stored type
-    	// contains a variably-sized buffer, we add a hard limit on the maximum buffer
-    	// to place back in the pool.
-    	//
-    	// See https://golang.org/issue/23199
-    	if cap(p.buf) > 64<<10 {	// 容量过大则丢弃
-    		return
-    	}
-    
-    	p.buf = p.buf[:0]
-    	p.arg = nil
-    	p.value = reflect.Value{}
-    	p.wrappedErr = nil
-    	ppFree.Put(p)
-    }
-    ```
+// 定义池子
+var ppFree = sync.Pool{
+	New: func() any { return new(pp) },
+}
 
-    :::
+// 放回池子操作
+func (p *pp) free() {
+	// Proper usage of a sync.Pool requires each entry to have approximately
+	// the same memory cost. To obtain this property when the stored type
+	// contains a variably-sized buffer, we add a hard limit on the maximum buffer
+	// to place back in the pool.
+	//
+	// See https://golang.org/issue/23199
+	if cap(p.buf) > 64<<10 {	// 容量过大则丢弃
+		return
+	}
 
-* 内存浪费问题：
+	p.buf = p.buf[:0]
+	p.arg = nil
+	p.value = reflect.Value{}
+	p.wrappedErr = nil
+	ppFree.Put(p)
+}
+```
 
-  * 描述：如果池子内的`buffer`比较大，但是实际用的话比较小，就存在浪费问题了
+:::
 
-  * 解决：定义多种规格的池子，按需使用
+::: details（4）注意事项：内存浪费问题
 
-  * 参考实现
+描述：如果池子内的`buffer`比较大，但是实际用的话比较小，就存在浪费问题了
 
-    ::: details 点击查看参考代码
+解决：定义多种规格的池子，按需使用
 
-    ```go
-    // net/http包server.go
-    
-    var (
-    	bufioReaderPool   sync.Pool
-    	bufioWriter2kPool sync.Pool
-    	bufioWriter4kPool sync.Pool
-    )
-    ```
+参考：
 
-    :::
+```go
+// net/http包server.go
+
+var (
+	bufioReaderPool   sync.Pool
+	bufioWriter2kPool sync.Pool
+	bufioWriter4kPool sync.Pool
+)
+```
+
+:::
 
 <br />
 
-#### 条件变量(不推荐)
+#### 条件变量
 
 `sync.Cond`并不被推荐使用，这里权当了解一下
 
@@ -7704,7 +7585,7 @@ func main() {
 
 <br />
 
-#### 原子操作举例
+#### 使用原子操作优化举例
 
 ::: details 点击查看完整代码
 
@@ -7724,8 +7605,139 @@ func main() {
 	for i := 0; i < 10000; i++ {
 		wg.Add(1)
 		go func() {
-			//data++ // 非原子操作，这会引起数据竞争
+			//data++                  // 非原子操作，这会引起数据竞争
 			atomic.AddInt64(&data, 1) // 原子操作
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+```
+
+:::
+
+<br />
+
+### 数据竞争检测手段
+
+并发读写共享资源的时候会出现数据竞争`(data race)`，所以需要像锁等机制来进行保护
+
+在编译`(cmpile)`、测试`（test）`、运行`（run）`前使用`--race`选项能检测数据竞争问题，
+
+他的原理是：在程序运行以后，会监控程序对内存地址访问，并打印出提示
+
+注意事项：
+
+* 如果程序在以后会访问某个资源，此时使用`--race`是检测不到的
+* 开启了`--race`不要部署到线上，因为会有性能问题，测试期间可以开启`--race`
+
+::: details 并发不安全代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var data int = 0
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			data++
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+
+// 每次运行结果都不一样，大概在为9600左右，原理是产生了数据竞争，data++不是一个原子操作，操作是可以被打断的
+// 比如说 有2个协程同时拿到了data为100，那么协程1给data+1=101，协程2也给data+1=101，经过这俩协程一番操作，data只增长了1，
+// 所以我们虽然循环了一万次，其实结果要<=10000，如果将上面的循环次数修改为100次，那么结果是正确的，但其实是还是有问题的
+```
+
+下面开启`--race`检测数据竞争
+
+```bash
+Goroutine 8 (running) created at:
+  main.main()
+      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
+
+Goroutine 7 (finished) created at:
+  main.main()
+      C:/Users/Administrator/GolandProjects/learn/main.go:14 +0x84
+==================
+10000
+Found 1 data race(s)	# 发现1个数据竞争
+exit status 66
+```
+
+:::
+
+::: details （1）解决方式1：加锁
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var data int = 0
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			mu.Lock()
+			data++
+			mu.Unlock()
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	fmt.Println(data)
+}
+
+// 运行并开启--race检测
+// go run -race main.go  
+// 10000
+```
+
+:::
+
+::: details （2）解决方式2：原子操作
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+func main() {
+	var data int64 = 0
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			//data++ // 非原子操作，这会引起数据竞争
+			atomic.AddInt64(&data, 1) // 原子操作,这里手动将data的类型改为了int64,如果不改类型如何做?
 			wg.Done()
 		}()
 	}
