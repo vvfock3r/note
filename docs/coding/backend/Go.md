@@ -4180,6 +4180,1198 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 ## 
 
+## IO
+
+### `os`包：基础文件读写
+
+官方文档：[https://pkg.go.dev/os](https://pkg.go.dev/os)
+
+#### 打开文件
+
+方式一：`OpenFile`
+
+```go
+OpenFile(name string, flag int, perm FileMode) (*File, error)
+```
+
+::: details 点击查看详细介绍
+
+```go
+// flag选项
+//	(1)打开模式（必须指定其一）
+//		os.O_RDONLY         以只读方式打开文件       如果文件不存在则报错
+//		os.O_WRONLY         以只写方式打开          如果文件不存在则报错
+//		os.O_RDWR           以读写方式打开文件       如果文件不存在则报错
+//	(2)辅助控制行为
+//		os.O_APPEND         追加方式写入
+//		os.O_CREATE         文件不存在则创建文件；Windows系统该属性会自带写属性                                          
+//		os.O_EXCL           文件必须不存在；使用场景比如：只允许进程打开自己的文件 或 多进程运行时退出，只允许单进程运行
+//		os.O_TRUNC          文件存在则截断（清空内容）
+
+// 常用flag组合选项
+//	读文件
+//		os.O_RDONLY                             读文件，文件不存在则报错
+//	写文件
+//		os.O_RDWR | os.O_CREATE                 写文件，当文件不存在时自动创建文件
+//		os.O_RDWR | os.O_CREATE | os.O_APPEND   写文件，当文件不存在时自动创建文件，当文件存在时追加内容
+//		os.O_RDWR | os.O_CREATE | os.O_TRUNC    写文件，当文件不存在时自动创建文件，当文件存在时清空文件内容
+
+// perm选项
+// 	文件权限
+//	(1)只有在创建文件时才有用，当不需要创建文件时可以设置为0
+//	(2)内置常量os.ModePerm = 0777
+```
+
+:::
+
+方式二：`Open`
+
+```go
+func Open(name string) (*File, error) {
+	return OpenFile(name, O_RDONLY, 0)
+}
+
+// 核心为OpenFile，以只读模式打开文件，当文件不存在时会报错
+```
+
+方式三：`Create`
+
+```go
+func Create(name string) (*File, error) {
+	return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666)
+}
+
+// 核心为OpenFile，当文件不存在时会创建，当文件存在时会清空文件内容
+// 使用时多加注意，不要误清空了文件内容!!!
+```
+
+<br />
+
+#### 常规操作函数
+
+| 分类               | 函数                                             | 说明                                                         |
+| ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
+| 创建临时文件或目录 | `CreateTemp(dir, pattern string) (*File, error)` | 创建临时文件，返回临时文件的路径<br />（1）`dir`指定在哪个目录下创建临时目录，为空会使用用户默认临时目录<br />（2）`pattern `指定文件名前缀，如果包含`*`，那么代指整个文件名，<br />`*`被替换为随机字符串 |
+|                    | `MkdirTemp(dir, pattern string) (string, error)` | 同上，只不过创建的是临时目录                                 |
+| 创建目录           | `Mkdir(name string, perm FileMode) error`        | 创建目录；<br />（1）不支持创建多级目录<br />（2）目录存在时会报错 |
+|                    | `MkdirAll(path string, perm FileMode) error`     | 创建目录<br />（1）支持创建多级目录<br />（2）目录存在时会报错 |
+| 删除文件或目录     | `Remove(name string) error`                      | 删除文件或空目录，不存在时会报错                             |
+|                    | `RemoveAll(path string) error`                   | 删除文件或目录，支持非空目录，不存在时会报错                 |
+| 重命名             | `Rename(oldpath, newpath string) error`          | 文件或目录重命名                                             |
+| 文件详情           | `Stat(name string) (FileInfo, error)`            | 获取文件详情                                                 |
+|                    | `Lstat(name string) (FileInfo, error)`           | 同上，区别是对于链接文件，`Stat`具有穿透能力而`Lstat`没有    |
+| 判断是哪种错误     | `IsExist(err error) bool`                        | 是否是文件存在错误                                           |
+|                    | `IsNotExist(err error) bool`                     | 是否是文件不存在错误                                         |
+|                    | `IsPermission(err error) bool`                   | 是否是权限错误                                               |
+|                    | `IsTimeout(err error) bool`                      | 是否是超时错误                                               |
+
+判断文件或目录是否存在
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+// 判断文件或目录是否存在
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func main() {
+	for _, path := range []string{"main.go", "go.mod", "test.log", "C:\\Windows"} {
+		if exists, err := PathExists(path); err == nil {
+			fmt.Printf("%s exist: %t\n", path, exists)
+		} else {
+			fmt.Printf("%s exist: %t\n", path, "unknown")
+		}
+	}
+}
+```
+
+:::
+
+输出结果
+
+```bash
+main.go exist: true
+go.mod exist: true    
+test.log exist: false 
+C:\Windows exist: true
+```
+
+<br />
+
+#### 写入数据
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"os"
+)
+
+func main() {
+	// 打开文件，文件存在则清空内容，不存在则创建
+	f, err := os.OpenFile("test.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		log.Fatalf("Open file error: %s\n", err)
+	}
+	defer f.Close()
+
+	// 写入内容 - 字节
+	byteLine := []byte("人之初，性本善。性相近，习相远。")
+	byteLine = append(byteLine, '\n')
+	if _, err := f.Write(byteLine); err != nil {
+		log.Fatalf("Write error: %s", byteLine)
+	}
+
+	// 写入内容 - 字符串
+	stringLine := "苟不教，性乃迁。教之道，贵以专。"
+	stringLine = stringLine + "\n"
+	if _, err := f.WriteString(stringLine); err != nil {
+		log.Fatalf("Write error: %s", stringLine)
+	}
+
+	// 获取文件指针位置 (从当前位置开始，偏移为0的位置)
+	currentSeek, err := f.Seek(0, io.SeekCurrent)
+	if err != nil {
+		log.Fatalf("Get file current seek error: %s\n", err)
+	}
+
+	// 使用指针写入（写入的长度会将指针后面的内容覆盖）
+	// 这里我们使用”新“替换掉”贵以专。“中的”贵“,思路就是文件指针移动到”贵“字上，然后替换即可
+	// 偏移量计算：1('\n') + 12("贵新专。"，一个汉字3个字节，注意这里的句号是中文的，也计算在汉字里面) = 13
+	seekRune := []byte("新")
+	if _, err := f.WriteAt(seekRune, currentSeek-13); err != nil {
+		log.Fatalf("Write error: %s", byteLine)
+	}
+}
+```
+
+:::
+
+<br />
+
+#### 读取数据
+
+**按字节从文件开始读取数据**
+`Read(b []byte) (n int, err error)`
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func Read() {
+	// 打开文件
+	fileName := "test.log"
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("文件不存在: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 循环读取文件
+	buffer := make([]byte, 1024)
+	for {
+		n, err := f.Read(buffer)
+
+		// 处理数据
+		if n > 0 {
+            fmt.Printf("%s", buffer[:n])	// 注意这里[:n]
+		}
+
+		// 判断是否可以读取下一行
+		if err == nil {
+			continue
+		}
+
+		// 文件读取完成
+		if err == io.EOF {
+			break
+		}
+
+		// 文件读取失败
+		log.Fatalf("文件读取失败: %s:%s\n", fileName, err)
+	}
+}
+
+func main() {
+	Read()
+}
+```
+
+:::
+
+**按字节从文件任意位置读取数据**
+
+`ReadAt(b []byte, off int64) (n int, err error)`
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func ReadAt() {
+	// 打开文件
+	fileName := "test.log"
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("文件不存在: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 获取文件指针(末尾)
+	seekEnd, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		log.Fatalf("File seek error: %s\n", err)
+	}
+
+	// ReadAt读取
+	buf := make([]byte, 4)
+	n, err := f.ReadAt(buf, seekEnd-4) // 读取文件末尾的4个字节，换行符1个字节，中文1个字节
+	if err != nil {
+		log.Fatalf("File readat error: %s\n", err)
+	}
+	fmt.Println(string(buf[:n]))
+}
+
+func main() {
+	ReadAt()
+}
+```
+
+:::
+
+<br />
+
+#### 读取中文乱码问题
+
+一个中文占3个字节，如果只是简单的使用`Read`按字节读取文件的话，有可能会遇到中文乱码问题
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"unicode/utf8"
+)
+
+func WriteFile(fileName string) {
+	// 生成数据
+	data := make([]byte, 0)
+	for i := 0; i < 170; i++ {
+		data = append(data, []byte("中")...)
+	}
+	data = append(data, []byte("国")...)
+
+	// 写入文件
+	err := os.WriteFile(fileName, data, os.ModePerm)
+	if err != nil {
+		log.Fatalf("写入文件失败: %s\n", fileName)
+	} else {
+		log.Printf("写入文件成功: %s: %d bytes\n", fileName, len(data))
+	}
+}
+
+func ReadByte(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	buf := make([]byte, 512)
+	for {
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+
+		// 显示数据,最后一个中文显示乱码
+		log.Printf("显示文件内容: %s\n", string(buf[:n]))
+
+		// 检测切片[]byte是否包含完整且合法的UTF-8编码序列（不能有乱码）
+		log.Printf("检测字节切片是否是完整且合法的UTF-8编码序列: %t\n", utf8.Valid(buf[:n]))
+	}
+}
+
+func ReadAllByte(fileName string) {
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+	}
+	log.Printf("读取文件成功: %s: %d bytes\n", fileName, len(data))
+	log.Printf("显示文件内容: %s\n", string(data))
+}
+
+func ReadByRune(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	reader := bufio.NewReader(f)
+	data := make([]rune, 0)
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+		//log.Printf("读取文件成功: %s: %d bytes\n", fileName, size)
+		data = append(data, r)
+	}
+	// 显示数据
+	log.Printf("显示文件内容: %s\n", string(data))
+}
+
+func ReadByteBySeek(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	var bufsize int64 = 512
+	oldSize := bufsize
+	for {
+		// 读取数据
+		buf := make([]byte, bufsize)
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+
+		// 非完整的UTF8序列处理
+		if !utf8.Valid(buf[:n]) {
+			// 指针回退
+			if ret, err := f.Seek(int64(n)*-1, io.SeekCurrent); err != nil {
+				log.Fatalf("读取文件失败: %s: %s %s \n", fileName, err, ret)
+			}
+			// buf字节数+1
+			bufsize++
+
+			continue
+		}
+
+		// 完整的UTF8序列处理
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+		log.Printf("显示文件内容: %s\n", buf[:n])
+		bufsize = oldSize
+	}
+}
+
+func ReadByteNoSeek(fileName string) {
+	// 打开文件
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s\n", fileName)
+	}
+	defer f.Close()
+
+	// 读取数据
+	lastLeft := make([]byte, 0) // 上次读取留下来的不完整的字节切片
+	for {
+		// 读取数据
+		buf := make([]byte, 300)
+		n, err := f.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
+		}
+
+		// 与上次读取遗留字节合并
+		buf = append(lastLeft, buf...)
+		n += len(lastLeft)
+		lastLeft = make([]byte, 0) // 重新初始化
+
+		// 检查序列完整性
+		for {
+			if utf8.Valid(buf[:n]) {
+				break
+			}
+			lastByte := buf[n-1:][0]
+			lastLeft = append([]byte{lastByte}, lastLeft...)
+			n--
+		}
+
+		// 完整的UTF8序列处理
+		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
+		log.Printf("显示文件内容: %s\n", buf[:n])
+	}
+}
+
+func main() {
+	fileName := "test.log"
+
+	// 写数据
+	fmt.Println("------------------ 写入数据 ---------------------")
+	WriteFile(fileName)
+
+	// 按字节读数据(会读到乱码)
+	fmt.Println("\n------------------ 按字节读数据(会读到乱码) ---------------------")
+	ReadByte(fileName)
+
+	// 解决方案1：一次性全部读取到内存中
+	// 缺点：内存占用过大，不适用大文件
+	fmt.Println("\n------------------ 解决方案1：一次性全部读取到内存中 ---------------------")
+	ReadAllByte(fileName)
+
+	// 解决方案2：按Rune读取文件
+	// 缺点：一个字符一个字符的读，效率太低
+	fmt.Println("\n------------------ 解决方案2：按Rune方式读取 ---------------------")
+	ReadByRune(fileName)
+
+	// 解决方案3：按字节读取，如果不是完整UTF8序列则回退文件指针，动态微调buf大小
+	// 缺点：需要通过Seek指针操作
+	fmt.Println("\n- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -")
+	ReadByteBySeek(fileName)
+
+	// 解决方案4：按字节读取，如果不是完整UTF8序列，那么将字节切片分割，只是用完整的UTF8序列，乱码部分与下一次读取连接起来
+	// 缺点：代码比较复杂
+	fmt.Println("\n------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------")
+	ReadByteNoSeek(fileName)
+}
+```
+
+:::
+
+输出结果
+
+```bash
+------------------ 写入数据 ---------------------
+2022/04/25 15:56:39 写入文件成功: test.log: 513 bytes
+
+------------------ 按字节读数据(会读到乱码) ---------------------
+2022/04/25 15:56:39 读取文件成功: test.log: 512 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中��
+2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
+2022/04/25 15:56:39 读取文件成功: test.log: 1 bytes
+2022/04/25 15:56:39 显示文件内容: �
+2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
+
+------------------ 解决方案1：一次性全部读取到内存中 ---------------------      
+2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+------------------ 解决方案2：按Rune方式读取 ---------------------
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -
+2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中国
+
+------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------
+2022/04/25 15:56:39 读取文件成功: test.log: 510 bytes
+2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
+中中中中中中中中中中中中中中中中中中中中中中中中中中中
+2022/04/25 15:56:39 读取文件成功: test.log: 3 bytes
+2022/04/25 15:56:39 显示文件内容: 国
+```
+
+<br />
+
+#### 读写快捷函数
+
+`os.WriteFile`和`os.ReadFile`底层调用的是`OpenFile`，一次性加载数据到内存中，适合读取小文件，大文件有撑爆内存的风险
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+)
+
+func main() {
+	// 写入文件
+	writeFileName := "test.log"
+	err := os.WriteFile(writeFileName, []byte("Hello, 这里是测试日志"), os.ModePerm)
+	if err != nil {
+		log.Fatalf("写入文件失败: %s\n", writeFileName)
+	}
+	log.Printf("写入文件成功: %s\n", writeFileName)
+
+	// 函数源码如下：
+	//func WriteFile(name string, data []byte, perm FileMode) error {
+	//	f, err := OpenFile(name, O_WRONLY|O_CREATE|O_TRUNC, perm)
+	//	if err != nil {
+	//	return err
+	//}
+	//	_, err = f.Write(data)
+	//	if err1 := f.Close(); err1 != nil && err == nil {
+	//	err = err1
+	//}
+	//	return err
+	//}
+	// 可以看到，(1)读写模式打开文件 (2)文件若不存在会自动创建 (3)文件若存在则会截断(清空内容)，所以使用这个函数前需要小心一些
+
+	// 读取文件
+	readFileName := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
+	log.Printf("开始读取文件: %s\n", readFileName)
+	buf, err := os.ReadFile(readFileName)
+	if err != nil {
+		log.Fatalf("读取文件失败: %s: %s\n", readFileName, err)
+	}
+	log.Printf("读取文件成功: %s: %d bytes\n", readFileName, len(buf))
+	// 查看源码可以看到，
+	//		(1)使用Open打开文件
+	//		(2)当文件大小(int64类型)能正常转为int类型时，buf就取这个值；否则buf设置为512
+	//		   int最大值转为GB是多少呢？ math.MaxInt / 1024 / 1024 / 1024 = 8589934591
+	//		   当文件小于8589934591GB时，都是一次性读入内存中
+	// 		   所以使用这个函数，就等同于将文件一次性读入内存，请确保内存充足..
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/24 14:30:58 写入文件成功: test.log
+2022/04/24 14:30:58 开始读取文件: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+2022/04/24 14:31:00 读取文件成功: D:\iso\CentOS-7-x86_64-DVD-1708.iso: 4521459712 bytes
+
+# 可以看到，4个多G的文件2秒钟读完了
+```
+
+<br />
+
+### `io`包：IO基本接口定义
+
+官方文档：[https://pkg.go.dev/io](https://pkg.go.dev/io)
+
+#### Reader基本接口
+
+**Reader定义**
+
+```go
+// io.Reader
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+```
+
+> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`和`error`
+
+**Reader读取规则**
+
+（1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
+
+（2）读取失败，此时有`err != nil`，`err`代表具体的错误
+
+（3）读到`EOF`，此时支持以下两种处理情况：
+
+​		① 返回实际读取的字节数n，将`err`设置为`EOF`（推荐）
+
+​		② 返回实际读取的字节数n，将`err`设置为`nil`，对于这种情况，在下一次读取时需要返回`n == 0, err == nil`（不推荐）
+
+（4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
+
+**Reader接口的几种实现**
+
+| 结构体/接口                                                  | 具体实现                           | 备注                                                         |
+| ------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------ |
+| 从文件中读：<br />`os.File`结构体                            | `os.OpenFile()`                    | 文件读取                                                     |
+|                                                              | `os.Stdin`/`os.Stdout`/`os.Stderr` | 主要为标准输入读取`Stdin`                                    |
+| 从字符串中读：<br />`strings.Reader`结构体                   | `strings.NewReader()`              | `Reader`接口：本质是调用内置函数`copy`，无法读取中文<br />`RuneReader`接口：本质是按字节遍历，如果字节在ASCII码范围内<br />则使用`rune`包装一下返回，否则调用`utf8.DecodeRuneInString`解码出第一个`Rune`并返回 |
+| 从字节中读：<br />`bytes.Reader`结构体                       | `bytes.NewReader()`                | 类似于`strings.Reader`结构体                                 |
+| 从缓冲中读：<br />`bytes.Buffer`结构体<br />`bufio.Reader`结构体 | 详细介绍见后面章节                 | 详细介绍见后面章节                                           |
+| 从网络连接中读：<br />`net.Conn`接口                         | 以后补充                           | 以后补充                                                     |
+
+示例代码
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"time"
+)
+
+func ReadFromStdin() {
+	buf := make([]byte, 1024)
+	for {
+		// 读取输入
+		fmt.Printf("%s 请输入名字：", time.Now().Format("2006/01/02 15:04:05"))
+		n, err := os.Stdin.Read(buf)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// 解析输入
+		name := strings.TrimSpace(string(buf[:n]))
+
+		// 判断输入是否合法
+		if len(name) > 0 {
+			log.Printf("您的名字为: %s", name)
+			break
+		}
+	}
+}
+
+func ReadFromStringReader() {
+	reader := strings.NewReader("hello world!")
+	buf := make([]byte, 1024)
+	for {
+		n, err := reader.Read(buf)
+		if n > 0 {
+			log.Printf("%s\n", buf[:n])
+		}
+		if err == nil {
+			continue
+		}
+		if err == io.EOF {
+			break
+		}
+		log.Println("read error")
+	}
+}
+
+func ReadRuneFromStringReader() {
+	reader := strings.NewReader("a你好")
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+		}
+		log.Printf("%s", string(r))
+	}
+}
+
+func main() {
+	ReadFromStdin()
+	ReadFromStringReader()
+	ReadRuneFromStringReader()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/24 16:52:13 请输入名字：愤怒的西瓜
+2022/04/24 16:52:32 您的名字为: 愤怒的西瓜
+2022/04/24 16:52:32 hello world!
+2022/04/24 16:52:32 a
+2022/04/24 16:52:32 你
+2022/04/24 16:52:32 好
+```
+
+<br />
+
+#### Reader其他接口
+
+```go
+// 读取一次返回一个字节
+type ByteReader interface {
+	ReadByte() (byte, error)
+}
+
+// 读取一次返回一个Rune
+type RuneReader interface {
+	ReadRune() (r rune, size int, err error)
+}
+
+// 可以从指定位置(字节)处读取
+type ReaderAt interface {
+	ReadAt(p []byte, off int64) (n int, err error)
+}
+```
+
+<br />
+
+#### Reader封装函数
+
+| 函数                                                         | 说明                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `func ReadAll(r Reader) ([]byte, error)`                     | 从`Reader`中读完所有数据再返回，当文件过大时有撑爆内存的风险 |
+| `func ReadFull(r Reader, buf []byte) (n int, err error)`     | 读满缓冲区再返回，未读满缓冲区（即使读到`EOF`）也会返回错误  |
+| `func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)` | 最少要读`min`个字节，即使读到`EOF`也会返回错误               |
+| `func LimitReader(r Reader, n int64) Reader`                 | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
+| `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
+
+<br />
+
+#### Writer和Closer接口
+
+**接口定义**
+
+```go
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type Closer interface {
+	Close() error
+}
+```
+
+<br />
+
+#### Reader和Writer复合函数
+
+**io.Copy系列**
+
+（1）`func Copy(dst Writer, src Reader) (written int64, err error)`
+
+主要功能为：从`Reader`中读取，并写入到`Writer`中，返回写入的字节数和错误
+
+> 实现的细节：
+>
+> 1. 如果`src`实现了`WriteTo`接口，那么就调用`src.WriteTo(dst)`方法
+> 2. 如果`dst`实现了`ReaderFrom`接口，那么就调用`dst.ReadFrom(src)`方法
+> 3. 如果以上两个接口都没实现，那么就从`src`读取数据到缓冲区再写入`Writer`
+> 4. 如果`src`是`*LimitedReader`结构体，那么`buffer`大小设定为规定的大小，否则设置为`32KB`
+
+（2）`func CopyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error)`
+
+与`io.Copy`不同的地方在于可以自定义`buffer`大小的`Copy`，但是请注意只有在`src.WriteTo`和`dst.ReadFrom`都没有实现的情况下生效
+
+（3）`func CopyN(dst Writer, src Reader, n int64) (written int64, err error)`
+
+只拷贝N个字节，本质上是通过`LimitReader`来限制`Reader`所能读取的字节数
+
+**io.Pipe**
+
+```go
+func Pipe() (*PipeReader, *PipeWriter)
+```
+
+* 从w中写入，从r中读出
+* 线程安全
+
+* 本质上是无缓冲的`channel`，所以不能在同一个协程中读和写
+
+<br />
+
+### bufio包：带缓冲的IO包
+
+官方文档：[https://pkg.go.dev/bufio](https://pkg.go.dev/bufio)
+
+#### 缓冲原理
+
+![bufio](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/bufio.png)
+
+本质上来讲，就是通过减少系统调用来提高效率，付出的代价就是内存占用变多
+
+<br />
+
+#### 构造函数
+
+```go
+func NewReader(rd io.Reader) *Reader {
+	return NewReaderSize(rd, defaultBufSize)	
+}
+
+func NewWriter(w io.Writer) *Writer {
+	return NewWriterSize(w, defaultBufSize)
+}
+
+// 默认的缓冲区大小defaultBufSize = 4096
+```
+
+<br />
+
+#### 使用示例
+
+::: details Reader使用示例
+
+```go
+package main
+
+import (
+	"bufio"
+	"log"
+	"strings"
+)
+
+func main() {
+	// 生成原始Reader
+	var str string
+	for i := 0; i < 170; i++ {
+		str += "中"
+	}
+	r := strings.NewReader(str)
+	log.Printf("原始Reader可读取数据大小: %d\n", len(str))
+
+	// 带缓冲的Reader
+	//reader := bufio.NewReader(f)	// 使用默认缓冲大小
+	reader := bufio.NewReaderSize(r, 1024) // 自定义缓冲大小
+
+	// 读取数据
+	buf := make([]byte, 100)
+	n, err := reader.Read(buf)
+	if err != nil {
+		log.Fatalf("Read error: %s\n", err)
+	}
+	log.Printf("Read %d bytes\n", n)
+
+	// 查看缓冲区信息
+	log.Printf("缓冲区大小: %d bytes\n", reader.Size())
+	log.Printf("当前缓冲区剩余的可读字节数: %d bytes\n", reader.Buffered())
+}
+```
+
+:::
+
+::: details Writer使用示例
+
+```go
+package main
+
+import (
+	"bufio"
+	"log"
+	"os"
+)
+
+func main() {
+	// 带缓冲的Writer
+	//writer := bufio.NewWriter(os.Stdout)
+	writer := bufio.NewWriterSize(os.Stdout, 15)
+
+	// 写入数据，本次总共写入13个字节数据
+	// 若缓冲区大于等于13则写入到缓冲区，屏幕上也不会输出任何信息，因为缓冲区还并没有向真正的io.Writer中写入
+	// 若缓冲区小于13则不写缓冲区直接写到原始的io.Writer中去
+	n, err := writer.Write([]byte("hello world!\n"))
+	if err != nil {
+		log.Fatalf("Write error: %s\n", err)
+	}
+	log.Printf("Write ok: %d bytes\n", n)
+
+	// 缓冲区信息
+	log.Printf("缓冲区大小: %d\n", writer.Size())
+	//_ = writer.Flush()   // 将缓冲区数据写入到io.Writer中
+	//writer.Reset(writer) // 清空缓冲区, 未写入的则丢弃
+	log.Printf("当前缓冲区已写入的字节数: %d\n", writer.Buffered())
+	log.Printf("当前缓冲区未使用的字节数: %d\n", writer.Available())
+	//b := writer.AvailableBuffer() // 返回未使用字节组成的切片, 等同于b := make([]byte, writer.Available())
+}
+```
+
+:::
+
+<br />
+
+#### 读写测试
+
+**写测试**
+
+::: details 写缓冲性能测试
+
+```go
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+func WriteBufTest(srcFileName, dstFileName string, buffer bool) {
+	// 定义变量
+	var (
+		total int64
+		err   error
+	)
+	start := time.Now().Unix()
+
+	// 打开src文件
+	reader, err := os.Open(srcFileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+	}
+	defer reader.Close()
+
+	// 打开dst文件
+	writer, err := os.OpenFile(dstFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", dstFileName, err)
+	}
+	defer writer.Close()
+
+	// 是否使用buffer
+	if buffer {
+		// 生成buffer并写入
+		w := bufio.NewWriterSize(writer, 1024*32)
+
+		// 使用io.Copy写入
+		//total, err = io.Copy(w, reader)
+
+		// 手动读取写入
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+
+			_, err = w.Write(buf[:n])
+			if err != nil {
+				log.Fatalf("write error: %s\n", err)
+			}
+			total += int64(n)
+		}
+
+	} else {
+		// 使用io.Copy写入
+		//total, err = io.Copy(writer, reader)
+
+		// 手动读取写入
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			_, err = writer.Write(buf[:n])
+			if err != nil {
+				log.Fatalf("write error: %s\n", err)
+			}
+			total += int64(n)
+		}
+	}
+
+	if err != nil {
+		log.Fatalf("拷贝文件失败: %s\n", err)
+	}
+	delta := time.Now().Unix() - start
+	log.Printf("It takes %d seconds to copy %d bytes for %s\n", delta, total, dstFileName)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_without_buffer.iso", false)
+		wg.Done()
+	}()
+	go func() {
+		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_with_buffer.iso", true)
+		wg.Done()
+	}()
+	wg.Wait()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/27 12:56:39 It takes 23 seconds to copy 4521459712 bytes for D:\iso\write_with_buffer.iso
+2022/04/27 12:56:50 It takes 34 seconds to copy 4521459712 bytes for D:\iso\write_without_buffer.iso
+```
+
+> 💡 说明：
+>
+> 代码中给出了2种读写方式，`Read`/`Write`读写方式 和 `io.Copy`读写方式
+>
+> 从输出结果来看
+>
+> （1）使用`Read`/`Write`读写方式性能有明显提升（1.5倍左右），写缓存起到了很大的作用
+>
+> （2）但如果使用`io.Copy`方式读写文件，会使用`dst.ReadFrom(src)`方式读写，对我们这次测试来说并不准，用不用`bufio`，两者花费的时间几乎一致
+
+**读测试**
+
+::: details 读缓冲性能测试
+
+```go
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+	"sync"
+	"time"
+)
+
+func ReadBufTest(srcFileName string, buffer bool) {
+	// 定义变量
+	var (
+		total int64
+		err   error
+	)
+	start := time.Now().UnixMilli()
+
+	// 打开src文件
+	reader, err := os.Open(srcFileName)
+	if err != nil {
+		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+	}
+	defer reader.Close()
+
+	// 是否使用buffer
+	if buffer {
+		// 生成buffer并写入
+		reader := bufio.NewReaderSize(reader, 1024*32)
+
+		// 手动读取
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			total += int64(n)
+		}
+
+	} else {
+		// 手动读取
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("read error: %s\n", err)
+			}
+			total += int64(n)
+		}
+	}
+
+	delta := float64((time.Now().UnixMilli() - start)) / 1000
+	log.Printf("Read %d bytes in %.2f second: %s\n", total, delta, srcFileName)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", false)
+		wg.Done()
+	}()
+	go func() {
+		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", true)
+		wg.Done()
+	}()
+	wg.Wait()
+}
+```
+
+:::
+
+输出结果
+
+```bash
+2022/04/27 13:20:28 Read 4521459712 bytes in 1.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+2022/04/27 13:20:34 Read 4521459712 bytes in 7.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+```
+
+> 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
+
+<br />
+
+### ioutils包：已被os/io包代替
+
+官方文档：[https://pkg.go.dev/io/ioutil](https://pkg.go.dev/io/ioutil)
+
+从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
+
+## 
+
 ## 并发编程
 
 ### `Goroutine`
@@ -6546,1200 +7738,6 @@ func main() {
 :::
 
 ## 
-
-## IO
-
-### `os`包：基础文件读写
-
-官方文档：[https://pkg.go.dev/os](https://pkg.go.dev/os)
-
-#### 打开文件
-
-方式一：`OpenFile`
-
-```go
-OpenFile(name string, flag int, perm FileMode) (*File, error)
-```
-
-::: details 点击查看详细介绍
-
-```go
-// flag选项
-//	(1)打开模式（必须指定其一）
-//		os.O_RDONLY         以只读方式打开文件       如果文件不存在则报错
-//		os.O_WRONLY         以只写方式打开          如果文件不存在则报错
-//		os.O_RDWR           以读写方式打开文件       如果文件不存在则报错
-//	(2)辅助控制行为
-//		os.O_APPEND         追加方式写入
-//		os.O_CREATE         文件不存在则创建文件；Windows系统该属性会自带写属性                                          
-//		os.O_EXCL           文件必须不存在；使用场景比如：只允许进程打开自己的文件 或 多进程运行时退出，只允许单进程运行
-//		os.O_TRUNC          文件存在则截断（清空内容）
-
-// 常用flag组合选项
-//	读文件
-//		os.O_RDONLY                             读文件，文件不存在则报错
-//	写文件
-//		os.O_RDWR | os.O_CREATE                 写文件，当文件不存在时自动创建文件
-//		os.O_RDWR | os.O_CREATE | os.O_APPEND   写文件，当文件不存在时自动创建文件，当文件存在时追加内容
-//		os.O_RDWR | os.O_CREATE | os.O_TRUNC    写文件，当文件不存在时自动创建文件，当文件存在时清空文件内容
-
-// perm选项
-// 	文件权限
-//	(1)只有在创建文件时才有用，当不需要创建文件时可以设置为0
-//	(2)内置常量os.ModePerm = 0777
-```
-
-:::
-
-方式二：`Open`
-
-```go
-func Open(name string) (*File, error) {
-	return OpenFile(name, O_RDONLY, 0)
-}
-
-// 核心为OpenFile，以只读模式打开文件，当文件不存在时会报错
-```
-
-方式三：`Create`
-
-```go
-func Create(name string) (*File, error) {
-	return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666)
-}
-
-// 核心为OpenFile，当文件不存在时会创建，当文件存在时会清空文件内容
-// 使用时多加注意，不要误清空了文件内容!!!
-```
-
-<br />
-
-#### 常规操作函数
-
-| 分类               | 函数                                             | 说明                                                         |
-| ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
-| 创建临时文件或目录 | `CreateTemp(dir, pattern string) (*File, error)` | 创建临时文件，返回临时文件的路径<br />（1）`dir`指定在哪个目录下创建临时目录，为空会使用用户默认临时目录<br />（2）`pattern `指定文件名前缀，如果包含`*`，那么代指整个文件名，<br />`*`被替换为随机字符串 |
-|                    | `MkdirTemp(dir, pattern string) (string, error)` | 同上，只不过创建的是临时目录                                 |
-| 创建目录           | `Mkdir(name string, perm FileMode) error`        | 创建目录；<br />（1）不支持创建多级目录<br />（2）目录存在时会报错 |
-|                    | `MkdirAll(path string, perm FileMode) error`     | 创建目录<br />（1）支持创建多级目录<br />（2）目录存在时会报错 |
-| 删除文件或目录     | `Remove(name string) error`                      | 删除文件或空目录，不存在时会报错                             |
-|                    | `RemoveAll(path string) error`                   | 删除文件或目录，支持非空目录，不存在时会报错                 |
-| 重命名             | `Rename(oldpath, newpath string) error`          | 文件或目录重命名                                             |
-| 文件详情           | `Stat(name string) (FileInfo, error)`            | 获取文件详情                                                 |
-|                    | `Lstat(name string) (FileInfo, error)`           | 同上，区别是对于链接文件，`Stat`具有穿透能力而`Lstat`没有    |
-| 判断是哪种错误     | `IsExist(err error) bool`                        | 是否是文件存在错误                                           |
-|                    | `IsNotExist(err error) bool`                     | 是否是文件不存在错误                                         |
-|                    | `IsPermission(err error) bool`                   | 是否是权限错误                                               |
-|                    | `IsTimeout(err error) bool`                      | 是否是超时错误                                               |
-
-判断文件或目录是否存在
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-)
-
-// 判断文件或目录是否存在
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
-func main() {
-	for _, path := range []string{"main.go", "go.mod", "test.log", "C:\\Windows"} {
-		if exists, err := PathExists(path); err == nil {
-			fmt.Printf("%s exist: %t\n", path, exists)
-		} else {
-			fmt.Printf("%s exist: %t\n", path, "unknown")
-		}
-	}
-}
-```
-
-:::
-
-输出结果
-
-```bash
-main.go exist: true
-go.mod exist: true    
-test.log exist: false 
-C:\Windows exist: true
-```
-
-<br />
-
-#### 写入数据
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"io"
-	"log"
-	"os"
-)
-
-func main() {
-	// 打开文件，文件存在则清空内容，不存在则创建
-	f, err := os.OpenFile("test.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
-	if err != nil {
-		log.Fatalf("Open file error: %s\n", err)
-	}
-	defer f.Close()
-
-	// 写入内容 - 字节
-	byteLine := []byte("人之初，性本善。性相近，习相远。")
-	byteLine = append(byteLine, '\n')
-	if _, err := f.Write(byteLine); err != nil {
-		log.Fatalf("Write error: %s", byteLine)
-	}
-
-	// 写入内容 - 字符串
-	stringLine := "苟不教，性乃迁。教之道，贵以专。"
-	stringLine = stringLine + "\n"
-	if _, err := f.WriteString(stringLine); err != nil {
-		log.Fatalf("Write error: %s", stringLine)
-	}
-
-	// 获取文件指针位置 (从当前位置开始，偏移为0的位置)
-	currentSeek, err := f.Seek(0, io.SeekCurrent)
-	if err != nil {
-		log.Fatalf("Get file current seek error: %s\n", err)
-	}
-
-	// 使用指针写入（写入的长度会将指针后面的内容覆盖）
-	// 这里我们使用”新“替换掉”贵以专。“中的”贵“,思路就是文件指针移动到”贵“字上，然后替换即可
-	// 偏移量计算：1('\n') + 12("贵新专。"，一个汉字3个字节，注意这里的句号是中文的，也计算在汉字里面) = 13
-	seekRune := []byte("新")
-	if _, err := f.WriteAt(seekRune, currentSeek-13); err != nil {
-		log.Fatalf("Write error: %s", byteLine)
-	}
-}
-```
-
-:::
-
-<br />
-
-#### 读取数据
-
-**按字节从文件开始读取数据**
-`Read(b []byte) (n int, err error)`
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-)
-
-func Read() {
-	// 打开文件
-	fileName := "test.log"
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("文件不存在: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 循环读取文件
-	buffer := make([]byte, 1024)
-	for {
-		n, err := f.Read(buffer)
-
-		// 处理数据
-		if n > 0 {
-            fmt.Printf("%s", buffer[:n])	// 注意这里[:n]
-		}
-
-		// 判断是否可以读取下一行
-		if err == nil {
-			continue
-		}
-
-		// 文件读取完成
-		if err == io.EOF {
-			break
-		}
-
-		// 文件读取失败
-		log.Fatalf("文件读取失败: %s:%s\n", fileName, err)
-	}
-}
-
-func main() {
-	Read()
-}
-```
-
-:::
-
-**按字节从文件任意位置读取数据**
-
-`ReadAt(b []byte, off int64) (n int, err error)`
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-)
-
-func ReadAt() {
-	// 打开文件
-	fileName := "test.log"
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("文件不存在: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 获取文件指针(末尾)
-	seekEnd, err := f.Seek(0, io.SeekEnd)
-	if err != nil {
-		log.Fatalf("File seek error: %s\n", err)
-	}
-
-	// ReadAt读取
-	buf := make([]byte, 4)
-	n, err := f.ReadAt(buf, seekEnd-4) // 读取文件末尾的4个字节，换行符1个字节，中文1个字节
-	if err != nil {
-		log.Fatalf("File readat error: %s\n", err)
-	}
-	fmt.Println(string(buf[:n]))
-}
-
-func main() {
-	ReadAt()
-}
-```
-
-:::
-
-<br />
-
-#### 读取中文乱码问题
-
-一个中文占3个字节，如果只是简单的使用`Read`按字节读取文件的话，有可能会遇到中文乱码问题
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"bufio"
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"unicode/utf8"
-)
-
-func WriteFile(fileName string) {
-	// 生成数据
-	data := make([]byte, 0)
-	for i := 0; i < 170; i++ {
-		data = append(data, []byte("中")...)
-	}
-	data = append(data, []byte("国")...)
-
-	// 写入文件
-	err := os.WriteFile(fileName, data, os.ModePerm)
-	if err != nil {
-		log.Fatalf("写入文件失败: %s\n", fileName)
-	} else {
-		log.Printf("写入文件成功: %s: %d bytes\n", fileName, len(data))
-	}
-}
-
-func ReadByte(fileName string) {
-	// 打开文件
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 读取数据
-	buf := make([]byte, 512)
-	for {
-		n, err := f.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
-		}
-		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
-
-		// 显示数据,最后一个中文显示乱码
-		log.Printf("显示文件内容: %s\n", string(buf[:n]))
-
-		// 检测切片[]byte是否包含完整且合法的UTF-8编码序列（不能有乱码）
-		log.Printf("检测字节切片是否是完整且合法的UTF-8编码序列: %t\n", utf8.Valid(buf[:n]))
-	}
-}
-
-func ReadAllByte(fileName string) {
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
-	}
-	log.Printf("读取文件成功: %s: %d bytes\n", fileName, len(data))
-	log.Printf("显示文件内容: %s\n", string(data))
-}
-
-func ReadByRune(fileName string) {
-	// 打开文件
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 读取数据
-	reader := bufio.NewReader(f)
-	data := make([]rune, 0)
-	for {
-		r, _, err := reader.ReadRune()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
-		}
-		//log.Printf("读取文件成功: %s: %d bytes\n", fileName, size)
-		data = append(data, r)
-	}
-	// 显示数据
-	log.Printf("显示文件内容: %s\n", string(data))
-}
-
-func ReadByteBySeek(fileName string) {
-	// 打开文件
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 读取数据
-	var bufsize int64 = 512
-	oldSize := bufsize
-	for {
-		// 读取数据
-		buf := make([]byte, bufsize)
-		n, err := f.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
-		}
-
-		// 非完整的UTF8序列处理
-		if !utf8.Valid(buf[:n]) {
-			// 指针回退
-			if ret, err := f.Seek(int64(n)*-1, io.SeekCurrent); err != nil {
-				log.Fatalf("读取文件失败: %s: %s %s \n", fileName, err, ret)
-			}
-			// buf字节数+1
-			bufsize++
-
-			continue
-		}
-
-		// 完整的UTF8序列处理
-		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
-		log.Printf("显示文件内容: %s\n", buf[:n])
-		bufsize = oldSize
-	}
-}
-
-func ReadByteNoSeek(fileName string) {
-	// 打开文件
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s\n", fileName)
-	}
-	defer f.Close()
-
-	// 读取数据
-	lastLeft := make([]byte, 0) // 上次读取留下来的不完整的字节切片
-	for {
-		// 读取数据
-		buf := make([]byte, 300)
-		n, err := f.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Fatalf("读取文件失败: %s: %s \n", fileName, err)
-		}
-
-		// 与上次读取遗留字节合并
-		buf = append(lastLeft, buf...)
-		n += len(lastLeft)
-		lastLeft = make([]byte, 0) // 重新初始化
-
-		// 检查序列完整性
-		for {
-			if utf8.Valid(buf[:n]) {
-				break
-			}
-			lastByte := buf[n-1:][0]
-			lastLeft = append([]byte{lastByte}, lastLeft...)
-			n--
-		}
-
-		// 完整的UTF8序列处理
-		log.Printf("读取文件成功: %s: %d bytes\n", fileName, n)
-		log.Printf("显示文件内容: %s\n", buf[:n])
-	}
-}
-
-func main() {
-	fileName := "test.log"
-
-	// 写数据
-	fmt.Println("------------------ 写入数据 ---------------------")
-	WriteFile(fileName)
-
-	// 按字节读数据(会读到乱码)
-	fmt.Println("\n------------------ 按字节读数据(会读到乱码) ---------------------")
-	ReadByte(fileName)
-
-	// 解决方案1：一次性全部读取到内存中
-	// 缺点：内存占用过大，不适用大文件
-	fmt.Println("\n------------------ 解决方案1：一次性全部读取到内存中 ---------------------")
-	ReadAllByte(fileName)
-
-	// 解决方案2：按Rune读取文件
-	// 缺点：一个字符一个字符的读，效率太低
-	fmt.Println("\n------------------ 解决方案2：按Rune方式读取 ---------------------")
-	ReadByRune(fileName)
-
-	// 解决方案3：按字节读取，如果不是完整UTF8序列则回退文件指针，动态微调buf大小
-	// 缺点：需要通过Seek指针操作
-	fmt.Println("\n- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -")
-	ReadByteBySeek(fileName)
-
-	// 解决方案4：按字节读取，如果不是完整UTF8序列，那么将字节切片分割，只是用完整的UTF8序列，乱码部分与下一次读取连接起来
-	// 缺点：代码比较复杂
-	fmt.Println("\n------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------")
-	ReadByteNoSeek(fileName)
-}
-```
-
-:::
-
-输出结果
-
-```bash
------------------- 写入数据 ---------------------
-2022/04/25 15:56:39 写入文件成功: test.log: 513 bytes
-
------------------- 按字节读数据(会读到乱码) ---------------------
-2022/04/25 15:56:39 读取文件成功: test.log: 512 bytes
-2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中��
-2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
-2022/04/25 15:56:39 读取文件成功: test.log: 1 bytes
-2022/04/25 15:56:39 显示文件内容: �
-2022/04/25 15:56:39 检测字节切片是否是完整且合法的UTF-8编码序列: false
-
------------------- 解决方案1：一次性全部读取到内存中 ---------------------      
-2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
-2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中国
-
------------------- 解决方案2：按Rune方式读取 ---------------------
-2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中国
-
-- 解决方案3：按字节读数据，如果不是完整UTF8序列则回退文件指针，动态微调buf大小 -
-2022/04/25 15:56:39 读取文件成功: test.log: 513 bytes
-2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中国
-
-------- 解决方案4：字节分割与重组读法（与Read表现一致） ----------
-2022/04/25 15:56:39 读取文件成功: test.log: 510 bytes
-2022/04/25 15:56:39 显示文件内容: 中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中
-中中中中中中中中中中中中中中中中中中中中中中中中中中中
-2022/04/25 15:56:39 读取文件成功: test.log: 3 bytes
-2022/04/25 15:56:39 显示文件内容: 国
-```
-
-<br />
-
-#### 读写快捷函数
-
-`os.WriteFile`和`os.ReadFile`底层调用的是`OpenFile`，一次性加载数据到内存中，适合读取小文件，大文件有撑爆内存的风险
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"log"
-	"os"
-)
-
-func main() {
-	// 写入文件
-	writeFileName := "test.log"
-	err := os.WriteFile(writeFileName, []byte("Hello, 这里是测试日志"), os.ModePerm)
-	if err != nil {
-		log.Fatalf("写入文件失败: %s\n", writeFileName)
-	}
-	log.Printf("写入文件成功: %s\n", writeFileName)
-
-	// 函数源码如下：
-	//func WriteFile(name string, data []byte, perm FileMode) error {
-	//	f, err := OpenFile(name, O_WRONLY|O_CREATE|O_TRUNC, perm)
-	//	if err != nil {
-	//	return err
-	//}
-	//	_, err = f.Write(data)
-	//	if err1 := f.Close(); err1 != nil && err == nil {
-	//	err = err1
-	//}
-	//	return err
-	//}
-	// 可以看到，(1)读写模式打开文件 (2)文件若不存在会自动创建 (3)文件若存在则会截断(清空内容)，所以使用这个函数前需要小心一些
-
-	// 读取文件
-	readFileName := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
-	log.Printf("开始读取文件: %s\n", readFileName)
-	buf, err := os.ReadFile(readFileName)
-	if err != nil {
-		log.Fatalf("读取文件失败: %s: %s\n", readFileName, err)
-	}
-	log.Printf("读取文件成功: %s: %d bytes\n", readFileName, len(buf))
-	// 查看源码可以看到，
-	//		(1)使用Open打开文件
-	//		(2)当文件大小(int64类型)能正常转为int类型时，buf就取这个值；否则buf设置为512
-	//		   int最大值转为GB是多少呢？ math.MaxInt / 1024 / 1024 / 1024 = 8589934591
-	//		   当文件小于8589934591GB时，都是一次性读入内存中
-	// 		   所以使用这个函数，就等同于将文件一次性读入内存，请确保内存充足..
-}
-```
-
-:::
-
-输出结果
-
-```bash
-2022/04/24 14:30:58 写入文件成功: test.log
-2022/04/24 14:30:58 开始读取文件: D:\iso\CentOS-7-x86_64-DVD-1708.iso
-2022/04/24 14:31:00 读取文件成功: D:\iso\CentOS-7-x86_64-DVD-1708.iso: 4521459712 bytes
-
-# 可以看到，4个多G的文件2秒钟读完了
-```
-
-<br />
-
-### `io`包：IO基本接口定义
-
-官方文档：[https://pkg.go.dev/io](https://pkg.go.dev/io)
-
-#### Reader基本接口
-
-**Reader定义**
-
-```go
-// io.Reader
-type Reader interface {
-	Read(p []byte) (n int, err error)
-}
-```
-
-> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`和`error`
-
-**Reader读取规则**
-
-（1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
-
-（2）读取失败，此时有`err != nil`，`err`代表具体的错误
-
-（3）读到`EOF`，此时支持以下两种处理情况：
-
-​		① 返回实际读取的字节数n，将`err`设置为`EOF`（推荐）
-
-​		② 返回实际读取的字节数n，将`err`设置为`nil`，对于这种情况，在下一次读取时需要返回`n == 0, err == nil`（不推荐）
-
-（4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
-
-**Reader接口的几种实现**
-
-| 结构体/接口                                                  | 具体实现                           | 备注                                                         |
-| ------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------ |
-| 从文件中读：<br />`os.File`结构体                            | `os.OpenFile()`                    | 文件读取                                                     |
-|                                                              | `os.Stdin`/`os.Stdout`/`os.Stderr` | 主要为标准输入读取`Stdin`                                    |
-| 从字符串中读：<br />`strings.Reader`结构体                   | `strings.NewReader()`              | `Reader`接口：本质是调用内置函数`copy`，无法读取中文<br />`RuneReader`接口：本质是按字节遍历，如果字节在ASCII码范围内<br />则使用`rune`包装一下返回，否则调用`utf8.DecodeRuneInString`解码出第一个`Rune`并返回 |
-| 从字节中读：<br />`bytes.Reader`结构体                       | `bytes.NewReader()`                | 类似于`strings.Reader`结构体                                 |
-| 从缓冲中读：<br />`bytes.Buffer`结构体<br />`bufio.Reader`结构体 | 详细介绍见后面章节                 | 详细介绍见后面章节                                           |
-| 从网络连接中读：<br />`net.Conn`接口                         | 以后补充                           | 以后补充                                                     |
-
-示例代码
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"strings"
-	"time"
-)
-
-func ReadFromStdin() {
-	buf := make([]byte, 1024)
-	for {
-		// 读取输入
-		fmt.Printf("%s 请输入名字：", time.Now().Format("2006/01/02 15:04:05"))
-		n, err := os.Stdin.Read(buf)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// 解析输入
-		name := strings.TrimSpace(string(buf[:n]))
-
-		// 判断输入是否合法
-		if len(name) > 0 {
-			log.Printf("您的名字为: %s", name)
-			break
-		}
-	}
-}
-
-func ReadFromStringReader() {
-	reader := strings.NewReader("hello world!")
-	buf := make([]byte, 1024)
-	for {
-		n, err := reader.Read(buf)
-		if n > 0 {
-			log.Printf("%s\n", buf[:n])
-		}
-		if err == nil {
-			continue
-		}
-		if err == io.EOF {
-			break
-		}
-		log.Println("read error")
-	}
-}
-
-func ReadRuneFromStringReader() {
-	reader := strings.NewReader("a你好")
-	for {
-		r, _, err := reader.ReadRune()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-		}
-		log.Printf("%s", string(r))
-	}
-}
-
-func main() {
-	ReadFromStdin()
-	ReadFromStringReader()
-	ReadRuneFromStringReader()
-}
-```
-
-:::
-
-输出结果
-
-```bash
-2022/04/24 16:52:13 请输入名字：愤怒的西瓜
-2022/04/24 16:52:32 您的名字为: 愤怒的西瓜
-2022/04/24 16:52:32 hello world!
-2022/04/24 16:52:32 a
-2022/04/24 16:52:32 你
-2022/04/24 16:52:32 好
-```
-
-<br />
-
-#### Reader其他接口
-
-```go
-// 读取一次返回一个字节
-type ByteReader interface {
-	ReadByte() (byte, error)
-}
-
-// 读取一次返回一个Rune
-type RuneReader interface {
-	ReadRune() (r rune, size int, err error)
-}
-
-// 可以从指定位置(字节)处读取
-type ReaderAt interface {
-	ReadAt(p []byte, off int64) (n int, err error)
-}
-```
-
-<br />
-
-#### Reader封装函数
-
-| 函数                                                         | 说明                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `func ReadAll(r Reader) ([]byte, error)`                     | 从`Reader`中读完所有数据再返回，当文件过大时有撑爆内存的风险 |
-| `func ReadFull(r Reader, buf []byte) (n int, err error)`     | 读满缓冲区再返回，未读满缓冲区（即使读到`EOF`）也会返回错误  |
-| `func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)` | 最少要读`min`个字节，即使读到`EOF`也会返回错误               |
-| `func LimitReader(r Reader, n int64) Reader`                 | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
-| `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
-
-<br />
-
-#### Writer和Closer接口
-
-**接口定义**
-
-```go
-type Writer interface {
-	Write(p []byte) (n int, err error)
-}
-
-type Closer interface {
-	Close() error
-}
-```
-
-<br />
-
-#### Reader和Writer复合函数
-
-**io.Copy系列**
-
-（1）`func Copy(dst Writer, src Reader) (written int64, err error)`
-
-主要功能为：从`Reader`中读取，并写入到`Writer`中，返回写入的字节数和错误
-
-> 实现的细节：
->
-> 1. 如果`src`实现了`WriteTo`接口，那么就调用`src.WriteTo(dst)`方法
-> 2. 如果`dst`实现了`ReaderFrom`接口，那么就调用`dst.ReadFrom(src)`方法
-> 3. 如果以上两个接口都没实现，那么就从`src`读取数据到缓冲区再写入`Writer`
-> 4. 如果`src`是`*LimitedReader`结构体，那么`buffer`大小设定为规定的大小，否则设置为`32KB`
-
-（2）`func CopyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error)`
-
-与`io.Copy`不同的地方在于可以自定义`buffer`大小的`Copy`，但是请注意只有在`src.WriteTo`和`dst.ReadFrom`都没有实现的情况下生效
-
-（3）`func CopyN(dst Writer, src Reader, n int64) (written int64, err error)`
-
-只拷贝N个字节，本质上是通过`LimitReader`来限制`Reader`所能读取的字节数
-
-**io.Pipe**
-
-```go
-func Pipe() (*PipeReader, *PipeWriter)
-```
-
-* 从w中写入，从r中读出
-* 线程安全
-
-* 本质上是无缓冲的`channel`，所以不能在同一个协程中读和写
-
-<br />
-
-### bufio包：带缓冲的IO包
-
-官方文档：[https://pkg.go.dev/bufio](https://pkg.go.dev/bufio)
-
-#### 缓冲原理
-
-![bufio](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/bufio.png)
-
-本质上来讲，就是通过减少系统调用来提高效率，付出的代价就是内存占用变多
-
-<br />
-
-#### 构造函数
-
-```go
-func NewReader(rd io.Reader) *Reader {
-	return NewReaderSize(rd, defaultBufSize)	
-}
-
-func NewWriter(w io.Writer) *Writer {
-	return NewWriterSize(w, defaultBufSize)
-}
-
-// 默认的缓冲区大小defaultBufSize = 4096
-```
-
-<br />
-
-#### 使用示例
-
-::: details Reader使用示例
-
-```go
-package main
-
-import (
-	"bufio"
-	"log"
-	"strings"
-)
-
-func main() {
-	// 生成原始Reader
-	var str string
-	for i := 0; i < 170; i++ {
-		str += "中"
-	}
-	r := strings.NewReader(str)
-	log.Printf("原始Reader可读取数据大小: %d\n", len(str))
-
-	// 带缓冲的Reader
-	//reader := bufio.NewReader(f)	// 使用默认缓冲大小
-	reader := bufio.NewReaderSize(r, 1024) // 自定义缓冲大小
-
-	// 读取数据
-	buf := make([]byte, 100)
-	n, err := reader.Read(buf)
-	if err != nil {
-		log.Fatalf("Read error: %s\n", err)
-	}
-	log.Printf("Read %d bytes\n", n)
-
-	// 查看缓冲区信息
-	log.Printf("缓冲区大小: %d bytes\n", reader.Size())
-	log.Printf("当前缓冲区剩余的可读字节数: %d bytes\n", reader.Buffered())
-}
-```
-
-:::
-
-::: details Writer使用示例
-
-```go
-package main
-
-import (
-	"bufio"
-	"log"
-	"os"
-)
-
-func main() {
-	// 带缓冲的Writer
-	//writer := bufio.NewWriter(os.Stdout)
-	writer := bufio.NewWriterSize(os.Stdout, 15)
-
-	// 写入数据，本次总共写入13个字节数据
-	// 若缓冲区大于等于13则写入到缓冲区，屏幕上也不会输出任何信息，因为缓冲区还并没有向真正的io.Writer中写入
-	// 若缓冲区小于13则不写缓冲区直接写到原始的io.Writer中去
-	n, err := writer.Write([]byte("hello world!\n"))
-	if err != nil {
-		log.Fatalf("Write error: %s\n", err)
-	}
-	log.Printf("Write ok: %d bytes\n", n)
-
-	// 缓冲区信息
-	log.Printf("缓冲区大小: %d\n", writer.Size())
-	//_ = writer.Flush()   // 将缓冲区数据写入到io.Writer中
-	//writer.Reset(writer) // 清空缓冲区, 未写入的则丢弃
-	log.Printf("当前缓冲区已写入的字节数: %d\n", writer.Buffered())
-	log.Printf("当前缓冲区未使用的字节数: %d\n", writer.Available())
-	//b := writer.AvailableBuffer() // 返回未使用字节组成的切片, 等同于b := make([]byte, writer.Available())
-}
-```
-
-:::
-
-<br />
-
-#### 读写测试
-
-**写测试**
-
-::: details 写缓冲性能测试
-
-```go
-package main
-
-import (
-	"bufio"
-	"io"
-	"log"
-	"os"
-	"sync"
-	"time"
-)
-
-func WriteBufTest(srcFileName, dstFileName string, buffer bool) {
-	// 定义变量
-	var (
-		total int64
-		err   error
-	)
-	start := time.Now().Unix()
-
-	// 打开src文件
-	reader, err := os.Open(srcFileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
-	}
-	defer reader.Close()
-
-	// 打开dst文件
-	writer, err := os.OpenFile(dstFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", dstFileName, err)
-	}
-	defer writer.Close()
-
-	// 是否使用buffer
-	if buffer {
-		// 生成buffer并写入
-		w := bufio.NewWriterSize(writer, 1024*32)
-
-		// 使用io.Copy写入
-		//total, err = io.Copy(w, reader)
-
-		// 手动读取写入
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-
-			_, err = w.Write(buf[:n])
-			if err != nil {
-				log.Fatalf("write error: %s\n", err)
-			}
-			total += int64(n)
-		}
-
-	} else {
-		// 使用io.Copy写入
-		//total, err = io.Copy(writer, reader)
-
-		// 手动读取写入
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-			_, err = writer.Write(buf[:n])
-			if err != nil {
-				log.Fatalf("write error: %s\n", err)
-			}
-			total += int64(n)
-		}
-	}
-
-	if err != nil {
-		log.Fatalf("拷贝文件失败: %s\n", err)
-	}
-	delta := time.Now().Unix() - start
-	log.Printf("It takes %d seconds to copy %d bytes for %s\n", delta, total, dstFileName)
-}
-
-func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_without_buffer.iso", false)
-		wg.Done()
-	}()
-	go func() {
-		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_with_buffer.iso", true)
-		wg.Done()
-	}()
-	wg.Wait()
-}
-```
-
-:::
-
-输出结果
-
-```bash
-2022/04/27 12:56:39 It takes 23 seconds to copy 4521459712 bytes for D:\iso\write_with_buffer.iso
-2022/04/27 12:56:50 It takes 34 seconds to copy 4521459712 bytes for D:\iso\write_without_buffer.iso
-```
-
-> 💡 说明：
->
-> 代码中给出了2种读写方式，`Read`/`Write`读写方式 和 `io.Copy`读写方式
->
-> 从输出结果来看
->
-> （1）使用`Read`/`Write`读写方式性能有明显提升（1.5倍左右），写缓存起到了很大的作用
->
-> （2）但如果使用`io.Copy`方式读写文件，会使用`dst.ReadFrom(src)`方式读写，对我们这次测试来说并不准，用不用`bufio`，两者花费的时间几乎一致
-
-**读测试**
-
-::: details 读缓冲性能测试
-
-```go
-package main
-
-import (
-	"bufio"
-	"io"
-	"log"
-	"os"
-	"sync"
-	"time"
-)
-
-func ReadBufTest(srcFileName string, buffer bool) {
-	// 定义变量
-	var (
-		total int64
-		err   error
-	)
-	start := time.Now().UnixMilli()
-
-	// 打开src文件
-	reader, err := os.Open(srcFileName)
-	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
-	}
-	defer reader.Close()
-
-	// 是否使用buffer
-	if buffer {
-		// 生成buffer并写入
-		reader := bufio.NewReaderSize(reader, 1024*32)
-
-		// 手动读取
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-			total += int64(n)
-		}
-
-	} else {
-		// 手动读取
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-			total += int64(n)
-		}
-	}
-
-	delta := float64((time.Now().UnixMilli() - start)) / 1000
-	log.Printf("Read %d bytes in %.2f second: %s\n", total, delta, srcFileName)
-}
-
-func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", false)
-		wg.Done()
-	}()
-	go func() {
-		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", true)
-		wg.Done()
-	}()
-	wg.Wait()
-}
-```
-
-:::
-
-输出结果
-
-```bash
-2022/04/27 13:20:28 Read 4521459712 bytes in 1.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
-2022/04/27 13:20:34 Read 4521459712 bytes in 7.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
-```
-
-> 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
-
-<br />
-
-### ioutils包：已被os/io包代替
-
-官方文档：[https://pkg.go.dev/io/ioutil](https://pkg.go.dev/io/ioutil)
-
-从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
-
-## 
-
-
 
 ## 其他
 
