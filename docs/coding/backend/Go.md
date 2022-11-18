@@ -2669,6 +2669,34 @@ func main() {
 
 :::
 
+::: details （5）案例：使用闭包实现斐波那契数列
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func Fibonacci() func() int64 {
+	var a, b int64 = 0, 1
+	return func() int64 {
+		a, b = b, a+b
+		return a
+	}
+}
+
+func main() {
+
+	fib := Fibonacci()
+	for i := 0; i < 100; i++ {
+		fmt.Println(fib())
+	}
+}
+```
+
+:::
+
 ### 内置函数
 
 ::: details （1）copy
