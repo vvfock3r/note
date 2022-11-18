@@ -1,7 +1,5 @@
 # Go核心语法
 
-## 文档
-
 官网：[https://golang.google.cn/](https://golang.google.cn/)
 
 安装文档：[https://golang.google.cn/doc/install](https://golang.google.cn/doc/install)
@@ -10,7 +8,7 @@ Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd
 
 <br />
 
-## 初始化
+## 第一个应用
 
 ### 环境变量
 
@@ -118,7 +116,7 @@ see 'go help modules'
 
 
 
-#### 1）开启Go Module
+::: details （1）开启Go Module
 
 `GO111MODULE`变量控制是否启用go modules，他有3个值：
 
@@ -133,9 +131,9 @@ C:\Users\Administrator\Desktop\Notes>go env GO111MODULE
 on
 ```
 
+:::
 
-
-#### 2）初始化项目：`go mod init`
+::: details （2）初始化项目：`go mod init`
 
 文档：[https://go.dev/ref/mod#go-mod-init](https://go.dev/ref/mod#go-mod-init)
 
@@ -170,9 +168,9 @@ go 1.18			# go版本
 | https://github.com/gin-gonic/gin         | `module github.com/gin-gonic/gin`         |
 | https://github.com/pingcap/tidb          | `module github.com/pingcap/tidb`          |
 
-仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？，先不管他，后面再说
+仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？先不管他，后面再说
 
-**继续使用Gin**
+**举例使用第三方Web框架Gin**
 
 ```bash
 [root@localhost demo]# ls -l
@@ -208,7 +206,9 @@ main.go:4:2: no required module provides package github.com/gin-gonic/gin; to ad
         go get github.com/gin-gonic/gin
 ```
 
-#### 3）下载第三方包：`go get`
+:::
+
+::: details （3）go get基础：下载第三方包
 
 文档：[https://go.dev/ref/mod#go-get](https://go.dev/ref/mod#go-get)
 
@@ -218,10 +218,6 @@ main.go:4:2: no required module provides package github.com/gin-gonic/gin; to ad
 * `go get`用来管理第三方包版本问题，会自动维护go.mod和go.sum文件
 * `go get`下载的包放在GOPATH/pkg目录内
 * 若不指定版本号只能更新到`v1.x.x`最新版，若第三方包没有版本号（Tag）则会更新到最后一次提交的代码
-
-
-
-::: details 基础用法
 
 ```bash
 # 下载
@@ -293,7 +289,7 @@ drwxr-xr-x 3 root root 4096 May 30 20:26 gopkg.in
 
 :::
 
-::: details 安装最新版、安装指定版、移除版本、升级依赖
+::: details （4）go get进阶：安装最新版、安装指定版、移除版本、升级依赖
 
 ```bash
 # 安装最新版本，以下两种方法都可以，这会下载最新的tag版本
@@ -365,7 +361,7 @@ require (
 
 :::
 
-#### 4）安装可执行文件：`go install`
+::: details （5）安装可执行文件：go install
 
 文档：[https://go.dev/ref/mod#go-install](https://go.dev/ref/mod#go-install)
 
@@ -386,7 +382,9 @@ require (
 | https://github.com/davecheney/httpstat | `main.go`          |
 | https://github.com/Code-Hex/pget       | `cmd/pget/main.go` |
 
-#### 5）依赖整理：go mod tidy
+:::
+
+::: details （6）依赖整理：go mod tidy
 
 很常用的一个命令，可多次执行
 
@@ -417,9 +415,9 @@ The commands are:
 Use "go help mod <command>" for more information about a command.
 ```
 
-#### 6）发布公共模块到 GitHub
+:::
 
-::: details （1）先跑通一个最简单的发布流程
+::: details （7）发布公共模块到 GitHub-1：先跑通一个最简单的发布流程
 
 ① 首先在Github上新建一个仓库test
 
@@ -494,7 +492,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （2）更新第三方包延迟问题
+::: details （7）发布公共模块到 GitHub-2：更新第三方包延迟问题
 
 描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
 
@@ -511,7 +509,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （3）指定第三方包的版本
+::: details （7）发布公共模块到 GitHub-3：指定第三方包的版本
 
 如果我想让用户使用`go get github.com/vvfock3r/test@v1.0.0`这样的方式来安装指定版本，该如何做呢？
 
@@ -542,7 +540,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （4）replace简介
+::: details （7）发布公共模块到 GitHub-4：replace简介
 
 replace可以让我们对包进行替换，可以达到这样的效果：导入的是`a`包，但实际使用的是`b`包
 
@@ -569,147 +567,9 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
-#### 7）交叉编译
-
-交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
-
-对于`go`来说主要控制3个变量：
-
-* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
-* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
-* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
-
-```bash
-# Windows下编译Linux和Mac64位可执行程序
-SET CGO_ENABLED=0
-SET GOOS=linux
-SET GOARCH=amd64
-go build .
-
-SET CGO_ENABLED=0
-SET GOOS=darwin
-SET GOARCH=amd64
-go build .
-
-# Mac下编译Linux和Windows64位可执行程序
-CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-
-# Linux下编译Mac和Windows 64位可执行程序
-CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-```
-
-#### 8）编译时自动添加版本
-
-::: details 点击查看完整代码
-
-`main.go`：这只是一段普通的、简单的Go代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-	"strings"
-)
-
-var (
-	Version   string
-	GoVersion string
-	GitCommit string
-	BuildTime string
-	OS        string
-	Arch      string
-)
-
-func main() {
-	args := os.Args
-	if len(args) >= 2 {
-		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
-			fmt.Printf("Version:             %s\n", Version)
-			fmt.Printf("Go version:          %s\n", GoVersion)
-			fmt.Printf("Git commit:          %s\n", GitCommit)
-			fmt.Printf("Build time:          %s\n", BuildTime)
-			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
-			return
-		}
-	}
-}
-```
-
-`build.sh`
-
-> 提醒：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-# =====================================
-# 描述: 编译Go项目为linux/amd64二进制命令
-# =====================================
-
-# 定义变量，用于编译时注入到Go程序中
-Version=$(go version | awk '{print $3}')
-GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
-BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
-OS=linux
-Arch=amd64
-
-# 交叉编译，若不需要直接注释下面3行即可
-# (1) 这里必须使用环境变量，否则设置不生效
-# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
-export CGO_ENABLED=0
-export GOOS=${OS}
-export GOARCH=${Arch}
-
-# 生成flags
-flags="-X main.Version=1.0.0 \
-       -X main.GoVersion=${Version} \
-       -X main.GitCommit=${GitCommit} \
-       -X 'main.BuildTime=${BuildTime}' \
-       -X main.OS=${OS} \
-       -X main.Arch=${Arch}"
-
-# go build的其他参数
-Options="$*"
-
-# 编译,通过ldflags注入变量信息
-go build -ldflags "${flags}" ${Options} main.go
-```
-
-:::
-
-输出结果
-
-```bash
-# 在Linux上执行
-[root@localhost ~]# bash build.sh
-[root@localhost ~]# ./main -v
-Version:             1.0.0
-Go version:          go1.18.1
-Git commit:          unknown
-Build time:          2022-09-04 21:34:06 CST +0800
-OS/Arch:             linux/amd64
-
-# 在Windows上执行
-Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
-$ sh build.sh -o demo
-# 传到Linux上去
-[root@localhost ~]# chmod 755 demo 
-[root@localhost ~]# ./demo -v
-Version:             1.0.0
-Go version:          go1.19
-Git commit:          unknown
-Build time:          2022-09-04 22:51:19 CST +0800
-OS/Arch:             linux/amd64
-```
-
 <br />
 
-## 基础
+## 基础入门
 
 ### 声明
 
@@ -1385,7 +1245,7 @@ switch-fallthrough判断
 
 <br />
 
-### 测试基础
+### 代码测试
 
 | 功能\属性 | 文件名要求               | 函数签名要求                | 执行命令                                    |
 | --------- | ------------------------ | --------------------------- | ------------------------------------------- |
@@ -7818,6 +7678,146 @@ func main() {
 
 
 ## 其他
+
+### 交叉编译
+
+交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
+
+对于`go`来说主要控制3个变量：
+
+* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
+* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
+* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
+
+```bash
+# Windows下编译Linux和Mac64位可执行程序
+SET CGO_ENABLED=0
+SET GOOS=linux
+SET GOARCH=amd64
+go build .
+
+SET CGO_ENABLED=0
+SET GOOS=darwin
+SET GOARCH=amd64
+go build .
+
+# Mac下编译Linux和Windows64位可执行程序
+CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+
+# Linux下编译Mac和Windows 64位可执行程序
+CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+```
+
+### 编译时自动添加版本
+
+::: details 点击查看完整代码
+
+`main.go`：这只是一段普通的、简单的Go代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+var (
+	Version   string
+	GoVersion string
+	GitCommit string
+	BuildTime string
+	OS        string
+	Arch      string
+)
+
+func main() {
+	args := os.Args
+	if len(args) >= 2 {
+		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
+			fmt.Printf("Version:             %s\n", Version)
+			fmt.Printf("Go version:          %s\n", GoVersion)
+			fmt.Printf("Git commit:          %s\n", GitCommit)
+			fmt.Printf("Build time:          %s\n", BuildTime)
+			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
+			return
+		}
+	}
+}
+```
+
+`build.sh`
+
+> 提醒：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# =====================================
+# 描述: 编译Go项目为linux/amd64二进制命令
+# =====================================
+
+# 定义变量，用于编译时注入到Go程序中
+Version=$(go version | awk '{print $3}')
+GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
+OS=linux
+Arch=amd64
+
+# 交叉编译，若不需要直接注释下面3行即可
+# (1) 这里必须使用环境变量，否则设置不生效
+# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
+export CGO_ENABLED=0
+export GOOS=${OS}
+export GOARCH=${Arch}
+
+# 生成flags
+flags="-X main.Version=1.0.0 \
+       -X main.GoVersion=${Version} \
+       -X main.GitCommit=${GitCommit} \
+       -X 'main.BuildTime=${BuildTime}' \
+       -X main.OS=${OS} \
+       -X main.Arch=${Arch}"
+
+# go build的其他参数
+Options="$*"
+
+# 编译,通过ldflags注入变量信息
+go build -ldflags "${flags}" ${Options} main.go
+```
+
+:::
+
+输出结果
+
+```bash
+# 在Linux上执行
+[root@localhost ~]# bash build.sh
+[root@localhost ~]# ./main -v
+Version:             1.0.0
+Go version:          go1.18.1
+Git commit:          unknown
+Build time:          2022-09-04 21:34:06 CST +0800
+OS/Arch:             linux/amd64
+
+# 在Windows上执行
+Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
+$ sh build.sh -o demo
+# 传到Linux上去
+[root@localhost ~]# chmod 755 demo 
+[root@localhost ~]# ./demo -v
+Version:             1.0.0
+Go version:          go1.19
+Git commit:          unknown
+Build time:          2022-09-04 22:51:19 CST +0800
+OS/Arch:             linux/amd64
+```
+
+<br />
 
 ### 多进度条实现原理
 
