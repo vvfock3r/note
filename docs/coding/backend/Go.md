@@ -1331,7 +1331,7 @@ ok      learn   0.956s
 
 <br />
 
-## 基本数据类型基础
+## 基本数据类型
 
 ### 数字
 
@@ -2568,19 +2568,13 @@ string 3.14
 | 切片     | ✔            | 引用类型        | `make`               | `nil`              |
 | 映射     | ❌            | 引用类型        | `make`               | `nil`              |
 
-## 基本数据类型进阶
-
 <br />
-
-## 
 
 ## 函数
 
-### 函数定义
+### 基础示例
 
-* 函数可以没有返回值，也可以有多个返回值
-
-#### 基本示例
+::: details （1）第一个函数
 
 ```go
 package main
@@ -2588,6 +2582,7 @@ package main
 import "fmt"
 
 // 参数x和y都是int类型，函数返回值也是int类型
+// 关于返回值：函数可以没有返回值，也可以有多个返回值
 func add(x, y int) int {
 	return x + y
 }
@@ -2598,7 +2593,9 @@ func main() {
 }
 ```
 
-#### 可省略参数
+:::
+
+::: details （2）可省略参数
 
 ```go
 package main
@@ -2619,7 +2616,9 @@ func main() {
 //0.0.0.0 3306 root 123456 [map[ssl:true]]
 ```
 
-#### 实参为nil
+:::
+
+::: details （3）实参为nil
 
 ```go
 package main
@@ -2638,11 +2637,9 @@ func main() {
 }
 ```
 
+:::
 
-
-#### 接受任意类型参数
-
-并不推荐这样写函数，仅作学习使用
+::: details （4）接受任意类型参数
 
 ```go
 package main
@@ -2650,6 +2647,8 @@ package main
 import "fmt"
 
 // 使用可省略参数 + interface，可接受任何类型的参数（包括不传），函数内部使用断言再去判断参数类型
+// 并不推荐这样写函数，仅作学习使用
+// 其中interface{}可以使用any代替，推荐使用any
 func test(i ...interface{}) {
 	if len(i) >= 1 {
 		if m, ok := i[0].(map[string]string); ok {
@@ -2668,9 +2667,11 @@ func main() {
 }
 ```
 
+:::
+
 ### 内置函数
 
-#### copy
+::: details （1）copy
 
 ```go
 package main
@@ -2700,224 +2701,215 @@ func main() {
 }
 ```
 
+:::
+
 ### defer延迟调用
 
-defer是延迟调用，比如有`A`、`B`两个函数，在`A`函数中`defer B()`，那么就意味着在`A`函数`return`或`panic`之后调用`B`函数
+**说明**
 
-#### defer应用场景
+defer是延迟调用，后面跟一个函数调用
 
-* 释放资源
+比如有`A`、`B`两个函数，在`A`函数中`defer B()`，那么就意味着在`A`函数`return`或`panic`之后调用`B`函数
 
-  ```go
-  m.mutex.Lock()
-  defer m.mutex.Unlock()
-  ```
+<br />
+
+**应用场景**
+
+* 释放资源，比如文件句柄、锁等
 
 * 异常处理
 
 * 修改函数返回值
 
+<br />
 
+**详细解读**
 
-#### defer机制
+::: details （1）defer后面的表达式不能加圆括号
 
-* defer后面的表达式不能加圆括号
+```go
+package main
 
-  ::: details 点击查看完整代码
+import "fmt"
 
-  ```go
-  package main
-  
-  import "fmt"
-  
-  func main() {
-  	defer (fmt.Println(1))	// defer后面的函数调用，不能加括号，会报语法错误
-  }
-  
-  ```
+func main() {
+	defer (fmt.Println(1))	// defer后面的函数调用，不能加括号，会报语法错误
+}
+```
 
-  :::
+:::
 
-* 若执行多次`defer语句`，则满足`LIFO`（后进先出），即<span style="color: red;font-weight: bold;">后defer的先执行</span>
+::: details （2）若执行多次`defer语句`，则满足`LIFO`（后进先出），即后defer的先执行
 
-* <span style="color: red;font-weight: bold;">被defer的函数的参数在执行到defer语句的时候就被确定下来了</span>
+```go
+package main
 
-  ::: details 点击查看完整代码
+import "fmt"
 
-  ```go
-  package main
-  
-  import "fmt"
-  
-  func test1() {
-  	fmt.Println("测试1")
-  	for i := 0; i <= 5; i++ {
-  		defer fmt.Printf("%d %p \n", i, &i)
-  	}
-  }
-  
-  func test2() {
-  	fmt.Println("\n测试2")
-  	for i := 0; i <= 5; i++ {
-  		defer func() {
-  			fmt.Printf("%d %p \n", i, &i)
-  		}()
-  	}
-  }
-  
-  func test3() {
-  	fmt.Println("\n测试3")
-  	for i := 0; i <= 5; i++ {
-  		defer func(i int) {
-  			fmt.Printf("%d %p \n", i, &i)
-  		}(i)
-  	}
-  }
-  
-  func main() {
-  	test1()
-  	test2()
-  	test3()
-  }
-  ```
+func test1() {
+	fmt.Println("测试1")
+	for i := 0; i <= 5; i++ {
+		defer fmt.Printf("%d %p \n", i, &i)
+	}
+}
 
-  :::
+func test2() {
+	fmt.Println("\n测试2")
+	for i := 0; i <= 5; i++ {
+		defer func() {
+			fmt.Printf("%d %p \n", i, &i)
+		}()
+	}
+}
 
-  ::: details 点击查看输出结果
+func test3() {
+	fmt.Println("\n测试3")
+	for i := 0; i <= 5; i++ {
+		defer func(i int) {
+			fmt.Printf("%d %p \n", i, &i)
+		}(i)
+	}
+}
 
-  ```bash
-  测试1
-  5 0xc0000180b8 
-  4 0xc0000180b8 
-  3 0xc0000180b8 
-  2 0xc0000180b8 
-  1 0xc0000180b8 
-  0 0xc0000180b8 
-                 
-  测试2          
-  6 0xc0000180f0 
-  6 0xc0000180f0 
-  6 0xc0000180f0 
-  6 0xc0000180f0 
-  6 0xc0000180f0 
-  6 0xc0000180f0 
-                 
-  测试3          
-  5 0xc0000180f8 
-  4 0xc000018110 
-  3 0xc000018118 
-  2 0xc000018120 
-  1 0xc000018128 
-  0 0xc000018130 
-  ```
+func main() {
+	test1()
+	test2()
+	test3()
+}
+```
 
-  :::
+输出结果
 
-* <span style="color: red;font-weight: bold;">defer和return执行顺序的问题</span>
+```bash
+测试1
+5 0xc0000180b8 
+4 0xc0000180b8 
+3 0xc0000180b8 
+2 0xc0000180b8 
+1 0xc0000180b8 
+0 0xc0000180b8 
+               
+测试2          
+6 0xc0000180f0 
+6 0xc0000180f0 
+6 0xc0000180f0 
+6 0xc0000180f0 
+6 0xc0000180f0 
+6 0xc0000180f0 
+               
+测试3          
+5 0xc0000180f8 
+4 0xc000018110 
+3 0xc000018118 
+2 0xc000018120 
+1 0xc000018128 
+0 0xc000018130 
+```
 
-  ::: details 点击查看完整代码
+:::
 
-  ```go
-  package main
-  
-  import "fmt"
-  
-  // 在defer中修改返回值成功，前提是必须提前声明返回值
-  func add1(x, y int) (result int) {
-  	defer func() {
-  		result += 10
-  	}()
-  	return x + y
-  }
-  
-  // 在defer中修改返回值失败，并未提前声明返回值
-  // 原因是：
-  // 		return并非原子操作，共分为两步，赋值和函数返回
-  //		赋值：将结果写入到返回值中，如果未提前声明，就写入到一个临时变量中
-  //		函数返回：函数带着当前返回值退出
-  // 执行顺序：return赋值 --> defer --> return函数返回
-  
-  func add2(x, y int) int {
-  	result := x + y // result必须定义在前面
-  	fmt.Printf("%p\n", &result)
-  	defer func() {
-  		result += 10
-  		fmt.Printf("%p\n", &result)
-  	}()
-  	return result
-  }
-  
-  func main() {
-  	fmt.Println(add1(1, 2)) // 13
-  	fmt.Println(add2(4, 5)) // 9
-  }
-  ```
+::: details （3）defer和return执行顺序的问题
 
-  :::
+```go
+package main
 
-* defer可以捕捉`panic`
+import "fmt"
 
-  ::: details 点击查看完整代码
+// 在defer中修改返回值成功，前提是必须提前声明返回值
+func add1(x, y int) (result int) {
+	defer func() {
+		result += 10
+	}()
+	return x + y
+}
 
-  ```go
-  package main
-  
-  import "fmt"
-  
-  func Close() {
-  	// recover函数只能用在defer中
-  	if err := recover(); err != nil {
-  		fmt.Println("panic: ", err)
-  	} else {
-  		fmt.Println("Close success!")
-  	}
-  }
-  
-  func WithPanic() {
-  	defer Close()
-  	panic(1)
-  }
-  
-  func NonPanic() {
-  	defer Close()
-  }
-  
-  func main() {
-  	WithPanic()
-  	NonPanic()
-  }
-  
-  // 输出结果
-  // panic:  1
-  // Close success!
-  ```
+// 在defer中修改返回值失败，并未提前声明返回值
+// 原因是：
+// 		return并非原子操作，共分为两步，赋值和函数返回
+//		赋值：将结果写入到返回值中，如果未提前声明，就写入到一个临时变量中
+//		函数返回：函数带着当前返回值退出
+// 执行顺序：return赋值 --> defer --> return函数返回
 
-  :::
+func add2(x, y int) int {
+	result := x + y // result必须定义在前面
+	fmt.Printf("%p\n", &result)
+	defer func() {
+		result += 10
+		fmt.Printf("%p\n", &result)
+	}()
+	return result
+}
 
-* derfer一定会执行吗？
+func main() {
+	fmt.Println(add1(1, 2)) // 13
+	fmt.Println(add2(4, 5)) // 9
+}
+```
 
-  ```go
-  package main
-  
-  import (
-  	"fmt"
-  	"os"
-  )
-  
-  func main() {
-  	defer fmt.Println("defer called")
-  	os.Exit(0)
-  }
-  
-  // 运行之后，发现什么都没有输出，说明defer没有正常执行
-  ```
+:::
 
+::: details （4）defer可以捕捉panic
 
-## 
+```go
+package main
 
-## 自定义类型
+import "fmt"
 
-### 别名
+func Close() {
+	// recover函数只能用在defer中
+	if err := recover(); err != nil {
+		fmt.Println("panic: ", err)
+	} else {
+		fmt.Println("Close success!")
+	}
+}
+
+func WithPanic() {
+	defer Close()
+	panic(1)
+}
+
+func NonPanic() {
+	defer Close()
+}
+
+func main() {
+	WithPanic()
+	NonPanic()
+}
+
+// 输出结果
+// panic:  1
+// Close success!
+```
+
+:::
+
+::: details （5）derfer并不能保证一定会执行
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	defer fmt.Println("defer called")
+	os.Exit(0)
+}
+
+// 运行之后，发现什么都没有输出，说明defer没有正常执行
+```
+
+:::
+
+<br />
+
+## 自定义别名&类型
+
+::: details （1）自定义别名
 
 ```go
 package main
@@ -2938,9 +2930,9 @@ func main() {
 }
 ```
 
-### 自定义类型
+:::
 
-#### （1）基础使用
+::: details （2）自定义类型：基础使用
 
 ```go
 package main
@@ -2969,9 +2961,9 @@ func main() {
 }
 ```
 
-#### （2）定义复杂的类型
+:::
 
-::: details 点击查看完整代码
+::: details （3）自定义类型：定义复杂的类型
 
 ```go
 package main
@@ -3044,8 +3036,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3059,9 +3049,9 @@ main.LoginForm{UserName:"jinhui", Password:"qaz.123"}
 main.Form{UserName:"jinhui", Password:"qaz.123"}
 ```
 
-#### （3）仿`http handler`对象转换
+:::
 
-::: details 点击查看完整代码
+::: details （4）自定义类型：仿http handler对象转换
 
 ```go
 package main
@@ -3099,8 +3089,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3111,7 +3099,9 @@ main.HandFunc
 3        
 ```
 
-## 
+:::
+
+<br />
 
 ## 结构体
 
