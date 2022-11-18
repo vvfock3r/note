@@ -2907,7 +2907,9 @@ func main() {
 
 <br />
 
-## 自定义别名和类型
+## 自定义
+
+### 自定义别名
 
 ::: details （1）自定义别名
 
@@ -2932,7 +2934,29 @@ func main() {
 
 :::
 
-::: details （2）自定义类型：基础使用
+::: details （2）内置的别名
+
+```go
+// byte is an alias for uint8 and is equivalent to uint8 in all ways. It is
+// used, by convention, to distinguish byte values from 8-bit unsigned
+// integer values.
+type byte = uint8
+
+// rune is an alias for int32 and is equivalent to int32 in all ways. It is
+// used, by convention, to distinguish character values from integer values.
+type rune = int32
+
+// any is an alias for interface{} and is equivalent to interface{} in all ways.
+type any = interface{}
+```
+
+:::
+
+<br />
+
+### 自定义类型
+
+::: details （1）自定义类型：基础使用
 
 ```go
 package main
@@ -2963,7 +2987,7 @@ func main() {
 
 :::
 
-::: details （3）自定义类型：定义复杂的类型
+::: details （2）自定义类型：定义复杂的类型
 
 ```go
 package main
@@ -3051,7 +3075,7 @@ main.Form{UserName:"jinhui", Password:"qaz.123"}
 
 :::
 
-::: details （4）自定义类型：仿http handler对象转换
+::: details （3）自定义类型：仿http handler对象转换
 
 ```go
 package main
@@ -3744,7 +3768,7 @@ func main() {
 
 ## 接口
 
-### 概念
+### 接口是什么
 
 接口是一个类型，就和`int`、`string`、`map`等一样，是类型，不是值
 
@@ -3773,6 +3797,8 @@ func main() {
 	_, _ = w.Write([]byte("hello"))	// hello
 }
 ```
+
+<br />
 
 ### 接口类型都可以用在哪
 
@@ -3829,6 +3855,8 @@ func main() {
 
 :::
 
+<br />
+
 ### 接口类型值都可以是什么
 
 凡是实现了接口中定义的方法的对象都可以是接口值，都有哪些呢？
@@ -3876,7 +3904,7 @@ func main() {
 
 :::
 
-
+<br />
 
 ### 值接收者和指针接收者
 
@@ -3944,13 +3972,13 @@ func main() {
 
 :::
 
-
+<br />
 
 ### 空接口
 
-<span style="color: red; font-weight: bold;">空接口意为着可以接受任意类型的值</span>，
+空接口意为着可以接受任意类型的值，也意味着我们不能确定值是什么类型
 
-<span style="color: blue; font-weight: bold;">也意味着我们不能确定值是什么类型</span>
+::: details 点击查看完整代码
 
 ```go
 package main
@@ -3968,6 +3996,10 @@ func main() {
 	fmt.Println(a)	// Hello
 }
 ```
+
+:::
+
+<br />
 
 ### 断言和查询
 
@@ -4054,8 +4086,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4079,9 +4109,13 @@ a.User=我是小a
 a.User=我是小a
 ```
 
+:::
+
+<br />
+
 ### 常用接口
 
-#### Stringer
+::: details （1）Stringer
 
 字符串功能接口
 
@@ -4095,8 +4129,6 @@ type Stringer interface {
 ```
 
 测试代码
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -4133,8 +4165,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4146,7 +4176,9 @@ String: 大家好, 我是张三, 性别男, 年龄18
 "String: 大家好, 我是张三, 性别男, 年龄18"
 ```
 
-## 
+:::
+
+<br />
 
 ## 并发编程
 
