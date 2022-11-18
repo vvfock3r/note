@@ -2907,7 +2907,7 @@ func main() {
 
 <br />
 
-## 自定义别名&类型
+## 自定义别名和类型
 
 ::: details （1）自定义别名
 
@@ -3165,6 +3165,8 @@ func main() {
 
 :::
 
+<br />
+
 ### 自定义Tag
 
 已知使用了结构体`Tag`的库：[https://github.com/golang/go/wiki/Well-known-struct-tags](https://github.com/golang/go/wiki/Well-known-struct-tags)
@@ -3221,8 +3223,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3232,11 +3232,13 @@ Age
 Password     min=6,max=10
 ```
 
+:::
 
+<br />
 
 ### 空结构体
 
-**空结构体占用内存为0**
+::: details （1）空结构体占用内存为0
 
 ```go
 package main
@@ -3256,114 +3258,104 @@ func main() {
 }
 ```
 
-**空结构体的应用场景**
+:::
 
-* 方法分组
+::: details （2）空结构体的应用场景：对方法分组，将相同类型的方法组合在一起，便于后续扩展和维护
 
-  将相同类型的方法组合在一起，便于后续扩展和维护
+```go
+package main
 
-  ::: details 点击查看完整代码
+import (
+	"fmt"
+	"runtime"
+	"strconv"
+)
 
-  ```go
-  package main
-  
-  import (
-  	"fmt"
-  	"runtime"
-  	"strconv"
-  )
-  
-  type Platform struct{}
-  
-  func (e *Platform) GetOS() string {
-  	return runtime.GOOS
-  }
-  
-  func (e *Platform) GetOSBit() int {
-  	return strconv.IntSize
-  }
-  
-  func main() {
-  	var platform Platform
-  	fmt.Printf("%s %dbits\n", platform.GetOS(), platform.GetOSBit())	// windows 64bits
-  }
-  ```
+type Platform struct{}
 
-  :::
+func (e *Platform) GetOS() string {
+	return runtime.GOOS
+}
 
-* 实现`set`类型
+func (e *Platform) GetOSBit() int {
+	return strconv.IntSize
+}
 
-  ::: details 点击查看完整代码
+func main() {
+	var platform Platform
+	fmt.Printf("%s %dbits\n", platform.GetOS(), platform.GetOSBit())	// windows 64bits
+}
+```
 
-  ```go
-  package main
-  
-  import "fmt"
-  
-  type Set map[string]struct{}
-  
-  func (s Set) Add(item string) {
-  	s[item] = struct{}{}
-  }
-  
-  func (s Set) Remove(item string) {
-  	delete(s, item)
-  }
-  
-  func (s Set) Exist(item string) bool {
-  	_, ok := s[item]
-  	return ok
-  }
-  
-  func main() {
-  	set := make(Set)
-  	set.Add("123")
-  	set.Add("456")
-  	fmt.Println(set.Exist("123")) // true
-  	set.Remove("123")
-  	fmt.Println(set.Exist("123")) // false
-  }
-  ```
+:::
 
-  :::
+::: details （3）空结构体的应用场景：实现`set`类型
 
-* 空通道
+```go
+package main
 
-  实现通知型`channel`，其不需要发送任何数据，只是用于协调`Goroutine`运行
+import "fmt"
 
-  ::: details 点击查看完整代码
+type Set map[string]struct{}
 
-  ```go
-  package main
-  
-  import (
-  	"fmt"
-  	"time"
-  )
-  
-  func main() {
-  	ch := make(chan struct{})
-  
-  	go func() {
-  		time.Sleep(3 * time.Second)
-  		close(ch)
-  	}()
-  
-  	fmt.Println("a")
-  	<-ch
-  	fmt.Println("b")
-  }
-  ```
+func (s Set) Add(item string) {
+	s[item] = struct{}{}
+}
 
-  :::
+func (s Set) Remove(item string) {
+	delete(s, item)
+}
+
+func (s Set) Exist(item string) bool {
+	_, ok := s[item]
+	return ok
+}
+
+func main() {
+	set := make(Set)
+	set.Add("123")
+	set.Add("456")
+	fmt.Println(set.Exist("123")) // true
+	set.Remove("123")
+	fmt.Println(set.Exist("123")) // false
+}
+```
+
+:::
+
+::: details （4）空结构体的应用场景：空通道，实现通知型`channel`，其不需要发送任何数据，只是用于协调`Goroutine`运行
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	ch := make(chan struct{})
+
+	go func() {
+		time.Sleep(3 * time.Second)
+		close(ch)
+	}()
+
+	fmt.Println("a")
+	<-ch
+	fmt.Println("b")
+}
+```
+
+:::
+
+<br />
 
 ### 结构体组合
 
 类似于类的继承
 
-**基础用法**
-
-::: details 点击查看完整代码
+::: details （1）基础用法
 
 ```go
 package main
@@ -3403,9 +3395,7 @@ func main() {
 
 :::
 
-**K-V同名简写**
-
-::: details 点击查看完整代码
+::: details （2）K-V同名简写
 
 ```go
 package main
@@ -3440,11 +3430,11 @@ func main() {
 
 :::
 
-
+<br />
 
 ### 结构体方法
 
-**语法**
+::: details （1）基础示例
 
 ```go
 // 定义结构体
@@ -3466,11 +3456,9 @@ func (p *Person) GetName() string {
 }
 ```
 
-**值接收者会进行结构体拷贝**
+:::
 
-测试1：值接收者会将结构体拷贝一份到方法内
-
-::: details 点击查看完整代码
+::: details 测试1：值接收者会将结构体拷贝一份到方法内
 
 ```go
 package main
@@ -3510,9 +3498,7 @@ func main() {
 
 :::
 
-测试2：指针接收者不会拷贝结构体
-
-::: details 点击查看完整代码
+::: details 测试2：指针接收者不会拷贝结构体
 
 ```go
 package main
@@ -3553,9 +3539,7 @@ func main() {
 
 :::
 
-**结构体是map-v的怪异行为**
-
-::: details 点击查看完整代码
+::: details （3）结构体是map-v的怪异行为
 
 ```go
 package main
@@ -3593,6 +3577,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 ### 函数式选项模式✨
 
@@ -3665,24 +3651,22 @@ func main() {
 }
 ```
 
+<br />
+
 ### 结构体内存大小计算
 
-**结论先行**
+**结论**
 
 结构体内存占用大小是<span style="color: red; font-weight: bold;">每个字段内存对齐之后占用之和</span>，并不是每个字段占用之和
 
 
 
-**（1）结构体内存对齐规则**
+**结构体内存对齐规则**
 
 * 第一个字段在与结构体偏移量为0的地址处
 * 其他字段要对齐到对齐数的整数倍的地址处
 
-
-
-**（2）查看每种数据类型占用大小和对齐数**
-
-::: details 点击查看完整代码
+::: details （1）查看每种数据类型占用大小和对齐数
 
 ```go
 package main
@@ -3705,8 +3689,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```go
@@ -3724,9 +3706,9 @@ struct: Size  0, Alignment 1
 // Alignment代表内存对齐数字（单位字节）
 ```
 
+:::
 
-
-**（3）对齐规则验证**
+::: details （2）对齐规则验证
 
 ```go
 package main
@@ -3756,7 +3738,9 @@ func main() {
 }
 ```
 
-## 
+:::
+
+<br />
 
 ## 接口
 
