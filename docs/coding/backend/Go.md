@@ -567,7 +567,7 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
-<br />
+## 
 
 ## 基础入门
 
@@ -1329,7 +1329,7 @@ ok      learn   0.956s
 
 :::
 
-<br />
+## 
 
 ## 基本数据类型
 
@@ -2568,7 +2568,7 @@ string 3.14
 | 切片     | ✔            | 引用类型        | `make`               | `nil`              |
 | 映射     | ❌            | 引用类型        | `make`               | `nil`              |
 
-<br />
+## 
 
 ## 函数
 
@@ -2905,7 +2905,7 @@ func main() {
 
 :::
 
-<br />
+## 
 
 ## 自定义
 
@@ -3125,7 +3125,7 @@ main.HandFunc
 
 :::
 
-<br />
+## 
 
 ## 结构体
 
@@ -3193,13 +3193,13 @@ func main() {
 
 ### 自定义Tag
 
-已知使用了结构体`Tag`的库：[https://github.com/golang/go/wiki/Well-known-struct-tags](https://github.com/golang/go/wiki/Well-known-struct-tags)
-
 `Tag`使用语法
 
 ```go
 `key1:"value1" key2:"value2" key3:"value3"...` // 键值对用空格分隔
 ```
+
+已知使用了结构体`Tag`的库：[https://github.com/golang/go/wiki/Well-known-struct-tags](https://github.com/golang/go/wiki/Well-known-struct-tags)
 
 ::: details 点击查看完整代码
 
@@ -3604,7 +3604,7 @@ func main() {
 
 <br />
 
-### 函数式选项模式✨
+### 函数式选项模式
 
 该模式解决的问题是如何更动态灵活地为对象配置参数
 
@@ -3764,7 +3764,7 @@ func main() {
 
 :::
 
-<br />
+## 
 
 ## 接口
 
@@ -4178,19 +4178,17 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 :::
 
-<br />
+## 
 
 ## 并发编程
 
 ### `Goroutine`
 
-#### 基础
+#### 基础示例
 
 Go语言中每个并发执行的单元叫`Goroutine`（协程），使用`go`关键字后接函数调用来创建一个`Goroutine`
 
 `Goroutine`是并发安全的
-
-
 
 ::: details 测试协程代码
 
@@ -4230,6 +4228,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 ####  等待Goroutine执行完成
 
@@ -4379,6 +4379,8 @@ func main() {
 
 :::
 
+<br />
+
 #### Goroutine相关函数
 
 | 函数                     | 说明                                                         |
@@ -4388,11 +4390,11 @@ func main() {
 | `runtime.Goexit()`       | 退出当前`Goroutine`                                          |
 | `runtime.GOMAXPROCS(n)`  | 设置可以使用的最大CPU数量，默认值为`runtime.NumCPU()`；返回上一次设置的值 |
 
-
+<br />
 
 ### Channel
 
-#### 基础
+#### 基础示例
 
 `Channel`用于`Goroutine`之间的通信，中文可以称为”管道"或"通道"
 
@@ -4421,7 +4423,7 @@ func main() {
 
 
 
-**定义**
+::: details （1）定义
 
 ```go
 package main
@@ -4448,7 +4450,9 @@ func main() {
 //chan int (chan int)(0xc00005e0c0)
 ```
 
-**读和写**
+:::
+
+::: details （2）读和写
 
 ```go
 // 写数据：将100写入到channel中
@@ -4471,6 +4475,10 @@ close(ch)
 // 记忆技巧：箭头代表数据流向
 ```
 
+:::
+
+<br />
+
 #### 无缓冲区`Channel`
 
 **定义**
@@ -4487,8 +4495,6 @@ ch := make(chan int)	// 无缓冲区channel, 等同于make(chan int, 0)，第二
   * 假如继续读，不会阻塞，而是会读取到零值
   * 假如继续写，会报错：`panic: send on closed channel`
 * 如果管道一切都正常，未读取之前写入会阻塞，未写入之前读取也会阻塞
-
-
 
 ::: details 测试1: 基础使用
 
@@ -4520,8 +4526,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4535,7 +4539,9 @@ func main() {
 2022/04/17 11:51:34 Read from Channel 34
 ```
 
+:::
 
+<br />
 
 #### 带缓冲区`Channel`
 
@@ -4817,6 +4823,8 @@ main.main()
 
 :::
 
+<br />
+
 #### 只读和只写限制
 
 只是在原有的`Channel`上加了一层限制，只能读或只能写，默认的`Channel`是读写都支持的
@@ -4868,6 +4876,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 多路复用select
 
@@ -5061,6 +5071,8 @@ ForEnd: // 定义标签
 
 :::
 
+<br />
+
 #### 练习:select:设置函数执行超时时间
 
 ::: details 设置函数执行超时时间（有问题版本，主要是学习超时核心逻辑）
@@ -5178,6 +5190,8 @@ func main() {
 
 :::
 
+<br />
+
 #### 练习:channel:多个协程顺序打印数字
 
 有4个`goroutine`，每个`goroutine`打印一个数字，要求按照1``/2/3/4``这样的顺序打印输出
@@ -5226,7 +5240,7 @@ func main() {
 
 :::
 
-
+<br />
 
 ### Context
 
@@ -5397,6 +5411,8 @@ func main() {
 
 :::
 
+<br />
+
 #### WithValue
 
 可以携带一个值
@@ -5545,6 +5561,8 @@ func main() {
 // 10000
 ```
 
+<br />
+
 ### Sync
 
 官方文档：[https://pkg.go.dev/sync](https://pkg.go.dev/sync)
@@ -5672,7 +5690,7 @@ func main() {
 
 :::
 
-
+<br />
 
 #### 案例：并发安全的Map的3种实现
 
@@ -5902,7 +5920,7 @@ func main() {
 
 :::
 
-
+<br />
 
 #### 只执行一次
 
@@ -5967,6 +5985,8 @@ func main() {
 > 方法1：定义包级别的变量  
 > 方法2：包级别`init`函数初始化  
 > 方法3：在`main`函数中，执行一个初始化函数
+
+<br />
 
 #### 临时缓存池Pool
 
@@ -6048,6 +6068,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 案例：并发安全的字节池的2种实现
 
@@ -6259,6 +6281,8 @@ func main() {
 
     :::
 
+<br />
+
 #### 条件变量(不推荐)
 
 `sync.Cond`并不被推荐使用，这里权当了解一下
@@ -6308,6 +6332,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 ### sync/atomic
 
@@ -6431,6 +6457,8 @@ x = -999
 x = 222
 ```
 
+<br />
+
 #### 任意数据类型-原子操作
 
 如果是其他类型的数据，`atomic`为我们提供了`Value`结构体来原子操作
@@ -6477,6 +6505,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 原子操作举例
 
@@ -6574,6 +6604,8 @@ func Create(name string) (*File, error) {
 // 使用时多加注意，不要误清空了文件内容!!!
 ```
 
+<br />
+
 #### 常规操作函数
 
 | 分类               | 函数                                             | 说明                                                         |
@@ -6638,6 +6670,8 @@ test.log exist: false
 C:\Windows exist: true
 ```
 
+<br />
+
 #### 写入数据
 
 ::: details 点击查看完整代码
@@ -6690,6 +6724,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 读取数据
 
@@ -6795,6 +6831,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 读取中文乱码问题
 
@@ -7064,7 +7102,7 @@ func main() {
 2022/04/25 15:56:39 显示文件内容: 国
 ```
 
-
+<br />
 
 #### 读写快捷函数
 
@@ -7131,6 +7169,8 @@ func main() {
 
 # 可以看到，4个多G的文件2秒钟读完了
 ```
+
+<br />
 
 ### `io`包：IO基本接口定义
 
@@ -7262,6 +7302,8 @@ func main() {
 2022/04/24 16:52:32 好
 ```
 
+<br />
+
 #### Reader其他接口
 
 ```go
@@ -7281,7 +7323,7 @@ type ReaderAt interface {
 }
 ```
 
-
+<br />
 
 #### Reader封装函数
 
@@ -7292,6 +7334,8 @@ type ReaderAt interface {
 | `func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)` | 最少要读`min`个字节，即使读到`EOF`也会返回错误               |
 | `func LimitReader(r Reader, n int64) Reader`                 | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
 | `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
+
+<br />
 
 #### Writer和Closer接口
 
@@ -7307,7 +7351,7 @@ type Closer interface {
 }
 ```
 
-
+<br />
 
 #### Reader和Writer复合函数
 
@@ -7343,7 +7387,7 @@ func Pipe() (*PipeReader, *PipeWriter)
 
 * 本质上是无缓冲的`channel`，所以不能在同一个协程中读和写
 
-
+<br />
 
 ### bufio包：带缓冲的IO包
 
@@ -7354,6 +7398,8 @@ func Pipe() (*PipeReader, *PipeWriter)
 ![bufio](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/bufio.png)
 
 本质上来讲，就是通过减少系统调用来提高效率，付出的代价就是内存占用变多
+
+<br />
 
 #### 构造函数
 
@@ -7368,6 +7414,8 @@ func NewWriter(w io.Writer) *Writer {
 
 // 默认的缓冲区大小defaultBufSize = 4096
 ```
+
+<br />
 
 #### 使用示例
 
@@ -7447,6 +7495,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 读写测试
 
@@ -7671,7 +7721,7 @@ func main() {
 
 > 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
 
-
+<br />
 
 ### ioutils包：已被os/io包代替
 
