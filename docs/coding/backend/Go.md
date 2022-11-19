@@ -1320,7 +1320,7 @@ FAIL
 
 :::
 
-::: details （2）还是使用上面的代码，在单元测试同时输出代码覆盖率
+::: details （2）单元测试：还是使用上面的代码，同时输出代码覆盖率
 
 **（1）查看代码覆盖率**
 
@@ -1388,7 +1388,7 @@ func TestFibonacci(t *testing.T) {
 D:\application\GoLand\demo>go test -coverprofile=c.out .
 ok      demo    0.040s  coverage: 62.5% of statements      # 已经提高到62.5%
 
-D:\application\GoLand\demo>go tool cover -html=c.out 
+D:\application\GoLand\demo>go tool cover -html=c.out
 ```
 
 ![image-20221119113455828](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119113455828.png)
@@ -1433,6 +1433,23 @@ ok      learn   0.956s
 ```
 
 :::
+
+::: details （4）性能测试：分析CPU性能
+
+Graphviz：[https://graphviz.org/](https://graphviz.org/)
+
+```bash
+# 生成cpuprofile文件，注意选项必须要在最后面才能执行执行，不知道为啥
+D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out 
+
+# 打开cpuprofile文件，进入交互式界面
+D:\application\GoLand\demo>go tool pprof cpu.out 
+(pprof) web  # 在这里输入web，不过需要提前安装Graphviz
+```
+
+:::
+
+<br />
 
 ## 
 
