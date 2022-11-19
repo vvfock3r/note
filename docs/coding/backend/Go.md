@@ -1254,14 +1254,41 @@ switch-fallthrough判断
 
 ::: details （1）单元测试举例
 
+`main.go`
+
 ```go
 package main
 
-import "testing"
+import (
+	"fmt"
+)
 
 func Add(n1, n2 int) int {
 	return n1 + n2
 }
+
+func Fibonacci() func() int64 {
+	var a, b int64 = 0, 1
+	return func() int64 {
+		a, b = b, a+b
+		return a
+	}
+}
+
+func main() {
+	fib := Fibonacci()
+	for i := 0; i < 100; i++ {
+		fmt.Println(fib())
+	}
+}
+```
+
+`main_test.go`
+
+```go
+package main
+
+import "testing"
 
 func TestAdd(t *testing.T) {
 	tests := []struct{ a, b, c int }{
@@ -1282,22 +1309,100 @@ func TestAdd(t *testing.T) {
 输出结果
 
 ```bash
-=== RUN   TestAdd
-    a_test.go:19: Add(6, 7) got 13, expectd 14
+# 运行
+D:\application\GoLand\demo>go test .
 --- FAIL: TestAdd (0.00s)
-
+    main_test.go:15: Add(6, 7) got 13, expectd 14
+FAIL
+FAIL    demo    0.628s
 FAIL
 ```
 
 :::
 
-::: details （2）性能测试举例
+::: details （2）还是使用上面的代码，在单元测试同时输出代码覆盖率
+
+**（1）查看代码覆盖率**
+
+```bash
+# 同时输出代码覆盖率
+D:\application\GoLand\demo>go test -coverprofile=c.out .
+--- FAIL: TestAdd (0.00s)
+    main_test.go:15: Add(6, 7) got 13, expectd 14
+FAIL
+coverage: 12.5% of statements        # 代码覆盖率只有12.5%
+FAIL    demo    0.593s
+FAIL
+
+# 看一下c.out的值, 看不懂没关系
+mode: set
+demo/main.go:7.26,9.2 1 1
+demo/main.go:11.31,13.22 2 0
+demo/main.go:13.22,16.3 2 0
+demo/main.go:19.13,21.27 2 0
+demo/main.go:21.27,23.3 1 0
+
+# 我怎么知道哪些没有覆盖到呢？使用下面的命令会打开浏览器
+D:\application\GoLand\demo>go tool cover -html=c.out
+```
+
+![image-20221119112441117](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119112441117.png)
+
+**（2）修正单元测试中的错误并优化代码覆盖率**
 
 ```go
 package main
 
 import "testing"
 
+func TestAdd(t *testing.T) {
+	tests := []struct{ a, b, c int }{
+		{1, 2, 3},
+		{4, 5, 9},
+		{5, 6, 11},
+		{6, 7, 13}, // 修正错误
+	}
+
+	for _, v := range tests {
+		if ret := Add(v.a, v.b); ret != v.c {
+			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
+		}
+	}
+}
+
+func TestFibonacci(t *testing.T) {
+	tests := []int64{1, 1, 2, 3, 5, 8, 13, 21}
+
+	fib := Fibonacci()
+	for _, v := range tests {
+		if ret := fib(); ret != v {
+			t.Errorf("TestFibonacci()=>fib() got %d, expected %d\n", ret, v)
+		}
+	}
+}
+```
+
+再次测试
+
+```bash
+D:\application\GoLand\demo>go test -coverprofile=c.out .
+ok      demo    0.040s  coverage: 62.5% of statements      # 已经提高到62.5%
+
+D:\application\GoLand\demo>go tool cover -html=c.out 
+```
+
+![image-20221119113455828](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119113455828.png)
+
+:::
+
+::: details （3）性能测试举例
+
+```go
+package main
+
+import "testing"
+
+// 为了演示方法，将实际的代码也在写这里
 func Add(n1, n2 int) int {
 	return n1 + n2
 }
