@@ -2931,6 +2931,8 @@ QiNqg[l.%;H>>rO9
 
 #### Nginx
 
+::: details 点击查看详情
+
 ```bash
 # (1) 创建本地持久化目录
 [root@ap-hongkang ~]# mkdir -p /etc/nginx/conf.d 
@@ -2954,6 +2956,8 @@ QiNqg[l.%;H>>rO9
     --restart=always \
   nginx:latest
 ```
+
+:::
 
 <br />
 
@@ -3151,7 +3155,48 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 
 #### MongoDB
 
+官方文档：[https://www.mongodb.com/docs/manual/installation/](https://www.mongodb.com/docs/manual/installation/)
 
+配置选项：[https://www.mongodb.com/docs/manual/reference/configuration-options/](https://www.mongodb.com/docs/manual/reference/configuration-options/)
+
+Docker Hub：[https://hub.docker.com/_/mongo](https://hub.docker.com/_/mongo)
+
+MongoDB 有两个服务器版本：社区版和 企业版。Docker Hub上的为社区版，由Docker官方维护，也是我们本次所采用的版本
+
+::: details 点击查看详情
+
+```bash
+# (1) 创建本地持久化目录
+[root@ap-hongkang ~]# mkdir -p /etc/mongodb 
+[root@ap-hongkang ~]# mkdir -p /var/lib/mongodb && chmod 777 /var/lib/mongodb
+
+# (2) Docker容器默认不提供配置，所以我们需要新建一个配置文件，先填写必要的配置项
+[root@ap-hongkang ~]# vim /etc/mongodb/mongod.conf
+processManagement:
+   # 是否开启守护进程模式
+   fork: false
+net:
+   bindIp: localhost
+   port: 27017
+storage:
+   dbPath: /var/lib/mongodb
+security:
+   # 是否开启认证: enabled/disabled
+   authorization: disabled
+
+# (3) 启动容器
+[root@ap-hongkang ~]# docker container run --name mongodb \
+    -v /etc/mongodb:/etc/mongodb \
+    -v /var/lib/mongodb:/var/lib/mongodb \
+    --restart=always \
+    -d \
+  mongo:6.0.3 --config /etc/mongodb/mongod.conf
+  
+# (4) 客户端连接测试
+[root@ap-hongkang ~]# docker exec -it mongodb mongosh
+```
+
+:::
 
 <br />
 
