@@ -3242,7 +3242,7 @@ security:
 # (5) 重启容器
 [root@ap-hongkang ~]# docker container restart mongodb
 
-# (6) 连接测试
+# (6) 连接测试，注意-u和root之间要有一个空格
 [root@ap-hongkang ~]# docker exec -it mongodb mongosh -u root --authenticationDatabase admin -p
 ```
 
