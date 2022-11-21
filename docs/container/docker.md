@@ -3161,9 +3161,11 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 
 Docker Hub：[https://hub.docker.com/_/mongo](https://hub.docker.com/_/mongo)
 
+二进制客户端下载地址：[https://www.mongodb.com/try/download/shell](https://www.mongodb.com/try/download/shell)
+
 MongoDB 有两个服务器版本：社区版和 企业版。Docker Hub上的为社区版，由Docker官方维护，也是我们本次所采用的版本
 
-::: details 点击查看详情
+::: details （1）部署MongoDB
 
 ```bash
 # (1) 创建本地持久化目录
@@ -3186,6 +3188,7 @@ security:
 
 # (3) 启动容器
 [root@ap-hongkang ~]# docker container run --name mongodb \
+    -p 27017:27017 \
     -v /etc/mongodb:/etc/mongodb \
     -v /var/lib/mongodb:/var/lib/mongodb \
     --restart=always \
@@ -3194,6 +3197,53 @@ security:
   
 # (4) 客户端连接测试
 [root@ap-hongkang ~]# docker exec -it mongodb mongosh
+
+# (5) 查看客户端版本
+[root@ap-hongkang ~]# docker exec -it mongodb mongosh --version
+1.6.0
+```
+
+:::
+
+::: details （2）开启认证
+
+```bash
+# (1) 无密码先连上去
+[root@ap-hongkang ~]# docker exec -it mongodb mongosh
+
+# (2) 创建管理员账号
+use admin
+db.createUser({
+	user: "root",  // 用户名
+	pwd: "cpayQTvHKT1QC18x",  // 密码
+	roles: [{ 
+		role: "root", // 角色
+		db: "admin" // 数据库名
+	}]
+})
+
+# (3) 创建普通用户账号(非必须)
+use admin
+db.createUser({
+  user: 'demo',  // 用户名
+  pwd: 'jWOOB7bI7qmrGH8y',  // 密码
+  roles:[{
+    role: 'dbOwner',  // 角色
+    db: 'demo'  // 数据库名
+  }]
+})
+
+# (4) 修改配置文件
+[root@ap-hongkang ~]# vim /etc/mongodb/mongod.conf
+security:
+   # 是否开启认证: enabled/disabled
+   authorization: enabled
+
+# (5) 重启容器
+[root@ap-hongkang ~]# docker container restart mongodb
+
+# (6) 连接测试
+[root@ap-hongkang ~]# docker exec -it mongodb mongosh -u root --authenticationDatabase admin -p
 ```
 
 :::
