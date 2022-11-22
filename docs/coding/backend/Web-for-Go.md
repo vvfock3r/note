@@ -5179,7 +5179,7 @@ protoc-gen-go-grpc 1.2.0
 可以使用go install安装，但是强烈不建议。因为使用`go install`安装会丢失版本信息，如下所示
 
 ```bash
-$ protoc-gen-grpc-gateway -version
+C:\Users\Administrator>protoc-gen-grpc-gateway -version
 Version dev, commit unknown, built at unknown
 ```
 
@@ -5227,11 +5227,26 @@ package echoserver;
 
 // 定义Go包名
 // 这个值写法有很多,后面再详细讲解
-option go_package = "echoserver";
+option go_package = "./;echoserver";
 
-// 定义一个数据结构，对应Go语言结构体
-message HelloRequest {
-  string name = 1;  // 1代表第一个字段, name代表字段名, string是值类型
+// 定义一个Message，对应Go语言结构体，用于封装请求数据
+// string: 字符串类型
+// data: 变量明
+// 1: 这里的1是指编号为1,并不是值为1，可以理解成data是一段数据中的第1个字段
+//    在同一个message中，多个字段的编号不能重复
+message Request {
+  string data = 1;
+}
+
+// 用于封装响应数据
+message Response {
+  string data = 1;
+}
+
+// 定义一个服务,对应Go的Interface
+service Echo {
+  // 定义一个方法
+  rpc Say (Request) returns (Response);
 }
 ```
 
