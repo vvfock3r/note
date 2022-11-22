@@ -5170,13 +5170,9 @@ protoc-gen-go-grpc 1.2.0
 
 :::
 
-::: details （3）安装grpc-gateway命令
-
-下载地址：[https://github.com/grpc-ecosystem/grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
-
 ::: warning
 
-可以使用go install安装，但是强烈不建议。因为使用`go install`安装会丢失版本信息，如下所示
+可以使用`go install`安装，但是强烈不建议。因为会丢失版本信息，如下所示
 
 ```bash
 C:\Users\Administrator>protoc-gen-grpc-gateway -version
@@ -5184,6 +5180,10 @@ Version dev, commit unknown, built at unknown
 ```
 
 :::
+
+::: details （3）安装grpc-gateway命令
+
+下载地址：[https://github.com/grpc-ecosystem/grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
 
 ```bash
 # 查看版本
