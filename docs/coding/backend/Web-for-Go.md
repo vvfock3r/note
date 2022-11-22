@@ -5183,8 +5183,6 @@ $ protoc-gen-grpc-gateway -version
 Version dev, commit unknown, built at unknown
 ```
 
-:::
-
 ```bash
 # 查看版本
 C:\Users\Administrator>protoc-gen-grpc-gateway --version
