@@ -5267,11 +5267,11 @@ D:\application\GoLand\demo\grpc_unary\proto> protoc --proto_path=. ^
 # 参数说明
 # --proto_path  指定proto文件的搜索路径,等同于使用-I参数
 
-# --go_out      生成的Go代码存放目录,在这个例子中会生成 echoserver.pb.go 文件
-# --go_opt      指定go_out的参数，paths=source_relative的意思是相对目录, 目录是.代表当前目录，若指定其他目录需要提前创建好
+# --go_out      生成的Go代码存放目录,.代表当前目录，若指定其他目录需要提前创建好,在这个例子中会生成 echoserver.pb.go 文件
+# --go_opt      指定go_out的参数，paths=source_relative的意思是相对目录
 
-# --go-grpc_out 生成的Go代码存放目录,在这个例子中会生成 echoserver_grpc.pb.go 文件
-# --go-grpc_opt 指定go-grpc_out的参数，paths=source_relative的意思是相对目录, 目录是.代表当前目录，若指定其他目录需要提前创建好
+# --go-grpc_out 生成的Go代码存放目录,.代表当前目录，若指定其他目录需要提前创建好,在这个例子中会生成 echoserver_grpc.pb.go 文件
+# --go-grpc_opt 指定go-grpc_out的参数，paths=source_relative的意思是相对目录
 ```
 
 :::
