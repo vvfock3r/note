@@ -5105,3 +5105,182 @@ func main() {
 
 * 官方收集：[https://github.com/gin-gonic/contrib](https://github.com/gin-gonic/contrib)
 
+<br />
+
+## 
+
+## gRPC
+
+**gRPC**
+
+* 官网：[https://grpc.io/docs/languages/go/](https://grpc.io/docs/languages/go/)
+
+* Github：[https://github.com/grpc/grpc](https://github.com/grpc/grpc)
+
+**Protocol Buffers**
+
+* 官网：[https://developers.google.com/protocol-buffers/](https://developers.google.com/protocol-buffers/)
+* Github：[https://github.com/protocolbuffers/protobuf](https://github.com/protocolbuffers/protobuf)
+
+<br />
+
+### 安装依赖
+
+::: details （1）安装protoc命令
+
+下载地址：[https://github.com/protocolbuffers/protobuf](https://github.com/protocolbuffers/protobuf)
+
+```bash
+# 安装protoc
+C:\Users\Administrator>protoc --version
+libprotoc 3.21.9
+
+# protoc支持生成Python、Java、C++等代码，但是默认不支持生成Go代码
+C:\Users\Administrator>protoc
+Usage: protoc [OPTION] PROTO_FILES
+Parse PROTO_FILES and generate output based on the options given:
+  ...
+  --cpp_out=OUT_DIR           Generate C++ header and source.
+  --csharp_out=OUT_DIR        Generate C# source file.
+  --java_out=OUT_DIR          Generate Java source file.
+  --kotlin_out=OUT_DIR        Generate Kotlin file.
+  --objc_out=OUT_DIR          Generate Objective-C header and source.
+  --php_out=OUT_DIR           Generate PHP source file.
+  --pyi_out=OUT_DIR           Generate python pyi stub.
+  --python_out=OUT_DIR        Generate Python source file.
+  --ruby_out=OUT_DIR          Generate Ruby source file.
+```
+
+:::
+
+::: details （2）安装protoc-gen-go命令
+
+```bash
+# 安装
+C:\Users\Administrator>go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+C:\Users\Administrator>go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 查看版本
+C:\Users\Administrator>protoc-gen-go --version
+protoc-gen-go v1.28.1
+
+C:\Users\Administrator>protoc-gen-go-grpc --version
+protoc-gen-go-grpc 1.2.0
+```
+
+:::
+
+::: details （3）安装grpc-gateway命令
+
+下载地址：[https://github.com/grpc-ecosystem/grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
+
+:::warning: 提醒
+
+可以使用go install安装，但是强烈不建议。因为使用`go install`安装会丢失版本信息，如下所示
+
+```bash
+$ protoc-gen-grpc-gateway -version
+Version dev, commit unknown, built at unknown
+```
+
+:::
+
+```bash
+# 查看版本
+C:\Users\Administrator>protoc-gen-grpc-gateway --version
+Version 2.14.0, commit fb3f4344d4f1d8c813694275c0448a0eacb125d6, built at 2022-11-15T22:45:09Z
+
+C:\Users\Administrator>protoc-gen-openapiv2 --version
+Version 2.14.0, commit fb3f4344d4f1d8c813694275c0448a0eacb125d6, built at 2022-11-15T22:45:09Z
+```
+
+:::
+
+<br />
+
+### 目录结构
+
+![image-20221122183044304](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221122183044304.png)
+
+* 每块独立的内容都会新建一个目录来做演示，`grpc_unary`便是为我们第一次学习`gRPC`所创建的目录，当然目录名叫什么都可以
+* `unary`这个名字并不是随便写的，它代表`gRPC`中最简单的一种调用模型`Unary RPC`（一元RPC），即：客户端发送单个请求并获得单个响应
+* `proto`目录：用来编写`ProtoBuf`序列化协议文件以及存放生成的`Go`代码
+* `client`目录：客户端代码
+* `server`目录：服务端代码
+
+<br />
+
+### 基础示例
+
+::: details （1）编写 .proto 文件
+
+`grpc_unary/proto/echoserver.proto`
+
+```protobuf
+// 定义ProtoBuf协议版本
+// 现在主流的也是最新的是proto3
+syntax = "proto3";
+
+// 定义ProtoBuf包名,用于Protoc内部
+// 在生成的Go代码中并不会用到这个字段
+package echoserver;
+
+// 定义Go包名
+// 这个值写法有很多,后面再详细讲解
+option go_package = "echoserver";
+
+// 定义一个数据结构，对应Go语言结构体
+message HelloRequest {
+  string name = 1;  // 1代表第一个字段, name代表字段名, string是值类型
+}
+```
+
+:::
+
+::: details （2）生成Go代码
+
+> Windows环境下使用^，和Linux下的 \ 效果一样 
+
+```bash
+# 方式1
+D:\application\GoLand\demo\grpc_unary\proto> protoc --proto_path=. ^
+    --go_out=. ^
+    --go_opt=paths=source_relative ^
+    --go-grpc_out=. ^
+    --go-grpc_opt=paths=source_relative ^
+*.proto
+
+# 方式2
+D:\application\GoLand\demo\grpc_unary\proto> protoc --proto_path=. ^
+    --go_out=paths=source_relative:. ^
+    --go-grpc_out=paths=source_relative:. ^
+*.proto
+
+# ---------------------------------------------------------------------------
+
+# 特别说明
+# 1) 第1种方式参数虽然多，但是看起来更清楚一些，所以推荐第1种方式
+# 2) Windows命令行中的上下键不能将^命令都连起来，所以下面这样使用更适合，支持上下键：
+#    protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+
+
+# 参数说明
+# --proto_path  指定proto文件的搜索路径,等同于使用-I参数
+
+# --go_out      生成的Go代码存放目录,在这个例子中会生成 echoserver.pb.go 文件
+# --go_opt      指定go_out的参数，paths=source_relative的意思是相对目录, 目录是.代表当前目录，若指定其他目录需要提前创建好
+
+# --go-grpc_out 生成的Go代码存放目录,在这个例子中会生成 echoserver_grpc.pb.go 文件
+# --go-grpc_opt 指定go-grpc_out的参数，paths=source_relative的意思是相对目录, 目录是.代表当前目录，若指定其他目录需要提前创建好
+```
+
+:::
+
+::: details （3）编写服务端代码
+
+:::
+
+
+
+
+
