@@ -5599,12 +5599,33 @@ func main() {
 * 客户端从返回的流中读取，直到没有更多消息为止
 * gRPC 保证单个 RPC 调用中的消息排序
 
+<br />
+
+下面实现一个文件下载服务器，客户端发送文件到服务器，服务器以流失数据返回给客户端
+
 ::: details （1）编写 .proto 文件
 
-`grpc_server_streaming/proto/echoserver.proto`
+`grpc_server_streaming/proto/file_download_server.proto`
 
 ```protobuf
+syntax = "proto3";
 
+package filedownload;
+
+option go_package = "./;filedownload";
+
+message FileDownloadRequest {
+  string name = 1;
+}
+
+message FileDownloadResponse {
+  bytes data = 1;
+  string md5 = 2;
+}
+
+service FileDownload {
+  rpc FileDownload (FileDownloadRequest) returns (stream FileDownloadResponse);
+}
 ```
 
 :::
@@ -5612,23 +5633,184 @@ func main() {
 ::: details （2）生成代码
 
 ```bash
-
+D:\application\GoLand\demo\grpc_server_streaming\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 ```
 
 :::
 
 ::: details （3）编写服务端代码
 
-```go
+`grpc_server_streaming/server/main.go`
 
+```go
+package main
+
+import (
+	"crypto/md5"
+	pb "demo/grpc_server_streaming/proto"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"strings"
+
+	"google.golang.org/grpc"
+)
+
+func MD5(b []byte) string {
+	sum := md5.Sum(b)
+	return hex.EncodeToString(sum[:])
+}
+
+type FileDownloadServer struct {
+	pb.UnimplementedFileDownloadServer
+}
+
+func (s *FileDownloadServer) FileDownload(req *pb.FileDownloadRequest, server pb.FileDownload_FileDownloadServer) error {
+	log.Println("filedownload request: ", req.GetName())
+
+	// 参数校验
+	fileName := strings.TrimSpace(req.GetName())
+	if fileName == "" {
+		return fmt.Errorf("missing file name")
+	}
+
+	// 打开文件
+	f, err := os.OpenFile(fileName, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		log.Printf("open file failed: %s\n", fileName)
+		return err
+	}
+	defer f.Close()
+
+	// 读取文件并发送数据
+	buffer := make([]byte, 1024)
+	for {
+		n, err := f.Read(buffer)
+		if n == 0 {
+			if err == io.EOF {
+				log.Printf("send file success: %s, total %d bytes\n", fileName)
+				break
+			}
+			if err != nil {
+				log.Printf("read file error: %s: %v\n", fileName, err)
+				return err
+			}
+		}
+
+		// 发送数据
+		err = server.Send(&pb.FileDownloadResponse{
+			Data: buffer[:n],
+			Md5:  MD5(buffer[:n]),
+		})
+		if err != nil {
+			log.Fatalf("send file error: %s: %v\n", fileName, err)
+		}
+	}
+	return nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将FileDownloadServer注册到gRPC Server
+	pb.RegisterFileDownloadServer(server, &FileDownloadServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", ":8081")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
 ```
 
 :::
 
 ::: details （4）编写客户端代码
 
-```go
+`grpc_server_streaming/client/main.go`
 
+```go
+package main
+
+import (
+	"context"
+	"crypto/md5"
+	bp "demo/grpc_server_streaming/proto"
+	"encoding/hex"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func MD5(b []byte) string {
+	sum := md5.Sum(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func main() {
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect filedownload server: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := bp.NewFileDownloadClient(conn)
+
+	// (3) 发送文件下载请求，获取数据流对象
+	requestName := "F:/.HOMES/admin/系统镜像/CentOS-7-x86_64-DVD-1708.iso"
+	stream, err := client.FileDownload(context.Background(), &bp.FileDownloadRequest{Name: requestName})
+	if err != nil {
+		log.Fatalf("failed to send request to filedownload server: %s: %v\n", requestName, err)
+	}
+
+	// （4）打开本地文件
+	_, fileName := filepath.Split(requestName)
+	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		log.Fatalf("Open file error: %s: %v\n", requestName, err)
+	}
+	defer f.Close()
+
+	// (5) 从流中持续接收数据写入到文件中
+	for {
+		// 接收数据
+		res, err := stream.Recv()
+		if res == nil {
+			if err == io.EOF {
+				log.Printf("download file success: %s\n", fileName)
+				break
+			}
+			if err != nil {
+				log.Fatalf("receive data error: %v\n", err)
+			}
+		}
+
+		// 校验MD5
+		if MD5(res.Data) != res.Md5 {
+			log.Fatalf("download file failed: %s: MD5 verification failed\n", fileName)
+		}
+
+		// 写入本地文件
+		_, err = f.Write(res.Data)
+		if err != nil {
+			log.Fatalf("write file error: %s: %v\n", fileName, err)
+		}
+	}
+}
 ```
 
 :::
