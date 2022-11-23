@@ -5601,7 +5601,7 @@ func main() {
 
 <br />
 
-下面实现一个文件下载服务器，客户端发送文件到服务器，服务器以流失数据返回给客户端
+下面实现一个文件下载服务器，客户端发送文件到服务器，服务器以流式数据返回给客户端
 
 ::: details （1）编写 .proto 文件
 
@@ -5624,7 +5624,7 @@ message FileDownloadResponse {
 }
 
 service FileDownload {
-  rpc FileDownload (FileDownloadRequest) returns (stream FileDownloadResponse);
+  rpc FileDownload (FileDownloadRequest) returns (stream FileDownloadResponse); // 注意stream位置
 }
 ```
 
@@ -5706,7 +5706,8 @@ func (s *FileDownloadServer) FileDownload(req *pb.FileDownloadRequest, server pb
 			Md5:  MD5(buffer[:n]),
 		})
 		if err != nil {
-			log.Fatalf("send file error: %s: %v\n", fileName, err)
+			log.Printf("send file error: %s: %v\n", fileName, err)
+            return err
 		}
 	}
 	return nil
@@ -5824,6 +5825,217 @@ func main() {
 * 客户端写入一系列消息并将它们发送到服务器
 * 客户端完成消息写入后，它会等待服务器读取消息并返回响应
 * gRPC 保证单个 RPC 调用中的消息排序
+
+下面实现一个文件上传服务器，客户端以流式数据发送文件到服务器
+
+::: details （1）编写 .proto 文件
+
+`grpc_client_streaming/proto/file_upload_server.proto`
+
+:::
+
+::: details （2）生成代码
+
+```bash
+D:\application\GoLand\demo\grpc_client_streaming\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+```
+
+:::
+
+::: details （3）编写服务端代码
+
+`grpc_client_streaming/server/main.go`
+
+```go
+package main
+
+import (
+	"crypto/md5"
+	pb "demo/grpc_client_streaming/proto"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"strings"
+
+	"google.golang.org/grpc"
+)
+
+func MD5(b []byte) string {
+	sum := md5.Sum(b)
+	return hex.EncodeToString(sum[:])
+}
+
+type FileUploadServer struct {
+	pb.UnimplementedFileUploadServer
+}
+
+func (s *FileUploadServer) FileUpload(server pb.FileUpload_FileUploadServer) error {
+	var (
+		fileName string             // 文件绝对路径，表示上传到哪
+		f        io.ReadWriteCloser // 表示打开的文件对象
+	)
+
+	for {
+		// (1) 接收数据
+		res, err := server.Recv()
+
+		// (2) 错误处理
+		if res == nil {
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Printf("Recv data error: %v\n", err)
+				return err
+			}
+		}
+
+		// (3) 初始化文件对象
+		if fileName == "" || f == nil {
+			fileName = strings.TrimSpace(res.Name)
+			f, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+			if err != nil {
+				log.Printf("open file error: %v\n", err)
+				return err
+			}
+			defer f.Close()
+		}
+
+		// (4) 校验MD5
+		if MD5(res.Data) != res.Md5 {
+			log.Printf("MD5 verification failed: %s\n", fileName)
+			return fmt.Errorf("MD5 verification failed")
+		}
+
+		// (5) 写入到文件
+		_, err = f.Write(res.Data)
+		if err != nil {
+			log.Printf("write data to file error: %v\n", err)
+		}
+	}
+
+	// 返回响应
+	if err := server.SendAndClose(&pb.FileUploadResponse{Status: true}); err != nil {
+		log.Printf("send and close error: %s: %v\n", fileName, err)
+		return err
+	}
+	return nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将FileDownloadServer注册到gRPC Server
+	pb.RegisterFileUploadServer(server, &FileUploadServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", ":8082")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
+:::
+
+::: details （4）编写客户端代码
+
+`grpc_client_streaming/client/main.go`
+
+```go
+package main
+
+import (
+	"context"
+	"crypto/md5"
+	pb "demo/grpc_client_streaming/proto"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func MD5(b []byte) string {
+	sum := md5.Sum(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func main() {
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect fileupload server: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化 Client
+	client := pb.NewFileUploadClient(conn)
+
+	// (3) 实例化 ClientStream
+	stream, err := client.FileUpload(context.Background())
+	if err != nil {
+		log.Fatalf("failed to init stream client: %v\n", err)
+	}
+
+	// (4) 打开文件
+	fileName := "F:/.HOMES/admin/系统镜像/CentOS-7-x86_64-DVD-1708.iso"
+	f, err := os.OpenFile(fileName, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		log.Fatalf("failed to open file: %s: %v\n", fileName, err)
+	}
+	defer f.Close()
+
+	// (5) 准备并发送数据
+	buffer := make([]byte, 1024)
+	fileSavePath := "./CentOS-7.iso" + strconv.Itoa(time.Now().Second())
+	for {
+		n, err := f.Read(buffer)
+
+		// 错误处理
+		if n == 0 {
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatalf("read file error: %v\n", err)
+			}
+		}
+
+		// 发送数据
+		message := &pb.FileUploadRequest{
+			Name: fileSavePath,
+			Data: buffer[:n],
+			Md5:  MD5(buffer[:n]),
+		}
+		if err := stream.Send(message); err != nil {
+			log.Fatalf("send file error: %s: %v\n", fileName, err)
+		}
+	}
+
+	// (6) 关闭并接收响应
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("failed to close and recv: %s: %v\n", fileName, err)
+	}
+	fmt.Println("来自服务端响应: ", res.Status)
+}
+```
+
+:::
 
 <br />
 
