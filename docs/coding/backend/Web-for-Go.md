@@ -5576,14 +5576,83 @@ func main() {
 
 <br />
 
-### RPC模型
+### 四种服务方法
 
-#### 一元RPC
+文档：[https://grpc.io/docs/what-is-grpc/core-concepts/#service-definition](https://grpc.io/docs/what-is-grpc/core-concepts/#service-definition)
 
-参考：基础示例
+<br />
 
-#### 服务端流
+#### 一元 RPC
 
-#### 客户端流
+一元 RPC（`Unary RPC`）：
 
-#### 双向数据流
+* 客户端向服务器发送单个请求并获取单个响应，就像正常的函数调用一样
+* 参考：基础示例
+
+<br />
+
+#### 服务器流式 RPC
+
+服务器流式 RPC（`Server streaming RPCs`）：
+
+* 客户端向服务器发送请求并获取流以读取一系列消息
+* 客户端从返回的流中读取，直到没有更多消息为止
+* gRPC 保证单个 RPC 调用中的消息排序
+
+::: details （1）编写 .proto 文件
+
+`grpc_server_streaming/proto/echoserver.proto`
+
+```protobuf
+
+```
+
+:::
+
+::: details （2）生成代码
+
+```bash
+
+```
+
+:::
+
+::: details （3）编写服务端代码
+
+```go
+
+```
+
+:::
+
+::: details （4）编写客户端代码
+
+```go
+
+```
+
+:::
+
+<br />
+
+#### 客户端流式 RPC
+
+客户端流式 RPC（`Client streaming RPCs`）：
+
+* 客户端写入一系列消息并将它们发送到服务器
+* 客户端完成消息写入后，它会等待服务器读取消息并返回响应
+* gRPC 保证单个 RPC 调用中的消息排序
+
+<br />
+
+#### 双向流式 RPC
+
+双向流式 RPC（`Bidirectional streaming RPCs`）：
+
+* 双方使用读写流发送一系列消息
+
+* 这两个流独立运行，因此客户端和服务器可以按照他们喜欢的任何顺序读取和写入：例如，
+
+  服务器可以在写入响应之前等待接收所有客户端消息，或者它可以交替读取一条消息然后写入一条消息，或其他一些读写组合
+
+* gRPC 保证每个流中消息的顺序
