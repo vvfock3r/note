@@ -112,6 +112,8 @@ see 'go help modules'
 
 文档：[https://go.dev/ref/mod](https://go.dev/ref/mod)
 
+包命名：[https://go.dev/blog/package-names](https://go.dev/blog/package-names)
+
 从`Go1.11`开始，官方推出Go module作为包管理工具
 
 
