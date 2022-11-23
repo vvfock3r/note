@@ -5231,20 +5231,20 @@ option go_package = "./;echoserver";
 // string: 字符串类型
 // data: 变量明
 // 1: 这里的1是指编号为1,并不是值为1，可以理解成data是一段数据中的第1个字段
-//    在同一个message中，多个字段的编号不能重复
-message Request {
+//   在同一个message中，多个字段的编号不能重复
+message EchoRequest {
   string data = 1;
 }
 
 // 用于封装响应数据
-message Response {
+message EchoResponse {
   string data = 1;
 }
 
-// 定义一个服务,对应Go的Interface
+// 定义一个服务,对应Go的Interface（名称为：<Service>Server）
 service Echo {
   // 定义一个方法
-  rpc Say (Request) returns (Response);
+  rpc Say (EchoRequest) returns (EchoResponse);
 }
 ```
 
@@ -5285,15 +5285,305 @@ D:\application\GoLand\demo\grpc_unary\proto> protoc --proto_path=. ^
 
 # --go-grpc_out 生成的Go代码存放目录,.代表当前目录，若指定其他目录需要提前创建好,在这个例子中会生成 echoserver_grpc.pb.go 文件
 # --go-grpc_opt 指定go-grpc_out的参数，paths=source_relative的意思是相对目录
+
+# 两个Go文件有啥异同?
+# (1) 他们俩属于同一个包
+# (2) pb的意思是ProtoBuf
+# (3) echoserver.pb.go       生成Message相关的代码，对应Go结构体
+# (4) echoserver_grpc.pb.go  生成Service生成的代码，对应Go接口，包含客户端和服务端代码
+#                            这是gRPC专门为ProtoBuf编写的插件，所以才会生成Service相关代码
 ```
 
 :::
 
 ::: details （3）编写服务端代码
 
+`grpc_unary/server/main.go`
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
 :::
 
+::: details （4）编写客户端代码
 
+`grpc_unary/client/main.go`
 
+```go
+package main
 
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"strconv"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	// (1) 连接gRPC Server    
+    // 因为我们并没有使用任何认证，所以需要加上 grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect echoserver: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := pb.NewEchoClient(conn)
+
+	// (3) 发送消息
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(context.Background(), &message)
+		if err != nil {
+			log.Printf("Remote Call Say error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+}
+```
+
+:::
+
+::: details （5）测试
+
+```bash
+# 启动服务端
+D:\application\GoLand\demo\grpc_unary\server>go run main.go
+server listening at tcp://[::]:8080
+
+# 发送数据
+D:\application\GoLand\demo\grpc_unary\client>go run main.go
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+# 服务端查看日志
+D:\application\GoLand\demo\grpc_unary\server>go run main.go
+server listening at tcp://[::]:8080
+2022/11/23 11:52:32 Receive request:  data:"0"
+2022/11/23 11:52:32 Receive request:  data:"1"
+2022/11/23 11:52:32 Receive request:  data:"2"
+2022/11/23 11:52:32 Receive request:  data:"3"
+2022/11/23 11:52:32 Receive request:  data:"4"
+2022/11/23 11:52:32 Receive request:  data:"5"
+2022/11/23 11:52:32 Receive request:  data:"6"
+2022/11/23 11:52:32 Receive request:  data:"7"
+2022/11/23 11:52:32 Receive request:  data:"8"
+2022/11/23 11:52:32 Receive request:  data:"9"
+```
+
+:::
+
+::: details （6）继续完善：添加一个Ping方法，用于测试客户端和服务端连接是否正常
+
+`grpc_unary/proto/echoserver.proto`
+
+```protobuf
+// 定义ProtoBuf协议版本
+// 现在主流的也是最新的是proto3
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+// 定义ProtoBuf包名,用于Protoc内部
+// 在生成的Go代码中并不会用到这个字段
+package echoserver;
+
+// 定义Go包名
+// 这个值写法有很多,后面再详细讲解
+option go_package = "./;echoserver";
+
+// 定义一个Message，对应Go语言结构体，用于封装请求数据
+// string: 字符串类型
+// data: 变量明
+// 1: 这里的1是指编号为1,并不是值为1，可以理解成data是一段数据中的第1个字段
+//   在同一个message中，多个字段的编号不能重复
+message EchoRequest {
+  string data = 1;
+}
+
+// 用于封装响应数据
+message EchoResponse {
+  string data = 1;
+}
+
+// 定义一个服务,对应Go的Interface（名称为：<Service>Server）
+service Echo {
+  // 定义一个方法
+  rpc Say (EchoRequest) returns (EchoResponse);
+  // 定义Ping方法，用于测试客户端和服务端连接是否正常
+  // 它没有参数，但是ProtoBuf必须要求我们传入一个参数，解决方法有两种：
+  //   (1) 定义一个Empty的Message,里面什么字段都没有
+  //   (2) 使用内置的Empty Message
+  // 返回值是 "pong"
+  rpc Ping(google.protobuf.Empty) returns (EchoResponse);
+}
+```
+
+`grpc_unary/server/main.go`
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"net"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Ping(ctx context.Context, req *emptypb.Empty) (*pb.EchoResponse, error) {
+	log.Println("Receive request: Ping")
+	return &pb.EchoResponse{Data: "pong"}, nil
+}
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
+`grpc_unary/client/main.go`
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/golang/protobuf/ptypes/empty"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect echoserver: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := pb.NewEchoClient(conn)
+
+	// (3) 连接测试
+	_, err = client.Ping(context.Background(), &empty.Empty{})
+	if err != nil {
+		log.Fatalf("Remote Call Ping error: %v\n", err)
+	}
+
+	// (4) 发送消息
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(context.Background(), &message)
+		if err != nil {
+			log.Printf("Remote Call Say error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+}
+```
+
+:::
+
+<br />
+
+### RPC模型
+
+#### 一元RPC
+
+参考：基础示例
+
+#### 服务端流
+
+#### 客户端流
+
+#### 双向数据流
