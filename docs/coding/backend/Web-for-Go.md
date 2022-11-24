@@ -6053,15 +6053,17 @@ func main() {
 
 <br />
 
-### Metadata
+### 元数据
 
 文档：[https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md](https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md)
 
 `Metadata`简单理解就是HTTP Header中的 key-value，上面文档写的非常详细，建议直接看文档
 
-#### 一元RPC
 
-以下代码基于**基础示例**进行修改
+
+**（1）一元RPC**
+
+新建目录`grpc_metadata_unary`，并基于**基础示例**进行修改
 
 ::: details （1）修改客户端代码
 
@@ -6070,7 +6072,7 @@ package main
 
 import (
 	"context"
-	pb "demo/grpc_unary/proto"
+	pb "demo/grpc_metadata_unary/proto"
 	"fmt"
 	"log"
 	"strconv"
@@ -6143,7 +6145,7 @@ package main
 
 import (
 	"context"
-	pb "demo/grpc_unary/proto"
+	pb "demo/grpc_metadata_unary/proto"
 	"fmt"
 	"log"
 	"net"
@@ -6229,9 +6231,9 @@ timestamp: [1669265604]
 
 ### 拦截器
 
-#### 一元RPC
+**（1）一元RPC**
 
-以下代码基于**基础示例**进行修改
+新建目录`grpc_interceptor_unary`，并基于**基础示例**进行修改
 
 ::: details （1）服务端拦截器
 
@@ -6240,7 +6242,7 @@ package main
 
 import (
 	"context"
-	pb "demo/grpc_unary/proto"
+	pb "demo/grpc_interceptor_unary/proto"
 	"fmt"
 	"log"
 	"net"
@@ -6339,7 +6341,7 @@ package main
 
 import (
 	"context"
-	pb "demo/grpc_unary/proto"
+	pb "demo/grpc_interceptor_unary/proto"
 	"fmt"
 	"log"
 	"strconv"
@@ -6418,4 +6420,147 @@ func main() {
 <br />
 
 ### 验证器
+
+Github：[https://github.com/bufbuild/protoc-gen-validate](https://github.com/bufbuild/protoc-gen-validate)
+
+**该项目目前处于alpha 阶段，推荐稳定以后再使用**
+
+<br />
+
+新建目录`grpc_validate`，并基于**基础示例**进行修改
+
+::: details （1）安装 protoc-gen-validate 命令
+
+```bash
+# 下载代码
+$ git clone https://github.com/bufbuild/protoc-gen-validate
+$ cd protoc-gen-validate/
+
+# 切到指定版本
+$ git checkout v0.9.0
+
+# 编译安装
+$ go install .
+
+# 它没有提供任何查看版本的选项，所以直接执行一直卡着不报错就算安装完成了
+$ protoc-gen-validate
+```
+
+:::
+
+::: details （2）下载validate.proto文件
+
+Github：[https://github.com/bufbuild/protoc-gen-validate/tree/v0.9.0/validate](https://github.com/bufbuild/protoc-gen-validate/tree/v0.9.0/validate)
+
+推荐放到项目目录为：`proto/validate/validate.proto`
+
+:::
+
+::: details （3）修改 .proto 文件
+
+```protobuf
+// 定义ProtoBuf协议版本
+// 现在主流的也是最新的是proto3
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";   // 修改地方1/2
+
+// 定义ProtoBuf包名,用于Protoc内部
+// 在生成的Go代码中并不会用到这个字段
+package echoserver;
+
+// 定义Go包名
+// 这个值写法有很多,后面再详细讲解
+option go_package = "./;echoserver";
+
+// 定义一个Message，对应Go语言结构体，用于封装请求数据
+// string: 字符串类型
+// data: 变量明
+// 1: 这里的1是指编号为1,并不是值为1，可以理解成data是一段数据中的第1个字段
+//   在同一个message中，多个字段的编号不能重复
+message EchoRequest {
+  string data = 1 [(validate.rules).string.email = true];  // 修改地方2/2
+}
+
+// 用于封装响应数据
+message EchoResponse {
+  string data = 1;
+}
+
+// 定义一个服务,对应Go的Interface（名称为：<Service>Server）
+service Echo {
+  // 定义一个方法
+  rpc Say (EchoRequest) returns (EchoResponse);
+  // 定义Ping方法，用于测试客户端和服务端连接是否正常
+  // 它没有参数，但是ProtoBuf必须要求我们传入一个参数，解决方法有两种：
+  //   (1) 定义一个Empty的Message,里面什么字段都没有
+  //   (2) 使用内置的Empty Message
+  // 返回值是 "pong"
+  rpc Ping(google.protobuf.Empty) returns (EchoResponse);
+}
+```
+
+这里会飘红，但是不影响后续使用
+
+![image-20221124181245054](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221124181245054.png)
+
+:::
+
+::: details （4）生成Go代码
+
+```bash
+D:\application\GoLand\demo\grpc_validate\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative  --validate_out="lang=go:." *.proto
+```
+
+:::
+
+::: details （5）修改服务端代码
+
+```go
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	// 数据校验
+	if err := req.ValidateAll(); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+```
+
+:::
+
+::: details （6）查看输出日志
+
+```bash
+server listening at tcp://[::]:8080
+2022/11/24 17:58:27 Receive request: Ping
+2022/11/24 17:58:27 Receive request:  data:"0"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"1"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"2"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"3"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"4"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"5"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"6"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"7"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"8"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+2022/11/24 17:58:27 Receive request:  data:"9"
+invalid EchoRequest.Data: value must be a valid email address | caused by: mail: missing '@' or angle-addr
+```
+
+:::
+
+<br />
+
+### 状态码
 
