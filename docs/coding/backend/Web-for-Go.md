@@ -5605,7 +5605,7 @@ func main() {
 
 ::: details （1）编写 .proto 文件
 
-`grpc_server_streaming/proto/file_download_server.proto`
+`grpc_streaming_server/proto/file_download_server.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -5633,21 +5633,21 @@ service FileDownload {
 ::: details （2）生成代码
 
 ```bash
-D:\application\GoLand\demo\grpc_server_streaming\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+D:\application\GoLand\demo\grpc_streaming_server\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 ```
 
 :::
 
 ::: details （3）编写服务端代码
 
-`grpc_server_streaming/server/main.go`
+`grpc_streaming_server/server/main.go`
 
 ```go
 package main
 
 import (
 	"crypto/md5"
-	pb "demo/grpc_server_streaming/proto"
+	pb "demo/grpc_streaming_server/proto"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -5736,7 +5736,7 @@ func main() {
 
 ::: details （4）编写客户端代码
 
-`grpc_server_streaming/client/main.go`
+`grpc_streaming_server/client/main.go`
 
 ```go
 package main
@@ -5744,7 +5744,7 @@ package main
 import (
 	"context"
 	"crypto/md5"
-	bp "demo/grpc_server_streaming/proto"
+	bp "demo/grpc_streaming_server/proto"
 	"encoding/hex"
 	"io"
 	"log"
@@ -5830,28 +5830,28 @@ func main() {
 
 ::: details （1）编写 .proto 文件
 
-`grpc_client_streaming/proto/file_upload_server.proto`
+`grpc_streaming_client/proto/file_upload_server.proto`
 
 :::
 
 ::: details （2）生成代码
 
 ```bash
-D:\application\GoLand\demo\grpc_client_streaming\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+D:\application\GoLand\demo\grpc_streaming_client\proto>protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 ```
 
 :::
 
 ::: details （3）编写服务端代码
 
-`grpc_client_streaming/server/main.go`
+`grpc_streaming_client/server/main.go`
 
 ```go
 package main
 
 import (
 	"crypto/md5"
-	pb "demo/grpc_client_streaming/proto"
+	pb "demo/grpc_streaming_client/proto"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -5956,7 +5956,7 @@ package main
 import (
 	"context"
 	"crypto/md5"
-	pb "demo/grpc_client_streaming/proto"
+	pb "demo/grpc_streaming_client/proto"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -6266,13 +6266,13 @@ func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResp
 	return &pb.EchoResponse{Data: req.Data}, nil
 }
 
-func WithPerRequestTime() grpc.ServerOption {
+func WithServerPerRequestTime() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// 计算耗时，handler是真正执行的函数
 		log.Printf("WithPerRequestTime Start...\n")
 		start := time.Now()
 		resp, err := handler(ctx, req)
-		time.Sleep(time.Millisecond * 10) // handler运行的太快了,所以这里增加一点耗时
+		time.Sleep(time.Millisecond * 1) // handler运行的太快了,所以这里增加一点耗时
 		ms := time.Since(start).Milliseconds()
 
 		// 输出日志并返回
@@ -6285,7 +6285,7 @@ func main() {
 	// (1) 实例化一个gRPC Server
 	// grpc.NewServer可以传递可变参数，类型是 ServerOption
 	// grpc.UnaryInterceptor 返回一个 ServerOption
-	server := grpc.NewServer(WithPerRequestTime())
+	server := grpc.NewServer(WithServerPerRequestTime())
 
 	// (2) 将EchoServer注册到gRPC Server中
 	pb.RegisterEchoServer(server, &EchoServer{})
@@ -6335,7 +6335,87 @@ server listening at tcp://[::]:8080
 ::: details （2）客户端拦截器
 
 ```go
+package main
 
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/golang/protobuf/ptypes/empty"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func WithClientOptionToken() grpc.DialOption {
+	return grpc.WithUnaryInterceptor(func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		// 断言,修改值
+		if req, ok := req.(*pb.EchoRequest); ok {
+			req.Data = "[ " + req.Data + " ]"
+		}
+
+		// invoker是我们真正执行的调用
+		err := invoker(ctx, method, req, reply, cc, opts...)
+		return err
+	})
+}
+
+func main() {
+	// (1) 连接gRPC Server
+	// grpc.Dial可以接收可变参数: DialOption
+	// grpc.WithUnaryInterceptor() 返回一个 DialOption
+	conn, err := grpc.Dial("localhost:8080",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		WithClientOptionToken(),
+	)
+	if err != nil {
+		log.Fatalf("failed to connect echoserver: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := pb.NewEchoClient(conn)
+
+	// (3) 连接测试
+	_, err = client.Ping(context.Background(), &empty.Empty{})
+	if err != nil {
+		log.Fatalf("Remote Call Ping error: %v\n", err)
+	}
+
+	// (4) 发送消息
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(context.Background(), &message)
+		if err != nil {
+			log.Printf("gRPC error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+}
+```
+
+输出结果
+
+```bash
+[ 0 ]
+[ 1 ]
+[ 2 ]
+[ 3 ]
+[ 4 ]
+[ 5 ]
+[ 6 ]
+[ 7 ]
+[ 8 ]
+[ 9 ]
 ```
 
 :::
+
+<br />
+
+### 验证器
+
