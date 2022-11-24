@@ -5576,7 +5576,7 @@ func main() {
 
 <br />
 
-### 四种服务方法
+### 服务方法
 
 文档：[https://grpc.io/docs/what-is-grpc/core-concepts/#service-definition](https://grpc.io/docs/what-is-grpc/core-concepts/#service-definition)
 
@@ -6053,7 +6053,9 @@ func main() {
 
 <br />
 
-### 元数据
+### 核心概念
+
+#### 元数据
 
 文档：[https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md](https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md)
 
@@ -6229,7 +6231,7 @@ timestamp: [1669265604]
 
 <br />
 
-### 拦截器
+#### 拦截器
 
 **（1）一元RPC**
 
@@ -6419,7 +6421,7 @@ func main() {
 
 <br />
 
-### 验证器
+#### 验证器
 
 Github：[https://github.com/bufbuild/protoc-gen-validate](https://github.com/bufbuild/protoc-gen-validate)
 
@@ -6562,5 +6564,89 @@ invalid EchoRequest.Data: value must be a valid email address | caused by: mail:
 
 <br />
 
-### 状态码
+#### 状态码
 
+文档：
+
+* [https://github.com/grpc/grpc/blob/master/doc/statuscodes.md](https://github.com/grpc/grpc/blob/master/doc/statuscodes.md)
+* [https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md](https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md)
+
+新建目录`grpc_status`，并基于**基础示例**进行修改
+
+::: details （1）服务端返回错误
+
+```go
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+
+	// 参数校验，假设这里只允许传递 0-5
+	n, err := strconv.Atoi(req.Data)
+	if err != nil || n < 0 || n > 5 {
+		return nil, status.Error(codes.InvalidArgument, "Must be between 0 and 5")
+	}
+
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+```
+
+:::
+
+::: details （2）客户端解码错误
+
+```go
+	// (4) 发送消息
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(context.Background(), &message)
+		if err != nil {
+			// 通过error反解出status，但是并不一定能成功
+			st, ok := status.FromError(err)
+			if ok {
+				fmt.Println("错误代码: ", st.Code())
+				fmt.Println("错误消息: ", st.Message())
+				continue
+			}
+
+			// 不能反解的错误
+			log.Printf("gRPC error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+```
+
+:::
+
+::: details （3）输出结果
+
+```bash
+D:\application\GoLand\demo\grpc_status\client>go run main.go
+0
+1                                 
+2                                 
+3                                 
+4                                 
+5                                 
+错误代码:  InvalidArgument        
+错误消息:  Must be between 0 and 5
+错误代码:  InvalidArgument
+错误消息:  Must be between 0 and 5
+错误代码:  InvalidArgument
+错误消息:  Must be between 0 and 5
+错误代码:  InvalidArgument
+错误消息:  Must be between 0 and 5
+```
+
+:::
+
+<br />
+
+### 简单优化
+
+#### 超时机制
+
+<br />
+
+#### TLS证书
+
+<br />
