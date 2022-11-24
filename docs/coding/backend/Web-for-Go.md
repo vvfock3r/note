@@ -5114,7 +5114,7 @@ func main() {
 **gRPC**
 
 * 官网：[https://grpc.io/docs/languages/go/](https://grpc.io/docs/languages/go/)
-
+* 文档：[https://github.com/grpc/grpc/tree/master/doc](https://github.com/grpc/grpc/tree/master/doc)
 * Github：[https://github.com/grpc/grpc](https://github.com/grpc/grpc)
 
 **Protocol Buffers**
@@ -6050,3 +6050,292 @@ func main() {
   服务器可以在写入响应之前等待接收所有客户端消息，或者它可以交替读取一条消息然后写入一条消息，或其他一些读写组合
 
 * gRPC 保证每个流中消息的顺序
+
+<br />
+
+### Metadata
+
+文档：[https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md](https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md)
+
+`Metadata`简单理解就是HTTP Header中的 key-value，上面文档写的非常详细，建议直接看文档
+
+#### 一元RPC
+
+以下代码基于**基础示例**进行修改
+
+::: details （1）修改客户端代码
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/metadata"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect echoserver: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := pb.NewEchoClient(conn)
+
+	// ----------------------------------------------------------------
+	// (3) metadata使用
+	// 1.生成元数据,有两种方式; 如果Paires接收的个数是奇数会panic
+	md1 := metadata.New(map[string]string{
+		"Userame":  "bob",
+		"Password": "123456",
+	})
+	//md2 := metadata.Pairs(
+	//	"Username", "jack",
+	//	"Password", "qaz.12345",
+	//)
+
+	// 2.生成context,有两种方式
+	// 生成一个新的Context，旧Context的数据将被覆盖
+	ctx := metadata.NewOutgoingContext(context.Background(), md1)
+	// 追加数据
+	ctx = metadata.AppendToOutgoingContext(ctx, "timestamp", strconv.FormatInt(time.Now().Unix(), 10))
+	// ----------------------------------------------------------------
+
+	// (4) 连接测试
+	// 3.使用context
+	_, err = client.Ping(ctx, &empty.Empty{})
+	if err != nil {
+		log.Fatalf("Remote Call Ping error: %v\n", err)
+	}
+
+	// (5) 发送消息
+	// 4.使用context
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(ctx, &message)
+		if err != nil {
+			log.Printf("gRPC error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+}
+```
+
+:::
+
+::: details （2）修改服务端代码
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"net"
+
+	"google.golang.org/grpc/metadata"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Ping(ctx context.Context, req *emptypb.Empty) (*pb.EchoResponse, error) {
+	log.Println("Receive request: Ping")
+
+	// 取出metadata
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		for k, v := range md {
+			fmt.Printf("%s: %s\n", k, v)
+		}
+	}
+	return &pb.EchoResponse{Data: "pong"}, nil
+}
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
+:::
+
+::: details （3）服务端输出结果
+
+```bash
+D:\application\GoLand\demo\grpc_metadata_unary\server>go run main.go
+server listening at tcp://[::]:8080
+2022/11/24 12:53:24 Receive request: Ping
+:authority: [localhost:8080]                  
+content-type: [application/grpc]              
+user-agent: [grpc-go/1.51.0]                  
+userame: [bob]                                
+password: [123456]                            
+timestamp: [1669265604]
+2022/11/24 12:53:24 Receive request:  data:"0"
+2022/11/24 12:53:24 Receive request:  data:"1"
+2022/11/24 12:53:24 Receive request:  data:"2"
+2022/11/24 12:53:24 Receive request:  data:"3"
+2022/11/24 12:53:24 Receive request:  data:"4"
+2022/11/24 12:53:24 Receive request:  data:"5"
+2022/11/24 12:53:24 Receive request:  data:"6"
+2022/11/24 12:53:24 Receive request:  data:"7"
+2022/11/24 12:53:24 Receive request:  data:"8"
+2022/11/24 12:53:24 Receive request:  data:"9"
+```
+
+:::
+
+<br />
+
+### 拦截器
+
+#### 一元RPC
+
+以下代码基于**基础示例**进行修改
+
+::: details （1）服务端拦截器
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Ping(ctx context.Context, req *emptypb.Empty) (*pb.EchoResponse, error) {
+	log.Println("Receive request: Ping")
+	return &pb.EchoResponse{Data: "pong"}, nil
+}
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func WithPerRequestTime() grpc.ServerOption {
+	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// 计算耗时，handler是真正执行的函数
+		log.Printf("WithPerRequestTime Start...\n")
+		start := time.Now()
+		resp, err := handler(ctx, req)
+		time.Sleep(time.Millisecond * 10) // handler运行的太快了,所以这里增加一点耗时
+		ms := time.Since(start).Milliseconds()
+
+		// 输出日志并返回
+		log.Printf("WithPerRequestTime Return... [%d ms]\n", ms)
+		return resp, err
+	})
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	// grpc.NewServer可以传递可变参数，类型是 ServerOption
+	// grpc.UnaryInterceptor 返回一个 ServerOption
+	server := grpc.NewServer(WithPerRequestTime())
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
+输出结果
+
+```bash
+server listening at tcp://[::]:8080
+2022/11/24 14:21:31 WithPerRequestTime Start...
+2022/11/24 14:21:31 Receive request: Ping
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"0"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"1"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"6"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"7"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"8"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+2022/11/24 14:21:32 WithPerRequestTime Start...
+2022/11/24 14:21:32 Receive request:  data:"9"
+2022/11/24 14:21:32 WithPerRequestTime Return... [14 ms]
+```
+
+:::
+
+::: details （2）客户端拦截器
+
+```go
+
+```
+
+:::
