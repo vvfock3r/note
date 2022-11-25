@@ -716,7 +716,7 @@ echo
 
 :::
 
-::: details （5）case语句
+::: details （6）case语句
 
 ```bash
 #!/bin/bash
@@ -738,7 +738,7 @@ esac
 
 :::
 
-::: details （6）continue和break 
+::: details （7）continue和break 
 
 ```bash
 # continue 跳过本次循环，继续下一次循环
@@ -771,7 +771,7 @@ echo $sum
 
 :::
 
-::: details （7）eval将字符串作为语句执行
+::: details （8）eval将字符串作为语句执行
 
 ```bash
 # 经典的获取最后一个参数命令
@@ -796,7 +796,7 @@ echo "最后一个参数是:"$(eval echo "\$$#")
 
 :::
 
-::: details （8）exec执行命令后退出当前终端
+::: details （9）exec执行命令后退出当前终端
 
 ```bash
 # 检测网络
@@ -808,7 +808,7 @@ if [ `id -u` -ne 0 ];then exec echo "Must be root can run it"; fi
 
 :::
 
-::: details （9）getopts命令行参数处理
+::: details （10）getopts命令行参数处理
 
 > 注：只支持短选项
 
@@ -869,3 +869,52 @@ option is v ,the value is V
 ## 安全工具
 
 ### cfssl
+
+Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
+
+::: details （1）安装
+
+```bash
+# Windows
+# 建议直接在Github Release页面下载二进制, 速度最快
+
+# Linux
+Version=1.6.3
+DownloadURL=https://github.com/cloudflare/cfssl/releases/download
+
+wget ${DownloadURL}/v${Version}/cfssl_${Version}_linux_amd64          -O /usr/local/bin/cfssl
+wget ${DownloadURL}/v${Version}/cfssljson_${Version}_linux_amd64      -O /usr/local/bin/cfssljson
+wget ${DownloadURL}/v${Version}/cfssl-certinfo_${Version}_linux_amd64 -O /usr/local/bin/cfssl-certinfo
+wget ${DownloadURL}/v${Version}/cfssl-bundle_${Version}_linux_amd64   -O /usr/local/bin/cfssl-bundle
+wget ${DownloadURL}/v${Version}/cfssl-newkey_${Version}_linux_amd64   -O /usr/local/bin/cfssl-newkey
+wget ${DownloadURL}/v${Version}/mkbundle_${Version}_linux_amd64       -O /usr/local/bin/mkbundle
+wget ${DownloadURL}/v${Version}/multirootca_${Version}_linux_amd64    -O /usr/local/bin/multirootca
+
+chmod 755 /usr/local/bin/cfssl
+chmod 755 /usr/local/bin/cfssljson
+chmod 755 /usr/local/bin/cfssl-certinfo
+chmod 755 /usr/local/bin/cfssl-bundle
+chmod 755 /usr/local/bin/cfssl-newkey
+chmod 755 /usr/local/bin/mkbundle
+chmod 755 /usr/local/bin/multirootca
+
+
+echo                                                      && \
+echo "cfssl: "     && cfssl version       | sed 's/^/  /' && \
+echo "cfssljson: " && cfssljson --version | sed 's/^/  /' && \
+echo
+
+# 输出结果
+cfssl: 
+  Version: 1.6.3
+  Runtime: go1.18
+cfssljson: 
+  Version: 1.6.3
+  Runtime: go1.18
+```
+
+:::
+
+::: details （2）
+
+:::
