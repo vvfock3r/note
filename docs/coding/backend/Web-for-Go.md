@@ -6645,6 +6645,175 @@ D:\application\GoLand\demo\grpc_status\client>go run main.go
 
 #### 超时机制
 
+新建目录`grpc_timeout`，并基于**基础示例**进行修改
+
+::: details （1）客户端超时机制
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
+
+	"github.com/golang/protobuf/ptypes/empty"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect echoserver: %v\n", err)
+	}
+	defer conn.Close()
+
+	// (2) 实例化Client
+	client := pb.NewEchoClient(conn)
+
+	// (3) 生成context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	defer cancel()
+
+	// (3) 连接测试
+	_, err = client.Ping(ctx, &empty.Empty{})
+	if err != nil {
+		// 解码错误
+		st, ok := status.FromError(err)
+		if ok {
+			if st.Code() == codes.DeadlineExceeded {
+				log.Fatalf("Remote Call Ping error: timeout\n")
+			}
+		}
+		// 未知错误
+		log.Fatalf("Remote Call Ping error: %v\n", err)
+	}
+
+	// (4) 发送消息
+	for i := 0; i < 10; i++ {
+		message := pb.EchoRequest{Data: strconv.Itoa(i)}
+		res, err := client.Say(ctx, &message)
+		if err != nil {
+			log.Printf("gRPC error: %v\n", err)
+			continue
+		}
+		fmt.Println(res.Data)
+	}
+}
+```
+
+:::
+
+::: details （2）服务端超时机制
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_unary/proto"
+	"fmt"
+	"log"
+	"net"
+	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Ping(ctx context.Context, req *emptypb.Empty) (*pb.EchoResponse, error) {
+	log.Println("Receive request: Ping")
+
+	// 服务器处理-方式1
+	for i := 0; i < 3; i++ {
+		// 模拟耗时操作
+		log.Println("Sleep 1 second")
+		time.Sleep(time.Second)
+
+		// 判断客户端是否已经完成
+		select {
+		case <-ctx.Done():
+			log.Printf("EchoServer.Ping return")
+			return nil, status.Error(codes.Canceled, "EchoServer.Ping canceled")
+		default:
+		}
+	}
+
+	// 服务器处理-方式2
+	//handler := func() chan struct{} {
+	//	ch := make(chan struct{})
+	//	go func() {
+	//		time.Sleep(time.Second * 3)
+	//		ch <- struct{}{}
+	//	}()
+	//	return ch
+	//}
+	//select {
+	//case <-ctx.Done():
+	//	log.Printf("EchoServer.Ping return")
+	//	return nil, status.Error(codes.Canceled, "EchoServer.Ping canceled")
+	//case <-handler():
+	//	break
+	//}
+
+	return &pb.EchoResponse{Data: "pong"}, nil
+}
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func main() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+```
+
+:::
+
+::: details （3）输出结果
+
+```bash
+server listening at tcp://[::]:8080
+2022/11/25 14:41:44 Receive request: Ping
+2022/11/25 14:41:44 Sleep 1 second
+2022/11/25 14:41:45 EchoServer.Ping return
+```
+
+:::
+
 <br />
 
 #### TLS证书
