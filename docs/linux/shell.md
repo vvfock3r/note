@@ -872,7 +872,7 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
-::: details （1）安装
+::: details 安装
 
 ```bash
 # Windows
@@ -915,6 +915,161 @@ cfssljson:
 
 :::
 
-::: details （2）
+<br />
+
+::: details 创建根证书（CA证书），后续所有的证书都会基于根证书或二级根证书来颁发
+
+```bash
+# 创建一个目录专门存放证书
+[root@ap-hongkang ~]# mkdir -p pki && cd pki
+
+# ---------------------------------------------------------------------
+# 创建默认的CA配置文件
+[root@ap-hongkang pki]# cfssl print-defaults config > ca-config.json
+
+# 修改
+[root@ap-hongkang pki]# vim ca-config.json
+{
+    "signing": {
+        "default": {
+            "expiry": "876000h"
+        },
+        "profiles": {
+            "server": {
+                "expiry": "876000h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth",
+                    "client auth"
+                ]
+            },
+            "client": {
+                "expiry": "876000h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "client auth"
+                ]
+            }
+        }
+    }
+}
+
+# 配置说明
+# (1) profiles：   为服务器颁发证书时我们使用server，为客户端颁发证书时我们使用client,这个操作是在后面的命令中手工指定使用哪个profile
+# (2) expiry:      指定过期时间：这里是100年 (876000h/24/365 = 100年)
+# (3) server auth: 服务器验证，用于客户端验证服务器,需要注意的是在profile.server中也需要添加client auth，因为它也会作为客户端来使用
+# (4) client auth: 客户端验证，用于服务器验证客户端
+
+# ---------------------------------------------------------------------
+# 创建默认的证书签名申请文件(Certificate Signing Request)
+[root@ap-hongkang pki]# cfssl print-defaults csr > ca-csr.json
+
+# 修改
+[root@ap-hongkang pki]# vim ca-csr.json
+{
+    "CN": "Reliable internal CA",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "BeiJing",
+            "L": "BeiJing",
+            "O": "Trust Services"
+        }
+    ]
+}
+
+# 配置说明
+# CN     公用名或通用名(Common Name)
+# hosts  要签名的域名或IP，此处是根证书，不需要填写字段，删除就好
+# key    指定签名算法，推荐使用 <rsa 2048>
+# names:
+#   C    国家(country)
+#   ST   州或省(the state or province)
+#   L    地方或自治市(locality or municipality)
+#   O    组织(organisation)，可以理解为公司，一般写法 <公司名, Inc|Ltd>，Inc为股份有限公司，Ltd为有限责任公司
+#   OU   组织单位(organisational unit)，可以理解为公司内的部门,CA一般不需要填写
+
+# ---------------------------------------------------------------------
+# 生成根证书和私钥
+[root@ap-hongkang pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
+2022/11/25 20:18:38 [INFO] generating a new CA key and certificate from CSR
+2022/11/25 20:18:38 [INFO] generate received request
+2022/11/25 20:18:38 [INFO] received CSR
+2022/11/25 20:18:38 [INFO] generating key: rsa-2048
+2022/11/25 20:18:39 [INFO] encoded CSR
+2022/11/25 20:18:39 [INFO] signed certificate with serial number 338200400845890616859871071580431105511487856853
+
+[root@ap-hongkang pki]# ll
+total 20
+-rw-r--r-- 1 root root  611 Nov 25 19:03 ca-config.json
+-rw-r--r-- 1 root root 1005 Nov 25 20:18 ca.csr
+-rw-r--r-- 1 root root  257 Nov 25 20:17 ca-csr.json
+-rw------- 1 root root 1675 Nov 25 20:18 ca-key.pem  # CA证书私钥
+-rw-r--r-- 1 root root 1322 Nov 25 20:18 ca.pem      # CA证书
+```
+
+:::
+
+<br />
+
+::: details 签发服务器证书
+
+```bash
+# 假设我们的域名是 example.com
+[root@ap-hongkang pki]# cfssl print-defaults csr > example.com-csr.json
+[root@ap-hongkang pki]# vim example.com-csr.json
+{
+    "CN": "*.example.com",
+    "hosts": [
+        "*.example.com"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "BeiJing",
+            "L": "BeiJing"
+        }
+    ]
+}
+
+# 签发证书
+[root@ap-hongkang pki]# cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=ca-config.json \
+      -profile=server \
+  example.com-csr.json | cfssljson -bare example.com
+  
+2022/11/25 20:28:55 [INFO] generate received request
+2022/11/25 20:28:55 [INFO] received CSR
+2022/11/25 20:28:55 [INFO] generating key: rsa-2048
+2022/11/25 20:28:55 [INFO] encoded CSR
+2022/11/25 20:28:55 [INFO] signed certificate with serial number 167771831832943042458597458877414465265415032753
+
+[root@ap-hongkang pki]# ll example*
+-rw-r--r-- 1 root root 1021 Nov 25 20:28 example.com.csr
+-rw-r--r-- 1 root root  262 Nov 25 20:28 example.com-csr.json
+-rw------- 1 root root 1675 Nov 25 20:28 example.com-key.pem   # 私钥文件
+-rw-r--r-- 1 root root 1399 Nov 25 20:28 example.com.pem       # 证书文件 
+```
+
+:::
+
+::: details 验证服务器证书
+
+```bash
+
+```
 
 :::
