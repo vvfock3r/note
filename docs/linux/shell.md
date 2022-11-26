@@ -872,7 +872,7 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
-演示说明：所有的示例均在`Windows` + `Goland`项目根目录下的**`pki`**目录下 操作
+演示说明：大部分示例均在`Windows` + `Goland`项目根目录下的**`pki`**目录下 操作
 
 **（1）安装**
 
@@ -1317,6 +1317,30 @@ D:\application\GoLand\demo\pki> go run server/main.go
 D:\application\GoLand\demo\pki> go run client/main.go
 2022-11-26 16:31:31
 ```
+
+:::
+
+<br />
+
+**（5）查看证书信息**
+
+* 可以使用`cfssl-certinfo`命令，也可以使用`cfssl certinfo`，经过测试发现不需要下载`cfssl-certinfo`也可以使用`cfssl certinfo`
+
+::: details 点击查看详情
+
+（1）通过域名查看**证书信息**
+
+![image-20221126171148440](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126171148440.png)
+
+（2）通过证书文件查看**证书信息**
+
+![image-20221126171648691](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20221126171648691.png)
+
+（3）查看**`.csr`**文件信息，其实就是对**`xx-csr.json`**文件做了一次编码
+
+![image-20221126173026296](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126173026296.png)
+
+![image-20221126172850473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126172850473.png)
 
 :::
 
