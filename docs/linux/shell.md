@@ -872,7 +872,9 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
-::: details 安装
+**（1）安装**
+
+::: details 点击查看详情
 
 ```bash
 # Windows
@@ -917,7 +919,12 @@ cfssljson:
 
 <br />
 
-::: details 创建根证书（CA证书）：（1）后续所有的证书都会基于根证书或二级根证书来颁发（2）默认有效期只有5年，注意修改
+**（2）创建一级根证书（CA证书）**
+
+* 后续所有的证书都会基于根证书或二级根证书来颁发
+* 默认有效期只有5年，注意修改
+
+::: details 点击查看详情
 
 ```bash
 # 创建一个目录专门存放证书
@@ -1023,7 +1030,9 @@ total 20
 
 <br />
 
-::: details 签发服务器证书 和 hosts重点说明
+**（3）单向认证，一般指的是客户端验证服务器证书**
+
+::: details （1）签发服务器证书
 
 ```bash
 # 假设我们的域名是 example.com
@@ -1080,7 +1089,7 @@ total 20
 
 :::
 
-::: details 验证服务器证书
+::: details （2）验证服务器证书
 
 （1）使用Go启动一个`HTTPS Server`
 
@@ -1115,3 +1124,8 @@ func main() {
 ![image-20221126111212758](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126111212758.png)
 
 :::
+
+<br />
+
+**（4）双向认证，客户端验证服务器证书，同时服务器也验证客户端证书**
+
