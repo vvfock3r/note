@@ -856,7 +856,46 @@ option is v ,the value is V
 
 ### awk
 
-### yq
+### xq
+
+**jq**
+
+* 文档：[https://stedolan.github.io/jq/](https://stedolan.github.io/jq/)
+* Github：[https://github.com/stedolan/jq](https://github.com/stedolan/jq)
+
+**yq**
+
+* 文档：[https://mikefarah.gitbook.io/yq/](https://mikefarah.gitbook.io/yq/)
+* Github：[https://github.com/mikefarah/yq](https://github.com/mikefarah/yq)
+
+**说明：**
+
+* `jq`是一个轻量级且灵活的命令行 JSON处理器
+* `yq`是一个轻量级且灵活的命令行 YAML处理器，同时它还可以处理`json`，使用类似于`jq`
+
+<br />
+
+**（1）准备数据**
+
+::: details etcd-member.json
+
+```bash
+[root@ap-hongkang ~]# cat > etcd-member.json << EOF
+{"header":{"cluster_id":17381046135283785533,"member_id":11396445557462919399,"raft_term":30},"members":[{"ID":11396445557462919399,"name":"etcd-2","peerURLs":["https://10.0.8.4:22380"],"clientURLs":["https://10.0.8.4:22379"]},{"ID":15030193553199729832,"name":"etcd-1","peerURLs":["https://10.0.8.4:12380"],"clientURLs":["https://10.0.8.4:12379"]},{"ID":15402820199101751686,"name":"etcd-3","peerURLs":["https://10.0.8.4:32380"],"clientURLs":["https://10.0.8.4:32379"]}]}
+EOF
+```
+
+:::
+
+<br />
+
+**（2）输出美化**
+
+::: details （1）JSON美化输出
+
+
+
+:::
 
 <br />
 
