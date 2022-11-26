@@ -872,7 +872,7 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
-演示说明：**所有的示例均在`Windows`系统上操作**
+演示说明：所有的示例均在`Windows` + `Goland`项目根目录下的**`pki`**目录下 操作
 
 **（1）安装**
 
@@ -1108,7 +1108,7 @@ D:\application\GoLand\demo\pki>dir
 
 :::
 
-::: details （2）使用Go启动一个`HTTPS Server`
+::: details （2）使用Go启动一个HTTPS Server
 
 `pki/server/main.go`
 
@@ -1199,7 +1199,7 @@ D:\application\GoLand\demo\pki> cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -con
 
 :::
 
-::: details （2）使用Go编写一个HTTPS Server，与单向认证相比，这里的代码会略复杂一点
+::: details （2）使用Go编写一个HTTPS Server，与单向认证相比代码会复杂一些
 
 `pki/server/main.go`
 
@@ -1246,7 +1246,7 @@ func main() {
 
 :::
 
-::: details （3）使用Go编写一个HTTPS Client
+::: details （3）使用Go编写一个HTTPS Client，与普通的Client相比也复杂一些
 
 `pki/client/main.go`
 
