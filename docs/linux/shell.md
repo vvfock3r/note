@@ -872,6 +872,8 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
+演示说明：**所有的示例均在`Windows`系统上操作**
+
 **（1）安装**
 
 ::: details 点击查看详情
@@ -928,14 +930,13 @@ cfssljson:
 
 ```bash
 # 创建一个目录专门存放证书
-[root@ap-hongkang ~]# mkdir -p pki && cd pki
+D:\application\GoLand\demo\> mkdir pki && cd pki
 
 # ---------------------------------------------------------------------
 # 创建默认的CA配置文件
-[root@ap-hongkang pki]# cfssl print-defaults config > ca-config.json
+D:\application\GoLand\demo\pki> cfssl print-defaults config > ca-config.json
 
-# 修改
-[root@ap-hongkang pki]# vim ca-config.json
+# 修改ca-config.json,完整内容如下
 {
     "signing": {
         "default": {
@@ -971,10 +972,9 @@ cfssljson:
 
 # ---------------------------------------------------------------------
 # 创建默认的证书签名申请文件(Certificate Signing Request)
-[root@ap-hongkang pki]# cfssl print-defaults csr > ca-csr.json
+D:\application\GoLand\demo\pki> cfssl print-defaults csr > ca-csr.json
 
-# 修改
-[root@ap-hongkang pki]# vim ca-csr.json
+# 修改ca-csr.json,完整内容如下
 {
     "CA": {
         "expiry": "876000h"
@@ -1008,7 +1008,7 @@ cfssljson:
 
 # ---------------------------------------------------------------------
 # 生成根证书和私钥
-[root@ap-hongkang pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+D:\application\GoLand\demo\pki> cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 
 2022/11/25 20:18:38 [INFO] generating a new CA key and certificate from CSR
 2022/11/25 20:18:38 [INFO] generate received request
@@ -1017,13 +1017,22 @@ cfssljson:
 2022/11/25 20:18:39 [INFO] encoded CSR
 2022/11/25 20:18:39 [INFO] signed certificate with serial number 338200400845890616859871071580431105511487856853
 
-[root@ap-hongkang pki]# ll
-total 20
--rw-r--r-- 1 root root  611 Nov 25 19:03 ca-config.json
--rw-r--r-- 1 root root 1005 Nov 25 20:18 ca.csr
--rw-r--r-- 1 root root  257 Nov 25 20:17 ca-csr.json
--rw------- 1 root root 1675 Nov 25 20:18 ca-key.pem  # CA证书私钥
--rw-r--r-- 1 root root 1322 Nov 25 20:18 ca.pem      # CA证书
+# 查看
+D:\application\GoLand\demo\pki> dir 
+ 驱动器 D 中的卷是 本地磁盘                       
+ 卷的序列号是 5867-A979                           
+                                                  
+ D:\application\GoLand\demo\pki 的目录
+                                                  
+2022/11/26  16:08    <DIR>          .             
+2022/11/26  16:08    <DIR>          ..            
+2022/11/26  10:16               467 ca-config.json
+2022/11/26  13:11               262 ca-csr.json   
+2022/11/26  13:11             1,675 ca-key.pem    # CA证书私钥
+2022/11/26  13:11             1,054 ca.csr        
+2022/11/26  13:11             1,322 ca.pem        # CA证书
+               5 个文件          4,780 字节       
+               2 个目录 131,353,825,280 可用字节
 ```
 
 :::
@@ -1035,9 +1044,10 @@ total 20
 ::: details （1）签发服务器证书
 
 ```bash
-# 假设我们的域名是 example.com
-[root@ap-hongkang pki]# cfssl print-defaults csr > example.com-csr.json
-[root@ap-hongkang pki]# vim example.com-csr.json
+# 假设我们的域名是example.com，生成默认的证书签名申请文件
+D:\application\GoLand\demo\pki> cfssl print-defaults csr > example.com-csr.json
+
+# 修改example.com-csr.json,完整内容如下
 {
   "CN": "example.com",
   "hosts": [
@@ -1060,38 +1070,47 @@ total 20
 }
 
 # 签发证书
-[root@ap-hongkang pki]# cfssl gencert \
-      -ca=ca.pem \
-      -ca-key=ca-key.pem \
-      -config=ca-config.json \
-      -profile=server \
-  example.com-csr.json | cfssljson -bare example.com
-  
+D:\application\GoLand\demo\pki> cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server example.com-csr.json | cfssljson -bare example.com
 2022/11/25 20:28:55 [INFO] generate received request
 2022/11/25 20:28:55 [INFO] received CSR
 2022/11/25 20:28:55 [INFO] generating key: rsa-2048
 2022/11/25 20:28:55 [INFO] encoded CSR
 2022/11/25 20:28:55 [INFO] signed certificate with serial number 167771831832943042458597458877414465265415032753
 
-[root@ap-hongkang pki]# ll example*
--rw-r--r-- 1 root root 1021 Nov 25 20:28 example.com.csr
--rw-r--r-- 1 root root  262 Nov 25 20:28 example.com-csr.json
--rw------- 1 root root 1675 Nov 25 20:28 example.com-key.pem   # 私钥文件
--rw-r--r-- 1 root root 1399 Nov 25 20:28 example.com.pem       # 证书文件
+# 查看
+D:\application\GoLand\demo\pki>dir
+ 驱动器 D 中的卷是 本地磁盘            
+ 卷的序列号是 5867-A979                
+                                       
+ D:\application\GoLand\demo\pki 的目录
+
+2022/11/26  16:19    <DIR>          .
+2022/11/26  16:19    <DIR>          ..
+2022/11/26  10:16               467 ca-config.json
+2022/11/26  13:11               262 ca-csr.json
+2022/11/26  13:11             1,675 ca-key.pem
+2022/11/26  13:11             1,054 ca.csr
+2022/11/26  13:11             1,322 ca.pem
+2022/11/26  14:05               269 example.com-csr.json
+2022/11/26  16:18             1,675 example.com-key.pem    # 私钥文件
+2022/11/26  16:18             1,070 example.com.csr
+2022/11/26  16:18             1,448 example.com.pem        # 证书文件
+               9 个文件          9,242 字节
+               2 个目录 131,353,100,288 可用字节
 
 # 重要说明
 # (1) hosts字段：
 #       该字段必须要有，否则签发时会报错
 #       支持填写IP和localhost以及任意名称
 #       支持泛域名，例如*.example.com，但是该泛域名不包含example.com
-#       如果为了省事，直接写"*"是不可以的
+#       如果想支持所有的域名和IP，直接写"*"或者""是不可以的
 ```
 
 :::
 
-::: details （2）验证服务器证书
+::: details （2）使用Go启动一个`HTTPS Server`
 
-（1）使用Go启动一个`HTTPS Server`
+`pki/server/main.go`
 
 ```bash
 package main
@@ -1107,17 +1126,21 @@ func main() {
 		now := time.Now().Format("2006-01-02 15:04:05")
 		_, _ = w.Write([]byte(now))
 	})
-	log.Fatalln(http.ListenAndServeTLS(":443", "example.com.pem", "example.com-key.pem", nil))
+	log.Fatalln(http.ListenAndServeTLS(":443", "../example.com.pem", "../example.com-key.pem", nil))
 }
 ```
 
-（2）客户端导入CA证书，否则不会显示小绿锁，这里以`Chrome`浏览器为例
+:::
+
+::: details （3）使用浏览器访问验证
+
+（1）客户端导入CA证书，否则不会显示小绿锁，这里以`Chrome`浏览器为例
 
 `chrome://settings/` --> 隐私设置和安全性（或者直接搜索"安全"） --> 管理设备证书 --> 受信任的根证书颁发机构 --> 导入 --> 选择`ca.pem`
 
 ![image-20221126112151991](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126112151991.png)
 
-（3）Chrome浏览器访问
+（2）Chrome浏览器访问
 
 这里为了省事没有修改hosts文件，使用IP访问
 
@@ -1129,3 +1152,132 @@ func main() {
 
 **（4）双向认证，客户端验证服务器证书，同时服务器也验证客户端证书**
 
+::: details （1）签发客户端证书
+
+```bash
+D:\application\GoLand\demo\pki> cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
+2022/11/26 16:25:28 [INFO] generate received request
+2022/11/26 16:25:28 [INFO] received CSR             
+2022/11/26 16:25:28 [INFO] generating key: rsa-2048 
+2022/11/26 16:25:29 [INFO] encoded CSR
+2022/11/26 16:25:29 [INFO] signed certificate with serial number 127515002614121196936565316274577746096537175070
+```
+
+:::
+
+::: details （2）使用Go启动一个`HTTPS Server`，与单向认证相比，这里的代码会略复杂一点
+
+`pki/server/main.go`
+
+```go
+package main
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"log"
+	"net/http"
+	"os"
+	"time"
+)
+
+func main() {
+	// 实例化CA对象
+	caCertPool := x509.NewCertPool()
+	caCert, err := os.ReadFile("../ca.pem")
+	if err != nil {
+		panic(err)
+	}
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// 实例化Server
+	server := &http.Server{
+		Addr: ":443", // 监听地址
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert, // 服务端必须验证客户端证书
+			ClientCAs:  caCertPool,                     // 该参数用于 服务端 验证 客户端 所使用的CA机构
+		},
+	}
+
+	// 注册路由
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now().Format("2006-01-02 15:04:05")
+		_, _ = w.Write([]byte(now))
+	})
+
+	// 启动服务
+	log.Fatalln(server.ListenAndServeTLS("../example.com.pem", "../example.com-key.pem"))
+}
+```
+
+:::
+
+::: details （3）使用Go启动一个`HTTPS Client`
+
+`pki/client/main.go`
+
+```go
+package main
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+	// 实例化CA对象
+	caCertPool := x509.NewCertPool()
+	caCert, err := os.ReadFile("../ca.pem")
+	if err != nil {
+		panic(err)
+	}
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// 读取客户端证书
+	clientCert, err := tls.LoadX509KeyPair("../client.pem", "../client-key.pem")
+	if err != nil {
+		log.Fatalf("LoadX509KeyPair error: %v\n", err)
+	}
+
+	// 实例化 Transport 对象
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:      caCertPool,                    // 该参数用于 客户端 验证 服务端 所使用的CA机构
+			Certificates: []tls.Certificate{clientCert}, // 添加客户端自己的证书
+		},
+	}
+
+	// 实例化 Client 对象
+	client := &http.Client{Transport: transport}
+
+	// 向服务端发送请求
+	res, err := client.Get("https://127.0.0.1:443")
+	if err != nil {
+		log.Fatalf("Send request error: %v\n", err)
+	}
+	defer res.Body.Close()
+
+	// 读取响应
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("Read response body error: %v\n", err)
+	}
+	fmt.Println(string(body))
+}
+```
+
+:::
+
+::: details （4）测试
+
+```bash
+D:\application\GoLand\demo\pki\client> go run main.go
+2022-11-26 16:31:31
+```
+
+:::
