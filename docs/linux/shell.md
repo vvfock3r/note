@@ -1126,8 +1126,15 @@ func main() {
 		now := time.Now().Format("2006-01-02 15:04:05")
 		_, _ = w.Write([]byte(now))
 	})
-	log.Fatalln(http.ListenAndServeTLS(":443", "../example.com.pem", "../example.com-key.pem", nil))
+	log.Fatalln(http.ListenAndServeTLS(":443", "example.com.pem", "example.com-key.pem", nil))
 }
+```
+
+启动Server
+
+```bash
+# 注意我们是在pki目录下启动的Server
+D:\application\GoLand\demo\pki>go run server/main.go
 ```
 
 :::
@@ -1155,6 +1162,33 @@ func main() {
 ::: details （1）签发客户端证书
 
 ```bash
+# 生成默认的证书签名申请文件
+D:\application\GoLand\demo\pki> cfssl print-defaults csr > client-csr.json
+
+# 修改client-csr.json,完整内容如下
+{
+  "CN": "client",
+  "hosts": [
+    ""
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "Hello World信息技术有限公司"
+    }
+  ]
+}
+
+# 配置说明
+#   hosts  因为客户端可能有各种各样的IP，为了通用将hosts字段设置为 ""，意思是可以认证任何来源的客户端
+
+# 签发客户端证书
 D:\application\GoLand\demo\pki> cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client-csr.json | cfssljson -bare client
 2022/11/26 16:25:28 [INFO] generate received request
 2022/11/26 16:25:28 [INFO] received CSR             
@@ -1165,7 +1199,7 @@ D:\application\GoLand\demo\pki> cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -con
 
 :::
 
-::: details （2）使用Go启动一个`HTTPS Server`，与单向认证相比，这里的代码会略复杂一点
+::: details （2）使用Go编写一个HTTPS Server，与单向认证相比，这里的代码会略复杂一点
 
 `pki/server/main.go`
 
@@ -1184,7 +1218,7 @@ import (
 func main() {
 	// 实例化CA对象
 	caCertPool := x509.NewCertPool()
-	caCert, err := os.ReadFile("../ca.pem")
+	caCert, err := os.ReadFile("ca.pem")
 	if err != nil {
 		panic(err)
 	}
@@ -1206,13 +1240,13 @@ func main() {
 	})
 
 	// 启动服务
-	log.Fatalln(server.ListenAndServeTLS("../example.com.pem", "../example.com-key.pem"))
+	log.Fatalln(server.ListenAndServeTLS("example.com.pem", "example.com-key.pem"))
 }
 ```
 
 :::
 
-::: details （3）使用Go启动一个`HTTPS Client`
+::: details （3）使用Go编写一个HTTPS Client
 
 `pki/client/main.go`
 
@@ -1232,14 +1266,14 @@ import (
 func main() {
 	// 实例化CA对象
 	caCertPool := x509.NewCertPool()
-	caCert, err := os.ReadFile("../ca.pem")
+	caCert, err := os.ReadFile("ca.pem")
 	if err != nil {
 		panic(err)
 	}
 	caCertPool.AppendCertsFromPEM(caCert)
 
 	// 读取客户端证书
-	clientCert, err := tls.LoadX509KeyPair("../client.pem", "../client-key.pem")
+	clientCert, err := tls.LoadX509KeyPair("client.pem", "client-key.pem")
 	if err != nil {
 		log.Fatalf("LoadX509KeyPair error: %v\n", err)
 	}
@@ -1273,11 +1307,16 @@ func main() {
 
 :::
 
-::: details （4）测试
+::: details （4）启动服务端和客户端，进行双向认证测试
 
 ```bash
-D:\application\GoLand\demo\pki\client> go run main.go
+# 启动服务端,注意我们是在pki目录下启动的Server
+D:\application\GoLand\demo\pki> go run server/main.go
+
+# 启动客户端,注意我们是在pki目录下启动的Client
+D:\application\GoLand\demo\pki> go run client/main.go
 2022-11-26 16:31:31
 ```
 
 :::
+
