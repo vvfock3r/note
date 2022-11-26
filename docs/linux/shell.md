@@ -917,7 +917,7 @@ cfssljson:
 
 <br />
 
-::: details 创建根证书（CA证书），后续所有的证书都会基于根证书或二级根证书来颁发
+::: details 创建根证书（CA证书）：（1）后续所有的证书都会基于根证书或二级根证书来颁发（2）默认有效期只有5年，注意修改
 
 ```bash
 # 创建一个目录专门存放证书
@@ -969,6 +969,9 @@ cfssljson:
 # 修改
 [root@ap-hongkang pki]# vim ca-csr.json
 {
+    "CA": {
+        "expiry": "876000h"
+    },
     "CN": "Reliable internal CA",
     "key": {
         "algo": "rsa",
@@ -985,6 +988,7 @@ cfssljson:
 }
 
 # 配置说明
+# CA     默认CA的有效期只有5年，即使以后签发了100年的服务器证书，CA都过期了，服务器证书100年其实际有效期也只有5年
 # CN     公用名或通用名(Common Name)
 # hosts  要签名的域名或IP，此处是根证书，不需要填写字段，删除就好
 # key    指定签名算法，推荐使用 <rsa 2048>
@@ -1019,28 +1023,31 @@ total 20
 
 <br />
 
-::: details 签发服务器证书
+::: details 签发服务器证书 和 hosts重点说明
 
 ```bash
 # 假设我们的域名是 example.com
 [root@ap-hongkang pki]# cfssl print-defaults csr > example.com-csr.json
 [root@ap-hongkang pki]# vim example.com-csr.json
 {
-    "CN": "*.example.com",
-    "hosts": [
-        "*.example.com"
-    ],
-    "key": {
-        "algo": "rsa",
-        "size": 2048
-    },
-    "names": [
-        {
-            "C": "CN",
-            "ST": "BeiJing",
-            "L": "BeiJing"
-        }
-    ]
+  "CN": "example.com",
+  "hosts": [
+    "127.0.0.1",
+    "localhost",
+    "example.com"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "Hello World信息技术有限公司"
+    }
+  ]
 }
 
 # 签发证书
@@ -1061,15 +1068,50 @@ total 20
 -rw-r--r-- 1 root root 1021 Nov 25 20:28 example.com.csr
 -rw-r--r-- 1 root root  262 Nov 25 20:28 example.com-csr.json
 -rw------- 1 root root 1675 Nov 25 20:28 example.com-key.pem   # 私钥文件
--rw-r--r-- 1 root root 1399 Nov 25 20:28 example.com.pem       # 证书文件 
+-rw-r--r-- 1 root root 1399 Nov 25 20:28 example.com.pem       # 证书文件
+
+# 重要说明
+# (1) hosts字段：
+#       该字段必须要有，否则签发时会报错
+#       支持填写IP和localhost以及任意名称
+#       支持泛域名，例如*.example.com，但是该泛域名不包含example.com
+#       如果为了省事，直接写"*"是不可以的
 ```
 
 :::
 
 ::: details 验证服务器证书
 
-```bash
+（1）使用Go启动一个`HTTPS Server`
 
+```bash
+package main
+
+import (
+	"log"
+	"net/http"
+	"time"
+)
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now().Format("2006-01-02 15:04:05")
+		_, _ = w.Write([]byte(now))
+	})
+	log.Fatalln(http.ListenAndServeTLS(":443", "example.com.pem", "example.com-key.pem", nil))
+}
 ```
+
+（2）客户端导入CA证书，否则不会显示小绿锁，这里以`Chrome`浏览器为例
+
+`chrome://settings/` --> 隐私设置和安全性（或者直接搜索"安全"） --> 管理设备证书 --> 受信任的根证书颁发机构 --> 导入 --> 选择`ca.pem`
+
+![image-20221126112151991](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126112151991.png)
+
+（3）Chrome浏览器访问
+
+这里为了省事没有修改hosts文件，使用IP访问
+
+![image-20221126111212758](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126111212758.png)
 
 :::
