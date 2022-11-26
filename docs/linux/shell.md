@@ -1334,7 +1334,7 @@ D:\application\GoLand\demo\pki> go run client/main.go
 
 （2）通过证书文件查看**证书信息**
 
-![image-20221126171648691](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20221126171648691.png)
+![image-20221126171648691](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126171648691.png)
 
 （3）查看`xx.csr`文件信息，其实就是对`xx-csr.json`文件做了一次编码
 
