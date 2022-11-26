@@ -872,7 +872,7 @@ option is v ,the value is V
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
-演示说明：大部分示例均在`Windows` + `Goland`项目根目录下的**`pki`**目录下 操作
+演示说明：大部分示例均在`Windows` + `Goland`项目根目录下的`pki`目录下 操作
 
 **（1）安装**
 
@@ -1336,11 +1336,10 @@ D:\application\GoLand\demo\pki> go run client/main.go
 
 ![image-20221126171648691](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20221126171648691.png)
 
-（3）查看**`.csr`**文件信息，其实就是对**`xx-csr.json`**文件做了一次编码
+（3）查看`xx.csr`文件信息，其实就是对`xx-csr.json`文件做了一次编码
 
 ![image-20221126173026296](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126173026296.png)
 
 ![image-20221126172850473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126172850473.png)
 
 :::
-
