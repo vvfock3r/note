@@ -6818,4 +6818,121 @@ server listening at tcp://[::]:8080
 
 #### TLS证书
 
+新建目录`grpc_tls`，并基于**基础示例**进行修改
+
+证书配置：
+
+* 创建证书参考：[https://jinhui.dev/linux/shell.html#cfssl](https://jinhui.dev/linux/shell.html#cfssl)
+
+* 将证书放到和代码同一目录中
+
+  ![image-20221127140751508](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221127140751508.png)
+
+
+
+
+
+**（1）单向认证**
+
+::: details （1）修改服务端代码
+
+```go
+func main() {
+    // 初始化证书配置
+	credential, err := credentials.NewServerTLSFromFile("server.pem", "server-key.pem")
+	if err != nil {
+		log.Fatalf("failed to init tls")
+	}
+
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer(grpc.Creds(credential))
+```
+
+:::
+
+::: details （2）修改客户端代码
+
+```go
+func main() {
+    // 初始化CA配置, 用于校验服务器证书
+	// 第二个参数填写证书中允许的服务器名称，可以是IP也可以是域名，取决于证书的hosts字段
+	credential, err := credentials.NewClientTLSFromFile("ca.pem", "127.0.0.1")
+	if err != nil {
+		log.Fatalf("failed to init tls")
+	}
+
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(credential))
+```
+
+:::
+
 <br />
+
+**（2）双向认证**
+
+::: details （1）修改服务端代码
+
+```go
+func main() {
+    // 初始化服务器证书配置，用于提供给客户端校验
+	serverCert, err := tls.LoadX509KeyPair("server.pem", "server-key.pem")
+	if err != nil {
+		log.Fatalf("LoadX509KeyPair error: %v\n", err)
+	}
+
+	// 实例化CA对象,用来校验客户端证书
+	caCertPool := x509.NewCertPool()
+	caCert, err := os.ReadFile("ca.pem")
+	if err != nil {
+		log.Fatalln("failed to read ca certificates")
+	}
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		log.Fatalln("failed to append certificates to cert poll")
+	}
+
+	// 实例化 credentials
+	credential := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{serverCert},  // 服务器证书
+		ClientAuth:   tls.RequireAndVerifyClientCert, // 服务器认证客户端方式: 服务器必须校验客户端证书
+		ClientCAs:    caCertPool,                     // 该参数用于 客户端 验证 服务端 所使用的CA机构
+	})
+
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer(grpc.Creds(credential))
+```
+
+:::
+
+::: details （2）修改客户端代码
+
+```go
+func main() {
+    // 初始化客户端证书配置，用于提供给服务端校验
+	clientCert, err := tls.LoadX509KeyPair("client.pem", "client-key.pem")
+	if err != nil {
+		log.Fatalf("LoadX509KeyPair error: %v\n", err)
+	}
+
+	// 实例化CA对象,用来校验服务端证书
+	caCertPool := x509.NewCertPool()
+	caCert, err := os.ReadFile("ca.pem")
+	if err != nil {
+		log.Fatalln("failed to read ca certificates")
+	}
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		log.Fatalln("failed to append certificates to cert poll")
+	}
+
+	// 实例化 credentials
+	credential := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{clientCert}, // 客户端证书
+		ServerName:   "127.0.0.1",                   // 证书中允许的服务器名称，可以是IP也可以是域名，取决于证书的hosts字段
+		RootCAs:      caCertPool,                    // 该参数用于 服务端 验证 客户端 所使用的CA机构
+	})
+
+	// (1) 连接gRPC Server
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTransportCredentials(credential))
+```
+
+:::
