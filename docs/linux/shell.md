@@ -1261,7 +1261,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	caCertPool.AppendCertsFromPEM(caCert)
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		log.Fatalln("failed to append certificates to cert poll")
+	}
 
 	// 实例化Server
 	server := &http.Server{
@@ -1309,7 +1311,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	caCertPool.AppendCertsFromPEM(caCert)
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		log.Fatalln("failed to append certificates to cert poll")
+	}
 
 	// 读取客户端证书
 	clientCert, err := tls.LoadX509KeyPair("client.pem", "client-key.pem")
