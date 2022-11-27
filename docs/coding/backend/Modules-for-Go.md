@@ -3869,6 +3869,102 @@ func main() {
 
 <br />
 
+### 输出SQL语句
+
+文档：[https://gorm.io/zh_CN/docs/logger.html](https://gorm.io/zh_CN/docs/logger.html)
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"gorm.io/gorm/logger"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func getDB() (*gorm.DB, error) {
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	host := "43.154.36.151"
+	port := 3306
+	dbName := "demo"
+	charSet := "utf8mb4"
+	conntimeout := "5s"
+	readTimeout := "10s"
+	writeTimeout := "10s"
+
+	// 初始化dsn
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username,
+		password,
+		host,
+		port,
+		dbName,
+		charSet,
+		conntimeout,
+		readTimeout,
+		writeTimeout,
+	)
+
+	// 初始化日志
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标，前缀和日志包含的内容——译者注）
+		logger.Config{
+			SlowThreshold:             time.Second, // 慢 SQL 阈值
+			LogLevel:                  logger.Info, // 日志级别
+			IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
+			Colorful:                  true,        // 是否彩色输出
+		},
+	)
+
+	// 连接数据库
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
+	return db, err
+}
+
+type User struct {
+	gorm.Model
+	Name string
+}
+
+type Role struct {
+	Name string
+}
+
+func main() {
+	// 连接数据库
+	db, err := getDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 自动创建表
+	//err = db.AutoMigrate(&User{}, &Role{})
+	err = db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&User{}, &Role{})
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+![image-20221127193655596](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221127193655596.png)
+
+:::
+
+<br />
+
 ### 增加记录
 
 文档：[https://gorm.io/zh_CN/docs/create.html](https://gorm.io/zh_CN/docs/create.html)
@@ -5108,6 +5204,8 @@ func main() {
 :::
 
 #### 硬删除
+
+::: details 点击查看完整代码
 
 ```go
 	// 硬删除

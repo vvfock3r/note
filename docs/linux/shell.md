@@ -856,7 +856,7 @@ option is v ,the value is V
 
 ### awk
 
-### xq
+### ?q
 
 **jq**
 
