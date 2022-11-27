@@ -3918,7 +3918,7 @@ func getDB() (*gorm.DB, error) {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标，前缀和日志包含的内容——译者注）
 		logger.Config{
-			SlowThreshold:             time.Second, // 慢 SQL 阈值
+			SlowThreshold:             time.Second, // 慢SQL阈值
 			LogLevel:                  logger.Info, // 日志级别
 			IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
 			Colorful:                  true,        // 是否彩色输出
@@ -3954,6 +3954,9 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+    
+    // 若只想单独对某一条或几条语句语句进行Debug，可以将日志级别调整为logger.Silent,
+    // 然后使用db.Debug().xxx
 }
 ```
 
@@ -5218,9 +5221,9 @@ func main() {
 	fmt.Println("硬删除记录数目: ", result.RowsAffected)
 ```
 
-<br />
-
 :::
+
+<br />
 
 ### CURD总结
 
