@@ -19,6 +19,8 @@ go get k8s.io/client-go@v0.25.4
 
 ## 实例化客户端
 
+
+
 ::: details （1）在集群外部，通过配置文件连接到kubernetes
 
 * 将配置文件`~/.kube/config`拷贝一份到项目内
@@ -98,8 +100,104 @@ D:\application\GoLand\demo>go run main.go
 
 ::: details （2）在集群内部，通过ServiceAccount连接到kubernetes
 
-```go
+（1）Windows上编写代码
 
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
+
+// NewClientSetByServiceAccount 在集群内部使用ServiceAccount进行认证
+func NewClientSetByServiceAccount() (*kubernetes.Clientset, error) {
+	// (1) 实例化*rest.Config对象
+	resetConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByServiceAccount()
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		panic(err)
+	}
+	serverVersionJson, err := json.MarshalIndent(serverVersionInfo, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionJson))
+}
+```
+
+（2）编译为Linux amd64位程序，并上传到kubernetes
+
+```bash
+D:\application\GoLand\demo>SET CGO_ENABLED=0
+D:\application\GoLand\demo>SET GOOS=linux
+D:\application\GoLand\demo>SET GOARCH=amd64
+D:\application\GoLand\demo>go build -o main ./main.go
+```
+
+（3）构建镜像
+
+```dockerfile
+# 查看当前目录下的文件
+[root@node-1 ~]# ll
+total 102916
+-rw-rw-rw- 1 root root      101 Nov 28 19:33 Dockerfile
+-rwxr-xr-x 1 root root 39630147 Nov 28 19:19 main
+
+# 编写Dockerfile
+[root@node-1 ~]# vim Dockerfile 
+FROM alpine:3.15.4
+COPY ./main /
+RUN chmod 755 /main
+ENTRYPOINT /main
+
+# 构建镜像
+[root@node-1 ~]# docker build -t in-cluster:v1.0.0 .
+```
+
+（4）启动一个Pod测试
+
+```bash
+[root@node-1 ~]# kubectl run demo --image=in-cluster:v1.0.0
+
+[root@node-1 ~]# kubectl logs demo
+{
+    "major": "1",
+    "minor": "25",
+    "gitVersion": "v1.25.4",
+    "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+    "gitTreeState": "clean",
+    "buildDate": "2022-11-09T13:29:58Z",
+    "goVersion": "go1.19.3",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+}
+
+[root@node-1 ~]# kubectl delete pod demo
 ```
 
 :::
