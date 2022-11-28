@@ -6936,3 +6936,162 @@ func main() {
 ```
 
 :::
+
+<br />
+
+### Gateway
+
+Github：[https://github.com/grpc-ecosystem/grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
+
+`gRPC Gateway`可以为`RPC Server`暴露为一个`RESTful HTTP API`接口
+
+新建目录`grpc_gateway`，并基于**基础示例**进行修改
+
+::: details （1）新增YAML文件（也可以使用修改.proto文件的方式）
+
+`grpc_gateway/proto/echoserver.pb.gw.yaml`
+
+```yaml
+type: google.api.Service
+config_version: 3
+
+http:
+  rules:
+    - selector: echoserver.Echo.Say # 处理函数 selector,组成: <ProtoBuf Package>.<Service>.<Function>
+      get: /say # 暴露的HTTP方法和路径
+    - selector: echoserver.Echo.Ping
+      get: /ping
+```
+
+:::
+
+::: details （2）生成代码
+
+```bash
+# 这会额外生成gateway的代码：echoserver.pb.gw.go
+D:\application\GoLand\demo\grpc_gateway\proto> protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative,grpc_api_configuration=echoserver.pb.gw.yaml *.proto
+```
+
+:::
+
+::: details （3）修改服务端代码
+
+```go
+package main
+
+import (
+	"context"
+	pb "demo/grpc_gateway/proto"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"google.golang.org/grpc"
+)
+
+// 定义一个结构体, UnimplementedEchoServer必须要写
+type EchoServer struct {
+	pb.UnimplementedEchoServer
+}
+
+// 实现EchoServer接口方法
+func (e *EchoServer) Ping(ctx context.Context, req *emptypb.Empty) (*pb.EchoResponse, error) {
+	log.Println("Receive request: Ping")
+	return &pb.EchoResponse{Data: "pong"}, nil
+}
+func (e *EchoServer) Say(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	log.Println("Receive request: ", req)
+	return &pb.EchoResponse{Data: req.Data}, nil
+}
+
+func gRPCServerStart() {
+	// (1) 实例化一个gRPC Server
+	server := grpc.NewServer()
+
+	// (2) 将EchoServer注册到gRPC Server中
+	pb.RegisterEchoServer(server, &EchoServer{})
+
+	// (3) 监听一个TCP端口
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// (4) 启动服务，由gRPC Server处理连接
+	fmt.Printf("grpc server listening at %s://%s\n", listener.Addr().Network(), listener.Addr().String())
+	log.Fatalln(server.Serve(listener))
+}
+
+func gRPCGatewayStart() {
+	// 实例化Context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 实例化Mux,注意这里的是grpc中的runtime
+	mux := runtime.NewServeMux(
+		// 下面这段代码用于不显示值为空的字段
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}),
+	)
+
+	// 注册, 8080是gRPC Server的端口
+	opt := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err := pb.RegisterEchoHandlerFromEndpoint(ctx, mux, ":8080", opt)
+	if err != nil {
+		log.Fatalf("failed to listen: %v\n", err)
+	}
+
+	// 启动 HTTP Server
+	fmt.Printf("grpc gateway listening at http://0.0.0.0:80\n")
+	log.Fatalln(http.ListenAndServe(":80", mux))
+}
+
+func main() {
+	ch := make(chan struct{})
+	go func() {
+		gRPCGatewayStart()
+		ch <- struct{}{}
+	}()
+	go func() {
+		gRPCServerStart()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		os.Exit(1)
+	}
+}
+```
+
+:::
+
+::: details （4）测试
+
+```bash
+# 启动服务
+D:\application\GoLand\demo\grpc_gateway\server>go run main.go
+grpc gateway listening at http://0.0.0.0:80
+grpc server listening at tcp://[::]:8080
+
+# 测试接口
+C:\Users\Administrator>curl "http://localhost/ping"
+{"data":"pong"}
+C:\Users\Administrator>curl "http://localhost/say?data=hello"
+{"data":"hello"}
+```
+
+:::
