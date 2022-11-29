@@ -17,9 +17,23 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-## 实例化客户端
+## 客户端
 
+总共有4种客户端：
 
+* `RESTClient`：用于以`RESTful`方式与kubernetes进行交互
+* `ClientSet`：用于方便的请求kubernetes内置资源
+* `DiscoveryClient`：用于请求集群的API信息，如`kubectl api-versions`
+* `DynamicClient`：用于请求无类型资源，如`CRD`
+
+说明
+
+* `RESTClient`是最基础的客户端，使用上不是太方便，但是非常灵活，其他三种客户端均是基于`RESTClient`
+* `RESTClient`是我们重点学习的客户端，`ClientSet`是我们最常用的客户端
+
+<br />
+
+**ClientSet**
 
 ::: details （1）在集群外部，通过配置文件连接到kubernetes
 
@@ -198,6 +212,71 @@ ENTRYPOINT /main
 }
 
 [root@node-1 ~]# kubectl delete pod demo
+
 ```
 
 :::
+
+<br />
+
+**RESTClient**
+
+::: details （1）在集群外部，通过配置文件连接到kubernetes
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+// NewRestClientByConfig 在集群外部使用配置文件进行认证
+func NewRestClientByConfig(kubeconfig string) (*rest.RESTClient, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*RESTClient对象，以下两个参数必须指定否则会报错
+	restConfig.GroupVersion = &corev1.SchemeGroupVersion // 指定Group Version
+	restConfig.NegotiatedSerializer = scheme.Codecs      // 指定序列化协议
+	restClient, err := rest.RESTClientFor(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return restClient, nil
+}
+
+func main() {
+	// (1) 实例化RESTClient
+	restClient, err := NewRestClientByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	body, err := restClient.Get().AbsPath("/version").Do(context.TODO()).Raw()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(body))
+}
+```
+
+:::
+
+<br />
