@@ -17,12 +17,12 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-## Client
+## 客户端
 
 总共有4种客户端：
 
 * `RESTClient`：用于以`RESTful`方式与kubernetes进行交互
-* `ClientSet`：用于方便的请求kubernetes内置资源
+* `ClientSet`：用于方便的请求`kubernetes`内置资源
 * `DiscoveryClient`：用于请求集群的API信息，如`kubectl api-versions`
 * `DynamicClient`：用于请求无类型资源，如`CRD`
 
@@ -30,6 +30,7 @@ go get k8s.io/client-go@v0.25.4
 
 * `RESTClient`是最基础的客户端，使用上不是太方便，但是非常灵活，其他三种客户端均是基于`RESTClient`
 * `RESTClient`是我们重点学习的客户端，`ClientSet`是我们最常用的客户端
+* `ClientSet`的注释中写明，代码是由`client-gen`生成的
 
 <br />
 
@@ -366,7 +367,7 @@ func main() {
 
 <br />
 
-## Pod
+## 内置资源
 
 
 
