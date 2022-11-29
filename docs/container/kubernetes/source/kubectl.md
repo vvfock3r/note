@@ -46,7 +46,7 @@ D:\application\GoLand\kubernetes-1.25.4\cmd\kubectl>
 #     注意修改配置文件中的server地址，确保本机可以连接到kubernetes
 
 # (3) 设置配置文件环境变量
-D:\application\GoLand\kubernetes-1.25.4\cmd\kubectl> set KUBECONFIG=./.kube.config
+D:\application\GoLand\kubernetes-1.25.4\cmd\kubectl> set KUBECONFIG=D:/application/GoLand/kubernetes-1.25.4/cmd/kubectl/.kube.config
 
 # (4) 编译kubelet并执行测试
 D:\application\GoLand\kubernetes-1.25.4\cmd\kubectl>go run kubectl.go get nodes
