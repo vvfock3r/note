@@ -17,7 +17,7 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-## 客户端
+## Client
 
 总共有4种客户端：
 
@@ -221,7 +221,7 @@ ENTRYPOINT /main
 
 **RESTClient**
 
-::: details （1）在集群外部，通过配置文件连接到kubernetes
+::: details （1）在集群外部，通过配置文件连接到kubernetes：自定义RESTClient
 
 ```go
 package main
@@ -269,7 +269,7 @@ func main() {
 	}
 
 	// (2) 查看 kubernetes 版本
-	body, err := restClient.Get().AbsPath("/version").Do(context.TODO()).Raw()
+	serverVersionInfo, err := restClient.Get().AbsPath("/version").Do(context.TODO()).Raw()
 	if err != nil {
 		panic(err)
 	}
@@ -277,6 +277,96 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+{
+  "major": "1",
+  "minor": "25",
+  "gitVersion": "v1.25.4",
+  "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+  "gitTreeState": "clean",
+  "buildDate": "2022-11-09T13:29:58Z",
+  "goVersion": "go1.19.3",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+```
+
+:::
+
+::: details （2）在集群外部，通过配置文件连接到kubernetes：使用ClientSet内部的RESTClient
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.RESTClient().Get().AbsPath("/version").Do(context.TODO()).Raw()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionInfo))
+}
+```
+
+输出结果
+
+```bash
+{
+  "major": "1",
+  "minor": "25",
+  "gitVersion": "v1.25.4",
+  "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+  "gitTreeState": "clean",
+  "buildDate": "2022-11-09T13:29:58Z",
+  "goVersion": "go1.19.3",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+```
+
 :::
 
 <br />
+
+## Pod
+
+
+
