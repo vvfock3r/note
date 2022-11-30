@@ -10,6 +10,44 @@ Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd
 
 ## 第一个应用
 
+### Linux安装Go
+
+```bash
+# 1、Go版本管理设想
+[root@node-1 ~]# ll /usr/local/go                  # 所有版本的Go都放在这一个目录中,集中管理
+total 0
+drwxr-xr-x 10 root root 222 Nov  1 04:21 1.19.2    # 具体某个版本的Go
+drwxr-xr-x 10 root root 222 Nov  1 04:21 1.19.3    # 具体某个版本的Go
+drwxr-xr-x  4 root root  28 Nov 30 17:43 path      # GOPATH,这里将他设置为所有Go版本共用
+
+# -------------------------------------------------------------------------------------------------
+# 2、安装指定版本的G
+
+# (1) 创建Go目录
+mkdir -p /usr/local/go && cd /usr/local/go
+
+# (2) 下载二进制包
+Version=1.19.3
+wget -c https://dl.google.com/go/go${Version}.linux-amd64.tar.gz
+
+# (3) 解压
+tar zxf go${Version}.linux-amd64.tar.gz
+mv go ${Version}
+rm -f go${Version}.linux-amd64.tar.gz
+
+# 将Go命令加入到PATH路径中
+vim /etc/bashrc
+export PATH=${PATH}:/usr/local/go/1.19.3/bin:/usr/local/go/path/bin
+source /etc/bashrc
+
+# 设置GO环境变量
+go env -w GO111MODULE=on
+go env -w GOPATH=/usr/local/go/path
+go env -w GOPROXY=https://goproxy.cn,direct
+```
+
+<br />
+
 ### 环境变量
 
 **设置环境变量**
