@@ -8,7 +8,18 @@ Github：[https://github.com/kubernetes-sigs/kubebuilder](https://github.com/kub
 
 ## 基础示例
 
-### 1）安装
+### 1）要求
+
+* `kubernetes`集群，这里所使用的版本为`v1.25.4`
+* 如果开发环境是Windows系统需要注意：
+  * `kubebuilder`只提供了Linux和Mac的安装包，没有提供Windows的包
+  * 安装Windows版本`kubebuilder`的话还要安装一堆的依赖，不想折腾
+  * 这里直接在Linux上进行所有的操作，但是写代码还是要在Windows GoLand中写，可以利用一下GoLand的SFTP自动上传功能，体验超级好
+  * 实现的效果就是：GoLand中按下Ctrl + S保存，便会自动上传到Linux中，然后再手动重启服务。具体如何操作可以自行搜索
+
+<br />
+
+### 2）安装
 
 文档：[https://book.kubebuilder.io/quick-start.html](https://book.kubebuilder.io/quick-start.html)
 
@@ -34,7 +45,7 @@ Version: main.version{KubeBuilderVersion:"3.7.0", KubernetesVendor:"1.24.1", Git
 
 <br />
 
-### 2）创建项目
+### 3）创建项目
 
 ::: details 点击查看详情
 
@@ -52,7 +63,7 @@ Version: main.version{KubeBuilderVersion:"3.7.0", KubernetesVendor:"1.24.1", Git
 
 <br />
 
-### 3）创建API
+### 4）创建API
 
 ::: details 点击查看详情
 
@@ -64,7 +75,7 @@ Version: main.version{KubeBuilderVersion:"3.7.0", KubernetesVendor:"1.24.1", Git
 
 <br />
 
-### 4）make文档
+### 5）make文档
 
 ::: details 点击查看详情
 
@@ -107,7 +118,7 @@ Build Dependencies
 
 <br />
 
-### 5）部署 CRD
+### 6）部署 CRD
 
 ::: details （1）安装kustomize
 
@@ -173,7 +184,7 @@ mydemo-sample   20s
 
 <br />
 
-### 6）部署 Controller
+### 7）部署 Controller
 
 ::: details （1）在本地运行 Controller，用于测试
 
@@ -206,7 +217,7 @@ mydemo-sample   20s
 
 <br />
 
-### 7）调试 Controller
+### 8）调试 Controller
 
 ::: details 点击查看详情
 
@@ -333,7 +344,7 @@ func (r *MyDemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 <br />
 
-### 8）调试 types
+### 9）调试 types
 
 
 
