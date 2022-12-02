@@ -55,10 +55,11 @@ Version: main.version{KubeBuilderVersion:"3.7.0", KubernetesVendor:"1.24.1", Git
 [root@node-1 ~]# mkdir example && cd example
 
 # 初始化项目
-#   --domain 指定域名,默认是my.domain,可以写任意字符串,后续操作中相关的名称都会放到这个域名下
-#            该名称主要体现在YAML配置 和 kubectl api-resources等中
-#   --repo   指定仓库,也是go模块名,可以写任意字符串
-#            该名称主要体现在Go代码中,建议和项目名保持一致
+#   --domain        指定域名,默认是my.domain,可以写任意字符串,后续操作中相关的名称都会放到这个域名下
+#                   该名称主要体现在YAML配置 和 kubectl api-resources等中
+#   --repo          指定仓库,也是go模块名,可以写任意字符串
+#                   该名称主要体现在Go代码中,建议和项目名保持一致
+#   --project-name  指定项目名,默认情况下以当前目录作为项目名,这里不做修改
 [root@node-1 example]# kubebuilder init --domain devops.io --repo github.com/vvfock3r/example
 
 Writing kustomize manifests for you to edit...
@@ -83,10 +84,12 @@ API版本：[https://kubernetes.io/zh-cn/docs/reference/using-api/#api-reference
 
 ```bash
 # 说明
-# (1) 每个组都有一个或多个版本,每个组的每个版本都有一个或多个API。API也就是我们下面所指定的kind
-# (2) --group   指定组名,任意字符串
-# (3) --version 指定版本,任意字符串，但必须匹配正则^v\d+(?:alpha\d+|beta\d+)?$，建议按照约定填写
-# (4) --kind    指定API,任意字符串，首字母必须大写，建议使用大驼峰命名法(每个单词首字母大写)
+# 每个组都有一个或多个版本,每个组的每个版本都有一个或多个API。API也就是我们下面所指定的kind
+#     --group       指定组名,任意字符串
+#     --version     指定版本,任意字符串，但必须匹配正则^v\d+(?:alpha\d+|beta\d+)?$，建议按照约定填写
+#     --kind        指定API,任意字符串，首字母必须大写，建议使用大驼峰命名法(每个单词首字母大写)
+#     --namespaced  API是否区分命名空间,默认为true,根据实际情况设置
+#                   kubectl api-resources | grep false 可以查看默认的API都有哪些是不区分命名空间的,比如Node
 [root@node-1 example]# kubebuilder create api --group crd --version v1beta1 --kind MyKind
 
 Create Resource [y/n]
