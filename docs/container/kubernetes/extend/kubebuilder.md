@@ -210,7 +210,7 @@ mykinds                                        crd.devops.io/v1beta1            
 
 :::
 
-::: details （3）验证CRD：部署一个资源，就好比是部署一个`Kind: Pod`的资源
+::: details （3）验证CRD：部署一个资源，就好比是部署一个Kind: Pod的资源
 
 ```bash
 # (1) 修改配置(可选)
@@ -327,6 +327,7 @@ tcp6       0      0 :::8081                 :::*                    LISTEN      
 
 # (3) 看一下监控的指标(排除默认的指标)
 [root@node-1 ~]# curl -s http://127.0.0.1:8080/metrics | grep -Ev '^#|^go_|^process_'
+
 certwatcher_read_certificate_errors_total 0
 certwatcher_read_certificate_total 0
 controller_runtime_active_workers{controller="mykind"} 0
@@ -378,6 +379,7 @@ ok
 
 # (5) 看一下etcd中注册的信息
 [root@node-1 example]# etcdctl get "" --prefix --keys-only | grep -Ei 'example|MyKind'
+
 /registry/apiextensions.k8s.io/customresourcedefinitions/mykinds.crd.devops.io
 /registry/clusterrolebindings/example-manager-rolebinding
 /registry/clusterrolebindings/example-proxy-rolebinding
@@ -420,6 +422,7 @@ FROM gcr.io/distroless/static:nonroot
 # (3) 构建镜像,这里使用<项目>:<group version>作为镜像名
 #     下面有个报错但是不影响，它是对包的一个校验
 [root@node-1 example]# make docker-build IMG=devops.io/example:v1beat1
+
 test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 /root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 /root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -485,7 +488,7 @@ Successfully tagged devops.io/example:v1beat1
 
 :::
 
-::: details （2）部署到kubernetes：第二步：部署到kubernetes
+::: details （3）部署到kubernetes：第二步：部署到kubernetes
 
 ```bash
 # (1) 编辑参数,这里就先不修改了
@@ -505,6 +508,7 @@ image: devops.io/example:v1beat1
 
 # (4) 部署
 [root@node-1 example]# make deploy
+
 test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 /root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 test -s /root/example/bin/kustomize || { curl -Ss "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s -- 3.8.7 /root/example/bin; }
@@ -529,7 +533,8 @@ NAMESPACE        NAME                         READY   UP-TO-DATE   AVAILABLE   A
 example-system   example-controller-manager   1/1     1            1           56s
 
 # (6) 查看Pod
-[root@node-1 example]# kubectl -n example-system logs example-controller-manager-bbcbc6f95-ln5p9 
+[root@node-1 example]# kubectl -n example-system logs example-controller-manager-bbcbc6f95-ln5p9
+
 1.6699512538415365e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": "127.0.0.1:8080"}
 1.6699512538417842e+09  INFO    setup   starting manager
 1.6699512538420582e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "127.0.0.1:8080"}
