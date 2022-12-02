@@ -686,6 +686,14 @@ func (r *MyDemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 ### 9）调试 types
 
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
 <br />
 
 ## 深入原理
