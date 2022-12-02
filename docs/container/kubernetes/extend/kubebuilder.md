@@ -415,6 +415,7 @@ FROM gcr.io/distroless/static:nonroot
 #     2) 提前将 gcr.io/distroless/static:nonroot 镜像导入到Docker中
 
 # (3) 构建镜像,这里使用<项目>:<group version>作为镜像名
+#     下面有个报错但是不影响，它是对包的一个校验
 [root@node-1 example]# make docker-build IMG=devops.io/example:v1beat1
 test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 /root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -669,8 +670,6 @@ func (r *MyDemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 <br />
 
 ### 9）调试 types
-
-
 
 <br />
 
