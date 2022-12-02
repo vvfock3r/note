@@ -90,7 +90,8 @@ API版本：[https://kubernetes.io/zh-cn/docs/reference/using-api/#api-reference
 #     --kind        指定API,任意字符串，首字母必须大写，建议使用大驼峰命名法(每个单词首字母大写)
 #     --namespaced  API是否区分命名空间,默认为true,根据实际情况设置
 #                   kubectl api-resources | grep false 可以查看默认的API都有哪些是不区分命名空间的,比如Node
-[root@node-1 example]# kubebuilder create api --group crd --version v1beta1 --kind MyKind
+#                   特别注意: --namespaced=false这种写法是正确的, --namespaced false这种写法是错误的,不会生效
+[root@node-1 example]# kubebuilder create api --group crd --version v1beta1 --kind MyKind --namespaced=true
 
 Create Resource [y/n]
 y
@@ -203,6 +204,7 @@ customresourcedefinition.apiextensions.k8s.io/mykinds.crd.devops.io created
 [root@node-1 example]# kubectl get crd | grep mykind
 mykinds.crd.devops.io                                 2022-12-01T23:32:37Z
 
+# 检查API是否区分命名空间
 [root@node-1 example]# kubectl api-resources | grep -Ei 'KIND|mykind'
 NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
 mykinds                                        crd.devops.io/v1beta1                  true         MyKind
@@ -238,14 +240,19 @@ spec:
   # TODO(user): Add fields here
   foo: bar # 增加一项配置
 
-# (2) 部署,上面配置文件中并没有指定命名空间，所以部署在default中
+# (2) 部署
 [root@node-1 example]# kubectl apply -f config/samples/
 mykind.crd.devops.io/mykind-sample created
 
-# (3) 查看
-[root@node-1 example]# kubectl get mykind
+# (3) 查看，上面配置文件中并没有指定命名空间，所以部署在default中
+[root@node-1 example]# kubectl get mykind -A
+NAMESPACE   NAME            AGE
+default     mykind-sample   14s
+
+# 当设置资源不区分命名空间后，输出结果是这样的
+[root@node-1 example]# kubectl get mykind -A
 NAME            AGE
-mykind-sample   18s
+mykind-sample   13s
 
 # (4) 查看详情
 [root@node-1 example]# kubectl describe mykind mykind-sample
