@@ -51,10 +51,10 @@ Version: main.version{KubeBuilderVersion:"3.7.0", KubernetesVendor:"1.24.1", Git
 ::: details 点击查看详情
 
 ```bash
-# 创建项目目录
+# (1) 创建项目目录
 [root@node-1 ~]# mkdir example && cd example
 
-# 初始化项目
+# (2) 初始化项目
 #   --domain        指定域名,默认是my.domain,可以写任意字符串,后续操作中相关的名称都会放到这个域名下
 #                   该名称主要体现在YAML配置 和 kubectl api-resources等中
 #   --repo          指定仓库,也是go模块名,可以写任意字符串
@@ -89,7 +89,7 @@ API版本：[https://kubernetes.io/zh-cn/docs/reference/using-api/#api-reference
 #     --version     指定版本,任意字符串，但必须匹配正则^v\d+(?:alpha\d+|beta\d+)?$，建议按照约定填写
 #     --kind        指定API,任意字符串，首字母必须大写，建议使用大驼峰命名法(每个单词首字母大写)
 #     --namespaced  API是否区分命名空间,默认为true,根据实际情况设置
-#                   kubectl api-resources | grep false 可以查看默认的API都有哪些是不区分命名空间的,比如Node
+#                   kubectl api-resources --namespaced=false 可以查看默认的API都有哪些是不区分命名空间的,比如Node
 #                   特别注意: --namespaced=false这种写法是正确的, --namespaced false这种写法是错误的,不会生效
 [root@node-1 example]# kubebuilder create api --group crd --version v1beta1 --kind MyKind --namespaced=true
 
@@ -205,7 +205,7 @@ customresourcedefinition.apiextensions.k8s.io/mykinds.crd.devops.io created
 mykinds.crd.devops.io                                 2022-12-01T23:32:37Z
 
 # 检查API是否区分命名空间
-[root@node-1 example]# kubectl api-resources | grep -Ei 'KIND|mykind'
+[root@node-1 example]# kubectl api-resources | grep -Ei 'KIND|MyKind'
 NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
 mykinds                                        crd.devops.io/v1beta1                  true         MyKind
 ```
@@ -560,11 +560,13 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 ### 8）调试 Controller
 
+源码：`<project>/controllers/<kind>_controller.go`
+
 ::: details 点击查看详情
 
 ```go
 /*
-Copyright 2022. 1122
+Copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -585,38 +587,43 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	batchv1 "github.com/vvfock3r/demo/api/v1"
-	appsv1 "k8s.io/api/apps/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	"time"
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	// 我需要使用Deployment结构体，但是我不知道他在哪个包下面
+	// 使用 kubectl api-resources | grep -Ei 'APIVERSION|deployment' 可以发现一些蛛丝马迹：apps/v1
+	appsv1 "k8s.io/api/apps/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-	"time"
 )
 
-// MyDemoReconciler reconciles a MyDemo object
-type MyDemoReconciler struct {
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=batch.example.io,resources=mydemoes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=batch.example.io,resources=mydemoes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=batch.example.io,resources=mydemoes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the MyDemo object against the actual cluster state, and then
+// the MyKind object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
-func (r *MyDemoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// (1) 日志
 	logger := log.FromContext(ctx)
 
@@ -655,14 +662,15 @@ func (r *MyDemoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	//     2.通过Get或List获取对应Kind类型的资源，将对应Kind结构体指针作为参数传入即可，这与读文件时传入的切片数组指针很类似
 	//     3.需要对返回的error需要进一步判断资源是否存在 errors.IsNotFound(err)
 	//
-	var mydemo batchv1.MyDemo
-	err := r.Get(ctx, req.NamespacedName, &mydemo)
+	var mykind crdv1beta1.MyKind
+	err := r.Get(ctx, req.NamespacedName, &mykind)
 	if err != nil {
 		// 可能是 资源类型不匹配 或 资源匹配但是已经被删除
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		} else {
 			logger.Error(err, "unknown error")
+			return ctrl.Result{Requeue: true}, nil
 		}
 	}
 
@@ -670,12 +678,12 @@ func (r *MyDemoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *MyDemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
 		// 如果要监听其他资源,比如Deployment,需要使用Watches函数
 		// 下面的For本质上也是在使用Watches函数
 		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
-		For(&batchv1.MyDemo{}).
 		Complete(r)
 }
 ```
@@ -685,6 +693,57 @@ func (r *MyDemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 <br />
 
 ### 9）调试 types
+
+参考资料：[https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659](https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659)
+
+在部署示例`CRD`资源的时候（注意不是部署`CRD`），我们提到过可以在spec下加一个foo字段，完整的YAML文件如下：
+
+`<project>/config/samples/<group>_<version>_<kind>.yaml`
+
+```yaml
+apiVersion: crd.devops.io/v1beta1
+kind: MyKind
+metadata:
+  labels:
+    app.kubernetes.io/name: mykind
+    app.kubernetes.io/instance: mykind-sample
+    app.kubernetes.io/part-of: example
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: example
+  name: mykind-sample
+spec:
+  # TODO(user): Add fields here
+  foo: bar
+```
+
+这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
+
+```go
+// Spec里面定义：期望达到什么状态
+type MyKindSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// Foo is an example field of MyKind. Edit mykind_types.go to remove/update
+
+    // 上面的foo对应json tag里的foo, omitempty代表在写YAML的时候字段是可选的(empty)，且在序列化的时候会忽略是零值的字段(omit)
+	Foo string `json:"foo,omitempty"`
+}
+
+// Status里面定义：目前是什么状态
+type MyKindStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
+```
+
+接下来我们可以修改`types`文件，让`YAML`文件来支持更多的字段。
+
+`types`文件一旦修改，需要重新安装`CRD`
+
+```bash
+[root@node-1 example]# make install
+```
 
 ::: details 点击查看详情
 
