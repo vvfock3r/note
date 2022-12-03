@@ -745,10 +745,221 @@ type MyKindStatus struct {
 [root@node-1 example]# make install
 ```
 
-::: details 点击查看详情
+<br />
+
+接下来做一个测试，我想让CRD行为和Pod行为类似（精简版Kind Pod）：部署一个CRD就和部署一个Pod一样，修改和删除也保持一致
+
+::: details （1）修改crd_v1beta1_mykind.yaml
+
+```yaml
+apiVersion: crd.devops.io/v1beta1
+kind: MyKind
+metadata:
+  labels:
+    app.kubernetes.io/name: mykind
+    app.kubernetes.io/instance: mykind-sample
+    app.kubernetes.io/part-of: example
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: example
+    # 加个自定义标签，metadata里面加的东西跟types.go没有关系
+    app: abc
+  name: mykind-sample
+  namespace: default
+spec:
+  # 添加以下字段,这些字段需要在types.go中支持，否则会报错
+  containers:
+    - name: pod-1
+      image: busybox:1.28
+      command: [ 'sh', '-c', 'echo The app is running! && sleep 3601' ]
+    - name: pod-2
+      image: busybox:1.28
+      command: [ 'sh', '-c', 'echo The app is running! && sleep 3602' ]
+    - name: pod-3
+      image: busybox:1.28
+      command: [ 'sh', '-c', 'echo The app is running! && sleep 3603' ]
+```
+
+:::
+
+::: details （2）修改mykind_types.go
 
 ```go
+type MyKindSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 
+	Containers []Container `json:"containers,omitempty"`
+}
+
+type Container struct {
+	Name    string   `json:"name,omitempty"`
+	Image   string   `json:"image,omitempty"`
+	Command []string `json:"command,omitempty"`
+}
+
+// 重新安装CRD
+// make install
+```
+
+:::
+
+::: details （3）修改mykind_controller.go
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// (1) 日志
+	logger := log.FromContext(ctx)
+
+	// (2) 查询Kind是否存在
+	// error
+	//     == nil，代表Kind资源存在，则继续下一步
+	//     != nil, 代表Kind没有找到，需要进一步判断error:
+	//               errors.IsNotFound(err) 未找到是正常的，比如Kind已经被删除、若监听了其他类型的Kind也会提示找不到
+	//               其他错误是非正常的
+	// 举例
+	//     kubectl apply  返回nil，
+	//     kubectl delete 返回 NotFoundError,可以通过errors.IsNotFound来判断
+	//     kubectl edit   不触发 Reconcile
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err) // IgnoreNotFound如果是NotFoundError则返回nil
+		// 以上错误处理的代码展开是这样的：
+		//if errors.IsNotFound(err) {
+		//	logger.Info("NotFound, skip")
+		//	return ctrl.Result{}, nil
+		//}
+		//logger.Error(err, "Get error")
+		//return ctrl.Result{}, err
+	}
+
+	// (3) 新建Pod
+	for _, container := range mykind.Spec.Containers {
+		//podName := mykind.Name + "-" + container.Name + "-" + uuid.New().String()[:16]
+		podName := mykind.Name + "-" + container.Name
+		pod := corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: req.Namespace,
+				// 用于将Pod与MyKind资源关联，一旦MyKind资源被删除，那么Pod也将被删除
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+				},
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:    container.Name,
+						Image:   container.Image,
+						Command: container.Command,
+					},
+				},
+			},
+		}
+		err := r.Create(ctx, &pod)
+		if err == nil {
+			logger.Info("Create pod success: " + pod.Name)
+		} else if errors.IsAlreadyExists(err) {
+			logger.Info("Create pod success: " + pod.Name + ": already exists")
+		} else {
+			logger.Error(err, "Create pod failed: "+pod.Name)
+			//return ctrl.Result{}, err
+		}
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Complete(r)
+}
+```
+
+:::
+
+::: details （4）部署测试
+
+```bash
+# 将Controller运行跑起来
+make run
+
+# 部署CRD资源
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io/mykind-sample created
+
+# 查看Pod有没有创建
+[root@node-1 example]# kubectl get pods 
+NAME                  READY   STATUS    RESTARTS   AGE
+mykind-sample-pod-1   1/1     Running   0          17s
+mykind-sample-pod-2   1/1     Running   0          17s
+mykind-sample-pod-3   1/1     Running   0          17s
+
+# 删除CRD资源
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io "mykind-sample" deleted
+
+# 查看Pod有没有被销毁
+[root@node-1 example]# kubectl get pods 
+NAME                  READY   STATUS        RESTARTS   AGE
+mykind-sample-pod-1   1/1     Terminating   0          84s
+mykind-sample-pod-2   1/1     Terminating   0          84s
+mykind-sample-pod-3   1/1     Terminating   0          84s
+
+# 存在的问题
+# (1) 目前我们的Pod只能新建和销毁，若要修改YAML文件再apply是不生效的(Kind资源生效,Spec不生效)
 ```
 
 :::
