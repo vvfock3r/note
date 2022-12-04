@@ -727,7 +727,85 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 输出结果
 
 ```bash
+# 将Controller跑起来
+[root@node-1 example]# make run
 
+# 部署CRD资源
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io/mykind-sample created
+
+# 查看Controller输出
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.6701565156327682e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.670156515633611e+09   INFO    setup   starting manager
+1.6701565156357198e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6701565156357722e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6701565156360724e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6701565156361172e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1.Deployment"}
+1.6701565156361263e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6701565157439098e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 1}
+
+req:
+{
+    "CurrentTime   ": "2022-12-04 20:21:55",
+    "Name          ": "calico-kube-controllers",
+    "Namespace     ": "kube-system",
+    "NamespacedName": "kube-system/calico-kube-controllers",
+    "String        ": "kube-system/calico-kube-controllers"
+}
+
+req:
+{
+    "CurrentTime   ": "2022-12-04 20:21:55",
+    "Name          ": "coredns",
+    "Namespace     ": "kube-system",
+    "NamespacedName": "kube-system/coredns",
+    "String        ": "kube-system/coredns"
+}
+
+# 上面在获取Kind资源时候没有找到就退出了：crdv1beta1.MyKind
+# 下面的输出是 kubectl apply -f xx.yaml之后的
+
+req:
+{
+    "CurrentTime   ": "2022-12-04 20:21:59",
+    "Name          ": "mykind-sample",
+    "Namespace     ": "default",
+    "NamespacedName": "default/mykind-sample",
+    "String        ": "default/mykind-sample"
+}
+kube-system Pods:
+  kube-apiserver-front-proxy-node-4
+  kube-apiserver-node-2
+  coredns-565d847f94-gxtpx
+  kube-apiserver-node-1
+  coredns-565d847f94-hclt9
+  kube-controller-manager-node-3
+  etcd-node-3
+  kube-proxy-zztls
+  calico-node-jwflc
+  kube-controller-manager-node-1
+  calico-node-fgqsz
+  kube-scheduler-node-1
+  kube-proxy-72k55
+  etcd-node-1
+  calico-node-jhjwp
+  kube-scheduler-node-3
+  kube-apiserver-node-3
+  calico-node-wckpr
+  kube-controller-manager-node-2
+  coredns-565d847f94-f8xmz
+  kube-proxy-xk9r7
+  calico-kube-controllers-798cc86c47-8jlrm
+  kube-proxy-277hn
+  kube-scheduler-node-2
+  etcd-node-2
 ```
 
 :::
