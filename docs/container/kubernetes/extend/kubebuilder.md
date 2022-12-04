@@ -597,16 +597,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
-	// 这个导入可以参考main.go是如何导入的，尽量保持一致
-	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+
 	// 我需要使用Deployment结构体，但是我不知道他在哪个包下面
 	// 使用 kubectl api-resources | grep -Ei 'APIVERSION|deployment' 可以发现一些蛛丝马迹：apps/v1
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -676,9 +676,9 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// error
 	//     == nil，代表Kind资源存在，则继续下一步
 	//     != nil, 需要进一步判断error:
-    //               (1) NotFoundError是正常的，比如Kind已经被删除、若监听了其他类型的Kind就会有这个error, 
-    //                   此时我们可以使用 errors.IsNotFound(err) 将它转换为nil
-    //               (2) 其他错误是非正常的
+	//               (1) NotFoundError是正常的，比如Kind已经被删除、若监听了其他类型的Kind就会有这个error,
+	//                   此时我们可以使用 errors.IsNotFound(err) 将它转换为nil
+	//               (2) 其他错误是非正常的
 	// 举例
 	//     kubectl apply  返回nil，
 	//     kubectl delete 返回 NotFoundError,可以通过errors.IsNotFound来判断
@@ -696,21 +696,23 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	//	}
 	//	return ctrl.Result{}, err
 	//}
-    
-    // (5) Get只能获取单个，若要获取所有的Kind资源，如何操作？
-    //     1.使用r.List(ctx context.Context, list ObjectList, opts ...ListOption) error
-    //     2.List函数是不区分命名空间的，若要只获取当前命名空间的，可以使用可选参数：client.InNamespace(req.Namespace)
-    //     3.List函数若要过滤，可以使用可选参数Matchingxx,比如根据标签过滤：client.MatchingLabels{"key": "value"}
-    //     4.InNamespace和Matchingxx限制的是List和Delete操作
-    // 查询当前命名空间下的Pod
+
+	// (5) Get只能获取单个，若要获取所有的Kind资源，如何操作？
+	//     1.使用r.List(ctx context.Context, list ObjectList, opts ...ListOption) error
+	//     2.List函数是不区分命名空间的，若要只获取当前命名空间的，可以使用可选参数：client.InNamespace(req.Namespace)
+	//     3.List函数若要过滤，可以使用可选参数Matchingxx,比如根据标签过滤：client.MatchingLabels{"key": "value"}
+	//     4.InNamespace和Matchingxx限制的是List和Delete操作
+	// 查询kube-system命名空间下所有的Pod
 	var pods corev1.PodList
-	if err := r.List(ctx, &pods, client.InNamespace(req.Namespace)); err != nil {
+	if err := r.List(ctx, &pods, client.InNamespace("kube-system")); err != nil {
 		logger.Error(err, "list error")
+		return ctrl.Result{}, err
 	}
+	fmt.Println("kube-system Pods:")
 	for _, item := range pods.Items {
-		fmt.Println(item.Name)
+		fmt.Printf("  %s\n", item.Name)
 	}
-    
+
 	return ctrl.Result{}, nil
 }
 
@@ -719,7 +721,7 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&crdv1beta1.MyKind{}).
 		// 如果要监听其他资源,比如Deployment,需要使用Watches函数，上面的For本质上也是在使用Watches函数
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).   
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
 ```
@@ -979,25 +981,9 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	logger := log.FromContext(ctx)
 
 	// (2) 查询Kind是否存在
-	// error
-	//     == nil，代表Kind资源存在，则继续下一步
-	//     != nil, 代表Kind没有找到，需要进一步判断error:
-	//               errors.IsNotFound(err) 未找到是正常的，比如Kind已经被删除、若监听了其他类型的Kind也会提示找不到
-	//               其他错误是非正常的
-	// 举例
-	//     kubectl apply  返回nil，
-	//     kubectl delete 返回 NotFoundError,可以通过errors.IsNotFound来判断
-	//     kubectl edit   不触发 Reconcile
 	var mykind crdv1beta1.MyKind
 	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err) // IgnoreNotFound如果是NotFoundError则返回nil
-		// 以上错误处理的代码展开是这样的：
-		//if errors.IsNotFound(err) {
-		//	logger.Info("NotFound, skip")
-		//	return ctrl.Result{}, nil
-		//}
-		//logger.Error(err, "Get error")
-		//return ctrl.Result{}, err
 	}
 
 	// (3) 新建Pod
@@ -1075,8 +1061,30 @@ mykind-sample-pod-1   1/1     Terminating   0          84s
 mykind-sample-pod-2   1/1     Terminating   0          84s
 mykind-sample-pod-3   1/1     Terminating   0          84s
 
-# 存在的问题
-# (1) 目前我们的Pod只能新建和销毁，若要修改YAML文件再apply是不生效的(Kind资源生效,Spec不生效)
+# 查看Controller的日志
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.670156845316296e+09   INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.6701568453172016e+09  INFO    setup   starting manager
+1.6701568453190153e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6701568453191378e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6701568453192413e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6701568453192644e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6701568454264696e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 1}
+
+# 手动回车，为了看起来清楚点
+
+1.6701568863552523e+09  INFO    Create pod success: mykind-sample-pod-1 {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "MyKind": {"name":"mykind-sample","namespace":"default"}, "namespace": "default", "name": "mykind-sample", "reconcileID": "0725b46b-45bd-4537-aea9-818d39327f60"}
+1.6701568863661957e+09  INFO    Create pod success: mykind-sample-pod-2 {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "MyKind": {"name":"mykind-sample","namespace":"default"}, "namespace": "default", "name": "mykind-sample", "reconcileID": "0725b46b-45bd-4537-aea9-818d39327f60"}
+1.6701568863807628e+09  INFO    Create pod success: mykind-sample-pod-3 {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "MyKind": {"name":"mykind-sample","namespace":"default"}, "namespace": "default", "name": "mykind-sample", "reconcileID": "0725b46b-45bd-4537-aea9-818d39327f60"}
+
+# 备注
+# 这只是一个练习，它并没有实际用处，而且还有很多问题，比如，若要修改YAML文件再apply，Kind资源生效,Spec不生效
 ```
 
 :::
