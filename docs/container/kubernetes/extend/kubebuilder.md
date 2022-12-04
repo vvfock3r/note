@@ -6,7 +6,7 @@ Github：[https://github.com/kubernetes-sigs/kubebuilder](https://github.com/kub
 
 <br />
 
-## 基础示例
+## 1.先跑起来
 
 ### 1）要求
 
@@ -558,7 +558,67 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 <br />
 
-### 8）调试 Controller
+## 2.简单调试
+
+### 1）须知
+
+**（1）CRD资源YAML文件和types.go的关系**
+
+在部署示例`CRD`资源的时候（注意不是部署`CRD`），我们提到过可以在spec下加一个foo字段，完整的YAML文件如下：
+
+`<project>/config/samples/<group>_<version>_<kind>.yaml`
+
+```yaml
+apiVersion: crd.devops.io/v1beta1
+kind: MyKind
+metadata:
+  labels:
+    app.kubernetes.io/name: mykind
+    app.kubernetes.io/instance: mykind-sample
+    app.kubernetes.io/part-of: example
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: example
+  name: mykind-sample
+spec:
+  # TODO(user): Add fields here
+  foo: bar
+```
+
+这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
+
+```go
+// Spec里面定义：期望达到什么状态
+type MyKindSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// Foo is an example field of MyKind. Edit mykind_types.go to remove/update
+
+    // 上面的foo对应json tag里的foo, omitempty代表在写YAML的时候字段是可选的(empty)，且在序列化的时候会忽略是零值的字段(omit)
+	Foo string `json:"foo,omitempty"`
+}
+
+// Status里面定义：目前是什么状态
+type MyKindStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
+```
+
+我们可以修改`types.go`文件，让`YAML`文件来支持更多的字段。`types.go`文件一旦修改，需要重新安装`CRD`：`make install`
+
+**（2）Controller的作用**
+
+* Controller需要确保我们所使用到的资源（比如Pod、Deployment等）与YAML文件中`Spec`保持一致
+* Controller需要是幂等的
+* Controller中我们主要修改的是`Reconcile`函数（协调）
+* `Reconcile`函数的触发机制：
+  * `Controller`运行起来时会触发一次
+  * `Controller`所监听的资源有更新时会监听一次
+
+<br />
+
+### 1）Controller
 
 源码：`<project>/controllers/<kind>_controller.go`
 
@@ -629,13 +689,13 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// (2) 输入参数req代表啥?
 	// req: Request,类型为自定义类型，值为Request结构体，本质上就是NamespacedName结构体
-	//     Name:           值取决于所要监视的资源，可能是Pod Name，也可能是Deployment Name
-	//     Namespace:      命名空间
+	//     Name:           名称，值取决于所要监视的资源，默认只监视自定义API的资源，在这里是 MyKind API,名称是 mykind-sample
+	//     Namespace:      命名空间，值取决于所要监视的资源,同Name一样
 	//     NamespacedName: 结构体，由NameSpace和Name组成
 	//     string():       NamespacedName结构体的String()方法，输出格式为: <NameSpace>/<Name>
 	// 分析：
 	// 1) 通过req我们是无法区分出资源类型的, 也无法区分是创建、编辑、删除还是其他某种动作
-	// 2) 正确的使用方式是：一个Reconciler最好只处理一种类型的资源,也并不区分是何种操作
+	// 2) 正确的使用方式是：一个Reconciler是不需要区分是什么操作的，只要保持资源与YAML中定义的保持一样
 	reqInfo := map[string]string{
 		"CurrentTime   ": time.Now().Format("2006-01-02 15:04:05"),
 		"Name          ": req.Name,
@@ -659,21 +719,48 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// (4) 如何获取到指定Kind类型的资源，比如Pod、Deployment？
 	//     1.需要先watch对应类型的资源，需要修改 SetupWithManager 函数
-	//     2.通过Get或List获取对应Kind类型的资源，将对应Kind结构体指针作为参数传入即可，这与读文件时传入的切片数组指针很类似
+	//     2.通过Get获取对应Kind类型的资源，将对应Kind结构体指针作为参数传入即可，这与读文件时传入的切片数组指针很类似
 	//     3.需要对返回的error需要进一步判断资源是否存在 errors.IsNotFound(err)
 	//
+	// 查询某一类Kind是否存在
+	// error
+	//     == nil，代表Kind资源存在，则继续下一步
+	//     != nil, 需要进一步判断error:
+    //               (1) NotFoundError是正常的，比如Kind已经被删除、若监听了其他类型的Kind就会有这个error, 
+    //                   此时我们可以使用 errors.IsNotFound(err) 将它转换为nil
+    //               (2) 其他错误是非正常的
+	// 举例
+	//     kubectl apply  返回nil，
+	//     kubectl delete 返回 NotFoundError,可以通过errors.IsNotFound来判断
+	//     kubectl edit   不触发 Reconcile
 	var mykind crdv1beta1.MyKind
-	err := r.Get(ctx, req.NamespacedName, &mykind)
-	if err != nil {
-		// 可能是 资源类型不匹配 或 资源匹配但是已经被删除
-		if errors.IsNotFound(err) {
-			return ctrl.Result{}, nil
-		} else {
-			logger.Error(err, "unknown error")
-			return ctrl.Result{Requeue: true}, nil
-		}
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err) // IgnoreNotFound如果是NotFoundError则返回nil
 	}
 
+	// 以上代码展开是这样的
+	//var mykind crdv1beta1.MyKind
+	//if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+	//	if errors.IsNotFound(err) {
+	//		return ctrl.Result{}, nil
+	//	}
+	//	return ctrl.Result{}, err
+	//}
+    
+    // (5) Get只能获取单个，若要获取所有的Kind资源，如何操作？
+    //     1.使用r.List(ctx context.Context, list ObjectList, opts ...ListOption) error
+    //     2.List函数是不区分命名空间的，若要只获取当前命名空间的，可以使用可选参数：client.InNamespace(req.Namespace)
+    //     3.List函数若要过滤，可以使用可选参数Matchingxx,比如根据标签过滤：client.MatchingLabels{"key": "value"}
+    //     4.InNamespace和Matchingxx限制的是List和Delete操作
+    // 查询当前命名空间下的Pod
+	var pods corev1.PodList
+	if err := r.List(ctx, &pods, client.InNamespace(req.Namespace)); err != nil {
+		logger.Error(err, "list error")
+	}
+	for _, item := range pods.Items {
+		fmt.Println(item.Name)
+	}
+    
 	return ctrl.Result{}, nil
 }
 
@@ -681,73 +768,30 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&crdv1beta1.MyKind{}).
-		// 如果要监听其他资源,比如Deployment,需要使用Watches函数
-		// 下面的For本质上也是在使用Watches函数
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
+		// 如果要监听其他资源,比如Deployment,需要使用Watches函数，上面的For本质上也是在使用Watches函数
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).   
 		Complete(r)
 }
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
 
 <br />
 
-### 9）调试 types
+### 2）types
 
 参考资料：[https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659](https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659)
 
-在部署示例`CRD`资源的时候（注意不是部署`CRD`），我们提到过可以在spec下加一个foo字段，完整的YAML文件如下：
+我想让YAML文件支持更多的字段，比如说支持`name`、`image`、`command`
 
-`<project>/config/samples/<group>_<version>_<kind>.yaml`
-
-```yaml
-apiVersion: crd.devops.io/v1beta1
-kind: MyKind
-metadata:
-  labels:
-    app.kubernetes.io/name: mykind
-    app.kubernetes.io/instance: mykind-sample
-    app.kubernetes.io/part-of: example
-    app.kuberentes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: example
-  name: mykind-sample
-spec:
-  # TODO(user): Add fields here
-  foo: bar
-```
-
-这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
-
-```go
-// Spec里面定义：期望达到什么状态
-type MyKindSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of MyKind. Edit mykind_types.go to remove/update
-
-    // 上面的foo对应json tag里的foo, omitempty代表在写YAML的时候字段是可选的(empty)，且在序列化的时候会忽略是零值的字段(omit)
-	Foo string `json:"foo,omitempty"`
-}
-
-// Status里面定义：目前是什么状态
-type MyKindStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-```
-
-接下来我们可以修改`types`文件，让`YAML`文件来支持更多的字段。
-
-`types`文件一旦修改，需要重新安装`CRD`
-
-```bash
-[root@node-1 example]# make install
-```
-
-<br />
-
-接下来做一个测试，我想让CRD行为和Pod行为类似（精简版Kind Pod）：部署一个CRD就和部署一个Pod一样，修改和删除也保持一致
+* 当`kubectl apply -f xx.yaml`时启动一个Pod或多个Pod
+* 当`kubectl delete -f xx.yaml`时删除掉上一条命令创建的所有Pod
 
 ::: details （1）修改crd_v1beta1_mykind.yaml
 
@@ -762,7 +806,7 @@ metadata:
     app.kuberentes.io/managed-by: kustomize
     app.kubernetes.io/created-by: example
     # 加个自定义标签，metadata里面加的东西跟types.go没有关系
-    app: abc
+    app: demo
   name: mykind-sample
   namespace: default
 spec:
@@ -933,8 +977,8 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 ::: details （4）部署测试
 
 ```bash
-# 将Controller运行跑起来
-make run
+# 将Controller跑起来
+[root@node-1 example]# make run
 
 # 部署CRD资源
 [root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml 
@@ -965,12 +1009,4 @@ mykind-sample-pod-3   1/1     Terminating   0          84s
 :::
 
 <br />
-
-## 深入原理
-
-
-
-<br />
-
-## 实战1：
 
