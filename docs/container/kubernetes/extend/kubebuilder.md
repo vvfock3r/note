@@ -560,67 +560,17 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 ## 2.简单调试
 
-### 1）须知
-
-**（1）CRD资源YAML文件和types.go的关系**
-
-在部署示例`CRD`资源的时候（注意不是部署`CRD`），我们提到过可以在spec下加一个foo字段，完整的YAML文件如下：
-
-`<project>/config/samples/<group>_<version>_<kind>.yaml`
-
-```yaml
-apiVersion: crd.devops.io/v1beta1
-kind: MyKind
-metadata:
-  labels:
-    app.kubernetes.io/name: mykind
-    app.kubernetes.io/instance: mykind-sample
-    app.kubernetes.io/part-of: example
-    app.kuberentes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: example
-  name: mykind-sample
-spec:
-  # TODO(user): Add fields here
-  foo: bar
-```
-
-这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
-
-```go
-// Spec里面定义：期望达到什么状态
-type MyKindSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of MyKind. Edit mykind_types.go to remove/update
-
-    // 上面的foo对应json tag里的foo, omitempty代表在写YAML的时候字段是可选的(empty)，且在序列化的时候会忽略是零值的字段(omit)
-	Foo string `json:"foo,omitempty"`
-}
-
-// Status里面定义：目前是什么状态
-type MyKindStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-```
-
-我们可以修改`types.go`文件，让`YAML`文件来支持更多的字段。`types.go`文件一旦修改，需要重新安装`CRD`：`make install`
-
-**（2）Controller的作用**
-
-* Controller需要确保我们所使用到的资源（比如Pod、Deployment等）与YAML文件中`Spec`保持一致
-* Controller需要是幂等的
-* Controller中我们主要修改的是`Reconcile`函数（协调）
-* `Reconcile`函数的触发机制：
-  * `Controller`运行起来时会触发一次
-  * `Controller`所监听的资源有更新时会监听一次
-
-<br />
-
 ### 1）Controller
 
 源码：`<project>/controllers/<kind>_controller.go`
+
+**Controller的作用**
+
+* Controller需要确保实际的情况与YAML文件中`Spec`期望的状态保持一致
+* Controller需要是幂等的，即任意多次执行所产生的影响均与一次执行的影响相同
+* Controller中我们主要修改的是`Reconcile`函数（协调），`Reconcile`函数的触发机制简介：
+  * `Controller`运行起来时会触发一次
+  * `Controller`所监听的资源有更新、删除等操作时会触发一次
 
 ::: details 点击查看详情
 
@@ -788,7 +738,52 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 参考资料：[https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659](https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659)
 
-我想让YAML文件支持更多的字段，比如说支持`name`、`image`、`command`
+在部署示例`CRD`资源的时候（注意不是部署`CRD`），我们提到过可以在spec下加一个foo字段，完整的YAML文件如下：
+
+`<project>/config/samples/<group>_<version>_<kind>.yaml`
+
+```yaml
+apiVersion: crd.devops.io/v1beta1
+kind: MyKind
+metadata:
+  labels:
+    app.kubernetes.io/name: mykind
+    app.kubernetes.io/instance: mykind-sample
+    app.kubernetes.io/part-of: example
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: example
+  name: mykind-sample
+spec:
+  # TODO(user): Add fields here
+  foo: bar
+```
+
+这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
+
+```go
+// Spec里面定义：期望达到什么状态
+type MyKindSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// Foo is an example field of MyKind. Edit mykind_types.go to remove/update
+
+    // 上面的foo对应json tag里的foo, omitempty代表在写YAML的时候字段是可选的(empty)，且在序列化的时候会忽略是零值的字段(omit)
+	Foo string `json:"foo,omitempty"`
+}
+
+// Status里面定义：目前是什么状态
+type MyKindStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
+```
+
+我们可以修改`types.go`文件，让`YAML`文件来支持更多的字段。`types.go`文件一旦修改，需要重新安装`CRD`：`make install`
+
+<br />
+
+接下来做一个测试，我想让YAML文件支持更多的字段，比如说支持`name`、`image`、`command`
 
 * 当`kubectl apply -f xx.yaml`时启动一个Pod或多个Pod
 * 当`kubectl delete -f xx.yaml`时删除掉上一条命令创建的所有Pod
@@ -1009,4 +1004,8 @@ mykind-sample-pod-3   1/1     Terminating   0          84s
 :::
 
 <br />
+
+### 3）// +kubebuilder
+
+
 
