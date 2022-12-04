@@ -1092,7 +1092,7 @@ go run ./main.go
 1.6701568863807628e+09  INFO    Create pod success: mykind-sample-pod-3 {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "MyKind": {"name":"mykind-sample","namespace":"default"}, "namespace": "default", "name": "mykind-sample", "reconcileID": "0725b46b-45bd-4537-aea9-818d39327f60"}
 
 # 备注
-# 这只是一个练习，它并没有实际用处，而且还有很多问题，比如，若要修改YAML文件再apply，Kind资源生效,Spec不生效
+# 这只是一个练习，它并没有实际用处，而且还有很多问题，比如，若要修改YAML文件再apply，Kind资源生效,Spec不生效,因为我们没有针对性的处理
 ```
 
 :::
