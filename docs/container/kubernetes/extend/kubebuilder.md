@@ -562,8 +562,6 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 ### 1）Controller
 
-源码：`<project>/controllers/<kind>_controller.go`
-
 **Controller的作用**
 
 * Controller需要确保实际的情况与YAML文件中`Spec`期望的状态保持一致
@@ -571,6 +569,8 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 * Controller中我们主要修改的是`Reconcile`函数（协调），`Reconcile`函数的触发机制简介：
   * `Controller`运行起来时会触发一次
   * `Controller`所监听的资源有更新、删除等操作时会触发一次
+
+源码：`<project>/controllers/<kind>_controller.go`
 
 ::: details 点击查看详情
 
