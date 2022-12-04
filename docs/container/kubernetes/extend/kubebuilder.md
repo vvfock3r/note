@@ -1101,5 +1101,11 @@ go run ./main.go
 
 ### 3）// +kubebuilder
 
+::: details （1）kubectl展示参数
 
+```go
+
+```
+
+:::
 
