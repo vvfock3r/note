@@ -822,6 +822,8 @@ kube-system Pods:
 
 `<project>/config/samples/<group>_<version>_<kind>.yaml`
 
+::: details 点击查看详情
+
 ```yaml
 apiVersion: crd.devops.io/v1beta1
 kind: MyKind
@@ -838,7 +840,11 @@ spec:
   foo: bar
 ```
 
-这里的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
+:::
+
+上面的`foo`对应的是`<project>/api/<version>/<kind>_types.go`中的结构体
+
+::: details 点击查看详情
 
 ```go
 // Spec里面定义：期望达到什么状态
@@ -858,6 +864,8 @@ type MyKindStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 }
 ```
+
+:::
 
 我们可以修改`types.go`文件，让`YAML`文件来支持更多的字段。`types.go`文件一旦修改，需要重新安装`CRD`：`make install`
 
