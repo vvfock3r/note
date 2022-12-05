@@ -559,7 +559,7 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 <br />
 
-## 2.调试
+## 2.基础调试
 
 ### 1）Controller
 
@@ -570,6 +570,7 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 * Controller中我们主要修改的是`Reconcile`函数（协调），`Reconcile`函数的触发机制简介：
   * `Controller`运行起来时会触发一次
   * `Controller`所监听的资源有更新、删除等操作时会触发一次
+  * 默认情况下10小时触发一次，可以通过以下方式找到相关说明：`main.go -> ctrl.Options -> SyncPeriod *time.Duration`
 
 源码：`<project>/controllers/<kind>_controller.go`
 
@@ -1275,3 +1276,8 @@ mykind-sample   crd.devops.io/v1beta1   3h32m
 ```
 
 :::
+
+<br />
+
+## 3.深入原理
+
