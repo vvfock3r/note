@@ -491,6 +491,9 @@ Step 16/16 : ENTRYPOINT ["/manager"]
  ---> 64b730ada8d2
 Successfully built 64b730ada8d2
 Successfully tagged devops.io/example:v1beat1
+
+# (4) 可以根据实际情况选择将Docker镜像上传到镜像仓库,这里没有镜像仓库就不上传了
+[root@node-1 example]# make docker-push IMG=devops.io/example:v1beat1
 ```
 
 :::
@@ -504,17 +507,15 @@ Successfully tagged devops.io/example:v1beat1
 # (2) 检查都会用到哪些镜像
 [root@node-1 example]# find config -type f | xargs grep 'image: ' --color=auto
 config/default/manager_auth_proxy_patch.yaml:   image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0 # 需要科学上网，建议提前下载好
-config/manager/manager.yaml:                    image: controller:latest                          # 这里修改为上一步镜像地址
+config/manager/manager.yaml:                    image: controller:latest                          # 这里为controller镜像
 
 # (3) 修复镜像问题
-#     1) 将controller镜像修改为我们的镜像，如下所示
+#     1) 后面部署controller的时候我们会指定进行，也可以修改上面的镜像
 #     2) 提前下载好kube-rbac-proxy镜像
 #     3) 这里没有使用镜像仓库，所以需要将以上两个镜像导入到所有的node节点中
-[root@node-1 example]# vim config/manager/manager.yaml
-image: devops.io/example:v1beat1
 
 # (4) 部署
-[root@node-1 example]# make deploy
+[root@node-1 example]# make deploy IMG=devops.io/example:v1beat1
 
 test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 /root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
