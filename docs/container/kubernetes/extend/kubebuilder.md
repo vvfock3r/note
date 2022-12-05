@@ -1101,11 +1101,65 @@ go run ./main.go
 
 ### 3）// +kubebuilder
 
+文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
+
 ::: details （1）kubectl展示参数
 
-```go
+文档：[https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#additional-printer-columns](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#additional-printer-columns)
 
+1.默认情况下是这样的
+
+```bash
+[root@node-1 example]# kubectl get mykind 
+NAME            AGE
+mykind-sample   2m56s
 ```
+
+2.接下来修改types.go文件
+
+```go
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+
+// 添加下面两行
+//+kubebuilder:printcolumn:name="APIVERSION",type="string",JSONPath=".apiVersion",priority=0,description="The group version of mykind."
+//+kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp",priority=0,description="The creation duration of mykind"
+
+// MyKind is the Schema for the mykinds API
+type MyKind struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   MyKindSpec   `json:"spec,omitempty"`
+	Status MyKindStatus `json:"status,omitempty"`
+}
+```
+
+3.重新安装CRD
+
+```bash
+[root@node-1 example]# make install
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/mykinds.crd.devops.io configured
+```
+
+4.kubectl验证
+
+```bash
+[root@node-1 example]# kubectl get mykind 
+NAME            APIVERSION              AGE
+mykind-sample   crd.devops.io/v1beta1   27m
+```
+
+5.注意点
+
+* 如果我要新加字段，那么默认的AGE便不再显示，需要我们手动再加上去
+* 字段顺序与我们添加的顺序保持一致
+* 字段名默认会大写，即使我们写的是小写的名称
+* NAME字段比较特殊，它总是会显示，如果我们自定义一个NAME字段，它并不会将第一个NAME给顶掉，而是会有两个NAME字段
+* `priority`参数，默认为0，意思是只标准视图中显示，当设置为>0时，使用`kubectl get xx -o wide`时候会显示
 
 :::
 
