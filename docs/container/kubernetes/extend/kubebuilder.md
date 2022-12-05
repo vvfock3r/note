@@ -558,7 +558,7 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 <br />
 
-## 2.简单调试
+## 2.调试
 
 ### 1）Controller
 
@@ -1103,7 +1103,7 @@ go run ./main.go
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
-::: details （1）kubectl展示参数
+::: details （1）printcolumn：kubectl展示参数
 
 文档：[https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#additional-printer-columns](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#additional-printer-columns)
 
@@ -1163,3 +1163,114 @@ mykind-sample   crd.devops.io/v1beta1   27m
 
 :::
 
+::: details （2）自动实现runtime.Object接口，一般不需要修改
+
+文档：[https://xuejipeng.github.io/kubebuilder-doc-cn/cronjob-tutorial/other-api-files.html#zz_generateddeepcopygo](https://xuejipeng.github.io/kubebuilder-doc-cn/cronjob-tutorial/other-api-files.html#zz_generateddeepcopygo)
+
+```go
+//+kubebuilder:object:root=true
+
+// 1.上面这行注释用于实现runtime.Object接口，生成的代码在 api/<version>/zz_generated.deepcopy.go中，核心方法是DeepCopyObject
+// 2.若将他改为false，在Reconcile使用时,Get等函数就不可以传入&mykind，因为没有实现runtime.Object接口
+// var mykind crdv1beta1.MyKind
+//   if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+//     return ctrl.Result{}, client.IgnoreNotFound(err) // IgnoreNotFound如果是NotFoundError则返回nil
+// }
+// 3.我们可以看一下有这个标记的有 MyKind和MyKindList，在zz_generated.deepcopy.go中可以找到MyKind和MyKindList的DeepCopyObject方法
+// 4.修改后需要使用 make generate 重新生成代码
+```
+
+:::
+
+::: details （3）开启状态子资源，一般不需要修改
+
+文档：[https://book.kubebuilder.io/reference/generating-crd.html#subresources](https://book.kubebuilder.io/reference/generating-crd.html#subresources)
+
+```go
+//+kubebuilder:subresource:status
+
+// 1.通常建议在所有具有状态字段的资源上使用子资源
+// 2.在我们的示例中，MyKind开启了状态子资源，而MyKindList没有开启状态子资源
+// 3.启用后，主资源的更新不会更改状态。同样，对status子资源的更新只能更改status字段
+//   或者说，外部修改的status将不会被捕获，只能通过控制器使用status().update()来修改
+
+// 以后补充
+```
+
+:::
+
+::: details （4）开启伸缩子资源
+
+文档：[https://book.kubebuilder.io/reference/generating-crd.html#scale](https://book.kubebuilder.io/reference/generating-crd.html#scale)
+
+```go
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
+
+// 以后补充
+```
+
+:::
+
+::: details （5）配置CRD范围和别名
+
+文档：[https://book.kubebuilder.io/reference/markers/crd.html](https://book.kubebuilder.io/reference/markers/crd.html)
+
+```go
+//+kubebuilder:resource:scope=Cluster,shortName=mk;mk1;mk2
+
+// 参数有很多：
+//   scope=Cluster    配置CRD范围，可选值：Cluster, Namespaced
+//   shortName        配置CRD别名,比如说namespace的别名是ns。上面配置了3个别名，使用分号隔开
+
+// 修改后需要使用 make install 重新安装CRD
+```
+
+**scope**
+
+```bash
+# 当我们配置好CRD范围为集群范围后
+//+kubebuilder:resource:scope=Cluster
+
+# 再次查看一下，NAMESPACED变为false了
+[root@node-1 example]# kubectl api-resources | grep -Ei 'SHORTNAMES|KIND'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+mykinds                           mk,mk1,mk2   crd.devops.io/v1beta1                  false        MyKind
+```
+
+**shortName**
+
+```bash
+[root@node-1 example]# kubectl api-resources | grep -Ei 'SHORTNAMES|KIND'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+mykinds                           mk,mk1,mk2   crd.devops.io/v1beta1                  true         MyKind
+[root@node-1 example]# kubectl get mykind
+NAME            APIVERSION              AGE
+mykind-sample   crd.devops.io/v1beta1   3h32m
+[root@node-1 example]#
+[root@node-1 example]#
+[root@node-1 example]# kubectl get mk
+NAME            APIVERSION              AGE
+mykind-sample   crd.devops.io/v1beta1   3h32m
+[root@node-1 example]#
+[root@node-1 example]# kubectl get mk1
+NAME            APIVERSION              AGE
+mykind-sample   crd.devops.io/v1beta1   3h32m
+[root@node-1 example]# kubectl get mk2
+NAME            APIVERSION              AGE
+mykind-sample   crd.devops.io/v1beta1   3h32m
+```
+
+:::
+
+::: details （6）CRD字段验证
+
+文档：[https://book.kubebuilder.io/reference/markers/crd-validation.html](https://book.kubebuilder.io/reference/markers/crd-validation.html)
+
+```go
+//+kubebuilder:default=            设置默认值
+//+kubebuilder:validation:Enum={}  设置枚举
+
+// 更多的慢慢补充
+```
+
+:::
