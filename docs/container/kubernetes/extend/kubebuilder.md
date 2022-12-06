@@ -1,8 +1,8 @@
 # kubebuilder
 
-Github：[https://github.com/kubernetes-sigs/kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
-
 文档：[https://book.kubebuilder.io/](https://book.kubebuilder.io/)
+
+Github：[https://github.com/kubernetes-sigs/kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
 
 <br />
 
@@ -1279,5 +1279,368 @@ mykind-sample   crd.devops.io/v1beta1   3h32m
 
 <br />
 
-## 3.深入原理
+## 3.基础原理
 
+### 架构图
+
+文档：[https://book.kubebuilder.io/architecture.html](https://book.kubebuilder.io/architecture.html)
+
+![image-20221206114340050](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221206114340050.png)
+
+<br />
+
+### 程序入口
+
+`main`方法是我们程序的入口，它一般定义在`main.go`中，我们看一下他都做了什么事
+
+::: details main.go源码
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package main
+
+import (
+	"flag"
+	"os"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	"github.com/vvfock3r/example/controllers"
+	//+kubebuilder:scaffold:imports
+)
+
+var (
+	scheme   = runtime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
+)
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+
+	utilruntime.Must(crdv1beta1.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
+}
+
+func main() {
+	// 1.设置命令行参数
+	var metricsAddr string
+	var enableLeaderElection bool
+	var probeAddr string
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
+	flag.Parse()
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// 2.创建Manager
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "683e8863.devops.io",
+		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
+		// when the Manager ends. This requires the binary to immediately end when the
+		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
+		// speeds up voluntary leader transitions as the new leader don't have to wait
+		// LeaseDuration time first.
+		//
+		// In the default scaffold provided, the program ends immediately after
+		// the manager stops, so would be fine to enable this option. However,
+		// if you are doing or is intended to do any operation such as perform cleanups
+		// after the manager stops then its usage might be unsafe.
+		// LeaderElectionReleaseOnCancel: true,
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	// 3.将我们的 controllers 注册到 Manager 中
+	if err = (&controllers.MyKindReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MyKind")
+		os.Exit(1)
+	}
+	//+kubebuilder:scaffold:builder
+
+	// 4.添加健康检查和就绪检查,可以看到都是调用了相同的处理函数
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	// 5.启动Manager
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+```
+
+:::
+
+分析：
+
+* 设置命令行参数
+* 创建Manager
+* 将我们的 controllers 注册到 Manager 中
+* 添加健康检查（healthz）和就绪检查（readyz），都是调用的healthz.Ping函数
+* 启动Manager
+
+<br />
+
+#### Leader选举
+
+在设置命令行参数时我们看到有这样一个参数
+
+```go
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+        // 开启Leader选举，它将确保只有一个活跃的controller manager
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+// 翻译过来就是：
+// 1.当我们部署了多副本Manager时，对于同一个事件，所有的Manager都会处理一遍
+// 2.当设置了leader-elect参数后，所有的Manager会自动选举出一个Leader，由Leader统一处理
+// 3.当Leader挂掉后，会重新进行选举，达到高可用的效果
+```
+
+下面我们来测试一下
+
+::: details 1、修改controller，让他循环调度，并输出当前的时间
+
+```go
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = log.FromContext(ctx)
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+	return ctrl.Result{RequeueAfter: time.Second * 1}, nil
+}
+```
+
+:::
+
+::: details 2、测试一下是否按预期工作，后面我们就可以直接调用`go run main.go`来启动Manager
+
+```bash
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.67030183172172e+09    INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.670301831722304e+09   INFO    setup   starting manager
+1.6703018317233853e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6703018317236047e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.67030183172399e+09    INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6703018317240117e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6703018318252802e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 100}
+2022-12-06 12:43:51
+2022-12-06 12:43:52
+2022-12-06 12:43:53
+2022-12-06 12:43:54
+```
+
+:::
+
+::: details 3、查看一下命令行参数
+
+```bash
+[root@node-1 example]# go run main.go -h
+Usage of /tmp/go-build2568223212/b001/exe/main:
+  -health-probe-bind-address string
+        The address the probe endpoint binds to. (default ":8081")
+  -kubeconfig string
+        Paths to a kubeconfig. Only required if out-of-cluster.
+  -leader-elect
+        Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.
+  -metrics-bind-address string
+        The address the metric endpoint binds to. (default ":8080")
+  -zap-devel
+        Development Mode defaults(encoder=consoleEncoder,logLevel=Debug,stackTraceLevel=Warn). Production Mode defaults(encoder=jsonEncoder,logLevel=Info,stackTraceLevel=Error) (default true)
+  -zap-encoder value
+        Zap log encoding (one of 'json' or 'console')
+  -zap-log-level value
+        Zap Level to configure the verbosity of logging. Can be one of 'debug', 'info', 'error', or any integer value > 0 which corresponds to custom debug levels of increasing verbosity
+  -zap-stacktrace-level value
+        Zap Level at and above which stacktraces are captured (one of 'info', 'error', 'panic').
+  -zap-time-encoding value
+        Zap time encoding (one of 'epoch', 'millis', 'nano', 'iso8601', 'rfc3339' or 'rfc3339nano'). Defaults to 'epoch'.
+```
+
+:::
+
+::: details 4、启动两个Manager，看看效果，验证是不是同时都在进行处理
+
+```bash
+# 终端1
+[root@node-1 example]# go run main.go 
+1.6703020330145264e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.6703020330149448e+09  INFO    setup   starting manager
+1.6703020330155623e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6703020330156145e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6703020330159233e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6703020330159447e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6703020331177087e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 100}
+2022-12-06 12:47:13
+2022-12-06 12:47:14
+2022-12-06 12:47:15
+2022-12-06 12:47:16
+2022-12-06 12:47:17
+2022-12-06 12:47:18
+
+# 终端2，这里要修改一下健康检查和Metrics的端口
+[root@node-1 example]# go run main.go -health-probe-bind-address ":8082" -metrics-bind-address ":8083" 
+1.6703020338751724e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8083"}
+1.670302033875485e+09   INFO    setup   starting manager
+1.6703020338762925e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8083"}
+1.6703020338763382e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8082"}
+1.6703020338770015e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6703020338770266e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.670302033979318e+09   INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 100}
+2022-12-06 12:47:13
+2022-12-06 12:47:14
+2022-12-06 12:47:15
+2022-12-06 12:47:16
+2022-12-06 12:47:17
+2022-12-06 12:47:18
+```
+
+:::
+
+::: details 5、启动两个Manager，开启Leader选举选项
+
+```bash
+# 终端1：启动报错了，原因是我们的Manager没有在集群中部署来启动(in-cluster),需要指定 LeaderElectionNamespace 参数
+[root@node-1 example]# go run main.go -leader-elect
+1.6703022001695514e+09  ERROR   setup   unable to start manager {"error": "unable to find leader election namespace: not running in-cluster, please specify LeaderElectionNamespace"}
+main.main
+        /root/example/main.go:90
+runtime.main
+        /usr/local/go/go1.19.3/src/runtime/proc.go:250
+exit status 1
+
+# 解决办法有两种：
+#   1.将Manager部署到集群中，在生产环境我们会使用这种方式
+#   2.修改Manager启动参数，添加 LeaderElectionNamespace参数，为了方便，使用这种方法测试
+
+
+# 修改main.go，然后重新测试
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		Port:                    9443,
+		HealthProbeBindAddress:  probeAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "683e8863.devops.io",
+		LeaderElectionNamespace: "default",     // 添加这一行
+
+# ------------------------------------------------------------------------------------------
+
+# 1.Manager1 先启动，它顺理成章的成了Leader,开始工作
+[root@node-1 example]# go run main.go -leader-elect
+1.6703025195201068e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.6703025195203595e+09  INFO    setup   starting manager
+1.6703025195214355e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6703025195215063e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+I1206 12:55:19.521593  109310 leaderelection.go:248] attempting to acquire leader lease default/683e8863.devops.io...
+I1206 12:55:36.286356  109310 leaderelection.go:258] successfully acquired lease default/683e8863.devops.io
+1.670302536286516e+09   DEBUG   events  node-1_2cf35bd4-6482-4c1c-8cba-e5c6e5c7cb47 became leader       {"type": "Normal", "object": {"kind":"Lease","namespace":"default","name":"683e8863.devops.io","uid":"4d1e1ffd-1db3-49bd-bc2e-eb92b718bf02","apiVersion":"coordination.k8s.io/v1","resourceVersion":"380155"}, "reason": "LeaderElection"}
+1.6703025362868667e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6703025362869081e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6703025363879519e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 100}
+2022-12-06 12:55:36
+2022-12-06 12:55:37
+2022-12-06 12:55:38
+2022-12-06 12:55:39
+2022-12-06 12:55:40
+
+# 2.Manager2 保持静默模式
+[root@node-1 example]# go run main.go -health-probe-bind-address ":8082" -metrics-bind-address ":8083" -leader-elect
+1.6703025215551794e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8083"}
+1.6703025215578227e+09  INFO    setup   starting manager
+1.670302521558717e+09   INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8083"}
+1.6703025215588038e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8082"}
+I1206 12:55:21.559406  109462 leaderelection.go:248] attempting to acquire leader lease default/683e8863.devops.io...
+
+# 3.将 Manager1 关掉
+2022-12-06 12:58:29
+2022-12-06 12:58:30
+^C1.670302711080575e+09 INFO    Stopping and waiting for non leader election runnables
+1.67030271108063e+09    INFO    Stopping and waiting for leader election runnables
+1.6703027110806446e+09  INFO    Shutdown signal received, waiting for all workers to finish     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.670302711080734e+09   INFO    All workers finished    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6703027110807533e+09  INFO    Stopping and waiting for caches
+1.6703027110808523e+09  INFO    Stopping and waiting for webhooks
+1.6703027110808756e+09  INFO    Wait completed, proceeding to shutdown the manager
+
+# 4.检查 Manager2会不会接替Leader继续工作
+[root@node-1 example]# go run main.go -health-probe-bind-address ":8082" -metrics-bind-address ":8083" -leader-elect
+1.6703025215551794e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8083"}
+1.6703025215578227e+09  INFO    setup   starting manager
+1.670302521558717e+09   INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8083"}
+1.6703025215588038e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8082"}
+I1206 12:55:21.559406  109462 leaderelection.go:248] attempting to acquire leader lease default/683e8863.devops.io...
+I1206 12:58:48.648045  109462 leaderelection.go:258] successfully acquired lease default/683e8863.devops.io
+1.6703027286481993e+09  DEBUG   events  node-1_c3b8dde5-14ee-4050-820a-f97cb1c8afbd became leader       {"type": "Normal", "object": {"kind":"Lease","namespace":"default","name":"683e8863.devops.io","uid":"4d1e1ffd-1db3-49bd-bc2e-eb92b718bf02","apiVersion":"coordination.k8s.io/v1","resourceVersion":"380571"}, "reason": "LeaderElection"}
+1.670302728648579e+09   INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.670302728648621e+09   INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6703027287503834e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 100}
+2022-12-06 12:58:48
+2022-12-06 12:58:49
+2022-12-06 12:58:50
+2022-12-06 12:58:51
+
+# 5.可以看到中间有一个延迟，这里就不深究了
+
+# 6.这时候再把 Manager1起起来，它应该保持静默模式
+[root@node-1 example]# go run main.go -leader-elect
+1.6703027963906808e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.6703027963910198e+09  INFO    setup   starting manager
+1.6703027963913834e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.670302796391423e+09   INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+I1206 12:59:56.391514  116906 leaderelection.go:248] attempting to acquire leader lease default/683e8863.devops.io...
+```
+
+:::
