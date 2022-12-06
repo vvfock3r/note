@@ -1459,7 +1459,7 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 :::
 
-::: details 2、测试一下是否按预期工作，后面我们就可以直接调用`go run main.go`来启动Manager
+::: details 2、测试一下是否按预期工作，后面我们就可以直接调用go run main.go来启动Manager
 
 ```bash
 [root@node-1 example]# make run
@@ -1644,3 +1644,161 @@ I1206 12:59:56.391514  116906 leaderelection.go:248] attempting to acquire leade
 ```
 
 :::
+
+#### NewManager
+
+```go
+// 可以看到NewManager接收两个参数，第一个参数是获取client-go中的*rest.Config，第二个参数是可选选项
+mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		Port:                    9443,
+		HealthProbeBindAddress:  probeAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionID:        "683e8863.devops.io",
+	})
+
+func GetConfigOrDie() *rest.Config {
+	config, err := GetConfig()
+	if err != nil {
+		log.Error(err, "unable to get kubeconfig")
+		os.Exit(1)
+	}
+	return config
+}
+
+// 再继续往下追发现配置文件获取顺序：
+// 1.命令行参数 -kubeconfig
+// 2.环境变量   KUBECONFIG
+// 3.in-cluster config
+// 4.判断$HOME是否存在(os.LookupEnv("HOME"),即使值为空也会返回true)，若存在则获取当前用户的 家目录/.kube/config 文件
+//   如果HOME变量不存在，那么会报错 go: module cache not found: neither GOMODCACHE nor GOPATH is set
+//   这个报错是go语言引起的，跟我们这里关系不大
+```
+
+看一下NewManager都做了什么
+
+::: details 点击查看详情
+
+```go
+func New(config *rest.Config, options Options) (Manager, error) {
+	// Set default values for options fields
+	// 1.设置默认参数
+	options = setOptionsDefaults(options)
+
+	// 2.创建一个cluster对象，cluster提供与K8S集群交互的各种方法
+	cluster, err := cluster.New(config, func(clusterOptions *cluster.Options) {
+		clusterOptions.Scheme = options.Scheme
+		clusterOptions.MapperProvider = options.MapperProvider
+		clusterOptions.Logger = options.Logger
+		clusterOptions.SyncPeriod = options.SyncPeriod // 这个参数值得关注，默认大约10小时会调用一次Reconcile
+		clusterOptions.Namespace = options.Namespace
+		clusterOptions.NewCache = options.NewCache
+		clusterOptions.NewClient = options.NewClient
+		clusterOptions.ClientDisableCacheFor = options.ClientDisableCacheFor
+		clusterOptions.DryRunClient = options.DryRunClient
+		clusterOptions.EventBroadcaster = options.EventBroadcaster //nolint:staticcheck
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 3.创建一个事件记录器 recorderProvider
+	// Create the recorder provider to inject event recorders for the components.
+	// TODO(directxman12): the log for the event provider should have a context (name, tags, etc) specific
+	// to the particular controller that it's being injected into, rather than a generic one like is here.
+	recorderProvider, err := options.newRecorderProvider(config, cluster.GetScheme(), options.Logger.WithName("events"), options.makeBroadcaster)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4.初始化选举配置 resourceLock
+	// Create the resource lock to enable leader election)
+	var leaderConfig *rest.Config
+	var leaderRecorderProvider *intrec.Provider
+
+	if options.LeaderElectionConfig == nil {
+		leaderConfig = rest.CopyConfig(config)
+		leaderRecorderProvider = recorderProvider
+	} else {
+		leaderConfig = rest.CopyConfig(options.LeaderElectionConfig)
+		leaderRecorderProvider, err = options.newRecorderProvider(leaderConfig, cluster.GetScheme(), options.Logger.WithName("events"), options.makeBroadcaster)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resourceLock, err := options.newResourceLock(leaderConfig, leaderRecorderProvider, leaderelection.Options{
+		LeaderElection:             options.LeaderElection,
+		LeaderElectionResourceLock: options.LeaderElectionResourceLock,
+		LeaderElectionID:           options.LeaderElectionID,
+		LeaderElectionNamespace:    options.LeaderElectionNamespace,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 5.创建metrics和健康检查listener
+	// Create the metrics listener. This will throw an error if the metrics bind
+	// address is invalid or already in use.
+	metricsListener, err := options.newMetricsListener(options.MetricsBindAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	// By default we have no extra endpoints to expose on metrics http server.
+	metricsExtraHandlers := make(map[string]http.Handler)
+
+	// Create health probes listener. This will throw an error if the bind
+	// address is invalid or already in use.
+	healthProbeListener, err := options.newHealthProbeListener(options.HealthProbeBindAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	// 6.创建一个runnables对象
+	errChan := make(chan error)
+	runnables := newRunnables(options.BaseContext, errChan)
+
+	return &controllerManager{
+		stopProcedureEngaged:          pointer.Int64(0),
+		cluster:                       cluster,
+		runnables:                     runnables,
+		errChan:                       errChan,
+		recorderProvider:              recorderProvider,
+		resourceLock:                  resourceLock,
+		metricsListener:               metricsListener,
+		metricsExtraHandlers:          metricsExtraHandlers,
+		controllerOptions:             options.Controller,
+		logger:                        options.Logger,
+		elected:                       make(chan struct{}),
+		port:                          options.Port,
+		host:                          options.Host,
+		certDir:                       options.CertDir,
+		webhookServer:                 options.WebhookServer,
+		leaseDuration:                 *options.LeaseDuration,
+		renewDeadline:                 *options.RenewDeadline,
+		retryPeriod:                   *options.RetryPeriod,
+		healthProbeListener:           healthProbeListener,
+		readinessEndpointName:         options.ReadinessEndpointName,
+		livenessEndpointName:          options.LivenessEndpointName,
+		gracefulShutdownTimeout:       *options.GracefulShutdownTimeout,
+		internalProceduresStop:        make(chan struct{}),
+		leaderElectionStopped:         make(chan struct{}),
+		leaderElectionReleaseOnCancel: options.LeaderElectionReleaseOnCancel,
+	}, nil
+}
+```
+
+:::
+
+分析：
+
+* 设置默认参数
+* 创建一个cluster对象，cluster提供与K8S集群交互的各种方法
+* 创建一个事件记录器 recorderProvider
+* 初始化选举配置
+* 创建metrics和健康检查listener
+* 创建一个runnables对象
+
+<br />
