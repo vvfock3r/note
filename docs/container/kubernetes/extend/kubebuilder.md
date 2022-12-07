@@ -1802,3 +1802,159 @@ func New(config *rest.Config, options Options) (Manager, error) {
 * 创建一个runnables对象
 
 <br />
+
+#### cluster.New
+
+::: details 点击查看详情
+
+```go
+func New(config *rest.Config, opts ...Option) (Cluster, error) {
+	// 1.kubeconfig 配置文件
+	if config == nil {
+		return nil, errors.New("must specify Config")
+	}
+
+	// 2.配置参数，这里使用到了 函数式选项模式
+	options := Options{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	// 3.未配置的参数设置默认参数
+	options = setOptionsDefaults(options)
+
+	// 4.创建 mapper provider，用于go类型映射到Kubernetes API
+	// Create the mapper provider
+	mapper, err := options.MapperProvider(config)
+	if err != nil {
+		options.Logger.Error(err, "Failed to get API Group-Resources")
+		return nil, err
+	}
+
+	// 5.创建 Cache 并注册到 informers, Cache的作用是为客户端读取提供缓存
+	// Create the cache for the cached read client and registering informers
+	cache, err := options.NewCache(config, cache.Options{Scheme: options.Scheme, Mapper: mapper, Resync: options.SyncPeriod, Namespace: options.Namespace})
+	if err != nil {
+		return nil, err
+	}
+
+	clientOptions := client.Options{Scheme: options.Scheme, Mapper: mapper}
+
+	// 5.创建一个Client，直接和API Server交互，这里仅用作从API Server读取数据，称为Reader。它应该还会写入缓存
+	apiReader, err := client.New(config, clientOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// 6.创建另一个Client，用于从缓存中读取数据，和写入数据到API Server
+	writeObj, err := options.NewClient(cache, config, clientOptions, options.ClientDisableCacheFor...)
+	if err != nil {
+		return nil, err
+	}
+
+	// 以上两个客户端就是读写分离，一个用于读取，一个用于写入
+
+	// 7.DryRun，并不真正执行，所以这时候会创建一个特定的客户端代替上面的 写客户端
+	if options.DryRunClient {
+		writeObj = client.NewDryRunClient(writeObj)
+	}
+
+	// 8.创建一个事件记录器
+	// Create the recorder provider to inject event recorders for the components.
+	// TODO(directxman12): the log for the event provider should have a context (name, tags, etc) specific
+	// to the particular controller that it's being injected into, rather than a generic one like is here.
+	recorderProvider, err := options.newRecorderProvider(config, options.Scheme, options.Logger.WithName("events"), options.makeBroadcaster)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cluster{
+		config:           config,
+		scheme:           options.Scheme,
+		cache:            cache,
+		fieldIndexes:     cache,
+		client:           writeObj,
+		apiReader:        apiReader,
+		recorderProvider: recorderProvider,
+		mapper:           mapper,
+		logger:           options.Logger,
+	}, nil
+}
+```
+
+:::
+
+分析：
+
+* 创建了两个客户端，用于针对API Server的读写分离
+* 创建Cache，并注册到 informers
+
+<br />
+
+#### runnables
+
+从字面意思上理解是**可运行对象**
+
+::: details 点击查看详情
+
+```go
+// 分为4个组
+type runnables struct {
+	Webhooks       *runnableGroup
+	Caches         *runnableGroup
+	LeaderElection *runnableGroup
+	Others         *runnableGroup
+}
+
+// 组定义
+type runnableGroup struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	start        sync.Mutex
+	startOnce    sync.Once
+	started      bool
+	startQueue   []*readyRunnable
+	startReadyCh chan *readyRunnable
+
+	stop     sync.RWMutex
+	stopOnce sync.Once
+	stopped  bool
+
+	// errChan is the error channel passed by the caller
+	// when the group is created.
+	// All errors are forwarded to this channel once they occur.
+	errChan chan error
+
+	// ch is the internal channel where the runnables are read off from.
+	ch chan *readyRunnable
+
+	// wg is an internal sync.WaitGroup that allows us to properly stop
+	// and wait for all the runnables to finish before returning.
+	wg *sync.WaitGroup
+}
+
+type readyRunnable struct {
+	Runnable
+	Check       runnableCheck
+	signalReady bool
+}
+
+// 接口定义
+type Runnable interface {
+	// Start starts running the component.  The component will stop running
+	// when the context is closed. Start blocks until the context is closed or
+	// an error occurs.
+	Start(context.Context) error
+}
+
+// runnableCheck can be passed to Add() to let the runnable group determine that a
+// runnable is ready. A runnable check should block until a runnable is ready,
+// if the returned result is false, the runnable is considered not ready and failed.
+type runnableCheck func(ctx context.Context) bool
+```
+
+:::
+
+
+
