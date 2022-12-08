@@ -2067,6 +2067,17 @@ func (blder *Builder) doController(r reconcile.Reconciler) error {
 	blder.ctrl, err = newController(controllerName, blder.mgr, ctrlOptions)
 	return err
 }
+
+// newController 将Controller添加到Runnable中
+func New(name string, mgr manager.Manager, options Options) (Controller, error) {
+	c, err := NewUnmanaged(name, mgr, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add the controller as a Manager components
+	return c, mgr.Add(c)
+}
 ```
 
 :::
