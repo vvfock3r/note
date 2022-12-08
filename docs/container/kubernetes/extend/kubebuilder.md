@@ -1898,7 +1898,7 @@ func New(config *rest.Config, opts ...Option) (Cluster, error) {
 ::: details 点击查看详情
 
 ```go
-// 分为4个组
+// runnables包含4个分组
 type runnables struct {
 	Webhooks       *runnableGroup
 	Caches         *runnableGroup
@@ -1955,6 +1955,258 @@ type runnableCheck func(ctx context.Context) bool
 ```
 
 :::
+
+<br />
+
+#### SetupWithManager
+
+::: details 点击查看详情
+
+```go
+// 将Manager传入一个叫做NewControllerManagedBy的函数中，最终调用 Complete
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Complete(r)
+}
+
+func ControllerManagedBy(m manager.Manager) *Builder {
+	return &Builder{mgr: m}
+}
+
+// Complete
+func (blder *Builder) Complete(r reconcile.Reconciler) error {
+	_, err := blder.Build(r)
+	return err
+}
+
+func (blder *Builder) Build(r reconcile.Reconciler) (controller.Controller, error) {
+	if r == nil {
+		return nil, fmt.Errorf("must provide a non-nil Reconciler")
+	}
+	if blder.mgr == nil {
+		return nil, fmt.Errorf("must provide a non-nil Manager")
+	}
+	if blder.forInput.err != nil {
+		return nil, blder.forInput.err
+	}
+	// Checking the reconcile type exist or not
+	if blder.forInput.object == nil {
+		return nil, fmt.Errorf("must provide an object for reconciliation")
+	}
+
+    // 这里是注册逻辑
+	// Set the ControllerManagedBy
+	if err := blder.doController(r); err != nil {
+		return nil, err
+	}
+
+    // 这里是Watch逻辑
+	// Set the Watch
+	if err := blder.doWatch(); err != nil {
+		return nil, err
+	}
+
+	return blder.ctrl, nil
+}
+
+
+func (blder *Builder) doController(r reconcile.Reconciler) error {
+	globalOpts := blder.mgr.GetControllerOptions()
+
+	ctrlOptions := blder.ctrlOptions
+	if ctrlOptions.Reconciler == nil {
+		ctrlOptions.Reconciler = r
+	}
+
+	// Retrieve the GVK from the object we're reconciling
+	// to prepopulate logger information, and to optionally generate a default name.
+	gvk, err := getGvk(blder.forInput.object, blder.mgr.GetScheme())
+	if err != nil {
+		return err
+	}
+
+	// Setup concurrency.
+	if ctrlOptions.MaxConcurrentReconciles == 0 {
+		groupKind := gvk.GroupKind().String()
+
+		if concurrency, ok := globalOpts.GroupKindConcurrency[groupKind]; ok && concurrency > 0 {
+			ctrlOptions.MaxConcurrentReconciles = concurrency
+		}
+	}
+
+	// Setup cache sync timeout.
+	if ctrlOptions.CacheSyncTimeout == 0 && globalOpts.CacheSyncTimeout != nil {
+		ctrlOptions.CacheSyncTimeout = *globalOpts.CacheSyncTimeout
+	}
+
+	controllerName := blder.getControllerName(gvk)
+
+	// Setup the logger.
+	if ctrlOptions.LogConstructor == nil {
+		log := blder.mgr.GetLogger().WithValues(
+			"controller", controllerName,
+			"controllerGroup", gvk.Group,
+			"controllerKind", gvk.Kind,
+		)
+
+		ctrlOptions.LogConstructor = func(req *reconcile.Request) logr.Logger {
+			log := log
+			if req != nil {
+				log = log.WithValues(
+					gvk.Kind, klog.KRef(req.Namespace, req.Name),
+					"namespace", req.Namespace, "name", req.Name,
+				)
+			}
+			return log
+		}
+	}
+
+    // 创建Controller，挂载Builder结构体的ctrl字段上
+	// Build the controller and return.
+	blder.ctrl, err = newController(controllerName, blder.mgr, ctrlOptions)
+	return err
+}
+```
+
+:::
+
+<br />
+
+#### Manager.Start
+
+::: details 点击查看详情
+
+```go
+func (cm *controllerManager) Start(ctx context.Context) (err error) {
+	// 1.为啥要加锁呢?
+	cm.Lock()
+	if cm.started {
+		cm.Unlock()
+		return errors.New("manager already started")
+	}
+	var ready bool
+	defer func() {
+		// Only unlock the manager if we haven't reached
+		// the internal readiness condition.
+		if !ready {
+			cm.Unlock()
+		}
+	}()
+
+	// Initialize the internal context.
+	cm.internalCtx, cm.internalCancel = context.WithCancel(ctx)
+
+	// 2.同于通知关闭完成的channel
+	// This chan indicates that stop is complete, in other words all runnables have returned or timeout on stop request
+	stopComplete := make(chan struct{})
+	defer close(stopComplete)
+	// This must be deferred after closing stopComplete, otherwise we deadlock.
+	defer func() {
+		// https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/gettyimages-459889618-1533579787.jpg
+		stopErr := cm.engageStopProcedure(stopComplete)
+		if stopErr != nil {
+			if err != nil {
+				// Utilerrors.Aggregate allows to use errors.Is for all contained errors
+				// whereas fmt.Errorf allows wrapping at most one error which means the
+				// other one can not be found anymore.
+				err = kerrors.NewAggregate([]error{err, stopErr})
+			} else {
+				err = stopErr
+			}
+		}
+	}()
+
+	// 3.将cluster作为runnable对象添加到Manager中，添加到哪个分组里去了？
+	// Add the cluster runnable.
+	if err := cm.add(cm.cluster); err != nil {
+		return fmt.Errorf("failed to add cluster to runnables: %w", err)
+	}
+
+	// 4.使用Goroutine启动Metrics Server
+	// Metrics should be served whether the controller is leader or not.
+	// (If we don't serve metrics for non-leaders, prometheus will still scrape
+	// the pod but will get a connection refused).
+	if cm.metricsListener != nil {
+		cm.serveMetrics()
+	}
+
+	// 5.使用Goroutine启动健康检查Server
+	// Serve health probes.
+	if cm.healthProbeListener != nil {
+		cm.serveHealthProbes()
+	}
+
+	// 6.启动Webhook
+	// First start any webhook servers, which includes conversion, validation, and defaulting
+	// webhooks that are registered.
+	//
+	// WARNING: Webhooks MUST start before any cache is populated, otherwise there is a race condition
+	// between conversion webhooks and the cache sync (usually initial list) which causes the webhooks
+	// to never start because no cache can be populated.
+	if err := cm.runnables.Webhooks.Start(cm.internalCtx); err != nil {
+		if !errors.Is(err, wait.ErrWaitTimeout) {
+			return err
+		}
+	}
+
+	// 7.启动Cache
+	// Start and wait for caches.
+	if err := cm.runnables.Caches.Start(cm.internalCtx); err != nil {
+		if !errors.Is(err, wait.ErrWaitTimeout) {
+			return err
+		}
+	}
+
+	// 8.启动该其他
+	// Start the non-leaderelection Runnables after the cache has synced.
+	if err := cm.runnables.Others.Start(cm.internalCtx); err != nil {
+		if !errors.Is(err, wait.ErrWaitTimeout) {
+			return err
+		}
+	}
+
+	// 9.选举相关
+	// Start the leader election and all required runnables.
+	{
+		ctx, cancel := context.WithCancel(context.Background())
+		cm.leaderElectionCancel = cancel
+		go func() {
+			if cm.resourceLock != nil {
+				if err := cm.startLeaderElection(ctx); err != nil {
+					cm.errChan <- err
+				}
+			} else {
+				// Treat not having leader election enabled the same as being elected.
+				if err := cm.startLeaderElectionRunnables(); err != nil {
+					cm.errChan <- err
+				}
+				close(cm.elected)
+			}
+		}()
+	}
+
+	// 10.开启循环，监听 SIGTERM 和 SIGINT 信号，和Manager错误，任意一个触发就退出
+	ready = true
+	cm.Unlock()
+	select {
+	case <-ctx.Done():
+		// We are done
+		return nil
+	case err := <-cm.errChan:
+		// Error starting or running a runnable
+		return err
+	}
+}
+```
+
+:::
+
+<br />
+
+### 问题探究
+
+#### Reconcile函数是如何触发的？
 
 
 
