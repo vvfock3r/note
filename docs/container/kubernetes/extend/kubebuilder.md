@@ -2219,5 +2219,204 @@ func (cm *controllerManager) Start(ctx context.Context) (err error) {
 
 #### Reconcile函数是如何触发的？
 
+::: details （1）从Controller启动开始便会一直从队列中获取
 
+（我们自己的Controller）`Complete` -->  `Build` --> `doController` --> `newController` --> `NewUnmanaged` --> `controller.Controller` --> `(c *Controller) Start` --> `for c.processNextWorkItem(ctx) {}` -->
+
+```go
+// 不断的从队列中获取，然后执行 c.reconcileHandler(ctx, obj)
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
+	obj, shutdown := c.Queue.Get()
+	if shutdown {
+		// Stop working
+		return false
+	}
+
+	// We call Done here so the workqueue knows we have finished
+	// processing this item. We also must remember to call Forget if we
+	// do not want this work item being re-queued. For example, we do
+	// not call Forget if a transient error occurs, instead the item is
+	// put back on the workqueue and attempted again after a back-off
+	// period.
+	defer c.Queue.Done(obj)
+
+	ctrlmetrics.ActiveWorkers.WithLabelValues(c.Name).Add(1)
+	defer ctrlmetrics.ActiveWorkers.WithLabelValues(c.Name).Add(-1)
+
+	c.reconcileHandler(ctx, obj)
+	return true
+}
+
+// c.Reconcile 去调用我们的Reconcile，然后根据结果判断是否需要重试，
+// 需要注意的是若err != nil 或 只设置了Requeue的话，会使用限流策略，而使用RequeueAfter则不会限流
+func (c *Controller) reconcileHandler(ctx context.Context, obj interface{}) {
+	// Update metrics after processing each item
+	reconcileStartTS := time.Now()
+	defer func() {
+		c.updateMetrics(time.Since(reconcileStartTS))
+	}()
+
+	// Make sure that the object is a valid request.
+	req, ok := obj.(reconcile.Request)
+	if !ok {
+		// As the item in the workqueue is actually invalid, we call
+		// Forget here else we'd go into a loop of attempting to
+		// process a work item that is invalid.
+		c.Queue.Forget(obj)
+		c.LogConstructor(nil).Error(nil, "Queue item was not a Request", "type", fmt.Sprintf("%T", obj), "value", obj)
+		// Return true, don't take a break
+		return
+	}
+
+	log := c.LogConstructor(&req)
+
+	log = log.WithValues("reconcileID", uuid.NewUUID())
+	ctx = logf.IntoContext(ctx, log)
+
+	// RunInformersAndControllers the syncHandler, passing it the Namespace/Name string of the
+	// resource to be synced.
+	result, err := c.Reconcile(ctx, req)
+	switch {
+	case err != nil:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileErrors.WithLabelValues(c.Name).Inc()
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelError).Inc()
+		log.Error(err, "Reconciler error")
+	case result.RequeueAfter > 0:
+		// The result.RequeueAfter request will be lost, if it is returned
+		// along with a non-nil error. But this is intended as
+		// We need to drive to stable reconcile loops before queuing due
+		// to result.RequestAfter
+		c.Queue.Forget(obj)
+		c.Queue.AddAfter(req, result.RequeueAfter)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeueAfter).Inc()
+	case result.Requeue:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeue).Inc()
+	default:
+		// Finally, if no error occurs we Forget this item so it does not
+		// get queued again until another change happens.
+		c.Queue.Forget(obj)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelSuccess).Inc()
+	}
+}
+```
+
+:::
+
+::: details （2）队列是谁添加的？：For、Watches、Owns
+
+```go
+func (blder *Builder) doWatch() error {
+    // 1.For
+	// Reconcile type
+	typeForSrc, err := blder.project(blder.forInput.object, blder.forInput.objectProjection)
+	if err != nil {
+		return err
+	}
+	src := &source.Kind{Type: typeForSrc}
+	hdler := &handler.EnqueueRequestForObject{}
+	allPredicates := append(blder.globalPredicates, blder.forInput.predicates...)
+	if err := blder.ctrl.Watch(src, hdler, allPredicates...); err != nil {
+		return err
+	}
+
+    // 2.Owns
+	// Watches the managed types
+	for _, own := range blder.ownsInput {
+		typeForSrc, err := blder.project(own.object, own.objectProjection)
+		if err != nil {
+			return err
+		}
+		src := &source.Kind{Type: typeForSrc}
+		hdler := &handler.EnqueueRequestForOwner{
+			OwnerType:    blder.forInput.object,
+			IsController: true,
+		}
+		allPredicates := append([]predicate.Predicate(nil), blder.globalPredicates...)
+		allPredicates = append(allPredicates, own.predicates...)
+		if err := blder.ctrl.Watch(src, hdler, allPredicates...); err != nil {
+			return err
+		}
+	}
+
+    // 3.Watches
+	// Do the watch requests
+	for _, w := range blder.watchesInput {
+		allPredicates := append([]predicate.Predicate(nil), blder.globalPredicates...)
+		allPredicates = append(allPredicates, w.predicates...)
+
+		// If the source of this watch is of type *source.Kind, project it.
+		if srckind, ok := w.src.(*source.Kind); ok {
+			typeForSrc, err := blder.project(srckind.Type, w.objectProjection)
+			if err != nil {
+				return err
+			}
+			srckind.Type = typeForSrc
+		}
+
+		if err := blder.ctrl.Watch(w.src, w.eventhandler, allPredicates...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Predicate用于事件过滤
+// Predicate filters events before enqueuing the keys.
+type Predicate interface {
+	// Create returns true if the Create event should be processed
+	Create(event.CreateEvent) bool
+
+	// Delete returns true if the Delete event should be processed
+	Delete(event.DeleteEvent) bool
+
+	// Update returns true if the Update event should be processed
+	Update(event.UpdateEvent) bool
+
+	// Generic returns true if the Generic event should be processed
+	Generic(event.GenericEvent) bool
+}
+```
+
+:::
+
+::: details （3）缓存同步：默认为10小时
+
+```go
+// Cache.New里面的默认参数中
+
+var defaultResyncTime = 10 * time.Hour
+
+func defaultOpts(config *rest.Config, opts Options) (Options, error) {
+	// Use the default Kubernetes Scheme if unset
+	if opts.Scheme == nil {
+		opts.Scheme = scheme.Scheme
+	}
+
+	// Construct a new Mapper if unset
+	if opts.Mapper == nil {
+		var err error
+		opts.Mapper, err = apiutil.NewDiscoveryRESTMapper(config)
+		if err != nil {
+			log.WithName("setup").Error(err, "Failed to get API Group-Resources")
+			return opts, fmt.Errorf("could not create RESTMapper from config")
+		}
+	}
+
+	// Default the resync period to 10 hours if unset
+	if opts.Resync == nil {
+		opts.Resync = &defaultResyncTime
+	}
+	return opts, nil
+}
+```
+
+:::
+
+总结：
+
+* Controller通过For、Watches、Owns添加要监控的资源，若有变更事件（Create/Delete/Update/Generic）会通过Event进行过滤，然后添加到队列中
+* Controller会一直从队列中取，然后触发Reconcile
+* Cache会定时同步（10小时），从而也会触发Reconcile
 
