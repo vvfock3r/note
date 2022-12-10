@@ -2217,7 +2217,7 @@ func (cm *controllerManager) Start(ctx context.Context) (err error) {
 
 ### 问题探究
 
-#### Reconcile函数是如何触发的？
+#### Reconcile函数是如何触发的
 
 ::: details （1）从Controller启动开始便会一直从队列中获取
 
@@ -2419,4 +2419,174 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 * Controller通过For、Watches、Owns添加要监控的资源，若有变更事件（Create/Delete/Update/Generic）会通过Event进行过滤，然后添加到队列中
 * Controller会一直从队列中取，然后触发Reconcile
 * Cache会定时同步（10小时），从而也会触发Reconcile
+
+<br />
+
+#### Reconcile函数的限流行为
+
+::: details （1）先看一下效果
+
+```go
+// 测试1代码部分
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = log.FromContext(ctx)
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+	time.Sleep(time.Second)
+	return ctrl.Result{Requeue: true}, nil
+}
+
+// 测试1效果：间隔时长会变得越来越大
+2022-12-10 18:54:27
+2022-12-10 18:54:28
+2022-12-10 18:54:29
+2022-12-10 18:54:30
+2022-12-10 18:54:31
+2022-12-10 18:54:32
+2022-12-10 18:54:33
+2022-12-10 18:54:34
+2022-12-10 18:54:36
+2022-12-10 18:54:38
+2022-12-10 18:54:42
+2022-12-10 18:54:48
+2022-12-10 18:54:59
+2022-12-10 18:55:21
+2022-12-10 18:56:03
+
+// 测试2代码部分
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = log.FromContext(ctx)
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+	return ctrl.Result{RequeueAfter: time.Second}, nil
+}
+
+// 测试2效果：符合预期
+2022-12-10 18:56:45
+2022-12-10 18:56:46
+2022-12-10 18:56:47
+2022-12-10 18:56:48
+2022-12-10 18:56:49
+2022-12-10 18:56:50
+2022-12-10 18:56:51
+2022-12-10 18:56:52
+2022-12-10 18:56:53
+2022-12-10 18:56:54
+2022-12-10 18:56:55
+2022-12-10 18:56:56
+2022-12-10 18:56:57
+2022-12-10 18:56:58
+2022-12-10 18:56:59
+2022-12-10 18:57:00
+2022-12-10 18:57:01
+2022-12-10 18:57:02
+2022-12-10 18:57:03
+2022-12-10 18:57:04
+2022-12-10 18:57:05
+2022-12-10 18:57:06
+2022-12-10 18:57:07
+2022-12-10 18:57:08
+2022-12-10 18:57:09
+2022-12-10 18:57:10
+2022-12-10 18:57:11
+2022-12-10 18:57:12
+2022-12-10 18:57:13
+```
+
+:::
+
+::: details （2）对返回值的处理
+
+```go
+// 关键在于对部分返回值加入了限流策略
+func (c *Controller) reconcileHandler(ctx context.Context, obj interface{}) {
+	// Update metrics after processing each item
+	reconcileStartTS := time.Now()
+	defer func() {
+		c.updateMetrics(time.Since(reconcileStartTS))
+	}()
+
+	// Make sure that the object is a valid request.
+	req, ok := obj.(reconcile.Request)
+	if !ok {
+		// As the item in the workqueue is actually invalid, we call
+		// Forget here else we'd go into a loop of attempting to
+		// process a work item that is invalid.
+		c.Queue.Forget(obj)
+		c.LogConstructor(nil).Error(nil, "Queue item was not a Request", "type", fmt.Sprintf("%T", obj), "value", obj)
+		// Return true, don't take a break
+		return
+	}
+
+	log := c.LogConstructor(&req)
+
+	log = log.WithValues("reconcileID", uuid.NewUUID())
+	ctx = logf.IntoContext(ctx, log)
+
+	// RunInformersAndControllers the syncHandler, passing it the Namespace/Name string of the
+	// resource to be synced.
+	result, err := c.Reconcile(ctx, req)
+	switch {
+	case err != nil:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileErrors.WithLabelValues(c.Name).Inc()
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelError).Inc()
+		log.Error(err, "Reconciler error")
+	case result.RequeueAfter > 0:
+		// The result.RequeueAfter request will be lost, if it is returned
+		// along with a non-nil error. But this is intended as
+		// We need to drive to stable reconcile loops before queuing due
+		// to result.RequestAfter
+		c.Queue.Forget(obj)
+		c.Queue.AddAfter(req, result.RequeueAfter)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeueAfter).Inc()
+	case result.Requeue:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeue).Inc()
+	default:
+		// Finally, if no error occurs we Forget this item so it does not
+		// get queued again until another change happens.
+		c.Queue.Forget(obj)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelSuccess).Inc()
+	}
+}
+
+// 看一下默认的限流策略
+// DefaultControllerRateLimiter is a no-arg constructor for a default rate limiter for a workqueue.  It has
+// both overall and per-item rate limiting.  The overall is a token bucket and the per-item is exponential
+func DefaultControllerRateLimiter() RateLimiter {
+	return NewMaxOfRateLimiter(
+		NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+		&BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(10), 100)},
+	)
+}
+```
+
+:::
+
+<br />
+
+## 4.实战
+
+### 1）Deployment过期置零
+
+**（1）初始化**
+
+```bash
+# 项目初始化
+[root@node-1 ~]# mkdir crd-zero && cd crd-zero
+[root@node-1 crd-zero]# kubebuilder init --domain devops.io --repo github.com/vvfock3r/crd-zero
+
+# 创建API，不区分命名空间
+[root@node-1 crd-zero]# kubebuilder create api --group crd --version v1beta1 --kind Zero --namespaced=false
+```
+
+**（2）定义types文件**
+
+```yaml
+```
+
+**（3）编写Controller**
+
+```go
+```
 
