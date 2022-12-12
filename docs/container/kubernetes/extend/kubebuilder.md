@@ -2565,6 +2565,72 @@ func DefaultControllerRateLimiter() RateLimiter {
 
 <br />
 
+#### result.RequeueAfter 请求丢失问题
+
+::: details 点击查看详情
+
+```go
+// Controller代码
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = log.FromContext(ctx)
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+
+	return ctrl.Result{RequeueAfter: time.Minute}, nil
+}
+
+// 启动Controller
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.6708233638217475e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.67082336382204e+09    INFO    setup   starting manager
+1.6708233638229964e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6708233638231144e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6708233638235025e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.670823363823529e+09   INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.670823363927608e+09   INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 1}
+2022-12-12 13:36:03
+2022-12-12 13:36:08  // 这里对config/samples/crd_v1beta1_mykind.yaml做了一次修改,然后kubectl apply -f xx.yaml
+2022-12-12 13:37:03
+2022-12-12 13:38:03
+
+// 上面可以看到，08秒做的修改触发了Reconcile，但是后面就不会再触发，也就是请求丢了
+// 原因还是在于限流队列中
+	result, err := c.Reconcile(ctx, req)
+	switch {
+	case err != nil:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileErrors.WithLabelValues(c.Name).Inc()
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelError).Inc()
+		log.Error(err, "Reconciler error")
+	case result.RequeueAfter > 0:
+        // 请求会丢失
+		// The result.RequeueAfter request will be lost, if it is returned
+		// along with a non-nil error. But this is intended as
+		// We need to drive to stable reconcile loops before queuing due
+		// to result.RequestAfter
+		c.Queue.Forget(obj)
+		c.Queue.AddAfter(req, result.RequeueAfter)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeueAfter).Inc()
+	case result.Requeue:
+		c.Queue.AddRateLimited(req)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelRequeue).Inc()
+	default:
+		// Finally, if no error occurs we Forget this item so it does not
+		// get queued again until another change happens.
+		c.Queue.Forget(obj)
+		ctrlmetrics.ReconcileTotal.WithLabelValues(c.Name, labelSuccess).Inc()
+	}
+```
+
+:::
+
+<br />
+
 ## 4.实战
 
 ### 1）Deployment过期置零
