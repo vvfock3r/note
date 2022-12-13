@@ -1101,7 +1101,7 @@ go run ./main.go
 
 <br />
 
-### 3）// +kubebuilder
+### 3）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
