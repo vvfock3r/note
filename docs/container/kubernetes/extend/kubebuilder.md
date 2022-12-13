@@ -2635,7 +2635,7 @@ go run ./main.go
 
 ### 1）Deployment过期置零
 
-**（1）初始化**
+::: details （1）初始化
 
 ```bash
 # 项目初始化
@@ -2646,13 +2646,298 @@ go run ./main.go
 [root@node-1 crd-zero]# kubebuilder create api --group crd --version v1beta1 --kind Zero --namespaced=false
 ```
 
-**（2）定义types文件**
+:::
+
+::: details （2）定义types文件
 
 ```yaml
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1beta1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// ZeroSpec defines the desired state of Zero
+type ZeroSpec struct {
+}
+
+// +kubebuilder:validation:Enum=Running;HasError;UnKnown
+type Status string
+
+const (
+	Running  Status = "Running"
+	HasError Status = "HasError"
+)
+
+// ZeroStatus defines the observed state of Zero
+type ZeroStatus struct {
+	Status           Status `json:"status,omitempty"`
+	Watched          string `json:"watched,omitempty"`
+	Expired          string `json:"expired,omitempty"`
+	NextScheduleTime string `json:"nextScheduleTime,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster
+//+kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.status",priority=0
+//+kubebuilder:printcolumn:name="WATCHED",type="string",JSONPath=".status.watched",priority=0
+//+kubebuilder:printcolumn:name="EXPIRED",type="string",JSONPath=".status.expired",priority=0
+//+kubebuilder:printcolumn:name="NEXTSCHEDULE",type="string",JSONPath=".status.nextScheduleTime",priority=0
+//+kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp",priority=0
+
+// Zero is the Schema for the zeroes API
+type Zero struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ZeroSpec   `json:"spec,omitempty"`
+	Status ZeroStatus `json:"status,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+
+// ZeroList contains a list of Zero
+type ZeroList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Zero `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&Zero{}, &ZeroList{})
+}
 ```
 
-**（3）编写Controller**
+:::
+
+::: details （3）编写Controller
 
 ```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sort"
+	"strconv"
+	"time"
+
+	crdv1beta1 "github.com/vvfock3r/crd-zero/api/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
+)
+
+const (
+	LabelDateTime       = "2006-01-02-15-04-05"
+	HumanDateTime       = "2006-01-02 15:04:05"
+	DefaultRequeueAfter = time.Second * 5
+)
+
+// ZeroReconciler reconciles a Zero object
+type ZeroReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=zeroes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=zeroes/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=zeroes/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the Zero object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+func (r *ZeroReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 初始化日志
+	logger := log.FromContext(ctx)
+
+	// 获取 CR
+	var zero crdv1beta1.Zero
+	if err := r.Get(ctx, req.NamespacedName, &zero); err != nil {
+		logger.Error(err, "not found cr resource for <Kind: Zero>")
+		return ctrl.Result{RequeueAfter: DefaultRequeueAfter}, nil
+	}
+
+	// 设置初始状态
+	zero.Status = crdv1beta1.ZeroStatus{
+		Status:           crdv1beta1.Running,
+		Watched:          "0/0",
+		Expired:          "0/0",
+		NextScheduleTime: "",
+	}
+
+	// 获取所有符合要求的 deployment
+	var deploymentList appsv1.DeploymentList
+	hasLabels := []string{"devops-create", "devops-expire"}
+	if err := r.List(ctx, &deploymentList, client.HasLabels(hasLabels)); err != nil {
+		r.UpdateStatus(ctx, &zero)
+		logger.Info("no deployment matches")
+		return ctrl.Result{RequeueAfter: DefaultRequeueAfter}, nil
+	}
+
+	// 对标签值做一次校验，并对deployment进行分类
+	//   expireItems  已过期的，可能已经被调度也可能未被调度
+	//   readyItems   未过期的，已经准备好被调度
+	var expireItems []appsv1.Deployment
+	var readyItems []appsv1.Deployment
+	for _, item := range deploymentList.Items {
+		// 获取标签值
+		createdString, _ := item.Labels["devops-create"]
+		expireString, _ := item.Labels["devops-expire"]
+
+		// 对标签值格式进行校验
+		created, err := time.ParseInLocation(LabelDateTime, createdString, time.Local)
+		if err != nil {
+			zero.Status.Status = crdv1beta1.HasError
+			logger.Error(err, "label value format error: "+item.Namespace+"/"+item.Name)
+			continue
+		}
+		expire, err := time.ParseDuration(expireString)
+		if err != nil {
+			zero.Status.Status = crdv1beta1.HasError
+			logger.Error(err, "label value format error: "+item.Namespace+"/"+item.Name)
+			continue
+		}
+
+		// 校验通过，进行分类
+		if time.Now().After(created.Add(expire)) {
+			expireItems = append(expireItems, item)
+		} else {
+			item.Labels["devops-nextSchedule"] = created.Add(expire).Format(HumanDateTime) // 临时标签
+			readyItems = append(readyItems, item)
+		}
+	}
+
+	// 排序,按照到期时间从近到远
+	sort.Slice(readyItems, func(i, j int) bool {
+		ti, _ := time.ParseInLocation(HumanDateTime, readyItems[i].Labels["devops-nextSchedule"], time.Local)
+		tj, _ := time.ParseInLocation(HumanDateTime, readyItems[j].Labels["devops-nextSchedule"], time.Local)
+		return ti.After(tj)
+	})
+
+	// Deployment副本数置零
+	var expireDone int
+	for _, item := range expireItems {
+		// 若已置零则跳过
+		if *item.Spec.Replicas <= 0 {
+			expireDone += 1
+			continue
+		}
+		// 置零
+		item.Spec.Replicas = new(int32)
+		err := r.Update(ctx, &item)
+		if err != nil {
+			zero.Status.Status = crdv1beta1.HasError
+			logger.Error(err, "set replicas to zero failed: "+item.Namespace+"/"+item.Name)
+		} else {
+			expireDone += 1
+			logger.Info("set replicas to zero success: " + item.Namespace + "/" + item.Name)
+		}
+	}
+
+	// 设置状态
+	{
+		// 设置状态: Watched
+		valid := strconv.Itoa(len(readyItems) + len(expireItems))
+		total := strconv.Itoa(len(deploymentList.Items))
+		zero.Status.Watched = valid + "/" + total
+
+		// 设置状态: Expired
+		zero.Status.Expired = strconv.Itoa(expireDone) + "/" + strconv.Itoa(len(expireItems))
+
+		// 设置状态: NextScheduleTime
+		if len(readyItems) > 0 {
+			zero.Status.NextScheduleTime = readyItems[0].Labels["devops-nextSchedule"]
+		}
+
+		// 更新状态
+		r.UpdateStatus(ctx, &zero)
+	}
+
+	return ctrl.Result{RequeueAfter: DefaultRequeueAfter}, nil
+}
+
+func (r *ZeroReconciler) UpdateStatus(ctx context.Context, zero *crdv1beta1.Zero) {
+	logger := log.FromContext(ctx)
+	err := r.Status().Update(ctx, zero)
+	if err != nil {
+		logger.Error(err, "update status error")
+	}
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ZeroReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.Zero{}).
+		// 监控 Deployment
+        // 这里不能监控Deployment，否则遇到Deployment事件，上面的CR就获取不到了，所以也就导致不能使用Watch方式来进行调度
+		//Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
+		Complete(r)
+}
 ```
 
+:::
+
+::: details （4）验证
+
+```bash
+# 部署Deployment
+  labels:
+      devops-expire: "1h"
+      devops-create: "2022-12-13-17-03-00"
+
+# 查看
+[root@node-1 ~]# kubectl get zero
+NAME       STATUS    WATCHED   EXPIRED   NEXTSCHEDULE          AGE
+zero-pro   Running   2/2       1/1       2022-12-13 18:03:00   88s
+
+# 再次查看
+[root@node-1 ~]# kubectl get zero
+NAME       STATUS    WATCHED   EXPIRED   NEXTSCHEDULE   AGE
+zero-pro   Running   2/2       2/2                      9m4s
+```
+
+:::
