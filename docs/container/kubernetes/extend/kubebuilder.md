@@ -1170,7 +1170,35 @@ Events:
 
 <br />
 
-### 4）+kubebuilder
+### 4）监听其他资源
+
+::: details 1、默认生成的代码只会监听CR资源
+
+```go
+// 关键点在于下面的For
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Complete(r)
+}
+
+// 查看For源码的注释，发现 
+// For(&crdv1beta1.MyKind{}) 等同于 Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
+```
+
+:::
+
+::: details 2、Watches函数参数
+
+```go
+
+```
+
+:::
+
+<br />
+
+### 5）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
