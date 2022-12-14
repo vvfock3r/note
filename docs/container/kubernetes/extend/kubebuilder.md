@@ -561,7 +561,7 @@ I1202 03:20:53.897282       1 leaderelection.go:258] successfully acquired lease
 
 ## 2.基础调试
 
-### 1）Controller
+### 1）Reconcile
 
 **Controller的作用**
 
@@ -816,7 +816,7 @@ kube-system Pods:
 
 <br />
 
-### 2）types
+### 2）Types
 
 参考资料：[https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659](https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659)
 
@@ -1101,7 +1101,76 @@ go run ./main.go
 
 <br />
 
-### 3）+kubebuilder
+### 3）EventRecorder
+
+EventRecorder可以添加事件记录，就像下面这样
+
+![image-20221214192132247](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221214192132247.png)
+
+::: details 点击查看详情
+
+```go
+// 1.导入包
+import (
+    "k8s.io/client-go/tools/record"
+    corev1 "k8s.io/api/core/v1"
+)
+
+// 2.添加一个字段
+type MyKindReconciler struct {
+	client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder // 添加一个字段
+}
+
+// 3.Reconcile函数记录日志
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 记录一条正常类型的事件日志
+	r.Recorder.Event(&mykind, corev1.EventTypeNormal, "reason", "message")
+
+	// 休眠1秒
+	time.Sleep(time.Second)
+
+	// 记录一条错误类型的事件日志
+	r.Recorder.Event(&mykind, corev1.EventTypeWarning, "reason2", "message2")
+
+	return ctrl.Result{}, nil
+}
+
+// 4.Recorder还没有具体的实现，需要修改main.go
+	if err = (&controllers.MyKindReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("example"),    // 添加这行
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MyKind")
+		os.Exit(1)
+	}
+```
+
+输出结果
+
+```bash
+# 查看效果,可以看到最新的事件在最下面
+[root@node-1 example]# kubectl describe mykind mykind-sample | sed -n '/Events:/, $'p
+Events:
+  Type     Reason   Age   From     Message
+  ----     ------   ----  ----     -------
+  Normal   reason   6s    example  message
+  Warning  reason2  5s    example  message2
+```
+
+:::
+
+<br />
+
+### 4）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
@@ -2635,6 +2704,8 @@ go run ./main.go
 
 ### 1）Deployment过期置零
 
+**方案一：通过一个全局的Controller来控制所有的Deployment**
+
 ::: details （1）初始化
 
 ```bash
@@ -2941,3 +3012,8 @@ zero-pro   Running   2/2       2/2                      9m4s
 ```
 
 :::
+
+<br />
+
+**方案二：手动创建一个ExpireReplicaSet资源，用于控制指定的Deployment**
+
