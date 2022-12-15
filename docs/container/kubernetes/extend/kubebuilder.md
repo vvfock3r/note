@@ -1419,8 +1419,7 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// 创建一个Deployment
-	replicas := int32(1)
+	// 创建一个Deployment	
 	deploy := appsv1.Deployment{
 		// deployment metadata
 		ObjectMeta: metav1.ObjectMeta{
@@ -1432,7 +1431,7 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		},
 		// deployment spec
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
+			Replicas: func() *int32 { r := int32(1); return &r }(),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": "k8s"},
 			},
@@ -1538,7 +1537,9 @@ mykind-deployment   0/1     1            0           10s
 
 ### 6）监听其他资源
 
-::: details 默认生成的代码只会监听CR资源
+按照正规的思路，一个Controller应该只需要监控一种资源，即监控CR本身自己。但是也支持监视其他资源，比如Pod、Deployment等
+
+::: details 默认生成的代码只会监视CR资源
 
 ```go
 // 关键点在于下面的For
@@ -1564,17 +1565,17 @@ func (blder *Builder) Watches(src source.Source, eventhandler handler.EventHandl
 // 参数
 //   source                       事件源，比如要监控Deployment，可以写做&source.Kind{Type: &appsv1.Deployment{}}
 //   EventHandler                 事件入队处理，支持三种方式：
-//     EnqueueRequestForObject    资源变动时将资源key加入workqueue
-//     EnqueueRequestForOwner     资源变动时将资源owner的key加入workqueue
-//     EnqueueRequestsFromMapFunc 定义一个关联函数，资源变动时生成一组reconcile.Request
+//     EnqueueRequestForObject    资源变动时将资源<Namespace/Name>加入workqueue
+//     EnqueueRequestForOwner     资源变动时将资源ownerReference的<Namespace/Name>加入workqueue
+//     EnqueueRequestsFromMapFunc 定义一个关联函数，资源变动时生成一组Reconcile.Request
 ```
 
 :::
 
-::: details EnqueueRequestForObject：资源变动时将资源key加入workqueue
+::: details EnqueueRequestForObject：资源变动时将资源<Namespace/Name>加入workqueue
 
 ```go
-
+// 这个最容易理解，哪个资源变动，就将资源的<Namespace/Name>作为req传递到Reconcile中
 ```
 
 :::
