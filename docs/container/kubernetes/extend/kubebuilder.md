@@ -1503,7 +1503,7 @@ mykind-deployment   0/1     1            0           6m6s
 
 :::
 
-::: details （2）监控Deployment发生变化
+::: details （3）监控Deployment发生变化
 
 若Deployment发生变化，此时我们的Reconcile是感知不到的，这不太符合我们的预期
 
@@ -1532,6 +1532,28 @@ mykind-deployment   0/1     1            0           10s
 ```
 
 :::
+
+注意事项：
+
+* 设置了`.metadata.ownerReferences`的资源必须和其指定的"父级"资源属于同一个命名空间，否则就会出现逻辑错误，举个例子：
+
+  * 代码中Deployment创建成功
+  * `kubectl get deploy -A`却查询不到
+  * `kubectl get pods -A`可以查到，但是却是`Terminating`状态
+
+* 在我们上面的例子中，正确的写法应该是`Namespace: req.Namespace`，而不是可以写任意命名空间
+
+* `OwnerReference`结构体注释中关于命名空间的描述
+
+  ```go
+  // OwnerReference contains enough information to let you identify an owning
+  // object. An owning object must be in the same namespace as the dependent, or
+  // be cluster-scoped, so there is no namespace field.
+  // +structType=atomic
+  type OwnerReference struct {
+  	...
+  }
+  ```
 
 <br />
 
