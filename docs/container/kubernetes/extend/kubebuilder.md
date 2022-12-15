@@ -816,7 +816,127 @@ kube-system Pods:
 
 <br />
 
-### 2）Types
+### 2）创建内置资源
+
+当我们创建一个Pod或Deployment等内置资源时，因为它的属性比较多，所以在写代码的时候有两种写法
+
+::: details （1）嵌套式写法
+
+```go
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment - 嵌套式写法
+	deploy := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: func() *int32 { r := int32(1); return &r }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "centos:7",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Println("Deployment创建失败: ", client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Println("Deployment创建成功或已存在")
+	}
+
+	return ctrl.Result{}, nil
+}
+```
+
+:::
+
+::: details （2）扁平式写法
+
+```go
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment - 扁平式写法
+	var deploy appsv1.Deployment
+
+    // metadata
+	deploy.ObjectMeta = metav1.ObjectMeta{
+		Name:      "mykind-deployment",
+		Namespace: "default",
+		OwnerReferences: []metav1.OwnerReference{
+			*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+		},
+	}
+
+	// 上面的 OwnerReferences 也可以改写成下面这样，有一部分字段是有Setxxx方法的
+	//deploy.SetOwnerReferences([]metav1.OwnerReference{
+	//	*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+	//})
+
+    // spec,下面的嵌套还可以继续提出来，这里就不写了
+	deploy.Spec = appsv1.DeploymentSpec{
+		Replicas: func() *int32 { r := int32(1); return &r }(),
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{"app": "k8s"},
+		},
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"app": "k8s"},
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:    "mykind-pod",
+						Image:   "centos:7",
+						Command: []string{"sh", "-c", "sleep 3600"},
+					},
+				},
+			},
+		},
+	}
+
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Println("Deployment创建失败: ", client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Println("Deployment创建成功或已存在")
+	}
+
+	return ctrl.Result{}, nil
+}
+```
+
+:::
+
+<br />
+
+### 3）Types
 
 参考资料：[https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659](https://medium.com/@gallettilance/10-things-you-should-know-before-writing-a-kubernetes-controller-83de8f86d659)
 
@@ -1101,7 +1221,7 @@ go run ./main.go
 
 <br />
 
-### 3）EventRecorder
+### 4）EventRecorder
 
 EventRecorder可以添加事件记录，就像下面这样
 
@@ -1170,7 +1290,7 @@ Events:
 
 <br />
 
-### 4）Owner
+### 5）Owner
 
 * owner表示资源的从属关系，比如一个 ReplicaSet 是一组 Pod 的 `Owner`,在每个Pod上通过`metadata.ownerReferences`引用`ReplicaSet `的信息
 * 创建内置资源时，Kubernetes 会自动设置 `metadata.ownerReference` 的值
@@ -1416,7 +1536,7 @@ mykind-deployment   0/1     1            0           10s
 
 <br />
 
-### 5）监听其他资源
+### 6）监听其他资源
 
 ::: details 默认生成的代码只会监听CR资源
 
@@ -1463,7 +1583,7 @@ func (blder *Builder) Watches(src source.Source, eventhandler handler.EventHandl
 
 <br />
 
-### 6）+kubebuilder
+### 7）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
