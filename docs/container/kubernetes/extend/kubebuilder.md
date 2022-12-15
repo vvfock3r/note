@@ -1170,9 +1170,15 @@ Events:
 
 <br />
 
-### 4）监听其他资源
+### 4）Owner
 
-::: details 1、默认生成的代码只会监听CR资源
+owner表示资源的从属关系
+
+<br />
+
+### 5）监听其他资源
+
+::: details 默认生成的代码只会监听CR资源
 
 ```go
 // 关键点在于下面的For
@@ -1182,13 +1188,31 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// 查看For源码的注释，发现 
-// For(&crdv1beta1.MyKind{}) 等同于 Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
+// 1.查看For源码的注释，发现For(&crdv1beta1.MyKind{}) 等同于 Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
+// 2.For和Watches有区别吗？没有区别，我们自己使用的话使用Watches即可
+// 3.除了For和Watches,监控其他资源还可以使用Owns,意思是
+//   只监听由我自己创建的外部资源，比如控制器创建了一个Pod，那么该Pod的事件会通知到Reconcile，但其他Pod事件并不会通知到Reconcile
 ```
 
 :::
 
-::: details 2、Watches函数参数
+::: details Watches函数参数
+
+```go
+// 函数签名
+func (blder *Builder) Watches(src source.Source, eventhandler handler.EventHandler, opts ...WatchesOption) *Builder
+
+// 参数
+//   source                       事件源，比如要监控Deployment，可以写做&source.Kind{Type: &appsv1.Deployment{}}
+//   EventHandler                 事件入队处理，支持三种方式：
+//     EnqueueRequestForObject    资源变动时将资源key加入workqueue
+//     EnqueueRequestForOwner     资源变动时将资源owner的key加入workqueue
+//     EnqueueRequestsFromMapFunc 定义一个关联函数，资源变动时生成一组reconcile.Request
+```
+
+:::
+
+::: details EnqueueRequestForObject：资源变动时将资源key加入workqueue
 
 ```go
 
@@ -1196,9 +1220,11 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 :::
 
+
+
 <br />
 
-### 5）+kubebuilder
+### 6）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
