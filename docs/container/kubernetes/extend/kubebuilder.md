@@ -1549,9 +1549,26 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// 1.查看For源码的注释，发现For(&crdv1beta1.MyKind{}) 等同于 Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
-// 2.For和Watches有区别吗？没有区别，我们自己使用的话使用Watches即可
-// 3.除了For和Watches,监控其他资源还可以使用Owns,在Owner章节我们已经提到过，不再解释
+// 1.查看For源码的注释，发现
+//     For(&crdv1beta1.MyKind{}).
+//                 等于
+//     	Watches(
+//			&source.Kind{Type: &crdv1beta1.MyKind{}},
+//			&handler.EnqueueRequestForObject{},
+//		).
+
+// 2.Owns上面我们讲过，查看Owns源码的注释，发现
+//     Owns(&appsv1.Deployment{}).
+//                等于   
+//		Watches(
+//			&source.Kind{Type: &appsv1.Deployment{}},
+//			&handler.EnqueueRequestForOwner{
+//				OwnerType:    &crdv1beta1.MyKind{},
+//				IsController: true,
+//			},
+//		).
+
+// 3.For和Owns都是对Watches的一层包装，让我们使用更简单，所以关键点在于Watches函数
 ```
 
 :::
@@ -1566,21 +1583,356 @@ func (blder *Builder) Watches(src source.Source, eventhandler handler.EventHandl
 //   source                       事件源，比如要监控Deployment，可以写做&source.Kind{Type: &appsv1.Deployment{}}
 //   EventHandler                 事件入队处理，支持三种方式：
 //     EnqueueRequestForObject    资源变动时将资源<Namespace/Name>加入workqueue
-//     EnqueueRequestForOwner     资源变动时将资源ownerReference的<Namespace/Name>加入workqueue
+//     EnqueueRequestForOwner     资源变动时将资源ownerReference中指定的资源的<Namespace/Name>加入workqueue
 //     EnqueueRequestsFromMapFunc 定义一个关联函数，资源变动时生成一组Reconcile.Request
 ```
 
 :::
 
-::: details EnqueueRequestForObject：资源变动时将资源<Namespace/Name>加入workqueue
+::: details （1）EnqueueRequestForObject：资源变动时将资源<Namespace/Name>加入workqueue
 
 ```go
 // 这个最容易理解，哪个资源变动，就将资源的<Namespace/Name>作为req传递到Reconcile中
+
+import (
+    corev1 "k8s.io/api/core/v1"
+    "sigs.k8s.io/controller-runtime/pkg/source"
+    "sigs.k8s.io/controller-runtime/pkg/handler"
+)
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	fmt.Println(req)
+	return ctrl.Result{}, nil
+}
+
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		// 监控所有的Pod,并将Pod的<Namespce>/<Name>作为req传到Reconcile中
+		Watches(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForObject{}).
+		Complete(r)
+}
+```
+
+输出结果
+
+```bash
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.6710905158347652e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.671090515835489e+09   INFO    setup   starting manager
+1.671090515837014e+09   INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6710905158370821e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6710905158372035e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6710905158372345e+09  INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1.Pod"}
+1.6710905158372438e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6710905159385548e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 1}
+/mykind-sample
+kube-system/kube-scheduler-node-1
+kube-system/kube-scheduler-node-3
+kube-system/kube-scheduler-node-2
+kube-system/kube-proxy-277hn
+kube-system/coredns-565d847f94-d484w
+kube-system/etcd-node-1
+kube-system/coredns-565d847f94-f8xmz
+kube-system/kube-apiserver-node-3
+kube-system/coredns-565d847f94-hclt9
+kube-system/etcd-node-2
+kube-system/kube-controller-manager-node-1
+kube-system/calico-node-wckpr
+kube-system/calico-node-jhjwp
+kube-system/kube-apiserver-node-2
+kube-system/kube-controller-manager-node-2
+kube-system/calico-node-jwflc
+kube-system/calico-node-fgqsz
+default/mykind-deployment-9d64b486b-l9kdl
+default/mykind-deployment-7bc7889bc-79ccg
+kube-system/calico-kube-controllers-798cc86c47-8jlrm
+kube-system/kube-apiserver-front-proxy-node-4
+kube-system/kube-proxy-zztls
+kube-system/kube-apiserver-node-1
+kube-system/etcd-node-3
+kube-system/kube-controller-manager-node-3
+kube-system/kube-proxy-xk9r7
+kube-system/kube-proxy-72k55
 ```
 
 :::
 
+::: details （2）EnqueueRequestForOwner：资源变动时将资源ownerReference中指定的资源的<Namespace/Name>加入workqueue
 
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	fmt.Println(req)
+
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment - 嵌套式写法
+	deploy := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: func() *int32 { r := int32(1); return &r }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "centos:7",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Println("Deployment创建失败: ", client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Println("Deployment创建成功或已存在")
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		// 监控所有的Deployment,但需要满足以下条件：
+		//   <Deployment>.metadata.ownerReferences.kind == MyKind
+		// 将满足条件的Deployment引用的CR的<Namespce>/<Name>作为req传到Reconcile中。注意传递的不是Deployment的信息
+		// 下面的代码等同于 Owns(&appsv1.Deployment{}).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+			OwnerType:    &crdv1beta1.MyKind{},
+			IsController: true,
+		}).				
+		Complete(r)
+}
+```
+
+:::
+
+::: details （3）EnqueueRequestsFromMapFunc：定义一个关联函数，资源变动时生成一组Reconcile.Request，这里模拟Owns函数
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment - 嵌套式写法
+	deploy := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: func() *int32 { r := int32(1); return &r }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "centos:7",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	namespacedName := deploy.Namespace + "/" + deploy.Name
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Printf("Deployment创建失败: %s: %s\n", namespacedName, client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Printf("Deployment创建成功或已存在: %s\n", namespacedName)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, handler.EnqueueRequestsFromMapFunc(func(object client.Object) []reconcile.Request {
+			// 查看一下对象的Namespace和Name
+			//fmt.Printf("Object NamespacedName: %s\n", object.GetNamespace()+"/"+object.GetName())
+			// 模拟Owns函数
+			var requestList []reconcile.Request
+			for _, owner := range object.GetOwnerReferences() {
+				if owner.Kind == "MyKind" {
+					// 传递的是Deployment的NamespacedName
+					//requestList = append(requestList, reconcile.Request{
+					//	NamespacedName: types.NamespacedName{
+					//		Namespace: object.GetNamespace(),
+					//		Name:      object.GetName(),
+					//	},
+					//})
+					// 传递的是CR的NamespacedName
+					requestList = append(requestList, reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Namespace: object.GetNamespace(),
+							Name:      owner.Name,
+						},
+					})
+
+					// 两者的区别在于Name不同，而Namespace是相同的，为什么Namespace是相同的？
+					// OwnerReference的注释中说的很清楚
+					// An owning object must be in the same namespace as the dependent, or be cluster-scoped, so there is no namespace field
+				}
+			}
+			return requestList
+		})).		
+		Complete(r)
+}
+```
+
+:::
 
 <br />
 
