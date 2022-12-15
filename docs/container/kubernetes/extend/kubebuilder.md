@@ -1611,7 +1611,7 @@ func (blder *Builder) Watches(src source.Source, eventhandler handler.EventHandl
 
 :::
 
-::: details （1）EnqueueRequestForObject：资源变动时将资源<Namespace/Name>加入workqueue
+::: details （1）EnqueueRequestForObject：资源变动时将资源 Namespace/Name 加入workqueue
 
 ```go
 // 这个最容易理解，哪个资源变动，就将资源的<Namespace/Name>作为req传递到Reconcile中
@@ -1686,7 +1686,7 @@ kube-system/kube-proxy-72k55
 
 :::
 
-::: details （2）EnqueueRequestForOwner：资源变动时将资源ownerReference中指定的资源的<Namespace/Name>加入workqueue
+::: details （2）EnqueueRequestForOwner：资源变动时将资源ownerReference中指定的资源的 Namespace/Name 加入workqueue
 
 ```go
 /*
