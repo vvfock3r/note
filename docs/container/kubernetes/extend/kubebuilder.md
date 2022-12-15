@@ -1175,7 +1175,9 @@ Events:
 * owner表示资源的从属关系，比如一个 ReplicaSet 是一组 Pod 的 `Owner`,在每个Pod上通过`metadata.ownerReferences`引用`ReplicaSet `的信息
 * 创建内置资源时，Kubernetes 会自动设置 `metadata.ownerReference` 的值
 * 创建自定义资源时，需要我们手动设置`metadata.ownerReference` 的值
-* 当我们设置了这种从属关系之后，删除Owner也会将下属资源删除，即删除Deployment，也会将对应的Pod删除
+* 当我们设置了这种从属关系之后，删除Owner也会将下属资源删除，举例说明：
+  * 删除Deployment，也会将对应的Pod删除
+  * 删除CR资源时，所关联的其他资源也将删除
 
 ::: details （1）查看内置资源的metadata.ownerReference
 
@@ -1334,9 +1336,9 @@ func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		},
 	}
 	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
-		fmt.Println("创建Deployment失败: ", client.IgnoreAlreadyExists(err))
+		fmt.Println("Deployment创建失败: ", client.IgnoreAlreadyExists(err))
 	} else {
-		fmt.Println("创建Deployment成功")
+		fmt.Println("Deployment创建成功或已存在")
 	}
 
 	return ctrl.Result{}, nil
@@ -1375,6 +1377,39 @@ mykind-deployment   0/1     1            0           6m6s
   kind: ReplicaSet
   name: mykind-deployment-9d64b486b
   uid: 4f09d7bf-3374-417b-8e0d-13c916b8fb0f
+  
+# 当我们把CR资源删除以后，Deployment也会自动删除
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml
+```
+
+:::
+
+::: details （2）监控Deployment发生变化
+
+若Deployment发生变化，此时我们的Reconcile是感知不到的，这不太符合我们的预期
+
+我们想让这个Deployment一直在运行，除非是我们手动删除了CR资源
+
+此时可以使用Owns来监控Deployment，Deployment一旦发生变化会通过`.metadata.ownerReferences`传递到我们的Reconcile中
+
+```go
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Owns(&appsv1.Deployment{}). // 添加这行
+		Complete(r)
+}
+```
+
+查看效果
+
+```bash
+# 删除Deployment后，会通知到Reconcile，然后它帮我们又创建一个新的Deployment
+[root@node-1 example]# kubectl delete deploy mykind-deployment
+
+[root@node-1 example]# kubectl get deploy 
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+mykind-deployment   0/1     1            0           10s
 ```
 
 :::
@@ -1395,8 +1430,7 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // 1.查看For源码的注释，发现For(&crdv1beta1.MyKind{}) 等同于 Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
 // 2.For和Watches有区别吗？没有区别，我们自己使用的话使用Watches即可
-// 3.除了For和Watches,监控其他资源还可以使用Owns,意思是
-//   只监听由我自己创建的外部资源，比如控制器创建了一个Pod，那么该Pod的事件会通知到Reconcile，但其他Pod事件并不会通知到Reconcile
+// 3.除了For和Watches,监控其他资源还可以使用Owns,在Owner章节我们已经提到过，不再解释
 ```
 
 :::
