@@ -1172,7 +1172,212 @@ Events:
 
 ### 4）Owner
 
-owner表示资源的从属关系
+* owner表示资源的从属关系，比如一个 ReplicaSet 是一组 Pod 的 `Owner`,在每个Pod上通过`metadata.ownerReferences`引用`ReplicaSet `的信息
+* 创建内置资源时，Kubernetes 会自动设置 `metadata.ownerReference` 的值
+* 创建自定义资源时，需要我们手动设置`metadata.ownerReference` 的值
+* 当我们设置了这种从属关系之后，删除Owner也会将下属资源删除，即删除Deployment，也会将对应的Pod删除
+
+::: details （1）查看内置资源的metadata.ownerReference
+
+```bash
+# 看一下Deployment
+[root@node-1 ~]# kubectl -n kube-system get deploy
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+calico-kube-controllers   1/1     1            1           28d
+coredns                   2/2     2            2           28d
+
+# 找到对应的Pod
+[root@node-1 ~]# kubectl -n kube-system get pod | grep coredns
+coredns-565d847f94-d484w                   1/1     Running   4 (11m ago)    109m
+coredns-565d847f94-f8xmz                   1/1     Running   45 (11m ago)   28d
+coredns-565d847f94-hclt9                   0/1     Error     6              28d
+
+# 查看每个Pod的metadata.ownerReferences,可以看到他们的"父级"都是同一个ReplicaSet
+[root@node-1 ~]# kubectl -n kube-system get pod coredns-565d847f94-d484w -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: apps/v1
+  blockOwnerDeletion: true
+  controller: true
+  kind: ReplicaSet
+  name: coredns-565d847f94
+  uid: cba893a3-4977-40b2-b5af-d78cf31e2db6
+  
+[root@node-1 ~]# kubectl -n kube-system get pod coredns-565d847f94-f8xmz -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: apps/v1
+  blockOwnerDeletion: true
+  controller: true
+  kind: ReplicaSet
+  name: coredns-565d847f94
+  uid: cba893a3-4977-40b2-b5af-d78cf31e2db6
+  
+[root@node-1 ~]# kubectl -n kube-system get pod coredns-565d847f94-hclt9 -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: apps/v1
+  blockOwnerDeletion: true
+  controller: true
+  kind: ReplicaSet
+  name: coredns-565d847f94
+  uid: cba893a3-4977-40b2-b5af-d78cf31e2db6
+  
+# 看一下ReplicaSet的metadata.ownerReferences，它的"父级"是Deployment
+[root@node-1 ~]# kubectl -n kube-system get rs coredns-565d847f94 -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: apps/v1
+  blockOwnerDeletion: true
+  controller: true
+  kind: Deployment
+  name: coredns
+  uid: 3e1304da-60c7-4119-964c-3304293fe70a
+  
+# 看一下Deployment的metadata.ownerReferences
+[root@node-1 ~]# kubectl -n kube-system get deploy coredns -o yaml | yq '.metadata.ownerReferences'
+null
+```
+
+:::
+
+::: details （2）自定义资源手动关联metadata.ownerReference
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment
+	replicas := int32(1)
+	deploy := appsv1.Deployment{
+		// deployment metadata
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: "default",
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		// deployment spec
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			// template
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				// spec
+				Spec: corev1.PodSpec{
+					// containers
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "centos:7",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Println("创建Deployment失败: ", client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Println("创建Deployment成功")
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Complete(r)
+}
+```
+
+输出效果
+
+```bash
+# 查看Deployment
+[root@node-1 ~]# kubectl get deploy
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+mykind-deployment   0/1     1            0           6m6s
+
+# 查看Deployment的metadata.ownerReferences，它的"父级"就是我们的CR资源
+[root@node-1 ~]# kubectl get deploy mykind-deployment -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: crd.devops.io/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: MyKind
+  name: mykind-sample
+  uid: 99bd8795-81ab-4a37-aabd-199df5bf7471
+
+# 查看一下对应的Pod，"父级"是ReplicaSet，和原生的Deployment一样
+[root@node-1 ~]# kubectl get pod mykind-deployment-9d64b486b-hcqv8 -o yaml | yq '.metadata.ownerReferences'
+- apiVersion: apps/v1
+  blockOwnerDeletion: true
+  controller: true
+  kind: ReplicaSet
+  name: mykind-deployment-9d64b486b
+  uid: 4f09d7bf-3374-417b-8e0d-13c916b8fb0f
+```
+
+:::
 
 <br />
 
