@@ -1958,7 +1958,115 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 <br />
 
-### 7）+kubebuilder
+### 7）监听指定事件
+
+默认情况下会监听所有事件，我们可以通过`WithEventFilter`来监听或不监听某些事件
+
+::: details （1）全局过滤指定事件
+
+```go
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	fmt.Println("Running...")
+	return ctrl.Result{}, nil
+}
+
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		// 事件过滤: 假如我不想监听删除事件,那么让DeleteFunc返回false即可
+		WithEventFilter(predicate.Funcs{
+			CreateFunc: func(createEvent event.CreateEvent) bool {
+				return true
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
+			UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+				return true
+			},
+			GenericFunc: func(genericEvent event.GenericEvent) bool {
+				return true
+			},
+		}).
+		Complete(r)
+}
+```
+
+输出结果
+
+```bash
+# 启动Controller
+[root@node-1 example]# make run
+test -s /root/example/bin/controller-gen || GOBIN=/root/example/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/root/example/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/root/example/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+go run ./main.go
+1.671108174078604e+09   INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": ":8080"}
+1.67110817407954e+09    INFO    setup   starting manager
+1.671108174080219e+09   INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "[::]:8080"}
+1.6711081740804477e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.671108174080466e+09   INFO    Starting EventSource    {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "source": "kind source: *v1beta1.MyKind"}
+1.6711081740805044e+09  INFO    Starting Controller     {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind"}
+1.6711081741840272e+09  INFO    Starting workers        {"controller": "mykind", "controllerGroup": "crd.devops.io", "controllerKind": "MyKind", "worker count": 1}
+Running...     # 程序启动输出一次
+
+# 删除CR，Controller并没有日志输出
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml
+mykind.crd.devops.io "mykind-sample" deleted
+
+# 创建CR，Controller有日志输出：Running...
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml
+mykind.crd.devops.io/mykind-sample created
+```
+
+:::
+
+::: details （2）Watches中过滤指定事件
+
+```go
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	fmt.Println("Running...")
+	return ctrl.Result{}, nil
+}
+
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Watches(
+			&source.Kind{Type: &corev1.Pod{}},
+			&handler.EnqueueRequestForObject{},
+            // 事件过滤: 只监听删除事件
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(createEvent event.CreateEvent) bool {
+					return false
+				},
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					return true
+				},
+				UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+					return false
+				},
+				GenericFunc: func(genericEvent event.GenericEvent) bool {
+					return false
+				},
+			})).
+		Complete(r)
+}
+```
+
+输出结果
+
+```bash
+# 创建、删除Pod走一遍流程即可明白
+```
+
+:::
+
+<br />
+
+### 8）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
