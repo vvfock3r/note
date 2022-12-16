@@ -2066,7 +2066,549 @@ func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 <br />
 
-### 8）+kubebuilder
+### 8）Finalizer
+
+Finalizer表示预删除操作
+
+在一般情况下，如果资源被删除之后，我们虽然能够被触发删除事件，但是这个时候从 Cache 里面无法读取任何被删除对象的信息，这样一来，导致很多垃圾清理工作因为信息不足无法进行。
+
+Finalizer字段用于处理这种情况。只要对象 ObjectMeta 里面的 Finalizers 不为空，对该对象的 delete 操作就会转变为 update 操作，具体说就是 update deletionTimestamp 字段，其意义就是告诉 K8s 的 GC "在deletionTimestamp 这个时刻之后，只要 Finalizers 为空，就立马删除掉该对象"
+
+所以一般的使用姿势就是在创建对象时把 Finalizers 设置好（string切片），然后处理 DeletionTimestamp 不为空的 update 操作（实际是 delete），根据 Finalizers 的值执行完所有的 pre-delete hook（此时可以在 Cache 里面读取到被删除对象的任何信息）之后将 Finalizers 置为空即可
+
+::: details 准备一段普通的Controller代码
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 创建一个Deployment - 嵌套式写法
+	deploy := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: req.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: func() *int32 { r := int32(1); return &r }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "busybox:1.29",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	namespacedName := deploy.Namespace + "/" + deploy.Name
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Printf("Deployment创建失败: %s: %s\n", namespacedName, client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Printf("Deployment创建成功或已存在: %s\n", namespacedName)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Owns(&appsv1.Deployment{}).
+		Complete(r)
+}
+
+```
+
+分析代码
+
+* Controller确保集群存在一个名叫mykind-deployment的Deployment
+* 当CR被删除以后，Deployment也会被删除（`OwnerReferences`起的作用）
+* 当Deployment被删除后，会自动创建一个新的Deployment（`Owns(&appsv1.Deployment{})`起的作用）
+
+:::
+
+::: details （1）修改CR增加 finalizer 字段，因为控制器没有对应的处理逻辑，所以CR将无法直接删除
+
+```bash
+# 先将原来的CR删除
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml
+mykind.crd.devops.io "mykind-sample" deleted
+
+# 修改CR，增加 finalizers
+apiVersion: crd.devops.io/v1beta1
+kind: MyKind
+metadata:
+  labels:
+    app.kubernetes.io/name: mykind
+    app.kubernetes.io/instance: mykind-sample
+    app.kubernetes.io/part-of: example
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: example
+  name: mykind-sample
+  finalizers:
+    - kubernetes
+spec:
+
+# 部署 CR
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml
+mykind.crd.devops.io/mykind-sample created
+
+# 再删除CR，因为我们的控制器还没有处理finalizers的逻辑，所以这里会一直卡着，删不掉
+# 它其实已经进入了删除的逻辑，等 finalizers逻辑处理完成后会自动删除
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml
+mykind.crd.devops.io "mykind-sample" deleted
+
+# 如果要删掉它的话，需要先将 finalizers 字段去掉。将下面两行删掉
+# 此时 kubectl delete -f xx.yaml 会立即返回
+[root@node-1 ~]# kubectl edit mykind mykind-sample
+  finalizers:
+  - kubernetes
+```
+
+:::
+
+::: details （2）Controller处理 finalizer 逻辑
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
+
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 上面获取了CR，说明系统中存在CR资源
+	// 如果CR的 DeletionTimestamp 有值，说明执行了删除操作（对Reconcile来说是触发了Update DeletionTimestamp的事件），
+	// 我们需要处理 finalizer
+	if !mykind.ObjectMeta.DeletionTimestamp.IsZero() {
+		for _, v := range mykind.ObjectMeta.Finalizers {
+			fmt.Printf("处理Finalizers: %s\n", v)
+			time.Sleep(time.Second * 3) // 模拟耗时
+		}
+		// 处理完成后置为空切片
+		mykind.ObjectMeta.Finalizers = []string{}
+		// 提交更新
+		err := r.Update(ctx, &mykind)
+		if err != nil {
+			fmt.Printf("更新CR失败: %s\n", req.NamespacedName)
+			return ctrl.Result{}, err
+		} else {
+			fmt.Printf("更新CR成功: %s\n", req.NamespacedName)
+			return ctrl.Result{}, nil
+		}
+	}
+
+	// 创建一个Deployment - 嵌套式写法
+	deploy := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mykind-deployment",
+			Namespace: req.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: func() *int32 { r := int32(1); return &r }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "k8s"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "k8s"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "mykind-pod",
+							Image:   "busybox:1.29",
+							Command: []string{"sh", "-c", "sleep 3600"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	namespacedName := deploy.Namespace + "/" + deploy.Name
+	if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+		fmt.Printf("Deployment创建失败: %s: %s\n", namespacedName, client.IgnoreAlreadyExists(err))
+	} else {
+		fmt.Printf("Deployment创建成功或已存在: %s\n", namespacedName)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Owns(&appsv1.Deployment{}).
+		Complete(r)
+}
+
+```
+
+输出结果
+
+```bash
+# 部署带有finalizers字段的CR
+[root@node-1 example]# grep finalizers config/samples/crd_v1beta1_mykind.yaml -A 1
+  finalizers:
+    - kubernetes
+
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io/mykind-sample created
+
+# 将控制器起起来
+[root@node-1 example]# make run
+
+# 删除CR
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io "mykind-sample" deleted
+
+# 查看控制器日志
+处理Finalizers: kubernetes
+更新CR成功: default/mykind-sample
+```
+
+:::
+
+::: details （3）创建一个带finalizer的Deployment
+
+将CR YAML文件和控制器代码回滚到不带finalizer的初始状态，然后再继续下一步
+
+练习效果：
+
+* 创建一个带finalizer的Deployment，让使用者感觉不到它的存在，但是开发者可以在删除Deployment前做一些额外的事情
+
+<br />
+
+问题：
+
+* 创建一个带finalizer的Deployment，此时若将CR删除，Deployment由于有finalizer不会被删除
+* 但是CR已经删除了，Reconcile会立即返回（因为我们的代码中获取不到CR就会立即返回）
+* 造成的结果就是CR被删了，Deployment还存在（DeletionTimestamp已经有值了），该如何解决？
+
+<br />
+
+分析：
+
+* 我们要在CR删除之前处理好Deployment的finalizer，所以我们给CR动态注入一个finalizer
+* 当CR被删除，在处理CR的finalizer代码中处理Deployment的finalizer，达到删除Deployment的效果
+
+```go
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	// 这个导入可以参考main.go是如何导入的，尽量保持一致
+	crdv1beta1 "github.com/vvfock3r/example/api/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// MyKindReconciler reconciles a MyKind object
+type MyKindReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=crd.devops.io,resources=mykinds/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the MyKind object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+
+func (r *MyKindReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 获取 CR
+	var mykind crdv1beta1.MyKind
+	if err := r.Get(ctx, req.NamespacedName, &mykind); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// 给CR注入Finalizers，原因后面讲
+	if len(mykind.ObjectMeta.Finalizers) <= 0 {
+		mykind.ObjectMeta.Finalizers = []string{"kubernetes"}
+		if err := r.Update(ctx, &mykind); err != nil {
+			fmt.Printf("为CR注入Finalizers失败: %s\n", mykind.Namespace+"/"+mykind.Name)
+			return ctrl.Result{}, err
+		}
+	}
+
+	// 获取Deployment
+	var deploy appsv1.Deployment
+	namespaced := types.NamespacedName{Namespace: req.Namespace, Name: "mykind-deployment"}
+	err := r.Get(ctx, namespaced, &deploy)
+	// 成功获取到Deployment, 当 DeletionTimestamp不为空的时候处理finalizer
+	if err == nil {
+		fmt.Printf("Get Deployment success: %s\n", deploy.Namespace+"/"+deploy.Name)
+		// 处理CR的finalizer
+		if !mykind.ObjectMeta.DeletionTimestamp.IsZero() {
+			// 处理Deployment 的finalizer
+			deploy.ObjectMeta.Finalizers = []string{}
+			if err := r.Update(ctx, &deploy); err != nil {
+				fmt.Println("更新Deployment Finalizer失败")
+				return ctrl.Result{}, err
+			} else {
+				fmt.Println("更新Deployment Finalizer成功")
+			}
+			// 处理完成后置为空切片
+			mykind.ObjectMeta.Finalizers = []string{}
+			// 提交更新
+			err := r.Update(ctx, &mykind)
+			if err != nil {
+				fmt.Printf("更新CR失败: %s\n", req.NamespacedName)
+				return ctrl.Result{}, err
+			} else {
+				fmt.Printf("更新CR成功: %s\n", req.NamespacedName)
+				return ctrl.Result{}, nil
+			}
+		}
+	}
+	// 未获取到Deployment，可能是还没有创建 或者 Get出错，需要判断
+	if err != nil {
+		// 出错了，函数返回
+		if client.IgnoreNotFound(err) != nil {
+			fmt.Printf("Get deployment error: %s\n", namespaced.String())
+			return ctrl.Result{}, err
+		}
+		// 未找到，原因是还没有创建，那么就创建一个Deployment - 嵌套式写法
+		fmt.Printf("Get Deployment none: %s\n", deploy.Namespace+"/"+deploy.Name)
+		deploy := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mykind-deployment",
+				Namespace: req.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					*metav1.NewControllerRef(mykind.GetObjectMeta(), mykind.GroupVersionKind()),
+				},
+				Finalizers: []string{"kubernetes"},
+			},
+			Spec: appsv1.DeploymentSpec{
+				Replicas: func() *int32 { r := int32(1); return &r }(),
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"app": "k8s"},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"app": "k8s"},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:    "mykind-pod",
+								Image:   "busybox:1.29",
+								Command: []string{"sh", "-c", "sleep 3600"},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		namespacedName := deploy.Namespace + "/" + deploy.Name
+		if err := r.Create(ctx, &deploy); client.IgnoreAlreadyExists(err) != nil {
+			fmt.Printf("Deployment创建失败: %s: %s\n", namespacedName, client.IgnoreAlreadyExists(err))
+		} else {
+			fmt.Printf("Deployment创建成功或已存在: %s\n", namespacedName)
+		}
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MyKindReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crdv1beta1.MyKind{}).
+		Owns(&appsv1.Deployment{}).
+		Complete(r)
+}
+```
+
+输出结果
+
+```bash
+# 创建CR然后删除
+[root@node-1 example]# kubectl apply -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io/mykind-sample created
+[root@node-1 example]# kubectl delete -f config/samples/crd_v1beta1_mykind.yaml 
+mykind.crd.devops.io "mykind-sample" deleted
+
+# Controller日志
+Get Deployment none: /
+Deployment创建成功或已存在: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+Get Deployment success: default/mykind-deployment
+更新Deployment Finalizer成功
+更新CR成功: default/mykind-sample
+
+# 查看Deployment
+[root@node-1 example]# kubectl get deploy 
+No resources found in default namespace.
+```
+
+:::
+
+<br />
+
+### 9）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
