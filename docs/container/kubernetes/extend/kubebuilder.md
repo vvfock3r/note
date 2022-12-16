@@ -4,6 +4,8 @@
 
 Github：[https://github.com/kubernetes-sigs/kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
 
+Hub：[https://operatorhub.io/](https://operatorhub.io/)
+
 <br />
 
 ## 1.先跑起来
@@ -2400,21 +2402,17 @@ mykind.crd.devops.io "mykind-sample" deleted
 
 将CR YAML文件和控制器代码回滚到不带finalizer的初始状态，然后再继续下一步
 
-练习效果：
+**练习效果：**
 
 * 创建一个带finalizer的Deployment，让使用者感觉不到它的存在，但是开发者可以在删除Deployment前做一些额外的事情
 
-<br />
-
-问题：
+**问题：**
 
 * 创建一个带finalizer的Deployment，此时若将CR删除，Deployment由于有finalizer不会被删除
 * 但是CR已经删除了，Reconcile会立即返回（因为我们的代码中获取不到CR就会立即返回）
 * 造成的结果就是CR被删了，Deployment还存在（DeletionTimestamp已经有值了），该如何解决？
 
-<br />
-
-分析：
+**分析：**
 
 * 我们要在CR删除之前处理好Deployment的finalizer，所以我们给CR动态注入一个finalizer
 * 当CR被删除，在处理CR的finalizer代码中处理Deployment的finalizer，达到删除Deployment的效果
@@ -2608,7 +2606,11 @@ No resources found in default namespace.
 
 <br />
 
-### 9）+kubebuilder
+### 9）Webhook
+
+<br />
+
+### 10）+kubebuilder
 
 文档：[https://book.kubebuilder.io/reference/markers.html](https://book.kubebuilder.io/reference/markers.html)
 
