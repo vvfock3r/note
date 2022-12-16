@@ -2408,7 +2408,8 @@ mykind.crd.devops.io "mykind-sample" deleted
 
 **问题：**
 
-* 创建一个带finalizer的Deployment，此时若将CR删除，Deployment由于有finalizer不会被删除
+* 创建一个带finalizer的Deployment，
+* 此时若将CR删除，Deployment由于有finalizer不会被删除，而是变更为Update事件，传递的是MyKind的NamespacedName（`Owns`的作用），
 * 但是CR已经删除了，Reconcile会立即返回（因为我们的代码中获取不到CR就会立即返回）
 * 造成的结果就是CR被删了，Deployment还存在（DeletionTimestamp已经有值了），该如何解决？
 
