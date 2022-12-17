@@ -6,7 +6,9 @@ Github：[https://github.com/kubernetes/client-go](https://github.com/kubernetes
 
 <br />
 
-## 安装
+## 基础示例
+
+### 安装
 
 关于版本问题：[https://github.com/kubernetes/client-go/blob/master/INSTALL.md](https://github.com/kubernetes/client-go/blob/master/INSTALL.md)
 
@@ -17,7 +19,7 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-## 客户端
+### 客户端
 
 总共有4种客户端：
 
@@ -32,13 +34,17 @@ go get k8s.io/client-go@v0.25.4
 * `RESTClient`是我们重点学习的客户端，`ClientSet`是我们最常用的客户端
 * `ClientSet`的注释中写明，代码是由`client-gen`生成的
 
+注意：
+
+* 实例化客户端的过程并不会向kubernetes发起连接
+
 <br />
 
 **ClientSet**
 
 ::: details （1）在集群外部，通过配置文件连接到kubernetes
 
-* 将配置文件`~/.kube/config`拷贝一份到项目内
+* 将配置文件`~/.kube/config`拷贝一份到项目内改名为`.kube.config`
 * 确保本机可以连接配置文件中的`server`及端口
 
 ```go
@@ -97,7 +103,7 @@ func main() {
 输出结果
 
 ```bash
-D:\application\GoLand\demo>go run main.go                
+D:\application\GoLand\example>go run main.go                
 {
     "major": "1",
     "minor": "25",
@@ -168,10 +174,10 @@ func main() {
 （2）编译为Linux amd64位程序，并上传到kubernetes
 
 ```bash
-D:\application\GoLand\demo>SET CGO_ENABLED=0
-D:\application\GoLand\demo>SET GOOS=linux
-D:\application\GoLand\demo>SET GOARCH=amd64
-D:\application\GoLand\demo>go build -o main ./main.go
+D:\application\GoLand\example>SET CGO_ENABLED=0
+D:\application\GoLand\example>SET GOOS=linux
+D:\application\GoLand\example>SET GOARCH=amd64
+D:\application\GoLand\example>go build -o main ./main.go
 ```
 
 （3）构建镜像
@@ -367,7 +373,345 @@ func main() {
 
 <br />
 
-## 内置资源
+### 超时问题
 
+默认情况下是没有超时限制的，但是在我的测试中看起来像是有超时的，下面来模拟一下
 
+::: details （1）模拟默认的"超时"
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// GetServerVersion 以格式化的JSON字符串返回kubernetes版本
+func GetServerVersion(clientset *kubernetes.Clientset) (string, error) {
+	serverVersionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	serverVersionJson, err := json.MarshalIndent(serverVersionInfo, "", "    ")
+	if err != nil {
+		return "", err
+	}
+	return string(serverVersionJson), nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	startTime := time.Now()
+	versionInfo, err := GetServerVersion(clientset)
+	fmt.Printf("Used %.2f seconds\n", time.Now().Sub(startTime).Seconds())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(versionInfo)
+}
+```
+
+先看一下正常的输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Used 0.01 seconds
+{
+    "major": "1",
+    "minor": "25",
+    "gitVersion": "v1.25.4",
+    "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+    "gitTreeState": "clean",
+    "buildDate": "2022-11-09T13:29:58Z",
+    "goVersion": "go1.19.3",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+}
+```
+
+然后将客户端连接kubernetes的端口改一下，让他连接不到，看一下会不会超时
+
+```bash
+# 将端口随便改成一个不存在的端口
+server: https://api.k8s.local:64430
+
+# 再执行脚本看一下效果，2秒钟返回了
+D:\application\GoLand\example>go run main.go
+Used 2.05 seconds
+panic: Get "https://api.k8s.local:64430/version": dial tcp 192.168.48.151:64430: connectex: No connection could be made because the target machine actively refused it.
+
+goroutine 1 [running]:
+main.main()
+        D:/application/GoLand/example/main.go:58 +0x1b4
+
+# 默认的超时是2秒钟吗？我决定再做一个测试
+# -----------------------------------------------------------------------------------------------------
+
+# 先在服务器上监听64430端口
+[root@node-1 ~]# ncat -lvp 64430
+Ncat: Version 7.50 ( https://nmap.org/ncat )
+Ncat: Listening on :::64430
+Ncat: Listening on 0.0.0.0:64430
+
+# 再执行脚本，超时又变成10秒钟了？
+D:\application\GoLand\example>go run main.go
+Used 10.01 seconds
+panic: Get "https://api.k8s.local:64430/version": net/http: TLS handshake timeout
+
+goroutine 1 [running]:                                                           
+main.main()                                                                      
+        D:/application/GoLand/example/main.go:58 +0x1b4                          
+exit status 2
+
+# -----------------------------------------------------------------------------------------------------
+
+# 从代码中查一下关于超时的设置
+# 在 reset.Config结构体中关于超时的说明，这样看起来应该是没有超时才对，程序应该会一直卡着才对，但是缺看起来像是有超时，这是怎么回事呢？
+// The maximum length of time to wait before giving up on a server request. A value of zero means no timeout.
+Timeout time.Duration
+
+# 看上面的报错 
+#   No connection could be made because the target machine actively refused it.  
+#   这是服务器主动拒绝了连接，本质上是服务器返回了结果，客户端又设置的永不超时
+# 
+#   net/http: TLS handshake timeout
+#   这是TLS握手超时了
+
+# -----------------------------------------------------------------------------------------------------
+
+# 于是，我准备进行下一步测试
+# 思路就是开启一个HTTPs Server，然后再Handler中休眠一段时间，客户端应该就会一直卡着。服务器休眠多久客户端应该就会卡多久
+[root@node-1 ~]# cat test.go 
+package main
+
+import (
+        "fmt"
+        "log"
+        "net/http"
+        "time"
+)
+
+// 处理器
+func versionHandler(w http.ResponseWriter, req *http.Request) {
+        time.Sleep(time.Second * 60)
+}
+
+func main() {
+        // 监听地址
+        addr := "0.0.0.0:64430"
+
+        // 注册路由
+        http.HandleFunc("/version", versionHandler)
+
+        // 启动服务,证书文件根据实际情况修改
+        fmt.Println("* Running on https://" + addr)
+        log.Fatal(http.ListenAndServeTLS(addr, "/etc/kubernetes/pki/apiserver.crt", "/etc/kubernetes/pki/apiserver.key", nil))
+}
+
+[root@node-1 ~]# go run test.go
+* Running on https://0.0.0.0:64430
+
+D:\application\GoLand\example>go run main.go
+Used 60.05 seconds
+panic: unable to parse the server version: unexpected end of JSON input
+
+goroutine 1 [running]:
+main.main()
+        D:/application/GoLand/example/main.go:58 +0x1b4
+exit status 2
+
+# 结论
+# 1.默认是没有超时的
+# 2.看起来像是有超时，本质上是发生了错误，比如服务器拒绝连接、TLS握手失败等
+```
+
+:::
+
+::: details （2）设置超时时间
+
+超时设置可以分为两种：
+
+* 设置全局的超时时间，对所有请求失败
+* 设置单个请求的超时时间
+
+```bash
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改*reset.Config配置
+	resetConfig.Timeout = time.Second * 30 // 全局超时时间设置为30秒
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// GetServerVersion 以格式化的JSON字符串返回kubernetes版本
+func GetServerVersion(clientset *kubernetes.Clientset) (string, error) {
+	serverVersionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	serverVersionJson, err := json.MarshalIndent(serverVersionInfo, "", "    ")
+	if err != nil {
+		return "", err
+	}
+	return string(serverVersionJson), nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本, clientset.ServerVersion()并没有让我们传递context的参数，所以这里使用的是全局超时参数
+	{
+		startTime := time.Now()
+		versionInfo, err := GetServerVersion(clientset)
+		fmt.Printf("Used %.2f seconds\n", time.Now().Sub(startTime).Seconds())
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			fmt.Println(versionInfo)
+		}
+	}
+
+	// (3) 获取所有的Namespace,这里可以对某个请求设置单独的请求超时时间
+	{
+	    fmt.Println()
+		startTime := time.Now()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		fmt.Printf("Used %.2f seconds\n", time.Now().Sub(startTime).Seconds())
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			for _, namespace := range namespaceList.Items {
+				fmt.Println(namespace.Name)
+			}
+		}
+	}
+}
+```
+
+HTTPS Server也要添加一下对应的路由
+
+```go
+[root@node-1 ~]# cat test.go
+package main
+
+import (
+        "fmt"
+        "log"
+        "net/http"
+        "time"
+)
+
+// 处理器
+func versionHandler(w http.ResponseWriter, req *http.Request) {
+        time.Sleep(time.Second * 60)
+}
+func namespaceHandler(w http.ResponseWriter, req *http.Request) {
+        time.Sleep(time.Second * 60)
+}
+
+func main() {
+        // 监听地址
+        addr := "0.0.0.0:64430"
+
+        // 注册路由
+        http.HandleFunc("/version", versionHandler)
+        http.HandleFunc("/api/v1/namespaces", namespaceHandler)
+
+        // 启动服务
+        fmt.Println("* Running on https://" + addr)
+        log.Fatal(http.ListenAndServeTLS(addr, "/etc/kubernetes/pki/apiserver.crt", "/etc/kubernetes/pki/apiserver.key", nil))
+}
+```
+
+看一下效果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Used 30.02 seconds
+Error: Get "https://api.k8s.local:64430/version?timeout=30s": context deadline exceeded
+
+Used 5.01 seconds
+Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exceeded
+```
+
+:::
+
+<br />
+
+### 内置资源
+
+::: details （1）Namespace
+
+```go
+
+```
+
+:::
 
