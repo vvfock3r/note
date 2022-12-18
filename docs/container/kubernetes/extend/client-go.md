@@ -902,7 +902,7 @@ func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-// CreateNamespaces 创建Namespace,
+// CreateNamespaces 创建Namespace
 //
 //	prefix指定名称前缀
 //	start指定开始编号
@@ -1072,8 +1072,68 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （3）Namespace基础的增删改查：Patch
 
-```go
+Patch 用来增量更新对象
 
+* 不需要提前获取namespace，只需要给出name即可更新，当然前提是namespace必须存在，否则会报错
+* 它还要传递一个Type，可选值有：
+  * `JSONPatchType`
+  * `MergePatchType`
+  * `StrategicMergePatchType`
+  * `ApplyPatchType`
+* kubectl patch默认使用的是 `StrategicMergePatchType`
+
+**（1）JSONPatchType**
+
+```go
+	// JSONPatchType
+	// 详细的信息可以参考RFC6902协议：https://www.rfc-editor.org/rfc/rfc6902
+	// op: 表示对资源对象的操作，主要有以下六种操作
+	//   add
+	//   replace
+	//   remove
+	//   move
+	//   copy
+	//   test
+	// path: 表示被作资源对象的路径。例如/spec/containers/0/image表示要操作的对象是“spec.containers[0].image”
+	// value: 表示预修改的值
+	name := "test"
+	jsonPatch := `[{
+		"op": "add",
+    	"path": "/metadata/labels/a",
+    	"value": "c"
+	}]`
+	newNamespace, err := clientset.CoreV1().Namespaces().Patch(ctx, name, types.JSONPatchType, []byte(jsonPatch), metav1.PatchOptions{})
+	if err != nil {
+		log.Printf("Patch namespace failed: %s: %v\n", name, err)
+	} else {
+		log.Printf("Patch namespace success: %s\n", newNamespace.Name)
+	}
 ```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/18 22:10:52 Patch namespace success: test
+
+[root@node-1 ~]# kubectl get ns test -o yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2022-12-18T13:47:58Z"
+  labels:
+    a: c
+    kubernetes.io/metadata.name: test
+  name: test
+  resourceVersion: "891641"
+  uid: 0e57ab7b-5901-4a51-8e4a-a91306eee619
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
+```
+
+**（2）MergePatchType**
 
 :::
