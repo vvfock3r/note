@@ -6,9 +6,7 @@ Github：[https://github.com/kubernetes/client-go](https://github.com/kubernetes
 
 <br />
 
-## 基础示例
-
-### 安装
+## 安装
 
 关于版本问题：[https://github.com/kubernetes/client-go/blob/master/INSTALL.md](https://github.com/kubernetes/client-go/blob/master/INSTALL.md)
 
@@ -19,7 +17,7 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-### 客户端
+## 客户端
 
 总共有4种客户端：
 
@@ -373,7 +371,7 @@ func main() {
 
 <br />
 
-### 超时问题
+## 超时问题
 
 默认情况下是没有超时限制的，但是在我的测试中看起来像是有超时的，下面来模拟一下
 
@@ -705,13 +703,161 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 
 <br />
 
-### 内置资源
+## 基础操作
 
-::: details （1）Namespace
+### 增删改查
+
+::: details （1）Namespace基础的增删改查：List、Get、Create、Update、Delete
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"log"
+	"os"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// (1) 输出所有的Namespace
+	{
+		log.Println("Namespace.List: ")
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			log.Fatalf("  %v\n", err)
+		}
+		for _, namespace := range namespaceList.Items {
+			log.Printf("  %s\n", namespace.Name)
+		}
+	}
+
+	// (2) 获取某个Namespace
+	{
+		log.Println("Namespace.Get: ")
+		name := "kube-system"
+		namespace, err := clientset.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				log.Printf("  %s: %t\n", name, false)
+			} else {
+				log.Fatalf("  %v\n", err)
+			}
+		} else {
+			log.Printf("  %s: %t\n", namespace.Name, true)
+		}
+	}
+
+	// (3) 创建一个Namespace
+	{
+		log.Println("Namespace.Create: ")
+		namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+		newNamespace, err := clientset.CoreV1().Namespaces().Create(ctx, &namespace, metav1.CreateOptions{})
+		if err != nil {
+			if errors.IsAlreadyExists(err) {
+				log.Printf("  %s: already exists\n", namespace.Name)
+			} else {
+				log.Printf("  %s: %v\n", namespace.Name, err)
+			}
+		} else {
+			log.Printf("  %s: ok\n", newNamespace.Name)
+		}
+	}
+
+	// (4) 全量更新一个Namespace
+	{
+		log.Println("Namespace.Update: ")
+		// 获取，这里为了省事直接生成一个对象
+		namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+		// 修改
+		namespace.Labels = map[string]string{"a": "b"}
+		// 更新
+		newNamespace, err := clientset.CoreV1().Namespaces().Update(ctx, &namespace, metav1.UpdateOptions{})
+		if err != nil {
+			log.Printf("  %s: %v\n", namespace, err)
+		} else {
+			log.Printf("  %s: ok\n", newNamespace.Name)
+		}
+	}
+
+	// (5) 删除一个Namespace
+	{
+		log.Println("Namespace.Delete: ")
+		name := "test"
+		err := clientset.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				log.Printf("  %s: already deleted\n", name)
+			} else {
+				log.Printf("  %s: %v\n", name, err)
+			}
+		} else {
+			log.Printf("  %s: ok\n", name)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/18 15:18:07 Namespace.List: 
+2022/12/18 15:18:07   default        
+2022/12/18 15:18:07   kube-node-lease
+2022/12/18 15:18:07   kube-public    
+2022/12/18 15:18:07   kube-system    
+2022/12/18 15:18:07 Namespace.Get:   
+2022/12/18 15:18:07   kube-system: true
+2022/12/18 15:18:07 Namespace.Create:  
+2022/12/18 15:18:07   test: ok         
+2022/12/18 15:18:07 Namespace.Update:  
+2022/12/18 15:18:07   test: ok        
+2022/12/18 15:18:07 Namespace.Delete: 
+2022/12/18 15:18:07   test: ok
+```
+
+:::
+
+::: details （2）Namespace基础的增删改查：List会一次性返回全部数据吗？
 
 ```go
 
 ```
 
 :::
-
