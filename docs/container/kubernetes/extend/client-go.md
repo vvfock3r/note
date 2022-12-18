@@ -1027,7 +1027,7 @@ D:\application\GoLand\example>go run main.go
 # 确实是全部输出出来了，多出来的4个是default、kube-system等空间
 ```
 
-3.client-go `List`有个`Limit`参数，用于限制返回的数量。同时返回值中还会有一个`Continue`字段，可以拿这个值获取下一次的值。这就达到了类似分页的效果
+3.client-go `List`有个`Limit`参数，用于限制返回的数量。同时返回值中还会有一个`Continue`字段，可以拿这个值获取下一次的值。这就达到了分页的效果
 
 `kubectl get ns --chunk-size=500`实际上设置的就是`Limit`值为500
 
@@ -1067,5 +1067,13 @@ D:\application\GoLand\example>go run main.go
 4.结论：
 
 `List`会一次返回所有数据，但是我们也可以采用`Limit + Continue`方式达到分页的效果
+
+:::
+
+::: details （3）Namespace基础的增删改查：Patch
+
+```go
+
+```
 
 :::
