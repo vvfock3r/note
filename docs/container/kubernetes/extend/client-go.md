@@ -856,7 +856,7 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （2）Namespace基础的增删改查：List会一次性返回全部数据吗？
 
-1.我们先写一段代码用来创建10万个Namespace
+1.我们先写一段代码用来创建3万个Namespace
 
 ```go
 package main
@@ -1063,5 +1063,9 @@ D:\application\GoLand\example>go run main.go
 D:\application\GoLand\example>go run main.go
 2022/12/18 20:29:06 List 30004 namespaces, used 16.82 seconds
 ```
+
+4.结论：
+
+`List`会一次返回所有数据，但是我们也可以采用`Limit + Continue`方式达到分页的效果
 
 :::
