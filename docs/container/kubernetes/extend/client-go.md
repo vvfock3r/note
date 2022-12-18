@@ -856,8 +856,212 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （2）Namespace基础的增删改查：List会一次性返回全部数据吗？
 
-```go
+1.我们先写一段代码用来创建10万个Namespace
 
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"log"
+	"os"
+	"runtime"
+	"strconv"
+	"sync"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// CreateNamespaces 创建Namespace,
+//
+//	prefix指定名称前缀
+//	start指定开始编号
+//	stop 指定结束编号
+func CreateNamespaces(ctx context.Context, clientset *kubernetes.Clientset, prefix string, start int, stop int) {
+	// 初始化变量
+	startTime := time.Now()
+	wg := sync.WaitGroup{}
+	namesCh := make(chan string)
+	success, failed := 0, 0
+
+	// 生产者
+	wg.Add(1)
+	go func() {
+		// 计算一个合适的宽度(编号前自动补0)，方便kubectl get ns时自动排序
+		width := len(strconv.Itoa(stop))
+		for i := start; i <= stop; i++ {
+			name := strconv.Itoa(i)
+			for len(name) < width {
+				name = "0" + name
+			}
+			// 向channel中传递name
+			namesCh <- prefix + name
+		}
+		close(namesCh)
+		wg.Done()
+	}()
+
+	// 消费者
+	for i := 0; i < runtime.NumCPU(); i++ {
+		wg.Add(1)
+		go func() {
+			for name := range namesCh {
+				namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
+				newNamespace, err := clientset.CoreV1().Namespaces().Create(ctx, &namespace, metav1.CreateOptions{})
+				if err != nil {
+					if errors.IsAlreadyExists(err) {
+						log.Printf("  %s: already exists\n", namespace.Name)
+						success += 1
+					} else {
+						log.Printf("  %s: %v\n", namespace.Name, err)
+						failed += 1
+					}
+				} else {
+					log.Printf("  %s: success\n", newNamespace.Name)
+					success += 1
+				}
+				// 执行太快会报错，所以休眠1秒
+				time.Sleep(time.Second)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	log.Printf("Create %d namespaces, used %.2f seconds, success %d, failed %d\n", stop-start, time.Since(startTime).Seconds(), success, failed)
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 创建3,0000个Namespace
+	CreateNamespaces(ctx, clientset, "test", 1, 30000)
+}
+```
+
+输出结果
+
+```bash
+# 等待补充
+```
+
+2.`kubectl get ns`会不会返回全部数据
+
+```bash
+[root@node-1 ~]# time kubectl get ns | grep -E '^test[0-9]+' | wc -l
+30000
+
+real    0m12.170s
+user    0m2.807s
+sys     0m1.053s
+
+# 这个执行时间有点久，可以优化一下吗？
+# 查看帮助 kubectl get ns --help，发现有个默认参数 --chunk-size=500，尝试将他调大一点
+
+[root@node-1 ~]# time kubectl get ns --chunk-size=30000 | grep -E '^test[0-9]+' | wc -l
+30000
+
+real    0m3.320s
+user    0m2.167s
+sys     0m0.770s
+```
+
+3.client-go `List`会不会返回全部数据
+
+```go
+	// 创建3,0000个Namespace
+	// CreateNamespaces(ctx, clientset, "test", 1, 30000)
+
+	// 检查Namespace个数
+	startTime := time.Now()
+	namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("List %d namespaces, used %.2f seconds\n", len(namespaceList.Items), time.Since(startTime).Seconds())
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/18 20:17:14 List 30004 namespaces, used 1.02 seconds
+
+# 确实是全部输出出来了，多出来的4个是default、kube-system等空间
+```
+
+3.client-go `List`有个`Limit`参数，用于限制返回的数量。同时返回值中还会有一个`Continue`字段，可以拿这个值获取下一次的值。这就达到了类似分页的效果
+
+`kubectl get ns --chunk-size=500`实际上设置的就是`Limit`值为500
+
+```go
+	// 创建3,0000个Namespace
+	// CreateNamespaces(ctx, clientset, "test", 1, 30000)
+
+	// 检查Namespace个数
+	startTime := time.Now()
+	total := 0
+	token := ""
+	for {
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{
+			Limit:    100,
+			Continue: token,
+		})
+		if err != nil {
+			panic(err)
+		}
+		total += len(namespaceList.Items)
+		if namespaceList.Continue != "" {
+			token = namespaceList.Continue
+		} else {
+			break
+		}
+	}
+	log.Printf("List %d namespaces, used %.2f seconds\n", total, time.Since(startTime).Seconds())
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/18 20:29:06 List 30004 namespaces, used 16.82 seconds
 ```
 
 :::
