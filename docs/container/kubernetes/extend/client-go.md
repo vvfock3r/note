@@ -1352,7 +1352,301 @@ func main() {
 
 :::
 
+::: details （2）优化我们的程序
 
+`demo.yaml`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+  #namespace: default
+spec:
+  selector:
+    app: web
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  #namespace: default
+  labels:
+    a: zzz
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.23.2
+          command: [ 'nginx', '-g', 'daemon off;' ]
+        - name: busybox
+          image: busybox:1.28
+          command: [ 'sh', '-c', 'echo The app is running! && sleep 3600' ]
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
+	applyappsv1 "k8s.io/client-go/applyconfigurations/apps/v1"
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"reflect"
+	"runtime"
+	"strings"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// 从YAML文件中提取出所有的 Kind
+func GetKindList(data []byte) []string {
+	buffer := bytes.NewBuffer(data)
+	kindList := []string{}
+	for {
+		line, err := buffer.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if strings.HasPrefix(line, "kind") {
+			kind := strings.TrimSpace(strings.Trim(strings.Split(line, ":")[1], "\n"))
+			kindList = append(kindList, kind)
+		}
+	}
+	return kindList
+}
+
+// Apply状态
+type ApplyStatus string
+
+const (
+	Created    ApplyStatus = "created"
+	Configured ApplyStatus = "configured"
+	Unchanged  ApplyStatus = "unchanged"
+)
+
+func ApplyDeployment(
+	ctx context.Context,
+	clientset *kubernetes.Clientset,
+	decoder *yamlutil.YAMLOrJSONDecoder,
+	checkUpdated bool) (*appsv1.Deployment, ApplyStatus, error) {
+
+	// 初始化变量
+	var (
+		before *appsv1.Deployment
+		after  *appsv1.Deployment
+		status ApplyStatus
+	)
+
+	// 初始化deploy，并设置默认参数
+	deploy := &applyappsv1.DeploymentApplyConfiguration{
+		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
+			Namespace: func() *string { namespace := "default"; return &namespace }(),
+		},
+	}
+
+	// 解码
+	err := decoder.Decode(deploy)
+	if err != nil {
+		return nil, status, err
+	}
+
+	// 默认参数不能在这里加了，会报错 panic: runtime error: invalid memory address or nil pointer dereference
+	// DeploymentApplyConfiguration结构体里都是指针，难道是为了不让修改?
+	//fmt.Println(*(deploy.Namespace))
+	//if strings.TrimSpace(*(deploy.Namespace)) == "" {
+	//	*(deploy.Namespace) = "default"
+	//}
+
+	// 若需要检查是否有更新，则Apply之前获取一次Deployment
+	if checkUpdated {
+		before, err = clientset.AppsV1().Deployments(*(deploy.Namespace)).Get(ctx, *(deploy.Name), metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				status = Created
+			} else {
+				return nil, status, err
+			}
+		}
+	}
+
+	// Apply，核心方法，必须要执行
+	after, err = clientset.AppsV1().Deployments(*(deploy.Namespace)).Apply(ctx, deploy, metav1.ApplyOptions{FieldManager: "client-go"})
+	if err != nil {
+		return nil, status, err
+	}
+
+	// 若需要检查是否有更新，则进行对比
+	if checkUpdated {
+		if status != Created {
+			if !reflect.DeepEqual(before, after) {
+				status = Configured
+			} else {
+				status = Unchanged
+			}
+		}
+	}
+
+	return after, status, err
+}
+
+func ApplyService(
+	ctx context.Context,
+	clientset *kubernetes.Clientset,
+	decoder *yamlutil.YAMLOrJSONDecoder,
+	checkUpdated bool) (*corev1.Service, ApplyStatus, error) {
+
+	// 初始化变量
+	var (
+		before *corev1.Service
+		after  *corev1.Service
+		status ApplyStatus
+	)
+
+	// 初始化配置，并设置默认参数
+	service := &applycorev1.ServiceApplyConfiguration{
+		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
+			Namespace: func() *string { namespace := "default"; return &namespace }(),
+		},
+	}
+
+	// 解码
+	err := decoder.Decode(service)
+	if err != nil {
+		return nil, status, err
+	}
+
+	// 若需要检查是否有更新，则Apply之前获取一次Service
+	if checkUpdated {
+		before, err = clientset.CoreV1().Services(*(service.Namespace)).Get(ctx, *(service.Name), metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				status = Created
+			} else {
+				return nil, status, err
+			}
+		}
+	}
+
+	// Apply，核心方法，必须要执行
+	after, err = clientset.CoreV1().Services(*(service.Namespace)).Apply(ctx, service, metav1.ApplyOptions{FieldManager: "client-go"})
+	if err != nil {
+		return nil, status, err
+	}
+
+	// 若需要检查是否有更新，则进行对比
+	if checkUpdated {
+		if status != Created {
+			if !reflect.DeepEqual(before, after) {
+				status = Configured
+			} else {
+				status = Unchanged
+			}
+		}
+	}
+
+	return after, status, err
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 1.读取本地YAML文件并生成decoder对象
+	data, err := os.ReadFile("demo.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	// 2.按行读取YAML文件，并收集所有的 kind
+	kindList := GetKindList(data)
+
+	// 3.生成decoder对象
+	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(data), 512)
+
+	// 4.遍历 kindList,并创建对应资源
+	for _, kind := range kindList {
+		switch kind {
+		case "Deployment":
+			// 创建或更新
+			deploy, status, err := ApplyDeployment(ctx, clientset, decoder, true)
+			if err == nil {
+				fmt.Printf("deployment.apps/%s %s\n", deploy.Name, status)
+			} else {
+				fmt.Println(err)
+			}
+		case "Service":
+			// 创建或更新
+			service, status, err := ApplyService(ctx, clientset, decoder, true)
+			if err == nil {
+				fmt.Printf("service/%s %s\n", service.Name, status)
+			} else {
+				fmt.Println(err)
+			}
+		default:
+			fmt.Printf("Unknown kind: %s\n", kind)
+		}
+	}
+}
+```
+
+:::
 
 
 
