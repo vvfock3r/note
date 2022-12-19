@@ -1178,3 +1178,48 @@ status:
 ```
 
 :::
+
+::: details （4）基础的增删改查：Apply
+
+```go
+import (
+	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+)
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+
+    // Apply：创建或更新
+	// 1.Apply和Get、Update、Delete等不同，它需要传递一个xxApplyConfiguration对象
+	// 2.还必须传递一个FieldManager的选项
+	//   1) fieldManager字段用于跟踪哪个控制器负责本资源
+	//   2) fieldManager字段通常设置为控制器的名称
+	name := "test"
+	namespace := applycorev1.NamespaceApplyConfiguration{
+		TypeMetaApplyConfiguration: applymetav1.TypeMetaApplyConfiguration{
+			Kind:       stringPtr("Namespace"),
+			APIVersion: stringPtr("v1"),
+		},
+		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
+			Name: &name,
+		},
+	}
+	newNamespace, err := clientset.CoreV1().Namespaces().Apply(ctx, &namespace, metav1.ApplyOptions{FieldManager: "client-go"})
+	if err != nil {
+		log.Printf("Apply namespace failed: %s: %v\n", name, err)
+	} else {
+		log.Printf("Apply namespace success: %s\n", newNamespace.Name)
+	}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/19 16:57:19 Apply namespace success: test
+```
+
+:::
