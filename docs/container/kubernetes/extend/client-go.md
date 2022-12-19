@@ -707,7 +707,7 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 
 ### 增删改查
 
-::: details （1）Namespace基础的增删改查：List、Get、Create、Update、Delete
+::: details （1）基础的增删改查：List、Get、Create、Update、Delete
 
 ```go
 package main
@@ -854,7 +854,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）Namespace基础的增删改查：List会一次性返回全部数据吗？
+::: details （2）基础的增删改查：List会一次性返回全部数据吗？
 
 1.我们先写一段代码用来创建3万个Namespace
 
@@ -1070,9 +1070,9 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）Namespace基础的增删改查：Patch
+::: details （3）基础的增删改查：Patch
 
-Patch 用来增量更新对象
+`Patch `用来增量对象进行更新，此函数比较复杂，仅做了解
 
 * 不需要提前获取namespace，只需要给出name即可更新，当然前提是namespace必须存在，否则会报错
 * 它还要传递一个Type，可选值有：
@@ -1084,9 +1084,10 @@ Patch 用来增量更新对象
 
 **（1）JSONPatchType**
 
+RFC6902协议：[https://www.rfc-editor.org/rfc/rfc6902](https://www.rfc-editor.org/rfc/rfc6902)
+
 ```go
 	// JSONPatchType
-	// 详细的信息可以参考RFC6902协议：https://www.rfc-editor.org/rfc/rfc6902
 	// op: 表示对资源对象的操作，主要有以下六种操作
 	//   add
 	//   replace
@@ -1097,12 +1098,12 @@ Patch 用来增量更新对象
 	// path: 表示被作资源对象的路径。例如/spec/containers/0/image表示要操作的对象是“spec.containers[0].image”
 	// value: 表示预修改的值
 	name := "test"
-	jsonPatch := `[{
+	patch := `[{
 		"op": "add",
     	"path": "/metadata/labels/a",
     	"value": "c"
 	}]`
-	newNamespace, err := clientset.CoreV1().Namespaces().Patch(ctx, name, types.JSONPatchType, []byte(jsonPatch), metav1.PatchOptions{})
+	newNamespace, err := clientset.CoreV1().Namespaces().Patch(ctx, name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{})
 	if err != nil {
 		log.Printf("Patch namespace failed: %s: %v\n", name, err)
 	} else {
@@ -1135,5 +1136,45 @@ status:
 ```
 
 **（2）MergePatchType**
+
+RFC7386协议：[https://www.rfc-editor.org/rfc/rfc7386](https://www.rfc-editor.org/rfc/rfc7386)
+
+```go
+	// MergePatchType
+	// 1.若要删除一个key，需要将值设置为null。同时这也意味着想要为某个key设置值为null是不可能的
+	// 2.如果想要修改数组，那么必须将完整的数组传递过去，即使只修改了一小部分
+	name := "test"
+	patch := `{"metadata":{"labels":{"a":"f"}}}`
+	newNamespace, err := clientset.CoreV1().Namespaces().Patch(ctx, name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
+	if err != nil {
+		log.Printf("Patch namespace failed: %s: %v\n", name, err)
+	} else {
+		log.Printf("Patch namespace success: %s\n", newNamespace.Name)
+	}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/19 15:41:14 Patch namespace success: test
+
+[root@node-1 ~]# kubectl get ns test -o yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2022-12-18T13:47:58Z"
+  labels:
+    a: f
+    kubernetes.io/metadata.name: test
+  name: test
+  resourceVersion: "895914"
+  uid: 0e57ab7b-5901-4a51-8e4a-a91306eee619
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
+```
 
 :::
