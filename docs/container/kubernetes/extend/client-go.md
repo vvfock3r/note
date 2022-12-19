@@ -1191,7 +1191,6 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-
     // Apply：创建或更新
 	// 1.Apply和Get、Update、Delete等不同，它需要传递一个xxApplyConfiguration对象
 	// 2.还必须传递一个FieldManager的选项
@@ -1223,3 +1222,137 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
+### 读取YAML
+
+::: details （1）读取本地YAML文件，并创建（`Create`）对应的资源
+
+`demo.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  #namespace: default
+  labels:
+    a: b
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.23.2
+          command: [ 'nginx', '-g', 'daemon off;' ]
+        - name: busybox
+          image: busybox:1.28
+          command: [ 'sh', '-c', 'echo The app is running! && sleep 3600' ]
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"log"
+	"os"
+	"runtime"
+	"strings"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 1.读取本地YAML文件并生成decoder对象
+	yamlBytes, err := os.ReadFile("demo.yaml")
+	if err != nil {
+		panic(err)
+	}
+	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(yamlBytes), 512)
+
+	// 2.解码为 Deployment
+	deploy := &appsv1.Deployment{}
+	if err := decoder.Decode(deploy); err != nil {
+		panic(err)
+	}
+
+	// 3.添加默认参数
+	if strings.TrimSpace(deploy.Namespace) == "" {
+		deploy.Namespace = "default"
+	}
+
+	// 4.创建Deployment
+	newDeploy, err := clientset.AppsV1().Deployments(deploy.Namespace).Create(ctx, deploy, metav1.CreateOptions{})
+	if err == nil {
+		log.Printf("Deployment创建成功: %s\n", newDeploy.Name)
+	} else if errors.IsAlreadyExists(err) {
+		log.Printf("Deployment已经存在: %s\n", deploy.Name)
+	} else {
+		log.Printf("Deployment创建失败: %v\n", err)
+	}
+}
+```
+
+分析：这段代码可以跑，但是还有很大的优化空间：
+
+* YAML中应当支持任意内置资源类型，比如`Deployment`、`Service`等
+* YAML中应当同时支持操作多种资源，比如`Deployment`和`Service`，使用`---`分隔
+* 程序只具备`Create`能力，我希望它能支持最常用的`Apply`和`Delete`
+
+:::
+
+
+
+
+
