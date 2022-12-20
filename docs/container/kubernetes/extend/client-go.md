@@ -1356,7 +1356,7 @@ func main() {
 
 思路：
 
-* 关键在于`decoder`对象（`NewYAMLOrJSONDecoder`）的`Decode`方法
+* 关键在于`NewYAMLOrJSONDecoder`对象的`Decode`方法
   * 它可以解码任何对象，只要YAML或JSON格式没有错误就不会报错
   * 它是流式的，即解码一次后再次解码会从上次的位置继续往下走，并不是解码整个文件内容，而是以`---`作为一次解码
   * 综上所述
