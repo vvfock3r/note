@@ -1573,9 +1573,9 @@ func (d *Deployment) Delete(ctx context.Context, config *applyappsv1.DeploymentA
 }
 
 // Do 聚合方法
-func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, action Command) error {
+func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, command Command) error {
 	var err error
-	switch action {
+	switch command {
 	case ApplyCommand:
 		err = d.Apply(ctx, config)
 	case DeleteCommand:
@@ -1665,9 +1665,9 @@ func (s *Service) Delete(ctx context.Context, config *applycorev1.ServiceApplyCo
 }
 
 // Do 聚合方法
-func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, action Command) error {
+func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, command Command) error {
 	var err error
-	switch action {
+	switch command {
 	case ApplyCommand:
 		err = s.Apply(ctx, config)
 	case DeleteCommand:
