@@ -1407,6 +1407,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/spf13/cobra"
 	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1420,6 +1421,25 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+)
+
+// 定义执行动作
+type Action string
+
+const (
+	ApplyAction  Action = "apply"
+	DeleteAction Action = "delete"
+)
+
+// 定义执行状态
+type Status string
+
+const (
+	Created    Status = "created"
+	Configured Status = "configured"
+	Unchanged  Status = "unchanged"
+	Deleted    Status = "deleted"
+	NotFound   Status = "not found"
 )
 
 // NewClientSetByConfig 在集群外部使用配置文件进行认证
@@ -1447,32 +1467,24 @@ func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-// 从YAML文件中提取出所有的 Kind
-func GetKindList(data []byte) []string {
+// GetKindList 从YAML文件中提取出所有的 Kind
+func GetKindList(data []byte) ([]string, error) {
 	buffer := bytes.NewBuffer(data)
 	kindList := []string{}
 	for {
 		line, err := buffer.ReadString('\n')
 		if err == io.EOF {
 			break
+		} else if err != nil {
+			return nil, err
 		}
 		if strings.HasPrefix(line, "kind") {
 			kind := strings.TrimSpace(strings.Trim(strings.Split(line, ":")[1], "\n"))
 			kindList = append(kindList, kind)
 		}
 	}
-	return kindList
+	return kindList, nil
 }
-
-// Apply和Delete状态
-type Status string
-
-const (
-	Created    Status = "created"
-	Configured Status = "configured"
-	Unchanged  Status = "unchanged"
-	Deleted    Status = "deleted"
-)
 
 // 定义 Deployment 结构体
 type Deployment struct {
@@ -1534,6 +1546,39 @@ func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentAp
 	return nil
 }
 
+func (d *Deployment) Delete(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration) error {
+	// 初始化状态
+	var status Status
+
+	// 从ApplyConfig中获取需要的配置
+	namespace := *(config.Namespace)
+	name := *(config.Name)
+
+	err := d.clientset.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			status = NotFound
+		}
+	} else {
+		status = Deleted
+	}
+
+	fmt.Printf("deployment.apps/%s %s\n", name, status)
+	return nil
+}
+
+// Do 聚合方法
+func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, action Action) error {
+	var err error
+	switch action {
+	case ApplyAction:
+		err = d.Apply(ctx, config)
+	case DeleteAction:
+		err = d.Delete(ctx, config)
+	}
+	return err
+}
+
 // 定义 Service 结构体
 type Service struct {
 	clientset *kubernetes.Clientset
@@ -1593,29 +1638,66 @@ func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyCon
 	return nil
 }
 
-func main() {
+func (s *Service) Delete(ctx context.Context, config *applycorev1.ServiceApplyConfiguration) error {
+	// 初始化状态
+	var status Status
+
+	// 从ApplyConfig中获取需要的配置
+	namespace := *(config.Namespace)
+	name := *(config.Name)
+
+	err := s.clientset.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			status = NotFound
+		}
+	} else {
+		status = Deleted
+	}
+
+	fmt.Printf("service/%s %s\n", name, status)
+	return nil
+}
+
+// Do 聚合方法
+func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, action Action) error {
+	var err error
+	switch action {
+	case ApplyAction:
+		err = s.Apply(ctx, config)
+	case DeleteAction:
+		err = s.Delete(ctx, config)
+	}
+	return err
+}
+
+// 核心方法
+func ActionDoWithFile(action Action, fileName string) (err error) {
 	// 实例化ClientSet
 	clientset, err := NewClientSetByConfig(".kube.config")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// 初始化一个全局的Context
 	ctx := context.Background()
 
-	// 1.读取本地YAML文件并生成decoder对象
-	data, err := os.ReadFile("demo.yaml")
+	// 1.读取本地YAML文件
+	data, err := os.ReadFile(fileName)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// 2.按行读取YAML文件，并收集所有的 kind
-	kindList := GetKindList(data)
+	kindList, err := GetKindList(data)
+	if err != nil {
+		return err
+	}
 
 	// 3.生成decoder对象
 	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(data), 512)
 
-	// 4.遍历 kindList,并创建对应资源
+	// 4.遍历 kindList,并操作对应资源
 	for _, kind := range kindList {
 		switch kind {
 		case "Deployment":
@@ -1625,12 +1707,13 @@ func main() {
 			// 解码，获取 applyappsv1.DeploymentApplyConfiguration
 			applyConfig, err := deploy.Decode(decoder)
 			if err != nil {
-				panic(err)
+				return err
 			}
 
-			// Apply
-			if err := deploy.Apply(ctx, applyConfig); err != nil {
-				panic(err)
+			// 不同的子命令执行不同的操作
+			err = deploy.Do(ctx, applyConfig, action)
+			if err != nil {
+				fmt.Println(err)
 			}
 		case "Service":
 			// 定义Service结构体
@@ -1639,16 +1722,74 @@ func main() {
 			// 解码，获取 applycorev1.ServiceApplyConfiguration
 			applyConfig, err := service.Decode(decoder)
 			if err != nil {
-				panic(err)
+				return err
 			}
 
-			// Apply
-			if err := service.Apply(ctx, applyConfig); err != nil {
-				panic(err)
+			// 不同的子命令执行不同的操作
+			err = service.Do(ctx, applyConfig, action)
+			if err != nil {
+				fmt.Println(err)
 			}
 		default:
 			fmt.Printf("Unknown kind: %s\n", kind)
 		}
+	}
+
+	return err
+}
+
+// 命令行参数解析
+func GetRootCommand() *cobra.Command {
+	// 定义命令行选项
+	var fileName string
+
+	// 根命令
+	var rootCmd = &cobra.Command{
+		Use:   "kubectl",
+		Short: "kubectl controls the Kubernetes cluster manager.",
+	}
+
+	// 子命令apply，并设置必选参数-f/--filename
+	var ApplyCommand = &cobra.Command{
+		Use:   "apply",
+		Short: "ApplyAction a configuration to a resource by fileName name or stdin.",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := ActionDoWithFile(ApplyAction, fileName); err != nil {
+				os.Exit(1)
+			}
+		},
+	}
+	ApplyCommand.Flags().StringVarP(&fileName, "filename", "f", "", "The files that contain the configurations to apply")
+	if err := ApplyCommand.MarkFlagRequired("filename"); err != nil {
+		panic(err)
+	}
+
+	// 子命令delete，并设置必选参数-f/--filename
+	var DeleteCommand = &cobra.Command{
+		Use:   "delete",
+		Short: "DeleteAction resources by fileName names, stdin, resources and names, or by resources and label selector",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := ActionDoWithFile(DeleteAction, fileName); err != nil {
+				os.Exit(1)
+			}
+		},
+	}
+	DeleteCommand.Flags().StringVarP(&fileName, "filename", "f", "", "containing the resource to delete")
+	if err := DeleteCommand.MarkFlagRequired("filename"); err != nil {
+		panic(err)
+	}
+
+	// 将所有子命令注册到根命令中
+	rootCmd.AddCommand(ApplyCommand, DeleteCommand)
+
+	return rootCmd
+}
+
+func main() {
+	rootCmd := GetRootCommand()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 }
 ```
