@@ -98,22 +98,25 @@ nginx:webserver
 
 ## 自动发布
 
-### 说明
-
-| 发布方式      | 说明                                                         | 优势                                 | 劣势                                                         |
-| ------------- | ------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Webhook       | （1）首先启动一个公网可访问的Web Server<br />（2）当有代码提交时，Github会给Web Server发送POST请求<br />（3）Server接到请求后执行发布所需要的一系列流程 | 简单                                 | 服务器需要额外开放一个端口；<br />打包等操作会占用服务器资源 |
-| Github Action | 我们只需要编写一个YAML文件在Github所提供的云环境内进行各种操作即可完成发布 | 无额外端口开放；<br />不占用系统资源 | YAML编写略复杂；<br />通常需要开放SSH端口给云环境            |
-
-<br />
-
-### 方法1：Webhook
+* Webhook
+* Github Action（推荐）
 
 <details>
     <summary>点击查看详情</summary>
     <p>
 
-**服务端配置**
+### 自动发布方式对比
+
+| 发布方式      | 说明                                                         | 优势                                 | 劣势                                                         |
+| ------------- | ------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
+| Webhook       | （1）首先启动一个公网可访问的Web Server<br />（2）当有代码提交时，Github会给Web Server发送POST请求<br />（3）Server接到请求后执行发布所需要的一系列流程 | 简单                                 | 服务器需要额外开放一个端口；<br />打包等操作会占用服务器资源 |
+| Github Action | 我们只需要编写一个YAML文件在Github所提供的云环境内进行各种操作完成发布 | 无额外端口开放；<br />不占用系统资源 | YAML编写略复杂；<br />通常需要开放SSH端口给云环境            |
+
+<br />
+
+### 方法1：Webhook
+
+**（1）服务端配置**
 
 ```bash
 # (1)下载源码到/root/下
@@ -142,27 +145,27 @@ Github_Secret = "1YbutGiyBDV6hlix"  # 根据实际情况修改
  * Running on http://10.0.8.4:12345/ (Press CTRL+C to quit)
 ```
 
-**Github Web配置**
+**（2）Github Web配置**
 
 ![image-20220623124356891](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220623124356891.png)
+
+<br />
+
+### 方法2：Github Action（推荐）
+
+**（1）编写YAML**
+
+参考：[https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml](https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml)
+
+**（2）配置Github Secrets**
+
+![image-20220623124558992](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220623124558992.png)
 
 </p>
 </details>
 
 <br />
 
-### 方法2：Github Action（推荐）
+## VuePress配置
 
-**编写YAML**
-
-参考：[https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml](https://github.com/vvfock3r/note/blob/main/.github/workflows/main.yml)
-
-**Github Secrets配置**
-
-![image-20220623124558992](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220623124558992.png)
-
-<br />
-
-## VuePress配置说明
-
-参考：[https://jinhui.dev/frontend/VuePress.html](https://jinhui.dev/frontend/VuePress.html)
+参考：[https://jinhui.dev/coding/frontend/VuePress.html](https://jinhui.dev/coding/frontend/VuePress.html)
