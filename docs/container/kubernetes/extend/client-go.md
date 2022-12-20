@@ -1948,6 +1948,11 @@ deployment.apps/demo created
 service/demo unchanged
 deployment.apps/demo unchanged
 
+# 修改后再执行apply，这里改一下Service的labels
+[root@node-1 ~]# ./main apply -f demo.yaml
+service/demo configured
+deployment.apps/demo unchanged
+
 # delete
 [root@node-1 ~]# ./main delete -f demo.yaml 
 service/demo deleted
