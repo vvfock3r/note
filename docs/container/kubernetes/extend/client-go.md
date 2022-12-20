@@ -1947,6 +1947,11 @@ spec:
 service/demo created
 deployment.apps/demo created
 
+# 再次执行apply
+[root@node-1 ~]# ./main apply -f demo.yaml
+service/demo unchanged
+deployment.apps/demo unchanged
+
 # delete
 [root@node-1 ~]# ./main delete -f demo.yaml 
 service/demo deleted
