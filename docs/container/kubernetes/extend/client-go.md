@@ -1953,6 +1953,11 @@ deployment.apps/demo unchanged
 service/demo deleted
 deployment.apps/demo deleted
 
+# 再次执行delete
+[root@node-1 ~]# ./main delete -f demo.yaml
+Error from server (NotFound): error when deleting "demo.yaml": services "demo" not found
+Error from server (NotFound): error when deleting "demo.yaml": deployments.apps "demo" not found
+
 # ---------------------------------------------------------------------------------------------------------------------
 
 # 修改ClusterIP为ClusterIP1，检查报错情况
