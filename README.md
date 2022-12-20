@@ -162,14 +162,14 @@ Github_Secret = "1YbutGiyBDV6hlix"  # 根据实际情况修改
 
 <br />
 
-## VuePress 2.x
+## VuePress 2.x配置
 
 * 官网：[https://v2.vuepress.vuejs.org/zh/](https://v2.vuepress.vuejs.org/zh/)
 * 参考：[https://jinhui.dev/coding/frontend/VuePress.html](https://jinhui.dev/coding/frontend/VuePress.html)
 
 <br />
 
-### 联系我😊
+## 联系我😊
 
 如果您有**任何问题**欢迎通过如下方式联系我
 
