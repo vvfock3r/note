@@ -1354,6 +1354,16 @@ func main() {
 
 ::: details （2）优化我们的程序
 
+思路：
+
+* 关键在于`decoder`对象（`NewYAMLOrJSONDecoder`）的`Decode`方法
+  * 它可以解码任何对象，只要YAML或JSON格式没有错误就不会报错
+  * 它是流式的，即解码一次后再次解码会从上次的位置继续往下走，并不是解码整个文件内容，而是以`---`作为一次解码
+  * 综上所述
+    * （1）在使用`Decode`方法前我们要知道应该要解码为什么对象
+    * （2）流式的特性可以让我们的YAML文件支持多个资源配置
+* 为了能更贴近`kubectl`，这里使用了`cobra`作为命令行参数解析库，并且针对错误内容进行了特殊处理
+
 `demo.yaml`
 
 ```yaml
@@ -1423,7 +1433,7 @@ import (
 	"strings"
 )
 
-// 定义子命令
+// Command 定义子命令
 type Command string
 
 func (s Command) String() string {
@@ -1436,7 +1446,7 @@ const (
 	DeleteCommand Command = "delete"
 )
 
-// 定义执行状态
+// Status 定义执行状态
 type Status string
 
 const (
@@ -1444,7 +1454,6 @@ const (
 	Configured Status = "configured"
 	Unchanged  Status = "unchanged"
 	Deleted    Status = "deleted"
-	NotFound   Status = "not found"
 )
 
 // NewClientSetByConfig 在集群外部使用配置文件进行认证
@@ -1474,8 +1483,8 @@ func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
 
 // GetKindList 从YAML文件中提取出所有的 Kind
 func GetKindList(data []byte) ([]string, error) {
+	var kindList []string
 	buffer := bytes.NewBuffer(data)
-	kindList := []string{}
 	for {
 		line, err := buffer.ReadString('\n')
 		if err == io.EOF {
@@ -1491,7 +1500,7 @@ func GetKindList(data []byte) ([]string, error) {
 	return kindList, nil
 }
 
-// 定义 Deployment 结构体
+// Deployment 定义 Deployment 结构体
 type Deployment struct {
 	clientset *kubernetes.Clientset
 }
@@ -1513,7 +1522,7 @@ func (d *Deployment) Decode(decoder *yamlutil.YAMLOrJSONDecoder) (*applyappsv1.D
 	return applyConfig, nil
 }
 
-func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration) error {
+func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration) (Status, error) {
 	// 初始化状态
 	var status Status
 
@@ -1527,13 +1536,13 @@ func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentAp
 		if errors.IsNotFound(err) {
 			status = Created
 		} else {
-			return err
+			return status, err
 		}
 	}
 	// 创建或更新
 	after, err := d.clientset.AppsV1().Deployments(namespace).Apply(ctx, config, metav1.ApplyOptions{FieldManager: "client-go"})
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// 对比
@@ -1546,45 +1555,38 @@ func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentAp
 	}
 
 	// 输出结果
-	fmt.Printf("deployment.apps/%s %s\n", after.Name, status)
+	//fmt.Printf("deployment.apps/%s %s\n", after.Name, status)
 
-	return nil
+	return status, nil
 }
 
 func (d *Deployment) Delete(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration) error {
-	// 初始化状态
-	var status Status
-
-	// 从ApplyConfig中获取需要的配置
-	namespace := *(config.Namespace)
-	name := *(config.Name)
-
-	err := d.clientset.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			status = NotFound
-		}
-	} else {
-		status = Deleted
-	}
-
-	fmt.Printf("deployment.apps/%s %s\n", name, status)
-	return nil
+	return d.clientset.AppsV1().Deployments(*(config.Namespace)).Delete(ctx, *(config.Name), metav1.DeleteOptions{})
 }
 
 // Do 聚合方法
 func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, command Command) error {
-	var err error
+	var (
+		err    error
+		status Status
+	)
+
 	switch command {
 	case ApplyCommand:
-		err = d.Apply(ctx, config)
+		status, err = d.Apply(ctx, config)
+		if err == nil {
+			fmt.Printf("deployment.apps/%s %s\n", *(config.Name), status)
+		}
 	case DeleteCommand:
 		err = d.Delete(ctx, config)
+		if err == nil {
+			fmt.Printf("deployment.apps/%s %s\n", *(config.Name), Deleted)
+		}
 	}
 	return err
 }
 
-// 定义 Service 结构体
+// Service 定义 Service 结构体
 type Service struct {
 	clientset *kubernetes.Clientset
 }
@@ -1606,7 +1608,7 @@ func (s *Service) Decode(decoder *yamlutil.YAMLOrJSONDecoder) (*applycorev1.Serv
 	return applyConfig, err
 }
 
-func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyConfiguration) error {
+func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyConfiguration) (Status, error) {
 	// 初始化状态
 	var status Status
 
@@ -1620,14 +1622,14 @@ func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyCon
 		if errors.IsNotFound(err) {
 			status = Created
 		} else {
-			return err
+			return status, err
 		}
 	}
 
 	// 创建或更新
 	after, err := s.clientset.CoreV1().Services(namespace).Apply(ctx, config, metav1.ApplyOptions{FieldManager: "client-go"})
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// 对比
@@ -1639,45 +1641,40 @@ func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyCon
 		}
 	}
 
-	fmt.Printf("service/%s %s\n", after.Name, status)
-	return nil
+	//fmt.Printf("service/%s %s\n", after.Name, status)
+	return status, err
 }
 
 func (s *Service) Delete(ctx context.Context, config *applycorev1.ServiceApplyConfiguration) error {
-	// 初始化状态
-	var status Status
-
-	// 从ApplyConfig中获取需要的配置
-	namespace := *(config.Namespace)
-	name := *(config.Name)
-
-	err := s.clientset.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			status = NotFound
-		}
-	} else {
-		status = Deleted
-	}
-
-	fmt.Printf("service/%s %s\n", name, status)
-	return nil
+	return s.clientset.CoreV1().Services(*(config.Namespace)).Delete(ctx, *(config.Name), metav1.DeleteOptions{})
 }
 
 // Do 聚合方法
 func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, command Command) error {
-	var err error
+	var (
+		err    error
+		status Status
+	)
+
 	switch command {
 	case ApplyCommand:
-		err = s.Apply(ctx, config)
+		status, err = s.Apply(ctx, config)
+		if err == nil {
+			fmt.Printf("service/%s %s\n", *(config.Name), status)
+		}
 	case DeleteCommand:
 		err = s.Delete(ctx, config)
+		if err == nil {
+			fmt.Printf("service/%s %s\n", *(config.Name), Deleted)
+		}
 	}
 	return err
 }
 
-// 核心方法
+// DoCommandWithFile 核心方法
 func DoCommandWithFile(command Command, fileName string) (err error) {
+	var errorList []error
+
 	// 实例化ClientSet
 	clientset, err := NewClientSetByConfig(".kube.config")
 	if err != nil {
@@ -1718,7 +1715,7 @@ func DoCommandWithFile(command Command, fileName string) (err error) {
 			// 不同的子命令执行不同的操作
 			err = deploy.Do(ctx, applyConfig, command)
 			if err != nil {
-				fmt.Println(err)
+				errorList = append(errorList, err)
 			}
 		case "Service":
 			// 定义Service结构体
@@ -1733,25 +1730,40 @@ func DoCommandWithFile(command Command, fileName string) (err error) {
 			// 不同的子命令执行不同的操作
 			err = service.Do(ctx, applyConfig, command)
 			if err != nil {
-				fmt.Println(err)
+				errorList = append(errorList, err)
 			}
 		default:
-			fmt.Printf("Unknown kind: %s\n", kind)
+			errorList = append(errorList, fmt.Errorf("Unknown kind: %s\n", kind))
 		}
 	}
 
-	return err
+	// 5.错误处理
+	if len(errorList) > 0 {
+		for _, err := range errorList {
+			if errors.IsNotFound(err) {
+				message := `Error from server (NotFound): error when deleting "` + fileName + `": ` + err.Error()
+				_, _ = fmt.Fprintln(os.Stderr, message)
+			} else {
+				_, _ = fmt.Fprintln(os.Stderr, "The "+err.Error())
+			}
+		}
+		return fmt.Errorf("")
+	}
+
+	return nil
 }
 
-// 命令行参数解析
+// GetRootCommand 命令行参数解析
 func GetRootCommand() *cobra.Command {
 	// 定义命令行选项
 	var fileName string
 
 	// 根命令
 	var rootCmd = &cobra.Command{
-		Use:   RootCommand.String(),
-		Short: RootCommand.String() + " controls the Kubernetes cluster manager.",
+		Use:           RootCommand.String(),
+		Short:         RootCommand.String() + " controls the Kubernetes cluster manager.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
 	// 子命令apply，并设置必选参数-f/--filename
@@ -1765,6 +1777,7 @@ func GetRootCommand() *cobra.Command {
 		},
 	}
 	ApplyCommand.Flags().StringVarP(&fileName, "filename", "f", "", "The files that contain the configurations to apply")
+
 	if err := ApplyCommand.MarkFlagRequired("filename"); err != nil {
 		panic(err)
 	}
@@ -1793,10 +1806,175 @@ func GetRootCommand() *cobra.Command {
 func main() {
 	rootCmd := GetRootCommand()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, "error: "+err.Error())
 		os.Exit(1)
 	}
 }
+```
+
+交叉编译并上传到Linux中
+
+```bash
+# Windows上编译为Linx ELF二进制，并上传到Linux中
+SET CGO_ENABLED=0
+SET GOOS=linux
+SET GOARCH=amd64
+go build -o main .
+
+# 添加可执行权限
+[root@node-1 ~]# chmod 755 ./main
+
+# -----------------------------------------------------------------------------------------------------------
+
+# 根命令帮助
+[root@node-1 ~]# ./main -h
+kubectl controls the Kubernetes cluster manager.
+
+Usage:
+  kubectl [command]
+
+Available Commands:
+  apply       apply a configuration to a resource by fileName name or stdin.
+  completion  Generate the autocompletion script for the specified shell
+  delete      delete resources by fileName names, stdin, resources and names, or by resources and label selector
+  help        Help about any command
+
+Flags:
+  -h, --help   help for kubectl
+
+Use "kubectl [command] --help" for more information about a command.
+
+# -----------------------------------------------------------------------------------------------------------
+
+# apply 子命令帮助
+[root@node-1 ~]# ./main apply -h
+apply a configuration to a resource by fileName name or stdin.
+
+Usage:
+  kubectl apply [flags]
+
+Flags:
+  -f, --filename string   The files that contain the configurations to apply
+  -h, --help              help for apply
+
+# -----------------------------------------------------------------------------------------------------------
+
+# delete 子命令帮助
+[root@node-1 ~]# ./main delete -h
+delete resources by fileName names, stdin, resources and names, or by resources and label selector
+
+Usage:
+  kubectl delete [flags]
+
+Flags:
+  -f, --filename string   containing the resource to delete
+  -h, --help              help for delete
+```
+
+和kubectl输出简单对比一下
+
+```bash
+# 我们的程序没有定义-k选项，所以输出是不一样的
+[root@node-1 ~]# kubectl apply
+error: must specify one of -f and -k
+
+[root@node-1 ~]# ./main apply
+error: required flag(s) "filename" not set
+
+# 对于不存在的子命令
+[root@node-1 ~]# kubectl abc
+error: unknown command "abc" for "kubectl"
+[root@node-1 ~]# echo $?
+1
+
+[root@node-1 ~]# ./main abc
+error: unknown command "abc" for "kubectl"
+[root@node-1 ~]# echo $?
+1
+```
+
+使用
+
+```bash
+# 程序中使用的是当前目录下的.kube.config文件，所以拷贝一份
+[root@node-1 ~]# cp ~/.kube/config .kube.config
+
+# 创建一份YAML文件 demo.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+  #namespace: default
+  labels:
+    a: b
+spec:
+  selector:
+    app: web
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  #namespace: default
+  labels:
+    a: c
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.23.2
+          command: [ 'nginx', '-g', 'daemon off;' ]
+        - name: busybox
+          image: busybox:1.28
+          command: [ 'sh', '-c', 'echo The app is running! && sleep 3600' ]
+
+# apply
+[root@node-1 ~]# ./main apply -f demo.yaml 
+service/demo created
+deployment.apps/demo created
+
+# delete
+[root@node-1 ~]# ./main delete -f demo.yaml 
+service/demo deleted
+deployment.apps/demo deleted
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+# 修改ClusterIP为ClusterIP1，检查报错情况
+[root@node-1 ~]# ./main apply -f demo.yaml
+deployment.apps/demo created
+The Service "demo" is invalid: spec.type: Unsupported value: "ClusterIP1": supported values: "ClusterIP", "ExternalName", "LoadBalancer", "NodePort"
+[root@node-1 ~]# echo $?
+1
+
+[root@node-1 ~]# ./main delete -f demo.yaml
+deployment.apps/demo deleted
+Error from server (NotFound): error when deleting "demo.yaml": services "demo" not found
+
+# 看一下kubectl的报错情况，输出内容一样
+[root@node-1 ~]# kubectl apply -f demo.yaml
+deployment.apps/demo created
+The Service "demo" is invalid: spec.type: Unsupported value: "ClusterIP1": supported values: "ClusterIP", "ExternalName", "LoadBalancer", "NodePort"
+[root@node-1 ~]# echo $?
+1
+
+[root@node-1 ~]# kubectl delete -f demo.yaml
+deployment.apps "demo" deleted
+Error from server (NotFound): error when deleting "demo.yaml": services "demo" not found
 ```
 
 :::
