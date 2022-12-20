@@ -1423,12 +1423,17 @@ import (
 	"strings"
 )
 
-// 定义执行动作
-type Action string
+// 定义子命令
+type Command string
+
+func (s Command) String() string {
+	return string(s)
+}
 
 const (
-	ApplyAction  Action = "apply"
-	DeleteAction Action = "delete"
+	RootCommand   Command = "kubectl"
+	ApplyCommand  Command = "apply"
+	DeleteCommand Command = "delete"
 )
 
 // 定义执行状态
@@ -1568,12 +1573,12 @@ func (d *Deployment) Delete(ctx context.Context, config *applyappsv1.DeploymentA
 }
 
 // Do 聚合方法
-func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, action Action) error {
+func (d *Deployment) Do(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration, action Command) error {
 	var err error
 	switch action {
-	case ApplyAction:
+	case ApplyCommand:
 		err = d.Apply(ctx, config)
-	case DeleteAction:
+	case DeleteCommand:
 		err = d.Delete(ctx, config)
 	}
 	return err
@@ -1660,19 +1665,19 @@ func (s *Service) Delete(ctx context.Context, config *applycorev1.ServiceApplyCo
 }
 
 // Do 聚合方法
-func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, action Action) error {
+func (s *Service) Do(ctx context.Context, config *applycorev1.ServiceApplyConfiguration, action Command) error {
 	var err error
 	switch action {
-	case ApplyAction:
+	case ApplyCommand:
 		err = s.Apply(ctx, config)
-	case DeleteAction:
+	case DeleteCommand:
 		err = s.Delete(ctx, config)
 	}
 	return err
 }
 
 // 核心方法
-func ActionDoWithFile(action Action, fileName string) (err error) {
+func DoCommandWithFile(command Command, fileName string) (err error) {
 	// 实例化ClientSet
 	clientset, err := NewClientSetByConfig(".kube.config")
 	if err != nil {
@@ -1711,7 +1716,7 @@ func ActionDoWithFile(action Action, fileName string) (err error) {
 			}
 
 			// 不同的子命令执行不同的操作
-			err = deploy.Do(ctx, applyConfig, action)
+			err = deploy.Do(ctx, applyConfig, command)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -1726,7 +1731,7 @@ func ActionDoWithFile(action Action, fileName string) (err error) {
 			}
 
 			// 不同的子命令执行不同的操作
-			err = service.Do(ctx, applyConfig, action)
+			err = service.Do(ctx, applyConfig, command)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -1745,16 +1750,16 @@ func GetRootCommand() *cobra.Command {
 
 	// 根命令
 	var rootCmd = &cobra.Command{
-		Use:   "kubectl",
-		Short: "kubectl controls the Kubernetes cluster manager.",
+		Use:   RootCommand.String(),
+		Short: RootCommand.String() + " controls the Kubernetes cluster manager.",
 	}
 
 	// 子命令apply，并设置必选参数-f/--filename
 	var ApplyCommand = &cobra.Command{
-		Use:   "apply",
-		Short: "ApplyAction a configuration to a resource by fileName name or stdin.",
+		Use:   ApplyCommand.String(),
+		Short: ApplyCommand.String() + " a configuration to a resource by fileName name or stdin.",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ActionDoWithFile(ApplyAction, fileName); err != nil {
+			if err := DoCommandWithFile(ApplyCommand, fileName); err != nil {
 				os.Exit(1)
 			}
 		},
@@ -1766,10 +1771,10 @@ func GetRootCommand() *cobra.Command {
 
 	// 子命令delete，并设置必选参数-f/--filename
 	var DeleteCommand = &cobra.Command{
-		Use:   "delete",
-		Short: "DeleteAction resources by fileName names, stdin, resources and names, or by resources and label selector",
+		Use:   DeleteCommand.String(),
+		Short: DeleteCommand.String() + " resources by fileName names, stdin, resources and names, or by resources and label selector",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ActionDoWithFile(DeleteAction, fileName); err != nil {
+			if err := DoCommandWithFile(DeleteCommand, fileName); err != nil {
 				os.Exit(1)
 			}
 		},
