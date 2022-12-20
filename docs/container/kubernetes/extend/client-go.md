@@ -1378,7 +1378,7 @@ metadata:
   name: demo
   #namespace: default
   labels:
-    a: zzz
+    a: b
 spec:
   replicas: 3
   selector:
@@ -1408,8 +1408,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
@@ -1466,136 +1464,133 @@ func GetKindList(data []byte) []string {
 	return kindList
 }
 
-// Apply状态
-type ApplyStatus string
+// Apply和Delete状态
+type Status string
 
 const (
-	Created    ApplyStatus = "created"
-	Configured ApplyStatus = "configured"
-	Unchanged  ApplyStatus = "unchanged"
+	Created    Status = "created"
+	Configured Status = "configured"
+	Unchanged  Status = "unchanged"
+	Deleted    Status = "deleted"
 )
 
-func ApplyDeployment(
-	ctx context.Context,
-	clientset *kubernetes.Clientset,
-	decoder *yamlutil.YAMLOrJSONDecoder,
-	checkUpdated bool) (*appsv1.Deployment, ApplyStatus, error) {
-
-	// 初始化变量
-	var (
-		before *appsv1.Deployment
-		after  *appsv1.Deployment
-		status ApplyStatus
-	)
-
-	// 初始化deploy，并设置默认参数
-	deploy := &applyappsv1.DeploymentApplyConfiguration{
-		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
-			Namespace: func() *string { namespace := "default"; return &namespace }(),
-		},
-	}
-
-	// 解码
-	err := decoder.Decode(deploy)
-	if err != nil {
-		return nil, status, err
-	}
-
-	// 默认参数不能在这里加了，会报错 panic: runtime error: invalid memory address or nil pointer dereference
-	// DeploymentApplyConfiguration结构体里都是指针，难道是为了不让修改?
-	//fmt.Println(*(deploy.Namespace))
-	//if strings.TrimSpace(*(deploy.Namespace)) == "" {
-	//	*(deploy.Namespace) = "default"
-	//}
-
-	// 若需要检查是否有更新，则Apply之前获取一次Deployment
-	if checkUpdated {
-		before, err = clientset.AppsV1().Deployments(*(deploy.Namespace)).Get(ctx, *(deploy.Name), metav1.GetOptions{})
-		if err != nil {
-			if errors.IsNotFound(err) {
-				status = Created
-			} else {
-				return nil, status, err
-			}
-		}
-	}
-
-	// Apply，核心方法，必须要执行
-	after, err = clientset.AppsV1().Deployments(*(deploy.Namespace)).Apply(ctx, deploy, metav1.ApplyOptions{FieldManager: "client-go"})
-	if err != nil {
-		return nil, status, err
-	}
-
-	// 若需要检查是否有更新，则进行对比
-	if checkUpdated {
-		if status != Created {
-			if !reflect.DeepEqual(before, after) {
-				status = Configured
-			} else {
-				status = Unchanged
-			}
-		}
-	}
-
-	return after, status, err
+// 定义 Deployment 结构体
+type Deployment struct {
+	clientset *kubernetes.Clientset
 }
 
-func ApplyService(
-	ctx context.Context,
-	clientset *kubernetes.Clientset,
-	decoder *yamlutil.YAMLOrJSONDecoder,
-	checkUpdated bool) (*corev1.Service, ApplyStatus, error) {
-
-	// 初始化变量
-	var (
-		before *corev1.Service
-		after  *corev1.Service
-		status ApplyStatus
-	)
-
-	// 初始化配置，并设置默认参数
-	service := &applycorev1.ServiceApplyConfiguration{
+func (d *Deployment) Decode(decoder *yamlutil.YAMLOrJSONDecoder) (*applyappsv1.DeploymentApplyConfiguration, error) {
+	// 初始化deploy，并设置默认参数
+	applyConfig := &applyappsv1.DeploymentApplyConfiguration{
 		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
 			Namespace: func() *string { namespace := "default"; return &namespace }(),
 		},
 	}
 
 	// 解码
-	err := decoder.Decode(service)
+	err := decoder.Decode(applyConfig)
 	if err != nil {
-		return nil, status, err
+		return nil, err
 	}
 
-	// 若需要检查是否有更新，则Apply之前获取一次Service
-	if checkUpdated {
-		before, err = clientset.CoreV1().Services(*(service.Namespace)).Get(ctx, *(service.Name), metav1.GetOptions{})
-		if err != nil {
-			if errors.IsNotFound(err) {
-				status = Created
-			} else {
-				return nil, status, err
-			}
+	return applyConfig, nil
+}
+
+func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentApplyConfiguration) error {
+	// 初始化状态
+	var status Status
+
+	// 从ApplyConfig中获取需要的配置
+	namespace := *(config.Namespace)
+	name := *(config.Name)
+
+	// 提前获取一次Deployment，用于与Apply之后做对比，判断是否有更新
+	before, err := d.clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			status = Created
+		} else {
+			return err
+		}
+	}
+	// 创建或更新
+	after, err := d.clientset.AppsV1().Deployments(namespace).Apply(ctx, config, metav1.ApplyOptions{FieldManager: "client-go"})
+	if err != nil {
+		return err
+	}
+
+	// 对比
+	if status != Created {
+		if !reflect.DeepEqual(before, after) {
+			status = Configured
+		} else {
+			status = Unchanged
 		}
 	}
 
-	// Apply，核心方法，必须要执行
-	after, err = clientset.CoreV1().Services(*(service.Namespace)).Apply(ctx, service, metav1.ApplyOptions{FieldManager: "client-go"})
-	if err != nil {
-		return nil, status, err
+	// 输出结果
+	fmt.Printf("deployment.apps/%s %s\n", after.Name, status)
+
+	return nil
+}
+
+// 定义 Service 结构体
+type Service struct {
+	clientset *kubernetes.Clientset
+}
+
+func (s *Service) Decode(decoder *yamlutil.YAMLOrJSONDecoder) (*applycorev1.ServiceApplyConfiguration, error) {
+	// 初始化deploy，并设置默认参数
+	applyConfig := &applycorev1.ServiceApplyConfiguration{
+		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
+			Namespace: func() *string { namespace := "default"; return &namespace }(),
+		},
 	}
 
-	// 若需要检查是否有更新，则进行对比
-	if checkUpdated {
-		if status != Created {
-			if !reflect.DeepEqual(before, after) {
-				status = Configured
-			} else {
-				status = Unchanged
-			}
+	// 解码
+	err := decoder.Decode(applyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return applyConfig, err
+}
+
+func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyConfiguration) error {
+	// 初始化状态
+	var status Status
+
+	// 从ApplyConfig中获取需要的配置
+	namespace := *(config.Namespace)
+	name := *(config.Name)
+
+	// 提前获取一次Service，用于与Apply之后做对比，判断是否有更新
+	before, err := s.clientset.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			status = Created
+		} else {
+			return err
 		}
 	}
 
-	return after, status, err
+	// 创建或更新
+	after, err := s.clientset.CoreV1().Services(namespace).Apply(ctx, config, metav1.ApplyOptions{FieldManager: "client-go"})
+	if err != nil {
+		return err
+	}
+
+	// 对比
+	if status != Created {
+		if !reflect.DeepEqual(before, after) {
+			status = Configured
+		} else {
+			status = Unchanged
+		}
+	}
+
+	fmt.Printf("service/%s %s\n", after.Name, status)
+	return nil
 }
 
 func main() {
@@ -1624,20 +1619,32 @@ func main() {
 	for _, kind := range kindList {
 		switch kind {
 		case "Deployment":
-			// 创建或更新
-			deploy, status, err := ApplyDeployment(ctx, clientset, decoder, true)
-			if err == nil {
-				fmt.Printf("deployment.apps/%s %s\n", deploy.Name, status)
-			} else {
-				fmt.Println(err)
+			// 定义Deployment结构体
+			deploy := &Deployment{clientset: clientset}
+
+			// 解码，获取 applyappsv1.DeploymentApplyConfiguration
+			applyConfig, err := deploy.Decode(decoder)
+			if err != nil {
+				panic(err)
+			}
+
+			// Apply
+			if err := deploy.Apply(ctx, applyConfig); err != nil {
+				panic(err)
 			}
 		case "Service":
-			// 创建或更新
-			service, status, err := ApplyService(ctx, clientset, decoder, true)
-			if err == nil {
-				fmt.Printf("service/%s %s\n", service.Name, status)
-			} else {
-				fmt.Println(err)
+			// 定义Service结构体
+			service := &Service{clientset: clientset}
+
+			// 解码，获取 applycorev1.ServiceApplyConfiguration
+			applyConfig, err := service.Decode(decoder)
+			if err != nil {
+				panic(err)
+			}
+
+			// Apply
+			if err := service.Apply(ctx, applyConfig); err != nil {
+				panic(err)
 			}
 		default:
 			fmt.Printf("Unknown kind: %s\n", kind)
