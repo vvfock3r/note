@@ -6,7 +6,9 @@ Github：[https://github.com/kubernetes/client-go](https://github.com/kubernetes
 
 <br />
 
-## 安装
+## 连接集群
+
+### 安装
 
 关于版本问题：[https://github.com/kubernetes/client-go/blob/master/INSTALL.md](https://github.com/kubernetes/client-go/blob/master/INSTALL.md)
 
@@ -17,7 +19,7 @@ go get k8s.io/client-go@v0.25.4
 
 <br />
 
-## 客户端
+### 客户端
 
 总共有4种客户端：
 
@@ -371,7 +373,7 @@ func main() {
 
 <br />
 
-## 超时问题
+### 超时问题
 
 默认情况下是没有超时限制的，但是在我的测试中看起来像是有超时的，下面来模拟一下
 
@@ -704,6 +706,35 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 <br />
 
 ## 基础操作
+
+### 导入速查
+
+`client-go`子模块众多，所以整理了此表格方便复制粘贴
+
+| 分类     | 导入代码                                                     | 常用对象                                     |
+| -------- | ------------------------------------------------------------ | -------------------------------------------- |
+| 内置对象 | `corev1 "k8s.io/api/core/v1"`                                | `Namespace`、`Pod`、`Service`...             |
+|          | `appsv1 "k8s.io/api/apps/v1"`                                | `Deployment`                                 |
+| 选项     | `metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`              | `ListOptions`、`CreateOptions`、`XxxOptions` |
+| 配置     | `applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"` | `XxxApplyConfiguration`                      |
+|          | `applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"` | `ObjectMetaApplyConfiguration`               |
+| 工具     | `yamlutil "k8s.io/apimachinery/pkg/util/yaml"`               | `NewYAMLOrJSONDecoder`                       |
+
+当我们不知道某个对象在哪个模块时，可以通过如下方式查询
+
+```bash
+# apps/v1 即 "k8s.io/api/apps/v1"
+[root@node-1 ~]# kubectl api-resources | grep -Ei 'APIVERSION|deployment'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+deployments                       deploy       apps/v1                                true         Deployment
+
+# v1 即 "k8s.io/api/core/v1"
+[root@node-1 ~]# kubectl api-resources | grep -Ei 'APIVERSION|namespace'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+namespaces                        ns           v1                                     false        Namespace
+```
+
+<br />
 
 ### 增删改查
 
@@ -1950,6 +1981,8 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 ```
 
 :::
+
+<br />
 
 
 
