@@ -1554,9 +1554,6 @@ func (d *Deployment) Apply(ctx context.Context, config *applyappsv1.DeploymentAp
 		}
 	}
 
-	// 输出结果
-	//fmt.Printf("deployment.apps/%s %s\n", after.Name, status)
-
 	return status, nil
 }
 
@@ -1641,7 +1638,6 @@ func (s *Service) Apply(ctx context.Context, config *applycorev1.ServiceApplyCon
 		}
 	}
 
-	//fmt.Printf("service/%s %s\n", after.Name, status)
 	return status, err
 }
 
