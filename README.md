@@ -121,7 +121,7 @@ nginx:webserver
 # [root@localhost ~]# git clone --depth 1 git@github.com:vvfock3r/note.git
 [root@localhost ~]# git clone --depth 1 https://github.com/vvfock3r/note.git
 
-# 拷贝 note/scripts/github_webhook_server.py
+# 拷贝 note/scripts/webhook.py
 [root@localhost ~]# cp -raf note/scripts/webhook.py .
 
 # 修改Github_Secret，保持与Web界面配置的一样
