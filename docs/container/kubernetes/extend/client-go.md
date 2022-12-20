@@ -1227,7 +1227,7 @@ D:\application\GoLand\example>go run main.go
 
 ### 读取YAML
 
-::: details （1）读取本地YAML文件，并创建（`Create`）对应的资源
+::: details （1）读取本地YAML文件，并创建（Create）对应的资源
 
 `demo.yaml`
 
@@ -1352,7 +1352,7 @@ func main() {
 
 :::
 
-::: details （2）优化我们的程序
+::: details （2）优化我们的程序：支持多种资源、多种方法且返回值尽量与kubectl保持一致
 
 思路：
 
@@ -1362,7 +1362,7 @@ func main() {
   * 综上所述
     * （1）在使用`Decode`方法前我们要知道应该要解码为什么对象
     * （2）流式的特性可以让我们的YAML文件支持多个资源配置
-* 为了能更贴近`kubectl`，这里使用了`cobra`作为命令行参数解析库，并且针对错误内容进行了特殊处理
+* 为了能尽量和`kubectl`保持一致，这里使用了`cobra`作为命令行参数解析库，并且针对错误内容进行了特殊处理
 
 `demo.yaml`
 
