@@ -1898,49 +1898,6 @@ error: unknown command "abc" for "kubectl"
 # 程序中使用的是当前目录下的.kube.config文件，所以拷贝一份
 [root@node-1 ~]# cp ~/.kube/config .kube.config
 
-# 创建一份YAML文件 demo.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: demo
-  #namespace: default
-  labels:
-    a: b
-spec:
-  selector:
-    app: web
-  type: ClusterIP
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 80
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: demo
-  #namespace: default
-  labels:
-    a: c
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: web
-  template:
-    metadata:
-      labels:
-        app: web
-    spec:
-      containers:
-        - name: web
-          image: nginx:1.23.2
-          command: [ 'nginx', '-g', 'daemon off;' ]
-        - name: busybox
-          image: busybox:1.28
-          command: [ 'sh', '-c', 'echo The app is running! && sleep 3600' ]
-
 # apply
 [root@node-1 ~]# ./main apply -f demo.yaml 
 service/demo created
