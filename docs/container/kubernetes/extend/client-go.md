@@ -707,6 +707,8 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 
 ## 基础操作
 
+<br />
+
 ### 导入速查
 
 `client-go`子模块众多，所以整理了此表格方便复制粘贴
@@ -719,6 +721,8 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 | 配置     | `applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"` | `XxxApplyConfiguration`                      |
 |          | `applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"` | `ObjectMetaApplyConfiguration`               |
 | 工具     | `yamlutil "k8s.io/apimachinery/pkg/util/yaml"`               | `NewYAMLOrJSONDecoder`                       |
+
+<br />
 
 当我们不知道某个对象在哪个模块时，可以通过如下方式查询
 
@@ -1985,4 +1989,6 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 <br />
 
 ### Watch机制
+
+
 
