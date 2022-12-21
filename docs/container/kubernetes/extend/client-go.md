@@ -2064,8 +2064,8 @@ func main() {
 		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
 	}
 
-	// 也可以使用下面的方式来接收事件，两段代码实现的效果是一样的
-	// 这只是Go语言channel的两种写法而已
+	// 也可以使用下面的方式来接收事件
+	// 两段代码实现的效果是一样的,这只是Go语言channel的两种写法而已
     // 后面我们都会以第一段代码作为示例
 	//for event := range watcher.ResultChan() {
 	//	pod, ok := event.Object.(*corev1.Pod)
@@ -2098,10 +2098,42 @@ Watch通道关闭的原因：
 
 * `Watcher` 对象调用了其 `Stop()` 方法，表示停止监视
 * `client-go`和`Kubernetes`之间网络出现问题
-* `Kubernetes`会定期关闭通道，在我的测试中是`40`分钟左右
+* `Kubernetes`会定期关闭通道，在我的测试中是`30`分钟左右
 
 ```bash
 [root@node-1 example]# time go run main.go
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: coredns-565d847f94-n7d8k                 Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-proxy-72k55                         Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: coredns-565d847f94-tsksp                 Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-apiserver-node-2                    Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-proxy-zztls                         Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: calico-kube-controllers-798cc86c47-8jlrm Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: calico-node-jhjwp                        Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: calico-node-jwflc                        Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: etcd-node-1                              Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: etcd-node-2                              Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: etcd-node-3                              Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-controller-manager-node-3           Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-controller-manager-node-1           Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-proxy-277hn                         Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: coredns-565d847f94-hclt9                 Pod阶段: Failed
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-apiserver-node-3                    Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-controller-manager-node-2           Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: calico-node-fgqsz                        Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: calico-node-wckpr                        Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-apiserver-front-proxy-node-4        Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-proxy-xk9r7                         Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-scheduler-node-1                    Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-scheduler-node-2                    Pod阶段: Running
+2022/12/21 14:51:24    事件类型: ADDED    Pod名称: kube-scheduler-node-3                    Pod阶段: Running
+
+
+2022/12/21 15:30:48    Error: Channel closed
+
+real    39m31.355s
+user    0m2.934s
+sys     0m5.210s
 ```
 
 :::
@@ -2139,6 +2171,18 @@ Watch通道关闭的解决思路：
 			log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
 		}
 	}
+```
+
+输出结果
+
+```bash
+[root@node-1 example]# time go run main.go
+2022/12/21 15:54:26    事件类型: ADDED    Pod名称: etcd-node-2                              Pod阶段: Running
+2022/12/21 15:54:26    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+...
+2022/12/21 16:24:36    Error: Channel closed
+2022/12/21 16:24:37    事件类型: ADDED    Pod名称: coredns-565d847f94-hclt9                 Pod阶段: Failed
+2022/12/21 16:24:37    事件类型: ADDED    Pod名称: calico-node-fgqsz                        Pod阶段: Running
 ```
 
 **retrywatcher**
