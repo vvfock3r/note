@@ -2276,7 +2276,15 @@ func main() {
 输出结果
 
 ```bash
-
+# 它在内部实现了重试机制，所以对于开发者来说是感知不到在什么时候重新Watched
+[root@node-1 example]# time go run main.go
+2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-apiserver-node-3                    Pod阶段: Running
+2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-proxy-72k55                         Pod阶段: Running
+...
+2022/12/21 18:37:29    事件类型: MODIFIED Pod名称: calico-node-jwflc                        Pod阶段: Running
+2022/12/21 18:38:06    事件类型: MODIFIED Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+2022/12/21 18:38:08    事件类型: MODIFIED Pod名称: kube-apiserver-node-1                    Pod阶段: Running
 ```
 
 :::
@@ -2302,5 +2310,9 @@ func main() {
 
 * 双层For循环：会继续重新`Watch`，这显然不太符合常理，如果让它退出的话需要我们做额外处理
 * `RetryWatcher`：不会重新`Watch`，根据代码逻辑执行下一步
+
+**4.总结**
+
+* 推荐使用`RetryWatcher`
 
 :::
