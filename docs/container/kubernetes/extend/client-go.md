@@ -2145,7 +2145,7 @@ Watch通道关闭的解决思路：
 * 个人实现：使用两层`for`循环，当检测到通道关闭后再重新创建一个`watcher`对象
 * 官方实现：使用具有重试功能的`Watch`接口：`retrywatcher.go`
 
-**两层For循环：**
+**（1）两层For循环：**
 
 ```go
 	// pod watch
@@ -2185,9 +2185,91 @@ Watch通道关闭的解决思路：
 2022/12/21 16:24:37    事件类型: ADDED    Pod名称: calico-node-fgqsz                        Pod阶段: Running
 ```
 
-**retrywatcher**
+**（2）retrywatcher**
 
 ```go
+package main
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	watchtool "k8s.io/client-go/tools/watch"
+	"log"
+	"os"
+	"runtime"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 实例化watcher对象
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("kube-system").Watch(ctx, metav1.ListOptions{})
+	}
+	watcher, err := watchtool.NewRetryWatcher("1", &cache.ListWatch{WatchFunc: watchFunc})
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Stop()
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Printf("%-2s Error: Channel closed\n", "")
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+			continue
+		}
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
+	}
+}
+```
+
+输出结果
+
+```bash
 
 ```
 
