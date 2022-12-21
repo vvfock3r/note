@@ -2291,7 +2291,7 @@ func main() {
 
 * `RetryWatcher`：本质上还是调用的`Watch`方法，但是它会传递一个参数`ResourceVersion`给Watch，用于确保即使中断也会继续从上次的位置`Watch`，
 
-  ​                            该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
+  该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
 
 **2.重新Watch时增加延迟，若Watch出错时可以减弱高并发产生的影响**
 
