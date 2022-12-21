@@ -2053,12 +2053,12 @@ func main() {
 	for {
 		event, ok := <-watcher.ResultChan()
 		if !ok {
-			log.Println("Error: Channel closed")
+			log.Printf("%-2s Error: Channel closed\n", "")
 			break
 		}
 		pod, ok := event.Object.(*corev1.Pod)
 		if !ok {
-			log.Println("Error: Type Assertion to *corev1.Pod")
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
 			continue
 		}
 		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
@@ -2070,12 +2070,12 @@ func main() {
 	//for event := range watcher.ResultChan() {
 	//	pod, ok := event.Object.(*corev1.Pod)
 	//	if !ok {
-	//		log.Println("Error: Type Assertion to *corev1.Pod")
+	//		log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
 	//		continue
 	//	}
 	//	log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
 	//}
-	//log.Println("Error: Channel closed")
+	//log.Printf("%-2s Error: Channel closed\n", "")
 }
 ```
 
@@ -2092,7 +2092,56 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）ResultChan Channel不定时关闭问题
+::: details （2）ResultChan Channel自动关闭：问题复现
+
+Watch通道关闭的原因：
+
+* `Watcher` 对象调用了其 `Stop()` 方法，表示停止监视
+* `client-go`和`Kubernetes`之间网络出现问题
+* `Kubernetes`会定期关闭通道，在我的测试中是`40`分钟左右
+
+```bash
+[root@node-1 example]# time go run main.go
+```
+
+:::
+
+::: details （3）ResultChan Channel自动关闭：问题解决
+
+Watch通道关闭的解决思路：
+
+* 个人实现：使用两层`for`循环，当检测到通道关闭后再重新创建一个`watcher`对象
+* 官方实现：使用具有重试功能的`Watch`接口：`retrywatcher.go`
+
+**两层For循环：**
+
+```go
+	// pod watch
+	for {
+		// 实例化Watch对象
+		watcher, err := clientset.CoreV1().Pods("kube-system").Watch(ctx, metav1.ListOptions{})
+		if err != nil {
+			panic(err)
+		}
+
+		// 通过channel接收监听的事件
+		for {
+			event, ok := <-watcher.ResultChan()
+			if !ok {
+				log.Printf("%-2s Error: Channel closed\n", "")
+				break
+			}
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+				continue
+			}
+			log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
+		}
+	}
+```
+
+**retrywatcher**
 
 ```go
 
