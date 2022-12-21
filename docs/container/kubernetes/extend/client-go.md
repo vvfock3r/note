@@ -2293,13 +2293,14 @@ func main() {
 
   ​                            该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
 
-**2.重新Watch时增加延迟，若Watch出错时可以减弱高并发引起的影响**
+**2.重新Watch时增加延迟，若Watch出错时可以减弱高并发产生的影响**
 
 * 双层For循环：它没有使用`ResourceVersion`机制，所以它没有延迟时间，它需要执行的越快越好，否则就会增加丢失事件的频率
-* `RetryWatcher`：它设置了最小重启延迟时间为1秒（`minRestartDelay`）,这个值不能改
+* `RetryWatcher`：它设置了最小重启延迟时间为1秒（`minRestartDelay`）,且没有提供修改的途径
 
-```go
+**3.手动关闭通道后**
 
-```
+* 双层For循环：会继续重新`Watch`，这显然不太符合常理，如果让它退出的话需要我们做额外处理
+* `RetryWatcher`：不会重新`Watch`，根据代码逻辑执行下一步
 
 :::
