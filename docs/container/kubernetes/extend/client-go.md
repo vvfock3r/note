@@ -1990,7 +1990,9 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 
 ### Watch机制
 
-::: details （1）基础示例
+**（1）基础示例**
+
+::: details 点击查看详情
 
 ```go
 package main
@@ -2092,9 +2094,13 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）ResultChan Channel自动关闭：问题复现
+<br />
 
-Watch通道关闭的原因：
+**（2）Channel自动关闭复现和解决办法**
+
+::: details （1）ResultChan Channel自动关闭：问题复现
+
+Watch通道关闭可能的原因：
 
 * `Watcher` 对象调用了其 `Stop()` 方法，表示停止监视
 * `client-go`和`Kubernetes`之间网络出现问题
@@ -2138,7 +2144,7 @@ sys     0m5.210s
 
 :::
 
-::: details （3）ResultChan Channel自动关闭：问题解决
+::: details （2）ResultChan Channel自动关闭：两种解决办法
 
 Watch通道关闭的解决思路：
 
@@ -2185,7 +2191,7 @@ Watch通道关闭的解决思路：
 2022/12/21 16:24:37    事件类型: ADDED    Pod名称: calico-node-fgqsz                        Pod阶段: Running
 ```
 
-**（2）retrywatcher**
+**（2）RetryWatcher**
 
 ```go
 package main
@@ -2270,6 +2276,29 @@ func main() {
 输出结果
 
 ```bash
+
+```
+
+:::
+
+::: details （3）两种解决方案对比
+
+文档：[https://kubernetes.io/zh-cn/docs/reference/using-api/api-concepts/#efficient-detection-of-changes](https://kubernetes.io/zh-cn/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)
+
+**1.重新Watch时如何保证不丢失事件**
+
+* 双层For循环：虽然它重新`Watch`时执行很快，但是理论上还是会丢失事件
+
+* `RetryWatcher`：本质上还是调用的`Watch`方法，但是它会传递一个参数`ResourceVersion`给Watch，用于确保即使中断也会继续从上次的位置`Watch`，
+
+  ​                            该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
+
+**2.重新Watch时增加延迟，若Watch出错时可以减弱高并发引起的影响**
+
+* 双层For循环：它没有使用`ResourceVersion`机制，所以它没有延迟时间，它需要执行的越快越好，否则就会增加丢失事件的频率
+* `RetryWatcher`：它设置了最小重启延迟时间为1秒（`minRestartDelay`）,这个值不能改
+
+```go
 
 ```
 
