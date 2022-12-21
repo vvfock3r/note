@@ -1988,9 +1988,9 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 
 <br />
 
-### Watch机制
+## Watch机制
 
-**（1）基础示例**
+### 1）基础示例
 
 ::: details 点击查看详情
 
@@ -2096,7 +2096,7 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-**（2）Channel自动关闭复现和解决办法**
+### 2）通道关闭问题
 
 ::: details （1）ResultChan Channel自动关闭：问题复现
 
@@ -2316,3 +2316,8 @@ func main() {
 * 推荐使用`RetryWatcher`
 
 :::
+
+<br />
+
+### 3）资源过滤和事件过滤
+
