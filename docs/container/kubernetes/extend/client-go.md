@@ -1990,5 +1990,112 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 
 ### Watch机制
 
+::: details （1）基础示例
 
+```go
+package main
 
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"log"
+	"os"
+	"runtime"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 实例化Watch对象
+	watcher, err := clientset.CoreV1().Pods("kube-system").Watch(ctx, metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Stop()
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Println("Error: Channel closed")
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Println("Error: Type Assertion to *corev1.Pod")
+			continue
+		}
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
+	}
+
+	// 也可以使用下面的方式来接收事件，两段代码实现的效果是一样的
+	// 这只是Go语言channel的两种写法而已
+    // 后面我们都会以第一段代码作为示例
+	//for event := range watcher.ResultChan() {
+	//	pod, ok := event.Object.(*corev1.Pod)
+	//	if !ok {
+	//		log.Println("Error: Type Assertion to *corev1.Pod")
+	//		continue
+	//	}
+	//	log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
+	//}
+	//log.Println("Error: Channel closed")
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/21 13:01:18    事件类型: ADDED    Pod名称: etcd-node-3                              Pod阶段: Running
+2022/12/21 13:01:18    事件类型: ADDED    Pod名称: kube-apiserver-node-2                    Pod阶段: Running
+2022/12/21 13:01:18    事件类型: ADDED    Pod名称: kube-controller-manager-node-2           Pod阶段: Running
+2022/12/21 13:01:18    事件类型: MODIFIED Pod名称: calico-node-jwflc                        Pod阶段: Running
+2022/12/21 13:01:24    事件类型: MODIFIED Pod名称: kube-controller-manager-node-1           Pod阶段: Running
+```
+
+:::
+
+::: details （2）ResultChan Channel不定时关闭问题
+
+```go
+
+```
+
+:::
