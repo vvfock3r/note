@@ -2330,12 +2330,18 @@ func main() {
 
 主要利用了`ResourceVersion`字段：
 
-* 每个对象都有一个`ResourceVersion`
+* 每个对象都有一个`ResourceVersion`，它是一个字符串，但实际上是一个数字
+* `ResourceVersion`并不是`kubernetes`生成的，它使用的是`etcd`中的`Revision`，代表一个`key`在全局中的唯一编号
+* 举个例子：
+  * 创建一个Pod（`pod-1`），它的`ResourceVersion`是1000
+  * 随后又创建一个Pod（`pod-2`），它的`ResourceVersion`是1001
+  * 此时对`pod-1`进行一次更新，它的`ResourceVersion`变为1002
+
 
 注意事项总结：
 
 * `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间
-* `Watch`函数接收到的`ResourceVersion`可能是乱序的，比如先接收到一个大的Version，随后又接收到一个小的Version
+* `Watch`函数接收到的`ResourceVersion`可能是乱序的，比如先接收到一个大的`ResourceVersion`，随后又接收到一个小的`ResourceVersion`
 * `Watch`指定开始位置的`ResourceVersion`时会严格按照比该值大的事件来接收
 
 ::: details （1）Watch ResourceVersion 使用方式
