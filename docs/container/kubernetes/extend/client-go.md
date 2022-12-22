@@ -2341,42 +2341,13 @@ func main() {
 
 注意事项总结：
 
-* `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间
+* `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间（默认保留5分钟）
 * `Watch`函数接收到的`ResourceVersion`可能是乱序的，比如先接收到一个大的`ResourceVersion`，随后又接收到一个小的`ResourceVersion`
 * `Watch`指定开始位置的`ResourceVersion`时会严格按照比该值大的事件来接收
 
-::: details （1）Watch ResourceVersion 使用方式
 
-下面这段代码会把ResourceVersion的值输出出来
 
-```bash
-	// 实例化Watch对象
-	watcher, err := clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
-
-	if err != nil {
-		panic(err)
-	}
-	defer watcher.Stop()
-
-	// 通过channel接收监听的事件
-	for {
-		event, ok := <-watcher.ResultChan()
-		if !ok {
-			log.Printf("%-2s Error: Channel closed\n", "")
-			break
-		}
-		pod, ok := event.Object.(*corev1.Pod)
-		if !ok {
-			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
-			continue
-		}
-		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion: %s\n",
-			"", event.Type, pod.Name, pod.Status.Phase, pod.ResourceVersion,
-		)
-	}
-```
-
-`pods.yaml`
+::: details pods.yaml
 
 ```yaml
 apiVersion: v1
@@ -2417,6 +2388,39 @@ spec:
   - name: busybox
     image: busybox:1.25
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+```
+
+:::
+
+::: details （1）Watch ResourceVersion 使用方式
+
+下面这段代码会把ResourceVersion的值输出出来
+
+```bash
+	// 实例化Watch对象
+	watcher, err := clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
+
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Stop()
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Printf("%-2s Error: Channel closed\n", "")
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+			continue
+		}
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion: %s\n",
+			"", event.Type, pod.Name, pod.Status.Phase, pod.ResourceVersion,
+		)
+	}
 ```
 
 输出结果
@@ -2678,7 +2682,224 @@ D:\application\GoLand\example>go run main.go
 ::: details （4）有了以上基础，我们写一个持久化ResourceVersion到磁盘的Watch，即使程序短暂停止也不会丢失Watch事件
 
 ```go
+package main
 
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	watchtool "k8s.io/client-go/tools/watch"
+	"log"
+	"os"
+	"runtime"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// GetResourceVersion 获取本地 ResourceVersion
+func GetResourceVersion(fileName string) (resourceVersion []byte, err error) {
+	// 如果文件不存在则: 创建文件并写入初始的 ResourceVersion = ""
+	if _, err := os.Stat(fileName); err != nil {
+		if !os.IsNotExist(err) {
+			return resourceVersion, err
+		}
+		return resourceVersion, os.WriteFile(fileName, []byte(""), os.ModePerm)
+	}
+
+	// 读取 ResourceVersion
+	return os.ReadFile(fileName)
+}
+
+// SetResourceVersion 设置本地 ResourceVersion
+func SetResourceVersion(fileName string, resourceVersion []byte) error {
+	return os.WriteFile(fileName, resourceVersion, os.ModePerm)
+}
+
+// NewRetryWatcher 创建一个RetryWatcher
+func NewRetryWatcher(ctx context.Context, clientset *kubernetes.Clientset, resourceVersion string) (*watchtool.RetryWatcher, error) {
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{ResourceVersion: resourceVersion})
+	}
+	return watchtool.NewRetryWatcher("1", &cache.ListWatch{WatchFunc: watchFunc})
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 获取本地最新的 ResourceVersion, 若获取不到则返回 空字节数组
+	fileName := "resource-version.txt"
+	resourceVersion, err := GetResourceVersion(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	// 实例化watcher对象, 指定开始位置 resourceVersion
+	watcher, err := NewRetryWatcher(ctx, clientset, string(resourceVersion))
+	if err != nil {
+		panic(err)
+	}
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Printf("%-2s Error: Channel closed\n", "")
+			break
+		}
+
+		// 如果Type是否为Error，并且 Reason == metav1.StatusReasonExpired，则重新创建watcher
+		if event.Type == watch.Error {
+			status, ok := event.Object.(*metav1.Status)
+			if !ok {
+				log.Printf("%-2s Error: Type Assertion to *metav1.Status\n", "")
+				break
+			}
+			if status.Reason == metav1.StatusReasonExpired {
+				// watcher并不能动态修改 resourceVersion，所以这里只好重新创建一个
+				watcher.Stop()
+				watcher, err = NewRetryWatcher(ctx, clientset, "")
+				if err == nil {
+					log.Printf("%-2s Warn: %s\n", "", status.Message)
+					continue
+				}
+			}
+			log.Printf("%-2s Error: event.Type error: %s\n", "", status.Message)
+			break
+		}
+
+		// 断言为指定资源
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+			continue
+		}
+
+		// 处理函数
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion: %s\n",
+			"", event.Type, pod.Name, pod.Status.Phase, pod.ResourceVersion,
+		)
+
+		// 处理完成后将 ResourceVersion 持久化，
+		// 未处理前不要持久化 ResourceVersion，因为下一次启动程序Watch的时候会从下一次的 ResourceVersion 开始 Watch
+		if err := SetResourceVersion(fileName, []byte(pod.ResourceVersion)); err != nil {
+			fmt.Printf("%-2s Write ResourceVersion(%s) to file(%s) failed\n", pod.ResourceVersion, fileName)
+		}
+	}
+	watcher.Stop()
+}
+```
+
+输出结果
+
+```bash
+# 启动程序，然后创建3个Pod
+#   kubectl apply -f pods.yaml
+D:\application\GoLand\example>go run main.go
+2022/12/22 13:08:56    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081378
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081379
+2022/12/22 13:08:56    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081380
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081382
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081383
+2022/12/22 13:08:56    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081384
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081386
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081388
+2022/12/22 13:08:56    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081389
+2022/12/22 13:08:58    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081394
+2022/12/22 13:08:58    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081400
+2022/12/22 13:08:59    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081403
+2022/12/22 13:08:59    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081406
+2022/12/22 13:09:00    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081416
+2022/12/22 13:09:00    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081417
+
+# 关掉程序
+# 此时查看 resource-version.txt文件内容，值为 1081417
+
+# 然后对Pod进行一顿操作
+[root@node-1 ~]# kubectl delete -f pods.yaml 
+pod "pod-1" deleted
+pod "pod-2" deleted
+pod "pod-3" deleted
+
+[root@node-1 ~]# kubectl apply -f pods.yaml 
+pod/pod-1 created
+pod/pod-2 created
+pod/pod-3 created
+
+# 然后启动程序，检查上面的操作事件有没有接收到
+D:\application\GoLand\example>go run main.go
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081629
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081630
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081633
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081685
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081690
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081691
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081701
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081702
+2022/12/22 13:12:07    事件类型: DELETED  Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081703  # 删除pod-1
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081705
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081706
+2022/12/22 13:12:07    事件类型: DELETED  Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081707  # 删除pod-3
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081708
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081710
+2022/12/22 13:12:07    事件类型: DELETED  Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081711  # 删除pod-2
+2022/12/22 13:12:07    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081736  # 添加pod-1
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081737
+2022/12/22 13:12:07    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081738  # 添加pod-2
+2022/12/22 13:12:07    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081739  # 添加pod-3
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081740
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081743
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081744
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081746
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081747
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1081756
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1081761
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1081766
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081775
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081776
+2022/12/22 13:12:07    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081777
+
+# 停掉程序，手动修改resource-version.txt的值为1000，模拟 etcd中已经没有ResourceVersion的值
+# 预估程序行为：使用空字符串的ResourceVersion重新创建一个watcher
+D:\application\GoLand\example>go run main.go
+2022/12/22 13:16:05    Warn: too old resource version: 1000 (1080816)
+2022/12/22 13:16:05    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1081776
+2022/12/22 13:16:05    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1081775
+2022/12/22 13:16:05    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1081777
 ```
 
 :::
