@@ -3043,14 +3043,14 @@ D:\application\GoLand\example>go run main.go
 ::: details （2）对资源进行过滤，比如只监控带指定标签的Pod
 
 ```go
-// 监控app=pod 并且 id=1的Pod
+// 监控包含app=pod标签并且包含id=1标签的Pod
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{
 			LabelSelector: "app=pod-1,id=1",
 		})
 	}
 
-// 监控包含app标签 并且 包含id标签的Pod
+// 监控包含app标签并且包含id标签的Pod
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{
 			LabelSelector: "app,id",
@@ -3073,3 +3073,33 @@ D:\application\GoLand\example>go run main.go
 
 ### 5）监控事件过滤
 
+::: details （1）研究一下事件的类型
+
+```go
+type EventType string
+
+const (
+	Added    EventType = "ADDED"
+	Modified EventType = "MODIFIED"
+	Deleted  EventType = "DELETED"
+	Bookmark EventType = "BOOKMARK"
+	Error    EventType = "ERROR"
+)
+
+type Event struct {
+	Type EventType
+
+	// Object is:
+	//  * If Type is Added or Modified: the new state of the object.
+	//  * If Type is Deleted: the state of the object immediately before deletion.
+	//  * If Type is Bookmark: the object (instance of a type being watched) where
+	//    only ResourceVersion field is set. On successful restart of watch from a
+	//    bookmark resourceVersion, client is guaranteed to not get repeat event
+	//    nor miss any events.
+	//  * If Type is Error: *api.Status is recommended; other types may make sense
+	//    depending on context.
+	Object runtime.Object
+}
+```
+
+:::
