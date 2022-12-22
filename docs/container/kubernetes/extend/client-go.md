@@ -2101,7 +2101,7 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （1）ResultChan Channel自动关闭：问题复现
 
-Watch通道关闭可能的原因：
+通道关闭可能的原因：
 
 * `Watcher` 对象调用了其 `Stop()` 方法，表示停止监视
 * `client-go`和`Kubernetes`之间网络出现问题
