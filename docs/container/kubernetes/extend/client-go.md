@@ -2305,9 +2305,7 @@ func main() {
 
 * 双层For循环：虽然它重新`Watch`时执行很快，但是理论上还是会丢失事件
 
-* `RetryWatcher`：本质上还是调用的`Watch`方法，但是它会传递一个参数`ResourceVersion`给Watch，用于确保即使中断也会继续从上次的位置`Watch`，
-
-  该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
+* `RetryWatcher`：本质上还是调用的`Watch`方法，但是它会传递一个参数`ResourceVersion`给Watch，用于确保即使中断也会继续从上次的位置（`ResourceVersion`的下一个）`Watch`，该参数初始的值对应`NewRetryWatcher`的参数（`initialResourceVersion string`）
 
 **2.重新Watch时增加延迟，若Watch出错时可以减弱高并发产生的影响**
 
