@@ -713,14 +713,15 @@ Error: Get "https://api.k8s.local:64430/api/v1/namespaces": context deadline exc
 
 `client-go`子模块众多，所以整理了此表格方便复制粘贴
 
-| 分类     | 导入代码                                                     | 常用对象                                     |
-| -------- | ------------------------------------------------------------ | -------------------------------------------- |
-| 内置对象 | `corev1 "k8s.io/api/core/v1"`                                | `Namespace`、`Pod`、`Service`...             |
-|          | `appsv1 "k8s.io/api/apps/v1"`                                | `Deployment`                                 |
-| 选项     | `metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`              | `ListOptions`、`CreateOptions`、`XxxOptions` |
-| 配置     | `applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"` | `XxxApplyConfiguration`                      |
-|          | `applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"` | `ObjectMetaApplyConfiguration`               |
-| 工具     | `yamlutil "k8s.io/apimachinery/pkg/util/yaml"`               | `NewYAMLOrJSONDecoder`                       |
+| 分类       | 导入代码                                                     | 常用对象                                     |
+| ---------- | ------------------------------------------------------------ | -------------------------------------------- |
+| 内置的对象 | `corev1 "k8s.io/api/core/v1"`                                | `Namespace`、`Pod`、`Service`...             |
+|            | `appsv1 "k8s.io/api/apps/v1"`                                | `Deployment`                                 |
+| 选项和配置 | `metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`              | `ListOptions`、`CreateOptions`、`XxxOptions` |
+|            | `applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"` | `XxxApplyConfiguration`                      |
+|            | `applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"` | `ObjectMetaApplyConfiguration`               |
+| Watch系列  | `watchtool "k8s.io/client-go/tools/watch"`                   | `NewRetryWatcher`                            |
+| 工具模块   | `yamlutil "k8s.io/apimachinery/pkg/util/yaml"`               | `NewYAMLOrJSONDecoder`                       |
 
 <br />
 
@@ -2667,6 +2668,17 @@ D:\application\GoLand\example>go run main.go
 # 1064241 和 1064266 丢失了，虽然他们的顺序更靠后，但是他们小于 1064294
 D:\application\GoLand\example>go run main.go
 2022/12/22 08:47:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1064803
+
+# 结论
+# 虽然接收的事件可能是乱序的，但是好像并没有太大的影响
+```
+
+:::
+
+::: details （4）有了以上基础，我们写一个持久化ResourceVersion到磁盘的Watch，即使程序短暂停止也不会丢失Watch事件
+
+```go
+
 ```
 
 :::
