@@ -2066,8 +2066,13 @@ func main() {
 		}
 		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
 	}
+}
+```
 
-	// 也可以使用下面的方式来接收事件
+备注
+
+```go
+	// 上面的for循环代码也可以使用下面的方式来接收事件
 	// 两段代码实现的效果是一样的,这只是Go语言channel的两种写法而已
     // 后面我们都会以第一段代码作为示例
 	//for event := range watcher.ResultChan() {
@@ -2079,7 +2084,6 @@ func main() {
 	//	log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
 	//}
 	//log.Printf("%-2s Error: Channel closed\n", "")
-}
 ```
 
 输出结果
