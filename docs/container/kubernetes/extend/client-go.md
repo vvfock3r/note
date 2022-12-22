@@ -2329,7 +2329,7 @@ func main() {
 
 <br />
 
-### 3）监听进度持久化
+### 3）监控进度持久化
 
 主要利用了`ResourceVersion`字段：
 
@@ -2910,5 +2910,163 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 4）资源和事件过滤
+### 4）监控资源过滤
 
+::: details （1）监控所有命名空间下的资源
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	watchtool "k8s.io/client-go/tools/watch"
+	"log"
+	"os"
+	"runtime"
+)
+
+const WatchdAllNamespace = ""
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 修改默认配置
+	resetConfig.QPS = float32(runtime.NumCPU() * 2) // default 5
+	resetConfig.Burst = runtime.NumCPU() * 4        // default 10
+
+	// (3) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化一个全局的Context
+	ctx := context.Background()
+
+	// 实例化watcher对象
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{})
+	}
+	watcher, err := watchtool.NewRetryWatcher("1", &cache.ListWatch{WatchFunc: watchFunc})
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Stop()
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Printf("%-2s Error: Channel closed\n", "")
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+			continue
+		}
+		log.Printf("%-2s 事件类型: %-8s 命名空间: %-16s Pod名称: %-40s\n", "",
+			event.Type, pod.Namespace, pod.Name,
+		)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-scheduler-node-2                   
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: calico-node-wckpr                       
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: etcd-node-2                             
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: etcd-node-3                             
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-proxy-277hn                        
+2022/12/22 16:44:13    事件类型: ADDED    命名空间: kube-system      Pod名称: calico-kube-controllers-798cc86c47-8jlrm
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-scheduler-node-3                   
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-proxy-xk9r7                        
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-scheduler-node-1                   
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: coredns-565d847f94-n7d8k                
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: etcd-node-1                             
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-controller-manager-node-1          
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-proxy-72k55                        
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-apiserver-node-3                   
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-proxy-zztls                        
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: calico-node-fgqsz                       
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: coredns-565d847f94-hclt9                
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: coredns-565d847f94-tsksp
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-apiserver-front-proxy-node-4
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: calico-node-jwflc
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-apiserver-node-1
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-controller-manager-node-2
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: calico-node-jhjwp
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-apiserver-node-2
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: kube-system      Pod名称: kube-controller-manager-node-3
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: default          Pod名称: pod-2
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: default          Pod名称: pod-3
+2022/12/22 16:44:14    事件类型: ADDED    命名空间: default          Pod名称: pod-1
+```
+
+:::
+
+::: details （2）监控指定类型的资源
+
+```go
+
+```
+
+:::
+
+::: details （3）对资源进行过滤，比如只监控带指定标签的Pod
+
+```go
+// 监控app=pod 并且 id=1的Pod
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{
+			LabelSelector: "app=pod-1,id=1",
+		})
+	}
+
+// 监控包含app标签 并且 包含id标签的Pod
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{
+			LabelSelector: "app,id",
+		})
+	}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/22 17:12:28    事件类型: ADDED    命名空间: default          Pod名称: pod-1                                   
+2022/12/22 17:12:37    事件类型: MODIFIED 命名空间: default          Pod名称: pod-1                                   
+2022/12/22 17:12:37    事件类型: ADDED    命名空间: default          Pod名称: pod-2
+```
+
+:::
