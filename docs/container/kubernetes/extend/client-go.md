@@ -2912,6 +2912,12 @@ D:\application\GoLand\example>go run main.go
 
 ### 4）监控资源过滤
 
+总结：
+
+* 命名空间：原生只支持单个和所有命名空间
+* 资源类型：原生只支持监控一种资源
+* 资源过滤：原生只支持标签和字段过滤
+
 ::: details （1）监控所有命名空间下的资源
 
 ```go
@@ -3034,15 +3040,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）监控指定类型的资源
-
-```go
-
-```
-
-:::
-
-::: details （3）对资源进行过滤，比如只监控带指定标签的Pod
+::: details （2）对资源进行过滤，比如只监控带指定标签的Pod
 
 ```go
 // 监控app=pod 并且 id=1的Pod
@@ -3070,3 +3068,8 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
+### 5）监控事件过滤
+
