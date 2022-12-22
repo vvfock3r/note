@@ -3116,7 +3116,72 @@ type Event struct {
 // Error
 //   出现Error可能的原因，目前就见过以下几个：
 //     1.too old resource version: <old> (<new>)
-//   当出现Error时，我们可以把它断言为 *metav1.Status
+//   当出现Error时，我们可以把它断言为 event.Object.(*metav1.Status)
+```
+
+:::
+
+<br />
+
+## 日志设置
+
+### 1）基础设置
+
+::: details 点击查看详情
+
+```go
+func Init() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+
+	// 设置日志级别为3
+	if err := flag.Set("v", "3"); err != nil {
+		panic(err)
+	}
+
+	// 解析命令行参数
+	flag.Parse()
+}
+
+func main() {
+	// 初始化
+	Init()
+    
+    ...
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go -h
+Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2493560398\b001\exe\main.exe:
+  -add_dir_header
+        If true, adds the file directory to the header of the log messages
+  -alsologtostderr
+        log to standard error as well as files (no effect when -logtostderr=true)
+  -log_backtrace_at value
+        when logging hits line file:N, emit a stack trace
+  -log_dir string
+        If non-empty, write log files in this directory (no effect when -logtostderr=true)
+  -log_file string
+        If non-empty, use this log file (no effect when -logtostderr=true)
+  -log_file_max_size uint
+        Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+  -logtostderr
+        log to standard error instead of files (default true)
+  -one_output
+        If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+  -skip_headers
+        If true, avoid header prefixes in the log messages
+  -skip_log_headers
+        If true, avoid headers when opening log files (no effect when -logtostderr=true)
+  -stderrthreshold value
+        logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+  -v value
+        number for the log level verbosity
+  -vmodule value
+        comma-separated list of pattern=N settings for file-filtered logging
 ```
 
 :::
