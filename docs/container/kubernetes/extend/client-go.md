@@ -1990,7 +1990,7 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 
 ## Watch机制
 
-### 1）基础示例
+### 1）基础示例代码
 
 ::: details 点击查看详情
 
@@ -2335,29 +2335,8 @@ func main() {
 注意事项总结：
 
 * `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间
-
-* `Watch`函数接收到的`ResourceVersion`顺序并不一定是递增的，比如先接收到一个大的Version，随后又接收到一个小的Version，
-
-  `Watch`若指定开始位置的`ResourceVersion`则会按照数字递增的顺序重新接收事件，而不是上面提到的接收顺序来接收
-
-  ::: details 点击查看详情
-
-  ```bash
-  # 第一次Watch
-  D:\application\GoLand\example>go run main.go
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053712
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053682
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053698
-  2022/12/22 06:37:16    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
-  2022/12/22 06:37:17    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
-  
-  # 重启程序, 从1053712处继续Watch
-  # 1053682和1053698丢失了，虽然他们的顺序更靠后，但是他们小于1053712
-  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
-  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
-  ```
-
-  :::
+* `Watch`函数接收到的`ResourceVersion`可能是乱序的，比如先接收到一个大的Version，随后又接收到一个小的Version
+* `Watch`指定开始位置的`ResourceVersion`时会严格按照比该值大的事件来接收
 
 ::: details （1）Watch ResourceVersion 使用方式
 
@@ -2384,7 +2363,7 @@ func main() {
 			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
 			continue
 		}
-		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion:%s\n",
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion: %s\n",
 			"", event.Type, pod.Name, pod.Status.Phase, pod.ResourceVersion,
 		)
 	}
@@ -2439,21 +2418,21 @@ spec:
 # 程序跑起来之后,手动创建3个Pod:
 #    kubectl apply -f pods.yaml
 D:\application\GoLand\example>go run main.go
-2022/12/22 06:10:57    事件类型: ADDED    Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051823
-2022/12/22 06:10:57    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051824
-2022/12/22 06:10:58    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051828
-2022/12/22 06:11:02    事件类型: ADDED    Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051835
-2022/12/22 06:11:02    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051836
-2022/12/22 06:11:02    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051839
-2022/12/22 06:11:04    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051842
-2022/12/22 06:11:07    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Running    ResourceVersion:1051847
-2022/12/22 06:11:09    事件类型: ADDED    Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051853
-2022/12/22 06:11:11    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051856
-2022/12/22 06:11:15    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051861
-2022/12/22 06:11:24    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051879
-2022/12/22 06:11:27    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Running    ResourceVersion:1051888
-2022/12/22 06:11:36    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051907
-2022/12/22 06:11:39    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Running    ResourceVersion:1051915
+2022/12/22 06:10:57    事件类型: ADDED    Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051823
+2022/12/22 06:10:57    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051824
+2022/12/22 06:10:58    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051828
+2022/12/22 06:11:02    事件类型: ADDED    Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051835
+2022/12/22 06:11:02    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051836
+2022/12/22 06:11:02    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051839
+2022/12/22 06:11:04    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051842
+2022/12/22 06:11:07    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Running    ResourceVersion: 1051847
+2022/12/22 06:11:09    事件类型: ADDED    Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051853
+2022/12/22 06:11:11    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051856
+2022/12/22 06:11:15    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051861
+2022/12/22 06:11:24    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051879
+2022/12/22 06:11:27    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Running    ResourceVersion: 1051888
+2022/12/22 06:11:36    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051907
+2022/12/22 06:11:39    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Running    ResourceVersion: 1051915
 ```
 
 然后停止程序，修改代码
@@ -2469,20 +2448,20 @@ D:\application\GoLand\example>go run main.go
 
 ```bash
 D:\application\GoLand\example>go run main.go
-2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051824
-2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051828
-2022/12/22 06:13:39    事件类型: ADDED    Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051835
-2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051836
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051839
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051842
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Running    ResourceVersion:1051847
-2022/12/22 06:13:40    事件类型: ADDED    Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051853
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051856
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051861
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion:1051879
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Running    ResourceVersion:1051888
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion:1051907
-2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Running    ResourceVersion:1051915
+2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051824
+2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051828
+2022/12/22 06:13:39    事件类型: ADDED    Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051835
+2022/12/22 06:13:39    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051836
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051839
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion: 1051842
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Running    ResourceVersion: 1051847
+2022/12/22 06:13:40    事件类型: ADDED    Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051853
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051856
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051861
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Pending    ResourceVersion: 1051879
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-2   Pod阶段: Running    ResourceVersion: 1051888
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Pending    ResourceVersion: 1051907
+2022/12/22 06:13:40    事件类型: MODIFIED Pod名称: pod-3   Pod阶段: Running    ResourceVersion: 1051915
 ```
 
 :::
@@ -2538,7 +2517,7 @@ import (
 			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
 			continue
 		}
-		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion:%s\n",
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-8s Pod阶段: %-10s ResourceVersion: %s\n",
 			"", event.Type, pod.Name, pod.Status.Phase, pod.ResourceVersion,
 		)
 	}
@@ -2551,21 +2530,21 @@ import (
 #    kubectl apply -f pods.yaml
 
 D:\application\GoLand\example>go run main.go
-2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059681
-2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059682
-2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059683
-2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059684
-2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059687
-2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059688
-2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059691
-2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059695
-2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059696
-2022/12/22 07:55:47    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059701
-2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059706
-2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
-2022/12/22 07:55:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059713
-2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
-2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059681
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059682
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059683
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059684
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059687
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059688
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059691
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059695
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059696
+2022/12/22 07:55:47    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059701
+2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059706
+2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1059711
+2022/12/22 07:55:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059713
+2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1059721
+2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1059722
 ```
 
 然后停止程序，修改代码
@@ -2581,20 +2560,20 @@ D:\application\GoLand\example>go run main.go
 
 ```bash
 D:\application\GoLand\example>go run main.go
-2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059682
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059683
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059684
-2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059687
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059688
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059691
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059695
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059696
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059701
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059706
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059713
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
-2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059682
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059683
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059684
+2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059687
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059688
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059691
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059695
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059696
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion: 1059701
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion: 1059706
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1059711
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion: 1059713
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1059721
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1059722
 ```
 
 然后停止程序，修改代码，这次只修改`NewRetryWatcher`
@@ -2611,9 +2590,9 @@ D:\application\GoLand\example>go run main.go
 
 ```bash
 D:\application\GoLand\example>go run main.go
-2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
-2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
-2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1059711
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1059721
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1059722
 ```
 
 下面来测试一下删除事件
@@ -2624,24 +2603,24 @@ D:\application\GoLand\example>go run main.go
 #    kubectl delete -f pods.yaml
 
 D:\application\GoLand\example>go run main.go
-2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
-2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
-2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
-2022/12/22 08:02:12    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060358
-2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060360
-2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060363
-2022/12/22 08:02:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060416
-2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060418
-2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060420
-2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060428
-2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060431
-2022/12/22 08:02:48    事件类型: DELETED  Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060432
-2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060442
-2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060443
-2022/12/22 08:02:52    事件类型: DELETED  Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060444
-2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060445
-2022/12/22 08:02:53    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060448
-2022/12/22 08:02:53    事件类型: DELETED  Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060449
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1059721
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1059722
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1059711
+2022/12/22 08:02:12    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1060358
+2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1060360
+2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1060363
+2022/12/22 08:02:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1060416
+2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1060418
+2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1060420
+2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1060428
+2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1060431
+2022/12/22 08:02:48    事件类型: DELETED  Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1060432
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1060442
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1060443
+2022/12/22 08:02:52    事件类型: DELETED  Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1060444
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1060445
+2022/12/22 08:02:53    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1060448
+2022/12/22 08:02:53    事件类型: DELETED  Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1060449
 
 # 如果只是修改 NewRetryWatcher 中的 ResourceVersion，如下所示，会发现什么事件也监控不到，因为资源都被删除了, List不到哇
 	watcher, err := watchtool.NewRetryWatcher("1059721", &cache.ListWatch{WatchFunc: watchFunc})
@@ -2657,7 +2636,36 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+::: details （3）事件乱序问题
+
+```bash
+# 先创建3个Pod
+#    kubectl apply -f pods.yaml
+
+# 多等一会，然后进行Watch，不指定ResourceVersion
+# 可以看到他们的ResourceVersion是乱序的
+D:\application\GoLand\example>go run main.go
+2022/12/22 08:45:34    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion: 1064294
+2022/12/22 08:45:34    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1064241
+2022/12/22 08:45:34    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion: 1064266
+# 这里我手动修改了Pod-1的标签，然后触发的下面的事件,避免后续什么事件也看不到
+2022/12/22 08:46:01    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1064803
+
+# 然后停止程序，修改代码，若指定的是4294，则不会监控到4241和4266，但是会监控到4803
+	// 实例化watcher对象
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{ResourceVersion: "1064294"})
+	}
+
+# 运行起来看看效果
+# 1064241 和 1064266 丢失了，虽然他们的顺序更靠后，但是他们小于 1064294
+D:\application\GoLand\example>go run main.go
+2022/12/22 08:47:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion: 1064803
+```
+
+:::
+
 <br />
 
-### 4）资源过滤和事件过滤
+### 4）资源和事件过滤
 
