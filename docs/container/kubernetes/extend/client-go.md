@@ -2107,6 +2107,10 @@ D:\application\GoLand\example>go run main.go
 * `client-go`和`Kubernetes`之间网络出现问题
 * `Kubernetes`会定期关闭通道，在我的测试中是`30`分钟左右
 
+备注：
+
+* `ListOptions`有一个参数`TimeoutSeconds`，它跟我们所说的 *通道自动关闭* 问题并没有关系
+
 ```bash
 # 直接关闭Kubernetes节点测试
 D:\application\GoLand\example>go run main.go
