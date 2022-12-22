@@ -2073,8 +2073,7 @@ func main() {
 
 ```go
 	// 上面的for循环代码也可以使用下面的方式来接收事件
-	// 两段代码实现的效果是一样的,这只是Go语言channel的两种写法而已
-    // 后面我们都会以第一段代码作为示例
+	// 两段代码实现的效果是一样的,这只是Go语言channel的两种写法而已    
 	//for event := range watcher.ResultChan() {
 	//	pod, ok := event.Object.(*corev1.Pod)
 	//	if !ok {
@@ -2110,10 +2109,7 @@ D:\application\GoLand\example>go run main.go
 * `Watcher` 对象调用了其 `Stop()` 方法，表示停止监视
 * `client-go`和`Kubernetes`之间网络出现问题
 * `Kubernetes`会定期关闭通道，在我的测试中是`30`分钟左右
-
-备注：
-
-* `ListOptions`有一个参数`TimeoutSeconds`，它跟我们所说的 *通道自动关闭* 问题并没有关系
+* `ListOptions`有一个参数`TimeoutSeconds *int64`，默认值为0，即永不过期，但是仍然受到上面`30`分钟左右的限制；如果将他设置为600秒，那么在10分钟之后也将会关闭通道
 
 ```bash
 # 直接关闭Kubernetes节点测试
