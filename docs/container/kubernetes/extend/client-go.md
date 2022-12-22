@@ -3071,7 +3071,7 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 5）监控事件过滤
+### 5）监控事件研究
 
 ::: details （1）研究一下事件的类型
 
@@ -3100,6 +3100,20 @@ type Event struct {
 	//    depending on context.
 	Object runtime.Object
 }
+
+// 这里有两个类型需要重点关注
+
+// Bookmark
+//   以RetryWatcher作为示例讲解Bookmark
+//   RetryWatcher内部使用了ResourceVersion以保证重试时事件不丢失，且重试时有最小1秒的间隔事件
+//   假设最后一次Watch得到ResourceVersion为1000，然后一些我们不关心的Pod一直在产生事件导致ResourceVersion已经变成2000了，
+//   这时候我们Watch中断需要重新Watch，但是我们会使用之前的ResourceVersion，服务端就会报错too old resource version: 1000 (2000)，
+//   一般的解决办法就是重新List
+//   使用Bookmark的话，即使是我们不关心的Pod也会通知到我们，但只会给我们ResourceVersion信息，这时候我们可以更新本地缓存的ResourceVersion,
+//   下次重试导致的Watch时ResourceVersion不会太老而报错
+//   备注: 只有第一次Watch或重新Watch时候才会使用ResourceVersion。没有找到合适的测试方法，以后再进行测试
+
+// Error
 ```
 
 :::
