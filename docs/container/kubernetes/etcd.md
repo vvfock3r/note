@@ -1321,7 +1321,7 @@ benchmark --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0
 
 <br />
 
-### 数据压缩和碎片整理
+### 数据清理和碎片整理
 
 ::: details （1）写入数据
 
@@ -1339,7 +1339,7 @@ done
 
 :::
 
-::: details （2）压缩和数据整理
+::: details （2）数据清理和碎片整理
 
 ```bash
 # 检查磁盘大小
@@ -1366,7 +1366,8 @@ etcdctl \
     -w=json \
   endpoint status | grep -Eo '"revision":[0-9]*' | grep -Eo '[0-9].*' | sort -u
 
-# 压缩所有旧版本(这一步操作并不会释放空间)
+# 清理所有旧版本数据
+# 这一步操作并不会释放空间,但是在指定Revision之前的修订版本变得无法访问，这可能是一个危险的命令，请谨慎执行
 # 1000000 是上条命令输出的结果
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
@@ -1375,7 +1376,7 @@ etcdctl \
     --key=/etc/etcd/pki/etcd-key.pem \
   compact 1000000
 
-# 碎片整理(这一步操作才会释放空间)
+# 碎片整理(这一步操作会释放空间)
 etcdctl \
     --endpoints=https://10.0.8.4:12379,https://10.0.8.4:22379,https://10.0.8.4:32379 \
     --cacert=/etc/etcd/pki/ca.pem \
