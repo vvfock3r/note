@@ -3114,6 +3114,9 @@ type Event struct {
 //   备注: 只有第一次Watch或重新Watch时候才会使用ResourceVersion。没有找到合适的测试方法，以后再进行测试
 
 // Error
+//   出现Error可能的原因，目前就见过以下几个：
+//     1.too old resource version: <old> (<new>)
+//   当出现Error时，我们可以把它断言为 *metav1.Status
 ```
 
 :::
