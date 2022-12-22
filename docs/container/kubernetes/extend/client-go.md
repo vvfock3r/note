@@ -2332,6 +2332,33 @@ func main() {
 
 * 每个对象都有一个`ResourceVersion`
 
+注意事项总结：
+
+* `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间
+
+* `Watch`函数接收到的`ResourceVersion`顺序并不一定是递增的，比如先接收到一个大的Version，随后又接收到一个小的Version，
+
+  `Watch`若指定开始位置的`ResourceVersion`则会按照数字递增的顺序重新接收事件，而不是上面提到的接收顺序来接收
+
+  ::: details 点击查看详情
+
+  ```bash
+  # 第一次Watch
+  D:\application\GoLand\example>go run main.go
+  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053712
+  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053682
+  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053698
+  2022/12/22 06:37:16    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
+  2022/12/22 06:37:17    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
+  
+  # 重启程序, 从1053712处继续Watch
+  # 1053682和1053698丢失了，虽然他们的顺序更靠后，但是他们小于1053712
+  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
+  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
+  ```
+
+  :::
+
 ::: details （1）Watch ResourceVersion 使用方式
 
 下面这段代码会把ResourceVersion的值输出出来
@@ -2363,7 +2390,7 @@ func main() {
 	}
 ```
 
-`pod-1.yaml`
+`pods.yaml`
 
 ```yaml
 apiVersion: v1
@@ -2378,15 +2405,39 @@ spec:
   - name: busybox 
     image: busybox:1.25
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-2
+  namespace: default
+  labels:
+    app: pod-2
+spec:
+  containers:
+  - name: busybox
+    image: busybox:1.25
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-3
+  namespace: default
+  labels:
+    app: pod-3
+spec:
+  containers:
+  - name: busybox
+    image: busybox:1.25
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 ```
 
 输出结果
 
 ```bash
 # 程序跑起来之后,手动创建3个Pod:
-#    kubectl apply -f pod-1.yaml
-#    kubectl apply -f pod-2.yaml
-#    kubectl apply -f pod-3.yaml
+#    kubectl apply -f pods.yaml
 D:\application\GoLand\example>go run main.go
 2022/12/22 06:10:57    事件类型: ADDED    Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051823
 2022/12/22 06:10:57    事件类型: MODIFIED Pod名称: pod-1   Pod阶段: Pending    ResourceVersion:1051824
@@ -2436,7 +2487,14 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）RetryWatcherResourceVersion 使用方式
+::: details （2）RetryWatcher ResourceVersion 使用方式
+
+它有两种使用方式：
+
+* `metav1.ListOptions{}` 指定 `ResourceVersion `，这种使用方式和直接使用`Watch`的输出结果一样
+* `NewRetryWatcher` 指定 `initialResourceVersion`（内部还是`ResourceVersion`），这种方式可能会丢失事件，因为`List`的时候可能某些资源已经被删除，该资源属于不被`Watch`的对象，那么对应的事件也就被丢弃了。解决办法就是同时指定 `metav1.ListOptions{}`
+
+综上所述，`metav1.ListOptions{}` 中必须指定 `ResourceVersion `，而`NewRetryWatcher` 指定不指定都可以
 
 ```go
 package main
@@ -2489,53 +2547,115 @@ import (
 输出结果
 
 ```bash
+# 程序跑起来之后,手动创建3个Pod:
+#    kubectl apply -f pods.yaml
+
 D:\application\GoLand\example>go run main.go
-2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053712
-2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053682
-2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053698
-2022/12/22 06:37:16    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
-2022/12/22 06:37:17    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
-2022/12/22 06:37:18    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053880
-2022/12/22 06:37:47    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053928
-2022/12/22 06:37:48    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053934
-2022/12/22 06:37:49    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053941
-2022/12/22 06:37:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053942
-2022/12/22 06:37:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053943
-2022/12/22 06:37:49    事件类型: DELETED  Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053944
-2022/12/22 06:37:49    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053945
-2022/12/22 06:37:49    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053947
-2022/12/22 06:37:49    事件类型: DELETED  Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053949
-2022/12/22 06:37:51    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053955
-2022/12/22 06:37:51    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053956
-2022/12/22 06:37:51    事件类型: DELETED  Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053957
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059681
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059682
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059683
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059684
+2022/12/22 07:55:44    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059687
+2022/12/22 07:55:44    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059688
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059691
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059695
+2022/12/22 07:55:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059696
+2022/12/22 07:55:47    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059701
+2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059706
+2022/12/22 07:55:48    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
+2022/12/22 07:55:49    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059713
+2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
+2022/12/22 07:55:50    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+```
+
+然后停止程序，修改代码
+
+```go
+	// 实例化watcher对象
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{ResourceVersion: "1059681"})
+	}
+```
+
+然后再运行起来，可以看到`1059681`之后的事件都会监听到（不含`1059681`本身）
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059682
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059683
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059684
+2022/12/22 07:57:52    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059687
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059688
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059691
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059695
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059696
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Pending    ResourceVersion:1059701
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Pending    ResourceVersion:1059706
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Pending    ResourceVersion:1059713
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
+2022/12/22 07:57:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+```
+
+然后停止程序，修改代码，这次只修改`NewRetryWatcher`
+
+```go
+	// 实例化watcher对象
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{}) // 将这里的 ResourceVersion 删掉
+	}
+	watcher, err := watchtool.NewRetryWatcher("1059681", &cache.ListWatch{WatchFunc: watchFunc}) // 添加到这里
+```
+
+然后再运行起来，发现有一些事件丢失了，但是现在还不是最致命的，起码3个Pod事件都在
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
+2022/12/22 08:00:24    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+```
+
+下面来测试一下删除事件
+
+```bash
+# 将程序的ResourceVersion置为初始状态
+# 程序跑起来之后,手动创建3个Pod:
+#    kubectl delete -f pods.yaml
+
+D:\application\GoLand\example>go run main.go
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1059721
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1059722
+2022/12/22 08:02:08    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1059711
+2022/12/22 08:02:12    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060358
+2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060360
+2022/12/22 08:02:13    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060363
+2022/12/22 08:02:44    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060416
+2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060418
+2022/12/22 08:02:45    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060420
+2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060428
+2022/12/22 08:02:48    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060431
+2022/12/22 08:02:48    事件类型: DELETED  Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1060432
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060442
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060443
+2022/12/22 08:02:52    事件类型: DELETED  Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1060444
+2022/12/22 08:02:52    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060445
+2022/12/22 08:02:53    事件类型: MODIFIED Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060448
+2022/12/22 08:02:53    事件类型: DELETED  Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1060449
+
+# 如果只是修改 NewRetryWatcher 中的 ResourceVersion，如下所示，会发现什么事件也监控不到，因为资源都被删除了, List不到哇
+	watcher, err := watchtool.NewRetryWatcher("1059721", &cache.ListWatch{WatchFunc: watchFunc})
+	if err != nil {
+		panic(err)
+	}
+
+# 如果只修改 metav1.ListOptions，发现即使资源删除也可以正常监控到
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		return clientset.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{ResourceVersion: "1059721"})
+	}
 ```
 
 :::
-
-注意事项总结：
-
-* `ResourceVersion`并不会永久保存，这取决于`etcd`保留多长时间
-
-* `Watch`函数接收到的`ResourceVersion`顺序并不一定是递增的，比如先接收到一个大的Version，随后又接收到一个小的Version，
-
-  `Watch`若指定开始位置的`ResourceVersion`则会按照数字递增的顺序重新接收事件，而不是上面提到的接收顺序来接收
-
-  举个例子
-
-  ```bash
-  # 第一次Watch
-  D:\application\GoLand\example>go run main.go
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-3    Pod阶段: Running    ResourceVersion:1053712
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053682
-  2022/12/22 06:36:37    事件类型: ADDED    Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053698
-  2022/12/22 06:37:16    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
-  2022/12/22 06:37:17    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
-  
-  # 重启程序, 从1053712处继续Watch
-  # 1053682和1053698丢失了，虽然他们的顺序更靠后，但是他们小于1053712
-  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-1    Pod阶段: Running    ResourceVersion:1053870
-  2022/12/22 06:40:19    事件类型: MODIFIED Pod名称: pod-2    Pod阶段: Running    ResourceVersion:1053874
-  ```
 
 <br />
 
