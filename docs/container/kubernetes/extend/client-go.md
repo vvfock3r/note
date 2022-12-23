@@ -2308,7 +2308,7 @@ func main() {
 	// 日志级别测试
 	for i := -3; i < 6; i++ {
 		level := klog.Level(i)
-		klog.V(level).Info("Level " + level.String())
+		klog.V(level).InfoS("klog", "Level", level.String())
 	}
 }
 ```
@@ -2316,11 +2316,11 @@ func main() {
 输出结果
 
 ```bash
-D:\application\GoLand\example>go run main.go     
-I1223 17:11:32.489717    7696 main.go:11] Level -3
-I1223 17:11:32.503925    7696 main.go:11] Level -2
-I1223 17:11:32.503925    7696 main.go:11] Level -1
-I1223 17:11:32.503925    7696 main.go:11] Level 0
+D:\application\GoLand\example>go run main.go
+I1223 17:32:54.692647   10424 main.go:11] "klog" Level="-3"
+I1223 17:32:54.705785   10424 main.go:11] "klog" Level="-2"
+I1223 17:32:54.705785   10424 main.go:11] "klog" Level="-1"
+I1223 17:32:54.705785   10424 main.go:11] "klog" Level="0"
 ```
 
 :::
@@ -2343,7 +2343,7 @@ func main() {
 	// 日志级别测试
 	for i := -3; i < 6; i++ {
 		level := klog.Level(i)
-		klog.V(level).Info("Level " + level.String())
+		klog.V(level).InfoS("klog", "Level", level.String())
 	}
 }
 ```
@@ -2358,20 +2358,20 @@ D:\application\GoLand\example>go run main.go -h
         number for the log level verbosity
 
 # 命令行不传参数，还是默认的Level 0
-D:\application\GoLand\example>go run main.go     
-I1223 17:13:56.624376     916 main.go:16] Level -3
-I1223 17:13:56.637059     916 main.go:16] Level -2
-I1223 17:13:56.637059     916 main.go:16] Level -1
-I1223 17:13:56.637059     916 main.go:16] Level 0
+D:\application\GoLand\example>go run main.go
+I1223 17:33:44.256171   10992 main.go:16] "klog" Level="-3"
+I1223 17:33:44.268614   10992 main.go:16] "klog" Level="-2"
+I1223 17:33:44.268614   10992 main.go:16] "klog" Level="-1"
+I1223 17:33:44.268614   10992 main.go:16] "klog" Level="0"
 
 # 设置全局Level为2
 D:\application\GoLand\example>go run main.go -v=2
-I1223 17:14:09.841900    3612 main.go:16] Level -3
-I1223 17:14:09.855502    3612 main.go:16] Level -2
-I1223 17:14:09.855502    3612 main.go:16] Level -1
-I1223 17:14:09.856044    3612 main.go:16] Level 0 
-I1223 17:14:09.856044    3612 main.go:16] Level 1
-I1223 17:14:09.856044    3612 main.go:16] Level 2
+I1223 17:34:11.469717    8976 main.go:16] "klog" Level="-3"
+I1223 17:34:11.482664    8976 main.go:16] "klog" Level="-2"
+I1223 17:34:11.483204    8976 main.go:16] "klog" Level="-1"
+I1223 17:34:11.483204    8976 main.go:16] "klog" Level="0"
+I1223 17:34:11.483204    8976 main.go:16] "klog" Level="1"
+I1223 17:34:11.483204    8976 main.go:16] "klog" Level="2"
 ```
 
 :::
@@ -2406,7 +2406,7 @@ func main() {
 	// 日志级别测试
 	for i := -3; i < 6; i++ {
 		level := klog.Level(i)
-		klog.V(level).Info("Level " + level.String())
+		klog.V(level).InfoS("klog", "Level", level.String())
 	}
 }
 ```
@@ -2416,29 +2416,29 @@ func main() {
 ```bash
 # 默认全局Level变成了2
 D:\application\GoLand\example>go run main.go
-I1223 17:19:47.964986   12096 main.go:28] Level -3
-I1223 17:19:47.980340   12096 main.go:28] Level -2
-I1223 17:19:47.980340   12096 main.go:28] Level -1
-I1223 17:19:47.980891   12096 main.go:28] Level 0
-I1223 17:19:47.980891   12096 main.go:28] Level 1
-I1223 17:19:47.980891   12096 main.go:28] Level 2
+I1223 17:34:49.625088    9564 main.go:28] "klog" Level="-3"
+I1223 17:34:49.638219    9564 main.go:28] "klog" Level="-2"
+I1223 17:34:49.638219    9564 main.go:28] "klog" Level="-1"
+I1223 17:34:49.638724    9564 main.go:28] "klog" Level="0" 
+I1223 17:34:49.638762    9564 main.go:28] "klog" Level="1" 
+I1223 17:34:49.638762    9564 main.go:28] "klog" Level="2"
 
 # 命令行中手动指定Level，会覆盖我们设置的默认值
 D:\application\GoLand\example>go run main.go -v=-1
-I1223 17:21:24.154153    3672 main.go:28] Level -3
-I1223 17:21:24.166288    3672 main.go:28] Level -2
-I1223 17:21:24.166288    3672 main.go:28] Level -1
+I1223 17:35:13.185796    7812 main.go:28] "klog" Level="-3"
+I1223 17:35:13.198536    7812 main.go:28] "klog" Level="-2"
+I1223 17:35:13.198536    7812 main.go:28] "klog" Level="-1"
 
 # 如果将上面注释的代码打开，不管命令行传递任何参数都会被覆盖成4
 D:\application\GoLand\example>go run main.go -v=-1
-I1223 17:22:18.227397    6536 main.go:28] Level -3
-I1223 17:22:18.241475    6536 main.go:28] Level -2
-I1223 17:22:18.241518    6536 main.go:28] Level -1
-I1223 17:22:18.241518    6536 main.go:28] Level 0 
-I1223 17:22:18.241518    6536 main.go:28] Level 1 
-I1223 17:22:18.241518    6536 main.go:28] Level 2 
-I1223 17:22:18.242028    6536 main.go:28] Level 3 
-I1223 17:22:18.242028    6536 main.go:28] Level 4
+I1223 17:35:28.408730    6580 main.go:28] "klog" Level="-3"
+I1223 17:35:28.421870    6580 main.go:28] "klog" Level="-2"
+I1223 17:35:28.422083    6580 main.go:28] "klog" Level="-1"
+I1223 17:35:28.422083    6580 main.go:28] "klog" Level="0"
+I1223 17:35:28.422083    6580 main.go:28] "klog" Level="1"
+I1223 17:35:28.422083    6580 main.go:28] "klog" Level="2"
+I1223 17:35:28.422620    6580 main.go:28] "klog" Level="3"
+I1223 17:35:28.422620    6580 main.go:28] "klog" Level="4"
 ```
 
 :::
