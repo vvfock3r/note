@@ -2108,7 +2108,7 @@ Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2493560398\b001\exe\m
   * 易于解析和查询
   * 对日志消息及其参数有具体的指导
 
-::: details （1）InfoS 基础
+::: details （1）InfoS 示例
 
 ```go
 package main
@@ -2142,7 +2142,7 @@ func main() {
 	klog.InfoS("Request finished", "request", request)
 
 	// 但是我想把结构体中所有的内容都输出来，怎么做呢?
-	// 没有找到特别好的办法，所以自定义了一个类型，它没有String方法
+	// 没有找到特别好的办法，所以自定义了一个类型，它没有String方法    
 	type KlogRequest Request
 	klog.InfoS("Request finished", "request", KlogRequest(request))
 }
@@ -2156,6 +2156,12 @@ I1223 15:37:39.838107    8220 main.go:20] "Received HTTP request" method="GET" U
 I1223 15:37:39.851077    8220 main.go:23] "Received HTTP request" method="GET" URL="/metrics" latency="1s"
 I1223 15:37:39.851077    8220 main.go:27] "Request finished" request="GET"                                
 I1223 15:37:39.851077    8220 main.go:32] "Request finished" request={Method:GET Timeout:30 secret:pony}
+
+# 分析
+# 其实我们绝大部分情况并不需要直接输出结构体内容，原因如下：
+# 1.若结构体字段很少，直接写字段输出即可
+# 2.若结构体字段很多，那么直接输出不太合适，日志会显得很乱
+# 3.若结构体字段不少也不多，倒是可以可以采用这种办法，但是它的格式和上面的格式完全不一样，我还不确定当我们用代码处理的时候会不会有问题
 ```
 
 :::
@@ -2163,10 +2169,121 @@ I1223 15:37:39.851077    8220 main.go:32] "Request finished" request={Method:GET
 ::: details （2）InfoS 对 Kubernetes 对象的引用
 
 ```go
+package main
 
+import (
+	"context"
+	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		panic(err)
+	}
+	klog.InfoS("Kubernetes server info",
+		"version", serverVersionInfo,
+		"platform", serverVersionInfo.Platform,
+		"goVersion", serverVersionInfo.GoVersion,
+	)
+
+	// (3) 查看Pod
+	// 1.klog.KObj传入的对象需要实现以下两个接口
+	//     GetName() string
+	//     GetNamespace() string
+	// 2.注意我们需要传入的是指针对象，才能满足上面的接口
+	// 3.klog.KObj返回值 namespace/name, 如果没有namespace则返回 name
+	podList, err := clientset.CoreV1().Pods("kube-system").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	pod := podList.Items[0]
+	klog.InfoS("Random pod", "pod", klog.KObj(&pod), "status", pod.Status.Phase)
+
+	// (4) 查看Namespace
+	// 1.klog.KRef传入一个namespace和name，返回namespace/name
+	// 2.感觉用处不大
+	namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	namespace := namespaceList.Items[0]
+	klog.InfoS("Random namespace", "namespace", klog.KRef("", namespace.Name))
+	klog.InfoS("Random namespace", "namespace", namespace.Name)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+I1223 16:29:47.044782    7568 main.go:46] "Kubernetes server info" version="v1.25.4" platform="linux/amd64" goVersion="go1.19.3"
+I1223 16:29:47.081949    7568 main.go:63] "Random pod" pod="kube-system/calico-kube-controllers-798cc86c47-gglzh" status=Running
+I1223 16:29:48.358169    7568 main.go:68] "Random namespace" namespace="default"
+I1223 16:29:48.358169    7568 main.go:69] "Random namespace" namespace="default"
 ```
 
 :::
+
+::: details （3）ErrorS 示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/klog/v2"
+)
+
+func main() {
+	// 错误日志
+	err := fmt.Errorf("timeout")
+	klog.ErrorS(err, "Failed to update pod status")
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+E1223 16:33:25.123614    4840 main.go:11] "Failed to update pod status" err="timeout"
+```
+
+:::
+
+<br />
+
+### 4）设置日志级别
 
 <br />
 
