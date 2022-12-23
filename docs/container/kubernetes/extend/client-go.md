@@ -2285,6 +2285,164 @@ E1223 16:33:25.123614    4840 main.go:11] "Failed to update pod status" err="tim
 
 ### 4）设置日志级别
 
+说明：
+
+* klog并不是通过像`DEBUG`、`INFO`、`WARN`、`ERROR`这种方式来设置日志级别的
+* klog通过使用`V-levels`的机制来设置日志级别
+  * 全局有一个Level，它类似于我们通常设置的日志级别，它控制着低于或高于此日志级别的才会输出
+  * 全局Level本质是int32类型，默认值是零值0
+  * `klog.InfoS`等函数不受Level的限制，总是会输出
+  * `klog.V(<Level>).Info`这种显示指定Level的才会受到限制
+  * **等于或小于全局Level的日志才会输出，大于全局Level的日志不会输出**
+
+::: details （1）测试默认的Level
+
+```go
+package main
+
+import (
+	"k8s.io/klog/v2"
+)
+
+func main() {
+	// 日志级别测试
+	for i := -3; i < 6; i++ {
+		level := klog.Level(i)
+		klog.V(level).Info("Level " + level.String())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go     
+I1223 17:11:32.489717    7696 main.go:11] Level -3
+I1223 17:11:32.503925    7696 main.go:11] Level -2
+I1223 17:11:32.503925    7696 main.go:11] Level -1
+I1223 17:11:32.503925    7696 main.go:11] Level 0
+```
+
+:::
+
+::: details （2）指定Level的方式：命令行参数
+
+```go
+package main
+
+import (
+	"flag"
+	"k8s.io/klog/v2"
+)
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 日志级别测试
+	for i := -3; i < 6; i++ {
+		level := klog.Level(i)
+		klog.V(level).Info("Level " + level.String())
+	}
+}
+```
+
+输出结果
+
+```bash
+# 看一下命令行参数文档
+D:\application\GoLand\example>go run main.go -h
+...
+  -v value
+        number for the log level verbosity
+
+# 命令行不传参数，还是默认的Level 0
+D:\application\GoLand\example>go run main.go     
+I1223 17:13:56.624376     916 main.go:16] Level -3
+I1223 17:13:56.637059     916 main.go:16] Level -2
+I1223 17:13:56.637059     916 main.go:16] Level -1
+I1223 17:13:56.637059     916 main.go:16] Level 0
+
+# 设置全局Level为2
+D:\application\GoLand\example>go run main.go -v=2
+I1223 17:14:09.841900    3612 main.go:16] Level -3
+I1223 17:14:09.855502    3612 main.go:16] Level -2
+I1223 17:14:09.855502    3612 main.go:16] Level -1
+I1223 17:14:09.856044    3612 main.go:16] Level 0 
+I1223 17:14:09.856044    3612 main.go:16] Level 1
+I1223 17:14:09.856044    3612 main.go:16] Level 2
+```
+
+:::
+
+::: details （3）指定Level的方式：使用flag设置默认Level
+
+```go
+package main
+
+import (
+	"flag"
+	"k8s.io/klog/v2"
+)
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+
+	// (1) 这里设置默认的Level, 如果命令行参数中指定-v的话会覆盖此参数
+	if err := flag.Set("v", "2"); err != nil {
+		panic(err)
+	}
+
+	flag.Parse()
+
+	// (2) 如果在 flag.Parse() 之后再去 Set，那么就会覆盖命令行中指定的参数
+	//     一般情况下我们不会这么用，仅作了解，避免写bug
+	//if err := flag.Set("v", "4"); err != nil {
+	//	panic(err)
+	//}
+
+	// 日志级别测试
+	for i := -3; i < 6; i++ {
+		level := klog.Level(i)
+		klog.V(level).Info("Level " + level.String())
+	}
+}
+```
+
+输出结果
+
+```bash
+# 默认全局Level变成了2
+D:\application\GoLand\example>go run main.go
+I1223 17:19:47.964986   12096 main.go:28] Level -3
+I1223 17:19:47.980340   12096 main.go:28] Level -2
+I1223 17:19:47.980340   12096 main.go:28] Level -1
+I1223 17:19:47.980891   12096 main.go:28] Level 0
+I1223 17:19:47.980891   12096 main.go:28] Level 1
+I1223 17:19:47.980891   12096 main.go:28] Level 2
+
+# 命令行中手动指定Level，会覆盖我们设置的默认值
+D:\application\GoLand\example>go run main.go -v=-1
+I1223 17:21:24.154153    3672 main.go:28] Level -3
+I1223 17:21:24.166288    3672 main.go:28] Level -2
+I1223 17:21:24.166288    3672 main.go:28] Level -1
+
+# 如果将上面注释的代码打开，不管命令行传递任何参数都会被覆盖成4
+D:\application\GoLand\example>go run main.go -v=-1
+I1223 17:22:18.227397    6536 main.go:28] Level -3
+I1223 17:22:18.241475    6536 main.go:28] Level -2
+I1223 17:22:18.241518    6536 main.go:28] Level -1
+I1223 17:22:18.241518    6536 main.go:28] Level 0 
+I1223 17:22:18.241518    6536 main.go:28] Level 1 
+I1223 17:22:18.241518    6536 main.go:28] Level 2 
+I1223 17:22:18.242028    6536 main.go:28] Level 3 
+I1223 17:22:18.242028    6536 main.go:28] Level 4
+```
+
+:::
+
 <br />
 
 ## Watch机制
