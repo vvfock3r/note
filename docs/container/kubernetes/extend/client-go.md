@@ -1989,6 +1989,187 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 
 <br />
 
+## 日志设置
+
+### 1）日志说明
+
+文档：
+
+* 主要参考资料：[https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md)
+
+* 结构化日志记录：https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging
+
+* 上下文日志记录：[https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/3077-contextual-logging/README.md](https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/3077-contextual-logging/README.md)
+
+Github：
+
+* klog ：[https://github.com/kubernetes/klog](https://github.com/kubernetes/klog)
+
+* logr ：[https://github.com/go-logr/logr](https://github.com/go-logr/logr)
+
+说明：
+
+* Kubernetes 项目使用`klog`进行日志记录，由于结构化日志和上下文日志记录的引入，Kubernetes 正在迁移以使用`logr`作为其日志记录接口
+
+<br />
+
+### 2）命令行参数
+
+初始化命令行参数参数并不是必须的，但是在下面我们可以看到它为我们预设了大量的选项，让我们用起来更方便
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"flag"
+	"k8s.io/klog/v2"
+)
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+
+	// 解析命令行参数
+	flag.Parse()
+
+	// 输出日志
+	klog.Info("Info")
+	klog.Warning("Warning")
+	klog.Error("Error")
+	klog.Fatal("Fatal")    // 这里会使程序退出    
+	klog.Info("No output") // 这一行永远不会输出出来
+}
+```
+
+输出结果
+
+```bash
+# 输出结果
+D:\application\GoLand\example>go run main.go     
+I1223 12:30:38.017340   11656 main.go:16] Info
+W1223 12:30:38.031649   11656 main.go:17] Warning
+E1223 12:30:38.031649   11656 main.go:18] Error  
+F1223 12:30:38.031649   11656 main.go:19] Fatal  
+exit status 255
+
+# 查看命令行参数
+D:\application\GoLand\example>go run main.go -h
+Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2493560398\b001\exe\main.exe:
+  -add_dir_header
+        If true, adds the file directory to the header of the log messages
+  -alsologtostderr
+        log to standard error as well as files (no effect when -logtostderr=true)
+  -log_backtrace_at value
+        when logging hits line file:N, emit a stack trace
+  -log_dir string
+        If non-empty, write log files in this directory (no effect when -logtostderr=true)
+  -log_file string
+        If non-empty, use this log file (no effect when -logtostderr=true)
+  -log_file_max_size uint
+        Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+  -logtostderr
+        log to standard error instead of files (default true)
+  -one_output
+        If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+  -skip_headers
+        If true, avoid header prefixes in the log messages
+  -skip_log_headers
+        If true, avoid headers when opening log files (no effect when -logtostderr=true)
+  -stderrthreshold value
+        logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+  -v value
+        number for the log level verbosity
+  -vmodule value
+        comma-separated list of pattern=N settings for file-filtered logging
+```
+
+:::
+
+<br />
+
+### 3）结构化日志
+
+文档：
+
+* 使用什么方法：[https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use)
+
+* 日志记录结构：[https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging#log-message-structure](https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging#log-message-structure)
+
+说明：
+
+* 对于每个格式化方法 ( `Infof`, `Errorf`) 我们将添加匹配的结构化方法 ( `InfoS`, `ErrorS`)
+  * `klog.InfoS`：用于记录常规日志
+  * `klog.ErrorS`：用于记录错误日志
+* 日志记录结构为： `<message> <key1>=<value1> <key2>=<value2>`，说明如下
+  * 将日志消息与其参数分开
+  * 将日志参数视为键值对
+  * 易于解析和查询
+  * 对日志消息及其参数有具体的指导
+
+::: details （1）InfoS 基础
+
+```go
+package main
+
+import (
+	"k8s.io/klog/v2"
+	"time"
+)
+
+type Request struct {
+	Method  string
+	Timeout int
+	secret  string
+}
+
+func (req Request) String() string {
+	return req.Method
+}
+
+func main() {
+	// 键值对参数
+	klog.InfoS("Received HTTP request", "method", "GET", "URL", "/metrics", "latency", time.Second)
+
+	// 数组形式
+	klog.InfoS("Received HTTP request", []any{"method", "GET", "URL", "/metrics", "latency", time.Second}...)
+
+	// ---------------------------------------------------------------------------------------------------------------
+
+	// 结构体参数,若结构体有String方法，则会使用String方法里面的内容
+	request := Request{Method: "GET", Timeout: 30, secret: "pony"}
+	klog.InfoS("Request finished", "request", request)
+
+	// 但是我想把结构体中所有的内容都输出来，怎么做呢?
+	// 没有找到特别好的办法，所以自定义了一个类型，它没有String方法
+	type KlogRequest Request
+	klog.InfoS("Request finished", "request", KlogRequest(request))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+I1223 15:37:39.838107    8220 main.go:20] "Received HTTP request" method="GET" URL="/metrics" latency="1s"
+I1223 15:37:39.851077    8220 main.go:23] "Received HTTP request" method="GET" URL="/metrics" latency="1s"
+I1223 15:37:39.851077    8220 main.go:27] "Request finished" request="GET"                                
+I1223 15:37:39.851077    8220 main.go:32] "Request finished" request={Method:GET Timeout:30 secret:pony}
+```
+
+:::
+
+::: details （2）InfoS 对 Kubernetes 对象的引用
+
+```go
+
+```
+
+:::
+
+<br />
+
 ## Watch机制
 
 ### 1）基础示例代码
@@ -3122,66 +3303,3 @@ type Event struct {
 :::
 
 <br />
-
-## 日志设置
-
-### 1）基础设置
-
-::: details 点击查看详情
-
-```go
-func Init() {
-	// 初始化命令行参数
-	klog.InitFlags(nil)
-
-	// 设置日志级别为3
-	if err := flag.Set("v", "3"); err != nil {
-		panic(err)
-	}
-
-	// 解析命令行参数
-	flag.Parse()
-}
-
-func main() {
-	// 初始化
-	Init()
-    
-    ...
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go -h
-Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2493560398\b001\exe\main.exe:
-  -add_dir_header
-        If true, adds the file directory to the header of the log messages
-  -alsologtostderr
-        log to standard error as well as files (no effect when -logtostderr=true)
-  -log_backtrace_at value
-        when logging hits line file:N, emit a stack trace
-  -log_dir string
-        If non-empty, write log files in this directory (no effect when -logtostderr=true)
-  -log_file string
-        If non-empty, use this log file (no effect when -logtostderr=true)
-  -log_file_max_size uint
-        Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
-  -logtostderr
-        log to standard error instead of files (default true)
-  -one_output
-        If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
-  -skip_headers
-        If true, avoid header prefixes in the log messages
-  -skip_log_headers
-        If true, avoid headers when opening log files (no effect when -logtostderr=true)
-  -stderrthreshold value
-        logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
-  -v value
-        number for the log level verbosity
-  -vmodule value
-        comma-separated list of pattern=N settings for file-filtered logging
-```
-
-:::
