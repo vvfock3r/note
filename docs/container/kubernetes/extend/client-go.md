@@ -2046,12 +2046,12 @@ func main() {
 输出结果
 
 ```bash
-# 输出结果
+# 输出结果,可以看到日志中是没有类似 INFO 这种日志级别字段的
 D:\application\GoLand\example>go run main.go     
 I1223 12:30:38.017340   11656 main.go:16] Info
 W1223 12:30:38.031649   11656 main.go:17] Warning
 E1223 12:30:38.031649   11656 main.go:18] Error  
-F1223 12:30:38.031649   11656 main.go:19] Fatal  
+F1223 12:30:38.031649   11656 main.go:19] Fatal
 exit status 255
 
 # 查看命令行参数
@@ -2285,6 +2285,10 @@ E1223 16:33:25.123614    4840 main.go:11] "Failed to update pod status" err="tim
 
 ### 4）设置日志级别
 
+文档：
+
+* 使用什么方法：[https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use)
+
 说明：
 
 * klog并不是通过像`DEBUG`、`INFO`、`WARN`、`ERROR`这种方式来设置日志级别的
@@ -2440,6 +2444,108 @@ I1223 17:35:28.422083    6580 main.go:28] "klog" Level="2"
 I1223 17:35:28.422620    6580 main.go:28] "klog" Level="3"
 I1223 17:35:28.422620    6580 main.go:28] "klog" Level="4"
 ```
+
+:::
+
+::: details （4）如果我想固定一个日志级别，然后使用 obj.InfoS 来输出日志
+
+```go
+package main
+
+import (
+	"flag"
+	"k8s.io/klog/v2"
+	"strconv"
+)
+
+func main() {
+	// 初始化命令行参数，默认全局Level是0
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 固定输出的日志级别为1
+	level := klog.Level(1)
+	logger := klog.V(level)
+
+	// 日志级别测试
+	for i := -3; i < 6; i++ {
+		logger.InfoS("klog", "Number", strconv.Itoa(i))
+	}
+}
+```
+
+输出结果
+
+```bash
+# 因为全局Level为0，日志Level为1，所以什么也不会输出
+D:\application\GoLand\example>go run main.go
+
+# 设置全局Level为1，Level <=1的日志便会输出出来
+D:\application\GoLand\example>go run main.go -v=1
+I1223 20:51:51.645938   10300 main.go:20] "klog" Number="-3"
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="-2"
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="-1"
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="0" 
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="1" 
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="2" 
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="3" 
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="4" 
+I1223 20:51:51.659282   10300 main.go:20] "klog" Number="5"
+```
+
+:::
+
+::: details （5）我应该使用哪种级别的日志 以及 哪些方法？
+
+**1.首先应该明白**
+
+* 越粗糙的日志应该设置越低的Level级别
+* 越详细的日志应该设置越高的Level级别
+
+**2.搜一下client-go都应用了哪些Level级别**
+
+```bash
+# 进入 k8s.io目录
+[root@node-1 ~]# cd `go env GOPATH`/pkg/mod/k8s.io
+
+# 看看client-go中的日志是如何设置Level的
+# 输出内容太多，这里就简单总结一下
+#   1-6都有，其中4比较多, 
+#   7、8、9、10也有，比较少
+[root@node-1 k8s.io]# find . -type f  | grep -Ev 'test' | xargs grep -E '\.V\([0-9]+\)' --color=auto
+
+# 再统计一下都各有多少个,这里设置最高的Level为20
+for i in `seq 20`
+do
+    n=`find . -type f  | grep -Ev 'test' | xargs grep --color=auto -E "\.V\($i\)" | wc -l`
+    echo -e "${i} \t ${n}"
+done
+
+1        20
+2        69
+3        26
+4        218
+5        47
+6        52
+7        2
+8        6
+9        6
+10       18
+11       0
+12       0
+13       0
+14       0
+15       0
+16       0
+17       0
+18       0
+19       0
+20       0
+```
+
+**3.我们应该使用哪种日志级别?**
+
+推荐使用 **0、1、2、3**四种级别，日志详细程度依次递增
 
 :::
 
