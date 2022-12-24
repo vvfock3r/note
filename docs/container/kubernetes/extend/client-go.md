@@ -2727,14 +2727,11 @@ sys     0m5.210s
 
 :::
 
-::: details （2）ResultChan Channel自动关闭：两种解决办法
+::: details （2）ResultChan Channel自动关闭：使用两层`for`循环解决
 
 Watch通道关闭的解决思路：
 
 * 个人实现：使用两层`for`循环，当检测到通道关闭后再重新创建一个`watcher`对象
-* 官方实现：使用具有重试功能的`Watch`接口：`retrywatcher.go`
-
-**（1）两层For循环：**
 
 ```go
 	// pod watch
@@ -2774,7 +2771,13 @@ Watch通道关闭的解决思路：
 2022/12/21 16:24:37    事件类型: ADDED    Pod名称: calico-node-fgqsz                        Pod阶段: Running
 ```
 
-**（2）RetryWatcher**
+:::
+
+::: details （3）ResultChan Channel自动关闭：使用RetryWatcher解决
+
+Watch通道关闭的解决思路：
+
+* 官方实现：使用具有重试功能的`Watch`接口：`retrywatcher.go`
 
 ```go
 package main
@@ -2820,6 +2823,11 @@ func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
 }
 
 func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Set("v", "10")
+	flag.Parse()
+
 	// 实例化ClientSet
 	clientset, err := NewClientSetByConfig(".kube.config")
 	if err != nil {
@@ -2860,19 +2868,32 @@ func main() {
 
 ```bash
 # 它在内部实现了重试机制，所以对于开发者来说是感知不到在什么时候重新Watched
+# 为了能看到重试的日志，我们将默认的日志级别改成了10
 [root@node-1 example]# time go run main.go
-2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
-2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-apiserver-node-3                    Pod阶段: Running
-2022/12/21 16:53:27    事件类型: ADDED    Pod名称: kube-proxy-72k55                         Pod阶段: Running
+I1224 10:01:41.862714    3385 loader.go:374] Config loaded from file:  .kube.config
+I1224 10:01:41.864359    3385 retrywatcher.go:247] Starting RetryWatcher.
+I1224 10:01:41.864520    3385 round_trippers.go:466] curl -v -XGET  -H "Accept: application/json, */*" -H "User-Agent: main/v0.0.0 (linux/amd64) kubernetes/$Format" 'https://api.k8s.local:6443/api/v1/namespaces/kube-system/pods?watch=true'
+I1224 10:01:41.866216    3385 round_trippers.go:495] HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.151 }]
+I1224 10:01:41.866702    3385 round_trippers.go:510] HTTP Trace: Dial to tcp:192.168.48.151:6443 succeed
+I1224 10:01:41.879675    3385 round_trippers.go:553] GET https://api.k8s.local:6443/api/v1/namespaces/kube-system/pods?watch=true 200 OK in 15 milliseconds
+I1224 10:01:41.879700    3385 round_trippers.go:570] HTTP Statistics: DNSLookup 1 ms Dial 0 ms TLSHandshake 5 ms ServerProcessing 6 ms Duration 15 ms
+I1224 10:01:41.879707    3385 round_trippers.go:577] Response Headers:
+I1224 10:01:41.879714    3385 round_trippers.go:580]     Content-Type: application/json
+I1224 10:01:41.879720    3385 round_trippers.go:580]     X-Kubernetes-Pf-Flowschema-Uid: 4c56132b-c45c-41c6-b23e-c195a7027193
+I1224 10:01:41.879756    3385 round_trippers.go:580]     X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302
+I1224 10:01:41.879763    3385 round_trippers.go:580]     Date: Sat, 24 Dec 2022 02:01:41 GMT
+I1224 10:01:41.879769    3385 round_trippers.go:580]     Audit-Id: f5139a74-8bd6-47c3-ae38-9469520c8216
+I1224 10:01:41.879775    3385 round_trippers.go:580]     Cache-Control: no-cache, private
+2022/12/24 10:01:41    事件类型: ADDED    Pod名称: kube-apiserver-front-proxy-node-4        Pod阶段: Running
+2022/12/24 10:01:41    事件类型: ADDED    Pod名称: mydeploy-55845c6865-hjzv8                Pod阶段: Running
+2022/12/24 10:01:41    事件类型: ADDED    Pod名称: etcd-node-3                              Pod阶段: Running
 ...
-2022/12/21 18:37:29    事件类型: MODIFIED Pod名称: calico-node-jwflc                        Pod阶段: Running
-2022/12/21 18:38:06    事件类型: MODIFIED Pod名称: kube-apiserver-node-1                    Pod阶段: Running
-2022/12/21 18:38:08    事件类型: MODIFIED Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+
 ```
 
 :::
 
-::: details （3）两种解决方案对比
+::: details （4）两种解决方案对比
 
 文档：[https://kubernetes.io/zh-cn/docs/reference/using-api/api-concepts/#efficient-detection-of-changes](https://kubernetes.io/zh-cn/docs/reference/using-api/api-concepts/#efficient-detection-of-changes)
 
