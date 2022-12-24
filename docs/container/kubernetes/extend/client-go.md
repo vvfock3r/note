@@ -2727,7 +2727,7 @@ sys     0m5.210s
 
 :::
 
-::: details （2）ResultChan Channel自动关闭：使用两层`for`循环解决
+::: details （2）ResultChan Channel自动关闭：使用两层for循环解决
 
 Watch通道关闭的解决思路：
 
@@ -2888,7 +2888,23 @@ I1224 10:01:41.879775    3385 round_trippers.go:580]     Cache-Control: no-cache
 2022/12/24 10:01:41    事件类型: ADDED    Pod名称: mydeploy-55845c6865-hjzv8                Pod阶段: Running
 2022/12/24 10:01:41    事件类型: ADDED    Pod名称: etcd-node-3                              Pod阶段: Running
 ...
-
+I1224 11:00:34.939721    3385 retrywatcher.go:151] "Failed to get event! Re-creating the watcher." resourceVersion="1189532"
+I1224 11:00:34.939783    3385 retrywatcher.go:279] Restarting RetryWatcher at RV="1189532"
+I1224 11:00:34.939878    3385 round_trippers.go:466] curl -v -XGET  -H "User-Agent: main/v0.0.0 (linux/amd64) kubernetes/$Format" -H "Accept: application/json, */*" 'https://api.k8s.local:6443/api/v1/namespaces/kube-system/pods?watch=true'
+I1224 11:00:34.943209    3385 round_trippers.go:553] GET https://api.k8s.local:6443/api/v1/namespaces/kube-system/pods?watch=true 200 OK in 3 milliseconds
+I1224 11:00:34.943228    3385 round_trippers.go:570] HTTP Statistics: GetConnection 0 ms ServerProcessing 3 ms Duration 3 ms
+I1224 11:00:34.943234    3385 round_trippers.go:577] Response Headers:
+I1224 11:00:34.943241    3385 round_trippers.go:580]     Audit-Id: 991a642e-c06d-4181-b6d6-b9a6a17ffdd7
+I1224 11:00:34.943247    3385 round_trippers.go:580]     Cache-Control: no-cache, private
+I1224 11:00:34.943252    3385 round_trippers.go:580]     Content-Type: application/json
+I1224 11:00:34.943258    3385 round_trippers.go:580]     X-Kubernetes-Pf-Flowschema-Uid: 4c56132b-c45c-41c6-b23e-c195a7027193
+I1224 11:00:34.943264    3385 round_trippers.go:580]     X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302
+I1224 11:00:34.943269    3385 round_trippers.go:580]     Date: Sat, 24 Dec 2022 03:00:34 GMT
+2022/12/24 11:00:34    事件类型: ADDED    Pod名称: etcd-node-2                              Pod阶段: Running
+2022/12/24 11:00:34    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+2022/12/24 11:00:34    事件类型: ADDED    Pod名称: calico-node-jhjwp                        Pod阶段: Running
+2022/12/24 11:00:34    事件类型: ADDED    Pod名称: coredns-565d847f94-vmrwl                 Pod阶段: Running
+2022/12/24 11:00:34    事件类型: ADDED    Pod名称: kube-proxy-zztls                         Pod阶段: Running
 ```
 
 :::
