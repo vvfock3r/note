@@ -4091,3 +4091,16 @@ type Event struct {
 :::
 
 <br />
+
+## 自定义控制器
+
+### 架构图
+
+文档：[https://github.com/kubernetes/sample-controller/blob/master/docs/controller-client-go.md](https://github.com/kubernetes/sample-controller/blob/master/docs/controller-client-go.md)
+
+![client-go-controller-interaction](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//client-go-controller-interaction.jpeg)
+
+<br />
+
+### Informer
+
