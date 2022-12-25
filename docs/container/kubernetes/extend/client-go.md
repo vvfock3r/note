@@ -2714,6 +2714,177 @@ D:\application\GoLand\example>go run main.go -v=10
 
 :::
 
+::: details （2）定制核心功能
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"strconv"
+	"time"
+)
+
+// Init 初始化，包含命令行参数和Logger
+func Init() {
+	// 初始化klog自带的命令行参数,它使用的是全局的flag
+	// 但是我们并不会解析它到命令行帮助文档中，仅仅是为了设置klog,比如 v
+	klog.InitFlags(nil)
+
+	// 新建一个flagset,这个才是我们自己的命令行，
+	// 这里按照flag默认的flagset方式创建的新的flagset
+	flagset := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	// flagset设置选项
+	var (
+		level  int
+		format string
+	)
+	flagset.IntVar(&level, "logging_level", 2, "number for the log level verbosity")
+	flagset.StringVar(&format, "logging_format", "console", `Sets the log format. Permitted formats: "json", "console".`)
+
+	// 解析flagset命令行参数，因为上面我们设置了flag.ExitOnError，所以下面的错误可以忽略
+	_ = flagset.Parse(os.Args[1:])
+
+	// 同步我们的命令行参数到klog v中
+	err := flag.Set("v", strconv.Itoa(level))
+	if err != nil {
+		panic(err)
+	}
+
+	// 初始化zap.Logger
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.Level(level * -1))                                    // 设置日志等级
+	config.Encoding = format                                                                          // 设置输出格式，可选值: json、console
+	config.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.00")           // 设置时间格式
+	config.EncoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) { // 设置日志等级字符串
+		// 如果klog.V(2)这样的话会显示
+		// 2022-12-25 16:25:28.85  LEVEL(-2) example/main.go:98 xxx
+		// 这里会改成 INFO
+		if level < 0 {
+			level = zap.InfoLevel
+		}
+		// 这里是将日志级别改为大写的字符串，比如 info 改成 INFO
+		enc.AppendString(level.CapitalString())
+	}
+	zapLogger, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	// 使用zap.Logger替换默认的klog.Logger
+	klog.SetLogger(zapr.NewLogger(zapLogger))
+}
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化
+	Init()
+
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.ServerVersion()
+
+	// 错误日志
+	if err != nil {
+		klog.V(2).ErrorS(err, "Failed to get kubernetes server version")
+		klog.FlushAndExit(time.Second, 1)
+	}
+
+	// 正常日志
+	klog.V(1).InfoS("我是V(1)日志")
+	klog.V(2).InfoS("Kubernetes server info",
+		"version", serverVersionInfo,
+		"platform", serverVersionInfo.Platform,
+		"goVersion", serverVersionInfo.GoVersion,
+	)
+	klog.V(3).InfoS("我是V(3)日志")
+}
+```
+
+输出结果
+
+```bash
+# 查看帮助信息
+D:\application\GoLand\example>go run main.go -h
+Usage of C:\Users\Administrator\AppData\Local\Temp\go-build4188220230\b001\exe\main.exe:
+  -logging_format string                                                              
+        Sets the log format. Permitted formats: "json", "console". (default "console")
+  -logging_level int                                                                  
+        number for the log level verbosity (default 2)
+
+# 使用默认的日志级别输出日志
+D:\application\GoLand\example>go run main.go
+2022-12-25 16:49:15.27  INFO    example/main.go:109     我是V(1)日志
+2022-12-25 16:49:15.28  INFO    example/main.go:110     Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
+
+# 修改日志级别
+D:\application\GoLand\example>go run main.go -logging_level=10
+2022-12-25 16:49:47.53  INFO    clientcmd/loader.go:374 Config loaded from file:  .kube.config
+
+2022-12-25 16:49:47.53  INFO    transport/round_trippers.go:466 curl -v -XGET  -H "Accept: application/json, */*" -H "User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format" 'https://api.k8s.local:6443/version'
+...                                                                                                                             
+2022-12-25 16:49:47.54  INFO    transport/round_trippers.go:580     X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302                                                                               
+
+2022-12-25 16:49:47.54  INFO    transport/round_trippers.go:580     Content-Length: 263
+
+2022-12-25 16:49:47.54  INFO    rest/request.go:1154    Response Body: {
+  "major": "1",
+  "minor": "25",
+  "gitVersion": "v1.25.4",
+  "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+  "gitTreeState": "clean",
+  "buildDate": "2022-11-09T13:29:58Z",
+  "goVersion": "go1.19.3",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+2022-12-25 16:49:47.54  INFO    example/main.go:109     我是V(1)日志
+2022-12-25 16:49:47.54  INFO    example/main.go:110     Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
+2022-12-25 16:49:47.54  INFO    example/main.go:115     我是V(3)日志
+
+# 使用JSON格式输出日志
+D:\application\GoLand\example>go run main.go -logging_format=json
+{"level":"INFO","ts":"2022-12-25 16:51:30.04","caller":"example/main.go:109","msg":"我是V(1)日志"}
+{"level":"INFO","ts":"2022-12-25 16:51:30.05","caller":"example/main.go:110","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
+```
+
+:::
+
 <br />
 
 ## Watch机制
