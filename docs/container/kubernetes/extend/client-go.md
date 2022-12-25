@@ -2749,25 +2749,31 @@ func Init() {
 
 	// flagset设置选项
 	var (
-		level  int
-		format string
+		log_level  int
+		log_format string
+		log_file   string
 	)
-	flagset.IntVar(&level, "logging_level", 2, "number for the log level verbosity")
-	flagset.StringVar(&format, "logging_format", "console", `Sets the log format. Permitted formats: "json", "console".`)
+	flagset.IntVar(&log_level, "log_level", 2, "number for the log log_level verbosity")
+	flagset.StringVar(&log_format, "log_format", "console", `Sets the log log_format. Permitted formats: "json", "console".`)
+	flagset.StringVar(&log_file, "log_file", "", `If non-empty, use this log file`)
 
 	// 解析flagset命令行参数，因为上面我们设置了flag.ExitOnError，所以下面的错误可以忽略
 	_ = flagset.Parse(os.Args[1:])
 
-	// 同步我们的命令行参数到klog v中
-	err := flag.Set("v", strconv.Itoa(level))
-	if err != nil {
+	// 同步我们的命令行参数到klog中
+	// 并不是所有的参数都要同步，这个需要测试过再选择是否要同步到klog中
+	// 需要同步的:
+	//  -v
+	// 不需要同步的:
+	//  -log_file
+	if err := flag.Set("v", strconv.Itoa(log_level)); err != nil {
 		panic(err)
 	}
 
 	// 初始化zap.Logger
 	config := zap.NewProductionConfig()
-	config.Level = zap.NewAtomicLevelAt(zapcore.Level(level * -1))                                    // 设置日志等级
-	config.Encoding = format                                                                          // 设置输出格式，可选值: json、console
+	config.Level = zap.NewAtomicLevelAt(zapcore.Level(log_level * -1))                                // 设置日志等级
+	config.Encoding = log_format                                                                      // 设置输出格式，可选值: json、console
 	config.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.00")           // 设置时间格式
 	config.EncoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) { // 设置日志等级字符串
 		// 如果klog.V(2)这样的话会显示
@@ -2779,6 +2785,13 @@ func Init() {
 		// 这里是将日志级别改为大写的字符串，比如 info 改成 INFO
 		enc.AppendString(level.CapitalString())
 	}
+
+	// 额外输出到日志文件
+	if len(strings.TrimSpace(log_file)) > 0 {
+		config.OutputPaths = append(config.OutputPaths, log_file)
+		config.ErrorOutputPaths = append(config.ErrorOutputPaths, log_file)
+	}
+
 	zapLogger, err := config.Build()
 	if err != nil {
 		panic(err)
@@ -2827,6 +2840,7 @@ func main() {
 		klog.V(2).ErrorS(err, "Failed to get kubernetes server version")
 		klog.FlushAndExit(time.Second, 1)
 	}
+	klog.V(2).ErrorS(err, "error log test")
 
 	// 正常日志
 	klog.V(1).InfoS("我是V(1)日志")
@@ -2842,49 +2856,65 @@ func main() {
 输出结果
 
 ```bash
-# 查看帮助信息
-D:\application\GoLand\example>go run main.go -h
-Usage of C:\Users\Administrator\AppData\Local\Temp\go-build4188220230\b001\exe\main.exe:
-  -logging_format string                                                              
-        Sets the log format. Permitted formats: "json", "console". (default "console")
-  -logging_level int                                                                  
-        number for the log level verbosity (default 2)
+# (1) 查看帮助信息
+D:\application\GoLand\example>go run main.go -h                           
+Usage of C:\Users\Administrator\AppData\Local\Temp\go-build3992222914\b001\exe\main.exe:
+  -log_file string                                                                        
+        If non-empty, use this log file                                                   
+  -log_format string                                                                      
+        Sets the log log_format. Permitted formats: "json", "console". (default "console")
+  -log_level int                                                                          
+        number for the log log_level verbosity (default 2)
 
-# 使用默认的日志级别输出日志
+# (2) 使用默认的日志级别输出日志
 D:\application\GoLand\example>go run main.go
-2022-12-25 16:49:15.27  INFO    example/main.go:109     我是V(1)日志
-2022-12-25 16:49:15.28  INFO    example/main.go:110     Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
+2022-12-25 17:22:14.05  ERROR   example/main.go:121     error log test
+main.main                                                             
+        D:/application/GoLand/example/main.go:121                     
+runtime.main                                                          
+        C:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250   
+2022-12-25 17:22:14.07  INFO    example/main.go:124     我是V(1)日志                                                                                      
+2022-12-25 17:22:14.07  INFO    example/main.go:125     Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
 
-# 修改日志级别
-D:\application\GoLand\example>go run main.go -logging_level=10
-2022-12-25 16:49:47.53  INFO    clientcmd/loader.go:374 Config loaded from file:  .kube.config
+# (3) 使用JSON格式输出，JSON输出比较紧凑，后面的示例都使用JSON格式
+D:\application\GoLand\example>go run main.go -log_format=json
+{"level":"ERROR","ts":"2022-12-25 17:23:48.92","caller":"example/main.go:121","msg":"error log test","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:121\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runti
+me/proc.go:250"}
+{"level":"INFO","ts":"2022-12-25 17:23:48.93","caller":"example/main.go:124","msg":"我是V(1)日志"}                                                                              
+{"level":"INFO","ts":"2022-12-25 17:23:48.93","caller":"example/main.go:125","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
 
-2022-12-25 16:49:47.53  INFO    transport/round_trippers.go:466 curl -v -XGET  -H "Accept: application/json, */*" -H "User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format" 'https://api.k8s.local:6443/version'
-...                                                                                                                             
-2022-12-25 16:49:47.54  INFO    transport/round_trippers.go:580     X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302                                                                               
 
-2022-12-25 16:49:47.54  INFO    transport/round_trippers.go:580     Content-Length: 263
+# (4) 修改日志级别
+D:\application\GoLand\example>go run main.go -log_format=json -log_level=10
+{"level":"INFO","ts":"2022-12-25 17:25:26.18","caller":"clientcmd/loader.go:374","msg":"Config loaded from file:  .kube.config\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.18","caller":"transport/round_trippers.go:466","msg":"curl -v -XGET  -H \"Accept: application/json, */*\" -H \"User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format\" 'https://api.k
+8s.local:6443/version'\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.19","caller":"transport/round_trippers.go:495","msg":"HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.151 }]\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.19","caller":"transport/round_trippers.go:510","msg":"HTTP Trace: Dial to tcp:192.168.48.151:6443 succeed\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:553","msg":"GET https://api.k8s.local:6443/version 200 OK in 16 milliseconds\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:570","msg":"HTTP Statistics: DNSLookup 6 ms Dial 1 ms TLSHandshake 6 ms ServerProcessing 1 ms Duration 16 ms\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:577","msg":"Response Headers:\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    Cache-Control: no-cache, private\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    Content-Type: application/json\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    X-Kubernetes-Pf-Flowschema-Uid: 4c56132b-c45c-41c6-b23e-c195a7027193\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    Content-Length: 263\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    Date: Sun, 25 Dec 2022 09:25:25 GMT\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:580","msg":"    Audit-Id: 7b80a20e-8723-4582-bea6-fbf5a4b4f857\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"rest/request.go:1154","msg":"Response Body: {\n  \"major\": \"1\",\n  \"minor\": \"25\",\n  \"gitVersion\": \"v1.25.4\",\n  \"gitCommit\": \"872a965c6c6526caa949f0c6ac028ef7aff
+3fb78\",\n  \"gitTreeState\": \"clean\",\n  \"buildDate\": \"2022-11-09T13:29:58Z\",\n  \"goVersion\": \"go1.19.3\",\n  \"compiler\": \"gc\",\n  \"platform\": \"linux/amd64\"\n}\n"}
+{"level":"ERROR","ts":"2022-12-25 17:25:26.20","caller":"example/main.go:121","msg":"error log test","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:121\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runti
+me/proc.go:250"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"example/main.go:124","msg":"我是V(1)日志"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"example/main.go:125","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"example/main.go:130","msg":"我是V(3)日志"}
 
-2022-12-25 16:49:47.54  INFO    rest/request.go:1154    Response Body: {
-  "major": "1",
-  "minor": "25",
-  "gitVersion": "v1.25.4",
-  "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
-  "gitTreeState": "clean",
-  "buildDate": "2022-11-09T13:29:58Z",
-  "goVersion": "go1.19.3",
-  "compiler": "gc",
-  "platform": "linux/amd64"
-}
-
-2022-12-25 16:49:47.54  INFO    example/main.go:109     我是V(1)日志
-2022-12-25 16:49:47.54  INFO    example/main.go:110     Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
-2022-12-25 16:49:47.54  INFO    example/main.go:115     我是V(3)日志
-
-# 使用JSON格式输出日志
-D:\application\GoLand\example>go run main.go -logging_format=json
-{"level":"INFO","ts":"2022-12-25 16:51:30.04","caller":"example/main.go:109","msg":"我是V(1)日志"}
-{"level":"INFO","ts":"2022-12-25 16:51:30.05","caller":"example/main.go:110","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
+# (5) 将日志额外输出到文件中
+D:\application\GoLand\example>go run main.go -log_format=json -log_file=demo.log
+{"level":"ERROR","ts":"2022-12-25 17:26:13.57","caller":"example/main.go:121","msg":"error log test","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:121\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runti
+me/proc.go:250"}
+{"level":"INFO","ts":"2022-12-25 17:26:13.59","caller":"example/main.go:124","msg":"我是V(1)日志"}
+{"level":"INFO","ts":"2022-12-25 17:26:13.59","caller":"example/main.go:125","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
 ```
 
 :::
