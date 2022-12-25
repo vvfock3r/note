@@ -2004,8 +2004,8 @@ Error from server (NotFound): error when deleting "demo.yaml": services "demo" n
 Github：
 
 * klog ：[https://github.com/kubernetes/klog](https://github.com/kubernetes/klog)
-
 * logr ：[https://github.com/go-logr/logr](https://github.com/go-logr/logr)
+* zapr：[https://github.com/go-logr/zapr](https://github.com/go-logr/zapr)
 
 说明：
 
@@ -2554,9 +2554,165 @@ done
 
 <br />
 
-### 5）设置时间格式
+### 5）定制Logger
 
+**（1）为什么不直接使用第三方库，比如zap？**
 
+直接使用第三方库是可以的，但是会有一个问题，`client-go`默认使用的`klog`日志会丢失或者会出现两种完全不同格式的日志
+
+为了解决这个问题，我们需要定制Logger，但是并不是直接修改Logger参数，而是通过引入第三方Logger来替换默认的Logger
+
+**（2）如何使用第三方库的Logger替换默认的Logger？**
+
+* 替换默认的Logger可以使用`klog.SetLogger(logger logr.Logger)`函数
+* 它的参数类型是`logr.Logger`，这意味着一般我们不能直接使用第三方的Logger，而是需要通过一个"适配器"来转换成`logr.Logger`类型
+* `go-logr`仓库提供了`zapr`和`zerologr`适配器，我们使用`zapr`来将`zap.Logger`转为`logr.Logger`
+
+**（3）使用zap.Logger有什么需要注意的地方？**
+
+* `klog`为我们设置的命令行功能会失效，需要我们手动对参数进行处理才可以，但是它的参数对我们并不是特别友好，所以这里基本没影响
+* 一条日志能打印出来，需要满足klog `V-levels`校验，还需要满足zap `Level`才可以
+* 关于日志级别的特别说明：
+  * `klog`中的日志级别V数字越大日志越详细，`zap`中的日志级别数字越小越详细
+  * `klog`低于日志级别的日志才会输出，`zap`高于日志级别的日志才会输出
+  * `klog`和`zap`默认日志级别都是0，但是在其他方面完全是相反的
+  * `klog.V(4).InfoS` 经过 `zapr` 库传递到 `zap.Logger` 中后，会自动将`Level * -1`，也就是`klog.V(4)`对应`zap.Logger Level(-4)`
+  * 举个例子：
+    * 将klog的日志级别设置为10，那么`klog.V(4).InfoS("Hello World!")`语句中由于4<10，日志在klog层面可以通过
+    * zap.Logger将会接收到 -4 级别的日志，-4 不大于等于 0，那么在zap.Logger层面，这条日志将不会输出，最终的结果是日志不会输出
+    * 解决办法之一：将`klog.V(4)`修改为`klog.V(-4)`，这样这条日志最终就可以输出出来了，但这并不是最好的解决办法
+    * 解决办法之二：
+      * 如果klog的日志级别为10，那么设置zap的日志级别为 -10
+      * `klog.V(4)`传到`zap.Logger`后会是 -4，由于 -4 > -10，那么这条日志就可以顺利输出
+
+::: details （1）zap.Logger基础示例
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 初始化zap.Logger
+	zapLogger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
+	// 使用zap.Logger替换默认的klog.Logger
+	klog.SetLogger(zapr.NewLogger(zapLogger))
+
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.ServerVersion()
+
+	// 错误日志
+	if err != nil {
+		klog.V(-2).ErrorS(err, "Failed to get kubernetes server version")
+		klog.FlushAndExit(time.Second, 1)
+	}
+
+	// 正常日志
+	klog.V(-2).InfoS("Kubernetes server info",
+		"version", serverVersionInfo,
+		"platform", serverVersionInfo.Platform,
+		"goVersion", serverVersionInfo.GoVersion,
+	)
+}
+```
+
+输出结果
+
+```bash
+# zap.NewProduction生成的Logger默认是JSON格式的日志
+D:\application\GoLand\example>go run main.go      
+{"level":"info","ts":1671948467.35341,"caller":"example/main.go:66","msg":"Kubernetes server info","version":"v1.25.4","platform":"linux/amd64","goVersion":"go1.19.3"}
+
+# 我们可以对zap.Logger做一个简单的配置
+	// 初始化zap.Logger
+	config := zap.NewProductionConfig()
+	config.Encoding = "console"
+	config.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.00")
+	zapLogger, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+	
+D:\application\GoLand\example>go run main.go
+2022-12-25 14:12:03.42  info    example/main.go:70      Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
+
+# 我们再看一下client-go中的日志有没有变化，这是我们主要解决的问题
+D:\application\GoLand\example>go run main.go -v=10
+2022-12-25 14:14:44.07  info    transport/round_trippers.go:466 curl -v -XGET  -H "Accept: application/json, */*" -H "User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format" 'https://api.k8s.local:6443/version'
+
+2022-12-25 14:14:44.07  info    transport/round_trippers.go:495 HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.151 }]
+                                                                                                                                        
+2022-12-25 14:14:44.08  info    transport/round_trippers.go:510 HTTP Trace: Dial to tcp:192.168.48.151:6443 succeed                     
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:553 GET https://api.k8s.local:6443/version 200 OK in 18 milliseconds                                
+                                                                                                                                                                
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:570 HTTP Statistics: DNSLookup 7 ms Dial 1 ms TLSHandshake 7 ms ServerProcessing 1 ms Duration 18 ms
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:577 Response Headers:
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     X-Kubernetes-Pf-Flowschema-Uid: 4c56132b-c45c-41c6-b23e-c195a7027193
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     X-Kubernetes-Pf-Prioritylevel-Uid: dc88b4ad-1cce-4d39-8ba3-1effb0e4d302
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     Content-Length: 263
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     Date: Sun, 25 Dec 2022 06:14:43 GMT
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     Audit-Id: 5755bea9-3eb1-4972-8521-1caac789fc0d
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     Cache-Control: no-cache, private
+
+2022-12-25 14:14:44.09  info    transport/round_trippers.go:580     Content-Type: application/json
+
+2022-12-25 14:14:44.09  info    example/main.go:70      Kubernetes server info  {"version": "v1.25.4", "platform": "linux/amd64", "goVersion": "go1.19.3"}
+```
+
+:::
 
 <br />
 
