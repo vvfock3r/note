@@ -2762,10 +2762,8 @@ func Init() {
 
 	// 同步我们的命令行参数到klog中
 	// 并不是所有的参数都要同步，这个需要测试过再选择是否要同步到klog中
-	// 需要同步的:
-	//  -v
-	// 不需要同步的:
-	//  -log_file
+	// 需要同步的: -v
+	// 不需要同步的: -log_file
 	if err := flag.Set("v", strconv.Itoa(log_level)); err != nil {
 		panic(err)
 	}
