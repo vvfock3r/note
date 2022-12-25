@@ -2716,6 +2716,10 @@ D:\application\GoLand\example>go run main.go -v=10
 
 ::: details （2）定制核心功能
 
+* 初始化`klog`自带的命令行参数，但并不解析，这让我们依旧可以设置klog参数，但并不污染我们的命令行界面
+* 为了简单我们依旧使用了`flag`包来定义命令行参数，但是实际应用中更推荐使用`cobra`
+* 我们使用了`zap.Logger`替换`klog.Logger`,并对日志级别做了针对性优化
+
 ```go
 package main
 
