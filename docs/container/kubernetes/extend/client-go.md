@@ -4156,7 +4156,8 @@ func main() {
 
 	// 创建一个SharedInformer工厂函数
 	//   第一个参数：用于与Kubernetes APIServer交互的客户端
-	//   第二个参数：用于设置多久进行一次resync(重新同步)，resync会执行List操作，将所有的资源存放在Informer Store中。如果该参数为0，则禁用resync功能
+	//   第二个参数：用于设置默认情况下多久进行一次resync(重新同步)
+    //             resync会执行List操作，将所有的资源存放在Informer Store中。如果该参数为0，则禁用resync功能
 	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
 
 	// 创建Pods Informer，并对事件进行监控
@@ -4283,7 +4284,197 @@ func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultRes
 可选的Options
 
 ```go
+package main
 
+import (
+	"flag"
+	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// NewSharedInformerFactoryWithOptions
+	// 1.WithNamespace           指定监控的命名空间，默认是所有命名空间
+	// 2.WithTweakListOptions    指定过滤哪些资源
+	// 2.WithCustomResyncConfig  指定特定资源类型的resync时间
+	sharedInformers := informers.NewSharedInformerFactoryWithOptions(
+		clientset,
+		time.Second*45,
+		// 指定监控 kube-system命名空间
+		informers.WithNamespace(metav1.NamespaceSystem),
+		// 指定监控具有tier=control-plane label的资源
+		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.LabelSelector = "tier=control-plane"
+		}),
+		// Pod资源每20秒resync，deployment每30秒resync
+		informers.WithCustomResyncConfig(map[metav1.Object]time.Duration{
+			&corev1.Pod{}:        time.Second * 20,
+			&appsv1.Deployment{}: time.Second * 30,
+		}),
+	)
+
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// 创建Pods Informer
+	podsInformer := sharedInformers.Core().V1().Pods().Informer()
+	podsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			addedObj, ok := obj.(*corev1.Pod)
+			if !ok {
+				return
+			}
+			klog.V(2).InfoS("Add new pod to Store",
+				"name", klog.KObj(addedObj),
+				"podIP", addedObj.Status.PodIP,
+				"node", addedObj.Spec.NodeName,
+				"hostIP", addedObj.Status.HostIP,
+			)
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			updatedOldObj := oldObj.(metav1.Object)
+			updatedNewObj := newObj.(metav1.Object)
+			klog.V(2).InfoS("Update pod", "old", klog.KObj(updatedOldObj), "new", klog.KObj(updatedNewObj))
+		},
+		DeleteFunc: func(obj any) {
+			deletedObj := obj.(metav1.Object)
+			klog.V(2).InfoS("Delete pod", "name", klog.KObj(deletedObj))
+		},
+	})
+
+	// 创建Deployment Informer
+	deploysInformer := sharedInformers.Apps().V1().Deployments().Informer()
+	deploysInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			addedObj, ok := obj.(*corev1.Pod)
+			if !ok {
+				return
+			}
+			klog.V(2).InfoS("Add new deployment to Store",
+				"name", klog.KObj(addedObj),
+				"podIP", addedObj.Status.PodIP,
+				"node", addedObj.Spec.NodeName,
+				"hostIP", addedObj.Status.HostIP,
+			)
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			updatedOldObj := oldObj.(metav1.Object)
+			updatedNewObj := newObj.(metav1.Object)
+			klog.V(2).InfoS("Update deployment", "old", klog.KObj(updatedOldObj), "new", klog.KObj(updatedNewObj))
+		},
+		DeleteFunc: func(obj any) {
+			deletedObj := obj.(metav1.Object)
+			klog.V(2).InfoS("Delete deployment", "name", klog.KObj(deletedObj))
+		},
+	})
+
+	// 启动Informer
+	// 为了能正好的观察时间，设置在任意分钟的0秒时启动Goroutine
+	for {
+		if time.Now().Second() == 0 {
+			go podsInformer.Run(stopCh)
+			go deploysInformer.Run(stopCh)
+			break
+		}
+	}
+
+	// 用于hang住进程
+	select {}
+}
+```
+
+输出结果
+
+```bash
+# (1) 先使用kubectl看一下我们都会监控哪些资源
+# 我们指定监控kube-system命名空间 且 必须包含 tier=control-plane 的 Pod和Deployment
+# deployment默认是没有的，下面那个是我手工创建的
+[root@node-1 ~]# kubectl -n kube-system get pod,deploy --selector="tier=control-plane"
+NAME                                 READY   STATUS    RESTARTS         AGE
+pod/etcd-node-1                      1/1     Running   118 (121m ago)   39d
+pod/etcd-node-2                      1/1     Running   105 (121m ago)   39d
+pod/etcd-node-3                      1/1     Running   100 (121m ago)   39d
+pod/kube-apiserver-node-1            1/1     Running   177 (121m ago)   3d14h
+pod/kube-apiserver-node-2            1/1     Running   169 (121m ago)   4d7h
+pod/kube-apiserver-node-3            1/1     Running   190 (33m ago)    39d
+pod/kube-controller-manager-node-1   1/1     Running   159 (121m ago)   39d
+pod/kube-controller-manager-node-2   1/1     Running   139 (121m ago)   39d
+pod/kube-controller-manager-node-3   1/1     Running   125 (121m ago)   39d
+pod/kube-scheduler-node-1            1/1     Running   151 (121m ago)   39d
+pod/kube-scheduler-node-2            1/1     Running   135 (121m ago)   39d
+pod/kube-scheduler-node-3            1/1     Running   129 (121m ago)   39d
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mydeploy   3/3     3            3           23s
+
+# (2) 启动程序
+[root@node-1 example]# go run main.go -v=4 &> main.log
+
+# (3) 查看启动日志，这里可以看到 *v1.Pod (20s) 和 *v1.Deployment (30s)
+I1226 13:03:00.000184   64774 reflector.go:221] Starting reflector *v1.Deployment (30s) from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+I1226 13:03:00.000231   64774 reflector.go:257] Listing and watching *v1.Deployment from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+I1226 13:03:00.001400   64774 reflector.go:221] Starting reflector *v1.Pod (20s) from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+I1226 13:03:00.001430   64774 reflector.go:257] Listing and watching *v1.Pod from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+
+# (4) 查看resync日志
+# 1.我们假设每60秒为一个周期，那么Pod会resync 3次，Deployment会resync 2次
+[root@node-1 example]# cat main.log | grep resync
+# 第一个60秒
+I1226 13:03:20.044588   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:03:30.034433   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:03:40.056502   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:04:00.055181   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:04:00.060104   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+# 第二个60秒
+I1226 13:04:20.075345   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:04:30.069412   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:04:40.086389   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:05:00.072322   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 13:05:00.088308   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+# 2.因为我们所监控的Pod和Deployment都针对性设置了resync时间，所以并不会使用默认的resync时间，下面的输出为空
+#   为了避免有一些微小的误差，所以下面搜索的是将第44和46秒都加进去了
+[root@node-1 example]# cat main.log | grep resync | grep -E ':44:|:45:|:46:'
 ```
 
 :::
