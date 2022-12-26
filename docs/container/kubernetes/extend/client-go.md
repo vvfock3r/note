@@ -4103,7 +4103,7 @@ type Event struct {
 
 ### Informer
 
-::: details （1）基础示例：informers.NewSharedInformerFactory
+::: details （1）基础代码示例：NewSharedInformerFactory
 
 ```go
 package main
@@ -4231,7 +4231,7 @@ kube-system   etcd-node-2                 1/1     Running   104 (12h ago)    39d
 kube-system   etcd-node-3                 1/1     Running   99 (12h ago)     39d     192.168.48.153   node-3
 
 
-# 4.查看resync日志
+# 4.查看resync日志，我们指定了每分钟一次
 [root@node-1 example]# cat main.log | grep resync
 I1226 09:35:06.133077  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
 I1226 09:36:06.136939  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
@@ -4246,7 +4246,41 @@ I1226 09:51:49.107223  109594 reflector.go:559] pkg/mod/k8s.io/client-go@v0.25.4
 
 :::
 
-::: details （2）添加额外参数：informers.NewSharedInformerFactoryWithOptions
+::: details （2）添加额外参数：NewSharedInformerFactoryWithOptions
+
+看一下源码，理一理两个函数的关系
+
+```go
+func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Duration) SharedInformerFactory {
+	return NewSharedInformerFactoryWithOptions(client, defaultResync)
+}
+
+func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
+	factory := &sharedInformerFactory{
+		client:           client,
+		namespace:        v1.NamespaceAll,
+		defaultResync:    defaultResync,
+		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
+		startedInformers: make(map[reflect.Type]bool),
+		customResync:     make(map[reflect.Type]time.Duration),
+	}
+
+	// Apply all options
+	for _, opt := range options {
+		factory = opt(factory)
+	}
+
+	return factory
+}
+
+// 分析
+// 1.可以看到 NewSharedInformerFactory 就是不带额外参数的 NewSharedInformerFactoryWithOptions, 所以下面两行代码是等价的
+//   sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
+//   sharedInformers := informers.NewSharedInformerFactoryWithOptions(clientset, time.Minute)
+// 2.默认监控的命名空间是 v1.NamespaceAll, v1就是我们常用的metav1, 实际上它是一个空字符串，代表所有命名空间
+```
+
+可选的Options
 
 ```go
 
