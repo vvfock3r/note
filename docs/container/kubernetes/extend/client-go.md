@@ -4632,15 +4632,63 @@ type threadSafeMap struct {
 	indices Indices
 }
 
-// KeyFunc的值
+// KeyFunc 的值
 // 通过NewStore传过去的，我们仍然不知道是什么函数
-// 于是我搜了一下所有的代码
-[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep NewStore --color=auto
-./tools/cache/controller.go:    clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
-./tools/cache/controller.go:    clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
-./tools/cache/store.go:// NewStore returns a Store implemented simply with a map and a lock.
-./tools/cache/store.go:func NewStore(keyFunc KeyFunc) Store {
-./tools/cache/undelta_store.go:         Store:    NewStore(keyFunc),
+// 于是我搜了一下所有的代码，真正调用了NewStore的只有一个，在controller.go文件中
+[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep -n NewStore --color=auto
+./tools/cache/controller.go:323:        clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+./tools/cache/controller.go:382:        clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+./tools/cache/store.go:262:// NewStore returns a Store implemented simply with a map and a lock.
+./tools/cache/store.go:263:func NewStore(keyFunc KeyFunc) Store {
+./tools/cache/undelta_store.go:86:              Store:    NewStore(keyFunc),
+
+func NewInformer(
+	lw ListerWatcher,
+	objType runtime.Object,
+	resyncPeriod time.Duration,
+	h ResourceEventHandler,
+) (Store, Controller) {
+	// This will hold the client state, as we know it.
+	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, nil)
+}
+
+func NewTransformingInformer(
+	lw ListerWatcher,
+	objType runtime.Object,
+	resyncPeriod time.Duration,
+	h ResourceEventHandler,
+	transformer TransformFunc,
+) (Store, Controller) {
+	// This will hold the client state, as we know it.
+	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, transformer)
+}
+ 
+// 看一下 DeletionHandlingMetaNamespaceKeyFunc
+func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if d, ok := obj.(DeletedFinalStateUnknown); ok {
+		return d.Key, nil
+	}
+	return MetaNamespaceKeyFunc(obj)
+}
+
+// 看一下 MetaNamespaceKeyFunc，KeyFunc的值就是这个函数了，函数的功能也很简单，就是返回 Namespace/Name
+func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if key, ok := obj.(ExplicitKey); ok {
+		return string(key), nil
+	}
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return "", fmt.Errorf("object has no meta: %v", err)
+	}
+	if len(meta.GetNamespace()) > 0 {
+		return meta.GetNamespace() + "/" + meta.GetName(), nil
+	}
+	return meta.GetName(), nil
+}
 ```
 
 
