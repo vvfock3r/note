@@ -4093,7 +4093,7 @@ type Event struct {
 
 ## 自定义控制器
 
-### 架构图
+### 1）架构图
 
 文档：[https://github.com/kubernetes/sample-controller/blob/master/docs/controller-client-go.md](https://github.com/kubernetes/sample-controller/blob/master/docs/controller-client-go.md)
 
@@ -4101,9 +4101,7 @@ type Event struct {
 
 <br />
 
-### Informer
-
-#### 1）基础示例
+### 2）Informer
 
 ::: details （1）基础代码示例：NewSharedInformerFactory
 
@@ -4485,7 +4483,167 @@ I1226 13:05:00.088308   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4
 
 <br />
 
-#### 2）Store
+### 3）Store
+
+::: details （1）简单了解Store
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// 创建并启动Pods和Deployments Informer
+	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
+	podsInformer := sharedInformers.Core().V1().Pods().Informer()
+	deploysInformer := sharedInformers.Apps().V1().Deployments().Informer()
+	go podsInformer.Run(stopCh)
+	go deploysInformer.Run(stopCh)
+
+	// 获取Pods和Deployments Store
+	podsStore := podsInformer.GetStore()
+	deploysStore := deploysInformer.GetStore()
+
+	// 查看数据类型和值
+	fmt.Printf("%#v\n", podsStore)
+	fmt.Printf("%#v\n", deploysStore)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+&cache.cache{cacheStorage:(*cache.threadSafeMap)(0xc00025cc90), keyFunc:(cache.KeyFunc)(0x1ba7440)}
+&cache.cache{cacheStorage:(*cache.threadSafeMap)(0xc0002d7a70), keyFunc:(cache.KeyFunc)(0x1ba7440)}
+
+# 分析
+# 1.Store是cache.cache结构体，包含cacheStorage和keyFunc两个字段
+# 2.cacheStorage的值*cache.threadSafeMap，一个线程安全的Map
+# 3.keyFunc的值是什么cache.KeyFunc
+# 4.我们发现两个Store的cacheStorage内存地址不一样，但是keyFunc内存地址一样，说明两个Map是不同的对象，他们使用了相同的keyFunc对象
+```
+
+看一下cache结构体字段的类型
+
+```go
+// 在 type Store interface 接口代码中快速定位到 cache 结构体
+type cache struct {	
+	cacheStorage ThreadSafeStore
+	keyFunc KeyFunc
+}
+
+// ThreadSafeStore 是一个接口
+type ThreadSafeStore interface {
+	Add(key string, obj interface{})
+	Update(key string, obj interface{})
+	Delete(key string)
+	Get(key string) (item interface{}, exists bool)
+	List() []interface{}
+	ListKeys() []string
+	Replace(map[string]interface{}, string)
+	Index(indexName string, obj interface{}) ([]interface{}, error)
+	IndexKeys(indexName, indexedValue string) ([]string, error)
+	ListIndexFuncValues(name string) []string
+	ByIndex(indexName, indexedValue string) ([]interface{}, error)
+	GetIndexers() Indexers
 
 
+	AddIndexers(newIndexers Indexers) error
+	// Resync is a no-op and is deprecated
+	Resync() error
+}
+
+// KeyFunc 是一个函数类型
+type KeyFunc func(obj interface{}) (string, error)
+```
+
+看一下cache结构体字段的值
+
+```go
+// 找到NewStore函数
+func NewStore(keyFunc KeyFunc) Store {
+	return &cache{
+		cacheStorage: NewThreadSafeStore(Indexers{}, Indices{}),
+		keyFunc:      keyFunc,
+	}
+}
+
+// cacheStorage的值
+func NewThreadSafeStore(indexers Indexers, indices Indices) ThreadSafeStore {
+	return &threadSafeMap{
+		items:    map[string]interface{}{},
+		indexers: indexers,
+		indices:  indices,
+	}
+}
+
+type threadSafeMap struct {
+	lock  sync.RWMutex
+	items map[string]interface{}
+
+	// indexers maps a name to an IndexFunc
+	indexers Indexers
+	// indices maps a name to an Index
+	indices Indices
+}
+
+// KeyFunc的值
+// 通过NewStore传过去的，我们仍然不知道是什么函数
+// 于是我搜了一下所有的代码
+[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep NewStore --color=auto
+./tools/cache/controller.go:    clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+./tools/cache/controller.go:    clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+./tools/cache/store.go:// NewStore returns a Store implemented simply with a map and a lock.
+./tools/cache/store.go:func NewStore(keyFunc KeyFunc) Store {
+./tools/cache/undelta_store.go:         Store:    NewStore(keyFunc),
+```
+
+
+
+:::
 
