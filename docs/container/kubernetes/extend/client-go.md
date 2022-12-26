@@ -4193,6 +4193,10 @@ func main() {
 		},
 	})
 
+    // 查看Pods Informer是什么数据类型
+    // fmt.Printf("%T\n", podsInformer)
+    // *cache.sharedIndexInformer
+    
 	// 启动Pods Informer
 	podsInformer.Run(stopCh)
 }
@@ -4568,44 +4572,23 @@ D:\application\GoLand\example>go run main.go
 # 4.我们发现两个Store的cacheStorage内存地址不一样，但是keyFunc内存地址一样，说明两个Map是不同的对象，他们使用了相同的keyFunc对象
 ```
 
-看一下cache结构体字段的类型
+:::
+
+::: details （2）初始化Store代码
+
+1.看一下`GetStore`，只知道内部是`indexer`属性，别的什么也看不出来
 
 ```go
-// 在 type Store interface 接口代码中快速定位到 cache 结构体
-type cache struct {	
-	cacheStorage ThreadSafeStore
-	keyFunc KeyFunc
+func (s *sharedIndexInformer) GetStore() Store {
+	return s.indexer
 }
-
-// ThreadSafeStore 是一个接口
-type ThreadSafeStore interface {
-	Add(key string, obj interface{})
-	Update(key string, obj interface{})
-	Delete(key string)
-	Get(key string) (item interface{}, exists bool)
-	List() []interface{}
-	ListKeys() []string
-	Replace(map[string]interface{}, string)
-	Index(indexName string, obj interface{}) ([]interface{}, error)
-	IndexKeys(indexName, indexedValue string) ([]string, error)
-	ListIndexFuncValues(name string) []string
-	ByIndex(indexName, indexedValue string) ([]interface{}, error)
-	GetIndexers() Indexers
-
-
-	AddIndexers(newIndexers Indexers) error
-	// Resync is a no-op and is deprecated
-	Resync() error
-}
-
-// KeyFunc 是一个函数类型
-type KeyFunc func(obj interface{}) (string, error)
 ```
 
-看一下cache结构体字段的值
+2.如果直接从`Informer`找`Store`的话，代码非常的绕，很难到，所以换个思路，倒着找Store初始化。这种方法不是太准确，局限性也很大，不过在这里够用了
 
 ```go
-// 找到NewStore函数
+// (1) 先从Newxx开始，找到两个函数，Indexer是包含了Store的
+//     NewThreadSafeStore都是一样的,基本可以确定 cacheStorage的值是 NewThreadSafeStore 返回值
 func NewStore(keyFunc KeyFunc) Store {
 	return &cache{
 		cacheStorage: NewThreadSafeStore(Indexers{}, Indices{}),
@@ -4613,7 +4596,14 @@ func NewStore(keyFunc KeyFunc) Store {
 	}
 }
 
-// cacheStorage的值
+func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
+	return &cache{
+		cacheStorage: NewThreadSafeStore(indexers, Indices{}),
+		keyFunc:      keyFunc,
+	}
+}
+
+// (2) NewThreadSafeStore 返回了 threadSafeMap 结构体，和我们上面的 cacheStorage:(*cache.threadSafeMap 就对上了
 func NewThreadSafeStore(indexers Indexers, indices Indices) ThreadSafeStore {
 	return &threadSafeMap{
 		items:    map[string]interface{}{},
@@ -4622,52 +4612,27 @@ func NewThreadSafeStore(indexers Indexers, indices Indices) ThreadSafeStore {
 	}
 }
 
-type threadSafeMap struct {
-	lock  sync.RWMutex
-	items map[string]interface{}
-
-	// indexers maps a name to an IndexFunc
-	indexers Indexers
-	// indices maps a name to an Index
-	indices Indices
-}
-
-// KeyFunc 的值
-// 通过NewStore传过去的，我们仍然不知道是什么函数
-// 于是我搜了一下所有的代码，真正调用了NewStore的只有一个，在controller.go文件中
-[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep -n NewStore --color=auto
+// (3) 接下来要找到 keyFunc 的值是什么
+// 搜一下所有调用NewStore和NewIndexer的代码
+[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep -n --color=auto 'NewStore('
 ./tools/cache/controller.go:323:        clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
 ./tools/cache/controller.go:382:        clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
-./tools/cache/store.go:262:// NewStore returns a Store implemented simply with a map and a lock.
 ./tools/cache/store.go:263:func NewStore(keyFunc KeyFunc) Store {
 ./tools/cache/undelta_store.go:86:              Store:    NewStore(keyFunc),
+    
 
-func NewInformer(
-	lw ListerWatcher,
-	objType runtime.Object,
-	resyncPeriod time.Duration,
-	h ResourceEventHandler,
-) (Store, Controller) {
-	// This will hold the client state, as we know it.
-	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+[root@node-1 client-go@v0.25.4]# find . -type f | grep -v "test" | xargs grep -n --color=auto 'NewIndexer('
+./tools/cache/controller.go:351:        clientState := NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers)
+./tools/cache/controller.go:403:        clientState := NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers)
+./tools/cache/reflector.go:153: indexer = NewIndexer(MetaNamespaceKeyFunc, Indexers{NamespaceIndex: MetaNamespaceIndexFunc})
+./tools/cache/shared_informer.go:229:           indexer:                         NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers),
+./tools/cache/store.go:271:func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
 
-	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, nil)
-}
-
-func NewTransformingInformer(
-	lw ListerWatcher,
-	objType runtime.Object,
-	resyncPeriod time.Duration,
-	h ResourceEventHandler,
-	transformer TransformFunc,
-) (Store, Controller) {
-	// This will hold the client state, as we know it.
-	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
-
-	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, transformer)
-}
- 
-// 看一下 DeletionHandlingMetaNamespaceKeyFunc
+// (3)可以看到有两个关键的函数
+//    DeletionHandlingMetaNamespaceKeyFunc
+//    MetaNamespaceKeyFunc
+// 两个函数是互相调用关系,核心函数是 MetaNamespaceKeyFunc，返回值 namespace/name 或 name
+// 至此，初步确定keyFunc就是MetaNamespaceKeyFunc,函数的注释也说明了它是默认的KeyFunc
 func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
 	if d, ok := obj.(DeletedFinalStateUnknown); ok {
 		return d.Key, nil
@@ -4675,7 +4640,13 @@ func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
 	return MetaNamespaceKeyFunc(obj)
 }
 
-// 看一下 MetaNamespaceKeyFunc，KeyFunc的值就是这个函数了，函数的功能也很简单，就是返回 Namespace/Name
+// MetaNamespaceKeyFunc is a convenient default KeyFunc which knows how to make
+// keys for API objects which implement meta.Interface.
+// The key uses the format <namespace>/<name> unless <namespace> is empty, then
+// it's just <name>.
+//
+// TODO: replace key-as-string with a key-as-struct so that this
+// packing/unpacking won't be necessary.
 func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
 	if key, ok := obj.(ExplicitKey); ok {
 		return string(key), nil
@@ -4691,7 +4662,189 @@ func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
 }
 ```
 
+3.从`Informer`正着找`Store`
 
+```go
+// (1) 从下面的Informer方法开始
+podsInformer := sharedInformers.Core().V1().Pods().Informer()
+
+func (f *podInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&corev1.Pod{}, f.defaultInformer)
+}
+
+// (2) InformerFor函数，找了一遍没有任何发现
+
+// (3) 查看 f.defaultInformer,注意这个 cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}
+func (f *podInformer) defaultInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredPodInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+}
+
+// (4) 查看 NewFilteredPodInformer，注意 indexers
+func NewFilteredPodInformer(client kubernetes.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CoreV1().Pods(namespace).List(context.TODO(), options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CoreV1().Pods(namespace).Watch(context.TODO(), options)
+			},
+		},
+		&corev1.Pod{},
+		resyncPeriod,
+		indexers,
+	)
+}
+
+// (5) 查看 cache.NewSharedIndexInformer，可以看到有一个 indexer 属性，然后看它的值 NewIndexer
+func NewSharedIndexInformer(lw ListerWatcher, exampleObject runtime.Object, defaultEventHandlerResyncPeriod time.Duration, indexers Indexers) SharedIndexInformer {
+	realClock := &clock.RealClock{}
+	sharedIndexInformer := &sharedIndexInformer{
+		processor:                       &sharedProcessor{clock: realClock},
+		indexer:                         NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers),
+		listerWatcher:                   lw,
+		objectType:                      exampleObject,
+		resyncCheckPeriod:               defaultEventHandlerResyncPeriod,
+		defaultEventHandlerResyncPeriod: defaultEventHandlerResyncPeriod,
+		cacheMutationDetector:           NewCacheMutationDetector(fmt.Sprintf("%T", exampleObject)),
+		clock:                           realClock,
+	}
+	return sharedIndexInformer
+}
+
+// (5) 查看 NewIndexer，至此确定 keyFunc 是 DeletionHandlingMetaNamespaceKeyFunc
+func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
+	return &cache{
+		cacheStorage: NewThreadSafeStore(indexers, Indices{}),
+		keyFunc:      keyFunc,
+	}
+}
+
+// (6) keyFunc的实现源码
+func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if d, ok := obj.(DeletedFinalStateUnknown); ok {
+		return d.Key, nil
+	}
+	return MetaNamespaceKeyFunc(obj)
+}
+
+func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if key, ok := obj.(ExplicitKey); ok {
+		return string(key), nil
+	}
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return "", fmt.Errorf("object has no meta: %v", err)
+	}
+	if len(meta.GetNamespace()) > 0 {
+		return meta.GetNamespace() + "/" + meta.GetName(), nil
+	}
+	return meta.GetName(), nil
+}
+```
 
 :::
 
+::: details （3）Store.Get(obj interface{}) 应该传递什么参数?
+
+```go
+// 1.查看Get方法参数, interface{} 意味着传什么参数都可以
+Get(obj interface{}) (item interface{}, exists bool, err error)
+
+// 2.核心代码如下
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// 创建并启动Pods Informer
+	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
+	podsInformer := sharedInformers.Core().V1().Pods().Informer()
+	go podsInformer.Run(stopCh)
+
+	// 获取Pods Store
+	podsStore := podsInformer.GetStore()
+
+	// 调用Store方法
+	fmt.Println(podsStore.Get("abc"))
+
+// 执行报错了
+D:\application\GoLand\example>go run main.go
+<nil> false couldn't create key for object abc: object has no meta: object does not implement the Object interfaces
+
+// 3.看一下Get源码，store.go中cache结构体的Get方法
+//   它先用keyFunc处理一遍，然后调用GetByKey，经过测试，上面的错误就是 keyFunc 函数返回的
+func (c *cache) Get(obj interface{}) (item interface{}, exists bool, err error) {
+	key, err := c.keyFunc(obj)
+	if err != nil {
+		return nil, false, KeyError{obj, err}
+	}
+	return c.GetByKey(key)
+}
+
+// 4.keyFunc就是 DeletionHandlingMetaNamespaceKeyFunc，上面已经提过了，核心是MetaNamespaceKeyFunc
+//   看报错信息应该是 meta.Accessor返回的错误
+func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if key, ok := obj.(ExplicitKey); ok {
+		return string(key), nil
+	}
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return "", fmt.Errorf("object has no meta: %v", err)
+	}
+	if len(meta.GetNamespace()) > 0 {
+		return meta.GetNamespace() + "/" + meta.GetName(), nil
+	}
+	return meta.GetName(), nil
+}
+
+// 5.看一下 Accessor 方法，它需要我们传递 metav1.Object 或 metav1.ObjectMetaAccessor 类型的数据
+//   metav1.ObjectMetaAccessor 返回的也是 metav1.Object
+func Accessor(obj interface{}) (metav1.Object, error) {
+	switch t := obj.(type) {
+	case metav1.Object:
+		return t, nil
+	case metav1.ObjectMetaAccessor:
+		if m := t.GetObjectMeta(); m != nil {
+			return m, nil
+		}
+		return nil, errNotObject
+	default:
+		return nil, errNotObject
+	}
+}
+
+// (6) 那看一下都有哪些数据类型实现了metav1.Object即可，很容易发现corev1.Pod满足需求。所以改一下代码
+//     执行一下，不报错了，但是没数据，原因是代码执行的太快，go podsInformer.Run(stopCh)还没在Store中放入数据
+
+	// 调用Store方法
+	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "etcd-node-1"}}
+	fmt.Println(podsStore.Get(&pod))
+
+D:\application\GoLand\example>go run main.go
+<nil> false <nil> 
+
+// (7) 再优化一下，发现可以了
+
+	// 调用Store方法
+	time.Sleep(time.Second * 5)
+	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "etcd-node-1"}}
+	fmt.Println(podsStore.Get(&pod))
+
+D:\application\GoLand\example>go run main.go
+&Pod{ObjectMeta:{etcd-node-1  kube-system  e2e8ea22-8e1c-4f60-9549-5af1b7f3d290 1296835 0 2022-11-16 18:02:50 +0800 CST <nil> <nil> map[a:b component:etcd tier:control-plane] map[kubeadm.kubernetes.io/etcd.advertise-client-urls:http
+s://192.168.48.151:2379 kubernetes.io/config.hash:e0454780699eae02684ab59af6c987bd kubernetes.io/config.mirror:e0454780699eae02684ab59af6c987bd kubernetes.io/config.seen:2022-11-16T18:02:49.615165666+08:00 kubernetes.io/config.sourc
+e:file] [{v1 Node node-1 8fb48d42-4da9-4cb0-aaea-88f00f126648 0xc00011227a <nil>}] [] [{kubelet Update v1 2022-11-16 18:02:50 +0800 CST FieldsV1 {"f:metadata":{"f:annotations":{".":{},"f:kubeadm.kubernetes.io/etcd.advertise-client-u
+rls":{},"f:kubernetes.io/config.hash":{},"f:kubernetes.io/config.mirror":{},"f:kubernetes.io/config.seen":{}
+```
+
+:::
+
+<br />
+
+### 4）
