@@ -4838,16 +4838,30 @@ D:\application\GoLand\example>go run main.go
 
 // (7) 再优化一下，发现可以了
 
-	// 调用Store方法
-	time.Sleep(time.Second * 5)
+	// 等待Store第一次sync，它和resync没有关系
+	for !podsInformer.HasSynced() {
+		time.Sleep(time.Second)
+	}
+
+	//调用Store方法	
 	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "etcd-node-1"}}
 	fmt.Println(podsStore.Get(&pod))
 
 D:\application\GoLand\example>go run main.go
-&Pod{ObjectMeta:{etcd-node-1  kube-system  e2e8ea22-8e1c-4f60-9549-5af1b7f3d290 1296835 0 2022-11-16 18:02:50 +0800 CST <nil> <nil> map[a:b component:etcd tier:control-plane] map[kubeadm.kubernetes.io/etcd.advertise-client-urls:http
-s://192.168.48.151:2379 kubernetes.io/config.hash:e0454780699eae02684ab59af6c987bd kubernetes.io/config.mirror:e0454780699eae02684ab59af6c987bd kubernetes.io/config.seen:2022-11-16T18:02:49.615165666+08:00 kubernetes.io/config.sourc
-e:file] [{v1 Node node-1 8fb48d42-4da9-4cb0-aaea-88f00f126648 0xc00011227a <nil>}] [] [{kubelet Update v1 2022-11-16 18:02:50 +0800 CST FieldsV1 {"f:metadata":{"f:annotations":{".":{},"f:kubeadm.kubernetes.io/etcd.advertise-client-u
-rls":{},"f:kubernetes.io/config.hash":{},"f:kubernetes.io/config.mirror":{},"f:kubernetes.io/config.seen":{}
+&Pod{ObjectMeta:{etcd-node-1  kube-system  e2e8ea22-8e1c-4f60-9549-5af1b7f3d290 1296835 0 2022-11-16 18:02:50 +0800 CST <nil> <nil> ...
+
+// (8) Get方法用起来不是很友好, 继续优化
+
+	// 等待Store第一次sync，它和resync没有关系
+	for !podsInformer.HasSynced() {
+		time.Sleep(time.Second)
+	}
+
+	//调用Store方法
+	fmt.Println(podsStore.GetByKey("kube-system/etcd-node-1"))
+
+D:\application\GoLand\example>go run main.go
+&Pod{ObjectMeta:{etcd-node-1  kube-system  e2e8ea22-8e1c-4f60-9549-5af1b7f3d290 1296835 0 2022-11-16 18:02:50 +0800 CST <nil> <nil> ...
 ```
 
 :::
