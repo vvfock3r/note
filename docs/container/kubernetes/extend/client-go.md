@@ -4489,6 +4489,9 @@ I1226 13:05:00.088308   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4
 
 ### 3）Store
 
+* `Store`是一个通用的对象存储和处理接口
+* `GetStore`返回 `informer` 的本地缓存用于实现 `Store` 接口
+
 ::: details （1）简单了解Store
 
 ```go
@@ -4877,4 +4880,43 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 4）
+### 4）Indexer
+
+Indexer包含Store的所有功能，并在此基础上添加了一层索引
+
+::: details （1）Indexer接口
+
+```go
+type Indexer interface {
+	Store
+	// Index returns the stored objects whose set of indexed values
+	// intersects the set of indexed values of the given object, for
+	// the named index
+	Index(indexName string, obj interface{}) ([]interface{}, error)
+	// IndexKeys returns the storage keys of the stored objects whose
+	// set of indexed values for the named index includes the given
+	// indexed value
+	IndexKeys(indexName, indexedValue string) ([]string, error)
+	// ListIndexFuncValues returns all the indexed values of the given index
+	ListIndexFuncValues(indexName string) []string
+	// ByIndex returns the stored objects whose set of indexed values
+	// for the named index includes the given indexed value
+	ByIndex(indexName, indexedValue string) ([]interface{}, error)
+	// GetIndexers return the indexers
+	GetIndexers() Indexers
+
+	// AddIndexers adds more indexers to this store.  If you call this after you already have data
+	// in the store, the results are undefined.
+	AddIndexers(newIndexers Indexers) error
+}
+```
+
+:::
+
+::: details （2）Indexer如何存储
+
+```go
+
+```
+
+:::
