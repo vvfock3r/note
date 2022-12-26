@@ -4246,7 +4246,7 @@ I1226 09:51:49.107223  109594 reflector.go:559] pkg/mod/k8s.io/client-go@v0.25.4
 
 :::
 
-::: details （2）额外参数：informers.NewSharedInformerFactoryWithOptions
+::: details （2）添加额外参数：informers.NewSharedInformerFactoryWithOptions
 
 ```go
 
