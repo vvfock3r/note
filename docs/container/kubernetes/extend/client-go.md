@@ -3907,8 +3907,6 @@ import (
 	"runtime"
 )
 
-const WatchdAllNamespace = ""
-
 // NewClientSetByConfig 在集群外部使用配置文件进行认证
 func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
 	// 参数校验
@@ -3945,8 +3943,9 @@ func main() {
 	ctx := context.Background()
 
 	// 实例化watcher对象
+	// metav1.NamespaceAll 是空字符串，代表所有命名空间
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		return clientset.CoreV1().Pods(WatchdAllNamespace).Watch(ctx, metav1.ListOptions{})
+		return clientset.CoreV1().Pods(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
 	}
 	watcher, err := watchtool.NewRetryWatcher("1", &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
@@ -4104,3 +4103,153 @@ type Event struct {
 
 ### Informer
 
+::: details （1）基础示例：informers.NewSharedInformerFactory
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 创建一个SharedInformer工厂函数
+	//   第一个参数：用于与Kubernetes APIServer交互的客户端
+	//   第二个参数：用于设置多久进行一次resync(重新同步)，resync会执行List操作，将所有的资源存放在Informer Store中。如果该参数为0，则禁用resync功能
+	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
+
+	// 创建Pods Informer，并对事件进行监控
+	// 对于监听到的obj，可以断言为
+	//  1.具体的资源类型，比如 *corev1.Pod
+	//  2.抽象的资源类型，比如 metav1.Object
+	podsInformer := sharedInformers.Core().V1().Pods().Informer()
+	podsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			addedObj, ok := obj.(*corev1.Pod)
+			if !ok {
+				return
+			}
+			klog.V(2).InfoS("Add new pod to Store",
+				"name", klog.KObj(addedObj),
+				"podIP", addedObj.Status.PodIP,
+				"node", addedObj.Spec.NodeName,
+				"hostIP", addedObj.Status.HostIP,
+			)
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			updatedOldObj := oldObj.(metav1.Object)
+			updatedNewObj := newObj.(metav1.Object)
+			klog.V(2).InfoS("Update pod", "old", klog.KObj(updatedOldObj), "new", klog.KObj(updatedNewObj))
+		},
+		DeleteFunc: func(obj any) {
+			deletedObj := obj.(metav1.Object)
+			klog.V(2).InfoS("Delete pod", "name", klog.KObj(deletedObj))
+		},
+	})
+
+	// 启动Pods Informer
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	podsInformer.Run(stopCh)
+}
+```
+
+输出结果
+
+```bash
+# 1.启动程序: 设置日志级别为10，并且将日志重定向文件中
+[root@node-1 example]# time go run main.go -v=10 &> main.log
+
+# 2.查看刚启动时的输出日志
+[root@node-1 example]# head main.log
+I1226 09:34:06.057301  109594 loader.go:374] Config loaded from file:  .kube.config
+I1226 09:34:06.060678  109594 reflector.go:221] Starting reflector *v1.Pod (1m0s) from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+I1226 09:34:06.060703  109594 reflector.go:257] Listing and watching *v1.Pod from pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169
+I1226 09:34:06.060889  109594 round_trippers.go:466] curl -v -XGET  -H "Accept: application/json, */*" -H "User-Agent: main/v0.0.0 (linux/amd64) kubernetes/$Format" 'https://api.k8s.local:6443/api/v1/pods?limit=500&resourceVersion=0'
+I1226 09:34:06.061666  109594 round_trippers.go:495] HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.151 }]
+I1226 09:34:06.062826  109594 round_trippers.go:510] HTTP Trace: Dial to tcp:192.168.48.151:6443 succeed
+I1226 09:34:06.074218  109594 round_trippers.go:553] GET https://api.k8s.local:6443/api/v1/pods?limit=500&resourceVersion=0 200 OK in 13 milliseconds
+I1226 09:34:06.074251  109594 round_trippers.go:570] HTTP Statistics: DNSLookup 0 ms Dial 0 ms TLSHandshake 6 ms ServerProcessing 4 ms Duration 13 ms
+I1226 09:34:06.074259  109594 round_trippers.go:577] Response Headers:
+I1226 09:34:06.074266  109594 round_trippers.go:580]     Content-Type: application/json
+
+# 3.查看我们获取的PodIP和HostIP是否正确，这里选择etcd和coredns两个服务来验证
+[root@node-1 client-go]# cat main.log | grep Add | grep -Ei 'etcd|coredns'
+I1226 09:34:06.099984  109594 main.go:65] "Add new pod to Store" name="kube-system/coredns-565d847f94-vmrwl" podIP="10.100.217.140" node="node-4" hostIP="192.168.48.154"
+I1226 09:34:06.100027  109594 main.go:65] "Add new pod to Store" name="kube-system/coredns-565d847f94-tsksp" podIP="10.100.247.4" node="node-2" hostIP="192.168.48.152"
+I1226 09:34:06.100053  109594 main.go:65] "Add new pod to Store" name="kube-system/etcd-node-3" podIP="192.168.48.153" node="node-3" hostIP="192.168.48.153"
+I1226 09:34:06.100059  109594 main.go:65] "Add new pod to Store" name="kube-system/etcd-node-2" podIP="192.168.48.152" node="node-2" hostIP="192.168.48.152"
+I1226 09:34:06.100148  109594 main.go:65] "Add new pod to Store" name="kube-system/etcd-node-1" podIP="192.168.48.151" node="node-1" hostIP="192.168.48.151"
+
+[root@node-1 ~]# kubectl get pods -A -o wide | grep -Ei 'IP\s|NODE\s|etcd|coredns' # 输出结果删除了无关紧要的两列否则页面占不下
+NAMESPACE     NAME                        READY   STATUS    RESTARTS         AGE     IP               NODE  
+kube-system   coredns-565d847f94-tsksp    1/1     Running   60 (12h ago)     10d     10.100.247.4     node-2
+kube-system   coredns-565d847f94-vmrwl    1/1     Running   6 (12h ago)      3d11h   10.100.217.140   node-4
+kube-system   etcd-node-1                 1/1     Running   117 (12h ago)    39d     192.168.48.151   node-1
+kube-system   etcd-node-2                 1/1     Running   104 (12h ago)    39d     192.168.48.152   node-2
+kube-system   etcd-node-3                 1/1     Running   99 (12h ago)     39d     192.168.48.153   node-3
+
+
+# 4.查看resync日志
+[root@node-1 example]# cat main.log | grep resync
+I1226 09:35:06.133077  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 09:36:06.136939  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 09:37:06.138063  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+I1226 09:38:06.149220  109594 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: forcing resync
+
+# 5.查看watch close日志
+[root@node-1 example]# cat main.log | grep close
+I1226 09:42:07.104752  109594 reflector.go:559] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: Watch close - *v1.Pod total 50 items received
+I1226 09:51:49.107223  109594 reflector.go:559] pkg/mod/k8s.io/client-go@v0.25.4/tools/cache/reflector.go:169: Watch close - *v1.Pod total 10 items received
+```
+
+:::
+
+::: details （2）额外参数：informers.NewSharedInformerFactoryWithOptions
+
+```go
+
+```
+
+:::
