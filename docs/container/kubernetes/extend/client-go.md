@@ -4829,6 +4829,9 @@ func Accessor(obj interface{}) (metav1.Object, error) {
 // (6) 那看一下都有哪些数据类型实现了metav1.Object即可，很容易发现corev1.Pod满足需求。所以改一下代码
 //     执行一下，不报错了，但是没数据，原因是代码执行的太快，go podsInformer.Run(stopCh)还没在Store中放入数据
 
+	// 获取Pods Store
+	podsStore := podsInformer.GetStore()
+
 	// 调用Store方法
 	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "etcd-node-1"}}
 	fmt.Println(podsStore.Get(&pod))
@@ -4838,10 +4841,13 @@ D:\application\GoLand\example>go run main.go
 
 // (7) 再优化一下，发现可以了
 
-	// 等待Store第一次sync，它和resync没有关系
+    // 等待podsInformer第一次sync(将输入存入Store)
 	for !podsInformer.HasSynced() {
 		time.Sleep(time.Second)
 	}
+
+	// 获取Pods Store
+	podsStore := podsInformer.GetStore()
 
 	//调用Store方法	
 	pod := corev1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "etcd-node-1"}}
@@ -4852,10 +4858,13 @@ D:\application\GoLand\example>go run main.go
 
 // (8) Get方法用起来不是很友好, 继续优化
 
-	// 等待Store第一次sync，它和resync没有关系
+    // 等待podsInformer第一次sync(将输入存入Store)
 	for !podsInformer.HasSynced() {
 		time.Sleep(time.Second)
 	}
+
+	// 获取Pods Store
+	podsStore := podsInformer.GetStore()
 
 	//调用Store方法
 	fmt.Println(podsStore.GetByKey("kube-system/etcd-node-1"))
