@@ -4587,7 +4587,7 @@ func (s *sharedIndexInformer) GetStore() Store {
 }
 ```
 
-2.如果只是想看一下`Store`的值的话，使用调试功能是最快的
+2.如果只是想看一下`Store`的值的话，使用编辑器的`Debug`功能非常好用
 
 ![image-20221227004414632](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221227004414632.png)
 
