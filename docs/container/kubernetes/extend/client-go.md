@@ -4568,7 +4568,7 @@ D:\application\GoLand\example>go run main.go
 # 分析
 # 1.Store是cache.cache结构体，包含cacheStorage和keyFunc两个字段
 # 2.cacheStorage的值*cache.threadSafeMap，一个线程安全的Map
-# 3.keyFunc的值是什么cache.KeyFunc
+# 3.keyFunc的值是cache.KeyFunc,但具体是什么还未可知
 # 4.我们发现两个Store的cacheStorage内存地址不一样，但是keyFunc内存地址一样，说明两个Map是不同的对象，他们使用了相同的keyFunc对象
 ```
 
@@ -4584,7 +4584,13 @@ func (s *sharedIndexInformer) GetStore() Store {
 }
 ```
 
-2.如果直接从`Informer`找`Store`的话，代码非常的绕，很难到，所以换个思路，倒着找Store初始化。这种方法不是太准确，局限性也很大，不过在这里够用了
+2.如果只是想看一下`Store`的值的话，使用调试功能是最快的
+
+![image-20221227004414632](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221227004414632.png)
+
+
+
+3.如果直接从`Informer`找`Store`的话，代码非常的绕，所以换个思路，倒着找Store初始化。这种方法不是太准确，局限性也很大，不过在这里够用了
 
 ```go
 // (1) 先从Newxx开始，找到两个函数，Indexer是包含了Store的
@@ -4662,7 +4668,7 @@ func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
 }
 ```
 
-3.从`Informer`正着找`Store`
+4.从`Informer`正着找`Store`
 
 ```go
 // (1) 从下面的Informer方法开始
@@ -4718,7 +4724,7 @@ func NewSharedIndexInformer(lw ListerWatcher, exampleObject runtime.Object, defa
 	return sharedIndexInformer
 }
 
-// (5) 查看 NewIndexer，至此确定 keyFunc 是 DeletionHandlingMetaNamespaceKeyFunc
+// (6) 查看 NewIndexer，至此确定 keyFunc 是 DeletionHandlingMetaNamespaceKeyFunc
 func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
 	return &cache{
 		cacheStorage: NewThreadSafeStore(indexers, Indices{}),
@@ -4726,7 +4732,7 @@ func NewIndexer(keyFunc KeyFunc, indexers Indexers) Indexer {
 	}
 }
 
-// (6) keyFunc的实现源码
+// (7) keyFunc的实现源码
 func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
 	if d, ok := obj.(DeletedFinalStateUnknown); ok {
 		return d.Key, nil
@@ -4757,7 +4763,8 @@ func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
 // 1.查看Get方法参数, interface{} 意味着传什么参数都可以
 Get(obj interface{}) (item interface{}, exists bool, err error)
 
-// 2.核心代码如下
+// 2.那我们就测试一下, 核心代码如下
+
 	// 定义channel，用于通知关闭监控
 	stopCh := make(chan struct{})
 	defer close(stopCh)
