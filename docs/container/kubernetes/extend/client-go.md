@@ -4103,6 +4103,8 @@ type Event struct {
 
 ### Informer
 
+#### 1）基础示例
+
 ::: details （1）基础代码示例：NewSharedInformerFactory
 
 ```go
@@ -4154,10 +4156,14 @@ func main() {
 		panic(err)
 	}
 
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
 	// 创建一个SharedInformer工厂函数
 	//   第一个参数：用于与Kubernetes APIServer交互的客户端
 	//   第二个参数：用于设置默认情况下多久进行一次resync(重新同步)
-    //             resync会执行List操作，将所有的资源存放在Informer Store中。如果该参数为0，则禁用resync功能
+	//             resync会执行List操作，将所有的资源存放在Informer Store中。如果该参数为0，则禁用resync功能
 	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
 
 	// 创建Pods Informer，并对事件进行监控
@@ -4190,8 +4196,6 @@ func main() {
 	})
 
 	// 启动Pods Informer
-	stopCh := make(chan struct{})
-	defer close(stopCh)
 	podsInformer.Run(stopCh)
 }
 ```
@@ -4333,6 +4337,10 @@ func main() {
 		panic(err)
 	}
 
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
 	// NewSharedInformerFactoryWithOptions
 	// 1.WithNamespace           指定监控的命名空间，默认是所有命名空间
 	// 2.WithTweakListOptions    指定过滤哪些资源
@@ -4352,10 +4360,6 @@ func main() {
 			&appsv1.Deployment{}: time.Second * 30,
 		}),
 	)
-
-	// 定义channel，用于通知关闭监控
-	stopCh := make(chan struct{})
-	defer close(stopCh)
 
 	// 创建Pods Informer
 	podsInformer := sharedInformers.Core().V1().Pods().Informer()
@@ -4410,7 +4414,7 @@ func main() {
 	})
 
 	// 启动Informer
-	// 为了能正好的观察时间，设置在任意分钟的0秒时启动Goroutine
+	// 为了能更好的观察时间，设置在任意分钟的0秒时启动Goroutine
 	for {
 		if time.Now().Second() == 0 {
 			go podsInformer.Run(stopCh)
@@ -4478,3 +4482,10 @@ I1226 13:05:00.088308   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4
 ```
 
 :::
+
+<br />
+
+#### 2）Store
+
+
+
