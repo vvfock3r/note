@@ -4490,7 +4490,7 @@ I1226 13:05:00.088308   64774 reflector.go:281] pkg/mod/k8s.io/client-go@v0.25.4
 ### 3）Store
 
 * `Store`是一个通用的对象存储和处理接口
-* `GetStore`返回 `informer` 的本地缓存用于实现 `Store` 接口
+* `GetStore`返回 `informer` 的本地缓存用于实现 `Store` 接口，具体实现是`cache.cache`结构体
 
 ::: details （1）简单了解Store
 
