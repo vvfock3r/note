@@ -4787,6 +4787,8 @@ Get(obj interface{}) (item interface{}, exists bool, err error)
 D:\application\GoLand\example>go run main.go
 <nil> false couldn't create key for object abc: object has no meta: object does not implement the Object interfaces
 
+// -----------------------------------------------------------------------------------------------------------------
+
 // 3.看一下Get源码，store.go中cache结构体的Get方法
 //   它先用keyFunc处理一遍，然后调用GetByKey，经过测试，上面的错误就是 keyFunc 函数返回的
 func (c *cache) Get(obj interface{}) (item interface{}, exists bool, err error) {
@@ -4828,6 +4830,8 @@ func Accessor(obj interface{}) (metav1.Object, error) {
 		return nil, errNotObject
 	}
 }
+
+// -----------------------------------------------------------------------------------------------------------------
 
 // (6) 那看一下都有哪些数据类型实现了metav1.Object即可，很容易发现corev1.Pod满足需求。所以改一下代码
 //     执行一下，不报错了，但是没数据，原因是代码执行的太快，go podsInformer.Run(stopCh)还没在Store中放入数据
