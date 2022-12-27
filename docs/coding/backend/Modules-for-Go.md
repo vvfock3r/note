@@ -11825,7 +11825,11 @@ D:\application\GoLand\demo>go run main.go
 
 ## path/filepath
 
-### 目录类型
+文档：[https://pkg.go.dev/path/filepath](https://pkg.go.dev/path/filepath)
+
+<br />
+
+### 两种目录
 
 **目录说明**
 
@@ -12095,3 +12099,232 @@ C:\Users\Administrator>mklink C:\Users\Administrator\Desktop\main.exe D:\applica
 :::
 
 <br />
+
+### 函数示例
+
+::: details （1）filepath.Abs：获取文件或目录的绝对路径，filepath.IsAbs：返回路径是否是绝对路径
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Abs：获取文件或目录的绝对路径
+	// 1.文件或目录在不在它并不会校验
+	// 2.如果传入一个绝对路径,它直接返回
+	// 3.如果传入一个相对路径，它会使用 运行时目录 + 相对路径 组合出一个绝对路径再返回
+    // 4.特殊值: 空字符串会转为 .
+	fmt.Println(filepath.Abs("/abc"))
+	fmt.Println(filepath.Abs("abc"))
+	fmt.Println(filepath.Abs("C:/abc"))
+	fmt.Println(filepath.Abs("."))
+	fmt.Println(filepath.Abs(""))
+}
+```
+
+输出结果
+
+```bash
+# Windows下输出结果
+D:\application\GoLand\example>go run main.go
+D:\abc <nil> # 测试绝对路径，Windows下没有/,或者说Windows下有多个/，每个驱动器(C盘/D盘等)都是一个根, /abc => D:\abc
+D:\application\GoLand\example\abc <nil>  # 测试相对路径，程序运行时用户所在目录 + 相对目录
+C:\abc <nil>                             # Windows下的绝对目录，原样输出
+D:\application\GoLand\example <nil>      # 特殊目录测试
+D:\application\GoLand\example <nil>      # 特殊目录测试
+
+# Windows下切换一个驱动器，可以看到前两个输出都变成C盘路径了
+C:\Users\Administrator>go run D:\application\GoLand\example\main.go
+C:\abc <nil>
+C:\Users\Administrator\abc <nil>
+C:\abc <nil>
+C:\Users\Administrator <nil>
+C:\Users\Administrator <nil>
+
+# Linux下输出结果
+[root@ap-hongkang example]# go run main.go
+/abc <nil>
+/root/example/abc <nil>
+/root/example/C:/abc <nil>    # Linux下不认Windows的驱动,所以路径变成这样了
+/root/example <nil>
+/root/example <nil>
+
+# 注意事项
+# filepath.Abs：如果传入的相对路径，会使用 程序运行时用户所在目录 + 相对目录
+```
+
+:::
+
+::: details （2）filepath.Base：路径最后一个元素，filepath.Dir：除路径最后最后一个元素外的所有元素
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Base：获取路径的最后一个元素
+	fmt.Println(filepath.Base("/var/lib"))
+	fmt.Println(filepath.Base("/var/lib/"))
+	fmt.Println(filepath.Base("/var/lib//"))
+	fmt.Println(filepath.Base(""))
+	fmt.Println(filepath.Base("."))
+	fmt.Println(filepath.Base(".."))
+
+	fmt.Printf("\n------------------------------\n\n")
+
+	// filepath.Dir：提取路径除最后一个元素外的路径
+	fmt.Println(filepath.Dir("/var/lib"))
+	fmt.Println(filepath.Dir("/var/lib/"))
+	fmt.Println(filepath.Dir(""))
+	fmt.Println(filepath.Dir("."))
+	fmt.Println(filepath.Dir(".."))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+lib
+lib                           
+lib                           
+.                             
+.                             
+..                            
+                              
+------------------------------
+
+\var                          
+\var\lib  # 这里需要注意
+.                             
+.                             
+.                             
+
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go
+lib
+lib
+lib
+.
+.
+..
+
+------------------------------
+
+/var
+/var/lib  # 这里需要注意
+.
+.
+.
+```
+
+:::
+
+::: details （3）filepath.Split：路径分割
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Split：路径分割
+
+	var dir, file string
+
+	dir, file = filepath.Split("/var/lib")
+	fmt.Printf("Dir: %s\t File: %s\n", dir, file)
+
+	dir, file = filepath.Split("/var/lib/")
+	fmt.Printf("Dir: %s\t File: %s\n", dir, file)
+
+	dir, file = filepath.Split(filepath.Clean("/var/lib/"))
+	fmt.Printf("Dir: %s\t File: %s\n", dir, file)
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+Dir: /var/       File: lib
+Dir: /var/lib/   File:
+Dir: \var\       File: lib
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go
+Dir: /var/       File: lib
+Dir: /var/lib/   File: 
+Dir: /var/       File: lib
+```
+
+:::
+
+::: details （4）
+
+:::
+
+::: details （5）filepath.Clean：返回与路径等效的最短路径名
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Clean：返回与路径等效的最短路径名
+	fmt.Println(filepath.Clean("."))
+	fmt.Println(filepath.Clean("~"))
+	fmt.Println(filepath.Clean("/var/lib/.."))
+	fmt.Println(filepath.Clean("/var/lib/.."))
+	fmt.Println(filepath.Clean("/var/lib"))
+	fmt.Println(filepath.Clean("/var/lib/."))
+	fmt.Println(filepath.Clean("/var/lib/./"))
+	fmt.Println(filepath.Clean("/var/lib/././"))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+.
+~       
+\var    
+\var    
+\var\lib
+\var\lib
+\var\lib
+\var\lib
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go
+.
+~
+/var
+/var
+/var/lib
+/var/lib
+/var/lib
+/var/lib
+```
+
+:::
