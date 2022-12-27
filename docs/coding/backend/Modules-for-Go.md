@@ -11921,6 +11921,8 @@ D:\application\GoLand>go run example/main.go && example\main.exe
 
 ::: details （2）二进制所在目录
 
+备注：使用`os.Executable`重新改写一下会简单一些，以后再做
+
 ```go
 package main
 
