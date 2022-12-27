@@ -71,7 +71,7 @@
     </tr>
     <tr>
         <td>文件路径</td>
-        <td><a href="#file-path" style="text-decoration:none;">path/filepath</a></td>
+        <td><a href="#path-filepath" style="text-decoration:none;">path/filepath</a></td>
         <td><li><code>Go 1.19</code></li></td>
         <td></td>
         <td></td>
