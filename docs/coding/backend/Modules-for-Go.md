@@ -11899,10 +11899,6 @@ func main() {
 # 先编译一下
 D:\application\GoLand\example>go build main.go
 
-# 进入项目目录编译代码
-C:\Users\Administrator>cd /D D:\application\GoLand\example
-D:\application\GoLand\example>go build main.go
-
 # 在项目根目录下运行
 D:\application\GoLand\example>go run main.go && main.exe
 运行时所在目录:             D:\application\GoLand\example
@@ -11971,7 +11967,7 @@ func GetBinaryFilePath(followSymLinks bool) (filePath string, fileName string, e
 
 func main() {
 	// 二进制所在目录
-	filePath, fileName, err := GetBinaryFilePath(false)
+	filePath, fileName, err := GetBinaryFilePath(true)
 	if err != nil {
 		panic(err)
 	}
@@ -12060,10 +12056,15 @@ D:\application\GoLand>example\main.exe
 [root@ap-hongkang ~]# ln -s /root/example/main /usr/bin/main-soft
 [root@ap-hongkang ~]# ln /root/example/main /usr/bin/main-hard
 
-# 不会追随软链接
+# 不追随软链接情况下
 [root@ap-hongkang ~]# main-soft
 二进制所在目录:             /usr/bin
 二进制文件名称:             main-soft
+
+# 追随软链接情况下
+[root@ap-hongkang ~]# main-soft
+二进制所在目录:             /root/example
+二进制文件名称:             main
 
 # 硬链接
 [root@ap-hongkang ~]# main-hard
