@@ -12073,8 +12073,19 @@ D:\application\GoLand>example\main.exe
 
 **（3）Windows快捷方式下的表现**
 
-* 设置followSymLinks = false
+* Windows下的快捷方式相当于软连接，硬链接不测试了
+* 设置`followSymLinks = false`
 * `main`函数加一下暂停，方便观看输出 `time.Sleep(time.Minute)`
+
+创建软链接
+
+```bash
+# 可以直接右键创建快捷方式，也可以使用如下命令创建
+C:\Users\Administrator>mklink C:\Users\Administrator\Desktop\main.exe D:\application\GoLand\example\main.exe
+为 C:\Users\Administrator\Desktop\main.exe <<===>> D:\application\GoLand\example\main.exe 创建的符号链接
+```
+
+输出结果
 
 ![image-20221227162928620](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221227162928620.png)
 
