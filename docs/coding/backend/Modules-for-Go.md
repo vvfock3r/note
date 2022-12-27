@@ -12090,4 +12090,6 @@ C:\Users\Administrator>mklink C:\Users\Administrator\Desktop\main.exe D:\applica
 
 ![image-20221227162928620](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221227162928620.png)
 
+结论：Windows下总是追随快捷方式（软连接）
+
 :::
