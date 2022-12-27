@@ -2096,8 +2096,8 @@ Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2493560398\b001\exe\m
 
 文档：
 
+* 结构化日志记录：[https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging](https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging)
 * 使用什么方法：[https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md#what-method-to-use)
-
 * 日志记录结构：[https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging#log-message-structure](https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging#log-message-structure)
 
 说明：
@@ -2286,7 +2286,48 @@ E1223 16:33:25.123614    4840 main.go:11] "Failed to update pod status" err="tim
 
 <br />
 
-### 4）设置日志级别
+### 4）上下文日志
+
+上下文日志记录：[https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/3077-contextual-logging/README.md](https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/3077-contextual-logging/README.md)
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"context"
+	"k8s.io/klog/v2"
+	"strconv"
+	"time"
+)
+
+func main() {
+	// 实例化Logger,固定上下文Name为foo
+	logger := klog.FromContext(context.TODO()).WithName("foo")
+
+	// 输出日志，动态设置上下文time
+	for i := 0; i < 3; i++ {
+		logger.WithValues("time", time.Now()).Info(strconv.Itoa(i))
+		time.Sleep(time.Second * 1)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+I1227 10:50:12.129575   10956 main.go:16] "foo: 0" time="2022-12-27 10:50:12.1168163 +0800 CST m=+0.005898801"
+I1227 10:50:13.130194   10956 main.go:16] "foo: 1" time="2022-12-27 10:50:13.1301942 +0800 CST m=+1.019276701"
+I1227 10:50:14.134016   10956 main.go:16] "foo: 2" time="2022-12-27 10:50:14.1340169 +0800 CST m=+2.023099401"
+```
+
+:::
+
+<br />
+
+### 5）设置日志级别
 
 文档：
 
@@ -2554,7 +2595,7 @@ done
 
 <br />
 
-### 5）定制Logger
+### 6）定制Logger
 
 **（1）为什么不直接使用第三方库，比如zap？**
 
