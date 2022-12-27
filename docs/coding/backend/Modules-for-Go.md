@@ -69,6 +69,13 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>文件路径</td>
+        <td><a href="#file-path" style="text-decoration:none;">path/filepath</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
@@ -11811,5 +11818,264 @@ D:\application\GoLand\demo>go run main.go
 63
 73
 ```
+
+:::
+
+<br />
+
+## path/filepath
+
+### 目录类型
+
+**目录说明**
+
+Go可以输出目录的路径，但是会受到一些外在因素的影响，因此我将目录分为两类，并解释会受到何种因素的影响
+
+**（1）运行时所在目录：执行程序时用户所在的目录**
+
+* 以下两种执行代码输出的目录路径是不一样的，因为用户所在的目录发生了变化
+  * `go run example/main.go`
+  * `cd example && go run main.go`
+* 我们写的代码大部分情况都是使用这种目录，比如`os.Open`、`os.WriteFile`、`filepath.Abs`等函数
+* `go run`和`go build`输出的结果一致，因为用户所在的目录没有发生变化
+
+**（2）二进制所在目录：二进制命令所在的目录**
+
+* 只要程序（二进制命令）路径没有发生变化，那么不管在哪个目录下执行程序输出结果都不会有影响
+* 在特殊情况下可能会用到这种目录，比如在项目内部记录一些数据、日志等
+* `go run`和`go build`输出的结果不一致，因为`go run`会把代码编译到一个临时目录中，也就是说二进制命令目录发生了变化
+
+<br />
+
+**演示环境**
+
+* Linux演示环境项目目录： `/root/example`
+* Windows演示环境目录：`D:\application\GoLand\example`
+
+::: details （1）运行时所在目录
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+// 字符串格式化模板
+const FORMAT = "%-20s %s\n"
+
+func main() {
+	// 运行时所在目录
+	pwd, err := os.Getwd()
+    if err != nil {
+        panic(err)
+    }
+	fmt.Printf(FORMAT, "运行时所在目录:", pwd)
+}
+```
+
+输出结果
+
+```bash
+# -------------------------------------------------------------------
+# Linux
+
+# 先编译一下
+[root@ap-hongkang example]# go build main.go
+
+# 在项目根目录下运行
+[root@ap-hongkang example]# go run main.go && ./main
+运行时所在目录:             /root/example
+运行时所在目录:             /root/example
+
+# 切换到其他目录运行
+[root@ap-hongkang example]# cd ..
+[root@ap-hongkang ~]# go run example/main.go && ./example/main
+运行时所在目录:             /root
+运行时所在目录:             /root
+
+# -----------------------------------------------------------------
+# Windows
+
+# 先编译一下
+D:\application\GoLand\example>go build main.go
+
+# 进入项目目录编译代码
+C:\Users\Administrator>cd /D D:\application\GoLand\example
+D:\application\GoLand\example>go build main.go
+
+# 在项目根目录下运行
+D:\application\GoLand\example>go run main.go && main.exe
+运行时所在目录:             D:\application\GoLand\example
+运行时所在目录:             D:\application\GoLand\example
+
+# 切换到其他目录运行
+D:\application\GoLand\example>cd ..
+D:\application\GoLand>go run example/main.go && example\main.exe
+运行时所在目录:             D:\application\GoLand
+运行时所在目录:             D:\application\GoLand
+```
+
+:::
+
+::: details （2）二进制所在目录
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+)
+
+// 字符串格式化模板
+const FORMAT = "%-20s %s\n"
+
+// GetBinaryFilePath 获取二进制命令路径
+func GetBinaryFilePath(followSymLinks bool) (filePath string, fileName string, err error) {
+	// 获取二进制命令的文件名，根据执行方式不同结果不同:
+	// 1.以绝对路径执行，获取到绝对路径
+	// 2.以相对路径执行，获取到相对路径
+	file, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		return filePath, fileName, err
+	}
+
+	// 获取文件的绝对路径
+	// 1.文件在不在它并不会校验
+	// 2.如果传入一个绝对路径,它直接返回
+	// 3.如果传入一个相对路径，它会使用 运行时目录 + 相对路径 组合出一个绝对路径再返回
+	fileAbsPath, err := filepath.Abs(file)
+	if err != nil {
+		return filePath, fileName, err
+	}
+
+	// 是否跟随符号链接
+	// 1.Linux只跟随软连接，不跟随硬链接
+	// 2.Linux支持跟随多级软连接
+	// 3.Windows 10下总是跟随快捷方式
+	//   CMD下无法执行快捷方式的二进制命令，此时直接点击快捷方式执行(代码加一下Sleep暂停操作)
+	if followSymLinks {
+		fileAbsPath, err = filepath.EvalSymlinks(fileAbsPath)
+	}
+
+	// 将路径分割，提取出目录和文件名
+	filePath = filepath.Dir(fileAbsPath)
+	fileName = filepath.Base(fileAbsPath)
+
+	return filePath, fileName, nil
+}
+
+func main() {
+	// 二进制所在目录
+	filePath, fileName, err := GetBinaryFilePath(false)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf(FORMAT, "二进制所在目录:", filePath)
+	fmt.Printf(FORMAT, "二进制文件名称:", fileName)
+}
+```
+
+**（1）基础测试**
+
+```bash
+# -------------------------------------------------------------------
+# Linux
+
+# 先编译一下
+[root@ap-hongkang example]# go build main.go
+
+# (1) 在项目根目录下运行 - go run
+[root@ap-hongkang example]# go run main.go
+二进制所在目录:             /tmp/go-build1293444666/b001/exe
+二进制文件名称:             main
+
+[root@ap-hongkang example]# ll /tmp/go-build1293444666/b001/exe  # 查看一下目录，报错不存在，因为运行完该目录就被删除了
+ls: cannot access '/tmp/go-build1293444666/b001/exe': No such file or directory
+
+[root@ap-hongkang example]# go run -work main.go # 添加-work参数，会将临时目录输出出来并且不会删除临时目录
+WORK=/tmp/go-build4122350003
+二进制所在目录:             /tmp/go-build4122350003/b001/exe
+二进制文件名称:             main
+
+[root@ap-hongkang example]# ll /tmp/go-build4122350003/b001/exe/  # 进到目录查看一下
+total 1308
+-rwxr-xr-x 1 root root 1339392 Dec 27 15:55 main
+
+[root@ap-hongkang example]# /tmp/go-build4122350003/b001/exe/main 
+二进制所在目录:             /tmp/go-build4122350003/b001/exe
+二进制文件名称:             main
+
+# (2) 在项目根目录下运行 - go build
+[root@ap-hongkang example]# ./main 
+二进制所在目录:             /root/example
+二进制文件名称:             main
+
+# (3) 切换到其他目录运行
+[root@ap-hongkang example]# cd ..
+[root@ap-hongkang ~]# go run example/main.go 
+二进制所在目录:             /tmp/go-build601928247/b001/exe
+二进制文件名称:             main
+
+[root@ap-hongkang ~]# ./example/main
+二进制所在目录:             /root/example
+二进制文件名称:             main
+
+# -------------------------------------------------------------------
+# Windows
+
+# 先编译一下
+D:\application\GoLand\example>go build main.go
+
+# (1) 在项目根目录下运行 - go run
+D:\application\GoLand\example>go run main.go
+二进制所在目录:             C:\Users\Administrator\AppData\Local\Temp\go-build4082603138\b001\exe
+二进制文件名称:             main.exe
+
+# (2) 在项目根目录下运行 - go build
+D:\application\GoLand\example>.\main.exe 
+二进制所在目录:             D:\application\GoLand\example
+二进制文件名称:             main.exe
+
+# (3) 切换到其他目录运行
+D:\application\GoLand\example>cd ..
+
+D:\application\GoLand>go run example/main.go
+二进制所在目录:             C:\Users\Administrator\AppData\Local\Temp\go-build1999072041\b001\exe
+二进制文件名称:             main.exe
+
+D:\application\GoLand>example\main.exe
+二进制所在目录:             D:\application\GoLand\example
+二进制文件名称:             main.exe
+```
+
+**（2）Linux软硬链接下的表现情况**
+
+```bash
+# 制作软链接和硬链接
+[root@ap-hongkang ~]# ln -s /root/example/main /usr/bin/main-soft
+[root@ap-hongkang ~]# ln /root/example/main /usr/bin/main-hard
+
+# 不会追随软链接
+[root@ap-hongkang ~]# main-soft
+二进制所在目录:             /usr/bin
+二进制文件名称:             main-soft
+
+# 硬链接
+[root@ap-hongkang ~]# main-hard
+二进制所在目录:             /usr/bin
+二进制文件名称:             main-hard
+```
+
+**（3）Windows快捷方式下的表现**
+
+* 设置followSymLinks = false
+* `main`函数加一下暂停，方便观看输出 `time.Sleep(time.Minute)`
+
+![image-20221227162928620](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221227162928620.png)
 
 :::
