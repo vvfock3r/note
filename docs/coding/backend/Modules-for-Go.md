@@ -150,7 +150,14 @@
         <td><li><code>Go 1.19</code></li><li><code>Validator v10.11.1</code></li></td>
         <td></td>
         <td></td>
-    </tr>        
+    </tr>
+    <tr>
+        <td>计划任务</td>
+        <td><a href="#cron" style="text-decoration:none;">Cron</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Cron vv3.0.1</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
@@ -12506,3 +12513,205 @@ false <nil>
 ### 目录遍历
 
 待补充
+
+<br />
+
+## Cron
+
+Github：[https://github.com/robfig/cron](https://github.com/robfig/cron)
+
+文档：[https://pkg.go.dev/github.com/robfig/cron/v3](https://pkg.go.dev/github.com/robfig/cron/v3)
+
+### 安装
+
+```bash
+go get github.com/robfig/cron/v3
+```
+
+<br />
+
+### 基础用法
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化Cron
+	crontab := cron.New()
+
+	// 添加一个计划任务，每分钟执行一次
+	id, err := crontab.AddFunc("* * * * *", func() {
+		log.Println("Every Minute")
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	// 1.Run()   会在当前协程中启动，也就是说会阻塞代码向下执行
+	// 2.Start() 会在新的协程中启动，也就是说不会阻塞代码向下执行
+	crontab.Start()
+
+	// 停止计划任务
+	time.Sleep(time.Minute * 5)
+	crontab.Stop()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/28 16:49:22 Add crontab job success: 1
+2022/12/28 16:50:00 Every Minute
+2022/12/28 16:51:00 Every Minute
+2022/12/28 16:52:00 Every Minute
+2022/12/28 16:53:00 Every Minute
+2022/12/28 16:54:00 Every Minute
+
+# 分析
+# 经过多次测试，发现会从下个分钟整秒开始执行
+```
+
+:::
+
+<br />
+
+### 输出日志
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/funcr"
+	"github.com/robfig/cron/v3"
+	"log"
+)
+
+// NewLogger 创建一个Logger
+func NewLogger(level int) logr.Logger {
+	return funcr.New(
+		func(pfx, args string) { fmt.Println(pfx, args) },
+		funcr.Options{
+			LogCaller:    funcr.All,
+			LogTimestamp: true,
+			Verbosity:    level,
+		})
+}
+
+func main() {
+	// 实例化Logger
+	// 1.可以使用以下代码兼容log库,后面就是正常使用log库，但是无法区分V-Level
+	logger := cron.VerbosePrintfLogger(log.Default())
+	// 2.使用logr定制log，后面的代码需要使用logger.V或logger.Info
+	//   查看Cron.Run方法代码，发现其内部并没有使用V机制区分日志等级，那么它的V默认等于0
+	//   所以我们自己的Logger日志要想和Cron区分开的话，使用<0的V-Level,但是logr.V(-1) 会自动将小于0的值设置为0
+	//   这就带来问题，如果我们要使用V机制区分我们自己的日志和Cron的日志的话，几乎是不可能的
+
+    // 所以最终的结论是：尽量不要输出cron内部的日志，除非它支持了使用V来区分级别
+
+	//logger := NewLogger(-1)
+
+	// 实例化Cron,添加可选项: cron.WithLogger(logger)
+	crontab := cron.New(
+		cron.WithSeconds(),
+		cron.WithLogger(logger),
+	)
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	id, err := crontab.AddFunc("*/5 * * * * *", func() {
+		logger.Info("Every 5 Second")
+	})
+	if err != nil {
+		panic(err)
+	}
+	logger.Info("Add a crontab job", "id", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/28 19:09:43 Add a crontab job, id=1
+2022/12/28 19:09:43 start                                                                           
+2022/12/28 19:09:43 schedule, now=2022-12-28T19:09:43+08:00, entry=1, next=2022-12-28T19:09:45+08:00
+2022/12/28 19:09:45 wake, now=2022-12-28T19:09:45+08:00
+2022/12/28 19:09:45 run, now=2022-12-28T19:09:45+08:00, entry=1, next=2022-12-28T19:09:50+08:00
+2022/12/28 19:09:45 Every 5 Second
+```
+
+:::
+
+<br />
+
+### 秒级任务
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	id, err := crontab.AddFunc("*/5 * * * * *", func() {
+		log.Println("Every 5 Second")
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/28 17:05:41 Add crontab job success: 1
+2022/12/28 17:05:45 Every 5 Second
+2022/12/28 17:05:50 Every 5 Second
+2022/12/28 17:05:55 Every 5 Second
+2022/12/28 17:06:00 Every 5 Second
+2022/12/28 17:06:05 Every 5 Second
+2022/12/28 17:06:10 Every 5 Second
+
+# 分析
+# 经过多次测试，发现会从下个整除5的秒数开始
+```
+
+:::
+
+<br />
+
+### 单次任务
+
+
+
