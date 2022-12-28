@@ -12274,7 +12274,38 @@ Dir: /var/       File: lib
 
 :::
 
-::: details （4）
+::: details （4）filepath.SplitList：用于分割环境变量或GOPATH变量,根据os.PathListSeparator分割
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.SplitList：用于分割环境变量或GOPATH变量,根据os.PathListSeparator分割
+	//   Windows: ;
+	//   Linux:   :
+	fmt.Printf("%#v\n", filepath.SplitList("C:/abc;D:/def;F:/xyz"))
+	fmt.Printf("%#v\n", filepath.SplitList("/bin:/usr/sbin:/usr/local/bin"))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+[]string{"C:/abc", "D:/def", "F:/xyz"}
+[]string{"/bin:/usr/sbin:/usr/local/bin"}
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go 
+[]string{"C", "/abc;D", "/def;F", "/xyz"}
+[]string{"/bin", "/usr/sbin", "/usr/local/bin"}
+```
 
 :::
 
