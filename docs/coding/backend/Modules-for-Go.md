@@ -12309,7 +12309,49 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （5）filepath.Clean：返回与路径等效的最短路径名
+::: details （5）filepath.Join：路径组合
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Join: 路径组合
+	fmt.Println(filepath.Join("a", "b", "c"))
+	fmt.Println(filepath.Join("a", "b/c"))
+	fmt.Println(filepath.Join("a/b", "c"))
+	fmt.Println(filepath.Join("a/b", "/c"))
+	fmt.Println(filepath.Join("a/b", "../../../xyz"))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+a\b\c
+a\b\c
+a\b\c
+a\b\c
+..\xyz
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go 
+a/b/c
+a/b/c
+a/b/c
+a/b/c
+../xyz
+```
+
+:::
+
+::: details （6）filepath.Clean：返回与路径等效的最短路径名；路径分隔符自动替换为系统路径分隔符
 
 ```go
 package main
@@ -12359,3 +12401,108 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
+### 模式匹配
+
+匹配语法
+
+```bash
+pattern:
+	{ term }
+term:
+	'*'         matches any sequence of non-Separator characters
+	'?'         matches any single non-Separator character
+	'[' [ '^' ] { character-range } ']'
+	            character class (must be non-empty)
+	c           matches character c (c != '*', '?', '\\', '[')
+	'\\' c      matches character c
+
+character-range:
+	c           matches character c (c != '\\', '-', ']')
+	'\\' c      matches character c
+	lo '-' hi   matches character c for lo <= c <= hi
+```
+
+::: details （1）filepath.Glob：返回匹配的结果
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Glob: 模式匹配
+	fmt.Println(filepath.Glob("C:/*"))
+	fmt.Println(filepath.Glob("/*/*/bin"))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+D:\application\GoLand\example>go run main.go
+[C:\$360Section C:\$Recycle.Bin C:\$WinREAgent C:\360SANDBOX C:\CIMTEMP C:\Documents and Settings C:\DumpStack.log C:\DumpStack.log.tmp C:\PerfLogs C:\Plugin C:\Program Files C:\Program Files (x86) C:\ProgramData C:\Recovery C:\Syst
+em Volume Information C:\Users C:\WCH.CN C:\Windows C:\bootTel.dat C:\hiberfil.sys C:\pagefile.sys C:\swapfile.sys C:\sys] <nil>
+[\application\GoPath\bin \software\Cygwin\bin \software\EDU\bin \software\Git\bin \software\GoLand 2022.2.3\bin \software\IntelliJ IDEA 2022.2\bin \software\Microsoft VS Code\bin \software\PyCharm Community Edition 2021.3.1\bin \sof
+tware\VMwareWorkstationPro\bin \software\WebStorm 2022.2.2\bin \software\jdk-8u341\bin \software\protoc-21.9-win64\bin] <nil>
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go 
+[] <nil>
+[/lib/debug/bin /opt/cni/bin /opt/containerd/bin /usr/local/bin] <nil>
+```
+
+:::
+
+::: details （2）filepath.Match：判断字符串是否满足模式
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	// filepath.Match: 判断字符串是否满足模式
+	fmt.Println(filepath.Match("C:/*", "C:/Program Files"))
+	fmt.Println(filepath.Match("*/bin", "/usr/local/bin"))
+	fmt.Println(filepath.Match("C:\\*", "C:\\Program Files\\abc"))
+}
+```
+
+输出结果
+
+```bash
+# Windows下执行输出结果
+D:\application\GoLand\example>go run main.go
+true <nil>
+true <nil>
+false <nil>
+
+# Linux下执行输出结果
+[root@ap-hongkang example]# go run main.go 
+true <nil>
+false <nil>
+false <nil>
+
+# 分析
+# 1.Windows路径分隔符是\\，Linux路径分隔符是/
+# 2./在Windos看来就是普通的字符串，\\在Linux看来也是普通字符串
+```
+
+:::
+
+<br />
+
+### 目录遍历
+
+待补充
