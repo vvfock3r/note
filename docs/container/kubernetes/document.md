@@ -12,13 +12,15 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/overview/components/](https://kubernetes.io/zh-cn/docs/concepts/overview/components/)
 
-**控制平面组件（Control Plane Components）**
+### 控制平面
 
-（1）APIServer
+控制平面（Control Plane Components）包含以下组件
+
+**（1）APIServer**
 
 Kube-APIServer 是 Kubernetes 最重要的核心组件之一，主要提供以下功能：
 
-* 提供集群管理的 REST API 接口，包括:
+* 提供管理集群的 `REST API` 接口，包括:
   * 认证 Authentication
   * 授权 Authorization
   * 准入 Admission（Mutating & Valiating）
@@ -27,20 +29,20 @@ Kube-APIServer 是 Kubernetes 最重要的核心组件之一，主要提供以�
 
 * APIServer 提供 etcd 数据缓存以减少集群对 etcd 的访问
 
-（2）Etcd
+**（2）Etcd**
 
 etcd 是 CoreOS 基于Raft协议开发的高度一致的分布式key-value 存储，可用于服务发现、共享配置以及一致性保障（如数据库选主、分布式锁等）
 
 etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etcd`写入/查询数据
 
-（3）Controller Manager
+**（3）Controller Manager**
 
 * Controller Manager 是集群的大脑，是确保整个集群动起来的关键；
 * 作用是确保 Kubernetes 遵循声明式系统规范，确保系统的真实状态（ActualState）与用户定义的期望状态（Desired State）一致；
 * Controller Manager 是多个控制器的组合，每个 Controller 事实上都是一个control loop，负责侦听其管控的对象，当对象发生变更时完成配置；
 * Controller 配置失败通常会触发自动重试，整个集群会在控制器不断重试的机制下确保最终一致性（ **Eventual Consistency**）。
 
-（4）Scheduler
+**（4）Scheduler**
 
 特殊的 Controller，工作原理与其他控制器无差别。
 
@@ -52,9 +54,9 @@ Scheduler 的特殊职责在于监控当前集群所有未调度的 Pod，并且
 * Priority：按既定要素将满足调度需求的节点评分，选择最佳节点。
 * Bind：将计算节点与 Pod 绑定，完成调度
 
+<br />
 
-
-**Node 组件**
+### Node
 
 | 名称                            | 说明                                                         |
 | ------------------------------- | ------------------------------------------------------------ |
