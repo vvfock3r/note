@@ -4958,7 +4958,7 @@ type Indexer interface {
 
 :::
 
-::: details （2）Indexer如何存储
+::: details （2）Indexer如何使用
 
 ```go
 
