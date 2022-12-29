@@ -12530,7 +12530,9 @@ go get github.com/robfig/cron/v3
 
 <br />
 
-### 基础用法
+### 基础
+
+#### 基础示例
 
 ::: details 点击查看详情
 
@@ -12547,7 +12549,7 @@ func main() {
 	// 实例化Cron
 	crontab := cron.New()
 
-	// 添加一个计划任务，每分钟执行一次
+	// 添加一个计划任务，每分钟执行一次, 第一个参数spec代表<分 时 日 月 周>
 	id, err := crontab.AddFunc("* * * * *", func() {
 		log.Println("Every Minute")
 	})
@@ -12557,13 +12559,34 @@ func main() {
 	log.Printf("Add crontab job success: %d\n", id)
 
 	// 启动计划任务
-	// 1.Run()   会在当前协程中启动，也就是说会阻塞代码向下执行
-	// 2.Start() 会在新的协程中启动，也就是说不会阻塞代码向下执行
-	crontab.Start()
+	crontab.Run()
+}
+```
 
-	// 停止计划任务
-	time.Sleep(time.Minute * 5)
-	crontab.Stop()
+扩展
+
+```go
+// 启动计划任务的两种方法
+// 1.Run()   会在当前协程中启动，也就是说会阻塞代码向下执行
+// 2.Start() 会在新的协程中启动，也就是说不会阻塞代码向下执行
+crontab.Start()
+
+// 停止计划任务
+crontab.Stop()
+
+// 删除一个计划任务
+crontab.Remove(id)
+
+// 查看某个计划任务
+entry := crontab.Entry(id)
+if entry.ID == 0 {
+	log.Printf("Entry not found: id=%d\n", id)
+}
+
+// 查看所有的计划任务
+entries := crontab.Entries()
+for _, entry := range entries {
+	fmt.Println(entry.ID)
 }
 ```
 
@@ -12586,82 +12609,7 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 输出日志
-
-::: details 点击查看详情
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/go-logr/logr/funcr"
-	"github.com/robfig/cron/v3"
-	"log"
-)
-
-// NewLogger 创建一个Logger
-func NewLogger(level int) logr.Logger {
-	return funcr.New(
-		func(pfx, args string) { fmt.Println(pfx, args) },
-		funcr.Options{
-			LogCaller:    funcr.All,
-			LogTimestamp: true,
-			Verbosity:    level,
-		})
-}
-
-func main() {
-	// 实例化Logger
-	// 1.可以使用以下代码兼容log库,后面就是正常使用log库，但是无法区分V-Level
-	logger := cron.VerbosePrintfLogger(log.Default())
-	// 2.使用logr定制log，后面的代码需要使用logger.V或logger.Info
-	//   查看Cron.Run方法代码，发现其内部并没有使用V机制区分日志等级，那么它的V默认等于0
-	//   所以我们自己的Logger日志要想和Cron区分开的话，使用<0的V-Level,但是logr.V(-1) 会自动将小于0的值设置为0
-	//   这就带来问题，如果我们要使用V机制区分我们自己的日志和Cron的日志的话，几乎是不可能的
-
-    // 所以最终的结论是：尽量不要输出cron内部的日志，除非它支持了使用V来区分级别
-
-	//logger := NewLogger(-1)
-
-	// 实例化Cron,添加可选项: cron.WithLogger(logger)
-	crontab := cron.New(
-		cron.WithSeconds(),
-		cron.WithLogger(logger),
-	)
-
-	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
-	id, err := crontab.AddFunc("*/5 * * * * *", func() {
-		logger.Info("Every 5 Second")
-	})
-	if err != nil {
-		panic(err)
-	}
-	logger.Info("Add a crontab job", "id", id)
-
-	// 启动计划任务
-	crontab.Run()
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go
-2022/12/28 19:09:43 Add a crontab job, id=1
-2022/12/28 19:09:43 start                                                                           
-2022/12/28 19:09:43 schedule, now=2022-12-28T19:09:43+08:00, entry=1, next=2022-12-28T19:09:45+08:00
-2022/12/28 19:09:45 wake, now=2022-12-28T19:09:45+08:00
-2022/12/28 19:09:45 run, now=2022-12-28T19:09:45+08:00, entry=1, next=2022-12-28T19:09:50+08:00
-2022/12/28 19:09:45 Every 5 Second
-```
-
-:::
-
-<br />
-
-### 秒级任务
+#### 秒级任务
 
 ::: details 点击查看详情
 
@@ -12711,7 +12659,242 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 单次任务
+#### 设置时区
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+	_ "time/tzdata"
+)
+
+func main() {
+	// 读取日本东京时区（UTC+9）
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		panic(err)
+	}
+
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds(), cron.WithLocation(tokyo))
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	spec := fmt.Sprintf("*/5 * %d * * *", time.Now().Hour()+1) // 小时+1
+	id, err := crontab.AddFunc(spec, func() {
+		log.Println("Every 5 Second")
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 17:25:55 Add crontab job success: 1
+2022/12/29 17:26:00 Every 5 Second
+2022/12/29 17:26:05 Every 5 Second
+2022/12/29 17:26:10 Every 5 Second
+```
+
+:::
+
+<br />
+
+#### Job接口
+
+::: details （1）源码
+
+```go
+// AddFunc 会将我们的函数进行类型转换，然后调用 AddJob
+func (c *Cron) AddFunc(spec string, cmd func()) (EntryID, error) {
+	return c.AddJob(spec, FuncJob(cmd))
+}
+
+// Job接口需要实现一个Run方法
+type Job interface {
+	Run()
+}
+
+// 如何转换呢
+// 自定义了一个FuncJob类型，然后它在Run方法中调用我们原始的函数
+type FuncJob func()
+
+func (f FuncJob) Run() { f() }
+```
+
+:::
+
+::: details （2）自定义Job接口
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+)
+
+type MyJob struct {
+}
+
+func (j *MyJob) Run() {
+	log.Println("MyJob Run")
+}
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 方式一
+	id, err := crontab.AddJob("*/5 * * * * *", &MyJob{})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 方式二
+	id, err = crontab.AddJob("*/5 * * * * *", cron.FuncJob(func() {
+		log.Println("FuncJob Run")
+	}))
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 17:35:52 Add crontab job success: 1
+2022/12/29 17:35:52 Add crontab job success: 2
+2022/12/29 17:35:55 FuncJob Run
+2022/12/29 17:35:55 MyJob Run
+2022/12/29 17:36:00 FuncJob Run
+2022/12/29 17:36:00 MyJob Run
+```
+
+:::
+
+<br />
+
+#### Schedule接口
+
+::: details （1）源码
+
+```go
+// spec会被解析为schedule, 然后调用 Schedule 方法
+func (c *Cron) AddJob(spec string, cmd Job) (EntryID, error) {
+	schedule, err := c.parser.Parse(spec)
+	if err != nil {
+		return 0, err
+	}
+	return c.Schedule(schedule, cmd), nil
+}
+
+// Schedule 方法
+func (c *Cron) Schedule(schedule Schedule, cmd Job) EntryID {
+	c.runningMu.Lock()
+	defer c.runningMu.Unlock()
+	c.nextID++
+	entry := &Entry{
+		ID:         c.nextID,
+		Schedule:   schedule,
+		WrappedJob: c.chain.Then(cmd),
+		Job:        cmd,
+	}
+	if !c.running {
+		c.entries = append(c.entries, entry)
+	} else {
+		c.add <- entry
+	}
+	return entry.ID
+}
+
+// Schedule 接口
+type Schedule interface {
+	// Next returns the next activation time, later than the given time.
+	// Next is invoked initially, and then each time the job is run.
+	Next(time.Time) time.Time
+}
+```
+
+:::
+
+::: details （2）自定义Schedule接口
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+// MyCron
+type MyCron struct {
+	Interval time.Duration
+}
+
+// 实现 Schedule 接口, Next返回下一次调度的时间
+func (c *MyCron) Next(time.Time) time.Time {
+	return time.Now().Add(c.Interval)
+}
+
+// 实现 Job 接口
+func (c *MyCron) Run() {
+	log.Printf("Every %.0f Seconds\n", c.Interval.Seconds())
+}
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	myCron := MyCron{Interval: time.Second * 2}
+	id := crontab.Schedule(&myCron, &myCron)
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 17:48:55 Add crontab job success: 1
+2022/12/29 17:48:57 Every 2 Seconds
+2022/12/29 17:48:59 Every 2 Seconds
+2022/12/29 17:49:01 Every 2 Seconds
+2022/12/29 17:49:03 Every 2 Seconds
+```
+
+:::
+
+<br />
+
+### 不支持的功能
+
+* 一次性任务，或者说在具体时间点执行的任务
+
+<br />
 
 
 
