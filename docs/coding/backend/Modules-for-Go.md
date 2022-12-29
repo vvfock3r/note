@@ -12971,7 +12971,88 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 故障处理
+### 深入
+
+#### 任务装饰器
+
+::: details （1）每2秒执行一次任务，但是任务需要5秒才能执行完成
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+	"math/rand"
+	"time"
+)
+
+func CronTimerWrapper() cron.JobWrapper {
+	return func(job cron.Job) cron.Job {
+		return cron.FuncJob(func() {
+			start := time.Now()
+			job.Run()
+			log.Printf("Used %.2f seconds\n", time.Since(start).Seconds())
+		})
+	}
+}
+
+func main() {
+	// 初始化随机数种子
+	rand.Seed(time.Now().UnixNano())
+
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每2秒执行一次
+	id, err := crontab.AddJob(
+		"*/5 * * * * *",
+		cron.NewChain(CronTimerWrapper()).Then(cron.FuncJob(func() {
+			fmt.Println()
+			log.Printf("Job start")
+			time.Sleep(time.Millisecond * time.Duration(1000+rand.Intn(4000)))
+			log.Println("Job end")
+		})),
+	)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 20:40:50 Add crontab job success: 1
+
+2022/12/29 20:40:55 Job start
+2022/12/29 20:40:56 Job end
+2022/12/29 20:40:56 Used 1.44 seconds
+
+2022/12/29 20:41:00 Job start
+2022/12/29 20:41:03 Job end
+2022/12/29 20:41:03 Used 3.05 seconds
+
+2022/12/29 20:41:05 Job start
+2022/12/29 20:41:07 Job end
+2022/12/29 20:41:07 Used 2.00 seconds
+```
+
+分析
+
+```go
+// NewChain(m1, m2, m3).Then(job) 等于 m1(m2(m3(job)))
+```
+
+:::
+
+<br />
 
 #### 执行时长过长
 
