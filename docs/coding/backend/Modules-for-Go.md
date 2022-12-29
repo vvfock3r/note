@@ -12975,7 +12975,7 @@ D:\application\GoLand\example>go run main.go
 
 #### 任务装饰器
 
-::: details （1）每2秒执行一次任务，但是任务需要5秒才能执行完成
+::: details 点击查看详情
 
 ```go
 package main
