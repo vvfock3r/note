@@ -12971,5 +12971,68 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
+### 故障处理
 
+#### 执行时长过长
 
+::: details （1）每2秒执行一次任务，但是任务需要4秒才能执行完成
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每2秒执行一次
+	id, err := crontab.AddFunc("*/2 * * * * *", func() {
+		log.Println("Start")
+		time.Sleep(time.Second * 4)
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+# 可以看到，cron只管调度，不会管我们任务有没有完成
+D:\application\GoLand\example>go run main.go
+2022/12/29 19:27:51 Add crontab job success: 1
+2022/12/29 19:27:52 Start
+2022/12/29 19:27:54 Start
+2022/12/29 19:27:56 Start
+2022/12/29 19:27:58 Start
+2022/12/29 19:28:00 Start
+2022/12/29 19:28:02 Start
+```
+
+:::
+
+::: details （2）当上一个任务执行完再执行下一个任务
+
+```go
+
+```
+
+:::
+
+::: details （3）当上一个任务未执行完前不再进行调度，上一个任务执行完后再继续调度
+
+```go
+
+```
+
+:::
