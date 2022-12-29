@@ -12,7 +12,7 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/overview/components/](https://kubernetes.io/zh-cn/docs/concepts/overview/components/)
 
-### 控制平面
+### Control Plane
 
 控制平面（Control Plane Components）包含以下组件
 
