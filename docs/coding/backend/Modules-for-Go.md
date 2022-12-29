@@ -12891,7 +12891,7 @@ D:\application\GoLand\example>go run main.go
 
 #### 实现一次性任务
 
-`cron`默认不支持一次性任务
+`cron`默认不支持一次性任务，所以需要自己来封装
 
 ::: details 点击查看详情
 
@@ -12975,7 +12975,7 @@ D:\application\GoLand\example>go run main.go
 
 #### 执行时长过长
 
-::: details （1）每2秒执行一次任务，但是任务需要4秒才能执行完成
+::: details （1）每2秒执行一次任务，但是任务需要5秒才能执行完成
 
 ```go
 package main
@@ -12993,7 +12993,7 @@ func main() {
 	// 每2秒执行一次
 	id, err := crontab.AddFunc("*/2 * * * * *", func() {
 		log.Println("Start")
-		time.Sleep(time.Second * 4)
+		time.Sleep(time.Second * 5)
 	})
 	if err != nil {
 		panic(err)
@@ -13024,7 +13024,48 @@ D:\application\GoLand\example>go run main.go
 ::: details （2）当上一个任务执行完再执行下一个任务
 
 ```go
+package main
 
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每2秒执行一次
+	id, err := crontab.AddJob(
+		"*/2 * * * * *",
+		cron.NewChain(cron.DelayIfStillRunning(cron.DefaultLogger)).Then(cron.FuncJob(func() {
+			log.Println("Start")
+			time.Sleep(time.Second * 5)
+		})),
+	)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 20:10:51 Add crontab job success: 1
+2022/12/29 20:10:52 Start
+2022/12/29 20:10:57 Start
+2022/12/29 20:11:02 Start
+2022/12/29 20:11:07 Start
+2022/12/29 20:11:12 Start
+2022/12/29 20:11:17 Start
+2022/12/29 20:11:22 Start
 ```
 
 :::
@@ -13032,7 +13073,48 @@ D:\application\GoLand\example>go run main.go
 ::: details （3）当上一个任务未执行完前不再进行调度，上一个任务执行完后再继续调度
 
 ```go
+package main
 
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每2秒执行一次
+	id, err := crontab.AddJob(
+		"*/2 * * * * *",
+		cron.NewChain(cron.SkipIfStillRunning(cron.DefaultLogger)).Then(cron.FuncJob(func() {
+			log.Println("Start")
+			time.Sleep(time.Second * 5)
+		})),
+	)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+# 可以看到这里间隔了6秒，那是因为中间的任务跳过了，等下一次任务的时候要和2秒对齐
+D:\application\GoLand\example>go run main.go
+2022/12/29 20:10:04 Add crontab job success: 1
+2022/12/29 20:10:06 Start
+2022/12/29 20:10:12 Start
+2022/12/29 20:10:18 Start
+2022/12/29 20:10:24 Start
+2022/12/29 20:10:30 Start
+2022/12/29 20:10:36 Start
 ```
 
 :::
