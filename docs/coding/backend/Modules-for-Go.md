@@ -12747,11 +12747,10 @@ import (
 	"log"
 )
 
-type MyJob struct {
-}
+type MyCronJob struct {}
 
-func (j *MyJob) Run() {
-	log.Println("MyJob Run")
+func (j *MyCronJob) Run() {
+	log.Println("MyCronJob Run")
 }
 
 func main() {
@@ -12759,7 +12758,7 @@ func main() {
 	crontab := cron.New(cron.WithSeconds())
 
 	// 方式一
-	id, err := crontab.AddJob("*/5 * * * * *", &MyJob{})
+	id, err := crontab.AddJob("*/5 * * * * *", &MyCronJob{})
 	if err != nil {
 		panic(err)
 	}
@@ -12890,9 +12889,85 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 不支持的功能
+#### 实现一次性任务
 
-* 一次性任务，或者说在具体时间点执行的任务
+`cron`默认不支持一次性任务
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+)
+
+// MyCronSpec
+type MyCronSpec struct {
+	At        time.Time
+	Scheduled bool
+}
+
+// 实现 Schedule 接口, Next返回下一次调度的时间
+func (s *MyCronSpec) Next(time.Time) time.Time {
+	if s.Scheduled {
+		return time.Time{} // 零值不会进行调度
+	}
+	s.Scheduled = true
+	return s.At
+}
+
+// MyCronJob
+type MyCronJob struct{}
+
+// 实现 Job 接口
+func (j *MyCronJob) Run() {
+	log.Printf("Run at %s\n", time.Now().Format("2006-01-02 15:04:05"))
+}
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	id := crontab.Schedule(
+		&MyCronSpec{At: time.Now().Add(time.Second * 5)},
+		&MyCronJob{},
+	)
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 删除零值的任务
+	go func() {
+		for {
+			zeroEntries := []cron.Entry{}
+			for _, entry := range crontab.Entries() {
+				if entry.Next.IsZero() {
+					zeroEntries = append(zeroEntries, entry)
+				}
+			}
+			for _, entry := range zeroEntries {
+				crontab.Remove(entry.ID)
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 18:59:07 Add crontab job success: 1
+2022/12/29 18:59:12 Run at 2022-12-29 18:59:12
+```
+
+:::
 
 <br />
 
