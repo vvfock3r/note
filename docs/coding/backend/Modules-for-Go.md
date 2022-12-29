@@ -13021,7 +13021,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）当上一个任务执行完再执行下一个任务
+::: details （2）当上一个任务执行完再执行下一个任务，特点：不会丢任务，但可能会堆积任务
 
 ```go
 package main
@@ -13070,7 +13070,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）当上一个任务未执行完前不再进行调度，上一个任务执行完后再继续调度
+::: details （3）当上一个任务未执行完前不再进行调度，上一个任务执行完后再继续调度，特点：不会堆积任务，但可能会丢任务
 
 ```go
 package main
@@ -13118,3 +13118,6 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
