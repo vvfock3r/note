@@ -5056,3 +5056,233 @@ func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
 ## WorkQueue
 
 ### 普通队列
+
+::: details （1）基础示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加数据
+	for i := 1; i <= 5; i++ {
+		wq.Add(i)
+		fmt.Printf("添加数据: %-5d 队列大小: %-5d\n", i, wq.Len())
+	}
+
+	// 读取数据
+	for i := 1; i <= 5; i++ {
+		item, shutdown := wq.Get()
+		fmt.Printf("读取数据: %-5v 队列大小: %-5d 队列是否已经关闭: %t\n", item, wq.Len(), shutdown)
+	}
+}
+```
+
+输出结果
+
+```go
+D:\application\GoLand\example>go run main.go
+添加数据: 1     队列大小: 1    
+添加数据: 2     队列大小: 2    
+添加数据: 3     队列大小: 3
+添加数据: 4     队列大小: 4
+添加数据: 5     队列大小: 5
+读取数据: 1     队列大小: 4     队列是否已经关闭: false
+读取数据: 2     队列大小: 3     队列是否已经关闭: false
+读取数据: 3     队列大小: 2     队列是否已经关闭: false
+读取数据: 4     队列大小: 1     队列是否已经关闭: false
+读取数据: 5     队列大小: 0     队列是否已经关闭: false
+```
+
+:::
+
+::: details （2）结构体和接口
+
+```go
+type empty struct{}
+type t interface{}
+type set map[t]empty
+
+func (s set) has(item t) bool {
+	_, exists := s[item]
+	return exists
+}
+
+func (s set) insert(item t) {
+	s[item] = empty{}
+}
+
+func (s set) delete(item t) {
+	delete(s, item)
+}
+
+func (s set) len() int {
+	return len(s)
+}
+
+type Type struct {
+	// queue defines the order in which we will work on items. Every
+	// element of queue should be in the dirty set and not in the
+	// processing set.
+    // 使用切片存储元素，特点：有序，数据可重复
+	queue []t
+
+	// dirty defines all of the items that need to be processed.
+    // 使用集合存储元素，特点：无序，数据唯一
+	dirty set
+
+	// Things that are currently being processed are in the processing set.
+	// These things may be simultaneously in the dirty set. When we finish
+	// processing something and remove it from this set, we'll check if
+	// it's in the dirty set, and if so, add it to the queue.
+    // processing代表正在处理的元素
+	processing set
+
+	cond *sync.Cond
+
+	shuttingDown bool    // 队列是否已经关闭
+	drain        bool    // ?
+
+	metrics queueMetrics // Metrics
+
+	unfinishedWorkUpdatePeriod time.Duration     // ?
+	clock                      clock.WithTicker  // ?
+}
+
+
+
+type Interface interface {
+	Add(item interface{})
+	Len() int
+	Get() (item interface{}, shutdown bool)
+	Done(item interface{})
+	ShutDown()
+	ShutDownWithDrain()
+	ShuttingDown() bool
+}
+```
+
+:::
+
+::: details （3）Add方法
+
+```go
+// Add marks item as needing processing.
+func (q *Type) Add(item interface{}) {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+    // 如果队列已经关闭则返回，请注意这里没有error
+	if q.shuttingDown {
+		return
+	}
+    // 如果dirty集合中已经存在则返回
+	if q.dirty.has(item) {
+		return
+	}
+
+    // 添加Metrics
+	q.metrics.add(item)
+
+    // dirty中添加元素
+	q.dirty.insert(item)
+    
+    // 如果元素正在处理则返回
+	if q.processing.has(item) {
+		return
+	}
+
+    // queue中添加元素
+	q.queue = append(q.queue, item)
+	q.cond.Signal()
+}
+
+// 分析
+// 1.Add方法把元素存放到哪了?
+//   添加到dirty中
+//   如果processing中没有，则添加到queue中
+// 2.Add方法没有error，即由于某种原因假如没有添加到队列中，我们也不会知道
+// 3.Add方法不会阻塞
+```
+
+Add对于相同的元素只存储一份
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+)
+
+type User struct {
+	Name string
+}
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加重复元素
+	wq.Add(User{Name: "bob"})
+	wq.Add(User{Name: "bob"})
+	fmt.Println("队列大小: ", wq.Len())
+
+	// 添加指针类型的值重复元素
+	wq.Add(&User{Name: "bob"})
+	wq.Add(&User{Name: "bob"})
+	fmt.Println("队列大小: ", wq.Len())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+队列大小:  1
+队列大小:  3
+```
+
+:::
+
+::: details （4）Get方法
+
+```go
+// Get blocks until it can return an item to be processed. If shutdown = true,
+// the caller should end their goroutine. You must call Done with item when you
+// have finished processing it.
+func (q *Type) Get() (item interface{}, shutdown bool) {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	for len(q.queue) == 0 && !q.shuttingDown {
+		q.cond.Wait()
+	}
+	if len(q.queue) == 0 {
+		// We must be shutting down.
+		return nil, true
+	}
+
+	item = q.queue[0]
+	// The underlying array still exists and reference this object, so the object will not be garbage collected.
+	q.queue[0] = nil
+	q.queue = q.queue[1:]
+
+	q.metrics.get(item)
+
+	q.processing.insert(item)
+	q.dirty.delete(item)
+
+	return item, false
+}
+
+// 分析
+
+```
+
+:::
