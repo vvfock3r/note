@@ -12661,7 +12661,51 @@ D:\application\GoLand\example>go run main.go
 
 #### 设置时区
 
-::: details 点击查看详情
+::: details （1）设置时区：仅对单个任务生效
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+	"time"
+	_ "time/tzdata"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每5秒执行一次, 这里的字段会变成6个，第一个字段代表秒，其他字段保持不变
+	spec := fmt.Sprintf("CRON_TZ=Asia/Tokyo */5 * %d * * *", time.Now().Hour()+1) // 小时+1
+	id, err := crontab.AddFunc(spec, func() {
+		log.Println("Every 5 Second")
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/29 17:25:55 Add crontab job success: 1
+2022/12/29 17:26:00 Every 5 Second
+2022/12/29 17:26:05 Every 5 Second
+2022/12/29 17:26:10 Every 5 Second
+```
+
+:::
+
+::: details （2）设置时区：对所有任务生效
 
 ```go
 package main
@@ -12703,10 +12747,10 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-2022/12/29 17:25:55 Add crontab job success: 1
-2022/12/29 17:26:00 Every 5 Second
-2022/12/29 17:26:05 Every 5 Second
-2022/12/29 17:26:10 Every 5 Second
+2022/12/30 09:13:48 Add crontab job success: 1
+2022/12/30 09:13:50 Every 5 Second
+2022/12/30 09:13:55 Every 5 Second
+2022/12/30 09:14:00 Every 5 Second
 ```
 
 :::
