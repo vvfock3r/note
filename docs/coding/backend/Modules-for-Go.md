@@ -12686,7 +12686,210 @@ false <nil>
 
 ### 目录遍历
 
-待补充
+::: details （1）filepath.Walk遍历：不跟随符号链接
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
+	"sync"
+	"time"
+)
+
+// Walk 用于存储filepath.Walk遍历的结果
+type Walk struct {
+	directories []string
+	files       []string
+	problems    []string // 有问题的目录，可能是没有权限等，可以使用os.IsPermission()判断有无权限
+}
+
+func main() {
+	// 存储遍历结果
+	walk := &Walk{}
+	stopCh := make(chan struct{})
+	wg := new(sync.WaitGroup)
+
+	// 统计信息
+	wg.Add(1)
+	go func(chan struct{}) {
+		// 统计函数
+		DisplayResult := func() {
+			fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 问题个数: %d",
+				len(walk.directories),
+				len(walk.files),
+				len(walk.problems),
+			)
+		}
+
+		defer wg.Done()
+
+		// 运行时间
+		fmt.Printf("%s Start\n", time.Now().Format("2006-01-02 15:04:05"))
+		defer func() {
+			fmt.Printf("\n%s Complete\n", time.Now().Format("2006-01-02 15:04:05"))
+		}()
+
+		// 最后再输出一次执行结果
+		defer DisplayResult()
+
+		// 定时器,每隔1秒输出信息
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				DisplayResult()
+			default:
+			}
+		}
+	}(stopCh)
+
+	// 遍历目录
+	err := filepath.Walk("D://", func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			walk.problems = append(walk.problems, path)
+			return nil
+		}
+		if info.IsDir() {
+			walk.directories = append(walk.directories, path)
+		} else {
+			walk.files = append(walk.files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	close(stopCh)
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+# 用时27秒
+D:\application\GoLand\example>go run main.go
+2022-12-30 14:25:53 Start
+目录个数: 72054      文件个数: 367434     问题个数: 1
+2022-12-30 14:26:20 Complete
+```
+
+资源消耗：CPU使用比较稳定，内存使用一直在增长
+
+![image-20221230140638321](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221230140638321.png)
+
+:::
+
+::: details （2）filepath.WalkDir遍历：不跟随符号链接，比Walk效率高
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
+	"sync"
+	"time"
+)
+
+// Walk 用于存储filepath.Walk遍历的结果
+type Walk struct {
+	directories []string
+	files       []string
+	problems    []string // 有问题的目录，可能是没有权限等，可以使用os.IsPermission()判断有无权限
+}
+
+func main() {
+	// 存储遍历结果
+	walk := &Walk{}
+	stopCh := make(chan struct{})
+	wg := new(sync.WaitGroup)
+
+	// 统计信息
+	wg.Add(1)
+	go func(chan struct{}) {
+		// 统计函数
+		DisplayResult := func() {
+			fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 问题个数: %d",
+				len(walk.directories),
+				len(walk.files),
+				len(walk.problems),
+			)
+		}
+
+		defer wg.Done()
+
+		// 运行时间
+		fmt.Printf("%s Start\n", time.Now().Format("2006-01-02 15:04:05"))
+		defer func() {
+			fmt.Printf("\n%s Complete\n", time.Now().Format("2006-01-02 15:04:05"))
+		}()
+
+		// 最后再输出一次执行结果
+		defer DisplayResult()
+
+		// 定时器,每隔1秒输出信息
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				DisplayResult()
+			default:
+			}
+		}
+	}(stopCh)
+
+	// 遍历目录
+	err := filepath.WalkDir("D://", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			walk.problems = append(walk.problems, path)
+			return nil
+		}
+		if d.IsDir() {
+			walk.directories = append(walk.directories, path)
+		} else {
+			walk.files = append(walk.files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	close(stopCh)
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+# 用时10秒
+# 这里为什么比Walk函数多一个目录呢？暂时还搞不清楚
+D:\application\GoLand\example>go run main.go
+2022-12-30 14:27:13 Start
+目录个数: 72055      文件个数: 367434     问题个数: 1
+2022-12-30 14:27:23 Complete
+```
+
+资源消耗：CPU使用比较稳定，内存使用一直在增长，和Walk函数表现一致
+
+![image-20221230141049000](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221230141049000.png)
+
+:::
 
 <br />
 
