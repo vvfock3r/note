@@ -5475,6 +5475,8 @@ exit status 2
 // Done marks item as done processing, and if it has been marked as dirty again
 // while it was being processed, it will be re-added to the queue for
 // re-processing.
+// Done标记元素处理完成
+// 当元素又被添加到dirty后，它也会被添加到queue
 func (q *Type) Done(item interface{}) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
@@ -5497,6 +5499,285 @@ func (q *Type) Done(item interface{}) {
 // 1.我们在Get方法中提到过，当使用Get获取元素并处理完成后，应该使用Done(item)
 // 2.Done会从processing中将元素删除，至此该元素才算从队列中完全删除
 // 3.如果dirty中有此元素，添加到queue
+
+// 总结：
+// Done方法看起来像是和需要重新入队有关，但具体是怎么回事呢?
+```
+
+代码分析
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加一个元素
+	wq.Add("item")
+
+	// 我并没有从队列中获取元素，直接使用Done,它会做什么呢?
+	// 1.从processing中将元素删除: processing本质是个map，本来就没有这个元素，删除不删除也无所谓
+	// 2.dirty中有此元素，添加到queue， 此时queue中会有2个"item"，dirty中有1个"item"
+	wq.Done("item")
+
+	// 我们知道Len是查看的queue的长度
+	fmt.Println("队列大小: ", wq.Len())
+
+	// 此时再去Get
+	// 	queue有1个"item"，dirty为空
+	fmt.Println(wq.Get())
+	fmt.Println("队列大小: ", wq.Len())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+队列大小:  2
+item false  
+队列大小:  1
 ```
 
 :::
+
+#### ShutDown方法
+
+::: details （1）源码
+
+```go
+func (q *Type) ShutDown() {
+	q.setDrain(false)
+	q.shutdown()
+}
+
+// 设置 drain 为false, drain 意为 流出
+func (q *Type) setDrain(shouldDrain bool) {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	q.drain = shouldDrain
+}
+
+// 设置 shuttingDown 为true
+func (q *Type) shutdown() {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	q.shuttingDown = true
+	q.cond.Broadcast()
+}
+
+// ShuttingDown 用于返回 shuttingDown 的值
+func (q *Type) ShuttingDown() bool {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+
+	return q.shuttingDown
+}
+```
+
+:::
+
+::: details （2）队列关闭后的表现
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加元素
+	for i := 1; i < 5; i++ {
+		wq.Add(i)
+		fmt.Printf("添加元素: %d\n", i)
+	}
+
+	// 读取1次，处理完我并没有使用Done方法
+	for i := 0; i < 1; i++ {
+		item, shutdown := wq.Get()
+		fmt.Printf("读取数据: %-5v 队列是否已经关闭(Get): %-5t 队列是否已经关闭(ShuttingDown): %-5t\n", item, shutdown, wq.ShuttingDown())
+	}
+
+	// 关闭队列
+	fmt.Printf("关闭队列\n")
+	wq.ShutDown()
+
+	// 添加一个元素,此时已经添加不进去了
+	wq.Add(10)
+
+	// 查看队列大小
+	fmt.Printf("队列大小: %d\n", wq.Len())
+
+	// 获取数据，处理完我并没有使用Done方法
+	for i := 1; i < 5; i++ {
+		item, shutdown := wq.Get()
+		fmt.Printf("读取数据: %-5v 队列是否已经关闭(Get): %-5t 队列是否已经关闭(ShuttingDown): %-5t\n", item, shutdown, wq.ShuttingDown())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+添加元素: 1
+添加元素: 2                                                                       
+添加元素: 3                                                                       
+添加元素: 4                                                                       
+读取数据: 1     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): false
+关闭队列                                                                          
+队列大小: 3                                                                       
+读取数据: 2     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: 3     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: 4     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: <nil> 队列是否已经关闭(Get): true  队列是否已经关闭(ShuttingDown): true
+
+# 分析
+# 1.不能再添加元素
+# 2.ShuttingDown() 会告诉我们队列是否已经关闭
+# 3.可以多次Get()
+# 4.注意Get()和ShuttingDown() 都会返回队列是否已经关闭，注意他们的区别
+```
+
+:::
+
+#### ShutDownWithDrain方法
+
+::: details （1）源码
+
+```go
+func (q *Type) ShutDownWithDrain() {
+    // 设置drain属性为true,这一点和ShutDown()方法不一样
+	q.setDrain(true)
+    // 设置shuttingDown为true，和ShutDown()方法不一样
+	q.shutdown()
+    // 如果还有正在处理的元素（未使用Done(item)）
+	for q.isProcessing() && q.shouldDrain() {
+        // 那么就等待处理完成
+		q.waitForProcessing()
+	}
+}
+
+func (q *Type) setDrain(shouldDrain bool) {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	q.drain = shouldDrain
+}
+
+func (q *Type) shouldDrain() bool {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	return q.drain
+}
+
+func (q *Type) isProcessing() bool {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	return q.processing.len() != 0
+}
+
+func (q *Type) waitForProcessing() {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	// Ensure that we do not wait on a queue which is already empty, as that
+	// could result in waiting for Done to be called on items in an empty queue
+	// which has already been shut down, which will result in waiting
+	// indefinitely.
+	if q.processing.len() == 0 {
+		return
+	}
+	q.cond.Wait()
+}
+
+// 分析
+// 1.ShutDownWithDrain会等待元素处理完成再关闭，否则会一直阻塞
+// 2.同时需要注意可能会报死锁错误，注意Goroutine的数量
+```
+
+:::
+
+::: details （2）队列关闭后的表现
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+	"time"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加元素
+	for i := 1; i < 5; i++ {
+		wq.Add(i)
+		fmt.Printf("添加元素: %d\n", i)
+	}
+
+	// 读取1次，处理完我并没有使用Done方法
+	for i := 0; i < 1; i++ {
+		item, shutdown := wq.Get()
+		fmt.Printf("读取数据: %-5v 队列是否已经关闭(Get): %-5t 队列是否已经关闭(ShuttingDown): %-5t\n", item, shutdown, wq.ShuttingDown())
+
+		// 模拟处理数据
+		go func() {
+			time.Sleep(time.Second * 5)
+			wq.Done(item)
+		}()
+	}
+
+	// 关闭队列
+	fmt.Printf("关闭队列\n")
+	wq.ShutDownWithDrain()
+
+	// 添加一个元素,此时已经添加不进去了
+	wq.Add(10)
+
+	// 查看队列大小
+	fmt.Printf("队列大小: %d\n", wq.Len())
+
+	// 获取数据，处理完我并没有使用Done方法
+	for i := 1; i < 5; i++ {
+		item, shutdown := wq.Get()
+		fmt.Printf("读取数据: %-5v 队列是否已经关闭(Get): %-5t 队列是否已经关闭(ShuttingDown): %-5t\n", item, shutdown, wq.ShuttingDown())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+添加元素: 1
+添加元素: 2                                                                       
+添加元素: 3                                                                       
+添加元素: 4                                                                       
+读取数据: 1     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): false
+关闭队列        # 这里会阻塞
+队列大小: 3
+读取数据: 2     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: 3     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: 4     队列是否已经关闭(Get): false 队列是否已经关闭(ShuttingDown): true 
+读取数据: <nil> 队列是否已经关闭(Get): true  队列是否已经关闭(ShuttingDown): true
+```
+
+:::
+
+<br />
+
+### 延迟队列
+
