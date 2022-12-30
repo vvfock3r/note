@@ -5213,7 +5213,7 @@ func (q *Type) Add(item interface{}) {
 // 1.Add方法把元素存放到哪了?
 //   添加到dirty中
 //   如果processing中没有，则添加到queue中
-// 2.Add方法没有error，即由于某种原因假如没有添加到队列中，我们也不会知道
+// 2.Add方法没有error，即由于某种原因假如没有添加到队列中，我们也不会知道,比如说队列已经关闭
 // 3.Add方法不会阻塞
 
 // 总结
@@ -5463,6 +5463,40 @@ k8s.io/client-go/util/workqueue.(*Type).Get(0xc00005c180)
 main.main()
         D:/application/GoLand/example/main.go:22 +0x90
 exit status 2
+```
+
+:::
+
+#### Done方法
+
+::: details （1）源码
+
+```go
+// Done marks item as done processing, and if it has been marked as dirty again
+// while it was being processed, it will be re-added to the queue for
+// re-processing.
+func (q *Type) Done(item interface{}) {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+
+	q.metrics.done(item)
+
+    // 从processing删除元素
+	q.processing.delete(item)
+    
+    // 如果dirty中有此元素，添加到queue
+	if q.dirty.has(item) {
+		q.queue = append(q.queue, item)
+		q.cond.Signal()
+	} else if q.processing.len() == 0 {
+		q.cond.Signal()
+	}
+}
+
+// 分析：
+// 1.我们在Get方法中提到过，当使用Get获取元素并处理完成后，应该使用Done(item)
+// 2.Done会从processing中将元素删除，至此该元素才算从队列中完全删除
+// 3.如果dirty中有此元素，添加到queue
 ```
 
 :::
