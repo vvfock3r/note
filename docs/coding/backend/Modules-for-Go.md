@@ -423,8 +423,6 @@ func Execute() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -444,6 +442,8 @@ Usage:
 Flags:
   -h, --help   help for demo
 ```
+
+:::
 
 <br />
 
@@ -496,8 +496,6 @@ func Execute() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -541,6 +539,8 @@ Usage:
 Flags:
   -h, --help   help for init
 ```
+
+:::
 
 <br />
 
@@ -586,8 +586,6 @@ func init() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -620,6 +618,8 @@ init command running...
 init command args:  []
 output:  ini   
 ```
+
+:::
 
 <br />
 
@@ -717,8 +717,6 @@ func init() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -752,6 +750,8 @@ init command running...
 init command args:  [A]
 output:  json
 ```
+
+:::
 
 <br />
 
@@ -871,8 +871,6 @@ var Cmd = &cobra.Command{
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -892,6 +890,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init
 [ init ] PostRun          
 [ root ] PersistentPostRun
 ```
+
+:::
 
 <br />
 
@@ -958,8 +958,6 @@ var Cmd = &cobra.Command{
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -983,6 +981,8 @@ Flags:
 
 unknown flag: --abcexit status 1
 ```
+
+:::
 
 <br />
 
@@ -1017,8 +1017,6 @@ var Cmd = &cobra.Command{
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -1050,11 +1048,187 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go init
 [ root ] PersistentPostRun
 ```
 
+:::
+
 <br />
 
 #### （5）自动补全
 
 文档：[https://github.com/spf13/cobra/blob/main/shell_completions.md](https://github.com/spf13/cobra/blob/main/shell_completions.md)
+
+<br />
+
+#### （6）命令分组
+
+注意：此代码使用`v1.6.1`版本
+
+::: details （1）不分组时显示的命令行帮助文档
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+func main() {
+	// 定义根命令
+	var rootCmd = &cobra.Command{
+		Use:   "kubectl",
+		Short: "kubectl controls the Kubernetes cluster manager",
+	}
+
+	// 定义子命令
+	var createCmd = &cobra.Command{
+		Use:   "create",
+		Short: "Create a resource from a file or from stdin.",
+	}
+
+	// 定义子命令
+	var deleteCmd = &cobra.Command{
+		Use:   "delete",
+		Short: "Delete resources by file names, stdin, resources and names, or by resources and label selector",
+	}
+
+	// 定义子命令
+	var applyCmd = &cobra.Command{
+		Use:   "apply",
+		Short: "Apply a configuration to a resource by file name or stdin",
+	}
+
+	// 注册到根命令中
+	rootCmd.AddCommand(createCmd, deleteCmd, applyCmd)
+
+	// 执行入口
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+kubectl controls the Kubernetes cluster manager
+
+Usage:                                                                                                             
+  kubectl [command]                                                                                                
+                                                                                                                   
+Available Commands:                                                                                                
+  completion  Generate the autocompletion script for the specified shell                                           
+  help        Help about any command                                                                               
+                                                                                                                   
+Flags:                                                                                                             
+  -h, --help   help for kubectl                                                                                    
+                                                                                                                   
+Additional help topics:                                                                                            
+  kubectl apply      Apply a configuration to a resource by file name or stdin                                     
+  kubectl create     Create a resource from a file or from stdin.                                                  
+  kubectl delete     Delete resources by file names, stdin, resources and names, or by resources and label selector
+                                                                                                                   
+Use "kubectl [command] --help" for more information about a command.
+```
+
+:::
+
+::: details （2）分组时显示的命令行帮助文档
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"os"
+)
+
+func main() {
+	// 定义根命令
+	var rootCmd = &cobra.Command{
+		Use:   "kubectl",
+		Short: "kubectl controls the Kubernetes cluster manager",
+	}
+
+	// 添加分组
+	rootCmd.AddGroup(&cobra.Group{ID: "1", Title: "Basic Commands (Beginner)"})
+	rootCmd.AddGroup(&cobra.Group{ID: "2", Title: "Basic Commands (Intermediate)"})
+	rootCmd.AddGroup(&cobra.Group{ID: "3", Title: "Advanced Commands"})
+	rootCmd.AddGroup(&cobra.Group{ID: "help", Title: "Help Commands"})
+
+	// 定义子命令
+	var createCmd = &cobra.Command{
+		Use:     "create",
+		Short:   "Create a resource from a file or from stdin.",
+		GroupID: "1",
+		Run:     func(cmd *cobra.Command, args []string) {},
+	}
+
+	// 定义子命令
+	var deleteCmd = &cobra.Command{
+		Use:     "delete",
+		Short:   "Delete resources by file names, stdin, resources and names, or by resources and label selector",
+		GroupID: "2",
+		Run:     func(cmd *cobra.Command, args []string) {},
+	}
+
+	// 定义子命令
+	var applyCmd = &cobra.Command{
+		Use:     "apply",
+		Short:   "Apply a configuration to a resource by file name or stdin",
+		GroupID: "3",
+		Run:     func(cmd *cobra.Command, args []string) {},
+	}
+
+	// 注册到根命令中
+	rootCmd.AddCommand(createCmd, deleteCmd, applyCmd)
+
+	cobra.EnableCommandSorting = false
+
+	// 设置completion命令和help命令所在的分组
+	rootCmd.SetCompletionCommandGroupID("help")
+	rootCmd.SetHelpCommandGroupID("help")
+
+	// 执行入口
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+kubectl controls the Kubernetes cluster manager
+
+Usage:                                                                                                      
+  kubectl [command]                                                                                         
+                                                                                                            
+Basic Commands (Beginner)                                                                                   
+  create      Create a resource from a file or from stdin.                                                  
+                                                                                                            
+Basic Commands (Intermediate)                                                                               
+  delete      Delete resources by file names, stdin, resources and names, or by resources and label selector
+                                                                                                            
+Advanced Commands                                                                                           
+  apply       Apply a configuration to a resource by file name or stdin                                     
+                                                                                                            
+Help Commands                                                                                               
+  help        Help about any command                                                                        
+  completion  Generate the autocompletion script for the specified shell                                    
+                                                                                                            
+Flags:                                                                                                      
+  -h, --help   help for kubectl                                                                             
+                                                                                                            
+Use "kubectl [command] --help" for more information about a command.
+```
+
+:::
 
 <br />
 
