@@ -5057,7 +5057,9 @@ func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
 
 ### 普通队列
 
-::: details （1）基础示例
+#### 基础示例
+
+::: details 点击查看详情
 
 ```go
 package main
@@ -5103,7 +5105,9 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）结构体和接口
+#### 结构体和接口
+
+::: details 点击查看详情
 
 ```go
 type empty struct{}
@@ -5171,7 +5175,9 @@ type Interface interface {
 
 :::
 
-::: details （3）Add方法
+#### Add方法
+
+::: details （1）源码
 
 ```go
 // Add marks item as needing processing.
@@ -5209,9 +5215,16 @@ func (q *Type) Add(item interface{}) {
 //   如果processing中没有，则添加到queue中
 // 2.Add方法没有error，即由于某种原因假如没有添加到队列中，我们也不会知道
 // 3.Add方法不会阻塞
+
+// 总结
+// Add方法既保证了元素有序存储，又保证了较高的运行效率，空间(内存)换时间(运行效率高)的思想，代价就是内存消耗较大
+//   为啥要有序存储? 肯定是后面会用到顺序的特性
+//   为啥运行效率高? 如果只是用切片存储，那么判断是否已经存在就得遍历切片，时间复杂度为O(n)，而现在使用set(实际是map)判断，时间复杂度为O(1)
 ```
 
-Add对于相同的元素只存储一份
+:::
+
+::: details （2）Add方法对于相同的元素只存储一份
 
 ```go
 package main
@@ -5234,7 +5247,7 @@ func main() {
 	wq.Add(User{Name: "bob"})
 	fmt.Println("队列大小: ", wq.Len())
 
-	// 添加指针类型的值重复元素
+	// 添加指针类型的值重复元素,实际上是两个不同的对象
 	wq.Add(&User{Name: "bob"})
 	wq.Add(&User{Name: "bob"})
 	fmt.Println("队列大小: ", wq.Len())
@@ -5251,23 +5264,31 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （4）Get方法
+#### Get方法
+
+::: details （1）源码
 
 ```go
 // Get blocks until it can return an item to be processed. If shutdown = true,
 // the caller should end their goroutine. You must call Done with item when you
 // have finished processing it.
+// Get方法会阻塞，当我们处理完元素以后必须调用Done方法
 func (q *Type) Get() (item interface{}, shutdown bool) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
+    // 这里会阻塞或死锁报错: fatal error: all goroutines are asleep - deadlock!
+    // 取决于还有没有其他的Goroutine存在，这是Go语法层面的知识
 	for len(q.queue) == 0 && !q.shuttingDown {
 		q.cond.Wait()
 	}
+    
+    // queue等于0时返回 队列关闭
 	if len(q.queue) == 0 {
 		// We must be shutting down.
 		return nil, true
 	}
 
+    // 从对头弹出一个元素
 	item = q.queue[0]
 	// The underlying array still exists and reference this object, so the object will not be garbage collected.
 	q.queue[0] = nil
@@ -5275,14 +5296,98 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 
 	q.metrics.get(item)
 
+    // processing 添加元素
 	q.processing.insert(item)
+    
+    // dirty删除元素
 	q.dirty.delete(item)
 
 	return item, false
 }
 
 // 分析
+// 1.Get会阻塞 或 死锁报错 fatal error: all goroutines are asleep - deadlock!
+// 2.Get会将元素从queue和dirty中删除，并将元素添加到processing
+// 3.如果队列已经关闭则返回nil, true
+```
 
+:::
+
+::: details （2）Get阻塞或死锁报错问题
+
+```go
+package main
+
+import (
+	"k8s.io/client-go/util/workqueue"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// Get
+	log.Println("Get start")
+	log.Println(wq.Get())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/30 19:37:18 Get start
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [sync.Cond.Wait]:
+sync.runtime_notifyListWait(0xc000164550, 0x0)
+        C:/Users/Administrator/sdk/go1.19.2/src/runtime/sema.go:517 +0x152
+sync.(*Cond).Wait(0x4fe2a0?)
+        C:/Users/Administrator/sdk/go1.19.2/src/sync/cond.go:70 +0x8c
+k8s.io/client-go/util/workqueue.(*Type).Get(0xc00017e120)
+        D:/application/GoPath/pkg/mod/k8s.io/client-go@v0.26.0/util/workqueue/queue.go:157 +0x9e
+main.main()
+        D:/application/GoLand/example/main.go:21 +0x65
+exit status 2
+```
+
+修复Get死锁问题
+
+```go
+package main
+
+import (
+	"k8s.io/client-go/util/workqueue"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// Get前随便开一个Goroutine, wq.Add(1)并不是必须的，只是为了能让Get方法返回,不至于一直阻塞
+	go func() {
+		for i := 0; i < 10; i++ {
+			time.Sleep(time.Second)
+		}
+		wq.Add(1)
+	}()
+
+	// Get
+	log.Println("Get start")
+	log.Println(wq.Get())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/30 19:40:47 Get start
+2022/12/30 19:40:57 1 false
 ```
 
 :::
