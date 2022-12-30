@@ -12975,7 +12975,7 @@ D:\application\GoLand\example>go run main.go
 
 #### 任务装饰器
 
-::: details 点击查看详情
+::: details （1）任务装饰器：仅对单个任务生效
 
 ```go
 package main
@@ -13048,6 +13048,74 @@ D:\application\GoLand\example>go run main.go
 
 ```go
 // NewChain(m1, m2, m3).Then(job) 等于 m1(m2(m3(job)))
+```
+
+:::
+
+::: details （2）任务装饰器：对所有任务生效
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+	"math/rand"
+	"time"
+)
+
+func CronTimerWrapper() cron.JobWrapper {
+	return func(job cron.Job) cron.Job {
+		return cron.FuncJob(func() {
+			start := time.Now()
+			job.Run()
+			log.Printf("Used %.2f seconds\n", time.Since(start).Seconds())
+		})
+	}
+}
+
+func main() {
+	// 初始化随机数种子
+	rand.Seed(time.Now().UnixNano())
+
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds(), cron.WithChain(CronTimerWrapper()))
+
+	// 每2秒执行一次
+	id, err := crontab.AddJob("*/5 * * * * *", cron.FuncJob(func() {
+		fmt.Println()
+		log.Printf("Job start")
+		time.Sleep(time.Millisecond * time.Duration(1000+rand.Intn(4000)))
+		log.Println("Job end")
+	}))
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/30 08:56:17 Add crontab job success: 1
+
+2022/12/30 08:56:20 Job start
+2022/12/30 08:56:24 Job end
+2022/12/30 08:56:24 Used 4.53 seconds
+
+2022/12/30 08:56:25 Job start
+2022/12/30 08:56:27 Job end
+2022/12/30 08:56:27 Used 2.82 seconds
+
+2022/12/30 08:56:30 Job start
+2022/12/30 08:56:33 Job end
+2022/12/30 08:56:33 Used 3.96 seconds
 ```
 
 :::
@@ -13202,3 +13270,115 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
+#### 执行时 panic
+
+::: details （1）若任务panic的话，将退出进程
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds())
+
+	// 每5秒执行一次
+	id, err := crontab.AddFunc("*/5 * * * * *", func() {
+		log.Println("Start")
+		panic(fmt.Errorf("timeout"))
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/30 08:52:50 Add crontab job success: 1
+2022/12/30 08:52:55 Start
+panic: timeout
+
+goroutine 18 [running]:
+main.main.func1()
+        D:/application/GoLand/example/main.go:16 +0x6e
+github.com/robfig/cron/v3.FuncJob.Run(0x0?)
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:136 +0x1a
+github.com/robfig/cron/v3.(*Cron).startJob.func1()
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:312 +0x6a
+created by github.com/robfig/cron/v3.(*Cron).startJob
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:310 +0xad
+exit status 2
+```
+
+:::
+
+::: details （2）捕获所有任务的 panic
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/robfig/cron/v3"
+	"log"
+)
+
+func main() {
+	// 实例化Cron,添加可选项: cron.WithSeconds()
+	crontab := cron.New(cron.WithSeconds(), cron.WithChain(cron.Recover(cron.DefaultLogger)))
+
+	// 每5秒执行一次
+	id, err := crontab.AddFunc("*/5 * * * * *", func() {
+		log.Println("Start")
+		panic(fmt.Errorf("timeout"))
+	})
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Add crontab job success: %d\n", id)
+
+	// 启动计划任务
+	crontab.Run()
+}
+```
+
+输出结果
+
+```bash
+# 程序并不会退出
+D:\application\GoLand\example>go run main.go
+2022/12/30 09:06:08 Add crontab job success: 1
+2022/12/30 09:06:10 Start
+cron: 2022/12/30 09:06:10 panic, error=timeout, stack=...
+goroutine 5 [running]:
+github.com/robfig/cron/v3.Recover.func1.1.1()
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/chain.go:45 +0x85
+panic({0x6dc4c0, 0xc000050030})
+        C:/Users/Administrator/sdk/go1.19.2/src/runtime/panic.go:884 +0x212
+main.main.func1()
+        D:/application/GoLand/example/main.go:16 +0x6e
+github.com/robfig/cron/v3.FuncJob.Run(0x0?)
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:136 +0x1a
+github.com/robfig/cron/v3.Recover.func1.1()
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/chain.go:53 +0x73
+github.com/robfig/cron/v3.FuncJob.Run(0x0?)
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:136 +0x1a
+github.com/robfig/cron/v3.(*Cron).startJob.func1()
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:312 +0x6a
+created by github.com/robfig/cron/v3.(*Cron).startJob
+        D:/application/GoPath/pkg/mod/github.com/robfig/cron/v3@v3.0.1/cron.go:310 +0xad
+```
+
+:::
