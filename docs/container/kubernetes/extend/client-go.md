@@ -5308,7 +5308,7 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 // 分析
 // 1.Get会阻塞 或 死锁报错 fatal error: all goroutines are asleep - deadlock!
 // 2.Get会将元素从queue和dirty中删除，并将元素添加到processing
-// 3.如果队列已经关闭则返回nil, true
+// 3.如果队列已经关闭则返回nil, true，不会阻塞
 ```
 
 :::
@@ -5388,6 +5388,81 @@ func main() {
 D:\application\GoLand\example>go run main.go
 2022/12/30 19:40:47 Get start
 2022/12/30 19:40:57 1 false
+```
+
+:::
+
+#### Len方法
+
+::: details 点击查看详情
+
+```go
+// Len returns the current queue length, for informational purposes only. You
+// shouldn't e.g. gate a call to Add() or Get() on Len() being a particular
+// value, that can't be synchronized properly.
+func (q *Type) Len() int {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+	return len(q.queue)
+}
+
+// 分析
+// 1.Len方法返回的是queue的长度，其实返回dirty的也是可以的
+// 2.需要注意的就是, 下面的代码是有问题的：
+//   if wq.Len() > 0 {
+//     wq.Get()
+//}
+// 原因也很简单，Len()和Get()都是会加锁执行的，但是他们加的是两把锁，连起来就不一定是原子操作了
+```
+
+Len()和其他方法组合时，想当然的以为是原子操作的问题
+
+```go
+package main
+
+import (
+	"fmt"
+	"k8s.io/client-go/util/workqueue"
+	"time"
+)
+
+func main() {
+	// 实例化一个普通队列
+	wq := workqueue.New()
+
+	// 添加一个元素
+	wq.Add(1)
+
+	go func() {
+		time.Sleep(time.Second)
+		wq.Get()
+	}()
+
+	// Len() 判断的时候大于0，但是Get的时候已经没有值了，且没有其他Goroutine，所以会报错
+	// 不是很好模拟，所以这里加了2秒钟休眠
+	for wq.Len() > 0 {
+		time.Sleep(time.Second * 2)
+		fmt.Println(wq.Get())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [sync.Cond.Wait]:
+sync.runtime_notifyListWait(0xc0000265d0, 0x0)
+        C:/Users/Administrator/sdk/go1.19.2/src/runtime/sema.go:517 +0x152
+sync.(*Cond).Wait(0xc7d267?)
+        C:/Users/Administrator/sdk/go1.19.2/src/sync/cond.go:70 +0x8c
+k8s.io/client-go/util/workqueue.(*Type).Get(0xc00005c180)
+        D:/application/GoPath/pkg/mod/k8s.io/client-go@v0.26.0/util/workqueue/queue.go:157 +0x9e
+main.main()
+        D:/application/GoLand/example/main.go:22 +0x90
+exit status 2
 ```
 
 :::
