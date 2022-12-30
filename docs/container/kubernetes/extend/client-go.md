@@ -4958,10 +4958,95 @@ type Indexer interface {
 
 :::
 
-::: details （2）Indexer如何使用
+::: details （2）Indexer如何存储
 
 ```go
+package main
 
+import (
+	"flag"
+	"fmt"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
+	"os"
+	"time"
+)
+
+// NewClientSetByConfig 在集群外部使用配置文件进行认证
+func NewClientSetByConfig(kubeconfig string) (*kubernetes.Clientset, error) {
+	// 参数校验
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return nil, fmt.Errorf("kube config file not found: %s\n", kubeconfig)
+	}
+
+	// (1) 实例化*rest.Config对象, 第一个参数是APIServer地址，我们会使用配置文件中的APIServer地址，所以这里为空就好
+	resetConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func main() {
+	// 初始化命令行参数
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	// 实例化ClientSet
+	clientset, err := NewClientSetByConfig(".kube.config")
+	if err != nil {
+		panic(err)
+	}
+
+	// 定义channel，用于通知关闭监控
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	// 创建并启动Pods Informer
+	sharedInformers := informers.NewSharedInformerFactory(clientset, time.Minute)
+	podsInformer := sharedInformers.Core().V1().Pods().Informer()
+	go podsInformer.Run(stopCh)
+
+	// 等待podsInformer第一次sync(将输入存入Store)
+	for !podsInformer.HasSynced() {
+		time.Sleep(time.Second)
+	}
+
+	// 获取Pods Indexer
+	podsIndexer := podsInformer.GetIndexer()
+
+	// 查看
+	indexerMap := podsIndexer.GetIndexers()
+	fmt.Println(indexerMap)
+}
+```
+
+输出结果
+
+![image-20221230145151145](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221230145151145.png)
+
+源码
+
+```go
+// Indexers maps a name to an IndexFunc
+type Indexers map[string]IndexFunc
+
+// MetaNamespaceIndexFunc is a default index function that indexes based on an object's namespace
+func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return []string{""}, fmt.Errorf("object has no meta: %v", err)
+	}
+	return []string{meta.GetNamespace()}, nil
+}
 ```
 
 :::
