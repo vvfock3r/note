@@ -5965,3 +5965,49 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
+#### 结构体和接口
+
+::: details 点击查看详情
+
+```go
+type DelayingInterface interface {
+	Interface
+	// AddAfter adds an item to the workqueue after the indicated duration has passed
+	AddAfter(item interface{}, duration time.Duration)
+}
+
+// delayingType wraps an Interface and provides delayed re-enquing
+type delayingType struct {
+	Interface
+
+	// clock tracks time for delayed firing
+	clock clock.Clock
+
+	// stopCh lets us signal a shutdown to the waiting loop
+	stopCh chan struct{}
+	// stopOnce guarantees we only signal shutdown a single time
+	stopOnce sync.Once
+
+	// heartbeat ensures we wait no more than maxWait before firing
+	heartbeat clock.Ticker
+
+	// waitingForAddCh is a buffered channel that feeds waitingForAdd
+	waitingForAddCh chan *waitFor
+
+	// metrics counts the number of retries
+	metrics retryMetrics
+}
+
+// waitFor holds the data to add and the time it should be added
+type waitFor struct {
+	data    t
+	readyAt time.Time
+	// index in the priority queue (heap)
+	index int
+}
+
+type waitForPriorityQueue []*waitFor
+```
+
+:::
+
