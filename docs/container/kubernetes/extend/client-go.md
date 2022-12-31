@@ -5871,3 +5871,97 @@ func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayin
 ```
 
 :::
+
+<br />
+
+#### AddAfter方法
+
+::: details （1）源码
+
+```go
+func (q *delayingType) AddAfter(item interface{}, duration time.Duration) {
+	// don't add if we're already shutting down
+    // 队列已关闭则直接返回
+	if q.ShuttingDown() {
+		return
+	}
+
+	q.metrics.retry()
+
+	// immediately add things with no delay
+    // duration小于等于0直接添加
+	if duration <= 0 {
+		q.Add(item)
+		return
+	}
+
+    // 写入channel
+	select {
+	case <-q.stopCh:
+		// unblock if ShutDown() is called
+	case q.waitingForAddCh <- &waitFor{data: item, readyAt: q.clock.Now().Add(duration)}:
+	}
+}
+
+// waitingForAddCh初始化
+// waitingForAddCh是一个缓冲区长度为1000的channel，这也就意味着，如果缓冲区超过1000个的话，我们就添加不进去了
+// 实际上消费端会将&waitFor存储到一个切片中 waitForPriorityQueue，所以缓冲区一般不会满，仅提供一个缓冲功能
+// 如果真的满了，那估计要出问题了
+func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayingType {
+	ret := &delayingType{
+		Interface:       q,
+		clock:           clock,
+		heartbeat:       clock.NewTicker(maxWait),
+		stopCh:          make(chan struct{}),
+		waitingForAddCh: make(chan *waitFor, 1000),
+		metrics:         newRetryMetrics(name),
+	}
+
+	go ret.waitingLoop()
+	return ret
+}
+```
+
+:::
+
+::: details （2）AddAfter 缓冲区满的情况下表现
+
+```go
+package main
+
+import (
+	"k8s.io/client-go/util/workqueue"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化一个延迟队列
+	wq := workqueue.NewDelayingQueue()
+
+	// 添加元素
+	for i := 1; i <= 2000; i++ {
+		// 添加元素
+		log.Printf("添加元素: %d\n", i)
+		wq.AddAfter(i, time.Second*time.Duration(i))
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+...
+2022/12/31 19:22:25 添加元素: 1995
+2022/12/31 19:22:25 添加元素: 1996
+2022/12/31 19:22:25 添加元素: 1997
+2022/12/31 19:22:25 添加元素: 1998
+2022/12/31 19:22:25 添加元素: 1999
+2022/12/31 19:22:25 添加元素: 2000
+```
+
+:::
+
+<br />
+
