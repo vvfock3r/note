@@ -5321,7 +5321,7 @@ package main
 import (
 	"k8s.io/client-go/util/workqueue"
 	"log"
-	"time"
+	"runtime"
 )
 
 func main() {
@@ -5330,6 +5330,7 @@ func main() {
 
 	// Get
 	log.Println("Get start")
+	log.Println("Goroutine数量: ", runtime.NumGoroutine())
 	log.Println(wq.Get())
 }
 ```
@@ -5339,6 +5340,7 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 2022/12/30 19:37:18 Get start
+2022/12/30 19:37:18 Goroutine数量:  1
 fatal error: all goroutines are asleep - deadlock!
 
 goroutine 1 [sync.Cond.Wait]:
@@ -5378,6 +5380,7 @@ func main() {
 
 	// Get
 	log.Println("Get start")
+    log.Println("Goroutine数量: ", runtime.NumGoroutine())
 	log.Println(wq.Get())
 }
 ```
@@ -5387,6 +5390,7 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 2022/12/30 19:40:47 Get start
+2022/12/30 19:40:47 Goroutine数量:  2
 2022/12/30 19:40:57 1 false
 ```
 
@@ -5781,3 +5785,89 @@ D:\application\GoLand\example>go run main.go
 
 ### 延迟队列
 
+#### 基础示例
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"k8s.io/client-go/util/workqueue"
+	"log"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 实例化一个延迟队列
+	wq := workqueue.NewDelayingQueue()
+
+	// 添加元素
+	for i := 1; i <= 3; i++ {
+		// 添加元素
+		log.Printf("添加元素: %d\n", i)
+		wq.AddAfter(i, time.Second*time.Duration(i))
+	}
+
+	// 查看队列大小
+	for i := 0; i < 5; i++ {
+		log.Printf("队列大小: %d\n", wq.Len())
+		time.Sleep(time.Second)
+	}
+
+	// 读取数据
+	for i := 0; i < 5; i++ {
+		item, shutdown := wq.Get()
+		log.Printf("读取数据: %v 队列是否已经关闭: %t Goroutine数量: %d\n", item, shutdown, runtime.NumGoroutine())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2022/12/31 11:59:56 添加元素: 1
+2022/12/31 11:59:56 添加元素: 2
+2022/12/31 11:59:56 添加元素: 3
+2022/12/31 11:59:56 队列大小: 0
+2022/12/31 11:59:57 队列大小: 0
+2022/12/31 11:59:58 队列大小: 1
+2022/12/31 11:59:59 队列大小: 3
+2022/12/31 12:00:00 队列大小: 3
+2022/12/31 12:00:01 读取数据: 1 队列是否已经关闭: false Goroutine数量: 2
+2022/12/31 12:00:01 读取数据: 2 队列是否已经关闭: false Goroutine数量: 2
+2022/12/31 12:00:01 读取数据: 3 队列是否已经关闭: false Goroutine数量: 2
+# 这里会一直卡着
+
+# 分析
+# 1.延迟队列指的是：从添加元素开始计算，延迟指定时间后再添加进队列
+# 2.Add方法不会阻塞, Get方法会阻塞，不会报错。
+#   为啥不会报错呢？因为Goroutine数量大于1
+
+#   多出来的1个Groutine是干啥的?
+func NewDelayingQueue() DelayingInterface {
+	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
+}
+
+func NewDelayingQueueWithCustomClock(clock clock.WithTicker, name string) DelayingInterface {
+	return newDelayingQueue(clock, NewNamed(name), name)
+}
+
+func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayingType {
+	ret := &delayingType{
+		Interface:       q,
+		clock:           clock,
+		heartbeat:       clock.NewTicker(maxWait),
+		stopCh:          make(chan struct{}),
+		waitingForAddCh: make(chan *waitFor, 1000),
+		metrics:         newRetryMetrics(name),
+	}
+
+	go ret.waitingLoop()  // 这里会启动一个Grotine
+	return ret
+}
+```
+
+:::
