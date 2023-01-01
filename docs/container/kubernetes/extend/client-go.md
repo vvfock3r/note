@@ -6015,6 +6015,8 @@ type waitForPriorityQueue []*waitFor
 
 ### 限速队列
 
+#### 基础示例
+
 ::: details 点击查看详情
 
 ```go
@@ -6153,6 +6155,99 @@ D:\application\GoLand\example>go run main.go
 2023/01/01 13:18:19 读取数据: 18  队列是否已经关闭: false 队列大小: 0  
 2023/01/01 13:18:19 读取数据: 19  队列是否已经关闭: false 队列大小: 0  
 2023/01/01 13:18:20 读取数据: 20  队列是否已经关闭: false 队列大小: 0
+```
+
+:::
+
+#### 结构体和接口
+
+::: details 点击查看详情
+
+```go
+// 看一下初始化方法
+func NewRateLimitingQueue(rateLimiter RateLimiter) RateLimitingInterface {
+	return &rateLimitingType{
+		DelayingInterface: NewDelayingQueue(),
+		rateLimiter:       rateLimiter,
+	}
+}
+
+// 传入RateLimiter接口类型
+type RateLimiter interface {
+	// When gets an item and gets to decide how long that item should wait
+    // When方法决定item需要等待多长时间
+	When(item interface{}) time.Duration
+    
+	// Forget indicates that an item is finished being retried.  Doesn't matter whether it's for failing
+	// or for success, we'll stop tracking it
+    // Forget用于告诉限速器处理已经完成
+	Forget(item interface{})
+    
+	// NumRequeues returns back how many failures the item has had
+    // 返回item被重新排队的次数
+	NumRequeues(item interface{}) int
+}
+
+// RateLimitingInterface is an interface that rate limits items being added to the queue.
+// 返回RateLimitingInterface接口类型
+type RateLimitingInterface interface {
+    
+    // 限速队列包含了延迟队列，而延迟队列又包含了普通队列
+	DelayingInterface
+
+	// AddRateLimited adds an item to the workqueue after the rate limiter says it's ok
+    // 限速队列的Add方法
+	AddRateLimited(item interface{})
+
+	// Forget indicates that an item is finished being retried.  Doesn't matter whether it's for perm failing
+	// or for success, we'll stop the rate limiter from tracking it.  This only clears the `rateLimiter`, you
+	// still have to call `Done` on the queue.
+    // Forget用于告诉限速器处理已经完成，我们仍然需要调用Done告诉队列处理完成
+	Forget(item interface{})
+
+	// NumRequeues returns back how many times the item was requeued
+    // 返回item被重新排队的次数
+	NumRequeues(item interface{}) int
+}
+
+// 可以看到限速器是在延迟队列的基础上做的
+type rateLimitingType struct {
+	DelayingInterface
+
+	rateLimiter RateLimiter
+}
+```
+
+:::
+
+#### AddRateLimited方法
+
+::: details 点击查看详情
+
+```go
+// AddRateLimited AddAfter's the item based on the time when the rate limiter says it's ok
+func (q *rateLimitingType) AddRateLimited(item interface{}) {
+	q.DelayingInterface.AddAfter(item, q.rateLimiter.When(item))
+}
+```
+
+:::
+
+#### Forget方法
+
+::: details 点击查看详情
+
+```go
+// 可以看到调用了 q.rateLimiter.Forget方法
+func (q *rateLimitingType) Forget(item interface{}) {
+	q.rateLimiter.Forget(item)
+}
+
+// q.rateLimiter 在我们的例子中是 BucketRateLimiter
+// 那么找一下对应的方法，发现是空的，也就是什么都不做
+// 但是如果是其他类型的RateLimiter就不是空的了
+func (r *BucketRateLimiter) Forget(item interface{}) {
+}
 ```
 
 :::
