@@ -13845,6 +13845,7 @@ func main() {
 
 		// 查看令牌桶信息
 		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("桶内令牌数量: %.2f\n", limiter.Tokens())
 		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
 		fmt.Println()
 	}
@@ -13857,6 +13858,7 @@ func main() {
 
 		// 查看令牌桶信息
 		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("桶内令牌数量: %.2f\n", limiter.Tokens())
 		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
 		fmt.Println()
 	}
@@ -13869,6 +13871,7 @@ func main() {
 
 		// 查看令牌桶信息
 		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("桶内令牌数量: %.2f\n", limiter.Tokens())
 		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
 		fmt.Println()
 	}
@@ -13879,14 +13882,17 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-2023/01/01 20:42:41 桶容量: 10
-2023/01/01 20:42:41 令牌放入桶中的速率: 1.00/s
+2023/01/02 05:41:30 桶容量: 10
+2023/01/02 05:41:30 桶内令牌数量: 10.00
+2023/01/02 05:41:30 令牌放入桶中的速率: 1.00/s
 
-2023/01/01 20:42:41 桶容量: 20
-2023/01/01 20:42:41 令牌放入桶中的速率: 2.00/s
+2023/01/02 05:41:30 桶容量: 20
+2023/01/02 05:41:30 桶内令牌数量: 20.00
+2023/01/02 05:41:30 令牌放入桶中的速率: 2.00/s
 
-2023/01/01 20:42:41 桶容量: 30
-2023/01/01 20:42:41 令牌放入桶中的速率: 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328
+2023/01/02 05:41:30 桶容量: 30
+2023/01/02 05:41:30 桶内令牌数量: 30.00
+2023/01/02 05:41:30 令牌放入桶中的速率: 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328
 944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00/s
 ```
 
@@ -13986,15 +13992,61 @@ false
 
 :::
 
-::: details （3）
+::: details （3）Reserve / ReserveN
 
 ```go
+package main
+
+import (
+	"context"
+	"golang.org/x/time/rate"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化一个令牌桶对象,每10秒放入一个新令牌
+	limiter := rate.NewLimiter(rate.Every(time.Second*10), 10)
+	log.Printf("初始化桶成功, 桶内令牌数量: %.2f\n", limiter.Tokens())
+
+	// 将桶内令牌消耗完
+	err := limiter.WaitN(context.TODO(), 10)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("消费所有令牌, 剩余令牌数量: %.2f\n", limiter.Tokens())
+
+	// Reserve() 实际调用的是 ReserveN(time.Now(), 1)，这个对象比较复杂
+	//  1.表示要消耗1个Token
+	//  2.无论Token是否充足，都会返回一个 *Reservation 对象
+	//  3.可以将它比作是提前消费，调用Reserve后桶内可能出现负值
+	r := limiter.Reserve()
+	if !r.OK() {
+		panic("limiter reserve not ok")
+	}
+	log.Printf("调用Reserve,  桶内令牌数量: %.2f\n", limiter.Tokens())
+
+	// r.Delay()会告诉我们需要等待多久才能满足我们的要求（消耗指定数量的令牌）
+	// 如果桶内有足量Token，返回0
+	// 如果桶内没有足量token，返回需要等待的时间
+	time.Sleep(r.Delay())
+	log.Printf("等待令牌成功, 桶内令牌数量: %.2f\n", limiter.Tokens())
+
+	// r.Cancel() 用于取消，用于归还Token
+	// 将 r.Delay() 代码注释掉，就可以看到令牌数量为0（而不是负数），就代表归还了令牌
+	//r.Cancel()
+	//log.Printf("取消令牌成功, 桶内令牌数量: %.2f\n", limiter.Tokens())
+}
 ```
 
 输出结果
 
 ```bash
-
+D:\application\GoLand\example>go run main.go
+2023/01/02 06:18:25 初始化桶成功, 桶内令牌数量: 10.00
+2023/01/02 06:18:25 消费所有令牌, 剩余令牌数量: 0.00 
+2023/01/02 06:18:25 调用Reserve, 桶内令牌数量: -1.00 # 可以看到为负值了，提前消费
+2023/01/02 06:18:35 等待令牌成功, 桶内令牌数量: 0.00
 ```
 
 :::
@@ -14051,3 +14103,44 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
+### 动态调整
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"golang.org/x/time/rate"
+	"log"
+)
+
+func main() {
+	// 实例化一个令牌桶对象,每10秒放入一个新令牌
+	limiter := rate.NewLimiter(1, 10)
+	log.Printf("初始化桶成功, 桶大小: %d, 令牌放入速率: %.2f/每秒, 桶内令牌数量: %.2f\n", limiter.Burst(), limiter.Limit(), limiter.Tokens())
+
+	// 设置桶大小，如果是一个更大容量的桶，桶内原先令牌数量并不会增加
+	limiter.SetBurst(20)
+	log.Printf("重置容量成功, 桶大小: %d, 令牌放入速率: %.2f/每秒, 桶内令牌数量: %.2f\n", limiter.Burst(), limiter.Limit(), limiter.Tokens())
+
+	// 设置速率
+	limiter.SetLimit(2)
+	log.Printf("重置速率成功, 桶大小: %d, 令牌放入速率: %.2f/每秒, 桶内令牌数量: %.2f\n", limiter.Burst(), limiter.Limit(), limiter.Tokens())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023/01/02 06:29:26 初始化桶成功, 桶大小: 10, 令牌放入速率: 1.00/每秒, 桶内令牌数量: 10.00
+2023/01/02 06:29:26 重置容量成功, 桶大小: 20, 令牌放入速率: 1.00/每秒, 桶内令牌数量: 10.00
+2023/01/02 06:29:26 重置速率成功, 桶大小: 20, 令牌放入速率: 2.00/每秒, 桶内令牌数量: 10.00
+```
+
+:::
+
