@@ -13946,12 +13946,108 @@ D:\application\GoLand\example>go run main.go
 ::: details （2）Allow / AllowN
 
 ```go
+package main
+
+import (
+	"fmt"
+	"golang.org/x/time/rate"
+	"time"
+)
+
+func main() {
+	// 实例化一个令牌桶对象
+	limiter := rate.NewLimiter(1, 10)
+
+	// Allow() 等同于 AllowN(time.Now(), 1)
+	// 表示在某一时刻，要消费桶内1个Token，满足则消费1个Token并返回true，不满足则不消费Token并返回false
+	{
+		ok := limiter.Allow()
+		fmt.Println(ok)
+	}
+	{
+		ok := limiter.AllowN(time.Now(), 9)
+		fmt.Println(ok)
+	}
+	{
+		ok := limiter.Allow()
+		fmt.Println(ok)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+true
+true
+false
+```
+
+:::
+
+::: details （3）
+
+```go
 ```
 
 输出结果
 
 ```bash
 
+```
+
+:::
+
+::: details （4）一直消费的情况限流表现
+
+```go
+package main
+
+import (
+	"context"
+	"golang.org/x/time/rate"
+	"log"
+)
+
+func main() {
+	// 实例化一个令牌桶对象
+	limiter := rate.NewLimiter(1, 10)
+
+	// 一直消费的情况限流表现
+	for i := 0; i < 15; i++ {
+		err := limiter.Wait(context.TODO())
+		if err != nil {
+			panic(err)
+		} else {
+			log.Printf("消费%-2d个Token\n", i+1)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023/01/01 21:07:42 消费1 个Token
+2023/01/01 21:07:42 消费2 个Token
+2023/01/01 21:07:42 消费3 个Token
+2023/01/01 21:07:42 消费4 个Token
+2023/01/01 21:07:42 消费5 个Token
+2023/01/01 21:07:42 消费6 个Token
+2023/01/01 21:07:42 消费7 个Token
+2023/01/01 21:07:42 消费8 个Token
+2023/01/01 21:07:42 消费9 个Token
+2023/01/01 21:07:42 消费10个Token  # 1秒内将桶内令牌消费完毕,等待桶内添加令牌
+2023/01/01 21:07:43 消费11个Token
+2023/01/01 21:07:44 消费12个Token
+2023/01/01 21:07:45 消费13个Token
+2023/01/01 21:07:46 消费14个Token
+2023/01/01 21:07:47 消费15个Token
+
+# 分析
+# 如果我们开发一个接口，要求每秒最多可以调用100次，那么可以设置桶容量为100，令牌产生速率为 100.0/每秒
 ```
 
 :::
