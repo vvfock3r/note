@@ -6243,11 +6243,31 @@ func (q *rateLimitingType) Forget(item interface{}) {
 	q.rateLimiter.Forget(item)
 }
 
-// q.rateLimiter 在我们的例子中是 BucketRateLimiter
-// 那么找一下对应的方法，发现是空的，也就是什么都不做
+// q.rateLimiter 在我们的例子中是 BucketRateLimiter,那么找一下对应的方法
+// 发现是空的，也就是什么都不做
 // 但是如果是其他类型的RateLimiter就不是空的了
 func (r *BucketRateLimiter) Forget(item interface{}) {
 }
 ```
 
 :::
+
+#### NumRequeues方法
+
+::: details 点击查看详情
+
+```go
+// 可以看到调用了 q.rateLimiter.NumRequeues方法
+func (q *rateLimitingType) NumRequeues(item interface{}) int {
+	return q.rateLimiter.NumRequeues(item)
+}
+
+// q.rateLimiter 在我们的例子中是 BucketRateLimiter,那么找一下对应的方法
+// 发现直接返回0
+func (r *BucketRateLimiter) NumRequeues(item interface{}) int {
+	return 0
+}
+```
+
+:::
+
