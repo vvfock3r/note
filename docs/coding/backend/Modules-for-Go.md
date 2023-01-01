@@ -13894,5 +13894,64 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 消费Token
+### 消费令牌
 
+::: details （1）Wait / WaitN
+
+```go
+package main
+
+import (
+	"context"
+	"golang.org/x/time/rate"
+	"log"
+	"math"
+)
+
+func main() {
+	// 实例化一个令牌桶对象
+	limiter := rate.NewLimiter(1, 10)
+
+	// Wait(ctx) 实际调用的是 WaitN(ctx, 1)，表示我要消费1个Token
+	// 如果此时桶内Token数量不足1个，那么Wait方法将会一直阻塞
+	err := limiter.Wait(context.TODO())
+	if err != nil {
+		panic(err)
+	} else {
+		log.Println("消费1个Token")
+	}
+
+	// 如果要消费的Token数量大于桶容量，那么会报错
+	err = limiter.WaitN(context.TODO(), 11)
+	log.Println(err)
+
+	// 如果速率设置的是rate.Inf，则超过桶容量也不会报错
+	limiter.SetLimit(rate.Inf)
+	err = limiter.WaitN(context.TODO(), math.MaxInt64)
+	log.Println(err)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023/01/01 20:51:20 消费1个Token
+2023/01/01 20:51:20 rate: Wait(n=11) exceeds limiter's burst 10
+2023/01/01 20:51:20 <nil>
+```
+
+:::
+
+::: details （2）Allow / AllowN
+
+```go
+```
+
+输出结果
+
+```bash
+
+```
+
+:::
