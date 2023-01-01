@@ -154,7 +154,14 @@
     <tr>
         <td>计划任务</td>
         <td><a href="#cron" style="text-decoration:none;">Cron</a></td>
-        <td><li><code>Go 1.19</code></li><li><code>Cron vv3.0.1</code></li></td>
+        <td><li><code>Go 1.19</code></li><li><code>Cron v3.0.1</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>限速器</td>
+        <td><a href="#rate" style="text-decoration:none;">Rate</a></td>
+        <td><li><code>Go 1.19</code></li><li><code>Rate v0.0.3</code></li></td>
         <td></td>
         <td></td>
     </tr>
@@ -13805,4 +13812,87 @@ created by github.com/robfig/cron/v3.(*Cron).startJob
 :::
 
 <br />
+
+## Rate
+
+文档：[https://pkg.go.dev/golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate)
+
+### 安装
+
+```bash
+go get golang.org/x/time/rate
+```
+
+### 初始化桶
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"golang.org/x/time/rate"
+	"log"
+	"time"
+)
+
+func main() {
+	// 实例化一个令牌桶对象，使用数字指定速率
+	{
+		// 实例化一个令牌桶对象, 10代表桶容量, 1代表每秒放入1个Token到桶中
+		limiter := rate.NewLimiter(1, 10)
+
+		// 查看令牌桶信息
+		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
+		fmt.Println()
+	}
+
+	// 实例化一个令牌桶对象，使用rate.Every指定速率
+	{
+		// 实例化一个令牌桶对象
+		// 每500毫秒放入一个Token到桶中，换算一下，每秒可以放入2个Token到桶中
+		limiter := rate.NewLimiter(rate.Every(time.Millisecond*500), 20)
+
+		// 查看令牌桶信息
+		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
+		fmt.Println()
+	}
+
+	// 实例化一个令牌桶对象，使用rate.Inf指定速率，rate.Inf值为math.MaxFloat64，代表不限制速率
+	{
+		// 实例化一个令牌桶对象
+		// 每500毫秒放入一个Token到桶中，换算一下，每秒可以放入2个Token到桶中
+		limiter := rate.NewLimiter(rate.Inf, 30)
+
+		// 查看令牌桶信息
+		log.Printf("桶容量: %d\n", limiter.Burst())
+		log.Printf("令牌放入桶中的速率: %.2f/s\n", limiter.Limit())
+		fmt.Println()
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023/01/01 20:42:41 桶容量: 10
+2023/01/01 20:42:41 令牌放入桶中的速率: 1.00/s
+
+2023/01/01 20:42:41 桶容量: 20
+2023/01/01 20:42:41 令牌放入桶中的速率: 2.00/s
+
+2023/01/01 20:42:41 桶容量: 30
+2023/01/01 20:42:41 令牌放入桶中的速率: 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328
+944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00/s
+```
+
+:::
+
+<br />
+
+### 消费Token
 
