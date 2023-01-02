@@ -13841,6 +13841,7 @@ func main() {
 	// 实例化一个令牌桶对象，使用数字指定速率
 	{
 		// 实例化一个令牌桶对象, 10代表桶容量, 1代表每秒放入1个Token到桶中
+        // 如果下面的1传入一个变量的话，需要使用rate.Limit(n)来进行类型转换
 		limiter := rate.NewLimiter(1, 10)
 
 		// 查看令牌桶信息
@@ -14144,3 +14145,101 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+<br />
+
+### Gin接口限流
+
+::: details （1）接口级别的限流
+
+```go
+package main
+
+import (
+	"context"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
+	"log"
+	"net/http"
+)
+
+// RateLimiterPerSecond 设置每秒可以允许多少个请求通过
+func RateLimiterPerSecond(n int) gin.HandlerFunc {
+	limiter := rate.NewLimiter(rate.Limit(n), n)
+	return func(ctx *gin.Context) {
+		err := limiter.Wait(context.TODO())
+		if err != nil {
+			ctx.Abort()
+		}
+		ctx.Next()
+	}
+}
+
+func main() {
+	r := gin.Default()
+
+	r.Use(RateLimiterPerSecond(2))
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello")
+	})
+
+	log.Fatalln(r.Run(":8080"))
+}
+```
+
+输出结果
+
+```bash
+# 启动服务
+[root@ap-hongkang example]# go run main.go
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /                         --> main.main.func1 (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+
+# 并发为4，总共发送20个请求
+[root@ap-hongkang ~]# ab -n 20 -c 4 http://127.0.0.1:8080/
+
+# 查看服务端日志，可以看到每秒最多接收2个请求，达到限流的效果
+[GIN] 2023/01/02 - 12:20:11 | 200 |       21.18µs |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:11 | 200 |      17.253µs |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:12 | 200 |  500.562883ms |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:12 | 200 |   1.00016178s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:13 | 200 |  1.500026354s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:13 | 200 |  1.999918761s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:14 | 200 |  1.999009418s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:14 | 200 |  1.999215305s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:15 | 200 |  1.999091714s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:15 | 200 |  2.000244565s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:16 | 200 |  2.000399844s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:16 | 200 |  2.000598087s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:17 | 200 |  2.000667347s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:17 | 200 |   1.99966652s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:18 | 200 |  1.999973276s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:18 | 200 |  1.998798644s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:19 | 200 |  1.998724785s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:19 | 200 |  1.999201499s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:20 | 200 |  1.998554988s |       127.0.0.1 | GET      "/"
+[GIN] 2023/01/02 - 12:20:20 | 200 |  2.000254673s |       127.0.0.1 | GET      "/"
+```
+
+:::
+
+::: details （2）用户级别的限流
+
+```go
+```
+
+输出结果
+
+```bash
+
+```
+
+:::
