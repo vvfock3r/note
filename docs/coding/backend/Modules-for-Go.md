@@ -14378,7 +14378,7 @@ func (b *BucketRateLimiter) Apply(token string, limit int) *rate.Limiter {
 	return item.limiter
 }
 
-// Done 每个token处理完成后需要调用Done方法，这样支持被Clean函数清理
+// Done 每个token处理完成后都应该调用Done方法，不管处理成功还是处理失败，原因是调用Done()后支持被Clean()函数清理
 func (b *BucketRateLimiter) Done(token string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
