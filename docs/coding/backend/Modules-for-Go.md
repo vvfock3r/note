@@ -14326,7 +14326,7 @@ func main() {
 
 :::
 
-::: details （3）用户级别的限流 - 优化Map内存持续增长
+::: details （3）用户级别的限流 - 优化版本
 
 ```go
 package main
