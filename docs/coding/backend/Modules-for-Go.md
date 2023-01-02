@@ -14162,13 +14162,13 @@ import (
 	"net/http"
 )
 
-// RateLimiterPerSecond 设置每秒可以允许多少个请求通过
-func RateLimiterPerSecond(n int) gin.HandlerFunc {
+// DefaultRateLimiterPerSecond 设置每秒可以允许多少个请求通过
+func DefaultRateLimiterPerSecond(n int) gin.HandlerFunc {
 	limiter := rate.NewLimiter(rate.Limit(n), n)
 	return func(ctx *gin.Context) {
 		err := limiter.Wait(context.TODO())
 		if err != nil {
-			ctx.Abort()
+			ctx.AbortWithStatus(http.StatusForbidden)
 		}
 		ctx.Next()
 	}
@@ -14178,7 +14178,7 @@ func main() {
 	r := gin.Default()
 
     // 设置限流速率为 2个请求/每秒
-	r.Use(RateLimiterPerSecond(2))
+	r.Use(DefaultRateLimiterPerSecond(2))
 
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "Hello")
@@ -14234,13 +14234,94 @@ Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-
 
 ::: details （2）用户级别的限流
 
+* 为了演示核心功能，通过查询字符串来传递token，且不会对token做任何校验
+* 每个token分配一个`*rate.Limiter`，存储在一个Map中，用于实现每个人都有自己的限流，而不是所有人共用限流
+* 以下代码会引起内存泄漏，原因是Map会持续增长，并没有添加定时清理的功能
+
 ```go
+package main
+
+import (
+	"context"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
+	"log"
+	"net/http"
+)
+
+// TokenRateLimiterPerSecond 设置每个Token每秒可以允许多少个请求通过
+func TokenRateLimiterPerSecond(n int) gin.HandlerFunc {
+	limiterMap := make(map[string]*rate.Limiter)
+	return func(ctx *gin.Context) {
+		// 获取Token
+		token, ok := ctx.GetQuery("token")
+		if !ok {
+			ctx.AbortWithStatus(http.StatusForbidden)
+		}
+
+		// 获取或创建每个用户专属的*rate.Limiter
+		limiter, ok := limiterMap[token]
+		if !ok {
+			limiter = rate.NewLimiter(rate.Limit(n), n)
+			limiterMap[token] = limiter
+		}
+
+		// 接口限流
+		err := limiter.Wait(context.TODO())
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusForbidden)
+		}
+
+		ctx.Next()
+	}
+}
+
+func main() {
+	r := gin.Default()
+
+	r.Use(TokenRateLimiterPerSecond(2))
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello")
+	})
+
+	log.Fatalln(r.Run(":8080"))
+}
 ```
 
 输出结果
 
 ```bash
+# 开两个终端，模拟两个不同的用户
+[root@ap-hongkang ~]# ab -n 100 -c 4 http://127.0.0.1:8080/?token=1
+[root@ap-hongkang ~]# ab -n 100 -c 4 http://127.0.0.1:8080/?token=2
 
+# 查看服务端日志
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN] 2023/01/02 - 13:32:42 | 200 |       15.75µs |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:42 | 200 |      13.515µs |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:42 | 200 |      24.927µs |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:42 | 200 |       11.14µs |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:43 | 200 |   499.85989ms |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:43 | 200 |  500.203013ms |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:43 | 200 |  1.000143954s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:43 | 200 |  1.000389053s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:44 | 200 |  1.500406647s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:44 | 200 |  1.499648267s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:44 | 200 |  1.999804832s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:44 | 200 |  2.000190914s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:45 | 200 |  1.999461467s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:45 | 200 |  1.999454553s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:45 | 200 |  2.032093153s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:45 | 200 |  1.998775342s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:46 | 200 |  2.500122517s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:46 | 200 |   1.99945802s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:46 | 200 |  2.498879778s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:46 | 200 |  1.998611856s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:47 | 200 |  2.500059819s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:47 | 200 |   1.99902485s |       127.0.0.1 | GET      "/?token=2"
+[GIN] 2023/01/02 - 13:32:47 | 200 |  2.500410859s |       127.0.0.1 | GET      "/?token=1"
+[GIN] 2023/01/02 - 13:32:47 | 200 |  2.000191887s |       127.0.0.1 | GET      "/?token=2"
 ```
 
 :::
