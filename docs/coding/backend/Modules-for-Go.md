@@ -14147,7 +14147,7 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### Gin接口限流
+### Gin 限流
 
 ::: details （1）接口级别的限流
 
@@ -14181,7 +14181,7 @@ func main() {
 	r.Use(DefaultRateLimiterPerSecond(2))
 
 	r.GET("/", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "Hello")
+		ctx.String(http.StatusOK, "Hello World!\n")
 	})
 
 	log.Fatalln(r.Run(":8080"))
@@ -14282,7 +14282,7 @@ func main() {
 	r.Use(TokenRateLimiterPerSecond(2))
 
 	r.GET("/", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "Hello")
+		ctx.String(http.StatusOK, "Hello World!\n")
 	})
 
 	log.Fatalln(r.Run(":8080"))
@@ -14322,6 +14322,161 @@ func main() {
 [GIN] 2023/01/02 - 13:32:47 | 200 |   1.99902485s |       127.0.0.1 | GET      "/?token=2"
 [GIN] 2023/01/02 - 13:32:47 | 200 |  2.500410859s |       127.0.0.1 | GET      "/?token=1"
 [GIN] 2023/01/02 - 13:32:47 | 200 |  2.000191887s |       127.0.0.1 | GET      "/?token=2"
+```
+
+:::
+
+::: details （3）用户级别的限流 - 优化Map内存持续增长
+
+```go
+package main
+
+import (
+	"context"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
+	"log"
+	"net/http"
+	"sync"
+	"time"
+)
+
+type BucketRateLimiter struct {
+	mu      sync.Mutex
+	entries map[string]limiter
+}
+
+type limiter struct {
+	limiter *rate.Limiter // 限速器
+	have    bool          // 当前是否正在持有limiter
+	last    time.Time     // 上次持有limiter的时间
+}
+
+func NewBucketRateLimiter() *BucketRateLimiter {
+	return &BucketRateLimiter{
+		entries: make(map[string]limiter),
+	}
+}
+
+// Apply 返回一个 *rate.Limiter
+func (b *BucketRateLimiter) Apply(token string, limit int) *rate.Limiter {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	item, ok := b.entries[token]
+	if ok {
+		item.last = time.Now()
+		b.entries[token] = item
+	} else {
+		item = limiter{
+			limiter: rate.NewLimiter(rate.Limit(limit), limit),
+			have:    true,
+			last:    time.Now(),
+		}
+		b.entries[token] = item
+	}
+
+	return item.limiter
+}
+
+// Done 每个token处理完成后需要调用Done方法，这样支持被Clean函数清理
+func (b *BucketRateLimiter) Done(token string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	item, ok := b.entries[token]
+	if !ok {
+		return
+	}
+	item.have = false
+	b.entries[token] = item
+}
+
+// Clean 清理过期的Limiter
+func (b *BucketRateLimiter) Clean(before time.Duration) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	tokens := []string{}
+	for token, item := range b.entries {
+		if !item.have && time.Since(item.last) > before {
+			tokens = append(tokens, token)
+		}
+	}
+	for _, token := range tokens {
+		delete(b.entries, token)
+	}
+	log.Printf("BucketRateLimiter entries number: %d\n", len(b.entries))
+}
+
+// TokenRateLimiterPerSecond 设置每个Token每秒可以允许多少个请求通过
+func TokenRateLimiterPerSecond(limit int) gin.HandlerFunc {
+	// 初始化
+	limiters := NewBucketRateLimiter()
+
+	// 定时清理过期的限速器
+	go func() {
+		ticker := time.NewTicker(time.Second * 60)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				limiters.Clean(time.Second * 60)
+			default:
+			}
+		}
+	}()
+	return func(ctx *gin.Context) {
+		// 获取Token
+		token, ok := ctx.GetQuery("token")
+		if !ok {
+			ctx.AbortWithStatus(http.StatusForbidden)
+		}
+
+		// 获取或创建每个用户专属的*rate.limiter
+		limiter := limiters.Apply(token, limit)
+		defer limiters.Done(token)
+
+		// 接口限流
+		err := limiter.Wait(context.TODO())
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusForbidden)
+		}
+
+		ctx.Next()
+	}
+}
+
+func main() {
+	r := gin.Default()
+
+	r.Use(TokenRateLimiterPerSecond(2))
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello World!\n")
+	})
+
+	log.Fatalln(r.Run(":8080"))
+}
+```
+
+输出结果
+
+```bash
+# 客户端发送HTTP请求
+[root@ap-hongkang ~]# for i in `seq 100`; do ab -n 2 -c 2 http://127.0.0.1:8080/?token=${i}; done
+
+# 服务端日志
+...
+[GIN] 2023/01/02 - 19:56:08 | 200 |      14.097µs |       127.0.0.1 | GET      "/?token=96"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      11.111µs |       127.0.0.1 | GET      "/?token=96"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      21.049µs |       127.0.0.1 | GET      "/?token=97"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      11.251µs |       127.0.0.1 | GET      "/?token=97"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      15.079µs |       127.0.0.1 | GET      "/?token=98"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      11.211µs |       127.0.0.1 | GET      "/?token=98"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      14.387µs |       127.0.0.1 | GET      "/?token=99"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      11.372µs |       127.0.0.1 | GET      "/?token=99"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      23.384µs |       127.0.0.1 | GET      "/?token=100"
+[GIN] 2023/01/02 - 19:56:08 | 200 |      11.852µs |       127.0.0.1 | GET      "/?token=100"
+2023/01/02 19:57:06 BucketRateLimiter entries number: 100
+2023/01/02 19:58:06 BucketRateLimiter entries number: 0
 ```
 
 :::
