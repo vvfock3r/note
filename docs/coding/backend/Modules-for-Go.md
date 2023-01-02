@@ -14177,6 +14177,7 @@ func RateLimiterPerSecond(n int) gin.HandlerFunc {
 func main() {
 	r := gin.Default()
 
+    // 设置限流速率为 2个请求/每秒
 	r.Use(RateLimiterPerSecond(2))
 
 	r.GET("/", func(ctx *gin.Context) {
