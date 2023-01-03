@@ -14363,8 +14363,9 @@ func (b *BucketRateLimiter) Apply(token string, limit int) *rate.Limiter {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	item, ok := b.entries[token]
-	if ok {
-		item.last = time.Now()
+	if ok {		
+        item.have = true
+        item.last = time.Now()
 		b.entries[token] = item
 	} else {
 		item = limiter{
