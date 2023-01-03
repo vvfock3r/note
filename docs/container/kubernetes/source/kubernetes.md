@@ -78,7 +78,7 @@ node-4   Ready      <none>          47d   v1.25.4
 # (5) 将KUBECONFIG加入到环境变量中，避免以后每次启动项目都要重新设置一遍，参考下图
 ```
 
-![image-20230103140229064](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230103140229064.png)
+![image-20230103140229064](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230103140229064.png)
 
 :::
 
