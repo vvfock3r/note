@@ -213,31 +213,31 @@ Pause容器：[https://kubernetes.io/zh-cn/docs/concepts/windows/intro/#pause-co
 
 ```bash
 # 方式一：使用kubectl run
-[root@node-1 ~]# kubectl run nginx --image=nginx
+[root@node-1 ~]# kubectl run nginx --image=nginx:latest
 pod/nginx created
 
 # -------------------------------------------------------------------------
 
 # 方式二：使用YAML文件
 # 创建Yaml文件
-[root@node0 k8s]# cat > pod.yaml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pod-1
+  name: busybox
   namespace: default
   labels:
-    app: pod-1
+    app: busybox
 spec:
   containers:
-  - name: pod-1-busybox
+  - name: busybox
     image: busybox:1.28
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f pod.yaml
-pod/pod-1 created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 ```
 
 :::
