@@ -8,6 +8,8 @@ Github：[https://github.com/kubernetes/minikube](https://github.com/kubernetes/
 
 ## 系统初始化
 
+说明：本次安装使用的系统为`CentOS7`
+
 参考：[https://jinhui.dev/container/kubernetes/deploy/binary.html#%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96](https://jinhui.dev/container/kubernetes/deploy/binary.html#%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96)
 
 <br />
