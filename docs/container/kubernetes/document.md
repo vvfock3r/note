@@ -58,81 +58,99 @@ Scheduler 的特殊职责在于监控当前集群所有未调度的 Pod，并且
 
 ### Node
 
-| 名称                            | 说明                                                         |
-| ------------------------------- | ------------------------------------------------------------ |
-| `kubelet`                       | Agent，在集群中每个节点（Noede)上运行，管理本地容器的生命周期，比如创建容器、挂载数据卷、销毁容器等 |
-| `kube-proxy`                    | 网络代理，在集群中每个节点（Node)上运行，<br />负责集群内部或外部的网络会话与 Pod 进行网络通信<br />它还负责对正在服务的Pods进行负载均衡 |
-| 容器运行时（Container Runtime） | 比如`Docker`（目前已经不支持）、`Containerd`、`CRI-O`等      |
+**（1）kubelet**
+
+Agent，在集群中每个节点（Noede)上运行
+
+* 监视Node资源状况，定期向APIServer上报
+* 管理本地容器的生命周期，比如创建容器、挂载数据卷、销毁容器等
+
+**（2）kube-proxy**
+
+网络代理，在集群中每个节点（Node)上运行
+
+* 负责集群内部或外部的网络会话与 Pod 进行网络通信
+* 负责对正在服务的Pods进行负载均衡
+
+**（3）容器运行时（Container Runtime）**
+
+比如`Docker`、`Containerd`、`CRI-O`等
 
 <br />
 
 ## 演示版本
 
+::: details 点击查看详情
+
 ```bash
-# 两个Master同时也是Node节点
-# 容器运行时使用Containerd
-[root@node0 ~]# kubectl get node
-NAME    STATUS   ROLES                  AGE     VERSION
-node0   Ready    control-plane,master   3d13h   v1.23.7
-node1   Ready    control-plane,master   3d13h   v1.23.7
-node2   Ready    <none>                 3d13h   v1.23.7
+# 节点
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   49d   v1.25.4
+node-2   Ready    control-plane   49d   v1.25.4
+node-3   Ready    control-plane   49d   v1.25.4
+node-4   Ready    <none>          49d   v1.25.4
 
 # 版本
-[root@node0 ~]# kubectl version -o yaml
+[root@node-1 ~]# kubectl version -o yaml
 clientVersion:
-  buildDate: "2022-05-24T12:30:55Z"
+  buildDate: "2022-11-09T13:36:36Z"
   compiler: gc
-  gitCommit: 42c05a547468804b2053ecf60a3bd15560362fc2
+  gitCommit: 872a965c6c6526caa949f0c6ac028ef7aff3fb78
   gitTreeState: clean
-  gitVersion: v1.23.7
-  goVersion: go1.17.10
+  gitVersion: v1.25.4
+  goVersion: go1.19.3
   major: "1"
-  minor: "23"
+  minor: "25"
   platform: linux/amd64
+kustomizeVersion: v4.5.7
 serverVersion:
-  buildDate: "2022-05-24T12:24:41Z"
+  buildDate: "2022-11-09T13:29:58Z"
   compiler: gc
-  gitCommit: 42c05a547468804b2053ecf60a3bd15560362fc2
+  gitCommit: 872a965c6c6526caa949f0c6ac028ef7aff3fb78
   gitTreeState: clean
-  gitVersion: v1.23.7
-  goVersion: go1.17.10
+  gitVersion: v1.25.4
+  goVersion: go1.19.3
   major: "1"
-  minor: "23"
+  minor: "25"
   platform: linux/amd64
 ```
+
+:::
 
 <br />
 
 ## 系统信息
 
+::: details 点击查看详情
+
 ```bash
 # 查看都有哪些资源
 [root@node-1 ~]# kubectl api-resources
-NAME                               SHORTNAMES      APIVERSION                             NAMESPACED   KIND
-bindings                                           v1                                     true         Binding
-componentstatuses                  cs              v1                                     false        ComponentStatus
-configmaps                         cm              v1                                     true         ConfigMap
-endpoints                          ep              v1                                     true         Endpoints
-events                             ev              v1                                     true         Event
-limitranges                        limits          v1                                     true         LimitRange
-namespaces                         ns              v1                                     false        Namespace
-nodes                              no              v1                                     false        Node
-persistentvolumeclaims             pvc             v1                                     true         PersistentVolumeClaim
-persistentvolumes                  pv              v1                                     false        PersistentVolume
-pods                               po              v1                                     true         Pod
-podtemplates                                       v1                                     true         PodTemplate
-replicationcontrollers             rc              v1                                     true         ReplicationController
-resourcequotas                     quota           v1                                     true         ResourceQuota
-secrets                                            v1                                     true         Secret
-serviceaccounts                    sa              v1                                     true         ServiceAccount
-services                           svc             v1                                     true         Service
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+bindings                                       v1                                     true         Binding
+componentstatuses                 cs           v1                                     false        ComponentStatus
+configmaps                        cm           v1                                     true         ConfigMap
+endpoints                         ep           v1                                     true         Endpoints
+events                            ev           v1                                     true         Event
+limitranges                       limits       v1                                     true         LimitRange
+namespaces                        ns           v1                                     false        Namespace
+nodes                             no           v1                                     false        Node
+persistentvolumeclaims            pvc          v1                                     true         PersistentVolumeClaim
+persistentvolumes                 pv           v1                                     false        PersistentVolume
+pods                              po           v1                                     true         Pod
+podtemplates                                   v1                                     true         PodTemplate
+replicationcontrollers            rc           v1                                     true         ReplicationController
+resourcequotas                    quota        v1                                     true         ResourceQuota
+secrets                                        v1                                     true         Secret
+serviceaccounts                   sa           v1                                     true         ServiceAccount
+services                          svc          v1                                     true         Service
 ...
 
 # 输出控制平面和群集服务的地址
 [root@node-1 ~]# kubectl cluster-info
-Kubernetes control plane is running at https://127.0.0.1:6443
-CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
-KubeDNSUpstream is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns-upstream:dns/proxy
+Kubernetes control plane is running at https://api.k8s.local:6443
+CoreDNS is running at https://api.k8s.local:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
@@ -167,6 +185,8 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
             },
 ```
 
+:::
+
 <br />
 
 ## Pod基础
@@ -185,55 +205,48 @@ Pause容器：[https://kubernetes.io/zh-cn/docs/concepts/windows/intro/#pause-co
 * Pod中可以包含一个或多个容器，容器共享**网络**和**存储**资源，这需要用到一个中间容器`Pause`，这是创建`Pod`时启动的第一个容器
 * Pod是K8S最小的部署单元，也就是说同一Pod中的容器总是部署在同一个Node上
 
-
-
-**Pod UID**
-
-Kubernetes集群的整个生命周期中创建的每个对象都有一个不同的`uid`，Pod也不例外，可以通过如下命令来查看
-
-```bash
-[root@node0 k8s]# kubectl get pod demo -o json | grep -i uid
-        "uid": "05b1bc5d-379a-45cf-b2d6-77642b08bcb1"
-```
-
 <br />
 
-### 创建Pod
+### 增删改查
 
-::: details 点击查看详情
+::: details （1）创建Pod
 
 ```bash
-# 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
-apiVersion: v1           # API版本
-kind: Pod                # 类型为Pod
-metadata:                # 指定元数据
-  name: pod-1            # Pod名称
-  namespace: default     # 命名空间，默认为default
-  labels:                # 指定标签
-    app: pod-1			 # 
+# 方式一：使用kubectl run
+[root@node-1 ~]# kubectl run nginx --image=nginx
+pod/nginx created
+
+# -------------------------------------------------------------------------
+
+# 方式二：使用YAML文件
+# 创建Yaml文件
+[root@node0 k8s]# cat > pod.yaml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-1
+  namespace: default
+  labels:
+    app: pod-1
 spec:
-  containers:            # 指定容器
-  - name: pod-1-busybox  # 容器名称
+  containers:
+  - name: pod-1-busybox
     image: busybox:1.28
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node0 k8s]# kubectl apply -f pod.yaml
 pod/pod-1 created
 ```
 
 :::
 
-<br />
-
-### 查看Pod
-
-::: details Pod和命名空间
+::: details （2）查看Pod列表
 
 ```bash
-# 查看默认命名空间下的Pod（等同于kubectl get pods -n default）
+# 查看默认命名空间下的Pod
+# 等同于kubectl get pods -n default
 [root@node0 k8s]# kubectl get pods
 NAME    READY   STATUS    RESTARTS   AGE
 pod-1   1/1     Running   0          3m28s
@@ -272,7 +285,7 @@ kube-system     nodelocaldns-m2zvj                            1/1     Running   
 
 :::
 
-::: details 查看Pod详情
+::: details （3）查看Pod详情
 
 ```bash
 # 输出内容比较简单
@@ -518,7 +531,7 @@ Events:
 
 :::
 
-::: details 通过yaml文件查看
+::: details （4）通过yaml文件查看Pod
 
 ```bash
 [root@node0 k8s]# kubectl get -f demo.yml
@@ -527,11 +540,7 @@ Events:
 
 :::
 
-<br />
-
-### 删除Pod
-
-::: details 点击查看详情
+::: details （5）删除Pod
 
 ```bash
 # 删除Pod方式1：直接删除Pod(默认命名空间下)
