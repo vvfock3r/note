@@ -88,17 +88,24 @@ CONTAINER      IMAGE       CREATED        STATE         NAME         ATTEMPT    
 ```bash
 # (1) 安装kubernetes
 # 选项
-# --nodes=1                 默认参数
-# --driver=none             不设置会报错
-# --listen-address=0.0.0.0  支持远程连接集群
-# --embed-certs=true        kubeconfig内置证书方式,否则kubeconfig文件内会指定证书路径
+# --driver=none                                         驱动类型,不设置会报错
+# --nodes=1                                             Node节点数,默认参数
+# --listen-address=0.0.0.0                              支持远程连接集群
+# --embed-certs=true                                    kubeconfig内置证书方式,否则kubeconfig文件内会指定证书路径
+# --service-cluster-ip-range=10.96.0.0/12               Service网段,默认参数
+# --extra-config=kubeadm.pod-network-cidr=10.244.0.0/24 Pod网段，默认参数
 [root@localhost ~]# minikube start \
+    --driver=none \
     --kubernetes-version=v1.25.3 \
     --nodes=1 \
-    --driver=none \
+    --cpus=max \
+    --memory=max \
     --listen-address=0.0.0.0 \
-    --embed-certs=true
-    
+    --cert-expiration=26280h0m0s \
+    --embed-certs=true \
+    --service-cluster-ip-range=10.96.0.0/12 \
+    --extra-config=kubeadm.pod-network-cidr=10.244.0.0/24
+
 😄  minikube v1.28.0 on Centos 7.9.2009
 ✨  Using the none driver based on existing profile
 👍  Starting control plane node minikube in cluster minikube
