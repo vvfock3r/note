@@ -103,8 +103,8 @@ CONTAINER      IMAGE       CREATED        STATE         NAME         ATTEMPT    
     --listen-address=0.0.0.0 \
     --cert-expiration=26280h0m0s \
     --embed-certs=true \
-    --service-cluster-ip-range=10.96.0.0/12 \
-    --extra-config=kubeadm.pod-network-cidr=10.244.0.0/24
+    --service-cluster-ip-range=10.200.0.0/16 \
+    --extra-config=kubeadm.pod-network-cidr=10.100.0.0/16
 
 😄  minikube v1.28.0 on Centos 7.9.2009
 ✨  Using the none driver based on existing profile
