@@ -81,11 +81,11 @@ CONTAINER      IMAGE       CREATED        STATE         NAME         ATTEMPT    
 
 <br />
 
-## 安装kubernetes
+## 部署kubernetes
 
 ```bash
 # (1) 安装kubernetes
-# 选项:
+# 选项
 # --nodes=1                 默认参数
 # --driver=none             不设置会报错
 # --listen-address=0.0.0.0  支持远程连接集群
@@ -95,7 +95,7 @@ CONTAINER      IMAGE       CREATED        STATE         NAME         ATTEMPT    
     --nodes=1 \
     --driver=none \
     --listen-address=0.0.0.0 \
-    --embed-certs=true 
+    --embed-certs=true
     
 😄  minikube v1.28.0 on Centos 7.9.2009
 ✨  Using the none driver based on existing profile
