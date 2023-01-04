@@ -242,7 +242,7 @@ pod/busybox created
 
 :::
 
-::: details （2）查看Pod列表
+::: details （2）查看Pod
 
 ```bash
 # 查看默认命名空间下的Pod, 等同于kubectl get pods -n default
@@ -279,13 +279,7 @@ kube-system   kube-proxy-fbs9j                           1/1     Running   1 (16
 kube-system   kube-scheduler-node-1                      1/1     Running   2 (16m ago)     31m
 kube-system   kube-scheduler-node-2                      1/1     Running   1 (16m ago)     24m
 kube-system   kube-scheduler-node-3                      1/1     Running   1 (16m ago)     22m
-```
 
-:::
-
-::: details （3）查看Pod详情
-
-```bash
 # 默认情况下输出比较简单
 [root@node-1 ~]# kubectl get pods
 NAME      READY   STATUS    RESTARTS   AGE
@@ -311,13 +305,8 @@ ec79cc78c52e7       2c2bc18642790   11 minutes ago  Running    kube-proxy   2   
 
 # 输出更详细的信息-方式2
 [root@node-1 ~]# kubectl describe pod nginx
-```
 
-:::
-
-::: details （4）通过yaml文件查看Pod
-
-```bash
+# 通过yaml文件查看Pod
 [root@node-1 ~]# kubectl get -f busybox.yaml
 NAME      READY   STATUS    RESTARTS   AGE
 busybox   1/1     Running   0          7m2s
@@ -327,7 +316,15 @@ busybox   1/1     Running   0          7m2s
 
 :::
 
-::: details （5）删除Pod
+::: details （3）编辑Pod
+
+```bash
+[root@node-1 ~]# kubectl edit pod nginx
+```
+
+:::
+
+::: details （4）删除Pod
 
 ```bash
 # 删除Pod方式1：直接删除Pod(默认命名空间下)
@@ -337,6 +334,17 @@ pod "nginx" deleted
 # 删除Pod方式2：根据yaml文件删除
 [root@node-1 ~]# kubectl delete -f busybox.yaml
 pod "busybox" deleted
+```
+
+:::
+
+::: details （5）重启Pod（本质上是重新创建Pod）
+
+```bash
+# 语法: kubectl get pod {podname} -n {namespace} -o yaml | kubectl replace --force -f -
+[root@node-1 ~]# kubectl get pod nginx -o yaml | kubectl replace --force -f -
+pod "nginx" deleted
+pod/nginx replaced
 ```
 
 :::
@@ -822,14 +830,6 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 ```
 
 :::
-
-<br />
-
-### 重启Pod
-
-```bash
-kubectl get pod {podname} -n {namespace} -o yaml | kubectl replace --force -f -
-```
 
 <br />
 
