@@ -86,10 +86,10 @@ Agent，在集群中每个节点（Noede)上运行
 # 节点
 [root@node-1 ~]# kubectl get node
 NAME     STATUS   ROLES           AGE   VERSION
-node-1   Ready    control-plane   49d   v1.25.4
-node-2   Ready    control-plane   49d   v1.25.4
-node-3   Ready    control-plane   49d   v1.25.4
-node-4   Ready    <none>          49d   v1.25.4
+node-1   Ready    control-plane   23m   v1.25.4
+node-2   Ready    control-plane   15m   v1.25.4
+node-3   Ready    control-plane   14m   v1.25.4
+node-4   Ready    <none>          13m   v1.25.4
 
 # 版本
 [root@node-1 ~]# kubectl version -o yaml
@@ -231,7 +231,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox:1.28
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
@@ -245,42 +245,40 @@ pod/busybox created
 ::: details （2）查看Pod列表
 
 ```bash
-# 查看默认命名空间下的Pod
-# 等同于kubectl get pods -n default
-[root@node0 k8s]# kubectl get pods
-NAME    READY   STATUS    RESTARTS   AGE
-pod-1   1/1     Running   0          3m28s
+# 查看默认命名空间下的Pod, 等同于kubectl get pods -n default
+[root@node-1 ~]# kubectl get pods
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   1/1     Running   0          9s
+nginx     1/1     Running   0          15s
 
 # 查看所有命名空间下的Pod
-[root@node0 k8s]# kubectl get pods -A
-NAMESPACE       NAME                                          READY   STATUS    RESTARTS       AGE
-default         pod-1                                         1/1     Running   0              4m56s
-ingress-nginx   ingress-nginx-controller-hs8ld                1/1     Running   2 (42m ago)    11h
-ingress-nginx   ingress-nginx-controller-k6qzm                1/1     Running   3 (41m ago)    11h
-ingress-nginx   ingress-nginx-controller-kcggb                1/1     Running   2 (42m ago)    11h
-kube-system     calico-kube-controllers-6dd874f784-wxf8q      1/1     Running   2 (43m ago)    11h
-kube-system     calico-node-krtfp                             1/1     Running   2 (42m ago)    11h
-kube-system     calico-node-sn44p                             1/1     Running   2 (42m ago)    11h
-kube-system     calico-node-vfzzd                             1/1     Running   2 (43m ago)    11h
-kube-system     coredns-76b4fb4578-5jkmj                      1/1     Running   6 (27m ago)    11h
-kube-system     coredns-76b4fb4578-75bdd                      1/1     Running   8 (30m ago)    11h
-kube-system     dns-autoscaler-7979fb6659-5597v               1/1     Running   2 (42m ago)    11h
-kube-system     kube-apiserver-node0                          1/1     Running   3 (42m ago)    11h
-kube-system     kube-apiserver-node1                          1/1     Running   3 (42m ago)    11h
-kube-system     kube-controller-manager-node0                 1/1     Running   4 (42m ago)    11h
-kube-system     kube-controller-manager-node1                 1/1     Running   3 (42m ago)    11h
-kube-system     kube-proxy-fh2wf                              1/1     Running   2 (43m ago)    11h
-kube-system     kube-proxy-znqrr                              1/1     Running   2 (42m ago)    11h
-kube-system     kube-proxy-znvz6                              1/1     Running   2 (42m ago)    11h
-kube-system     kube-scheduler-node0                          1/1     Running   4 (42m ago)    11h
-kube-system     kube-scheduler-node1                          1/1     Running   4 (42m ago)    11h
-kube-system     kubernetes-dashboard-584bfbb648-6k96s         1/1     Running   3 (41m ago)    11h
-kube-system     kubernetes-metrics-scraper-5dc755864d-glpwt   1/1     Running   2 (43m ago)    11h
-kube-system     metrics-server-749474f899-szbn5               1/1     Running   3 (42m ago)    11h
-kube-system     nginx-proxy-node2                             1/1     Running   2 (43m ago)    11h
-kube-system     nodelocaldns-cmzbt                            1/1     Running   4 (33m ago)    11h
-kube-system     nodelocaldns-gkgh9                            1/1     Running   11 (30m ago)   11h
-kube-system     nodelocaldns-m2zvj                            1/1     Running   2 (43m ago)    11h
+[root@node-1 ~]# kubectl get pods -A
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS        AGE
+default       busybox                                    1/1     Running   0               18s
+default       nginx                                      1/1     Running   0               24s
+kube-system   calico-kube-controllers-798cc86c47-7mtnz   1/1     Running   1 (16m ago)     26m
+kube-system   calico-node-2992p                          1/1     Running   2 (7m37s ago)   22m
+kube-system   calico-node-fwrzv                          1/1     Running   1 (16m ago)     24m
+kube-system   calico-node-rt9xl                          1/1     Running   1 (16m ago)     26m
+kube-system   calico-node-wvrzz                          1/1     Running   1 (16m ago)     23m
+kube-system   coredns-565d847f94-dhfjc                   1/1     Running   1 (16m ago)     31m
+kube-system   coredns-565d847f94-kln2g                   1/1     Running   1 (16m ago)     31m
+kube-system   etcd-node-1                                1/1     Running   1 (16m ago)     31m
+kube-system   etcd-node-2                                1/1     Running   1 (16m ago)     24m
+kube-system   etcd-node-3                                1/1     Running   1 (16m ago)     23m
+kube-system   kube-apiserver-node-1                      1/1     Running   1 (16m ago)     31m
+kube-system   kube-apiserver-node-2                      1/1     Running   1 (16m ago)     24m
+kube-system   kube-apiserver-node-3                      1/1     Running   2 (16m ago)     23m
+kube-system   kube-controller-manager-node-1             1/1     Running   2 (16m ago)     31m
+kube-system   kube-controller-manager-node-2             1/1     Running   1 (16m ago)     24m
+kube-system   kube-controller-manager-node-3             1/1     Running   1 (16m ago)     22m
+kube-system   kube-proxy-826fr                           1/1     Running   2 (7m37s ago)   19m
+kube-system   kube-proxy-bfnqc                           1/1     Running   1 (16m ago)     19m
+kube-system   kube-proxy-cgsl9                           1/1     Running   1 (16m ago)     19m
+kube-system   kube-proxy-fbs9j                           1/1     Running   1 (16m ago)     19m
+kube-system   kube-scheduler-node-1                      1/1     Running   2 (16m ago)     31m
+kube-system   kube-scheduler-node-2                      1/1     Running   1 (16m ago)     24m
+kube-system   kube-scheduler-node-3                      1/1     Running   1 (16m ago)     22m
 ```
 
 :::
@@ -288,245 +286,31 @@ kube-system     nodelocaldns-m2zvj                            1/1     Running   
 ::: details （3）查看Pod详情
 
 ```bash
-# 输出内容比较简单
-[root@node0 k8s]# kubectl get pods
-NAME    READY   STATUS    RESTARTS   AGE
-pod-1   1/1     Running   0          24m
+# 默认情况下输出比较简单
+[root@node-1 ~]# kubectl get pods
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   1/1     Running   0          37s
+nginx     1/1     Running   0          43s
 
 # 输出Pod IP和所属Node节点以及其他信息
-[root@node0 k8s]# kubectl get pods -o wide
-NAME    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-pod-1   1/1     Running   0          23m   10.233.44.14   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          55s   10.100.217.77   node-4   <none>           <none>
+nginx     1/1     Running   0          61s   10.100.217.76   node-4   <none>           <none>
 
-# 在Node2上看一下容器
-[root@node2 ~]# crictl ps
-CONTAINER       IMAGE           CREATED         STATE       NAME                ATTEMPT     POD ID
-39bde5bbac45e   8c811b4aec35f   24 minutes ago  Running     pod-1-busybox       0           6143f353b06c8
+# 在Node4上看一下容器
+[root@node-4 ~]# crictl ps
+CONTAINER           IMAGE           CREATED         STATE      NAME         ATTEMPT  POD ID              POD
+0a0ac630736db       busybox@sha256  4 minutes ago   Running    busybox      0        f52aabb72c35c       busybox
+d059a65474095       nginx@sha256:0  4 minutes ago   Running    nginx        0        f9e9c163c189a       nginx
+6444b44e70320       54637cb36d4a1   11 minutes ago  Running    calico-node  2        d0a71fdbbbf9e       calico-node-2992p
+ec79cc78c52e7       2c2bc18642790   11 minutes ago  Running    kube-proxy   2        dcd60a494dd10       kube-proxy-826fr
 
 # 输出更详细的信息-方式1
-[root@node0 k8s]# kubectl get pod pod-1 -o json
-{
-    "apiVersion": "v1",
-    "kind": "Pod",
-    "metadata": {
-        "annotations": {
-            "cni.projectcalico.org/containerID": "6143f353b06c8b0f3c56b6d9c9965b73aa465b0aa9b6636f32550178e1dc7d99",
-            "cni.projectcalico.org/podIP": "10.233.44.14/32",
-            "cni.projectcalico.org/podIPs": "10.233.44.14/32",
-            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"pod-1\"},\"name\":\"pod-1\",\"namespace\":\"default\"},\"spec\":{\"containers\":[{\"command\":[\"sh\",\"-c\",\"echo The app is running! \\u0026\\u0026 sleep 3600\"],\"image\":\"busybox:1.28\",\"name\":\"pod-1-busybox\"}]}}\n"
-        },
-        "creationTimestamp": "2022-06-11T22:17:52Z",
-        "labels": {
-            "app": "pod-1"
-        },
-        "name": "pod-1",
-        "namespace": "default",
-        "resourceVersion": "12974",
-        "uid": "37efd0b5-982b-42ec-a767-82e33504ed37"
-    },
-    "spec": {
-        "containers": [
-            {
-                "command": [
-                    "sh",
-                    "-c",
-                    "echo The app is running! \u0026\u0026 sleep 3600"
-                ],
-                "image": "busybox:1.28",
-                "imagePullPolicy": "IfNotPresent",
-                "name": "pod-1-busybox",
-                "resources": {},
-                "terminationMessagePath": "/dev/termination-log",
-                "terminationMessagePolicy": "File",
-                "volumeMounts": [
-                    {
-                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-                        "name": "kube-api-access-kdqdc",
-                        "readOnly": true
-                    }
-                ]
-            }
-        ],
-        "dnsPolicy": "ClusterFirst",
-        "enableServiceLinks": true,
-        "nodeName": "node2",
-        "preemptionPolicy": "PreemptLowerPriority",
-        "priority": 0,
-        "restartPolicy": "Always",
-        "schedulerName": "default-scheduler",
-        "securityContext": {},
-        "serviceAccount": "default",
-        "serviceAccountName": "default",
-        "terminationGracePeriodSeconds": 30,
-        "tolerations": [
-            {
-                "effect": "NoExecute",
-                "key": "node.kubernetes.io/not-ready",
-                "operator": "Exists",
-                "tolerationSeconds": 300
-            },
-            {
-                "effect": "NoExecute",
-                "key": "node.kubernetes.io/unreachable",
-                "operator": "Exists",
-                "tolerationSeconds": 300
-            }
-        ],
-        "volumes": [
-            {
-                "name": "kube-api-access-kdqdc",
-                "projected": {
-                    "defaultMode": 420,
-                    "sources": [
-                        {
-                            "serviceAccountToken": {
-                                "expirationSeconds": 3607,
-                                "path": "token"
-                            }
-                        },
-                        {
-                            "configMap": {
-                                "items": [
-                                    {
-                                        "key": "ca.crt",
-                                        "path": "ca.crt"
-                                    }
-                                ],
-                                "name": "kube-root-ca.crt"
-                            }
-                        },
-                        {
-                            "downwardAPI": {
-                                "items": [
-                                    {
-                                        "fieldRef": {
-                                            "apiVersion": "v1",
-                                            "fieldPath": "metadata.namespace"
-                                        },
-                                        "path": "namespace"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-        ]
-    },
-    "status": {
-        "conditions": [
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2022-06-11T22:17:53Z",
-                "status": "True",
-                "type": "Initialized"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2022-06-11T22:17:55Z",
-                "status": "True",
-                "type": "Ready"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2022-06-11T22:17:55Z",
-                "status": "True",
-                "type": "ContainersReady"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2022-06-11T22:17:52Z",
-                "status": "True",
-                "type": "PodScheduled"
-            }
-        ],
-        "containerStatuses": [
-            {
-                "containerID": "containerd://39bde5bbac45e58e09d96c9dba9a97cfb5ee26e35d4a1c5ba47953d0bb08b6b2",
-                "image": "docker.io/library/busybox:1.28",
-                "imageID": "docker.io/library/busybox@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47",
-                "lastState": {},
-                "name": "pod-1-busybox",
-                "ready": true,
-                "restartCount": 0,
-                "started": true,
-                "state": {
-                    "running": {
-                        "startedAt": "2022-06-11T22:17:54Z"
-                    }
-                }
-            }
-        ],
-        "hostIP": "192.168.48.135",
-        "phase": "Running",
-        "podIP": "10.233.44.14",
-        "podIPs": [
-            {
-                "ip": "10.233.44.14"
-            }
-        ],
-        "qosClass": "BestEffort",
-        "startTime": "2022-06-11T22:17:53Z"
-    }
-}
+[root@node-1 ~]# kubectl get pod nginx -o json
 
 # 输出更详细的信息-方式2
-[root@node0 k8s]# kubectl describe pod pod-1
-Name:         pod-1
-Namespace:    default
-Priority:     0
-Node:         node2/192.168.48.135
-Start Time:   Sun, 12 Jun 2022 06:17:53 +0800
-Labels:       app=pod-1
-Annotations:  cni.projectcalico.org/containerID: 6143f353b06c8b0f3c56b6d9c9965b73aa465b0aa9b6636f32550178e1dc7d99
-              cni.projectcalico.org/podIP: 10.233.44.14/32
-              cni.projectcalico.org/podIPs: 10.233.44.14/32
-Status:       Running
-IP:           10.233.44.14
-IPs:
-  IP:  10.233.44.14
-Containers:
-  pod-1-busybox:
-    Container ID:  containerd://39bde5bbac45e58e09d96c9dba9a97cfb5ee26e35d4a1c5ba47953d0bb08b6b2
-    Image:         busybox:1.28
-    Image ID:      docker.io/library/busybox@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47
-    Port:          <none>
-    Host Port:     <none>
-    Command:
-      sh
-      -c
-      echo The app is running! && sleep 3600
-    State:          Running
-      Started:      Sun, 12 Jun 2022 06:17:54 +0800
-    Ready:          True
-    Restart Count:  0
-    Environment:    <none>
-    Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-kdqdc (ro)
-Conditions:
-  Type              Status
-  Initialized       True 
-  Ready             True 
-  ContainersReady   True 
-  PodScheduled      True 
-Volumes:
-  kube-api-access-kdqdc:
-    Type:                    Projected (a volume that contains injected data from multiple sources)
-    TokenExpirationSeconds:  3607
-    ConfigMapName:           kube-root-ca.crt
-    ConfigMapOptional:       <nil>
-    DownwardAPI:             true
-QoS Class:                   BestEffort
-Node-Selectors:              <none>
-Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
-                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
-Events:
-  Type    Reason     Age   From               Message
-  ----    ------     ----  ----               -------
-  Normal  Scheduled  32m   default-scheduler  Successfully assigned default/pod-1 to node2
-  Normal  Pulled     32m   kubelet            Container image "busybox:1.28" already present on machine
-  Normal  Created    32m   kubelet            Created container pod-1-busybox
-  Normal  Started    32m   kubelet            Started container pod-1-busybox
+[root@node-1 ~]# kubectl describe pod nginx
 ```
 
 :::
@@ -534,8 +318,11 @@ Events:
 ::: details （4）通过yaml文件查看Pod
 
 ```bash
-[root@node0 k8s]# kubectl get -f demo.yml
-[root@node0 k8s]# kubectl describe -f demo.yml
+[root@node-1 ~]# kubectl get -f busybox.yaml
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   1/1     Running   0          7m2s
+
+[root@node-1 ~]# kubectl describe -f busybox.yaml
 ```
 
 :::
@@ -544,12 +331,12 @@ Events:
 
 ```bash
 # 删除Pod方式1：直接删除Pod(默认命名空间下)
-[root@node0 k8s]# kubectl delete pod pod-1
-pod "pod-1" deleted
+[root@node-1 ~]# kubectl delete pod nginx
+pod "nginx" deleted
 
 # 删除Pod方式2：根据yaml文件删除
-[root@node0 k8s]# kubectl delete -f demo.yml 
-pod "mypod" deleted
+[root@node-1 ~]# kubectl delete -f busybox.yaml
+pod "busybox" deleted
 ```
 
 :::
