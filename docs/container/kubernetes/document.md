@@ -85,37 +85,12 @@ Agent，在集群中每个节点（Noede)上运行
 ::: details 点击查看详情
 
 ```bash
-# 节点
 [root@node-1 ~]# kubectl get node
 NAME     STATUS   ROLES           AGE   VERSION
 node-1   Ready    control-plane   23m   v1.25.4
 node-2   Ready    control-plane   15m   v1.25.4
 node-3   Ready    control-plane   14m   v1.25.4
 node-4   Ready    <none>          13m   v1.25.4
-
-# 版本
-[root@node-1 ~]# kubectl version -o yaml
-clientVersion:
-  buildDate: "2022-11-09T13:36:36Z"
-  compiler: gc
-  gitCommit: 872a965c6c6526caa949f0c6ac028ef7aff3fb78
-  gitTreeState: clean
-  gitVersion: v1.25.4
-  goVersion: go1.19.3
-  major: "1"
-  minor: "25"
-  platform: linux/amd64
-kustomizeVersion: v4.5.7
-serverVersion:
-  buildDate: "2022-11-09T13:29:58Z"
-  compiler: gc
-  gitCommit: 872a965c6c6526caa949f0c6ac028ef7aff3fb78
-  gitTreeState: clean
-  gitVersion: v1.25.4
-  goVersion: go1.19.3
-  major: "1"
-  minor: "25"
-  platform: linux/amd64
 ```
 
 :::
