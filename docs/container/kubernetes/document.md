@@ -1021,7 +1021,7 @@ fe00::2 ip6-allrouters
 
 <br />
 
-### 直接指定
+### 直接指定Node
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename)
 
@@ -1062,6 +1062,181 @@ busybox   1/1     Running   0          46s   10.100.84.141   node-1   <none>    
 
 <br />
 
+### 污点和容忍度
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
+**污点（Taint）**：给某个节点打污点，是为了避免Pod调度到该节点上，比如控制平面节点
+
+**容忍度（Toleration）**：给Pod配置容忍度，允许Pod调度到含有特定污点的节点上
+
+::: details （1）污点基础操作
+
+```bash
+# 查看所有的Node节点的污点
+[root@node-1 ~]# kubectl describe nodes | grep -Ei '\bname:|taints'
+Name:               node-1
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-2
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-3
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-4
+Taints:             <none>
+
+# 给node-1节点添加一个污点
+# 解释：
+#   （1）a=b是一个键值对，写啥都可以，但尽量是有意义的名称,其中值可以不写，=也不用写
+#   （2）最后一个字段含义
+#       NoSchedule         一定不能被调度到该节点上
+#       PreferNoSchedule   尽量不要调度到这个节点
+#       NoExecute          不仅不会调度，还会驱逐Node上已有的Pod
+[root@node-1 ~]# kubectl taint node node-1 a=b:NoSchedule
+node/node-1 tainted
+
+# 查看node-1节点的污点,为了能显示完整，这里使用sed来处理
+[root@node-1 ~]# kubectl describe node node-1 | sed -rn '/Taints/,/Unschedulable:/'p | sed '$d'
+Taints:             a=b:NoSchedule
+                    node-role.kubernetes.io/control-plane:NoSchedule
+
+# 删除污点
+[root@node-1 ~]# kubectl taint node node-1 a:NoSchedule-
+node/node-1 untainted
+
+# 添加/删除控制平面节点污点
+[root@node-1 ~]# kubectl taint node node-1 node-role.kubernetes.io/control-plane:NoSchedule-
+node/node-1 untainted
+[root@node-1 ~]# kubectl taint node node-1 node-role.kubernetes.io/control-plane:NoSchedule
+node/node-1 tainted
+```
+
+::: details （2）污点演示：NoExecute
+
+```bash
+# 生成yaml文件
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox:latest
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# 创建Pod
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
+
+# 查看Pod调度在哪个Node上
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          9s    10.100.217.118   node-4   <none>           <none>
+
+# 对node-4节点上的Pod驱逐
+[root@node-1 ~]# kubectl taint node node-4 taint-test:NoExecute
+node/node-4 tainted
+
+# 再次查看Pod，已经在销毁中了
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS        RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Terminating   0          79s   10.100.217.118   node-4   <none>           <none>
+
+# 删除污点
+[root@node-1 ~]# kubectl taint node node-4 taint-test:NoExecute-
+```
+
+:::
+
+::: details （3）容忍度演示：Tolerations
+
+```bash
+# 查看所有的Node节点的污点
+[root@node-1 ~]# kubectl describe nodes | grep -Ei '\bname:|taints'
+Name:               node-1
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-2
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-3
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Name:               node-4
+Taints:             <none>
+
+# 给node-4打上污点, Pod驱逐
+[root@node-1 ~]# kubectl taint nodes node-4 tolerations-test:NoExecute
+node/node-4 tainted
+
+# 生成yaml文件，故意分配给node-4节点，这将导致一分配就销毁，但是配置了污点容忍，就可以保持Running状态
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox:latest
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  nodeName: node-4
+  # 配置容忍度
+  tolerations:
+    # key为空表示匹配任意的key
+    - key: ""
+      # 默认值是Equal, 这里设置为Exists
+      operator: "Exists"
+EOF
+
+# 创建Pod
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
+
+# 查看Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          6s    10.100.217.120   node-4   <none>           <none>
+
+# 查看Pod配置的容忍度
+[root@node-1 ~]# kubectl describe pod busybox | grep -i Tolerations
+Tolerations:                 op=Exists
+```
+
+:::
+
+::: details （4）删除所有控制平面节点的所有污点
+
+```bash
+# 添加/删除控制平面节点污点
+[root@node-1 ~]# kubectl taint node node-1 node-role.kubernetes.io/control-plane:NoSchedule-
+node/node-1 untainted
+[root@node-1 ~]# kubectl taint node node-2 node-role.kubernetes.io/control-plane:NoSchedule-
+node/node-2 untainted
+[root@node-1 ~]# kubectl taint node node-3 node-role.kubernetes.io/control-plane:NoSchedule-
+node/node-3 untainted
+
+# 查看污点
+[root@node-1 ~]# kubectl describe nodes | grep -Ei '\bname:|taints'
+Name:               node-1
+Taints:             <none>
+Name:               node-2
+Taints:             <none>
+Name:               node-3
+Taints:             <none>
+Name:               node-4
+Taints:             <none>
+
+# 如果想加上去的话执行下面的操作
+[root@node-1 ~]# kubectl taint node node-1 node-role.kubernetes.io/control-plane:NoSchedule
+node/node-1 tainted
+```
+
+<br />
+
 ### 标签匹配
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
@@ -1071,14 +1246,6 @@ busybox   1/1     Running   0          46s   10.100.84.141   node-1   <none>    
 ::: details 点击查看详情
 
 ```bash
-# 查看所有的节点
-[root@node-1 ~]# kubectl get nodes
-NAME     STATUS   ROLES           AGE   VERSION
-node-1   Ready    control-plane   19h   v1.25.4
-node-2   Ready    control-plane   19h   v1.25.4
-node-3   Ready    control-plane   19h   v1.25.4
-node-4   Ready    <none>          19h   v1.25.4
-
 # 查看所有的节点的标签
 [root@node-1 ~]# kubectl get nodes --show-labels | sed -r 's/,/\n                                                  /'g
 NAME     STATUS   ROLES           AGE   VERSION   LABELS
@@ -1148,15 +1315,8 @@ pod/busybox created
 
 # 查看Pod调度在哪个Node上
 [root@node-1 ~]# kubectl get pods -o wide
-NAME      READY   STATUS    RESTARTS   AGE     IP       NODE     NOMINATED NODE   READINESS GATES
-busybox   0/1     Pending   0          4m12s   <none>   <none>   <none>           <none>
-
-# 查看原因
-[root@node-1 ~]# kubectl describe pod busybox
-Events:
-  Type     Reason            Age    From               Message
-  ----     ------            ----   ----               -------
-  Warning  FailedScheduling  3m17s  default-scheduler  0/4 nodes are available: 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+NAME      READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          9s    10.100.247.5   node-2   <none>           <none>
 ```
 
 :::
@@ -1171,13 +1331,6 @@ Events:
 
 `preferredDuringSchedulingIgnoredDuringExecution`：调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod
 
-```bash
-# 先给3个节点分别打上标签,后面要用到
-[root@node0 k8s]# kubectl label node node0 nodeName=node0
-[root@node0 k8s]# kubectl label node node1 nodeName=node1
-[root@node0 k8s]# kubectl label node node2 nodeName=node2
-```
-
 ::: details （一）requiredDuringSchedulingIgnoredDuringExecution 基础示例
 
 这是一个基础示例，只要节点同时满足以下两个条件即可被调度，不满足不调度
@@ -1187,17 +1340,17 @@ Events:
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
@@ -1215,86 +1368,83 @@ spec:
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          1s    10.233.154.22   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          31s   10.100.247.6   node-2   <none>           <none>
 ```
 
 :::
 
-::: details 若包含多个nodeSelectorTerms则只有最后一个生效，覆盖的关系
+::: details nodeSelectorTerms：若包含多个nodeSelectorTerms则只有最后一个生效，覆盖的关系
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node0
-
+              - node-1
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node2
-
+              - node-2
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node1
+              - node-3
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          98s   10.233.154.23   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          20m   10.100.139.68   node-3   <none>           <none>
 ```
 
 :::
 
-::: details 同一nodeSelectorTerms下若包含多个matchExpressions只要满足一个即可被调度，或的关系
+::: details matchExpressions：同一nodeSelectorTerms下若包含多个matchExpressions只要满足一个即可被调度，或的关系
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
@@ -1306,68 +1456,68 @@ spec:
           #   (2) 多个matchExpressions之间不是【与】的关系
           #   (3) 多个matchExpressions之间是【或】的关系        
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node0
+              - node-1
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node999
+              - node-999
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          4s    10.233.30.24   node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          6s    10.100.84.160   node-1   <none>           <none>
 ```
 
 :::
 
-::: details 同一matchExpressions下若包含多个key需要全部满足才可被调度，与的关系
+::: details key：同一matchExpressions下若包含多个key需要全部满足才可被调度，与的关系
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node0
+              - node-1
             - key: kubernetes.io/os
               operator: In
               values:
-              - linux
+              - windows
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
-# 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          5s    10.233.30.25   node0   <none>           <none>
+# 查看Pod调度在哪个Node上，因为不满足kubernetes.io/os，所以一直未被调度成功
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+busybox   0/1     Pending   0          25s   <none>   <none>   <none>           <none>
 ```
 
 :::
@@ -1666,132 +1816,6 @@ pod/demo created
 [root@node0 k8s]# kubectl get pods -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
 demo   1/1     Running   0          4s    10.233.154.26   node1   <none>           <none>
-```
-
-:::
-
-<br />
-
-### 污点和容忍度
-
-文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/)
-
-污点（Taint）：给某个节点打污点，是为了避免Pod调度到该节点上
-
-容忍度（Toleration）：给Pod配置容忍度，允许Pod调度到含有特定污点的节点上
-
-**污点基础操作**
-
-```bash
-# 给node2节点打一个污点
-# 解释：
-#   （1）a=b是一个键值对，写啥都可以
-#   （2）最后一个字段含义
-#       NoSchedule         一定不能被调度到该节点上
-#       PreferNoSchedule   尽量不要调度到这个节点
-#       NoExecute          不仅不会调度，还会驱逐Node上已有的Pod
-[root@node0 k8s]# kubectl taint node node2 a=b:NoSchedule
-
-# 查看node2节点的污点
-[root@node0 k8s]# kubectl describe node node2 | grep -i taint
-Taints:             a=b:NoSchedule
-
-# 删除污点
-[root@node0 k8s]# kubectl taint node node2 a:NoSchedule-
-```
-
-::: details  污点演示：NoExecute
-
-```bash
-# 查看所有的Node节点的污点
-[root@node0 k8s]# kubectl describe nodes | grep Taints
-Taints:             <none>
-Taints:             <none>
-Taints:             <none>
-
-# 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: demo
-  labels:
-    app: demo
-spec:
-  containers:
-  - name: demo
-    image: busybox:1.28
-    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-EOF
-
-# 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
-
-# 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          2s    10.233.44.72   node2   <none>           <none>
-
-# 对node2节点进行Pod驱逐
-[root@node0 k8s]# kubectl taint node node2 a=b:NoExecute
-
-# 再次查看Pod，已经在销毁中了
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS        RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Terminating   0          2m56s   10.233.44.72   node2   <none>           <none>
-```
-
-:::
-
-::: details  容忍度演示：Tolerations
-
-```bash
-# 当前节点中只有node2是含有污点的，驱逐Pod
-[root@node0 k8s]# kubectl describe nodes | grep Taints
-Taints:             <none>
-Taints:             <none>
-Taints:             a=b:NoExecute
-
-[root@node0 k8s]# kubectl describe nodes node2 | grep Taints
-Taints:             a=b:NoExecute
-
-# 生成yaml文件，故意分配给node2节点，这将导致一分配就销毁，但是配置了污点容忍，就可以保持Running状态
-[root@node0 k8s]# cat > demo.yml <<- EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: demo
-  labels:
-    app: demo
-spec:
-  containers:
-  - name: demo
-    image: busybox:1.28
-    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-
-  nodeName: node2
-
-  # 配置容忍度
-  tolerations:
-    # key为空表示匹配任意的key
-    - key: ""
-      # 默认值是Equal, 这里设置为Exists
-      operator: "Exists"
-EOF
-
-# 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
-
-# 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          4m18s   10.233.44.74   node2   <none>           <none>
-
-# 查看Pod配置的容忍度
-[root@node0 k8s]# kubectl describe pod demo | grep -i Tolerations
-Tolerations:                 op=Exists
 ```
 
 :::
