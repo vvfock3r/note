@@ -1585,7 +1585,7 @@ spec:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: NotIn
               values:
               - node-1
