@@ -359,12 +359,12 @@ CPU限制：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/assi
 
 LimitRange：[https://kubernetes.io/zh-cn/docs/concepts/policy/limit-range/](https://kubernetes.io/zh-cn/docs/concepts/policy/limit-range/)
 
-若`Pod`未配置资源限制，同时`NameSpace`也没有配置资源限制（`limitrange`），则有可能会使用节点的所有资源
-
 ::: details （1）限制单个Pod可用资源
 
 ```bash
 # 生成yaml文件
+# requests: 用于请求获取多少资源，这在调度时会参考此值
+# limits：  用于限制最多可以使用多少资源
 [root@node-1 ~]#  cat > pod-resources.yaml <<- EOF
 apiVersion: v1
 kind: Pod
@@ -411,26 +411,63 @@ pod-resources   497m         4Mi
 ::: details （2）限制某个命名空间下的所有Pod可用资源
 
 ```bash
+# 给命名空间下的资源添加默认值和可允许设置的范围
+# default        定义默认限制值, Limits
+# defaultRequest 定义默认请求值，Requests
+# max 和 min      定义覆盖default值可以最大和最小使用的范围
+# type           类型
+#      Container 针对每个容器，而不是Pod
+#      Pod       针对Pod，而不管其包含多少个容器，当使用此种类型时不允许设置default和defaultRequest
+
+# default和min/max的关系
+#   default用于定义默认值,min和max用于限制用户自定义配置的可选范围
+#   default字段的值是可以被具体资源的Requests和Limits覆盖的
+#   default的值要在min和max的范围中
+
+# 创建LimitRange时对已经存在的Pod不生效,需要重建Pod才能生效
+
 [root@node-1 ~]# cat > limitrange.yaml <<- EOF
 apiVersion: v1
 kind: LimitRange
 metadata:
   name: limitrange
+  namespace: default
 spec:
   limits:
-  - default:        # 此处定义默认限制值
+  - default:
       cpu: 500m
-    defaultRequest: # 此处定义默认请求值
+      memory: 500Mi
+    defaultRequest:
       cpu: 100m
-    max:            # max 和 min 定义限制范围
+      memory: 100Mi
+    max:
       cpu: "1"
+      memory: 1024Mi
     min:
-      cpu: 100m
-    type: Container # 
+      cpu: 50m
+      memory: 50Mi
+    type: Container
 EOF
 
-[root@node-1 ~]# kubectl apply -f limitrange.yaml 
+[root@node-1 ~]# kubectl apply -f limitrange.yaml
 limitrange/limitrange created
+
+[root@node-1 ~]# kubectl get limits
+NAME         CREATED AT
+limitrange   2023-01-05T03:09:54Z
+
+# 此时我创建一个Pod
+[root@node-1 ~]# kubectl run nginx --image=nginx:latest
+pod/nginx created
+
+# 默认会添加上Requests和Limits
+[root@node-1 ~]# kubectl describe pod nginx
+    Limits:
+      cpu:     500m
+      memory:  500Mi
+    Requests:
+      cpu:        100m
+      memory:     100Mi
 ```
 
 :::
@@ -441,7 +478,7 @@ limitrange/limitrange created
 
 文档1：[https://kubernetes.io/zh-cn/docs/tasks/inject-data-application/](https://kubernetes.io/zh-cn/docs/tasks/inject-data-application/)
 
-文档2：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#envvar-v1-core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#envvar-v1-core)
+文档2：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core)
 
 ![image-20220613081846919](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220613081846919.png)
 
