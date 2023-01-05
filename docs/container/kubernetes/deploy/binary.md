@@ -2246,6 +2246,8 @@ Github：[https://github.com/kubernetes-sigs/metrics-server](https://github.com/
 
 :::
 
+::: details （1）安装高可用版本
+
 ```bash
 # 在安装前，我们可以执行一下top子命令，输出如下
 [root@node-1 ~]# kubectl top node
@@ -2276,6 +2278,26 @@ node-1   274m         6%     1233Mi          67%
 node-2   304m         7%     1257Mi          69%       
 node-3   183m         4%     1130Mi          62%
 ```
+
+:::
+
+::: details （2）安装单节点版本
+
+```bash
+# 安装单节点版本
+[root@node-1 ~]# kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml
+
+# 若启动报证书错误的话, 下载components.yaml文件并修改Deployment部分
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=4443
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+        - --kubelet-insecure-tls   # 添加这行
+```
+
+:::
 
 #### （4）Vertical Pod Autoscaler
 

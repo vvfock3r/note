@@ -357,13 +357,15 @@ pod/nginx replaced
 
 CPU限制：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/assign-cpu-resource/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/assign-cpu-resource/)
 
+LimitRange：[https://kubernetes.io/zh-cn/docs/concepts/policy/limit-range/](https://kubernetes.io/zh-cn/docs/concepts/policy/limit-range/)
+
 若`Pod`未配置资源限制，同时`NameSpace`也没有配置资源限制（`limitrange`），则有可能会使用节点的所有资源
 
-::: details 点击查看详情
+::: details （1）限制单个Pod可用资源
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]#  cat > pod-resources.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -373,24 +375,24 @@ metadata:
 spec:
   containers:
   - name: pod-resources
-    image: busybox:1.28
+    image: busybox:latest
     command: ['sh', '-c', 'cat /dev/zero | gzip -9 > /dev/null']
     resources:
-        limits:
-            memory: "200Mi"
-            cpu: "0.5"
         requests:
             memory: "100Mi"
             cpu: "0.1"
+        limits:
+            memory: "200Mi"
+            cpu: "0.5"
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f pod-resources.yaml
 pod/pod-resources created
 
 # 查看Pod资源限制
 # CPU单位换算：1 CPU = 1000m CPU
-[root@node0 k8s]# kubectl describe -f demo.yml
+[root@node-1 ~]# kubectl describe -f pod-resources.yaml
     Limits:
       cpu:     500m          
       memory:  200Mi
@@ -398,10 +400,37 @@ pod/pod-resources created
       cpu:        100m
       memory:     100Mi
 
-# 查看Pod资源消耗
-[root@node0 k8s]# kubectl top pod pod-resources
+# 查看Pod资源消耗, 使用kubectl top命令前需要安装Metrics Server
+[root@node-1 ~]# kubectl top pod pod-resources
 NAME            CPU(cores)   MEMORY(bytes)   
-pod-resources   500m         0Mi
+pod-resources   497m         4Mi
+```
+
+:::
+
+::: details （2）限制某个命名空间下的所有Pod可用资源
+
+```bash
+[root@node-1 ~]# cat > limitrange.yaml <<- EOF
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limitrange
+spec:
+  limits:
+  - default:        # 此处定义默认限制值
+      cpu: 500m
+    defaultRequest: # 此处定义默认请求值
+      cpu: 100m
+    max:            # max 和 min 定义限制范围
+      cpu: "1"
+    min:
+      cpu: 100m
+    type: Container # 
+EOF
+
+[root@node-1 ~]# kubectl apply -f limitrange.yaml 
+limitrange/limitrange created
 ```
 
 :::
