@@ -1522,7 +1522,7 @@ busybox   0/1     Pending   0          25s   <none>   <none>   <none>           
 
 :::
 
-::: details key、operator、values之间的关系
+::: details 关联关系：key、operator、values之间的关联关系
 
 `operator`支持`In`、`NotIn`、`Exists`、`DoesNotExist`、`Gt` 和 `Lt` 作为操作符
 
@@ -1530,55 +1530,55 @@ busybox   0/1     Pending   0          25s   <none>   <none>   <none>           
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: In
               values:
-              - node0
-              - node1
+              - node-2
+              - node-3
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          3s    10.233.30.26   node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          7s    10.100.139.69   node-3   <none>           <none>
 ```
 
 `NotIn`：全部不满足才会调度，与的关系
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
@@ -1588,18 +1588,19 @@ spec:
             - key: nodeName
               operator: NotIn
               values:
-              - node0
-              - node1
+              - node-1
+              - node-2
+              - node-3
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          6s    10.233.44.63   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          8s    10.100.217.121   node-4   <none>           <none>
 ```
 
 `Exists`：标签存在即可被调度，不支持`values`字段
@@ -1730,6 +1731,8 @@ demo   1/1     Running   0          5s    10.233.154.25   node1   <none>        
 
 :::
 
+<br />
+
 ::: details （二）preferredDuringSchedulingIgnoredDuringExecution基础示例
 
 `preferredDuringSchedulingIgnoredDuringExecution`写法与`requiredDuringSchedulingIgnoredDuringExecution`类似，这里给出一个基础示例
@@ -1773,6 +1776,8 @@ demo   1/1     Running   0          25s   10.233.44.67   node2   <none>         
 ```
 
 :::
+
+<br />
 
 ::: details （三）matchExpressions和matchFields匹配时的不同
 
