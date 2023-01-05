@@ -85,7 +85,7 @@ Agent，在集群中每个节点（Noede)上运行
 ::: details 点击查看详情
 
 ```bash
-[root@node-1 ~]# kubectl get node
+[root@node-1 ~]# kubectl get nodes
 NAME     STATUS   ROLES           AGE   VERSION
 node-1   Ready    control-plane   23m   v1.25.4
 node-2   Ready    control-plane   15m   v1.25.4
@@ -1029,6 +1029,8 @@ fe00::2 ip6-allrouters
 * 使用`nodeName`后的优先级会高于使用默认调度器的规则，比如 `nodeSelector` 或亲和性与非亲和性的规则
 * 使用`nodeName`后的调度依旧可以调度后含有污点的节点上
 
+::: details 点击查看详情
+
 ```yaml
 # 生成yaml文件
 [root@node-1 ~]# cat > busybox.yaml <<- EOF
@@ -1056,6 +1058,8 @@ NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED 
 busybox   1/1     Running   0          46s   10.100.84.141   node-1   <none>           <none>
 ```
 
+:::
+
 <br />
 
 ### 标签匹配
@@ -1068,18 +1072,42 @@ busybox   1/1     Running   0          46s   10.100.84.141   node-1   <none>    
 
 ```bash
 # 查看所有的节点
-[root@node0 k8s]# kubectl get nodes
-NAME    STATUS   ROLES                  AGE   VERSION
-node0   Ready    control-plane,master   41h   v1.23.7
-node1   Ready    control-plane,master   41h   v1.23.7
-node2   Ready    <none>                 41h   v1.23.7
+[root@node-1 ~]# kubectl get nodes
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   19h   v1.25.4
+node-2   Ready    control-plane   19h   v1.25.4
+node-3   Ready    control-plane   19h   v1.25.4
+node-4   Ready    <none>          19h   v1.25.4
 
 # 查看所有的节点的标签
-[root@node0 k8s]# kubectl get nodes --show-labels
-NAME    STATUS   ROLES                  AGE   VERSION   LABELS
-node0   Ready    control-plane,master   41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node0,kubernetes.io/os=linux,node-role.kubernetes.io/control-plane=,node-role.kubernetes.io/master=,node.kubernetes.io/exclude-from-external-load-balancers=
-node1   Ready    control-plane,master   41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node1,kubernetes.io/os=linux,node-role.kubernetes.io/control-plane=,node-role.kubernetes.io/master=,node.kubernetes.io/exclude-from-external-load-balancers=
-node2   Ready    <none>                 41h   v1.23.7   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,kubernetes.io/arch=amd64,kubernetes.io/hostname=node2,kubernetes.io/os=linux
+[root@node-1 ~]# kubectl get nodes --show-labels | sed -r 's/,/\n                                                  /'g
+NAME     STATUS   ROLES           AGE   VERSION   LABELS
+node-1   Ready    control-plane   19h   v1.25.4   beta.kubernetes.io/arch=amd64
+                                                  beta.kubernetes.io/os=linux
+                                                  kubernetes.io/arch=amd64
+                                                  kubernetes.io/hostname=node-1
+                                                  kubernetes.io/os=linux
+                                                  node-role.kubernetes.io/control-plane=
+                                                  node.kubernetes.io/exclude-from-external-load-balancers=
+node-2   Ready    control-plane   19h   v1.25.4   beta.kubernetes.io/arch=amd64
+                                                  beta.kubernetes.io/os=linux
+                                                  kubernetes.io/arch=amd64
+                                                  kubernetes.io/hostname=node-2
+                                                  kubernetes.io/os=linux
+                                                  node-role.kubernetes.io/control-plane=
+                                                  node.kubernetes.io/exclude-from-external-load-balancers=
+node-3   Ready    control-plane   19h   v1.25.4   beta.kubernetes.io/arch=amd64
+                                                  beta.kubernetes.io/os=linux
+                                                  kubernetes.io/arch=amd64
+                                                  kubernetes.io/hostname=node-3
+                                                  kubernetes.io/os=linux
+                                                  node-role.kubernetes.io/control-plane=
+                                                  node.kubernetes.io/exclude-from-external-load-balancers=
+node-4   Ready    <none>          19h   v1.25.4   beta.kubernetes.io/arch=amd64
+                                                  beta.kubernetes.io/os=linux
+                                                  kubernetes.io/arch=amd64
+                                                  kubernetes.io/hostname=node-4
+                                                  kubernetes.io/os=linux
 
 # 给node0和node1打一个标签
 [root@node0 k8s]# kubectl label node node1 diskType=ssd
