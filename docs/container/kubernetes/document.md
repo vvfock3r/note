@@ -1050,36 +1050,35 @@ fe00::2 ip6-allrouters
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename)
 
-使用`nodeName`后调度器会忽略该Pod，而指定节点上的`kubelet `会尝试将 Pod 放到该节点上
-
-使用 `nodeName` 规则的优先级会高于使用 `nodeSelector` 或亲和性与非亲和性的规则
+* 使用`nodeName`后的调度不经过默认的调度器，当然也不受默认调度器的约束，指定节点上的`kubelet `会尝试将 Pod 放到该节点上
+* 使用`nodeName`后的优先级会高于使用默认调度器的规则，比如 `nodeSelector` 或亲和性与非亲和性的规则
+* 使用`nodeName`后的调度依旧可以调度后含有污点的节点上
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-
-  nodeName: node1
+  nodeName: node-1
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          2s    10.233.154.27   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          46s   10.100.84.141   node-1   <none>           <none>
 ```
 
 <br />
