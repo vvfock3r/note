@@ -316,7 +316,25 @@ busybox   1/1     Running   0          7m2s
 
 :::
 
-::: details （3）编辑Pod
+::: details （3）自定义输出格式
+
+```bash
+# 默认的输出格式
+[root@node-1 ~]# kubectl get pods
+NAME            READY   STATUS        RESTARTS   AGE
+busybox         1/1     Running       0          19s
+nginx           1/1     Running       0          44m
+
+# 自定义输出
+[root@node-1 ~]# kubectl get pods -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,NODENAME:.spec.nodeName,CREATE:.metadata.creationTimestamp
+NAMESPACE   NAME      NODENAME   CREATE
+default     busybox   node-4     2023-01-05T03:46:44Z
+default     nginx     node-4     2023-01-05T03:02:24Z
+```
+
+:::
+
+::: details （4）编辑Pod
 
 ```bash
 [root@node-1 ~]# kubectl edit pod nginx
@@ -324,7 +342,7 @@ busybox   1/1     Running   0          7m2s
 
 :::
 
-::: details （4）删除Pod
+::: details （5）删除Pod
 
 ```bash
 # 删除Pod方式1：直接删除Pod(默认命名空间下)
@@ -417,7 +435,8 @@ pod-resources   497m         4Mi
 # max 和 min      定义覆盖default值可以最大和最小使用的范围
 # type           类型
 #      Container 针对每个容器，而不是Pod
-#      Pod       针对Pod，而不管其包含多少个容器，当使用此种类型时不允许设置default和defaultRequest
+#      Pod       针对Pod，而不管其包含多少个容器
+#                当使用此种类型时不允许设置default和defaultRequests,并且创建Pod时必须设置资源限制参数
 
 # default和min/max的关系
 #   default用于定义默认值,min和max用于限制用户自定义配置的可选范围
@@ -480,25 +499,37 @@ pod/nginx created
 
 文档2：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#envvar-v1-core)
 
-![image-20220613081846919](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220613081846919.png)
+方式：
 
-![image-20220613081904820](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220613081904820.png)
+* 直接定义变量
+* Pod字段作为变量值
+* Container字段作为变量值
+* ConfigMap字段作为变量值
+* Secret字段作为变量值
 
-::: details 直接定义变量、Pod字段作为变量值、Container字段作为变量值
+注意：
+
+并不是支持所有的Pod字段/Container字段作为变量值，可以在上面文档中查看具体支持的值，比如
+
+```yaml
+Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+```
+
+::: details 点击查看详情
 
 ```bash
 # 创建yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pod-env
+  name: busybox
   labels:
-    app: pod-env
+    app: busybox
 spec:
   containers:
-  - name: pod-env
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
     resources:
       limits:
@@ -508,40 +539,34 @@ spec:
       # 直接定义变量
       - name: myName
         value: "My name is vvfock3r"
-
       # Pod字段作为变量值
       - name: myNode 
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
-
       # Container字段作为变量值
       - name: myMemoryLimit
         valueFrom:
           resourceFieldRef:
-            containerName: pod-env
+            containerName: busybox
             resource: limits.memory
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/pod-env created
+[root@node-1 ~]# kubectl apply -f busybox.yaml 
+pod/busybox created
 
 # 检查变量
-[root@node0 k8s]# kubectl exec -it pod-env -- sh
+[root@node-1 ~]# kubectl exec -it busybox -- sh
 / # echo ${myName}
 My name is vvfock3r
 / # echo ${myNode}
-node2
+node-4
 / # echo ${myMemoryLimit}
 67108864
 ```
 
 :::
-
-> （1）并不是支持所有的Pod字段/Container字段作为变量值
->
-> （2）还支持使用ConfigMap的值作为变量值，参考【ConfigMap】章节
 
 <br />
 
@@ -557,49 +582,49 @@ node2
 
 ```bash
 # 创建yaml文件
-[root@node0 k8s]# vim demo.yml
+[root@node-1 ~]# vim busybox.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c']
     # 将每次启动时间写入持久化目录中
     args:
-      - echo $(date +"%Y-%m-%d %H:%M:%S") >> /data/start.log &&
-        exit 1
+      - echo $(date +"%Y-%m-%d %H:%M:%S") >> /data/start.log && exit 1        
     volumeMounts:
       - name: data
         mountPath: /data
-
   # 数据持久化到宿主机目录
   volumes:
     - name: data
       hostPath:
         path: /data
         type: Directory
-
   # 指定Node节点，确保每次都调度到同一台机器
-  nodeName: node2
+  nodeName: node-4
+
+# 在node-4上创建/data目录
+[root@node-4 ~]# mkdir -p /data
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/pod-env created
+[root@node-1 ~]# kubectl apply -f busybox.yaml 
+pod/busybox created
 
-# 登录到node2机器，查看/data/start.log文件
+# 登录到node-4机器，查看/data/start.log文件
 # 可以看到，每次启动时间是有延迟的
-[root@node2 ~]# cat -n /data/start.log 
-     1  2022-06-13 03:01:20
-     2  2022-06-13 03:01:20
-     3  2022-06-13 03:01:34
-     4  2022-06-13 03:02:05
-     5  2022-06-13 03:02:51
-     6  2022-06-13 03:04:18
+[root@node-4 ~]# cat -n /data/start.log
+     1  2023-01-05 03:59:32
+     2  2023-01-05 03:59:35
+     3  2023-01-05 04:00:40
+     4  2023-01-05 04:00:45
+     5  2023-01-05 04:01:03
+     6  2023-01-05 04:01:36
 ```
 
 :::
