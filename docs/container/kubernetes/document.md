@@ -8,11 +8,11 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 
 
-## 核心组件
+## 组件说明
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/overview/components/](https://kubernetes.io/zh-cn/docs/concepts/overview/components/)
 
-### Control Plane
+::: details （1）控制平面组件（Control Plane）
 
 控制平面（Control Plane Components）包含以下组件
 
@@ -54,9 +54,9 @@ Scheduler 的特殊职责在于监控当前集群所有未调度的 Pod，并且
 * Priority：按既定要素将满足调度需求的节点评分，选择最佳节点。
 * Bind：将计算节点与 Pod 绑定，完成调度
 
-<br />
+:::
 
-### Node
+::: details （2）Node节点组件
 
 **（1）kubelet**
 
@@ -75,6 +75,8 @@ Agent，在集群中每个节点（Noede)上运行
 **（3）容器运行时（Container Runtime）**
 
 比如`Docker`、`Containerd`、`CRI-O`等
+
+:::
 
 <br />
 
@@ -574,9 +576,8 @@ node-4
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy)
 
-默认值是`Always`
-
-每次重启之间是有延迟的且时间不等，最长5分钟
+* 当 Pod 中的容器退出时，`kubelet` 会按指数回退方式计算重启的延迟（10s、20s、40s、...），其最长延迟为 5 分钟
+* 一旦某容器执行了 10 分钟并且没有出现问题，`kubelet` 对该容器的重启回退计时器执行重置操作
 
 ::: details 点击查看详情
 
@@ -608,6 +609,8 @@ spec:
         type: Directory
   # 指定Node节点，确保每次都调度到同一台机器
   nodeName: node-4
+  # 指定重启策略,Always为默认值
+  restartPolicy: Always
 
 # 在node-4上创建/data目录
 [root@node-4 ~]# mkdir -p /data
@@ -619,12 +622,13 @@ pod/busybox created
 # 登录到node-4机器，查看/data/start.log文件
 # 可以看到，每次启动时间是有延迟的
 [root@node-4 ~]# cat -n /data/start.log
-     1  2023-01-05 03:59:32
-     2  2023-01-05 03:59:35
-     3  2023-01-05 04:00:40
-     4  2023-01-05 04:00:45
-     5  2023-01-05 04:01:03
-     6  2023-01-05 04:01:36
+     1  2023-01-05 05:00:12
+     2  2023-01-05 05:00:16
+     3  2023-01-05 05:00:32
+     4  2023-01-05 05:01:03
+     5  2023-01-05 05:01:47
+     6  2023-01-05 05:03:19
+     7  2023-01-05 05:06:08
 ```
 
 :::
@@ -637,28 +641,30 @@ pod/busybox created
 
 文档2：[https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/](https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
 
-| 检查类型                               | 说明                                   | 若不提供该字段的默认值 | 若提供该字段                               | 若检查失败执行的动作                                         |
-| -------------------------------------- | -------------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------ |
-| **存活检查<br />（`livenessProbe`）**  | 检查容器是否正在运行                   | `Success`              | - - -                                      | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
-| **就绪检查<br />（`readinessProbe`）** | 检查容器是否准备好<br />为请求提供服务 | `Success`              | 初始状态为`Failure`                        | 检查失败会从service endpoints中删除该IP，检查成功则会把IP加进去 |
-| **启动检查<br />（`startupProbe`）**   | 检查容器是否已经启动                   | `Success`              | 所有其他探针都会被禁用，直到此探针成功为止 | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| 检查类型                               | 说明                                   | 默认值    | 若提供该字段                               | 若检查失败执行的动作                                         |
+| -------------------------------------- | -------------------------------------- | --------- | ------------------------------------------ | ------------------------------------------------------------ |
+| **启动检查<br />（`startupProbe`）**   | 检查容器是否已经启动                   | `Success` | 所有其他探针都会被禁用，直到此探针成功为止 | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| **存活检查<br />（`livenessProbe`）**  | 检查容器是否正在运行                   | `Success` | - - -                                      | `kubelet `会杀死容器<br />并根据其重启策略决定下一步操作     |
+| **就绪检查<br />（`readinessProbe`）** | 检查容器是否准备好<br />为请求提供服务 | `Success` | 初始状态为`Failure`                        | 检查失败会从service endpoints中删除该IP<br />检查成功则会把IP加进去 |
 
 ::: details 点击查看详情
 
 ```bash
 # 创建yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
   - name: demo
-    image: busybox:1.28
-    command: ['sh', '-c', 'touch /tmp/healthy && echo The app is running! && sleep 10 && rm -vf /tmp/healthy && sleep 3600']
+    image: busybox:latest
+    command: ['sh', '-c']
+    args:
+      - 'touch /tmp/healthy && echo The app is running! && sleep 10 && rm -vf /tmp/healthy && sleep 3600'
     # 存活检查
     livenessProbe:
       exec:
@@ -670,27 +676,27 @@ spec:
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 在容器运行10秒以后存活检查将失败，此时默认会重启重启
-[root@node0 k8s]# kubectl describe pod demo
+[root@node-1 ~]# kubectl describe pod busybox
 Events:
-  Type     Reason     Age               From               Message
-  ----     ------     ----              ----               -------
-  Normal   Scheduled  34s               default-scheduler  Successfully assigned default/demo to node2
-  Normal   Pulled     33s               kubelet            Container image "busybox:1.28" already present on machine
-  Normal   Created    33s               kubelet            Created container demo
-  Normal   Started    33s               kubelet            Started container demo
-  Warning  Unhealthy  9s (x3 over 19s)  kubelet            Liveness probe failed: cat: can't open '/tmp/healthy': No such file or directory
-  Normal   Killing    9s                kubelet            Container demo failed liveness probe, will be restarted
+  Type     Reason     Age              From               Message
+  ----     ------     ----             ----               -------
+  Normal   Scheduled  24s              default-scheduler  Successfully assigned default/busybox to node-4
+  Normal   Pulling    23s              kubelet            Pulling image "busybox:latest"
+  Normal   Pulled     21s              kubelet            Successfully pulled image "busybox:latest" in 2.632794621s
+  Normal   Created    21s              kubelet            Created container demo
+  Normal   Started    20s              kubelet            Started container demo
+  Warning  Unhealthy  4s (x2 over 9s)  kubelet            Liveness probe failed: cat: can't open '/tmp/healthy': No such file or directory
 ```
 
 :::
 
 <br />
 
-### 多容器
+### 多个容器
 
 **（1）共享网络和存储示例**
 
@@ -698,49 +704,50 @@ Events:
 
 ```bash
 # 生成yaml文件,Pod包含多个容器
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
 spec:
   containers:
-  - name: demo1
-    image: busybox:1.28
+  - name: busybox1
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-  - name: demo2
-    image: busybox:1.28
+  - name: busybox2
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod，READY下面是2/2
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   2/2     Running   0          12s   10.233.44.83   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   2/2     Running   0          16s   10.100.217.106   node-4   <none>           <none>
 
-# 在node2节点上查看容器
-[root@node2 ~]# crictl ps
-CONTAINER           IMAGE               CREATED              STATE      NAME     ATTEMPT POD ID
-dbf33c853a860       8c811b4aec35f       About a minute ago   Running    demo2    0       8b92e2da21dbc
-ac0bd7d433c67       8c811b4aec35f       About a minute ago   Running    demo1    0       8b92e2da21dbc
+# 在node-4节点上查看容器
+[root@node-4 ~]# crictl ps
+CONTAINER       IMAGE                CREATED         STATE      NAME       ATTEMPT  POD ID         POD
+81f4d5fa11016   busybox@sha256:05a   28 seconds ago  Running    busybox2   0        81fbf723119c8  busybox
+46da77d116044   busybox@sha256:05a   33 seconds ago  Running    busybox1   0        81fbf723119c8  busybox
 
-# 在demo1中监听80端口
-[root@node0 k8s]# kubectl exec demo -c demo1 -it -- sh
+# 在busybox1中监听80端口
+[root@node-1 ~]# kubectl exec busybox -c busybox1 -it -- sh
 / # nc -lvp 80
 listening on [::]:80 ...
 
-# 在demo2中访问80端口
-[root@node0 k8s]# kubectl exec demo -c demo2 -it -- sh
+# 在busybox2中访问80端口
+[root@node-1 ~]# kubectl exec busybox -c busybox2 -it -- sh
 / # telnet 127.0.0.1 80
+Connected to 127.0.0.1
 
-# demo1中已经能看到连接了
+# busybox1中已经能看到连接了
 / # nc -lvp 80
 listening on [::]:80 ...
-connect to [::ffff:127.0.0.1]:80 from [::ffff:127.0.0.1]:58970 ([::ffff:127.0.0.1]:58970)
+connect to [::ffff:127.0.0.1]:80 from [::ffff:127.0.0.1]:42024 ([::ffff:127.0.0.1]:42024)
 ```
 
 :::
@@ -749,51 +756,48 @@ connect to [::ffff:127.0.0.1]:80 from [::ffff:127.0.0.1]:58970 ([::ffff:127.0.0.
 
 ```bash
 # 生成yaml文件,Pod包含多个容器
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
 spec:
   containers:
-  - name: demo1
-    image: busybox:1.28
+  - name: busybox1
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
     volumeMounts:
       - name: data
         mountPath: /data
-  - name: demo2
-    image: busybox:1.28
+  - name: busybox2
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
     volumeMounts:
       - name: data
         mountPath: /data
-
   volumes:
-    - name: data
-      # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
-      emptyDir: {}
+    - name: data      
+      emptyDir: {} # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod，READY下面是2/2
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   2/2     Running   0          6s    10.233.44.84   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   2/2     Running   0          11s   10.100.217.107   node-4   <none>           <none>
 
-# 在demo1中写入数据/data/test.log
-[root@node0 k8s]# kubectl exec demo -c demo1 -it -- sh
+# 在busybox1中写入数据/data/test.log
+[root@node-1 ~]# kubectl exec busybox -c busybox1 -it -- sh
 / # seq 10 > /data/test.log
 
-# 在demo2中查看数据
-[root@node0 k8s]# kubectl exec demo -c demo2 -it -- sh
+# 在busybox2中查看数据
+[root@node-1 ~]# kubectl exec busybox -c busybox2 -it -- sh
 / # ls -l /data
 total 4
--rw-r--r--    1 root     root            21 Jun 15 01:31 test.log
-
+-rw-r--r--    1 root     root            21 Jan  5 05:26 test.log
 / # cat /data/test.log
 1
 2
@@ -819,36 +823,34 @@ total 4
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
 spec:
   # 共享进程命名空间
   shareProcessNamespace: true
   containers:
-  - name: demo1
-    image: busybox:1.28
+  - name: busybox1
+    image: busybox:latest
     command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
-  - name: demo2
-    image: busybox:1.28
+  - name: busybox2
+    image: busybox:latest
     command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
-# 进入任意一个容器中查看进程
-[root@node0 k8s]# kubectl exec -it demo -c demo1 -- sh
-/ # ps aux
+# 在任意一个容器中执行ps命令
+[root@node-1 ~]# kubectl exec -it busybox -c busybox1 -- ps aux
 PID   USER     TIME  COMMAND
-    1 root      0:00 /pause
+    1 65535     0:00 /pause
     7 root      0:00 sleep 3600
-   14 root      0:00 sleep 3600
-   21 root      0:00 sh
-   27 root      0:00 ps aux
+   12 root      0:00 sleep 3600
+   18 root      0:00 ps aux
 ```
 
 :::
@@ -872,59 +874,109 @@ PID   USER     TIME  COMMAND
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` The app is running! && sleep 3600"]
-
   initContainers:
   - name: init1
-    image: busybox:1.28
+    image: busybox:latest
     command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` init1 start running && sleep 10"]
   - name: init2
-    image: busybox:1.28
+    image: busybox:latest
     command: ['sh', '-c', "echo `date '+%Y-%m-%d %H:%M:%S'` init2 start running && sleep 10"]
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS     RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   0/1     Init:0/2   0          2s    10.233.44.92   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS     RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   0/1     Init:0/2   0          13s   10.100.217.109   node-4   <none>           <none>
 
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS     RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   0/1     Init:1/2   0          14s   10.233.44.92   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS     RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   0/1     Init:1/2   0          24s   10.100.217.109   node-4   <none>           <none>
 
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS            RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   0/1     PodInitializing   0          23s   10.233.44.92   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS            RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     PodInitializing   0          39s   10.100.217.109   node-4   <none>           <none>
 
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          26s   10.233.44.92   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          39s   10.100.217.109   node-4   <none>           <none>
 
 # 查看容器日志
-[root@node0 k8s]# kubectl logs demo -c init1 && kubectl logs demo -c init2 && kubectl logs demo -c demo
-2022-06-15 23:16:44 init1 start running
-2022-06-15 23:16:55 init2 start running
-2022-06-15 23:17:06 The app is running!
+[root@node-1 ~]# kubectl logs busybox -c init1 && kubectl logs busybox -c init2 && kubectl logs busybox -c busybox
+2023-01-05 13:32:35 init1 start running
+2023-01-05 13:32:35 init2 start running
+2023-01-05 13:32:35 The app is running!
 ```
 
 :::
 
 <br />
 
-### 修改Hosts文件
+### 回调钩子
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/](https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/)
+
+有两个回调暴露给容器：
+
+* `postStart`：容器创建之后执行，它和我们定义的容器的`command`命令是并行执行的
+* `preStop`：容器终止之前执行，执行完成之后再向容器发送终止信号
+
+::: details  点击查看详情
+
+```bash
+# 生成yaml文件
+[root@node-1 ~]# vim busybox.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox:latest
+    command: ['sh', '-c', 'echo "`date +"%Y-%m-%d %H:%M:%S"` command   running" >> /tmp/demo.log && sleep 3600']
+    lifecycle:
+      postStart:
+        exec:
+          command: ['sh', '-c', 'echo "`date +"%Y-%m-%d %H:%M:%S"` postStart running" >> /tmp/demo.log']
+      preStop:
+        exec:
+          command: ['sh', '-c', 'echo "`date +"%Y-%m-%d %H:%M:%S"` preStop   running" >> /tmp/demo.log && sleep 10']
+
+# 创建Pod
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
+
+# 查看日志
+[root@node-1 ~]# kubectl exec -it busybox -- cat /tmp/demo.log
+2023-01-05 05:51:07 command   running
+2023-01-05 05:51:07 postStart running
+
+# 另开一个终端,删除Pod,此时再查看日志
+[root@node-1 ~]# kubectl exec -it busybox -- cat /tmp/demo.log
+2023-01-05 05:51:07 command   running
+2023-01-05 05:51:07 postStart running
+2023-01-05 05:51:34 preStop   running
+```
+
+:::
+
+<br />
+
+### 修改Hosts
 
 文档：[https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/](https://kubernetes.io/zh-cn/docs/tasks/network/customize-hosts-file-for-pods/)
 
@@ -932,11 +984,11 @@ demo   1/1     Running   0          26s   10.233.44.92   node2   <none>         
 
 ```bash
 # 创建YAML
-[root@node-1 ~]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
 spec:
   hostAliases:
   - ip: "127.0.0.1"
@@ -948,19 +1000,21 @@ spec:
     - "c.com"
     - "d.com"
   containers:
-  - name: demo1
-    image: busybox:1.28
+  - name: busybox1
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-  - name: demo2
-    image: busybox:1.28
+  - name: busybox2
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
-# 部署
-[root@node-1 ~]# kubectl apply -f demo.yml
+# 创建Pod
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 分别查看两个容器中的/etc/hosts
-[root@node-1 ~]# kubectl exec -it demo -c demo1 -- cat /etc/hosts
+[root@node-1 ~]# kubectl exec -it busybox -c busybox1 -- cat /etc/hosts
+[root@node-1 ~]# kubectl exec -it busybox -c busybox2 -- cat /etc/hosts
 # Kubernetes-managed hosts file.
 127.0.0.1       localhost
 ::1     localhost ip6-localhost ip6-loopback
@@ -968,20 +1022,7 @@ fe00::0 ip6-localnet
 fe00::0 ip6-mcastprefix
 fe00::1 ip6-allnodes
 fe00::2 ip6-allrouters
-10.200.84.169   demo
-
-# Entries added by HostAliases.
-127.0.0.1       a.com   b.com
-10.1.2.3        c.com   d.com
-[root@node-1 ~]# kubectl exec -it demo -c demo2 -- cat /etc/hosts
-# Kubernetes-managed hosts file.
-127.0.0.1       localhost
-::1     localhost ip6-localhost ip6-loopback
-fe00::0 ip6-localnet
-fe00::0 ip6-mcastprefix
-fe00::1 ip6-allnodes
-fe00::2 ip6-allrouters
-10.200.84.169   demo
+10.100.217.110  busybox
 
 # Entries added by HostAliases.
 127.0.0.1       a.com   b.com
@@ -997,54 +1038,6 @@ fe00::2 ip6-allrouters
 
 <br />
 
-### 共享宿主机命名空间
-
-文档：[https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces](https://kubernetes.io/zh-cn/docs/concepts/security/pod-security-policy/#host-namespaces)
-
-<br />
-
-### 容器生命周期回调
-
-文档：[https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/](https://kubernetes.io/zh-cn/docs/concepts/containers/container-lifecycle-hooks/)
-
-有两个回调暴露给容器：
-
-* `postStart`：容器创建之后执行，它和我们定义的容器的`command`命令是并行执行的
-* `preStop`：容器终止之前执行，执行完成之后再向容器发送终止信号
-
-::: details  点击查看详情
-
-```bash
-[root@node-1 ~]# cat > demo.yml <<- EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: demo
-spec:
-  containers:
-  - name: demo
-    image: busybox:1.28
-    command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ Command ] The app is running! >> /tmp/demo.log && sleep 3600']
-    lifecycle:
-      postStart:
-        exec:
-          command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ postStart ] starting... >> /tmp/demo.log']
-      preStop:
-        exec:
-          command: ['sh', '-c', 'echo `date +"%Y-%m-%d %H:%M:%S"` [ preStop ] stopping... >> /tmp/demo.log && sleep 10']
-EOF
-
-[root@node-1 ~]# kubectl apply -f demo.yml
-
-[root@node-1 ~]# kubectl exec -it demo -- cat /tmp/demo.log
-2022-08-31 11:23:13 [ Command ] The app is running!
-2022-08-31 11:23:13 [ postStart ] starting...
-```
-
-:::
-
-<br />
-
 ## Pod调度策略
 
 文档总览：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/)
@@ -1053,11 +1046,49 @@ EOF
 
 <br />
 
-### 标签匹配 - nodeSelector
+### 直接指定
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename)
+
+使用`nodeName`后调度器会忽略该Pod，而指定节点上的`kubelet `会尝试将 Pod 放到该节点上
+
+使用 `nodeName` 规则的优先级会高于使用 `nodeSelector` 或亲和性与非亲和性的规则
+
+```yaml
+# 生成yaml文件
+[root@node0 k8s]# cat > demo.yml <<- EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: demo
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+
+  nodeName: node1
+EOF
+
+# 创建Pod
+[root@node0 k8s]# kubectl apply -f demo.yml 
+pod/demo created
+
+# 查看Pod调度在哪个Node上
+[root@node0 k8s]# kubectl get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
+demo   1/1     Running   0          2s    10.233.154.27   node1   <none>           <none>
+```
+
+<br />
+
+### 标签匹配
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
 
-nodeSelector会根据标签匹配合适的节点来调度Pod
+`nodeSelector`会根据标签匹配合适的节点来调度Pod
 
 ::: details 点击查看详情
 
@@ -1116,7 +1147,7 @@ demo   1/1     Running   0          4s    10.233.154.17   node1   <none>        
 
 <br />
 
-### 节点亲和性 - affinity.nodeAffinity
+### 节点亲和性
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
 
@@ -1625,45 +1656,7 @@ demo   1/1     Running   0          4s    10.233.154.26   node1   <none>        
 
 <br />
 
-### 直接指定Node - nodeName
-
-文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#nodename)
-
-使用`nodeName`后调度器会忽略该Pod，而指定节点上的`kubelet `会尝试将 Pod 放到该节点上
-
-使用 `nodeName` 规则的优先级会高于使用 `nodeSelector` 或亲和性与非亲和性的规则
-
-```yaml
-# 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: demo
-  labels:
-    app: demo
-spec:
-  containers:
-  - name: demo
-    image: busybox:1.28
-    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-
-  nodeName: node1
-EOF
-
-# 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
-
-# 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          2s    10.233.154.27   node1   <none>           <none>
-```
-
-<br />
-
-### 污点和容忍度策略
+### 污点和容忍度
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/taint-and-toleration/)
 
