@@ -1109,40 +1109,54 @@ node-4   Ready    <none>          19h   v1.25.4   beta.kubernetes.io/arch=amd64
                                                   kubernetes.io/hostname=node-4
                                                   kubernetes.io/os=linux
 
-# 给node0和node1打一个标签
-[root@node0 k8s]# kubectl label node node1 diskType=ssd
-node/node1 labeled
+# 题外话
+# 我们使用 kubectl get nodes 的时候，为什么控制平面节点会显示 control-plane 呢？
+# 因为控制平面节点包含一个标签 node-role.kubernetes.io/control-plane: ""
+# 如果我把非控制平面节点也打上这个标签,那么 kubectl get nodes 的时候也会显示成控制平面节点
+
+# 给node-1和node-2打一个标签
+[root@node-1 ~]# kubectl label node node-1 diskType=ssd
+node/node-1 labeled
+[root@node-1 ~]# kubectl label node node-2 diskType=ssd
+node/node-2 labeled
 
 # 如果想删除标签，那么使用 <标签名->
-[root@node0 k8s]# kubectl label node node1 diskType-
-node/node0 unlabeled
+[root@node-1 ~]# kubectl label node node-1 diskType-
+node/node-1 unlabeled
 
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   nodeSelector:
-    diskType: ssd             # 选择diskType=ssd标签的节点
     kubernetes.io/os: linux   # 选择系统为linux标签的节点
+    diskType: ssd             # 选择diskType=ssd标签的节点
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          4s    10.233.154.17   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE     IP       NODE     NOMINATED NODE   READINESS GATES
+busybox   0/1     Pending   0          4m12s   <none>   <none>   <none>           <none>
+
+# 查看原因
+[root@node-1 ~]# kubectl describe pod busybox
+Events:
+  Type     Reason            Age    From               Message
+  ----     ------            ----   ----               -------
+  Warning  FailedScheduling  3m17s  default-scheduler  0/4 nodes are available: 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
 ```
 
 :::
