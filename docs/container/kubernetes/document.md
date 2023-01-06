@@ -2275,7 +2275,10 @@ Hello from the Kubernetes cluster
 
 **Service说明**
 
-每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，<span style="color: red; font-weight: bold;">提供统一的访问入口和负载均衡功能</span>
+* 每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，<span style="color: red; font-weight: bold;">提供统一的访问入口和负载均衡功能</span>
+* Service的不足
+  * 一个端口只能一个服务使用，端口需要提前规划
+  * 只支持4层负载均衡，不支持7层负载均衡
 
 <br />
 
@@ -2326,13 +2329,6 @@ I0106 02:24:14.251165       1 proxier.go:449] "IPVS scheduler not specified, use
 | `port`                             | √        |                                                           | Service端口              |
 | `targetPort`                       | ×        | 默认情况下，`targetPort` 将被设置为与 `port` 字段相同的值 | 容器端口                 |
 | `nodePort`（类型为NodePort时有效） | ×        | 30000-32767（默认端口范围）                               | 集群所有节点对外暴露端口 |
-
-:::
-
-::: details  Service的不足
-
-* 一个端口只能一个服务使用，端口需要提前规划
-* 只支持4层负载均衡
 
 :::
 
