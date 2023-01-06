@@ -2271,15 +2271,17 @@ Hello from the Kubernetes cluster
 
 ### Service
 
-#### 简介
-
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/)
+
+**Service说明**
 
 每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，<span style="color: red; font-weight: bold;">提供统一的访问入口和负载均衡功能</span>
 
+<br />
 
+**Service基础**
 
-**Service的三种类型**
+::: details  Service的三种类型
 
 | 类型         | 简介                                   | 说明                                                         |
 | ------------ | -------------------------------------- | ------------------------------------------------------------ |
@@ -2287,17 +2289,18 @@ Hello from the Kubernetes cluster
 | NodePort     | 对外暴露应用                           | 分配一个稳定的集群内部IP，并在每个Node节点启用一个端口来暴露服务，使其可以在集群外部访问，<br />端口访问默认为：30000 - 32767 |
 | LoadBalancer | 对外暴露应用（对于公有云环境进行优化） | 与NodePort类似，不同之处在于kubernetes会请求底层云平台（例如阿里云、腾讯云等）上的负载均衡器，将每个Node（NodeIP:NodePort）作为后端添加进去 |
 
+:::
 
+::: details  Service的实现方式
 
-**Service的实现**
+* `iptables`
+* `ipvs`
 
-`iptables`和`ipvs`
+注意：若`kube-proxy`使用`iptables`模型则不可以使用`ping`来测试通信，若使用`ipvs`模型则支持`ping`来测试通信
 
-若`kube-proxy`使用`iptables`模型则不可以使用`ping`来测试通信，若使用`ipvs`模型则支持`ping`来测试通信
+:::
 
-
-
-**关键字段说明**
+::: details  Service字段说明
 
 | 字段                               | 是否必填 | 可选值和默认值                                            | 说明                     |
 | ---------------------------------- | -------- | --------------------------------------------------------- | ------------------------ |
@@ -2307,22 +2310,22 @@ Hello from the Kubernetes cluster
 | `targetPort`                       | ×        | 默认情况下，`targetPort` 将被设置为与 `port` 字段相同的值 | 容器端口                 |
 | `nodePort`（类型为NodePort时有效） | ×        | 30000-32767（默认端口范围）                               | 集群所有节点对外暴露端口 |
 
-<br />
+:::
 
-
-
-**Service对外暴露的不足**
+::: details  Service的不足
 
 * 一个端口只能一个服务使用，端口需要提前规划
 * 只支持4层负载均衡
 
+:::
 
+<br />
 
-#### 类型1：ClusterIP
+**Service实践**
 
-::: details  点击查看详情
+::: details  （1）ClusterIP
 
-**创建**
+**创建Deployment和ClusterIP类型的Service**
 
 ```bash
 [root@node0 k8s]# cat > demo.yml <<- EOF
@@ -2345,7 +2348,6 @@ spec:
       containers:
       - name: demo
         image: nginx:1.21.6
-
 ---
 apiVersion: v1
 kind: Service
@@ -2473,11 +2475,7 @@ Commercial support is available at
 
 :::
 
-<br />
-
-#### 类型2：NodePort
-
-::: details  点击查看详情
+::: details  （2）NodePort
 
 **创建**
 
@@ -2618,7 +2616,7 @@ E0611 11:12:15.485961       1 proxier.go:377] "Can't set sysctl, kernel version 
 
 <br />
 
-#### Service DNS通信
+**Service DNS通信**
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/)
 
