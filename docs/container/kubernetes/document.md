@@ -2284,16 +2284,6 @@ Hello from the Kubernetes cluster
 
 **Service基础**
 
-::: details  Service的三种类型
-
-| 类型         | 简介                                   | 说明                                                         |
-| ------------ | -------------------------------------- | ------------------------------------------------------------ |
-| ClusterIP    | 集群内部使用（默认类型）               | 分配一个稳定的集群内部IP                                     |
-| NodePort     | 对外暴露应用                           | 分配一个稳定的集群内部IP，并在每个Node节点启用一个端口来暴露服务，使其可以在集群外部访问，<br />端口访问默认为：30000 - 32767 |
-| LoadBalancer | 对外暴露应用（对于公有云环境进行优化） | 与NodePort类似，不同之处在于kubernetes会请求底层云平台（例如阿里云、腾讯云等）上的负载均衡器，将每个Node（NodeIP:NodePort）作为后端添加进去 |
-
-:::
-
 ::: details  Service的实现方式
 
 * `iptables`
@@ -2317,6 +2307,16 @@ I0106 02:24:14.250712       1 proxier.go:449] "IPVS scheduler not specified, use
 E0106 02:24:14.251054       1 proxier.go:390] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
 I0106 02:24:14.251165       1 proxier.go:449] "IPVS scheduler not specified, use rr by default"
 ```
+
+:::
+
+::: details  Service的三种类型
+
+| 类型         | 简介                                   | 说明                                                         |
+| ------------ | -------------------------------------- | ------------------------------------------------------------ |
+| ClusterIP    | 集群内部使用（默认类型）               | 分配一个稳定的集群内部IP                                     |
+| NodePort     | 对外暴露应用                           | 分配一个稳定的集群内部IP，并在每个Node节点启用一个端口来暴露服务，使其可以在集群外部访问，<br />端口访问默认为：30000 - 32767 |
+| LoadBalancer | 对外暴露应用（对于公有云环境进行优化） | 与NodePort类似，不同之处在于kubernetes会请求底层云平台（例如阿里云、腾讯云等）上的负载均衡器，将每个Node（NodeIP:NodePort）作为后端添加进去 |
 
 :::
 
@@ -2548,42 +2548,37 @@ Cluster IP A记录格式
 ::: details  同一个NameSpace下Service DNS通信
 
 ```bash
-# 生成demo1 yaml文件
-[root@node0 k8s]# cat > demo1.yml <<- EOF
+# 生成yaml文件
+[root@node-1 ~]# cat > service.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo1
+  name: demo
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo1
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo1
+        app: web
     spec:
       containers:
-      - name: demo1
-        image: busybox:1.28
-        command:
-        - sh 
-        - -c
-        - sleep 3600
-
+      - name: demo
+        image: busybox:latest
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo1-svc
+  name: demo
   namespace: default
 spec:
   selector:
-    app: demo1        # 通过标签关联Pods
-  type: NodePort      # 指定Service类型为NodePort
+    app: web          # 通过标签关联Pods
+  type: ClusterIP     # Service类型为ClusterIP，这也是默认值
   ports:              # 端口字段，固定
     - name: http      # 定义一个名字,用来说明这是http应用
       protocol: TCP   # 协议
@@ -2591,63 +2586,59 @@ spec:
       targetPort: 80  # 容器端口
 EOF
 
-# 生成demo2 yaml文件
-[root@node0 k8s]# cp demo1.yml demo2.yml 
-[root@node0 k8s]# sed -ri 's/demo1/demo2/g' demo2.yml
+# 生成service2.yaml
+[root@node-1 ~]# cp service.yaml service2.yaml 
+[root@node-1 ~]# sed -ri 's/demo/demo2/g' service2.yaml
 
 # 创建应用
-[root@node0 k8s]# kubectl apply -f demo1.yml 
-deployment.apps/demo1 created
-service/demo1-svc created
-[root@node0 k8s]# kubectl apply -f demo2.yml 
+[root@node-1 ~]# kubectl apply -f service.yaml 
+deployment.apps/demo created
+service/demo created
+[root@node-1 ~]# kubectl apply -f service2.yaml 
 deployment.apps/demo2 created
-service/demo2-svc created
+service/demo2 created
 
 # 查看Pod
-[root@node1 ~]# kubectl get pods
-NAME                     READY   STATUS    RESTARTS   AGE
-demo1-5f98c8db55-lxs8p   1/1     Running   0          15s
-demo2-6ccd8fc5d9-btbqd   1/1     Running   0          13s
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                     READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+demo-546b654cf4-b449d    1/1     Running   0          12s   10.100.217.115   node-4   <none>           <none>
+demo2-648c6ddf84-r8kqd   1/1     Running   0          8s    10.100.217.94    node-4   <none>           <none>
 
-# 进入demo1容器，Service DNS通信验证
-[root@node1 ~]# kubectl exec -it demo1-5f98c8db55-lxs8p -- sh
+# 进入demo容器，Service DNS通信验证
+[root@node-1 ~]# kubectl exec -it demo-546b654cf4-b449d -- sh
 
-# （1）直接ping service-name
-/ # ping demo2-svc    
-PING demo2-svc (10.200.121.230): 56 data bytes
-64 bytes from 10.200.121.230: seq=0 ttl=64 time=0.074 ms
-64 bytes from 10.200.121.230: seq=1 ttl=64 time=0.078 ms
-64 bytes from 10.200.121.230: seq=2 ttl=64 time=0.087 ms
-64 bytes from 10.200.121.230: seq=3 ttl=64 time=0.087 ms
-^C
---- demo2-svc ping statistics ---
+# (1) 直接ping service-name
+/ # ping demo2 -c 4
+PING demo2 (10.200.105.74): 56 data bytes
+64 bytes from 10.200.105.74: seq=0 ttl=64 time=0.056 ms
+64 bytes from 10.200.105.74: seq=1 ttl=64 time=0.079 ms
+64 bytes from 10.200.105.74: seq=2 ttl=64 time=0.079 ms
+64 bytes from 10.200.105.74: seq=3 ttl=64 time=0.149 ms
+
+--- demo2 ping statistics ---
 4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.074/0.081/0.087 ms
+round-trip min/avg/max = 0.056/0.090/0.149 ms
 
 
-# （2）域名解析，可以得到IP和完整的域名 demo2-svc.default.svc.cluster.local
-/ # nslookup demo2-svc
-Server:    169.254.25.10
-Address 1: 169.254.25.10
+# (2) 域名解析，可以得到IP和完整的域名
+/ # nslookup demo2
+Server:         10.200.0.10
+Address:        10.200.0.10:53
 
-Name:      demo2-svc
-Address 1: 10.200.121.230 demo2-svc.default.svc.cluster.local
-
-# （3）demo2，啥也不是
-/ # ping demo2
-ping: bad address 'demo2'
+Name:   demo2.default.svc.cluster.local
+Address: 10.200.105.74
 
 # 在demo2容器中进行Service DNS通信验证
-[root@node1 ~]# kubectl exec -it demo2-6ccd8fc5d9-btbqd -- ping demo1-svc
-PING demo1-svc (10.200.25.248): 56 data bytes
-64 bytes from 10.200.25.248: seq=0 ttl=64 time=0.069 ms
-64 bytes from 10.200.25.248: seq=1 ttl=64 time=0.125 ms
-64 bytes from 10.200.25.248: seq=2 ttl=64 time=0.118 ms
-64 bytes from 10.200.25.248: seq=3 ttl=64 time=0.111 ms
-^C
---- demo1-svc ping statistics ---
+[root@node-1 ~]# kubectl exec -it demo2-648c6ddf84-r8kqd -- ping demo -c 4
+PING demo (10.200.81.10): 56 data bytes
+64 bytes from 10.200.81.10: seq=0 ttl=64 time=0.059 ms
+64 bytes from 10.200.81.10: seq=1 ttl=64 time=0.134 ms
+64 bytes from 10.200.81.10: seq=2 ttl=64 time=0.146 ms
+64 bytes from 10.200.81.10: seq=3 ttl=64 time=0.102 ms
+
+--- demo ping statistics ---
 4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.069/0.105/0.125 ms
+round-trip min/avg/max = 0.059/0.110/0.146 ms
 ```
 
 :::
@@ -2655,42 +2646,37 @@ round-trip min/avg/max = 0.069/0.105/0.125 ms
 ::: details  不同NameSpace下Service DNS通信
 
 ```bash
-# 生成demo1 yaml文件
-[root@node0 k8s]# cat > demo1.yml <<- EOF
+# 生成yaml文件
+[root@node-1 ~]# cat > service.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo1
+  name: demo
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo1
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo1
+        app: web
     spec:
       containers:
-      - name: demo1
-        image: busybox:1.28
-        command:
-        - sh 
-        - -c
-        - sleep 3600
-
+      - name: demo
+        image: busybox:latest
+        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo1-svc
+  name: demo
   namespace: default
 spec:
   selector:
-    app: demo1        # 通过标签关联Pods
-  type: NodePort      # 指定Service类型为NodePort
+    app: web          # 通过标签关联Pods
+  type: ClusterIP     # Service类型为ClusterIP，这也是默认值
   ports:              # 端口字段，固定
     - name: http      # 定义一个名字,用来说明这是http应用
       protocol: TCP   # 协议
@@ -2698,59 +2684,58 @@ spec:
       targetPort: 80  # 容器端口
 EOF
 
-# 生成demo2 yaml文件
-[root@node0 k8s]# cp demo1.yml demo2.yml 
-[root@node0 k8s]# sed -ri 's/demo1/demo2/g' demo2.yml
-[root@node0 k8s]# sed -ri 's/(.*)(namespace:)(.*)/\1\2 kube-public/g' demo2.yml
+# 生成service2.yaml
+[root@node-1 ~]# cp service.yaml service2.yaml 
+[root@node-1 ~]# sed -ri 's/demo/demo2/g' service2.yaml
+[root@node-1 ~]# sed -ri 's/(.*)(namespace:)(.*)/\1\2 kube-public/g' service2.yaml
 
 # 创建应用
-[root@node0 k8s]# kubectl apply -f demo1.yml 
-deployment.apps/demo1 created
-service/demo1-svc created
-[root@node0 k8s]# kubectl apply -f demo2.yml 
+[root@node-1 ~]# kubectl apply -f service.yaml 
+deployment.apps/demo created
+service/demo created
+[root@node-1 ~]# kubectl apply -f service2.yaml 
 deployment.apps/demo2 created
-service/demo2-svc created
+service/demo2 created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -n default
-NAME                     READY   STATUS    RESTARTS   AGE
-demo1-5f98c8db55-dcl7h   1/1     Running   0          22s
+[root@node-1 ~]# kubectl get pods -n default
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-546b654cf4-mtd98   1/1     Running   0          11s
 
-[root@node0 k8s]# kubectl get pods -n kube-public
-NAME                     READY   STATUS    RESTARTS   AGE
-demo2-6ccd8fc5d9-5l4qk   1/1     Running   0          24s
+[root@node-1 ~]# kubectl get pods -n kube-public
+NAME                     READY   STATUS        RESTARTS   AGE
+demo2-648c6ddf84-scjgh   1/1     Running       0          11s
 
-# 进入demo1容器，Service DNS通信验证
-[root@node1 ~]# kubectl exec -it demo1-5f98c8db55-dcl7h -- sh
+# 进入demo容器，Service DNS通信验证
+[root@node1 ~]# kubectl exec -it demo-546b654cf4-mtd98 -- sh
 
-# （1）直接ping service-name是不可以的，因为在不同的namespace下
-/ # ping demo2-svc   
-ping: bad address 'demo2-svc'
+# (1) 直接ping service-name是不可以的，因为在不同的namespace下
+/ # ping demo2
+ping: bad address 'demo2'
 
+# (2) 可以使用service-name.namespace-name来通信
+/ # ping demo2.kube-public -c 4
+PING demo2.kube-public (10.200.120.104): 56 data bytes
+64 bytes from 10.200.120.104: seq=0 ttl=64 time=0.078 ms
+64 bytes from 10.200.120.104: seq=1 ttl=64 time=0.108 ms
+64 bytes from 10.200.120.104: seq=2 ttl=64 time=0.080 ms
+64 bytes from 10.200.120.104: seq=3 ttl=64 time=0.099 ms
 
-# （2）可以使用service-name.namespace-name来通信
-/ # ping demo2-svc.kube-public
-PING demo2-svc.kube-public (10.200.23.194): 56 data bytes
-64 bytes from 10.200.23.194: seq=0 ttl=64 time=0.122 ms
-64 bytes from 10.200.23.194: seq=1 ttl=64 time=0.078 ms
-64 bytes from 10.200.23.194: seq=2 ttl=64 time=0.103 ms
-64 bytes from 10.200.23.194: seq=3 ttl=64 time=0.137 ms
-^C
---- demo2-svc.kube-public ping statistics ---
+--- demo2.kube-public ping statistics ---
 4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.078/0.110/0.137 ms
+round-trip min/avg/max = 0.078/0.091/0.108 ms
 
 # 在demo2容器中进行Service DNS通信验证
-[root@node0 k8s]# kubectl exec -it demo2-6ccd8fc5d9-5l4qk -n kube-public -- ping demo1-svc.default
-PING demo1-svc.default (10.200.242.177): 56 data bytes
-64 bytes from 10.200.242.177: seq=0 ttl=64 time=0.075 ms
-64 bytes from 10.200.242.177: seq=1 ttl=64 time=0.078 ms
-64 bytes from 10.200.242.177: seq=2 ttl=64 time=0.102 ms
-64 bytes from 10.200.242.177: seq=3 ttl=64 time=0.099 ms
-^C
---- demo1-svc.default ping statistics ---
+[root@node-1 ~]# kubectl exec -it demo2-648c6ddf84-scjgh -n kube-public -- ping demo.default -c 4
+PING demo.default (10.200.210.157): 56 data bytes
+64 bytes from 10.200.210.157: seq=0 ttl=64 time=0.086 ms
+64 bytes from 10.200.210.157: seq=1 ttl=64 time=0.085 ms
+64 bytes from 10.200.210.157: seq=2 ttl=64 time=0.078 ms
+64 bytes from 10.200.210.157: seq=3 ttl=64 time=0.094 ms
+
+--- demo.default ping statistics ---
 4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.075/0.088/0.102 ms
+round-trip min/avg/max = 0.078/0.085/0.094 ms
 ```
 
 :::
