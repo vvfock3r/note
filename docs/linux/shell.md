@@ -875,9 +875,9 @@ option is v ,the value is V
 
 <br />
 
-**（1）准备数据**
+**准备数据**
 
-::: details etcd-member.json
+::: details 点击查看详情
 
 ```bash
 [root@ap-hongkang ~]# cat > etcd-member.json << EOF
@@ -887,23 +887,63 @@ EOF
 
 :::
 
-<br />
+**正常处理**
 
-**（2）美化输出**
+::: details （1）美化输出
 
-::: details 点击查看详情
+![2023-01-06 20_34_10](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//2023-01-06%2020_34_10.png)
 
-![image-20230106194559763](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194559763.png)
-
-![image-20230106194657505](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194657505.png)
-
-![image-20230106194754432](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194754432.png)
+![image-20230106203554031](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106203554031.png)
 
 :::
 
-**（3）遍历数组**
+::: details （2）返回指定格式：对象、数组
 
-::: details 点击查看详情
+```bash
+# 取单个值
+[root@ap-hongkang ~]# cat etcd-member.json | jq '.header.cluster_id'
+17381046135283786000
+[root@ap-hongkang ~]# cat etcd-member.json | yq '.header.cluster_id'
+17381046135283785533
+
+# 作为对象返回
+[root@ap-hongkang ~]# cat etcd-member.json | jq '{"custom_id": .header.cluster_id}'
+{
+  "custom_id": 17381046135283786000
+}
+[root@ap-hongkang ~]# cat etcd-member.json | yq '{"custom_id": .header.cluster_id}' -o json
+{
+  "custom_id": 17381046135283785533
+}
+
+# 作为数组返回
+[root@ap-hongkang ~]# cat etcd-member.json | jq '[.header.cluster_id]'
+[
+  17381046135283786000
+]
+[root@ap-hongkang ~]# cat etcd-member.json | yq '[.header.cluster_id]' -o json
+[
+  17381046135283785533
+]
+
+# 数组+对象组合格式
+[root@ap-hongkang ~]# cat etcd-member.json | jq '[{"custom_id": .header.cluster_id}]'
+[
+  {
+    "custom_id": 17381046135283786000
+  }
+]
+[root@ap-hongkang ~]# cat etcd-member.json | yq '[{"custom_id": .header.cluster_id}]' -o json
+[
+  {
+    "custom_id": 17381046135283785533
+  }
+]
+```
+
+:::
+
+::: details （3）遍历数组
 
 ```bash
 # 提取出所有的name
@@ -963,6 +1003,80 @@ etcd-3
     "name": "etcd-3"
   }
 ]
+```
+
+:::
+
+**报错处理**
+
+::: details （1）特殊符号引起的错误：key包含特殊字符或者以数字开头，使用'.key'会报错
+
+```bash
+# 看一下报错的情况
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | jq '.1header'
+jq: error: syntax error, unexpected IDENT, expecting $end (Unix shell quoting issues?) at <top-level>, line 1:
+.1header  
+jq: 1 compile error
+
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | yq '.1header'
+null
+
+# 看一下诡异的不报错的情况
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | jq '.1'
+0.1
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | jq '.1111111111'
+0.1111111111
+
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | yq '.1'
+2
+
+# 解决jq报错和异常的问题: 使用双引号将key包裹
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | jq '."1header"'
+null
+[root@ap-hongkang ~]# echo '{"1":2, "3":4}' | jq '."1"'
+2
+```
+
+:::
+
+::: details （2）使用不当引起的错误：比如对一个数组使用 .key 的方式访问，key是一个字符串并非是数组索引
+
+```bash
+# 报错演示
+[root@ap-hongkang ~]# echo '[1,2,3]' | jq '.foo'
+jq: error (at <stdin>:1): Cannot index array with string "foo"
+[root@ap-hongkang ~]# echo $?
+5
+
+[root@ap-hongkang ~]# echo '[1,2,3]' | yq '.foo'
+Error: cannot index array with 'foo' (strconv.ParseInt: parsing "foo": invalid syntax)
+[root@ap-hongkang ~]# echo $?
+1
+
+# 忽略报错
+[root@ap-hongkang ~]# echo '[1,2,3]' | jq '.foo?'
+[root@ap-hongkang ~]# echo $?
+0
+
+[root@ap-hongkang ~]# echo '[1,2,3]' | yq '.foo?'
+[root@ap-hongkang ~]# echo $?
+0
+```
+
+:::
+
+::: details （3）null的问题：当key不存在时会返回null，当key的值为null时也返回null，这就无法区分key是否存在
+
+```bash
+[root@ap-hongkang ~]# echo '{"foo": null}' | jq '.abc'
+null
+[root@ap-hongkang ~]# echo '{"foo": null}' | jq '.foo'
+null
+
+[root@ap-hongkang ~]# echo '{"foo": null}' | yq '.abc'
+null
+[root@ap-hongkang ~]# echo '{"foo": null}' | yq '.foo'
+null
 ```
 
 :::
