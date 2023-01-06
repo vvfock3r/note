@@ -856,7 +856,7 @@ option is v ,the value is V
 
 ### awk
 
-### ?q
+### jq
 
 **jq**
 
@@ -889,11 +889,81 @@ EOF
 
 <br />
 
-**（2）输出美化**
+**（2）美化输出**
 
-::: details （1）JSON美化输出
+::: details 点击查看详情
 
+![image-20230106194559763](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194559763.png)
 
+![image-20230106194657505](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194657505.png)
+
+![image-20230106194754432](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106194754432.png)
+
+:::
+
+**（3）遍历数组**
+
+::: details 点击查看详情
+
+```bash
+# 提取出所有的name
+[root@ap-hongkang ~]# cat etcd-member.json | jq '.members[] | .name'
+"etcd-2"
+"etcd-1"
+"etcd-3"
+[root@ap-hongkang ~]# cat etcd-member.json | yq '.members[] | .name'
+etcd-2
+etcd-1
+etcd-3
+
+# 作为一个键值对返回
+[root@ap-hongkang ~]# cat etcd-member.json | jq '.members[] | {"name":.name}'
+{
+  "name": "etcd-2"
+}
+{
+  "name": "etcd-1"
+}
+{
+  "name": "etcd-3"
+}
+[root@ap-hongkang ~]# cat etcd-member.json | yq '.members[] | {"name":.name}' -o json
+{
+  "name": "etcd-2"
+}
+{
+  "name": "etcd-1"
+}
+{
+  "name": "etcd-3"
+}
+
+# 将返回结果作为一个数组返回
+[root@ap-hongkang ~]# cat etcd-member.json | jq '[ .members[] | {"name":.name} ]'
+[
+  {
+    "name": "etcd-2"
+  },
+  {
+    "name": "etcd-1"
+  },
+  {
+    "name": "etcd-3"
+  }
+]
+[root@ap-hongkang ~]# cat etcd-member.json | yq '[ .members[] | {"name":.name} ]' -o json
+[
+  {
+    "name": "etcd-2"
+  },
+  {
+    "name": "etcd-1"
+  },
+  {
+    "name": "etcd-3"
+  }
+]
+```
 
 :::
 
