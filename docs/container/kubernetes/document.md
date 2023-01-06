@@ -1013,7 +1013,7 @@ fe00::2 ip6-allrouters
 
 <br />
 
-## Pod调度策略
+## Pod调度
 
 文档总览：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/)
 
@@ -1607,78 +1607,74 @@ busybox   1/1     Running   0          8s    10.100.217.121   node-4   <none>   
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: Exists
             - key: node-role.kubernetes.io/control-plane
-              operator: Exists
-            - key: node-role.kubernetes.io/master
               operator: Exists
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          81s   10.233.30.27   node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          11s   10.100.139.70   node-3   <none>           <none>
 ```
 
 `DoesNotExist`：标签不存在才会被调度，不支持`values`字段
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nodeName
+            - key: kubernetes.io/hostname
               operator: Exists
             - key: node-role.kubernetes.io/control-plane
-              operator: DoesNotExist
-            - key: node-role.kubernetes.io/master
               operator: DoesNotExist
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          4s    10.233.44.65   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          5s    10.100.217.124   node-4   <none>           <none>
 ```
 
 `Gt`：标签值大于所指定的值才会被调度
@@ -1687,22 +1683,22 @@ demo   1/1     Running   0          4s    10.233.44.65   node2   <none>         
 
 ```yaml
 # 给节点打个标签
-[root@node0 k8s]# kubectl label node node0 weight=1
-[root@node0 k8s]# kubectl label node node1 weight=2
-[root@node0 k8s]# kubectl label node node2 weight=3
+[root@node-1 ~]# kubectl label node node-1 weight=1
+[root@node-1 ~]# kubectl label node node-2 weight=2
+[root@node-1 ~]# kubectl label node node-3 weight=3
 
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
@@ -1720,13 +1716,13 @@ spec:
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          5s    10.233.154.25   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          11s   10.100.247.9   node-2   <none>           <none>
 ```
 
 :::
@@ -1739,17 +1735,17 @@ demo   1/1     Running   0          5s    10.233.154.25   node1   <none>        
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
@@ -1759,20 +1755,20 @@ spec:
         preference:
           matchExpressions:
           # 指定一个肯定不会存在的key和值
-          - key: a-nonexistent-key
+          - key: non-exists-key
             operator: In
             values:
             - any-value
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          25s   10.233.44.67   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          8s    10.100.217.125   node-4   <none>           <none>
 ```
 
 :::
@@ -1789,38 +1785,38 @@ demo   1/1     Running   0          25s   10.233.44.67   node2   <none>         
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > busybox.yaml <<- EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: demo
+  name: busybox
   labels:
-    app: demo
+    app: busybox
 spec:
   containers:
-  - name: demo
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
-          # 匹配字段metadata.name是node1的node
+          # 匹配字段metadata.name是node-1的node
           - matchFields:
             - key: metadata.name
               operator: In
               values:
-              - node1
+              - node-1
 EOF
 
 # 创建Pod
-[root@node0 k8s]# kubectl apply -f demo.yml 
-pod/demo created
+[root@node-1 ~]# kubectl apply -f busybox.yaml
+pod/busybox created
 
 # 查看Pod调度在哪个Node上
-[root@node0 k8s]# kubectl get pods -o wide
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo   1/1     Running   0          4s    10.233.154.26   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          10s   10.100.84.164   node-1   <none>           <none>
 ```
 
 :::
@@ -1851,26 +1847,21 @@ demo   1/1     Running   0          4s    10.233.154.26   node1   <none>        
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/)
 
-<br />
-
-#### 基础示例
-
-::: details  点击查看详情
+::: details （1）基础示例
 
 ```bash
-# 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+# 生成yaml文件      
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1     # API版本
 kind: Deployment        # 类型为 Deployment
 metadata:               # Deployment元数据
-  name: demo            #   Deployment名称
-  namespace: default    #   Deployment所属命名空间
+  name: nginx           #   名称
+  namespace: default    #   所属命名空间
 spec:                   # Deployment定义
   replicas: 3           #   定义预期的Pod副本数量
   selector:             #   定义标签选择器
     matchLabels:        #     用于与指定标签的Pod关联
-      app: web
-
+      app: web          #
   template:             # Pod模板
     metadata:           #   Pod元数据
       labels:           #     定义Pod标签
@@ -1878,101 +1869,100 @@ spec:                   # Deployment定义
     spec:               #   Pod定义
       containers:
       - name: web
-        image: nginx:1.21.6
+        image: nginx:latest
         command: ['nginx', '-g', 'daemon off;']
-      - name: other
-        image: busybox:1.28
-        command: ['sh', '-c', 'echo The app is running! && sleep 3600']
 EOF
 
 # 创建Deployment
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo created
+[root@node-1 ~]# kubectl apply -f deployment.yaml
+deployment.apps/nginx created
+
+# 查看Deployment
+[root@node-1 ~]# kubectl get deploy -o wide
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES         SELECTOR
+nginx   3/3     3            3           10s   web          nginx:latest   app=web
+
+# 查看Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-25tgn   1/1     Running   0          21s   10.100.217.66   node-4   <none>           <none>
+nginx-7d7b7d595-mmttw   1/1     Running   0          21s   10.100.84.166   node-1   <none>           <none>
+nginx-7d7b7d595-s8glt   1/1     Running   0          21s   10.100.247.11   node-2   <none>           <none>
+
+# 当我随便删除一个Pod
+[root@node-1 ~]# kubectl delete pod nginx-7d7b7d595-25tgn
+pod "nginx-7d7b7d595-25tgn" deleted
+
+# 可以在到Pod又被重新创建出来了，副本数重新恢复为3个,这其实是ReplicaSet控制器的功劳
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-mmttw   1/1     Running   0          47s   10.100.84.166   node-1   <none>           <none>
+nginx-7d7b7d595-nqg6j   1/1     Running   0          10s   10.100.217.67   node-4   <none>           <none>
+nginx-7d7b7d595-s8glt   1/1     Running   0          47s   10.100.247.11   node-2   <none>           <none>
+
+# 查看ReplicaSet
+# 1.Deployment控制器会自动创建ReplicaSet   ReplicaSet命名规则    [Deployment名称]-[hash]
+# 2.Deployment控制器会给ReplicaSet添加标签  ReplicaSet标签命名规则 pod-template-hash=[hash]
+# 2.ReplicaSet控制器会维护Pod数量          Pod的命名规则为：      [Deployment名称]-[hash]-[随机字符串]
+[root@node-1 ~]# kubectl get rs -o wide
+NAME              DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES         SELECTOR
+nginx-7d7b7d595   3         3         3       99s   web          nginx:latest   app=web,pod-template-hash=7d7b7d595
 ```
 
 :::
 
-1、查看deployments
-
-```bash
-[root@node0 ~]# kubectl get deploy -o wide --show-labels
-NAME   READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                      SELECTOR   LABELS
-demo   3/3     3            3           7m21s   web,other    nginx:1.21.6,busybox:1.28   app=web    <none>
-```
-
-2、查看ReplicaSet
-
-![image-20220617051518147](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220617051518147.png)
-
-> （1）Deployment控制器会自动创建ReplicaSet，命名规则为：`[Deployment名称]-[hash]`
->
-> （2）Deployment控制器会给ReplicaSet添加`pod-template-hash=[hash]`标签
-
-3、查看Pods
-
-![image-20220617052152945](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220617052152945.png)
-
-> （1）ReplicaSet控制器会维护Pod数量，Pod的命名规则为：`[Deployment名称]-[hash]-[随机字符串]`
->
-> （2）ReplicaSet控制器会给Pod添加上`pod-template-hash=[hash]`标签
-
 <br />
 
-#### ReplicaSet
+### ReplicaSet
 
-ReplicaSet控制器会自动维护Pod数量（新建或删除等）
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/replicaset/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/replicaset/)
+
+`ReplicaSet`控制器会自动维护Pod数量（新建或删除等），通常我们不需要显示使用它，而是使用更高级的对象，比如`Deployment `、`DaemonSet`等
 
 ::: details  (1) 通过污点驱逐说明ReplicaSet会自动新建Pod
 
 ```bash
-# 看一下当前的Pod
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-5fdxd   2/2     Running   0          43m   10.233.44.108   node2   <none>           <none>
-demo-6b86f546b6-9qmwm   2/2     Running   0          43m   10.233.30.55    node0   <none>           <none>
-demo-6b86f546b6-plq7k   2/2     Running   0          43m   10.233.154.49   node1   <none>           <none>
+# 看一下default命名空间下的Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-4wqp2   1/1     Running   0          8s    10.100.139.79   node-3   <none>           <none>
+nginx-7d7b7d595-wvr6c   1/1     Running   0          8s    10.100.84.168   node-1   <none>           <none>
+nginx-7d7b7d595-xv678   1/1     Running   0          8s    10.100.217.71   node-4   <none>           <none>
 
-# 给node2打一个污点，用于驱逐其上的Pod
-[root@node0 ~]# kubectl taint node node2 a=b:NoExecute
+# 给node-1打一个污点，用于驱逐其上的Pod
+[root@node-1 ~]# kubectl taint node node-1 replicaset-test:NoExecute
+node/node-1 tainted
 
-# 查看Pod，发现node2上的正在销毁，同时在node1上又启动了一个新Pod，维持Pod数量
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS        RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-5fdxd   2/2     Terminating   0          43m   10.233.44.108   node2   <none>           <none>
-demo-6b86f546b6-9qmwm   2/2     Running       0          43m   10.233.30.55    node0   <none>           <none>
-demo-6b86f546b6-mrccc   2/2     Running       0          2s    10.233.154.50   node1   <none>           <none>
-demo-6b86f546b6-plq7k   2/2     Running       0          43m   10.233.154.49   node1   <none>           <none>
-
-# 等稳定后再查看Pod
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-9qmwm   2/2     Running   0          46m     10.233.30.55    node0   <none>           <none>
-demo-6b86f546b6-mrccc   2/2     Running   0          2m33s   10.233.154.50   node1   <none>           <none>
-demo-6b86f546b6-plq7k   2/2     Running   0          46m     10.233.154.49   node1   <none>           <none>
+# 查看node-1上的Pod已经被销毁，同时在node-4上又启动了一个新Pod，维持Pod数量
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-4wqp2   1/1     Running   0          29s   10.100.139.79   node-3   <none>           <none>
+nginx-7d7b7d595-jss5h   1/1     Running   0          7s    10.100.217.72   node-4   <none>           <none>
+nginx-7d7b7d595-xv678   1/1     Running   0          29s   10.100.217.71   node-4   <none>           <none>
 
 # 看一下ReplicaSet的日志
-[root@node0 ~]# kubectl get rs
+[root@node-1 ~]# kubectl get rs
 NAME              DESIRED   CURRENT   READY   AGE
-demo-6b86f546b6   3         3         3       47m
+nginx-7d7b7d595   3         3         3       60s
 
-[root@node0 ~]# kubectl describe rs demo-6b86f546b6
-Name:           demo-6b86f546b6
+[root@node-1 ~]# kubectl describe rs nginx-7d7b7d595
+Name:           nginx-7d7b7d595
 Namespace:      default
-Selector:       app=web,pod-template-hash=6b86f546b6
+Selector:       app=web,pod-template-hash=7d7b7d595
 Labels:         app=web
-                pod-template-hash=6b86f546b6
+                pod-template-hash=7d7b7d595
 Annotations:    deployment.kubernetes.io/desired-replicas: 3
                 deployment.kubernetes.io/max-replicas: 4
                 deployment.kubernetes.io/revision: 1
-Controlled By:  Deployment/demo
+Controlled By:  Deployment/nginx
 Replicas:       3 current / 3 desired
 Pods Status:    3 Running / 0 Waiting / 0 Succeeded / 0 Failed
 Pod Template:
   Labels:  app=web
-           pod-template-hash=6b86f546b6
+           pod-template-hash=7d7b7d595
   Containers:
    web:
-    Image:      nginx:1.21.6
+    Image:      nginx:latest
     Port:       <none>
     Host Port:  <none>
     Command:
@@ -1981,24 +1971,18 @@ Pod Template:
       daemon off;
     Environment:  <none>
     Mounts:       <none>
-   other:
-    Image:      busybox:1.28
-    Port:       <none>
-    Host Port:  <none>
-    Command:
-      sh
-      -c
-      echo The app is running! && sleep 3600
-    Environment:  <none>
-    Mounts:       <none>
   Volumes:        <none>
 Events:
-  Type    Reason            Age    From                   Message
-  ----    ------            ----   ----                   -------
-  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-5fdxd
-  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-plq7k
-  Normal  SuccessfulCreate  48m    replicaset-controller  Created pod: demo-6b86f546b6-9qmwm
-  Normal  SuccessfulCreate  4m23s  replicaset-controller  Created pod: demo-6b86f546b6-mrccc  # 新建Pod
+  Type    Reason            Age   From                   Message
+  ----    ------            ----  ----                   -------
+  Normal  SuccessfulCreate  80s   replicaset-controller  Created pod: nginx-7d7b7d595-xv678
+  Normal  SuccessfulCreate  80s   replicaset-controller  Created pod: nginx-7d7b7d595-wvr6c
+  Normal  SuccessfulCreate  80s   replicaset-controller  Created pod: nginx-7d7b7d595-4wqp2
+  Normal  SuccessfulCreate  58s   replicaset-controller  Created pod: nginx-7d7b7d595-jss5h # 新建Pod
+  
+# 清理污点
+[root@node-1 ~]# kubectl taint node node-1 replicaset-test:NoExecute-
+node/node-1 untainted
 ```
 
 :::
@@ -2007,51 +1991,43 @@ Events:
 
 ```bash
 # 看一下当前的Pod
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-9qmwm   2/2     Running   0          53m     10.233.30.55    node0   <none>           <none>
-demo-6b86f546b6-mrccc   2/2     Running   0          9m43s   10.233.154.50   node1   <none>           <none>
-demo-6b86f546b6-plq7k   2/2     Running   0          53m     10.233.154.49   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-4wqp2   1/1     Running   0          2m42s   10.100.139.79   node-3   <none>           <none>
+nginx-7d7b7d595-jss5h   1/1     Running   0          2m20s   10.100.217.72   node-4   <none>           <none>
+nginx-7d7b7d595-xv678   1/1     Running   0          2m42s   10.100.217.71   node-4   <none>           <none>
 
-# 修改demo.yaml中的replicas为1，并使其生效
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo configured
+# 修改deployment.yaml中的replicas为1，并使其生效
+[root@node-1 ~]# kubectl apply -f deployment.yaml
+deployment.apps/nginx configured
 
-# 再次查看Pod，可以看到有两个正在销毁
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS        RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-9qmwm   2/2     Running       0          53m     10.233.30.55    node0   <none>           <none>
-demo-6b86f546b6-mrccc   2/2     Terminating   0          9m52s   10.233.154.50   node1   <none>           <none>
-demo-6b86f546b6-plq7k   2/2     Terminating   0          53m     10.233.154.49   node1   <none>           <none>
-
-# 等稳定后再查看Pod
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo-6b86f546b6-9qmwm   2/2     Running   0          56m   10.233.30.55   node0   <none>           <none>
+# 再次查看Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-7d7b7d595-4wqp2   1/1     Running   0          3m30s   10.100.139.79   node-3   <none>           <none>
 
 # 看一下ReplicaSet的日志
-[root@node0 ~]# kubectl get rs 
+[root@node-1 ~]# kubectl get rs
 NAME              DESIRED   CURRENT   READY   AGE
-demo-6b86f546b6   1         1         1       57m
-
-[root@node0 ~]# kubectl describe rs demo-6b86f546b6
-Name:           demo-6b86f546b6
+nginx-7d7b7d595   1         1         1       3m55s
+[root@node-1 ~]# kubectl describe rs nginx-7d7b7d595
+Name:           nginx-7d7b7d595
 Namespace:      default
-Selector:       app=web,pod-template-hash=6b86f546b6
+Selector:       app=web,pod-template-hash=7d7b7d595
 Labels:         app=web
-                pod-template-hash=6b86f546b6
+                pod-template-hash=7d7b7d595
 Annotations:    deployment.kubernetes.io/desired-replicas: 1
                 deployment.kubernetes.io/max-replicas: 2
                 deployment.kubernetes.io/revision: 1
-Controlled By:  Deployment/demo
+Controlled By:  Deployment/nginx
 Replicas:       1 current / 1 desired
 Pods Status:    1 Running / 0 Waiting / 0 Succeeded / 0 Failed
 Pod Template:
   Labels:  app=web
-           pod-template-hash=6b86f546b6
+           pod-template-hash=7d7b7d595
   Containers:
    web:
-    Image:      nginx:1.21.6
+    Image:      nginx:latest
     Port:       <none>
     Host Port:  <none>
     Command:
@@ -2060,29 +2036,80 @@ Pod Template:
       daemon off;
     Environment:  <none>
     Mounts:       <none>
-   other:
-    Image:      busybox:1.28
-    Port:       <none>
-    Host Port:  <none>
-    Command:
-      sh
-      -c
-      echo The app is running! && sleep 3600
-    Environment:  <none>
-    Mounts:       <none>
   Volumes:        <none>
 Events:
   Type    Reason            Age    From                   Message
   ----    ------            ----   ----                   -------
-  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-5fdxd
-  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-plq7k
-  Normal  SuccessfulCreate  57m    replicaset-controller  Created pod: demo-6b86f546b6-9qmwm
-  Normal  SuccessfulCreate  13m    replicaset-controller  Created pod: demo-6b86f546b6-mrccc
-  Normal  SuccessfulDelete  3m49s  replicaset-controller  Deleted pod: demo-6b86f546b6-mrccc  # 删除Pod
-  Normal  SuccessfulDelete  3m49s  replicaset-controller  Deleted pod: demo-6b86f546b6-plq7k  # 删除Pod
+  Normal  SuccessfulCreate  4m3s   replicaset-controller  Created pod: nginx-7d7b7d595-xv678
+  Normal  SuccessfulCreate  4m3s   replicaset-controller  Created pod: nginx-7d7b7d595-wvr6c
+  Normal  SuccessfulCreate  4m3s   replicaset-controller  Created pod: nginx-7d7b7d595-4wqp2
+  Normal  SuccessfulCreate  3m41s  replicaset-controller  Created pod: nginx-7d7b7d595-jss5h
+  Normal  SuccessfulDelete  43s    replicaset-controller  Deleted pod: nginx-7d7b7d595-jss5h  # 删除Pod
+  Normal  SuccessfulDelete  43s    replicaset-controller  Deleted pod: nginx-7d7b7d595-xv678  # 删除Pod
 ```
 
 :::
+
+<br />
+
+### DaemonSet
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/daemonset/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/daemonset/)
+
+注意：如果节点含有污点，没有配置容忍度的话不会调度到该节点
+
+```bash
+# 生成yaml文件      
+[root@node-1 ~]# cat > daemonset.yaml <<- EOF
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx
+  namespace: default
+spec:  
+  selector:
+    matchLabels: 
+      app: web 
+  template: 
+    metadata:  
+      labels: 
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: nginx:latest
+        command: ['nginx', '-g', 'daemon off;']
+EOF
+
+# 创建DaemonSet
+[root@node-1 ~]# kubectl apply -f daemonset.yaml
+daemonset.apps/nginx created
+
+# 查看DaemonSet
+[root@node-1 ~]# kubectl get ds -o wide
+NAME    DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE   CONTAINERS   IMAGES         SELECTOR
+nginx   3         3         3       3            3           <none>          37s   web          nginx:latest   app=web
+
+# 查看Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-bwxgg   1/1     Running   0          39s   10.100.84.170   node-1   <none>           <none>
+nginx-cx97z   1/1     Running   0          39s   10.100.247.12   node-2   <none>           <none>
+nginx-fdgkm   1/1     Running   0          39s   10.100.217.75   node-4   <none>           <none>
+nginx-wchml   1/1     Running   0          39s   10.100.139.81   node-3   <none>           <none>
+```
+
+<br />
+
+### Job
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/job/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/job/)
+
+<br />
+
+### Cronjob
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/cron-jobs/](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/cron-jobs/)
 
 <br />
 
