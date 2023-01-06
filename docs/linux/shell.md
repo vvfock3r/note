@@ -852,9 +852,15 @@ option is v ,the value is V
 
 ### grep
 
+<br />
+
 ### sed
 
+<br />
+
 ### awk
+
+<br />
 
 ### jq
 
@@ -889,11 +895,15 @@ EOF
 
 **正常处理**
 
-::: details （1）美化输出
+::: details （1）格式化和压缩
 
 ![2023-01-06 20_34_10](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//2023-01-06%2020_34_10.png)
 
 ![image-20230106203554031](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106203554031.png)
+
+![image-20230106211907207](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106211907207.png)
+
+![image-20230106212118258](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230106212118258.png)
 
 :::
 
