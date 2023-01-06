@@ -2736,11 +2736,13 @@ round-trip min/avg/max = 0.078/0.085/0.094 ms
 
 <br />
 
-### Ingress简介
+### Ingress
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
 
-#### HTTP访问
+<br />
+
+**HTTP访问**
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
@@ -2845,7 +2847,7 @@ demo-59ddb745c4-mkkgw   1/1     Running   0          14m   10.233.44.20   node2 
 
 <br />
 
-#### HTTPS访问
+**HTTPS访问**
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
 
@@ -3002,11 +3004,9 @@ Location: https://a.com     # 重定向后新的地址
 
 <br />
 
-#### 个性化配置
+**个性化配置**
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/)
-
-
 
 ::: details  （1）Basic Auth 认证
 
