@@ -2275,7 +2275,9 @@ Hello from the Kubernetes cluster
 
 **Service说明**
 
-* 每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，<span style="color: red; font-weight: bold;">提供统一的访问入口和负载均衡功能</span>
+* 每个`Service`都有一个固定的`IP`，使用标签与`Pod`进行关联，提供统一的访问入口和负载均衡功能
+* Kubernetes 为 Service 和 Pod 创建 DNS 记录
+  * Service Cluster IP A记录格式：`<service-name>.<namespace-name>.svc.cluster.local`
 * Service的不足
   * 一个端口只能一个服务使用，端口需要提前规划
   * 只支持4层负载均衡，不支持7层负载均衡
@@ -2536,14 +2538,6 @@ curl: (28) Connection timed out after 5001 milliseconds
 **Service DNS通信**
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/)
-
-`CoreDNS`是一个DNS服务器，会为每一个`Service`自动创建DNS记录用于域名解析
-
-
-
-Cluster IP A记录格式
-
-`<service-name>.<namespace-name>.svc.cluster.local`
 
 ::: details  同一个NameSpace下Service DNS通信
 
