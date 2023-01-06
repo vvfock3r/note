@@ -2298,6 +2298,23 @@ Hello from the Kubernetes cluster
 
 注意：若`kube-proxy`使用`iptables`模型则不可以使用`ping`来测试通信，若使用`ipvs`模型则支持`ping`来测试通信
 
+```bash
+# 查看Service实现方式
+[root@node-1 ~]# kubectl get pods -A | grep kube-proxy
+kube-system   kube-proxy-826fr                           1/1     Running   15 (18h ago)     42h
+kube-system   kube-proxy-bfnqc                           1/1     Running   15 (18h ago)     42h
+kube-system   kube-proxy-cgsl9                           1/1     Running   13 (18h ago)     42h
+kube-system   kube-proxy-fbs9j                           1/1     Running   17 (18h ago)     42h
+
+[root@node-1 ~]# kubectl logs kube-proxy-826fr -n kube-system | grep -Ei 'proxy|proxier|iptables|ipvs'
+I0106 02:24:14.250094       1 server_others.go:269] "Using ipvs Proxier"
+I0106 02:24:14.250126       1 server_others.go:271] "Creating dualStackProxier for ipvs"
+E0106 02:24:14.250533       1 proxier.go:390] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
+I0106 02:24:14.250712       1 proxier.go:449] "IPVS scheduler not specified, use rr by default"
+E0106 02:24:14.251054       1 proxier.go:390] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
+I0106 02:24:14.251165       1 proxier.go:449] "IPVS scheduler not specified, use rr by default"
+```
+
 :::
 
 ::: details  Service字段说明
@@ -2325,10 +2342,9 @@ Hello from the Kubernetes cluster
 
 ::: details  （1）ClusterIP
 
-**创建Deployment和ClusterIP类型的Service**
-
 ```bash
-[root@node0 k8s]# cat > demo.yml <<- EOF
+# 生成yaml文件
+[root@node-1 ~]# cat > service.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2339,7 +2355,6 @@ spec:
   selector:
     matchLabels:
       app: web
-
   template:
     metadata:
       labels:
@@ -2347,7 +2362,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: nginx:1.21.6
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
@@ -2355,132 +2370,69 @@ metadata:
   name: demo
 spec:
   selector:
-    app: web         # 通过标签关联Pods
-  type: ClusterIP    # Service类型为ClusterIP，这也是默认值
-  ports:             # 端口字段，固定
-    - name: http     # 定义一个名字,用来说明这是http应用
-      protocol: TCP  # 协议
-      port: 80       # Service端口
-      targetPort: 80 # 容器端口
+    app: web          # 通过标签关联Pods
+  type: ClusterIP     # Service类型为ClusterIP，这也是默认值
+  ports:              # 端口字段，固定
+    - name: http      # 定义一个名字,用来说明这是http应用
+      protocol: TCP   # 协议
+      port: 80        # Service端口
+      targetPort: 80  # 容器端口
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml
+[root@node-1 ~]# kubectl apply -f service.yaml 
 deployment.apps/demo created
 service/demo created
-```
 
-**查看**
-
-```bash
 # 查看Service
-[root@node0 k8s]# kubectl get svc -o wide
-NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE     SELECTOR
-demo         ClusterIP   10.200.216.121   <none>        80/TCP    102s    app=web
-kubernetes   ClusterIP   10.200.0.1       <none>        443/TCP   7d13h   <none>
+[root@node-1 ~]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+demo         ClusterIP   10.200.144.88   <none>        80/TCP    83s   app=web
+kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP   42h   <none>
 
 # 查看Service绑定的后端的Pods地址
-[root@node0 k8s]# kubectl get ep
-NAME         ENDPOINTS                                 AGE
-demo         10.233.44.12:80                           3m24s
-kubernetes   192.168.48.128:6443,192.168.48.134:6443   7d13h
+[root@node-1 ~]# kubectl get ep
+NAME         ENDPOINTS                                                     AGE
+demo         10.100.217.111:80                                             97s
+kubernetes   192.168.48.151:6443,192.168.48.152:6443,192.168.48.153:6443   42h
 
 # 查看一下Pod IP，验证是不是和Service绑定的一样
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE    IP             NODE    NOMINATED NODE   READINESS GATES
-demo-799f9cf89-kcmmc   1/1     Running   0          6m1s   10.233.44.12   node2   <none>           <none>
-```
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE    IP               NODE     NOMINATED NODE   READINESS GATES
+demo-8559c7f799-rlh22   1/1     Running   0          2m1s   10.100.217.111   node-4   <none>           <none>
 
-**在任意的Node节点都可以访问Service IP**
+# 在任意的Node节点都可以访问Service IP
 
-```bash
-# node0
-[root@node0 k8s]# curl http://10.200.216.121
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
+[root@node-1 ~]# curl http://10.200.144.88 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Fri, 06 Jan 2023 05:23:27 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes
 
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
-
-<p><em>Thank you for using nginx.</em></p>
-</body>
-</html>
-
-# node1
-[root@node1 ~]# curl http://10.200.216.121
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
-
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
-
-<p><em>Thank you for using nginx.</em></p>
-</body>
-</html>
-
-# node2
-[root@node2 ~]# curl http://10.200.216.121
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
-
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
-
-<p><em>Thank you for using nginx.</em></p>
-</body>
-</html>
+[root@node-2 ~]# curl http://10.200.144.88 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Fri, 06 Jan 2023 05:23:48 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes
 ```
 
 :::
 
 ::: details  （2）NodePort
 
-**创建**
-
 ```bash
-[root@node0 k8s]# cat > demo.yml <<- EOF
+# 生成yaml文件
+[root@node-1 ~]# cat > service.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2491,7 +2443,6 @@ spec:
   selector:
     matchLabels:
       app: web
-
   template:
     metadata:
       labels:
@@ -2499,8 +2450,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: nginx:1.21.6
-
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
@@ -2515,101 +2465,72 @@ spec:
       protocol: TCP   # 协议
       port: 80        # Service端口
       targetPort: 80  # 容器端口
-      nodePort: 31000 # 指定NodePort
+      nodePort: 31000 # 指定NodePort,若不指定会随机选择端口
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml
+[root@node-1 ~]# kubectl apply -f service.yaml 
 deployment.apps/demo created
 service/demo created
-```
 
-**查看Service**
-
-```bash
 # 查看Service
-[root@node0 k8s]# kubectl get svc -o wide
-NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE     SELECTOR
-demo         NodePort    10.200.214.143   <none>        80:31000/TCP   2m10s   app=web
-kubernetes   ClusterIP   10.200.0.1       <none>        443/TCP        7d13h   <none>
+[root@node-1 ~]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   SELECTOR
+demo         NodePort    10.200.32.173   <none>        80:31000/TCP   23s   app=web
+kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP        42h   <none>
 
 # 查看Service绑定的后端的Pods地址
-[root@node0 k8s]# kubectl get ep
-NAME         ENDPOINTS                                 AGE
-demo         10.233.44.13:80                           2m24s
-kubernetes   192.168.48.128:6443,192.168.48.134:6443   7d13h
+[root@node-1 ~]# kubectl get ep
+NAME         ENDPOINTS                                                     AGE
+demo         10.100.217.112:80                                             32s
+kubernetes   192.168.48.151:6443,192.168.48.152:6443,192.168.48.153:6443   42h
 
 # 查看一下Pod IP，验证是不是和Service绑定的一样
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE     IP             NODE    NOMINATED NODE   READINESS GATES
-demo-799f9cf89-2kpvx   1/1     Running   0          2m38s   10.233.44.13   node2   <none>           <none>
-```
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+demo-8559c7f799-4k796   1/1     Running   0          43s   10.100.217.112   node-4   <none>           <none>
 
-**在集群外部访问任意Node的NodePort端口**
+# 在集群外部访问任意Node的NodePort端口
+C:\Users\Administrator>curl http://192.168.48.153:31000 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Fri, 06 Jan 2023 05:29:01 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes
 
-![image-20220619085519517](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220619085519517.png)
-
-```bash
-[root@node0 k8s]# kubectl logs -f demo-799f9cf89-2kpvx 
-/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
-/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
-/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
-10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
-10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
-/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
-/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
-/docker-entrypoint.sh: Configuration complete; ready for start up
-2022/06/19 00:49:58 [notice] 1#1: using the "epoll" event method
-2022/06/19 00:49:58 [notice] 1#1: nginx/1.21.6
-2022/06/19 00:49:58 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6) 
-2022/06/19 00:49:58 [notice] 1#1: OS: Linux 3.10.0-1160.66.1.el7.x86_64
-2022/06/19 00:49:58 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
-2022/06/19 00:49:58 [notice] 1#1: start worker processes
-2022/06/19 00:49:58 [notice] 1#1: start worker process 31
-2022/06/19 00:49:58 [notice] 1#1: start worker process 32
-10.233.30.0 - - [19/Jun/2022:00:53:32 +0000] "GET / HTTP/1.1" 200 615 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
-2022/06/19 00:53:32 [error] 31#31: *1 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 10.233.30.0, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "192.168.48.128:31000", referrer: "http://192.168.48.128:31000/"
-10.233.30.0 - - [19/Jun/2022:00:53:32 +0000] "GET /favicon.ico HTTP/1.1" 404 555 "http://192.168.48.128:31000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
-
-
-10.233.30.0 - - [19/Jun/2022:00:54:30 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36" "-"
-```
-
-**查看监听端口**
-
-```bash
-# 并没有监听31000端口
-[root@node0 k8s]# netstat -atlnpu | grep 31000
+# 查看监听端口，并没有监听31000端口
+[root@node-1 ~]# netstat -atlnpu | grep 31000
 
 # 在本地监听以下31000端口
-[root@node0 k8s]# nc -l -v -p 31000
+[root@node-1 ~]# yum -y install nc
+[root@node-1 ~]# nc -l -v -p 31000
 Ncat: Version 7.50 ( https://nmap.org/ncat )
 Ncat: Listening on :::31000
 Ncat: Listening on 0.0.0.0:31000
 
-# 再次在浏览器访问，依旧访问的是Nginx，且本地nc命令没有输出任何连接日志
-```
+# 再次在集群外部访问，依旧访问的是Nginx，且本地nc命令没有输出任何连接日志
+C:\Users\Administrator>curl http://192.168.48.153:31000 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Fri, 06 Jan 2023 05:31:42 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes
 
-**使用回环接口访问**
-
-```bash
-# 先访问一个肯定不存在的端口，curl命令会立即(小于1秒)返回报错信息
-[root@node0 ~]# curl http://127.0.0.1:31001
+# 使用回环接口访问,先访问一个肯定不存在的端口，curl命令会立即(小于1秒)返回报错信息
+[root@node-1 ~]# curl http://127.0.0.1:31001
 curl: (7) Failed connect to 127.0.0.1:31001; Connection refused
 
 # 当访问31000端口时超时了
-[root@node0 ~]# curl http://127.0.0.1:31000 --connect-timeout 5
+[root@node-1 ~]# curl http://127.0.0.1:31000 --connect-timeout 5
 curl: (28) Connection timed out after 5001 milliseconds
-```
-
-**查看所使用的代理模式**
-
-```bash
-[root@node0 k8s]# kubectl logs kube-proxy-znqrr  -n kube-system | grep -Ei 'proxy|proxier|iptables|ipvs'
-I0611 11:12:15.485248       1 server_others.go:269] "Using ipvs Proxier"
-I0611 11:12:15.485275       1 server_others.go:271] "Creating dualStackProxier for ipvs"
-E0611 11:12:15.485477       1 proxier.go:377] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
-E0611 11:12:15.485961       1 proxier.go:377] "Can't set sysctl, kernel version doesn't satisfy minimum version requirements" sysctl="net/ipv4/vs/conn_reuse_mode" minimumKernelVersion="4.1"
 ```
 
 :::
