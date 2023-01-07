@@ -1134,17 +1134,23 @@ ln -s /usr/local/frp_0.46.0_linux_amd64 /usr/local/frp
 # 进入frp目录
 [root@ap-hongkang ~]# cd /usr/local/frp/
 
-# 查看服务端配置文件
-[root@ap-hongkang frp]# cat frps.ini 
+# 修改服务端配置文件
+# bind_addr               服务端监听地址
+# bind_port               服务端监听端口
+# authentication_method   认证方式,默认为token
+# token                   任意字符串
+[root@ap-hongkang frp]# vim frps.ini 
 [common]
-; 服务端监听地址
-bind_port = 7000
+bind_addr=0.0.0.0
+bind_port=7000
+authentication_method=token
+token=7qdOlynt!x%m6zV&
 
 # 启动服务端
-[root@ap-hongkang frp_0.46.0_linux_amd64]# ./frps -c frps.ini 
-2023/01/07 13:35:33 [I] [root.go:206] frps uses config file: frps.ini
-2023/01/07 13:35:33 [I] [service.go:200] frps tcp listen on 0.0.0.0:7000
-2023/01/07 13:35:33 [I] [root.go:215] frps started successfully
+[root@ap-hongkang frp]# ./frps -c frps.ini
+2023/01/07 17:34:56 [I] [root.go:206] frps uses config file: frps.ini
+2023/01/07 17:34:56 [I] [service.go:200] frps tcp listen on 0.0.0.0:7000
+2023/01/07 17:34:56 [I] [root.go:215] frps started successfully
 ```
 
 :::
@@ -1156,25 +1162,38 @@ bind_port = 7000
 [root@localhost ~]# cd /usr/local/frp/
 
 # 修改客户端文件
+# 说明：frp 会将请求 43.154.36.151:6000 的流量转发到内网机器的 22 端口
+# server_addr            服务端监听地址
+# server_port            服务端监听端口
+# authentication_method  认证方式,默认为token
+# token                  任意字符串
+
+# type                   代理类型
+# local_ip               需要被代理的本地服务的IP地址，可以为所在frpc能访问到的任意IP地址
+# local_port             配合 local_ip
+# remote_port            服务端绑定的端口
+# use_encryption         是否启用加密功能
+# use_compression        是否启用压缩功能
 [root@localhost frp]# vim frpc.ini
 [common]
-; 服务端监听地址和端口
-server_addr = 43.154.36.151
-server_port = 7000
+server_addr=43.154.36.151
+server_port=7000
+authentication_method=token
+token=7qdOlynt!x%m6zV&
+use_encryption=true
+use_compression=true
 
-; 将本地IP(127.0.0.1)的端口(22)通过远程主机的6000端口暴露出去
-; frp 会将请求 43.154.36.151:6000 的流量转发到内网机器的 22 端口
 [ssh]
-type = tcp
-local_ip = 127.0.0.1
-local_port = 22
-remote_port = 6000
+type=tcp
+local_ip=127.0.0.1
+local_port=22
+remote_port=6000
 
 # 启动客户端
-[root@localhost frp]# ./frpc -c frpc.ini 
-2023/01/07 13:46:06 [I] [service.go:298] [6bf810517359527e] login to server success, get run id [6bf810517359527e], server udp port [0]
-2023/01/07 13:46:06 [I] [proxy_manager.go:142] [6bf810517359527e] proxy added: [ssh]
-2023/01/07 13:46:06 [I] [control.go:172] [6bf810517359527e] [ssh] start proxy success
+[root@localhost frp]# ./frpc -c frpc.ini
+2023/01/07 17:50:18 [I] [service.go:298] [ee5a7300d2e684dc] login to server success, get run id [ee5a7300d2e684dc], server udp port [0]
+2023/01/07 17:50:18 [I] [proxy_manager.go:142] [ee5a7300d2e684dc] proxy added: [ssh]
+2023/01/07 17:50:18 [I] [control.go:172] [ee5a7300d2e684dc] [ssh] start proxy success
 ```
 
 :::
@@ -1184,13 +1203,13 @@ remote_port = 6000
 ```bash
 [root@ap-hongkang ~]# ssh -oPort=6000 root@43.154.36.151
 root@43.154.36.151's password: 
-Last login: Sat Jan  7 13:48:10 2023 from localhost
-
+Last login: Sat Jan  7 17:37:24 2023 from localhost
 [root@localhost ~]# w
- 13:49:43 up 21 min,  2 users,  load average: 0.35, 0.28, 0.18
+ 17:38:05 up 2 min,  3 users,  load average: 0.08, 0.13, 0.05
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
-root     pts/0    192.168.48.1     13:30    3:43   0.31s  0.25s ./frpc -c frpc.ini
-root     pts/1    localhost        13:49    7.00s  0.00s  0.00s w
+root     pts/0    192.168.48.1     17:35    2:21   0.01s  0.01s -bash
+root     pts/1    192.168.48.1     17:35    1:41   0.22s  0.21s ./frpc -c frpc.ini
+root     pts/2    localhost        17:38    2.00s  0.01s  0.00s w
 ```
 
 :::
@@ -1212,6 +1231,8 @@ Wants=network.target
 
 [Service]
 Type=simple
+Restart=always
+StartLimitInterval=0
 ExecStart=/usr/local/frp/frps -c /usr/local/frp/frps.ini
 
 [Install]
@@ -1245,6 +1266,8 @@ Wants=network.target
 
 [Service]
 Type=simple
+Restart=always
+StartLimitInterval=0
 ExecStart=/usr/local/frp/frpc -c /usr/local/frp/frpc.ini
 
 [Install]
