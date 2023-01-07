@@ -1101,6 +1101,88 @@ null
 
 Github：[https://github.com/fatedier/frp](https://github.com/fatedier/frp)
 
+**安装**
+
+::: details 点击查看详情
+
+```bash
+wget -c https://github.com/fatedier/frp/releases/download/v0.46.0/frp_0.46.0_linux_amd64.tar.gz
+tar zxf frp_0.46.0_linux_amd64.tar.gz -C /usr/local/
+```
+
+:::
+
+<br />
+
+**基础示例：将内网Linux主机的SSH服务暴露到公网上**
+
+::: details （1）服务端设置
+
+```bash
+# 进入frp目录
+[root@ap-hongkang ~]# cd /usr/local/frp_0.46.0_linux_amd64/
+
+# 查看服务端配置文件
+[root@ap-hongkang frp_0.46.0_linux_amd64]# cat frps.ini 
+[common]
+; 服务端监听地址
+bind_port = 7000
+
+# 启动服务端
+[root@ap-hongkang frp_0.46.0_linux_amd64]# ./frps -c frps.ini 
+2023/01/07 13:35:33 [I] [root.go:206] frps uses config file: frps.ini
+2023/01/07 13:35:33 [I] [service.go:200] frps tcp listen on 0.0.0.0:7000
+2023/01/07 13:35:33 [I] [root.go:215] frps started successfully
+```
+
+:::
+
+::: details （2）客户端设置
+
+```bash
+# 进入frp目录
+[root@localhost ~]# cd /usr/local/frp_0.46.0_linux_amd64/
+
+# 修改客户端文件
+[root@localhost ~]# vim frpc.ini
+[common]
+; 服务端监听地址和端口
+server_addr = 43.154.36.151
+server_port = 7000
+
+; 将本地IP(127.0.0.1)的端口(22)通过远程主机的6000端口暴露出去
+; frp 会将请求 43.154.36.151:6000 的流量转发到内网机器的 22 端口
+[ssh]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 22
+remote_port = 6000
+
+# 启动客户端
+[root@localhost frp_0.46.0_linux_amd64]# ./frpc -c frpc.ini 
+2023/01/07 13:46:06 [I] [service.go:298] [6bf810517359527e] login to server success, get run id [6bf810517359527e], server udp port [0]
+2023/01/07 13:46:06 [I] [proxy_manager.go:142] [6bf810517359527e] proxy added: [ssh]
+2023/01/07 13:46:06 [I] [control.go:172] [6bf810517359527e] [ssh] start proxy success
+```
+
+:::
+
+::: details （3）测试
+
+```bash
+[root@ap-hongkang ~]# ssh -oPort=6000 root@43.154.36.151
+root@43.154.36.151's password: 
+Last login: Sat Jan  7 13:48:10 2023 from localhost
+
+[root@localhost ~]# w
+ 13:49:43 up 21 min,  2 users,  load average: 0.35, 0.28, 0.18
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+root     pts/0    192.168.48.1     13:30    3:43   0.31s  0.25s ./frpc -c frpc.ini
+root     pts/1    localhost        13:49    7.00s  0.00s  0.00s w
+```
+
+:::
+
 <br />
 
 ## 安全工具
