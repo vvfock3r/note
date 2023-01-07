@@ -1101,13 +1101,19 @@ null
 
 Github：[https://github.com/fatedier/frp](https://github.com/fatedier/frp)
 
-**安装**
+<br />
+
+**Linux系统安装**
 
 ::: details 点击查看详情
 
 ```bash
+# 下载解压
 wget -c https://github.com/fatedier/frp/releases/download/v0.46.0/frp_0.46.0_linux_amd64.tar.gz
 tar zxf frp_0.46.0_linux_amd64.tar.gz -C /usr/local/
+
+# 做一个软连接
+ln -s /usr/local/frp_0.46.0_linux_amd64 /usr/local/frp
 ```
 
 :::
@@ -1120,10 +1126,10 @@ tar zxf frp_0.46.0_linux_amd64.tar.gz -C /usr/local/
 
 ```bash
 # 进入frp目录
-[root@ap-hongkang ~]# cd /usr/local/frp_0.46.0_linux_amd64/
+[root@ap-hongkang ~]# cd /usr/local/frp/
 
 # 查看服务端配置文件
-[root@ap-hongkang frp_0.46.0_linux_amd64]# cat frps.ini 
+[root@ap-hongkang frp]# cat frps.ini 
 [common]
 ; 服务端监听地址
 bind_port = 7000
@@ -1141,10 +1147,10 @@ bind_port = 7000
 
 ```bash
 # 进入frp目录
-[root@localhost ~]# cd /usr/local/frp_0.46.0_linux_amd64/
+[root@localhost ~]# cd /usr/local/frp/
 
 # 修改客户端文件
-[root@localhost ~]# vim frpc.ini
+[root@localhost frp]# vim frpc.ini
 [common]
 ; 服务端监听地址和端口
 server_addr = 43.154.36.151
@@ -1159,7 +1165,7 @@ local_port = 22
 remote_port = 6000
 
 # 启动客户端
-[root@localhost frp_0.46.0_linux_amd64]# ./frpc -c frpc.ini 
+[root@localhost frp]# ./frpc -c frpc.ini 
 2023/01/07 13:46:06 [I] [service.go:298] [6bf810517359527e] login to server success, get run id [6bf810517359527e], server udp port [0]
 2023/01/07 13:46:06 [I] [proxy_manager.go:142] [6bf810517359527e] proxy added: [ssh]
 2023/01/07 13:46:06 [I] [control.go:172] [6bf810517359527e] [ssh] start proxy success
@@ -1179,6 +1185,76 @@ Last login: Sat Jan  7 13:48:10 2023 from localhost
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
 root     pts/0    192.168.48.1     13:30    3:43   0.31s  0.25s ./frpc -c frpc.ini
 root     pts/1    localhost        13:49    7.00s  0.00s  0.00s w
+```
+
+:::
+
+<br />
+
+**优化：使用systemd管理服务端和客户端**
+
+::: details （1）服务端
+
+```bash
+# 编写systemd文件
+[root@ap-hongkang ~]# vim /etc/systemd/system/frps.service
+[Unit]
+Description=frp server
+Documentation=https://gofrp.org/docs/
+After=network.target syslog.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/frp/frps -c /usr/local/frp/frps.ini
+
+[Install]
+WantedBy=multi-user.target
+
+# 启动服务
+[root@ap-hongkang ~]# systemctl daemon-reload
+[root@ap-hongkang ~]# systemctl start frps.service
+
+# 查看端口
+[root@ap-hongkang ~]# netstat -altnpu | grep 7000
+tcp6       0      0 :::7000                 :::*                    LISTEN      4178957/frps
+
+# 设置开启自启
+[root@ap-hongkang ~]# systemctl enable frps.service
+Created symlink /etc/systemd/system/multi-user.target.wants/frps.service → /etc/systemd/system/frps.service.
+```
+
+:::
+
+::: details （2）客户端
+
+```bash
+# 编写systemd文件
+[root@localhost ~]# vim /etc/systemd/system/frpc.service
+[Unit]
+Description=frp client
+Documentation=https://gofrp.org/docs/
+After=network.target syslog.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/frp/frpc -c /usr/local/frp/frpc.ini
+
+[Install]
+WantedBy=multi-user.target
+
+# 启动服务
+[root@ap-hongkang ~]# systemctl daemon-reload
+[root@ap-hongkang ~]# systemctl start frpc.service
+
+# 查看是否与服务端建立连接
+[root@localhost ~]# netstat -altnpu | grep frpc
+tcp        0      0 192.168.48.160:39248    43.154.36.151:7000      ESTABLISHED 19260/frpc
+
+# 设置开启自启
+[root@localhost ~]# systemctl enable frpc.service
+Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to /etc/systemd/system/frpc.service.
 ```
 
 :::
