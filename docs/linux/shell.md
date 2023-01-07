@@ -1181,14 +1181,14 @@ server_addr=43.154.36.151
 server_port=7000
 authentication_method=token
 token=7qdOlynt!x%m6zV&
-use_encryption=true
-use_compression=true
 
 [ssh]
 type=tcp
 local_ip=127.0.0.1
 local_port=22
 remote_port=6000
+use_encryption=true
+use_compression=true
 
 # 启动客户端
 [root@localhost frp]# ./frpc -c frpc.ini
