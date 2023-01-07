@@ -1103,7 +1103,7 @@ Github：[https://github.com/fatedier/frp](https://github.com/fatedier/frp)
 
 <br />
 
-**Linux系统安装**
+**安装：For Linux**
 
 ::: details 点击查看详情
 
@@ -1120,7 +1120,7 @@ ln -s /usr/local/frp_0.46.0_linux_amd64 /usr/local/frp
 
 <br />
 
-**基础示例：将内网Linux主机的SSH服务暴露到公网上**
+**示例：将内网Linux主机的SSH服务暴露到公网上**
 
 ::: details （1）服务端设置
 
