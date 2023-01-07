@@ -1173,7 +1173,7 @@ remote_port = 6000
 
 :::
 
-::: details （3）测试
+::: details （3）SSH内网穿透测试
 
 ```bash
 [root@ap-hongkang ~]# ssh -oPort=6000 root@43.154.36.151
