@@ -1163,11 +1163,12 @@ token=7qdOlynt!x%m6zV&
 
 # 修改客户端文件
 # 说明：frp 会将请求 43.154.36.151:6000 的流量转发到内网机器的 22 端口
+#
 # server_addr            服务端监听地址
 # server_port            服务端监听端口
 # authentication_method  认证方式,默认为token
 # token                  任意字符串
-
+#
 # type                   代理类型
 # local_ip               需要被代理的本地服务的IP地址，可以为所在frpc能访问到的任意IP地址
 # local_port             配合 local_ip
