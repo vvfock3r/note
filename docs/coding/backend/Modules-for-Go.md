@@ -165,6 +165,13 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td>打包静态文件</td>
+        <td><a href="#embed" style="text-decoration:none;">Embed</a></td>
+        <td><li><code>Go 1.19</code></li></td>
+        <td></td>
+        <td></td>
+    </tr>
     </tbody>
 </table>
 
@@ -14481,3 +14488,101 @@ func main() {
 ```
 
 :::
+
+<br />
+
+## Embed
+
+文档：[https://pkg.go.dev/embed](https://pkg.go.dev/embed)
+
+<br />
+
+### 打包单个文件
+
+::: details （1）嵌入文件内容为Go字符串
+
+`main.go`
+
+```go
+package main
+
+import (
+	_ "embed"
+	"fmt"
+)
+
+//go:embed version.txt
+var version string
+
+func main() {
+	fmt.Println(version)
+}
+```
+
+新建`version.txt`
+
+```
+Version:           20.10.21
+API version:       1.41
+Go version:        go1.18.7
+Git commit:        baeda1f
+Built:             Tue Oct 25 18:02:19 2022
+OS/Arch:           linux/amd64
+```
+
+输出结果
+
+```bash
+# go run 执行
+D:\application\GoLand\example>go run main.go
+Version:           20.10.21                
+API version:       1.41                    
+Go version:        go1.18.7                
+Git commit:        baeda1f                 
+Built:             Tue Oct 25 18:02:19 2022
+OS/Arch:           linux/amd64
+
+# go build 执行
+D:\application\GoLand\example>go build main.go
+D:\application\GoLand\example>main.exe
+Version:           20.10.21                
+API version:       1.41                    
+Go version:        go1.18.7                
+Git commit:        baeda1f                 
+Built:             Tue Oct 25 18:02:19 2022
+OS/Arch:           linux/amd64
+```
+
+注意事项
+
+* `//go:embed version.txt`：`//`和`go:embed`之间不能有空格
+
+:::
+
+::: details （2）嵌入文件内容为Go字节切片
+
+* 只需要对上面的示例代码做一个特别简单的修改即可
+* 输出结果保持一致不再演示
+
+```go
+package main
+
+import (
+	_ "embed"
+	"fmt"
+)
+
+//go:embed version.txt
+var version []byte
+
+func main() {
+	fmt.Println(string(version))
+}
+```
+
+:::
+
+<br />
+
+### 打包多个文件
+
