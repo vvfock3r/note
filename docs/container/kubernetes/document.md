@@ -3134,11 +3134,11 @@ WWW-Authenticate: Basic realm="Authentication Required"
 
 :::
 
-::: details  （2）自定义Server块配置示例：根据User-Agent禁止某些工具访问
+::: details  （2）自定义Server块配置示例：比如根据User-Agent禁止某些工具访问
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-snippet)
 
-PS：
+备注：
 
 * 带`snippet`字眼的都是用来做自定义配置的
 
@@ -3148,35 +3148,34 @@ PS：
 
 ```bash
 # 编写YAML文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > nginx.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo
+  name: web
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo
+        app: web
     spec:
       containers:
-      - name: demo
-        image: nginx:1.21.6
+      - name: web
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-svc
+  name: web
   namespace: default
 spec:
   selector:
-    app: demo
+    app: web
   type: ClusterIP
   ports:
     - name: http
@@ -3187,9 +3186,9 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-demo
+  name: web
   namespace: default
-  annotations:    
+  annotations:
     nginx.ingress.kubernetes.io/server-snippet: |
       # 禁止使用curl等工具
       if ($http_user_agent ~* "curl|wget") {
@@ -3205,7 +3204,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: demo-svc
+              name: web
               port:        
                 number: 80
 EOF
