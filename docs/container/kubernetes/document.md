@@ -2740,7 +2740,11 @@ round-trip min/avg/max = 0.078/0.085/0.094 ms
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
 
-说明：以下基于**Ingress Nginx（Kubernetes官方维护版本）**进行演示
+说明：以下基于Ingress Nginx（Kubernetes官方维护版本）进行演示
+
+<br />
+
+**基础示例**
 
 ::: details  （1）部署HTTP应用
 
@@ -2970,6 +2974,8 @@ Location: https://a.com # 重定向后新的地址
 ```
 
 :::
+
+<br />
 
 **个性化配置**
 
