@@ -2750,7 +2750,7 @@ round-trip min/avg/max = 0.078/0.085/0.094 ms
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
-**部署应用**
+**1、部署应用**
 
 ```bash
 # 生成yaml文件
@@ -2832,7 +2832,7 @@ NAME                   READY   STATUS    RESTARTS   AGE   IP               NODE 
 web-6d59d875f6-q9lf5   1/1     Running   0          41s   10.100.217.121   node-4   <none>           <none>
 ```
 
-**访问测试**
+**2、访问测试**
 
 ```bash
 # 1、本地绑定hosts文件
@@ -2897,7 +2897,7 @@ Commercial support is available at
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
 
-1、提前申请好证书，这里使用mkcert生成自签证书，并且已经导入CA（即客户端已经信任自签证书，浏览器显示小绿锁）
+**1、提前申请好证书，这里使用mkcert生成自签证书，并且已经导入CA（即客户端已经信任自签证书，浏览器显示小绿锁）**
 
 ```bash
 # 生成自谦证书
@@ -2911,14 +2911,14 @@ The certificate is at "./a.com.pem" and the key at "./a.com-key.pem" ✅
 It will expire on 8 April 2025 🗓
 ```
 
-2、使用命令行创建TLS类型Secret
+**2、使用命令行创建TLS类型Secret**
 
 ```bash
 [root@node-1 ~]# kubectl create secret tls a.com --cert=a.com.pem --key=a.com-key.pem
 secret/a.com created
 ```
 
-3、Ingress中指定所使用的证书
+**3、Ingress中指定所使用的证书**
 
 ```bash
 [root@node-1 ~]# vim nginx.yaml
@@ -2953,11 +2953,11 @@ service/web unchanged
 ingress.networking.k8s.io/web configured
 ```
 
-4、验证HTTPS
+**4、验证HTTPS**
 
 ![image-20230108174556369](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230108174556369.png)
 
-5、若使用`HTTP`协议则会返回`308`重定向
+**5、若使用`HTTP`协议则会返回`308`重定向**
 
 若要改变其行为参考：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect)
 
@@ -2985,7 +2985,7 @@ Location: https://a.com # 重定向后新的地址
 
 文档2：[https://kubernetes.github.io/ingress-nginx/examples/auth/basic/](https://kubernetes.github.io/ingress-nginx/examples/auth/basic/)
 
-**（1）先准备密码文件，并进行base64编码**
+**1、先准备密码文件，并进行base64编码**
 
 ```bash
 # 创建密码文件
@@ -3006,7 +3006,7 @@ root:$apr1$ZY71LrZn$1EwOsOIdLtPVgQp76dFIv1
 YWRtaW46JGFwcjEkY1hpcndvLnUkOXN0Y1I0R2F2WVJ5TkVBTTdDekVSMApyb290OiRhcHIxJFpZNzFMclpuJDFFd09zT0lkTHRQVmdRcDc2ZEZJdjEK
 ```
 
-**（2）编写YAML**
+**2、编写YAML**
 
 ```bash
 [root@node-1 ~]# cat > nginx.yaml <<- EOF
@@ -3088,7 +3088,7 @@ secret/basic-auth created
 ingress.networking.k8s.io/web created
 ```
 
-**（3）访问测试**
+**3、访问测试**
 
 ```bash
 # 默认返回401
