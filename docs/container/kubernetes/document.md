@@ -3332,24 +3332,20 @@ Request-Id: c4dd6afadb27cab2b516871a0ff4c221  # Request-Id
 
 ```yaml
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > configmap.yaml <<- EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: demo
-  namespace: default
-  annotations:
-    kubernetes.io/description: ConfigMap学习
-             
+  namespace: default  
 data:
   # 类属性键
-  env: prod
-
+  env: fat
   # 类文件键
-  conf.ini: |
+  fat.ini: |
     HOST  = 0.0.0.0
     PORT  = 8080
-    DEBUG = false
+    DEBUG = true
 # 设置为不可变更，这会导致
 #   (1) 保护应用，不能修改此ConfigMap，只能重新创建
 #   (2) 关闭K8S对此ConfigMap的监视，当ConfigMap数量特别多的时候能显著提升K8S性能
@@ -3357,33 +3353,33 @@ data:
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f configmap.yaml
 configmap/demo created
 
 # 查看
-[root@node0 k8s]# kubectl get configmap 
+[root@node-1 ~]# kubectl get cm
 NAME               DATA   AGE
-demo               2      19s
-demo-configmap     2      6m26s
-kube-root-ca.crt   1      5d1h
+demo               2      27s
+kube-root-ca.crt   1      4d
 
-[root@node0 k8s]# kubectl describe configmap demo
+# 查看详情
+[root@node-1 ~]# kubectl describe cm demo
 Name:         demo
 Namespace:    default
 Labels:       <none>
-Annotations:  kubernetes.io/description: ConfigMap学习
+Annotations:  <none>
 
 Data
 ====
-conf.ini:
+env:
+----
+fat
+fat.ini:
 ----
 HOST  = 0.0.0.0
 PORT  = 8080
-DEBUG = false
+DEBUG = true
 
-env:
-----
-prod
 
 BinaryData
 ====
@@ -3397,29 +3393,22 @@ Events:  <none>
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > configmap.yaml <<- EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: demo-configmap
+  name: demo
   namespace: default
-  annotations:
-    kubernetes.io/description: ConfigMap学习
-             
 data:
-  # 类属性键
-  env: prod
-
-  # 类文件键
-  conf1.ini: |
-    HOST  = 0.0.0.0
-    PORT  = 8080
-    DEBUG = true
-
-  conf2.ini: |
+  env: pro
+  pro.ini: |
     HOST  = 127.0.0.1
     PORT  = 80
     DEBUG = false
+  fat.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = true
 ---
 apiVersion: v1
 kind: Pod
@@ -3428,53 +3417,97 @@ metadata:
 spec:
   containers:
     - name: demo
-      image: busybox:1.28
-      command: ["sleep", "3600"]
-
+      image: busybox:latest
+      command: ["sh", "-c", "sleep 3600"]
       # 通过ConfigMap给容器注入变量
       env:
         - name: ENV                     # 变量名, 用于容器内读取，这里故意写成和ConfigMap中的key不一致
           valueFrom:                    #
             configMapKeyRef:            # 变量值来自ConfigMap
-              name: demo-configmap      #
-              key: env                  #
-
+              name: demo                # ConfigMap的名称
+              key: env                  # ConfigMap的key
       # 将ConfigMap中的值作为文件挂载到容器中
       volumeMounts:
       - name: config              # 名称和下面的保持一致
-        mountPath: "/etc/demo/"   # 定义挂载目录
+        mountPath: "/etc/demo/"   # 定义挂载目录, /etc/demo目录不存在会自动创建
         readOnly: true
-
   volumes:
     - name: config           # 定义名称
       configMap:             # 指定来自ConfigMap
-        name: demo-configmap # 和ConfigMap名称保持一致                     
+        name: demo           # 和ConfigMap名称保持一致                     
         items:               # 来自 ConfigMap 的一组键，将被创建为文件
-        - key: "conf1.ini"    # 指定key
-          path: "CONF1.ini"   # 定义挂载以后的文件名
-        - key: "conf2.ini"   # 指定key
-          path: "CONF2.ini"  # 定义挂载以后的文件名
+        - key: "pro.ini"     # 指定key
+          path: "PRO.ini"    # 定义挂载以后的文件名
+        - key: "fat.ini"     # 指定key
+          path: "FAT.ini"    # 定义挂载以后的文件名
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-configmap/demo-configmap created
+[root@node-1 ~]# kubectl apply -f configmap.yaml
+configmap/demo configured
 pod/demo created
 
-# 进入容器，验证
-[root@node0 k8s]# kubectl exec -it demo -- sh
+# 进入容器验证
+[root@node-1 ~]# kubectl exec -it demo -- sh
 / # echo ${ENV}
-prod
+pro
 / # ls /etc/demo/
-CONF1.ini  CONF2.ini
-/ # cat /etc/demo/CONF1.ini
-HOST  = 0.0.0.0
-PORT  = 8080
-DEBUG = true
-/ # cat /etc/demo/CONF2.ini
+FAT.ini  PRO.ini
+/ # cat /etc/demo/PRO.ini
 HOST  = 127.0.0.1
 PORT  = 80
 DEBUG = false
+/ # cat /etc/demo/FAT.ini
+HOST  = 0.0.0.0
+PORT  = 8080
+DEBUG = true
+```
+
+:::
+
+::: details  （3）测试ConfigMap修改后Pod会不会同步更新
+
+```bash
+# 修改ConfigMap
+[root@node-1 ~]# kubectl edit cm demo
+apiVersion: v1
+data:
+  env: fat            # 这里修改为fat
+  fat.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = true
+    SECRET = 123456   # 这里新增一个配置
+  pro.ini: |
+    HOST  = 127.0.0.1
+    PORT  = 80
+    DEBUG = false
+kind: ConfigMap
+
+# 进入容器验证
+[root@node-1 ~]# kubectl exec -it demo -- sh
+/ # echo ${ENV}            # 环境变量并没有更新
+pro
+/ # cat /etc/demo/FAT.ini  # 文件内容发生更新
+HOST  = 0.0.0.0
+PORT  = 8080
+DEBUG = true
+SECRET = 123456
+
+# 重建Pod
+[root@node-1 ~]# kubectl get pod demo -o yaml | kubectl replace --force -f -
+pod "demo" deleted
+pod/demo replaced
+
+# 再次进入容器验证
+[root@node-1 ~]# kubectl exec -it demo -- sh
+/ # echo ${ENV}            # 环境变量发生更新
+fat
+/ # cat /etc/demo/FAT.ini
+HOST  = 0.0.0.0
+PORT  = 8080
+DEBUG = true
+SECRET = 123456
 ```
 
 :::
