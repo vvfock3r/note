@@ -2312,7 +2312,7 @@ I0106 02:24:14.251165       1 proxier.go:449] "IPVS scheduler not specified, use
 
 :::
 
-::: details  Service的三种类型
+::: details  Service常用的三种类型
 
 | 类型         | 简介                                   | 说明                                                         |
 | ------------ | -------------------------------------- | ------------------------------------------------------------ |
@@ -2740,45 +2740,44 @@ round-trip min/avg/max = 0.078/0.085/0.094 ms
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/)
 
-<br />
+说明：以下基于**Ingress Nginx（Kubernetes官方维护版本）**进行演示
 
-**HTTP访问**
+::: details  （1）部署HTTP应用
 
 文档：[https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/](https://kubernetes.github.io/ingress-nginx/user-guide/basic-usage/)
 
-::: details  点击查看详情
+**部署应用**
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > nginx.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo
+  name: web
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo
+        app: web
     spec:
       containers:
-      - name: demo
-        image: nginx:1.21.6
+      - name: web
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-svc
+  name: web
   namespace: default
 spec:
   selector:
-    app: demo
+    app: web
   type: ClusterIP
   ports:
     - name: http
@@ -2789,7 +2788,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-demo
+  name: web
   namespace: default
 spec:
   ingressClassName: nginx      # 指定ingress类名
@@ -2801,59 +2800,102 @@ spec:
           pathType: Prefix      #   前缀匹配，区分大小写
           backend:              #   定义后端
             service:            #   service
-              name: demo-svc    #     service name
+              name: web         #     service name
               port:             #     service port
                 number: 80      #
 EOF
 
-# 创建应用
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo created
-service/demo-svc created
-ingress.networking.k8s.io/ingress-demo created
+# 部署应用
+[root@node-1 ~]# kubectl apply -f nginx.yaml
+deployment.apps/web created
+service/web created
+ingress.networking.k8s.io/web created
 
 # 查看Service
-[root@localhost k8s]# kubectl get svc -o wide
-NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE    SELECTOR
-demo-svc     ClusterIP   10.200.159.80   <none>        80/TCP    14m    app=demo
-kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP   100m   <none>
+[root@node-1 ~]# kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+kubernetes   ClusterIP   10.200.0.1       <none>        443/TCP   3d22h   <none>
+web          ClusterIP   10.200.103.161   <none>        80/TCP    17s     app=web
 
 # 查看Ingress
-[root@localhost k8s]# kubectl get ingress -o wide
-NAME           CLASS   HOSTS   ADDRESS   PORTS   AGE
-ingress-demo   nginx   a.com             80      14m
+[root@node-1 ~]# kubectl get ingress -o wide
+NAME   CLASS   HOSTS   ADDRESS   PORTS   AGE
+web    nginx   a.com             80      29s
 
 # 查看Pod
-[root@localhost k8s]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo-59ddb745c4-mkkgw   1/1     Running   0          14m   10.233.44.20   node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+web-6d59d875f6-q9lf5   1/1     Running   0          41s   10.100.217.121   node-4   <none>           <none>
 ```
 
-**本地绑定hosts文件**
+**访问测试**
 
 ```bash
-192.168.48.128	a.com
+# 1、本地绑定hosts文件
+192.168.48.151 a.com
+
+# 2.访问Ingress Service NodePort端口
+C:\Users\Administrator>curl a.com:32261
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+# 3.访问Ingress Service端口（需Ingress NGINX设置使用宿主机网络）
+C:\Users\Administrator>curl a.com
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
 ```
-
-**浏览器访问 Ingress Service NodePort端口**
-
-![image-20220621090229523](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621090229523.png)
-
-**浏览器访问Ingress Service端口（需Ingress NGINX设置使用宿主机网络）**
-
-![image-20220621152327693](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621152327693.png)
 
 :::
 
-<br />
-
-**HTTPS访问**
+::: details  （2）部署HTTPS应用
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
 
 一、在HTTP能访问的基础上做一些简单的操作即可
 
-::: details  1、提前申请好证书，这里使用mkcert生成自签证书
+1、提前申请好证书，这里使用mkcert生成自签证书，并且已经导入CA（即客户端已经信任自签证书，浏览器显示小绿锁）
 
 ```bash
 # 生成自谦证书
@@ -2864,33 +2906,33 @@ Created a new certificate valid for the following names 📜
 
 The certificate is at "./a.com.pem" and the key at "./a.com-key.pem" ✅
 
-It will expire on 21 September 2024 🗓
+It will expire on 8 April 2025 🗓
 ```
 
-:::
-
-::: details  2、使用命令行创建TLS类型Secret
+2、使用命令行创建TLS类型Secret
 
 ```bash
-[root@node0 k8s]# kubectl create secret tls https --cert=a.com.pem --key=a.com-key.pem
+[root@node-1 ~]# kubectl create secret tls a.com --cert=a.com.pem --key=a.com-key.pem
+secret/a.com created
 ```
 
-:::
+3、Ingress中指定所使用的证书
 
-::: details  3、Ingress中指定所使用的证书
-
-```yaml
+```bash
+[root@node-1 ~]# vim nginx.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-demo
+  name: web
   namespace: default
 spec:
   ingressClassName: nginx       # 指定ingress类名
   tls:                          # TLS配置
   - hosts:                      #   定义主机
       - a.com                   #   
-    secretName: https           # secret name
+    secretName: a.com           # secret name
+  rules:
+    - host: a.com
   rules:                  
     - host: a.com        
       http:             
@@ -2902,107 +2944,32 @@ spec:
               name: demo-svc
               port:        
                 number: 80
+
+[root@node-1 ~]# kubectl apply -f nginx.yaml
+deployment.apps/web unchanged
+service/web unchanged
+ingress.networking.k8s.io/web configured
 ```
 
-:::
+4、验证HTTPS
 
-::: details  总结：完成的YAML文件（包含HTTPS证书base64编码）
+![image-20230108174556369](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230108174556369.png)
 
-```bash
-[root@node0 k8s]# cat > demo.yml <<- EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: demo
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: demo
-
-  template:
-    metadata:
-      labels:
-        app: demo
-    spec:
-      containers:
-      - name: demo
-        image: nginx:1.21.6
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: demo-svc
-  namespace: default
-spec:
-  selector:
-    app: demo
-  type: ClusterIP
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 80
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: https
-  namespace: default
-data:
-  tls.crt: |
-    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVYakNDQXNhZ0F3SUJBZ0lSQVArekg5RzBPMWdyeEJCMXNCRVVEaUl3RFFZSktvWklodmNOQVFFTEJRQXcKZ1pjeEhqQWNCZ05WQkFvVEZXMXJZMlZ5ZENCa1pYWmxiRzl3YldWdWRDQkRRVEUyTURRR0ExVUVDd3d0UkVWVApTMVJQVUMweU1rczRNRlU0WEVGa2JXbHVhWE4wY21GMGIzSkFSRVZUUzFSUFVDMHlNa3M0TUZVNE1UMHdPd1lEClZRUURERFJ0YTJObGNuUWdSRVZUUzFSUFVDMHlNa3M0TUZVNFhFRmtiV2x1YVhOMGNtRjBiM0pBUkVWVFMxUlAKVUMweU1rczRNRlU0TUI0WERUSXlNRFl5TVRBMk5EY3lPRm9YRFRJME1Ea3lNVEEyTkRjeU9Gb3dZVEVuTUNVRwpBMVVFQ2hNZWJXdGpaWEowSUdSbGRtVnNiM0J0Wlc1MElHTmxjblJwWm1sallYUmxNVFl3TkFZRFZRUUxEQzFFClJWTkxWRTlRTFRJeVN6Z3dWVGhjUVdSdGFXNXBjM1J5WVhSdmNrQkVSVk5MVkU5UUxUSXlTemd3VlRnd2dnRWkKTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDZXhRNzBBaWkwY1BvRmswRWVxa2Jhdi9hUwpjclRETEZyT0xoNkpPYUgrNHNmZU1kZFJ0UkRXRFhJTitCNlhvaTRCalNLdE5nVFRPRjlYcmYyOUNZYWsvZG05CndUbXgxaHRQaWx6dkRxTkJXVmNwSGFicExpOERMQWF4bUs0N1FYb2JmSkl5U0FYazllemRTNmQ4Sk1xQ055U0cKSWU0cnhlVTdIM2tuUDhMSE5tTmZMNWNEc1QrdTFSYWVKblVMTzBNUzZqTG5Ga2VGY0tUQk56T3pjR1ZNNWdqcQpzVnpmLzZ6MXJScUdFdDRpNWFJZzdwRUxVVWRxdmxFRFJOOVBpampMTG5oQjlTbGJWKzZ4Q0RvRERxbEx6YXhtCmQxNnVyQ284NURyYUJlMXUzMC8xK3BQakpHOWE2S3RId2NxTmJhY1dUSjRxZnhPbmtEMEE3b1VZYXpQNUFnTUIKQUFHaldqQllNQTRHQTFVZER3RUIvd1FFQXdJRm9EQVRCZ05WSFNVRUREQUtCZ2dyQmdFRkJRY0RBVEFmQmdOVgpIU01FR0RBV2dCVHNsQy9ZTkExQ1QzQXV4UmxNR1QvSWo2eHB3VEFRQmdOVkhSRUVDVEFIZ2dWaExtTnZiVEFOCkJna3Foa2lHOXcwQkFRc0ZBQU9DQVlFQWF2aGpJTGxXSkF6aGdVMUdaKzJZK1ozeXFQdGlUc0NhNGRKWXRCL3MKdURoZjEwTGlxUEtPcEFKWmZ1ZllWM2NYNGU1eDg2NnZTQWFKbDlYbkpvL0VDNXpIc0tOclphSG10Qm9QOE9IOQoyOVJ2WWtOL1pad2tQdEx0T0FCRmNtakM3Y1kvQnJnbDE3WEJzVnFzRFVOdDI4dG9hSEJVTE9lcndtMjNrbFJSCm9naHhRN3RncVJuR1VNb1M1Sm4wR3hGQXBxbXBHN3FrNnpGak9ad0RwUDZ2N2F2Yi9oOGx3NGJtRFJaMDVTaXAKbEdGU3pldXhiU2FGNFNTUFVrUXdYVTI0RmRjODE1WnJoMnBYSE11ZDhGRUd1UVhSbDVGTGNVc3J6YkgraHpUMApKZmJ3cjQxT1RET2RVd09GOHI1dkRtKy9tM1lyTmh4WkVMSnpObjdldXowU3Uwc2gxMEJWYUhuSTV4bU41RXJECmxjN0sxeFRNM1paVkpQUHlDZDgxVnJzM1F2akdpSlN0bVFld2kxc3Z3TjI1dnI4Qlg2MytCTDNYV29rRGJoVFoKbzdCRlc0TDZ2cVJzL3dvWjUyYmVCT1N2MnRLeGlSQnE2dnVJVlREbGdTTzAzbTRPWlFRbEI1V3c4WmZ0V1dScQpWY1E2VTljYUtWSk03Q3JmSEtXZGtPOWUKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
-  tls.key: |
-    LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRQ2V4UTcwQWlpMGNQb0YKazBFZXFrYmF2L2FTY3JURExGck9MaDZKT2FIKzRzZmVNZGRSdFJEV0RYSU4rQjZYb2k0QmpTS3ROZ1RUT0Y5WApyZjI5Q1lhay9kbTl3VG14MWh0UGlsenZEcU5CV1ZjcEhhYnBMaThETEFheG1LNDdRWG9iZkpJeVNBWGs5ZXpkClM2ZDhKTXFDTnlTR0llNHJ4ZVU3SDNrblA4TEhObU5mTDVjRHNUK3UxUmFlSm5VTE8wTVM2akxuRmtlRmNLVEIKTnpPemNHVk01Z2pxc1Z6Zi82ejFyUnFHRXQ0aTVhSWc3cEVMVVVkcXZsRURSTjlQaWpqTExuaEI5U2xiVis2eApDRG9ERHFsTHpheG1kMTZ1ckNvODVEcmFCZTF1MzAvMStwUGpKRzlhNkt0SHdjcU5iYWNXVEo0cWZ4T25rRDBBCjdvVVlhelA1QWdNQkFBRUNnZ0VBY01SZC9vbWFCNjlHcGJjVlJZYURsTk5MZW5EbVdzbWlKVmMwY1JyeUtHdEMKc2xxTUtJaUdVTUowQTkvN09wQUNSUy9OTldGc3cra0NMdkJ4akZhN3YyeGR2eDBDc1lEMUhPV1ZaR1h0Sm5raQpJeDNnY3paT1JkNTdVcUN5LzN0ZUV5L0RWdHM0OUlxSGxoWXArMDdXVnU1N2pwbUM1S3hHU0Z2dVhTWTRYZXp3CitoYzlnbkx2NldaM2g0ZEFGQjRhZTAxWUNTQk00dUFmRXNSaWlGMFJRbXYrZHBCRkVzTHBHZ2pYNDF3MTNTMzAKMmFOZlZQUEFXaFlIYk5RUFNacnB0QTlwRTUvTHYzSGlBUXVsMC84VUNkNFovckZ6R0xMTmUrV1duSUx3NEtNQgplM3o0ekVDMm9pU3UvSXpRdE5Bd0FjSkg3OUtOZUgrcGZmQ3pQd1g2RVFLQmdRRElERmRpVmZnZkxMNC83OGZ5CmNhODJrTXp0WjdFTW1LVmZub0xIdEVKc2VSMEtHWVk3YURJbUYxYmJYVmhpdTlseHFIcEJFWm5ualJuLzBCS3EKU0sydnVFOG9DdEJGaVpCamtpdWFYdDZXSi9pZkY0dzk4Z3MrVG5hbzNZK3lkODhEbDF0NVhwL2o0SVhPYnR5cApnTmtjY3M4aVpZMkNIT1hVdFNNTzFhN2cvd0tCZ1FETExTTXVERFNkZ09OZzJEZTAyVGk1b1kwMGVwNnVFanI5CndXM1hzdVBUdlhpeDVTd2ZaOG10ZytPZlZqTU0rNkRqMmRkLzZMZGVCNS9kZUhraGNFL0UyYUFWSWNkSjJxTFIKeVYySzhVUS9Xak9VNGVyZ1JMOG9iMmw4bDRBMXpEWHROZ3JPNFFsUVRyNk1KaHlscThJMDRHb01tUXJXaVB6Tgp6OHdvemUvekJ3S0JnRmtiWmpFZktnNTQxNldUSVBVVlBuNkhzVUJ1VjZiTXQ1MEg5aWtPV2lnSEtyQTgvbFduCjYrNmJwc3kvbjRjYk5aZ3krNEhRWFVXT3pHM3VPT0l3eld6Z0pDSXA3dXVLZ3c1WEphVDFiU0JsWFpFLzQvQVQKeUg1UVpQcUM5bWNBaHUyS2xleFNBZFozUkNMWHJ1S3h5Z09xQUNuS0ltWTZpUVZlU2VkcHR5UHhBb0dBTFdidgp4cGw1cEh5cDB2bGVNVzZkSzNZN2JLKytCOTRSQ3FXUDJ6U2hqcTUzYXlGd0k3QjRzK3FXRWdRY01sbUVrWVliCmp2eTlCU2tsQTBPcHBkeElKeEFPb3NwQ2szRmxFd1l4Zmh2K0NUNHA2cW8xWjFwVmNUNjhUdGc0RVUySiszRXAKSnlQSWhnYWl0QVRNUUFWS3g3QWlZcUJNZUxaeDc3Znd3bW1LcGo4Q2dZQUZXU215ckdIdG1Qa1F4SjhRMEViRQpuWnl4aE56bFprc2ZTc2NtNm95OXhYeWFMWllMem0zdWdFSmVkb3cxdkJYdFJtaXJtT0pXTXRzK0ZIeXU2cDhKCjk1OTVLcmxMQ1p4WXJLaXpLc2xaUjV3VDI3aW5xdDF1dlJsb0prOWpudUU0cXdKdDlYSndQQXpoSzRDc3g4S1YKZXVZVU53Zy9GYTA0VWFEMFpYa245dz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
-type: kubernetes.io/tls
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ingress-demo
-  namespace: default
-spec:
-  ingressClassName: nginx       # 指定ingress类名
-  tls:                          # TLS配置
-  - hosts:                      #   定义主机
-      - a.com                   #
-    secretName: https           # secret name，里面存的是HTTPS证书
-  rules:                  
-    - host: a.com        
-      http:             
-        paths:         
-        - path: /     
-          pathType: Prefix
-          backend:       
-            service:    
-              name: demo-svc
-              port:        
-                number: 80
-EOF
-```
-
-:::
-
-二、验证HTTPS
-
-![image-20220621161135198](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621161135198.png)
-
-三、须知：配置完成后，若使用`HTTP`协议则会返回`308`重定向
+5、若使用`HTTP`协议则会返回`308`重定向
 
 若要改变其行为参考：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect)
 
 ```bash
-[root@node0 k8s]# curl http://a.com -I
+C:\Users\Administrator\Desktop>curl http://a.com -I
 HTTP/1.1 308 Permanent Redirect
-Date: Tue, 21 Jun 2022 07:36:14 GMT
+Date: Sun, 08 Jan 2023 09:48:01 GMT
 Content-Type: text/html
 Content-Length: 164
 Connection: keep-alive
-Location: https://a.com     # 重定向后新的地址
+Location: https://a.com # 重定向后新的地址
 ```
 
-<br />
+:::
 
 **个性化配置**
 
