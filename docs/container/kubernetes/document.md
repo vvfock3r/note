@@ -3148,7 +3148,7 @@ WWW-Authenticate: Basic realm="Authentication Required"
 
 ```bash
 # 编写YAML文件
-[root@node-1 ~]# cat > nginx.yaml <<- EOF
+[root@node-1 ~]# vim nginx.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -3207,51 +3207,29 @@ spec:
               name: web
               port:        
                 number: 80
-EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo created
-service/demo-svc created
-ingress.networking.k8s.io/ingress-demo created
+[root@node-1 ~]# kubectl apply -f nginx.yaml 
+deployment.apps/web created
+service/web created
+ingress.networking.k8s.io/web created
 
 # 测试：直接使用curl和wget会返回403
-[root@node0 k8s]#  curl http://a.com -I
+C:\Users\Administrator\Desktop>curl http://a.com -I
 HTTP/1.1 403 Forbidden
-Date: Sat, 25 Jun 2022 03:29:47 GMT
+Date: Sun, 08 Jan 2023 10:46:39 GMT
 Content-Type: text/html
 Content-Length: 146
 Connection: keep-alive
 
-[root@node0 k8s]# wget http://a.com 
---2022-06-25 11:30:14--  http://a.com/
-Resolving a.com (a.com)... 192.168.48.134
-Connecting to a.com (a.com)|192.168.48.134|:80... connected.
-HTTP request sent, awaiting response... 403 Forbidden
-2022-06-25 11:30:14 ERROR 403: Forbidden.
-
 # 修改User-Agent后，可以正常访问
-[root@node0 k8s]# curl http://a.com -I --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+C:\Users\Administrator\Desktop>curl http://a.com -I --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
 HTTP/1.1 200 OK
-Date: Sat, 25 Jun 2022 03:31:39 GMT
+Date: Sun, 08 Jan 2023 10:47:16 GMT
 Content-Type: text/html
 Content-Length: 615
 Connection: keep-alive
-Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
-ETag: "61f01158-267"
-Accept-Ranges: bytes
-
-[root@node0 k8s]# wget http://a.com --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
---2022-06-25 11:31:57--  http://a.com/
-Resolving a.com (a.com)... 192.168.48.134
-Connecting to a.com (a.com)|192.168.48.134|:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 615 [text/html]
-Saving to: ‘index.html’
-
-100%[=================================================================>] 615         --.-K/s   in 0s      
-
-2022-06-25 11:31:57 (72.9 MB/s) - ‘index.html’ saved [615/615]
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
 ```
 
 :::
@@ -3262,35 +3240,34 @@ Saving to: ‘index.html’
 
 ```bash
 # 编写YAML文件
-[root@node0 k8s]# vim demo.yml
+[root@node-1 ~]# vim nginx.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo
+  name: web
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo
+        app: web
     spec:
       containers:
-      - name: demo
-        image: nginx:1.21.6
+      - name: web
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-svc
+  name: web
   namespace: default
 spec:
   selector:
-    app: demo
+    app: web
   type: ClusterIP
   ports:
     - name: http
@@ -3301,7 +3278,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-demo
+  name: web
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/configuration-snippet: |
@@ -3316,27 +3293,27 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: demo-svc
+              name: web
               port:        
                 number: 80
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo created
-service/demo-svc created
-ingress.networking.k8s.io/ingress-demo created
+[root@node-1 ~]# kubectl apply -f nginx.yaml 
+deployment.apps/web created
+service/web created
+ingress.networking.k8s.io/web created
 
 # 测试
-[root@node0 ~]# curl http://a.com -I
+C:\Users\Administrator\Desktop>curl http://a.com -I
 HTTP/1.1 200 OK
-Date: Sat, 25 Jun 2022 08:33:28 GMT
+Date: Sun, 08 Jan 2023 10:49:03 GMT
 Content-Type: text/html
 Content-Length: 615
 Connection: keep-alive
-Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
-ETag: "61f01158-267"
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+ETag: "6398a011-267"
 Accept-Ranges: bytes
-Request-Id: 58e26b9b04deabb8cf407b71429a34ac   # Request-Id
+Request-Id: c4dd6afadb27cab2b516871a0ff4c221  # Request-Id
 ```
 
 :::
