@@ -2893,11 +2893,9 @@ Commercial support is available at
 
 :::
 
-::: details  （2）部署HTTPS应用
+::: details  （2）基于HTTP应用，部署HTTPS应用
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
-
-一、在HTTP能访问的基础上做一些简单的操作即可
 
 1、提前申请好证书，这里使用mkcert生成自签证书，并且已经导入CA（即客户端已经信任自签证书，浏览器显示小绿锁）
 
@@ -2991,54 +2989,54 @@ Location: https://a.com # 重定向后新的地址
 
 ```bash
 # 创建密码文件
-[root@node0 k8s]# touch basic-auth.txt
+[root@node-1 ~]# touch basic-auth.txt
 
 # 使用htpasswd添加用户到密码文件
-[root@node0 k8s]# htpasswd basic-auth.txt admin    # 添加第一个用户，密码admin123
-[root@node0 k8s]# htpasswd basic-auth.txt root     # 添加第二个用户，密码root123
+[root@node-1 ~]# yum -y install httpd-tools
+[root@node-1 ~]# htpasswd basic-auth.txt admin    # 添加第一个用户，密码admin123
+[root@node-1 ~]# htpasswd basic-auth.txt root     # 添加第二个用户，密码root123
 
 # 查看一下文件
-[root@node0 k8s]# cat basic-auth.txt
-admin:$apr1$ZIRZeV/i$3/aYk.LQDVWwtM6YMLIRl/
-root:$apr1$iSc..JDp$uN5izoBG4XCTTVC19mSCS0
+[root@node-1 ~]# cat basic-auth.txt
+admin:$apr1$cXirwo.u$9stcR4GavYRyNEAM7CzER0
+root:$apr1$ZY71LrZn$1EwOsOIdLtPVgQp76dFIv1
 
 # base64编码
-[root@node0 k8s]# cat basic-auth.txt | base64 | tr -d "\n" | awk '{print $0}'
-YWRtaW46JGFwcjEkWklSWmVWL2kkMy9hWWsuTFFEVld3dE02WU1MSVJsLwpyb290OiRhcHIxJGlTYy4uSkRwJHVONWl6b0JHNFhDVFRWQzE5bVNDUzAK
+[root@node-1 ~]# cat basic-auth.txt | base64 | tr -d "\n" | awk '{print $0}'
+YWRtaW46JGFwcjEkY1hpcndvLnUkOXN0Y1I0R2F2WVJ5TkVBTTdDekVSMApyb290OiRhcHIxJFpZNzFMclpuJDFFd09zT0lkTHRQVmdRcDc2ZEZJdjEK
 ```
 
 **（2）编写YAML**
 
 ```bash
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > nginx.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo
+  name: web
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo
-
+      app: web
   template:
     metadata:
       labels:
-        app: demo
+        app: web
     spec:
       containers:
-      - name: demo
-        image: nginx:1.21.6
+      - name: web
+        image: nginx:latest
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-svc
+  name: web
   namespace: default
 spec:
   selector:
-    app: demo
+    app: web
   type: ClusterIP
   ports:
     - name: http
@@ -3055,18 +3053,18 @@ metadata:
 type: Opaque
 # data.auth是固定的,值是我们上面密码文件base64编码过后的值
 data:
-  auth: YWRtaW46JGFwcjEkWklSWmVWL2kkMy9hWWsuTFFEVld3dE02WU1MSVJsLwpyb290OiRhcHIxJGlTYy4uSkRwJHVONWl6b0JHNFhDVFRWQzE5bVNDUzAK
+  auth: YWRtaW46JGFwcjEkY1hpcndvLnUkOXN0Y1I0R2F2WVJ5TkVBTTdDekVSMApyb290OiRhcHIxJFpZNzFMclpuJDFFd09zT0lkTHRQVmdRcDc2ZEZJdjEK
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-demo
+  name: web
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/auth-type: basic                       # 认证类型
     nginx.ingress.kubernetes.io/auth-secret: basic-auth                # 认证所用的secret名称，与上面的secret名称要对应
     nginx.ingress.kubernetes.io/auth-secret-type: auth-file            # 认证所用的secret类型，auth-file是默认值
-    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required!' # 未认证时的提示消息
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'  # 未认证时的提示消息
 spec:
   ingressClassName: nginx
   rules:        
@@ -3077,65 +3075,61 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: demo-svc
+              name: web
               port:        
                 number: 80
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-deployment.apps/demo created
-service/demo-svc created
+[root@node-1 ~]# kubectl apply -f nginx.yaml 
+deployment.apps/web created
+service/web created
 secret/basic-auth created
-ingress.networking.k8s.io/ingress-demo created
+ingress.networking.k8s.io/web created
 ```
 
 **（3）访问测试**
 
 ```bash
-# 确认域名已有解析记录
-[root@node0 k8s]# cat /etc/hosts | grep a.com
-192.168.48.134 node1.cluster.local node1 a.com
-
 # 默认返回401
-[root@node0 k8s]# curl -I http://a.com 
+C:\Users\Administrator\Desktop>curl -I http://a.com
 HTTP/1.1 401 Unauthorized
-Date: Fri, 24 Jun 2022 11:04:55 GMT
+Date: Sun, 08 Jan 2023 10:27:48 GMT
 Content-Type: text/html
 Content-Length: 172
 Connection: keep-alive
-WWW-Authenticate: Basic realm="Authentication Required!"
+WWW-Authenticate: Basic realm="Authentication Required"
 
 # 输入用户名密码
-[root@node0 k8s]# curl -I http://a.com -u "admin:admin123"
+C:\Users\Administrator\Desktop>curl -I http://a.com -u "admin:admin123"
 HTTP/1.1 200 OK
-Date: Fri, 24 Jun 2022 11:05:09 GMT
+Date: Sun, 08 Jan 2023 10:28:04 GMT
 Content-Type: text/html
 Content-Length: 615
 Connection: keep-alive
-Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
-ETag: "61f01158-267"
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+ETag: "6398a011-267"
 Accept-Ranges: bytes
 
 # 输入用户名密码
-[root@node0 k8s]# curl -I http://a.com -u "root:root123"
+C:\Users\Administrator\Desktop>curl -I http://a.com -u "root:root123"
 HTTP/1.1 200 OK
-Date: Fri, 24 Jun 2022 11:05:17 GMT
+Date: Sun, 08 Jan 2023 10:28:17 GMT
 Content-Type: text/html
 Content-Length: 615
 Connection: keep-alive
-Last-Modified: Tue, 25 Jan 2022 15:03:52 GMT
-ETag: "61f01158-267"
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+ETag: "6398a011-267"
 Accept-Ranges: bytes
 
 # 输错密码
-[root@node0 k8s]# curl -I http://a.com -u "root:abc"
+C:\Users\Administrator\Desktop>curl -I http://a.com -u "root:abc"
 HTTP/1.1 401 Unauthorized
-Date: Fri, 24 Jun 2022 11:06:00 GMT
+Date: Sun, 08 Jan 2023 10:28:31 GMT
 Content-Type: text/html
 Content-Length: 172
 Connection: keep-alive
-WWW-Authenticate: Basic realm="Authentication Required!"
+WWW-Authenticate: Basic realm="Authentication Required"
 ```
 
 :::
