@@ -2897,7 +2897,7 @@ Commercial support is available at
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls](https://kubernetes.io/zh-cn/docs/concepts/services-networking/ingress/#tls)
 
-**1、提前申请好证书，这里使用mkcert生成自签证书，并且已经导入CA（即客户端已经信任自签证书，浏览器显示小绿锁）**
+**1、提前申请好证书，这里使用[mkcert](https://github.com/FiloSottile/mkcert)生成自签证书，并且已经导入CA（即客户端已经信任由mkcert的自签证书，浏览器显示小绿锁）**
 
 ```bash
 # 生成自谦证书
@@ -2959,7 +2959,9 @@ ingress.networking.k8s.io/web configured
 
 **5、若使用`HTTP`协议则会返回`308`重定向**
 
-若要改变其行为参考：[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect)
+若要改变其行为参考下面的连接
+
+[https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#server-side-https-enforcement-through-redirect)
 
 ```bash
 C:\Users\Administrator\Desktop>curl http://a.com -I
