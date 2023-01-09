@@ -4200,7 +4200,7 @@ command terminated with exit code 1
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
 spec:
   capacity:                                 # pv容量
     storage: 100Gi                          #
@@ -4210,13 +4210,13 @@ spec:
   persistentVolumeReclaimPolicy: Delete     # 回收策略
   storageClassName: local-storage           # 存储类
   nfs:
-    server: 192.168.48.128                  # NFS地址
+    server: 192.168.48.151                  # NFS地址
     path: /data/k8s                         # NFS中共享的路径
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4244,7 +4244,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4252,39 +4252,35 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml
-persistentvolume/demo-pv created
-persistentvolumeclaim/demo-pvc created
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolume/demo created
+persistentvolumeclaim/demo created
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-c846f7545-57jmd   1/1     Running   0          7s    10.233.154.14   node1   <none>           <none>
-demo-c846f7545-9nmj2   1/1     Running   0          7s    10.233.30.23    node0   <none>           <none>
-demo-c846f7545-qzpd4   1/1     Running   0          7s    10.233.44.10    node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-4vtkv   1/1     Running   0          8s    10.100.247.23   node-2   <none>           <none>
+demo-b46946dd8-87jxs   1/1     Running   0          8s    10.100.217.95   node-4   <none>           <none>
+demo-b46946dd8-qs896   1/1     Running   0          8s    10.100.84.178   node-1   <none>           <none>
 
 # 在NFS中创建一些数据
-[root@node0 k8s]# ll /data/k8s
-total 0
-[root@node0 k8s]# seq 3 > /data/k8s/all.txt
+[root@node-1 ~]# seq 3 > /data/k8s/all_node_share.txt
 
 # 在所有的节点的Pod中查看数据
-[root@node0 k8s]# kubectl exec -it demo-c846f7545-57jmd -- cat /data/all.txt
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-4vtkv -- cat /data/all_node_share.txt
 1
 2
 3
-
-[root@node0 k8s]# kubectl exec -it demo-c846f7545-9nmj2 -- cat /data/all.txt
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-87jxs -- cat /data/all_node_share.txt
 1
 2
 3
-
-[root@node0 k8s]# kubectl exec -it demo-c846f7545-qzpd4 -- cat /data/all.txt
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-qs896 -- cat /data/all_node_share.txt
 1
 2
 3
@@ -4294,22 +4290,26 @@ total 0
 
 <br />
 
-#### 存储类
+**PV和PVC的存储类**
+
+::: details  存储类简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#class](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#class)
 
 * 存储类其实就是一个标识，是一个字符串，`Kubernetes` 本身并不清楚各种类代表的什么
 * 存储类会影响`PVC`绑定`PV`
 
+:::
+
 ::: details  PVC指定一个不存在的存储类，看看会发生什么
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
 spec:
   capacity:                                 # pv容量
     storage: 100Gi                          #
@@ -4319,19 +4319,19 @@ spec:
   persistentVolumeReclaimPolicy: Delete     # 回收策略
   storageClassName: nfs-1                   # 存储类
   nfs:
-    server: 192.168.48.128                  # NFS地址
+    server: 192.168.48.151                  # NFS地址
     path: /data/k8s                         # NFS中共享的路径
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
   accessModes:                              # 访问模式
   - ReadWriteMany
-  storageClassName: nfs-2                   # 存储类
+  storageClassName: nfs-2                   # 存储类,与PV存储类不一致
   resources:                                # 资源
     requests:                               #   需求
       storage: 5Gi
@@ -4353,7 +4353,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4361,34 +4361,38 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-persistentvolume/demo-pv created
-persistentvolumeclaim/demo-pvc created
-deployment.apps/demo unchanged
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolume/demo created
+persistentvolumeclaim/demo created
+deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
+[root@node-1 ~]# kubectl get pods -o wide
 NAME                   READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
-demo-c846f7545-4kmw7   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
-demo-c846f7545-fg7tx   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
-demo-c846f7545-tps5k   0/1     Pending   0          5s    <none>   <none>   <none>           <none>
+demo-b46946dd8-5xghz   0/1     Pending   0          11s   <none>   <none>   <none>           <none>
+demo-b46946dd8-n8gd6   0/1     Pending   0          11s   <none>   <none>   <none>           <none>
+demo-b46946dd8-wp7ns   0/1     Pending   0          11s   <none>   <none>   <none>           <none>
 
 # 查看Pod详情
-[root@node0 k8s]# kubectl describe pod demo-c846f7545-4kmw7
+[root@node-1 ~]# kubectl describe pod demo-b46946dd8-5xghz
 ...
 Events:
   Type     Reason            Age   From               Message
   ----     ------            ----  ----               -------
-  Warning  FailedScheduling  22s   default-scheduler  0/3 nodes are available: 3 pod has unbound immediate PersistentVolumeClaims.
+  Warning  FailedScheduling  31s   default-scheduler  0/4 nodes are available: 4 pod has unbound immediate PersistentVolumeClaims. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
 ```
 
 :::
 
-#### PV 回收策略
+<br />
+
+**PV 回收策略**
+
+::: details  PV 回收策略简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#reclaiming](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#reclaiming)
 
@@ -4398,15 +4402,17 @@ Events:
 | 删除（Delete）  | 自动删除PV对象                                               |
 | 回收（Recycle） | 回收策略 `Recycle` 已被废弃。取而代之的建议方案是使用动态供应 |
 
+:::
+
 ::: details  保留（Retain）策略说明：保留PV，并将PV状态设置为Released
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
 spec:
   capacity:                                 # pv容量
     storage: 100Gi                          #
@@ -4429,7 +4435,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4457,7 +4463,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4465,43 +4471,43 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-persistentvolume/demo-pv created
-persistentvolumeclaim/demo-pvc created
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolume/demo created
+persistentvolumeclaim/demo created
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods
-NAME                   READY   STATUS    RESTARTS   AGE
-demo-c846f7545-fd9kk   1/1     Running   0          20s
-demo-c846f7545-fxm49   1/1     Running   0          20s
-demo-c846f7545-jcsfq   1/1     Running   0          20s
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-j5msj   1/1     Running   0          12s   10.100.84.179   node-1   <none>           <none>
+demo-b46946dd8-q9bfd   1/1     Running   0          12s   10.100.217.96   node-4   <none>           <none>
+demo-b46946dd8-r29tv   1/1     Running   0          12s   10.100.247.24   node-2   <none>           <none>
 
 # 删除Deployment
-[root@node0 k8s]# kubectl delete deploy demo
+[root@node-1 ~]# kubectl delete deploy demo
 deployment.apps "demo" deleted
 
 # 查看PVC和PV
-[root@node0 k8s]# kubectl get pvc
-NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
-demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   31s
+[root@node-1 ~]# kubectl get pvc
+NAME   STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo   Bound    demo     100Gi      RWX            local-storage   42s
 
-[root@node0 k8s]# kubectl get pv
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
-demo-pv   100Gi      RWX            Retain           Bound    default/demo-pvc   local-storage            34s
+[root@node-1 ~]# kubectl get pv
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM          STORAGECLASS    REASON   AGE
+demo   100Gi      RWX            Retain           Bound    default/demo   local-storage            44s
 
 # 删除PVC
-[root@node0 k8s]# kubectl delete pvc demo-pvc
-persistentvolumeclaim "demo-pvc" deleted
+[root@node-1 ~]# kubectl delete pvc demo
+persistentvolumeclaim "demo" deleted
 
 # 查看PV，状态变为Released(已释放)，由于卷上仍然存在这前一申领人的数据，该卷还不能用于其他申领
-[root@node0 k8s]# kubectl get pv
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM              STORAGECLASS    REASON   AGE
-demo-pv   100Gi      RWX            Retain           Released   default/demo-pvc   local-storage            72s
+[root@node-1 ~]# kubectl get pv
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM          STORAGECLASS    REASON   AGE
+demo   100Gi      RWX            Retain           Released   default/demo   local-storage            100s
 ```
 
 :::
@@ -4510,11 +4516,11 @@ demo-pv   100Gi      RWX            Retain           Released   default/demo-pvc
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
 spec:
   capacity:                                 # pv容量
     storage: 100Gi                          #
@@ -4524,13 +4530,13 @@ spec:
   persistentVolumeReclaimPolicy: Delete     # 回收策略
   storageClassName: local-storage           # 存储类
   nfs:
-    server: 192.168.48.128                  # NFS地址
+    server: 192.168.48.151                  # NFS地址
     path: /data/k8s                         # NFS中共享的路径
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4558,7 +4564,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4566,60 +4572,66 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
-# 查看Deployment
-root@node0 k8s]# kubectl get deploy
-NAME   READY   UP-TO-DATE   AVAILABLE   AGE
-demo   3/3     3            3           29s
+# 创建
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolume/demo created
+persistentvolumeclaim/demo created
+deployment.apps/demo created
+
 
 # 查看PV
-[root@node0 k8s]# kubectl get pv
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
-demo-pv   100Gi      RWX            Delete           Bound    default/demo-pvc   local-storage            31s
+[root@node-1 ~]# kubectl get pv
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM          STORAGECLASS    REASON   AGE
+demo   100Gi      RWX            Delete           Bound    default/demo   local-storage            22s
 
 # 查看PVC
-[root@node0 k8s]# kubectl get pvc
-NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
-demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   33s
+[root@node-1 ~]# kubectl get pvc
+NAME   STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo   Bound    demo     100Gi      RWX            local-storage   31s
 
 # 删除Deployment
-[root@node0 k8s]# kubectl delete deploy demo
+[root@node-1 ~]# kubectl delete deploy demo
 deployment.apps "demo" deleted
 
 # 再次查看PV，没有发生变化
-[root@node0 k8s]# kubectl get pv
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
-demo-pv   100Gi      RWX            Delete           Bound    default/demo-pvc   local-storage            2m48s
+[root@node-1 ~]# kubectl get pv
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM          STORAGECLASS    REASON   AGE
+demo   100Gi      RWX            Delete           Bound    default/demo   local-storage            50s
 
 # 再次查看PVC，没有发生变化
-[root@node0 k8s]# kubectl get pvc
-NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE
-demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   2m50s
+[root@node-1 ~]# kubectl get pvc
+NAME   STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS    AGE
+demo   Bound    demo     100Gi      RWX            local-storage   61s
 
 # 删除PVC
-[root@node0 k8s]# kubectl delete pvc demo-pvc
-persistentvolumeclaim "demo-pvc" deleted
+[root@node-1 ~]# kubectl delete pvc demo
+persistentvolumeclaim "demo" deleted
 
 # 查看PV，状态变为Failed
-[root@node0 k8s]# kubectl get pv
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE
-demo-pv   100Gi      RWX            Delete           Failed   default/demo-pvc   local-storage            4m17s
+[root@node-1 ~]# kubectl get pv
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM          STORAGECLASS    REASON   AGE
+demo   100Gi      RWX            Delete           Failed   default/demo   local-storage            84s
 
 # 看一下Failed的详情，没有找到插件来删除PV，也就是说NFS类型的持久卷并不支持Delete回收策略
 # 经测试，本地存储local也不支持Delete回收策略
-[root@node0 k8s]# kubectl describe pv demo-pv
+[root@node-1 ~]# kubectl describe pv demo
 ...
 Events:
   Type     Reason              Age   From                         Message
   ----     ------              ----  ----                         -------
-  Warning  VolumeFailedDelete  112s  persistentvolume-controller  error getting deleter volume plugin for volume "demo-pv": no deletable volume plugin matched
+  Warning  VolumeFailedDelete  24s   persistentvolume-controller  error getting deleter volume plugin for volume "demo": no deletable volume plugin matched
 ```
 
 :::
 
-#### PV动态供给
+<br />
+
+**PV动态供给**
+
+::: details PV动态供给简介
 
 文档：
 
@@ -4628,17 +4640,19 @@ Events:
 
 安装依赖：
 
-* [https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储](https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储)
+* [https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
+
+:::
 
 ::: details  使用NFS动态供给：我们不再需要自定义PV，而是由NFS驱动动态创建PV
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: kube-public                    # 故意将命名空间设置为和NFS外部驱动不一样，看是否会有限制
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4666,7 +4680,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4674,62 +4688,60 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-persistentvolumeclaim/demo-pvc created
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolumeclaim/demo created
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -n kube-public -o wide
-NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-c846f7545-q4wj8   1/1     Running   0          26s   10.233.154.25   node1   <none>           <none>
-demo-c846f7545-qslk7   1/1     Running   0          26s   10.233.44.29    node2   <none>           <none>
-demo-c846f7545-tccdw   1/1     Running   0          26s   10.233.30.34    node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -n kube-public -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-6sxtf   1/1     Running   0          13s   10.100.217.92   node-4   <none>           <none>
+demo-b46946dd8-gvjh5   1/1     Running   0          13s   10.100.84.181   node-1   <none>           <none>
+demo-b46946dd8-tsbgv   1/1     Running   0          13s   10.100.247.26   node-2   <none>           <none>
 
-# 查看PV（不区分命名空间的）
-[root@node0 k8s]# kubectl get pv 
-NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   REASON   AGE
-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff   5Gi        RWX            Delete           Bound    kube-public/demo-pvc   nfs-client              77s
+# 查看PV（不区分命名空间）
+[root@node-1 ~]# kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS   REASON   AGE
+pvc-8633c79b-4d69-4d93-8c2b-55e0d075400f   5Gi        RWX            Delete           Bound    kube-public/demo   nfs-client              25s
 
 # 查看PVC（PVC需要区分命名空间）
-[root@node0 k8s]# kubectl get pvc
-No resources found in default namespace.
-
-[root@node0 k8s]# kubectl get pvc -n kube-public
-NAME       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-demo-pvc   Bound    pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff   5Gi        RWX            nfs-client     92s
+[root@node-1 ~]# kubectl get pvc -n kube-public
+NAME   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+demo   Bound    pvc-8633c79b-4d69-4d93-8c2b-55e0d075400f   5Gi        RWX            nfs-client     63s
 
 # 查看NFS目录内容
-[root@node0 k8s]# ls -l /data/k8s
+[root@node-1 ~]# ls -l /data/k8s/
 total 0
-drwxrwxrwx. 2 root root 6 Jul 14 17:41 kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff
-
-[root@node0 k8s]# ls -l /data/k8s/kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff/
-total 0
+drwxrwxrwx 2 root root 6 Jan  9 19:35 kube-public-demo-pvc-8633c79b-4d69-4d93-8c2b-55e0d075400f
 
 # 写入点内容
-[root@node0 k8s]# seq 10 > /data/k8s/kube-public-demo-pvc-pvc-dfbc1a8a-d97b-4db4-9e13-63e39ed054ff/a.txt
+[root@node-1 ~]# seq 10 > /data/k8s/kube-public-demo-pvc-8633c79b-4d69-4d93-8c2b-55e0d075400f/test.txt
 
 # 删除Deployment和PVC
-[root@node0 k8s]# kubectl delete -f demo.yml
-persistentvolumeclaim "demo-pvc" deleted
+[root@node-1 ~]# kubectl delete -f deployment.yaml 
+persistentvolumeclaim "demo" deleted
 deployment.apps "demo" deleted
 
-# 检查PV是否删除
-[root@node0 k8s]# kubectl get pv
+# 检查PV已经自动删除
+[root@node-1 ~]# kubectl get pv
 No resources found
 
 # 检查NFS中的内容是否删除
 # 因为我们NFS驱动的archiveOnDelete为false，所以这里会真的把数据删除，而不是将目录改名(以archived-开头)
-[root@node0 k8s]# ls /data/k8s/
+[root@node-1 ~]# ls /data/k8s/
 ```
 
 :::
 
-#### 访问模式
+<br />
+
+**PV和PVC的访问模式**
+
+::: details 访问模式简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes)
 
@@ -4744,15 +4756,17 @@ No resources found
 
 * 访问模式会影响`PVC`绑定`PV`
 
+:::
+
 ::: details ReadWriteOnce示例
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
 spec:
   capacity:                                 # pv容量
     storage: 100Gi                          #
@@ -4762,13 +4776,13 @@ spec:
   persistentVolumeReclaimPolicy: Retain     # 回收策略
   storageClassName: local-storage           # 存储类
   nfs:
-    server: 192.168.48.128                  # NFS地址
+    server: 192.168.48.151                  # NFS地址
     path: /data/k8s                         # NFS中共享的路径
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4796,7 +4810,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4804,13 +4818,23 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-persistentvolumeclaim/demo-pvc created
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+persistentvolume/demo created
+persistentvolumeclaim/demo created
 deployment.apps/demo created
+
+# 查看Pod
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-2v4zh   1/1     Running   0          28s   10.100.84.182    node-1   <none>           <none>
+demo-b46946dd8-6m8mt   1/1     Running   0          28s   10.100.247.27    node-2   <none>           <none>
+demo-b46946dd8-w8msd   1/1     Running   0          28s   10.100.217.100   node-4   <none>           <none>
+
+
 ```
 
 :::
