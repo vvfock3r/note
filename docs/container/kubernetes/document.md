@@ -3934,13 +3934,13 @@ drwx------    2 root     root             6 Jan  8 10:44 vmware-root_793-4248746
 
 **准备工作**
 
-安装NFS Server及依赖：[https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储](https://jinhui.dev/container/kubernetes-deploy-binary.html#_5-nfs存储)
+安装NFS Server及依赖：[https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
 
 **测试NFS**
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -3958,56 +3958,58 @@ spec:
     spec:
       containers:
       - name: demo1
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
             mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
       - name: demo2
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
             mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
-
       volumes:
         - name: data
           nfs:
-            server: 192.168.48.128
+            server: 192.168.48.151
             path: /data/k8s
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE   IP             NODE    NOMINATED NODE   READINESS GATES
-demo-57ff9bdfd7-5m6zj   2/2     Running   0          44s   10.233.44.4    node2   <none>           <none>
-demo-57ff9bdfd7-dlr5s   2/2     Running   0          44s   10.233.44.5    node2   <none>           <none>
-demo-57ff9bdfd7-kl7rp   2/2     Running   0          44s   10.233.30.4    node0   <none>           <none>
-demo-57ff9bdfd7-sm9d2   2/2     Running   0          44s   10.233.30.5    node0   <none>           <none>
-demo-57ff9bdfd7-xvdrm   2/2     Running   0          44s   10.233.154.7   node1   <none>           <none>
-demo-57ff9bdfd7-zkmlr   2/2     Running   0          44s   10.233.154.8   node1   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-688f46966b-4mcr9   2/2     Running   0          19s   10.100.139.68   node-3   <none>           <none>
+demo-688f46966b-fwbr4   2/2     Running   0          19s   10.100.247.20   node-2   <none>           <none>
+demo-688f46966b-kf8gn   2/2     Running   0          19s   10.100.247.19   node-2   <none>           <none>
+demo-688f46966b-mlw4l   2/2     Running   0          19s   10.100.217.89   node-4   <none>           <none>
+demo-688f46966b-p7bqq   2/2     Running   0          19s   10.100.217.87   node-4   <none>           <none>
+demo-688f46966b-znlp8   2/2     Running   0          19s   10.100.84.175   node-1   <none>           <none>
 
-# 在node2节点上的容器写入数据
-[root@node0 k8s]# kubectl exec -it demo-57ff9bdfd7-5m6zj -c demo1 -- sh
-/ # seq 3 > /data1/node2
+# 在node-1节点上的容器写入数据
+[root@node-1 ~]# kubectl exec -it demo-688f46966b-znlp8 -c demo1 -- sh
+/ # seq 3 > /data1/node-1.txt
 
-# 在node1上的容器上查看数据
-[root@node0 k8s]# kubectl exec -it demo-57ff9bdfd7-xvdrm -c demo1 -- sh
-/ # ls /data1/
-node2
-/ # cat /data1/node2
+# 在node-2上的容器上查看数据
+[root@node-1 ~]# kubectl exec -it demo-688f46966b-fwbr4 -c demo1 -- sh
+/ # cat /data1/node-1.txt
 1
 2
 3
 
 # 查看node上的挂载情况
-[root@node1 ~]# mount | grep -i nfs
-192.168.48.128:/data/k8s on /var/lib/kubelet/pods/07f6dfbc-ba37-405e-a5b5-45281b764913/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.134,local_lock=none,addr=192.168.48.128)
-192.168.48.128:/data/k8s on /var/lib/kubelet/pods/35f5d23d-e65c-406f-ac91-ad4adfca060e/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.134,local_lock=none,addr=192.168.48.128)
+[root@node-1 ~]# mount | grep -i nfs
+sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw,relatime)
+nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
+192.168.48.151:/data/k8s on /var/lib/kubelet/pods/39ee3145-e2e5-41a0-9e79-800bd78cdcc5/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.151,local_lock=none,addr=192.168.48.151)
+
+[root@node-2 ~]# mount | grep -i nfs
+192.168.48.151:/data/k8s on /var/lib/kubelet/pods/66398b7f-89e2-46a2-bf7e-3513b1174dca/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.152,local_lock=none,addr=192.168.48.151)
+192.168.48.151:/data/k8s on /var/lib/kubelet/pods/4d8694ed-57d8-4b17-8e4e-48b8e5f5c720/volumes/kubernetes.io~nfs/data type nfs4 (rw,relatime,vers=4.1,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.48.152,local_lock=none,addr=192.168.48.151)
 ```
 
 :::
