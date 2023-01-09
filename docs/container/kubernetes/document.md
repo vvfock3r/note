@@ -3765,7 +3765,7 @@ secret/a.com created
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -3783,39 +3783,37 @@ spec:
     spec:
       containers:
       - name: demo1
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
             mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
       - name: demo2
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
-            mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
-
+            mountPath: /data2      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
       volumes:
-        - name: data
-          # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
-          emptyDir: {}
+        - name: data         
+          emptyDir: {}             # 临时存储卷，与Pod生命周期绑定在一起，如果Pod被删除了卷也会被删除
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-85846f8b7-4qtv6   2/2     Running   0          23s   10.233.154.30   node1   <none>           <none>
-demo-85846f8b7-brvdl   2/2     Running   0          23s   10.233.44.96    node2   <none>           <none>
-demo-85846f8b7-h7h7n   2/2     Running   0          23s   10.233.30.30    node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                    READY   STATUS        RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-868999645d-96swt   2/2     Running       0          24s   10.100.84.172   node-1   <none>           <none>
+demo-868999645d-jrrnv   2/2     Running       0          24s   10.100.247.17   node-2   <none>           <none>
+demo-868999645d-qhdbs   2/2     Running       0          24s   10.100.217.82   node-4   <none>           <none>
 
 # 同一个Pod内测试共享存储
-[root@node0 k8s]# kubectl exec -it demo-85846f8b7-4qtv6 -c demo1 -- sh 
+[root@node-1 ~]# kubectl exec -it demo-868999645d-96swt -c demo1 -- sh 
 / # seq 10 > /data1/1.txt
-[root@node0 k8s]# kubectl exec -it demo-85846f8b7-4qtv6 -c demo2 -- sh 
+[root@node-1 ~]# kubectl exec -it demo-868999645d-96swt -c demo2 -- sh 
 / # cat /data2/1.txt
 1
 2
@@ -3829,7 +3827,7 @@ demo-85846f8b7-h7h7n   2/2     Running   0          23s   10.233.30.30    node0 
 10
 
 # 不同Pod数据是不共享的
-[root@node0 k8s]# kubectl exec -it demo-85846f8b7-brvdl -c demo2 -- sh 
+[root@node-1 ~]# kubectl exec -it demo-868999645d-jrrnv -c demo2 -- sh
 / # ls /data2/
 ```
 
@@ -3839,7 +3837,7 @@ demo-85846f8b7-h7h7n   2/2     Running   0          23s   10.233.30.30    node0 
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -3857,72 +3855,77 @@ spec:
     spec:
       containers:
       - name: demo1
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
             mountPath: /data1      # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
       - name: demo2
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
             mountPath: /data2     # 一般情况下两个容器会设置相同的挂载点，这里仅为学习演示，所以设置不同的挂载点
-
       volumes:
         - name: data
           hostPath:
-            path: /tmp         # 所有宿主机都有/tmp目录
+            path: /tmp            # 所有宿主机都有/tmp目录
             type: Directory
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
 deployment.apps/demo created
 
 # 查看Pod
-[root@node0 ~]# kubectl get pods -o wide
-NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
-demo-7557dc6f66-4gk49   2/2     Running   0          2m47s   10.233.154.36   node1   <none>           <none>
-demo-7557dc6f66-4tvlr   2/2     Running   0          2m47s   10.233.30.38    node0   <none>           <none>
-demo-7557dc6f66-7l9rv   2/2     Running   0          2m47s   10.233.44.102   node2   <none>           <none>
-demo-7557dc6f66-9479q   2/2     Running   0          2m47s   10.233.154.35   node1   <none>           <none>
-demo-7557dc6f66-f67g8   2/2     Running   0          2m47s   10.233.44.101   node2   <none>           <none>
-demo-7557dc6f66-tglgk   2/2     Running   0          2m47s   10.233.30.37    node0   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-5758846f9-b8pgf   2/2     Running   0          31s   10.100.84.173   node-1   <none>           <none>
+demo-5758846f9-bvzwl   2/2     Running   0          31s   10.100.217.84   node-4   <none>           <none>
+demo-5758846f9-dr9r6   2/2     Running   0          31s   10.100.217.85   node-4   <none>           <none>
+demo-5758846f9-qkgr7   2/2     Running   0          31s   10.100.84.174   node-1   <none>           <none>
+demo-5758846f9-rl4t9   2/2     Running   0          31s   10.100.247.18   node-2   <none>           <none>
+demo-5758846f9-wrrv9   2/2     Running   0          31s   10.100.139.67   node-3   <none>           <none>
 
-# 在Node0节点的容器上写入数据
-[root@node0 ~]# kubectl exec -it demo-7557dc6f66-tglgk -c demo1 -- sh
-/ # seq 3 >/data1/node0-1.txt
+# 在Node-1节点的容器上写入数据
+[root@node-1 ~]# kubectl exec -it demo-5758846f9-b8pgf -c demo1 -- sh
+/ # seq 3 >/data1/node-1.txt
 
 # 在同一个Pod不同容器中查看数据
-/ # [root@node0 ~]# kubectl exec -it demo-7557dc6f66-tglgk -c demo2 -- sh
-/ # cat /data2/node0-1.txt 
+[root@node-1 ~]# kubectl exec -it demo-5758846f9-b8pgf -c demo2 -- sh
+/ # cat /data2/node-1.txt
 1
 2
 3
 
 # 在同一个Node节点上的不同Pod中查看数据
-/ # [root@node0 ~]# kubectl exec -it demo-7557dc6f66-4tvlr -c demo1 -- cat /data1/node0-1.txt
+[root@node-1 ~]# kubectl exec -it demo-5758846f9-qkgr7 -c demo1 -- cat /data1/node-1.txt
 1
 2
 3
-[root@node0 ~]# kubectl exec -it demo-7557dc6f66-4tvlr -c demo2 -- cat /data2/node0-1.txt
+[root@node-1 ~]# kubectl exec -it demo-5758846f9-qkgr7 -c demo2 -- cat /data2/node-1.txt
 1
 2
 3
 
 # 在不同的Node节点上看不到数据
-[root@node0 ~]# kubectl exec -it demo-7557dc6f66-4gk49 -c demo1 -- sh
+[root@node-1 ~]# kubectl exec -it demo-5758846f9-bvzwl -c demo1 -- sh
 / # ls -l /data1/
-total 4
-drwxr-xr-x    5 root     root          4096 Jun 20 23:15 releases
-drwx------    2 root     root             6 Jun 26 02:15 vmware-root_780-2957124724
-drwx------    2 root     root             6 Jun 21 06:23 vmware-root_783-4281646632
-drwx------    2 root     root             6 Jun 20 22:21 vmware-root_785-4282170929
-drwx------    2 root     root             6 Jun 24 02:34 vmware-root_786-2957649005
-drwx------    2 root     root             6 Jun 26 00:27 vmware-root_788-2957517930
-drwx------    2 root     root             6 Jun 25 07:57 vmware-root_790-2965972456
-drwx------    2 root     root             6 Jun 25 03:22 vmware-root_800-2999657415
+total 0
+drwx------    2 root     root             6 Jan  6 02:22 vmware-root_772-2990547578
+drwx------    2 root     root             6 Jan  8 13:48 vmware-root_773-4256676260
+drwx------    2 root     root             6 Jan  6 09:12 vmware-root_774-2999002104
+drwx------    2 root     root             6 Jan  5 02:53 vmware-root_775-4248221734
+drwx------    2 root     root             6 Jan  4 11:11 vmware-root_776-2965448177
+drwx------    2 root     root             6 Jan  5 11:11 vmware-root_777-4281777711
+drwx------    2 root     root             6 Jan  9 08:06 vmware-root_778-2956993651
+drwx------    2 root     root             6 Jan  8 11:22 vmware-root_779-4290232237
+drwx------    2 root     root             6 Jan  8 09:14 vmware-root_780-2957124724
+drwx------    2 root     root             6 Jan  9 06:14 vmware-root_781-4290101162
+drwx------    2 root     root             6 Jan  8 14:12 vmware-root_783-4281646632
+drwx------    2 root     root             6 Jan  8 10:07 vmware-root_784-2966103535
+drwx------    2 root     root             6 Jan  5 01:29 vmware-root_787-4290625459
+drwx------    2 root     root             6 Jan  8 10:44 vmware-root_793-4248746047
 ```
 
 :::
