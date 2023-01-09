@@ -4020,21 +4020,21 @@ nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/)
 
-注意：
+注意：PV不区分命名空间，PVC区分命名空间
 
-* PV不区分命名空间，PVC区分命名空间
+<br />
 
-#### 示例
+**基础示例**
 
-::: details 第一步：创建PV（PersistentVolume）
+::: details （1）创建PV（PersistentVolume）
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pv.yml <<- EOF
+[root@node-1 ~]# cat > pv.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: demo-pv
+  name: demo
   namespace: default
 spec:
   capacity:                                 # pv容量
@@ -4045,7 +4045,7 @@ spec:
   persistentVolumeReclaimPolicy: Delete     # 回收策略
   storageClassName: local-storage           # 存储类
   local:                                    # 持久卷类型,local代表节点上挂载的本地存储设备
-    path: /data/pv
+    path: /data/k8s/pv                      # 每个Node节点上必须存在此目录
   nodeAffinity:                             # 使用local卷时，你需要设置 PersistentVolume 对象的 nodeAffinity 字段
     required:
       nodeSelectorTerms:
@@ -4057,26 +4057,26 @@ spec:
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f pv.yml
-persistentvolume/demo-pv created
+[root@node-1 ~]# kubectl apply -f pv.yaml
+persistentvolume/demo created
  
- # 查看PV
-[root@node0 k8s]# kubectl get pv -o wide
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS    REASON   AGE   VOLUMEMODE
-demo-pv   100Gi      RWX            Delete           Available           local-storage            6s    Filesystem
+# 查看PV,状态为Available
+[root@node-1 ~]# kubectl get pv -o wide
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS    REASON   AGE   VOLUMEMODE
+demo   100Gi      RWX            Delete           Available           local-storage            9s    Filesystem
 ```
 
 :::
 
-::: details  第二步：创建PVC（PersistentVolumeClaims）
+::: details  （2）创建PVC（PersistentVolumeClaims）
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node-1 ~]# cat > pvc.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: demo-pvc
+  name: demo
   namespace: default
 spec:
   volumeMode: Filesystem                    # 卷模式
@@ -4089,27 +4089,27 @@ spec:
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f pvc.yml 
-persistentvolumeclaim/demo-pvc created
+[root@node-1 ~]# kubectl apply -f pvc.yaml 
+persistentvolumeclaim/demo created
 
 # 查看PVC，状态为Bound
-[root@node0 k8s]# kubectl get pvc -o wide
-NAME       STATUS   VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS    AGE   VOLUMEMODE
-demo-pvc   Bound    demo-pv   100Gi      RWX            local-storage   4s    Filesystem
+[root@node-1 ~]# kubectl get pvc -o wide
+NAME   STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS    AGE   VOLUMEMODE
+demo   Bound    demo     100Gi      RWX            local-storage   11s   Filesystem
 
-# 再次查看我们的PV，发现状态已经变为Bound
-[root@node0 k8s]# kubectl get pv -o wide
-NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM              STORAGECLASS    REASON   AGE   VOLUMEMODE
-demo-pv   100Gi      RWX            Delete           Bound    default/demo-pvc   local-storage            10m   Filesystem
+# 查看PV，状态已经变为Bound
+[root@node-1 ~]# kubectl get pv -o wide
+NAME   CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM          STORAGECLASS    REASON   AGE    VOLUMEMODE
+demo   100Gi      RWX            Delete           Bound    default/demo   local-storage            107s   Filesystem
 ```
 
 :::
 
-::: details  第三步：使用PVC（PersistentVolumeClaims）
+::: details  （3）使用PVC（PersistentVolumeClaims）
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -4127,7 +4127,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.28
+        image: busybox:latest
         command: ['sh', '-c', 'echo The app is running! && sleep 3600']
         volumeMounts:
           - name: data
@@ -4135,43 +4135,51 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:   # 固定字段
-            claimName: demo-pvc    # 指定PVC名称
+            claimName: demo        # 指定PVC名称
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
 deployment.apps/demo created
 
 # 查看Deployment
-[root@node0 k8s]# kubectl get deploy -o wide
-NAME   READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES         SELECTOR
-demo   3/3     3            3           16s   demo         busybox:1.28   app=demo
+[root@node-1 ~]# kubectl get deploy -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES           SELECTOR
+demo   3/3     3            3           7s    demo         busybox:latest   app=demo
 
 # 查看Pod
-[root@node0 k8s]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-demo-c846f7545-445zm   1/1     Running   0          18s   10.233.154.13   node1   <none>           <none>
-demo-c846f7545-8jxkv   1/1     Running   0          18s   10.233.30.22    node0   <none>           <none>
-demo-c846f7545-jsfx2   1/1     Running   0          18s   10.233.44.9     node2   <none>           <none>
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-c5wkh   1/1     Running   0          20s   10.100.217.90   node-4   <none>           <none>
+demo-b46946dd8-px2tn   1/1     Running   0          20s   10.100.247.21   node-2   <none>           <none>
+demo-b46946dd8-w4qxp   1/1     Running   0          20s   10.100.84.176   node-1   <none>           <none>
+
+# --------------------------------------------------------------------------------------------------------------------
 
 # 因为我们的PV使用的local卷，所以每个节点上的Pod数据并不共享，下面来实验一下
 
-# (1) node0节点生成数据
-[root@node0 k8s]# seq 3 > /data/pv/node0.txt 
-# (2) node0节点上的Pod可以正常拿到数据
-[root@node0 k8s]# kubectl exec -it demo-c846f7545-8jxkv -- cat /data/node0.txt
+# (1) node-1节点生成数据
+[root@node-1 ~]# seq 3 > /data/k8s/pv/node-1.txt
+
+# (2) node-1节点上的Pod可以正常拿到数据
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-w4qxp -- cat /data/node-1.txt
 1
 2
 3
-# (3) node1节点上的Pod则看不到数据
-[root@node0 k8s]# kubectl exec -it demo-c846f7545-445zm -- cat /data/node0.txt
-cat: can't open '/data/node0.txt': No such file or directory
+
+# (3) node-2节点上的Pod则看不到数据
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-px2tn -- cat /data/node-1.txt
+cat: can't open '/data/node-1.txt': No such file or directory
 command terminated with exit code 1
 ```
 
 :::
 
-#### PV 类型
+<br />
+
+**PV 类型**
+
+::: details  PV 类型简介
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes)
 
@@ -4182,7 +4190,9 @@ command terminated with exit code 1
 | 网络 | `nfs`      | NFS支持                                                      |
 |      | `cephfs`   | Ceph支持                                                     |
 
-::: details  nfs示例
+:::
+
+::: details  NFS 示例
 
 ```bash
 # 生成yaml文件
@@ -4281,6 +4291,8 @@ total 0
 ```
 
 :::
+
+<br />
 
 #### 存储类
 
