@@ -5103,7 +5103,7 @@ Github：[https://github.com/kubernetes/autoscaler](https://github.com/kubernete
 
 <br />
 
-### Cluster AutoScaler - Node弹性伸缩
+### Node弹性伸缩
 
 阿里云：[https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud)
 
@@ -5111,7 +5111,7 @@ Github：[https://github.com/kubernetes/autoscaler](https://github.com/kubernete
 
 <br />
 
-### HPA - Pod个数弹性伸缩
+### HPA - Pod横向伸缩（个数调整）
 
 文档：[https://kubernetes.io/zh-cn/docs/tasks/run-application/horizontal-pod-autoscale/](https://kubernetes.io/zh-cn/docs/tasks/run-application/horizontal-pod-autoscale/)
 
@@ -5119,7 +5119,7 @@ Github：[https://github.com/kubernetes/autoscaler](https://github.com/kubernete
 
 ```bash
 # 创建YAML文件
-[root@node-1 ~]# cat > demo.yml <<EOF
+[root@node-1 ~]# cat > deployment.yaml <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5137,13 +5137,13 @@ spec:
     spec:
       containers:
       - name: web
-        image: nginx:1.23
+        image: nginx:latest
         resources: 
-           requests:          # HPA会将这里的值作为总量与当前Pod使用量进行计算得到百分比，来判断是否需要扩容或缩容
+           # HPA会将这里的值作为总量与当前Pod使用量进行计算得到百分比，来判断是否需要扩容或缩容
+           requests:
              memory: "100Mi"
              cpu: "100m"
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -5158,66 +5158,50 @@ spec:
 EOF
 
 # 部署
-[root@node-1 ~]# kubectl apply -f demo.yml
+[root@node-1 ~]# kubectl apply -f deployment.yaml 
+deployment.apps/demo created
+service/demo created
 
 # 查看Pod
 [root@node-1 ~]# kubectl get pods
 NAME                    READY   STATUS    RESTARTS   AGE
-demo-78d8864777-2fbcf   1/1     Running   0          4s
-demo-78d8864777-nwphc   1/1     Running   0          4s
-demo-78d8864777-q6n7g   1/1     Running   0          4s
+demo-79f76cc597-6qls4   1/1     Running   0          10s
+demo-79f76cc597-dvklz   1/1     Running   0          10s
+demo-79f76cc597-tbqgw   1/1     Running   0          10s
 
 # 查看Service
 [root@node-1 ~]# kubectl get svc demo
-NAME   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-demo   ClusterIP   10.233.140.171   <none>        80/TCP    20s
+NAME   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+demo   ClusterIP   10.200.221.29   <none>        80/TCP    20s
 
 # 访问测试
-[root@node-1 ~]# curl 10.233.140.171
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
-
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
-
-<p><em>Thank you for using nginx.</em></p>
-</body>
-</html>
+[root@node-1 ~]# curl 10.200.221.29 -I
+HTTP/1.1 200 OK
+Server: nginx/1.23.3
+Date: Mon, 09 Jan 2023 12:54:27 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
+Connection: keep-alive
+ETag: "6398a011-267"
+Accept-Ranges: bytes
 
 # 看一下Pod的资源使用率
-[root@node-1 ~]# kubectl top pod 
+[root@node-1 ~]# kubectl top pod
 NAME                    CPU(cores)   MEMORY(bytes)   
-demo-78d8864777-2fbcf   0m           3Mi             
-demo-78d8864777-nwphc   0m           3Mi             
-demo-78d8864777-q6n7g   0m           3Mi
+demo-79f76cc597-6qls4   0m           1Mi             
+demo-79f76cc597-dvklz   1m           2Mi             
+demo-79f76cc597-tbqgw   0m           1Mi
 
 # 看一下Deployment
-[root@node-1 ~]# kubectl get pods
-NAME                    READY   STATUS    RESTARTS   AGE
-demo-78d8864777-7dmf5   1/1     Running   0          7m35s
-demo-78d8864777-nwphc   1/1     Running   0          23m
-[root@node-1 ~]# kubectl describe deployment
+[root@node-1 ~]# kubectl describe deployment demo
 Name:                   demo
 Namespace:              default
-CreationTimestamp:      Wed, 24 Aug 2022 17:39:04 +0800
+CreationTimestamp:      Mon, 09 Jan 2023 20:53:09 +0800
 Labels:                 <none>
 Annotations:            deployment.kubernetes.io/revision: 1
 Selector:               app=web
-Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
 StrategyType:           RollingUpdate
 MinReadySeconds:        0
 RollingUpdateStrategy:  25% max unavailable, 25% max surge
@@ -5225,7 +5209,7 @@ Pod Template:
   Labels:  app=web
   Containers:
    web:
-    Image:      nginx:1.23
+    Image:      nginx:latest
     Port:       <none>
     Host Port:  <none>
     Requests:
@@ -5237,16 +5221,14 @@ Pod Template:
 Conditions:
   Type           Status  Reason
   ----           ------  ------
-  Progressing    True    NewReplicaSetAvailable
   Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
 OldReplicaSets:  <none>
-NewReplicaSet:   demo-78d8864777 (2/2 replicas created)
+NewReplicaSet:   demo-79f76cc597 (3/3 replicas created)
 Events:
   Type    Reason             Age    From                   Message
   ----    ------             ----   ----                   -------
-  Normal  ScalingReplicaSet  24m    deployment-controller  Scaled up replica set demo-78d8864777 to 3
-  Normal  ScalingReplicaSet  13m    deployment-controller  Scaled down replica set demo-78d8864777 to 1
-  Normal  ScalingReplicaSet  7m44s  deployment-controller  Scaled up replica set demo-78d8864777 to 4
+  Normal  ScalingReplicaSet  2m20s  deployment-controller  Scaled up replica set demo-79f76cc597 to 3
 ```
 
 :::
@@ -5407,7 +5389,7 @@ EOF
 
 <br />
 
-### VPA - Pod配置弹性伸缩
+### VPA - Pod纵向伸缩（配置调整）
 
 Github：[https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
 
