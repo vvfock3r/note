@@ -4196,7 +4196,7 @@ command terminated with exit code 1
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > pvc.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
