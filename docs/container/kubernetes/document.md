@@ -2267,7 +2267,7 @@ Hello from the Kubernetes cluster
 
 <br />
 
-## 对外暴露应用
+## 应用对外暴露
 
 ### Service
 
@@ -3732,7 +3732,7 @@ secret/a.com created
 
 <br />
 
-## 数据存储
+## 应用数据存储
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/](https://kubernetes.io/zh-cn/docs/concepts/storage/volumes/)
 
