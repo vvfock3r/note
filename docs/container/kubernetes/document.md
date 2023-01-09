@@ -5233,15 +5233,15 @@ Events:
 
 :::
 
-::: details  （1）基于CPU的弹性伸缩：HPA v1版本  -- 详细演示版本
+::: details  （1）基于CPU的弹性伸缩：HPA v1版本
 
 ```bash
 # 创建YAML文件
-[root@node-1 ~]# cat > hpa-v1-cpu.yaml <<EOF
-apiVersion: autoscaling/v1
+[root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: demo-hpa
+  name: demo
 spec:
   minReplicas: 1     # 允许缩容到的最小副本数
   maxReplicas: 5     # 允许缩容到的最小副本数
