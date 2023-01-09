@@ -4745,12 +4745,12 @@ No resources found
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#access-modes)
 
-| 访问模式         | 简写形式 | 说明                                                         |
-| ---------------- | -------- | ------------------------------------------------------------ |
-| ReadWriteMany    | RWX      | 卷可以被多个节点以读写方式挂载                               |
-| ReadOnlyMany     | ROX      | 卷可以被多个节点以只读方式挂载                               |
-| ReadWriteOnce    | RWO      | 卷可以被一个节点以读写方式挂载。 ReadWriteOnce 访问模式也允许运行在同一节点上的多个 Pod 访问卷。 |
-| ReadWriteOncePod | RWOP     | 卷可以被单个 Pod 以读写方式挂载。 如果你想确保整个集群中只有一个 Pod 可以读取或写入该 PVC， 请使用ReadWriteOncePod 访问模式。这只支持 CSI 卷以及需要 Kubernetes 1.22 以上版本。 |
+| 访问模式         | 简写 | 说明                                                         |
+| ---------------- | ---- | ------------------------------------------------------------ |
+| ReadWriteMany    | RWX  | 卷可以被多个节点以读写方式挂载                               |
+| ReadOnlyMany     | ROX  | 卷可以被多个节点以只读方式挂载                               |
+| ReadWriteOnce    | RWO  | 卷可以被一个节点以读写方式挂载。 ReadWriteOnce 访问模式也允许运行在同一节点上的多个 Pod 访问卷。 |
+| ReadWriteOncePod | RWOP | 卷可以被单个 Pod 以读写方式挂载。 如果你想确保整个集群中只有一个 Pod 可以读取或写入该 PVC， 请使用ReadWriteOncePod 访问模式。这只支持 CSI 卷以及需要 Kubernetes 1.22 以上版本。 |
 
 注意事项：
 
@@ -4758,7 +4758,7 @@ No resources found
 
 :::
 
-::: details ReadWriteOnce示例
+::: details ReadWriteOnce示例（测试有问题）
 
 ```bash
 # 生成yaml文件
@@ -4829,12 +4829,18 @@ deployment.apps/demo created
 
 # 查看Pod
 [root@node-1 ~]# kubectl get pods -o wide
-NAME                   READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
-demo-b46946dd8-2v4zh   1/1     Running   0          28s   10.100.84.182    node-1   <none>           <none>
-demo-b46946dd8-6m8mt   1/1     Running   0          28s   10.100.247.27    node-2   <none>           <none>
-demo-b46946dd8-w8msd   1/1     Running   0          28s   10.100.217.100   node-4   <none>           <none>
+NAME                   READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+demo-b46946dd8-2j2xm   1/1     Running   0          3m33s   10.100.84.185    node-1   <none>           <none>
+demo-b46946dd8-8wgdc   1/1     Running   0          3m33s   10.100.247.30    node-2   <none>           <none>
+demo-b46946dd8-lnczz   1/1     Running   0          3m33s   10.100.217.101   node-4   <none>           <none>
 
+# 可以写入
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-2j2xm -- sh
+/ # seq 10 > /data/1.txt
 
+# 可以写入
+[root@node-1 ~]# kubectl exec -it demo-b46946dd8-8wgdc -- sh
+/ # echo 11 >> /data/1.txt
 ```
 
 :::
