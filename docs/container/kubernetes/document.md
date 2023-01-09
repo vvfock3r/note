@@ -4866,7 +4866,7 @@ demo-b46946dd8-lnczz   1/1     Running   0          3m33s   10.100.217.101   nod
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy)
 
-**配置说明**
+::: details  配置说明
 
 | 字段                                                         | 可选字段 | 默认值          | 说明                                                         |
 | ------------------------------------------------------------ | -------- | --------------- | ------------------------------------------------------------ |
@@ -4875,11 +4875,13 @@ demo-b46946dd8-lnczz   1/1     Running   0          3m33s   10.100.217.101   nod
 | 最大峰值<br />（`.spec.strategy.rollingUpdate.maxSurge`）    | 是       | `25%`           | 可以是绝对数字（例如，5），<br />也可以是所需 Pods 的百分比（例如，10%）；<br />百分比值会通过向上取整转换为绝对数 |
 | 最短就绪时间<br />（`.spec.minReadySeconds`）                | 是       | 0               | 指定新创建的 Pod 在没有任意容器崩溃情况下的最小就绪时间， 只有超出这个时间 Pod 才被视为可用 |
 
+:::
+
 ::: details  滚动更新示例
 
 ```bash
 # 创建yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -4893,7 +4895,6 @@ spec:
   strategy:
     rollingUpdate:
       maxSurge: 2    # 设置每次更新2个Pod
-
   template:
     metadata:
       labels:
@@ -4901,7 +4902,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:1.33
+        image: busybox:latest
         command: ['sh', '-c', 'sleep 60 && touch /tmp/healthy && echo The app is running! && sleep 3600']
         readinessProbe:
           exec:
@@ -4913,49 +4914,61 @@ spec:
 EOF
 
 # 创建Deployment
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml
 deployment.apps/demo created
 
 # 查看
-[root@node0 k8s]# kubectl rollout status deploy/demo
+[root@node-1 ~]# kubectl rollout status deploy/demo
 Waiting for deployment "demo" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "demo" rollout to finish: 1 of 3 updated replicas are available...
 Waiting for deployment "demo" rollout to finish: 2 of 3 updated replicas are available...
 deployment "demo" successfully rolled out
 
-[root@node0 k8s]# kubectl get pods
+[root@node-1 ~]# kubectl get pods
 NAME                    READY   STATUS    RESTARTS   AGE
-demo-5b978c7d6d-hvkjp   1/1     Running   0          70s
-demo-5b978c7d6d-svknh   1/1     Running   0          70s
-demo-5b978c7d6d-tsbn4   1/1     Running   0          70s
+demo-697c86c7d5-4m4df   1/1     Running   0          83s
+demo-697c86c7d5-54wj7   1/1     Running   0          83s
+demo-697c86c7d5-9l5g5   1/1     Running   0          83s
 
 # 修改busybox镜像版本为1.34，然后更新deployment
-[root@node0 k8s]# kubectl apply -f demo.yml 
+[root@node-1 ~]# kubectl apply -f deployment.yaml
 deployment.apps/demo configured
 
 # 查看Pod,新创建了2个，等待就绪检查成功后会删除2个旧的Pod
-[root@node0 k8s]# kubectl get pods
+[root@node-1 ~]# kubectl get pods
 NAME                    READY   STATUS    RESTARTS   AGE
-demo-5b978c7d6d-hvkjp   1/1     Running   0          2m57s
-demo-5b978c7d6d-svknh   1/1     Running   0          2m57s
-demo-5b978c7d6d-tsbn4   1/1     Running   0          2m57s
-demo-8f99576b9-26g8x    0/1     Running   0          7s
-demo-8f99576b9-r4kbm    0/1     Running   0          7s
+demo-697c86c7d5-4m4df   1/1     Running   0          2m4s
+demo-697c86c7d5-54wj7   1/1     Running   0          2m4s
+demo-697c86c7d5-9l5g5   1/1     Running   0          2m4s
+demo-b6466464-bxcj5     0/1     Running   0          11s
+demo-b6466464-sqm79     0/1     Running   0          11s
 
-[root@node0 k8s]# kubectl rollout status deploy/demo
-Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
+# 第3个Pod已经开始更新了
+[root@node-1 ~]# kubectl get pods
+NAME                    READY   STATUS        RESTARTS   AGE
+demo-697c86c7d5-4m4df   1/1     Running       0          3m4s
+demo-697c86c7d5-54wj7   1/1     Terminating   0          3m4s
+demo-697c86c7d5-9l5g5   1/1     Terminating   0          3m4s
+demo-b6466464-bxcj5     1/1     Running       0          71s
+demo-b6466464-pdt4f     0/1     Running       0          6s
+demo-b6466464-sqm79     1/1     Running       0          71s
+
+[root@node-1 ~]# kubectl rollout status deploy/demo
 Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
 Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
 Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
 Waiting for deployment "demo" rollout to finish: 2 out of 3 new replicas have been updated...
 Waiting for deployment "demo" rollout to finish: 2 old replicas are pending termination...
+Waiting for deployment "demo" rollout to finish: 2 old replicas are pending termination...
+Waiting for deployment "demo" rollout to finish: 1 old replicas are pending termination...
 Waiting for deployment "demo" rollout to finish: 1 old replicas are pending termination...
 deployment "demo" successfully rolled out
 
-[root@node0 k8s]# kubectl get pods
-NAME                   READY   STATUS    RESTARTS   AGE
-demo-8f99576b9-26g8x   1/1     Running   0          2m40s
-demo-8f99576b9-r4kbm   1/1     Running   0          2m40s
-demo-8f99576b9-vrfvx   1/1     Running   0          99s
+[root@node-1 ~]# kubectl get pods
+NAME                    READY   STATUS        RESTARTS   AGE
+demo-b6466464-bxcj5     1/1     Running       0          2m36s
+demo-b6466464-pdt4f     1/1     Running       0          91s
+demo-b6466464-sqm79     1/1     Running       0          2m36s
 ```
 
 :::
