@@ -3518,28 +3518,28 @@ SECRET = 123456
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/configuration/secret/](https://kubernetes.io/zh-cn/docs/concepts/configuration/secret/)
 
-`Secret` 类似于ConfigMap，但专门用于保存机密数据
+* `Secret` 类似于ConfigMap，但专门用于保存机密数据
 
-默认情况下`Secret`的数据未加密存储在etcd中，但是我们为`Secret`启用静态加密功能
+* 默认情况下`Secret`的数据未加密存储在etcd中，但是我们为`Secret`启用静态加密功能
 
 ::: details  （1）创建示例Secret
 
 ```bash
+# base64编码
+[root@node-1 ~]# echo -n admin | base64
+YWRtaW4=
+[root@node-1 ~]# echo -n 123456 | base64
+MTIzNDU2
+
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > secret.yaml <<- EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: demo-secret
+  name: demo
   namespace: default
-  annotations:
-    kubernetes.io/description: Secret学习
-
-# Opaque: 用户定义的任意数据, 默认类型
-type: Opaque
-
-# 将Secret标记为不可更改，默认值为false
-#immutable: true
+type: Opaque          # Opaque: 用户定义的任意数据, 默认类型
+#immutable: true      # 将Secret标记为不可更改，默认值为false
 
 # ----------------------------------------------------
 # 下面的data和stringdata所实现的效果相同，任选一个即可
@@ -3549,7 +3549,7 @@ type: Opaque
 # data中的v必须是base64编码
 data:
   username: YWRtaW4=
-  password: MWYyZDFlMmU2N2Rm
+  password: MTIzNDU2
 
 # stringdata是可选的
 # stringdata中写k-v数据
@@ -3557,48 +3557,34 @@ data:
 # stringdata比data优先级高
 #stringData:
 #  username: admin
-#  password: 1f2d1e2e67df
+#  password: 123456
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml
-secret/demo-secret created
+[root@node-1 ~]# kubectl apply -f secret.yaml
+secret/demo created
 
 # 查看
-[root@node0 k8s]# kubectl get secrets
-NAME                  TYPE                                  DATA   AGE
-default-token-p7d2l   kubernetes.io/service-account-token   3      5d6h
-demo-secret           Opaque                                2      6s
+[root@node-1 ~]# kubectl get secrets
+NAME   TYPE     DATA   AGE
+demo   Opaque   2      49s
 
-[root@node0 k8s]# kubectl describe secret demo-secret 
-Name:         demo-secret
-Namespace:    default
-Labels:       <none>
-Annotations:  kubernetes.io/description: Secret学习
-
-Type:  Opaque
-
-Data
-====
-password:  12 bytes
-username:  5 bytes
-
-[root@node0 k8s]# kubectl get secret demo-secret -o yaml
+# 查看详情
+[root@node-1 ~]# kubectl get secret demo -o yaml
 apiVersion: v1
 data:
-  password: MWYyZDFlMmU2N2Rm
+  password: MTIzNDU2
   username: YWRtaW4=
 kind: Secret
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","data":{"password":"MWYyZDFlMmU2N2Rm","username":"YWRtaW4="},"kind":"Secret","metadata":{"annotations":{"kubernetes.io/description":"Secret学习"},"name":"demo-secret","namespace":"default"},"type":"Opaque"}
-    kubernetes.io/description: Secret学习
-  creationTimestamp: "2022-06-26T06:10:41Z"
-  name: demo-secret
+      {"apiVersion":"v1","data":{"password":"MTIzNDU2","username":"YWRtaW4="},"kind":"Secret","metadata":{"annotations":{},"name":"demo","namespace":"default"},"type":"Opaque"}
+  creationTimestamp: "2023-01-09T06:15:07Z"
+  name: demo
   namespace: default
-  resourceVersion: "107901"
-  uid: 67255d95-14ab-4b97-81bf-524f558b48cf
+  resourceVersion: "114453"
+  uid: 9745d23f-5199-479b-a559-15f6ff132555
 type: Opaque
 ```
 
@@ -3608,24 +3594,21 @@ type: Opaque
 
 ```bash
 # 生成yaml文件
-[root@node0 k8s]# cat > demo.yml <<- EOF
+[root@node-1 ~]# cat > secret.yaml <<- EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: demo-secret
-  namespace: default
-  annotations:
-    kubernetes.io/description: Secret学习
+  name: demo
+  namespace: default  
 type: Opaque
 stringData:
-  env: prod
+  env: pro
   username: admin
   password: qaz.12345
-
   host.ini: |
    1.1.1.1
    2.2.2.2
-   3.3.3.3   
+   3.3.3.3
 ---
 apiVersion: v1
 kind: Pod
@@ -3634,75 +3617,68 @@ metadata:
 spec:
   containers:
     - name: demo
-      image: busybox:1.28
-      command: ["sleep", "3600"]
-
+      image: busybox:latest
+      command: ["sh", "-c", "sleep 3600"]
       # 通过ConfigMap给容器注入变量
       env:
-        - name: ENV                     # 变量名, 用于容器内读取，这里故意写成和Secret中的key不一致
-          valueFrom:                    #
-            secretKeyRef:               # 变量值来自Secret
-              name: demo-secret         #
-              key: env                  #
-              optional: false           # 此值为默认值；意味着 "mysecret"
-
+        - name: ENV                      # 变量名, 用于容器内读取，这里故意写成和Secret中的key不一致
+          valueFrom:                     #
+            secretKeyRef:                # 变量值来自Secret
+              name: demo                 #
+              key: env                   #
+              optional: false            # 此值为默认值；意味着 "mysecret"
       # 将Secret中的值作为文件挂载到容器中(这一段配置和使用ConfigMap一样)
       volumeMounts:
-
-      - name: config          # 名称和下面的保持一致
-        mountPath: "/etc/demo/config"   # 定义挂载目录
+      - name: config                      # 名称和下面的保持一致
+        mountPath: "/etc/demo/config"     # 定义挂载目录
         readOnly: true
-
-      - name: username            # 名称和下面的保持一致
+      - name: username                    # 名称和下面的保持一致
         mountPath: "/etc/demo/username"   # 定义挂载目录
         readOnly: true
-
   volumes:
-
     # 将整个secret作为文件挂载
-    - name: config           # 定义名称
+    - name: config               # 定义名称
       secret:                    # 指定来自Secret
-        secretName: demo-secret  # 和Secret名称保持一致                     
+        secretName: demo         # 和Secret名称保持一致                     
         optional: false          # 默认设置，意味着 "demo-secret" 必须已经存在
-
     # 将secret中某个key作为文件挂载
     - name: username
       secret:
-        secretName: demo-secret
+        secretName: demo
         items:
         - key: username
           path: username.ini
 EOF
 
 # 创建
-[root@node0 k8s]# kubectl apply -f demo.yml 
-secret/demo-secret created
+[root@node-1 ~]# kubectl apply -f secret.yaml 
+secret/demo configured
 pod/demo created
 
-# 进入容器，验证
-[root@node0 k8s]# kubectl exec -it demo -- sh
-/etc/demo # echo ${ENV}
-prod
+# 进入容器验证
+[root@node-1 ~]# kubectl exec -it demo -- sh
 
-/ # cd /etc/demo/
-/etc/demo # ls -lh
-total 0
-drwxrwxrwt    3 root     root         160 Jun 27 03:27 config
-drwxrwxrwt    3 root     root         100 Jun 27 03:27 username
+/ # echo ${ENV}
+pro
+
+/ # cd /etc/demo/ && ls -lh
+total 0      
+drwxrwxrwt    3 root     root         160 Jan  9 06:26 config
+drwxrwxrwt    3 root     root         100 Jan  9 06:26 username
 
 /etc/demo # ls -lh config/
-total 0
-lrwxrwxrwx    1 root     root          10 Jun 27 03:27 env -> ..data/env
-lrwxrwxrwx    1 root     root          15 Jun 27 03:27 host.ini -> ..data/host.ini
-lrwxrwxrwx    1 root     root          15 Jun 27 03:27 password -> ..data/password
-lrwxrwxrwx    1 root     root          15 Jun 27 03:27 username -> ..data/username
+total 0      
+lrwxrwxrwx    1 root     root          10 Jan  9 06:26 env -> ..data/env
+lrwxrwxrwx    1 root     root          15 Jan  9 06:26 host.ini -> ..data/host.ini
+lrwxrwxrwx    1 root     root          15 Jan  9 06:26 password -> ..data/password
+lrwxrwxrwx    1 root     root          15 Jan  9 06:26 username -> ..data/username
 
 /etc/demo # cat config/env | awk '{print $0}'
-prod
-/etc/demo # cat config/host.ini 
+pro
+/etc/demo # cat config/host.ini
 1.1.1.1
 2.2.2.2
-3.3.3.3   
+3.3.3.3
 /etc/demo # cat config/username | awk '{print $0}'
 admin
 /etc/demo # cat config/password | awk '{print $0}'
@@ -3717,14 +3693,14 @@ admin
 ::: details （3）创建TLS类型的Secret，用于保存证书 --- 方法1：使用命令行创建TLS类型Secret
 
 ```bash
-[root@node0 k8s]# kubectl create secret tls https --cert=a.com.pem --key=a.com-key.pem
+[root@node-1 ~]# kubectl create secret tls a.com --cert=a.com.pem --key=a.com-key.pem
 ```
 
 :::
 
 ::: details  （4）创建TLS类型的Secret，用于保存证书 --- 方法2：使用YAML文件创建TLS类型Secret
 
-① 先将证书进行base64编码
+**1、先将证书进行base64编码**
 
 ```bash
 [root@node-1 ~]# cat a.com.pem | base64 | tr -d "\n" | awk '{print $0}'
@@ -3734,16 +3710,23 @@ LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVYakNDQXNhZ0F3SUJBZ0lSQVArekg5RzBPMWdy
 LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRQ2V4UTcwQWlpMGNQb0YKazBFZXFrYmF2L2FTY3JURExGck9MaDZKT2FIKzRzZmVNZGRSdFJEV0RYSU4rQjZYb2k0QmpTS3ROZ1RUT0Y5WApyZjI5Q1lhay9kbTl3VG14MWh0UGlsenZEcU5CV1ZjcEhhYnBMaThETEFheG1LNDdRWG9iZkpJeVNBWGs5ZXpkClM2ZDhKTXFDTnlTR0llNHJ4ZVU3SDNrblA4TEhObU5mTDVjRHNUK3UxUmFlSm5VTE8wTVM2akxuRmtlRmNLVEIKTnpPemNHVk01Z2pxc1Z6Zi82ejFyUnFHRXQ0aTVhSWc3cEVMVVVkcXZsRURSTjlQaWpqTExuaEI5U2xiVis2eApDRG9ERHFsTHpheG1kMTZ1ckNvODVEcmFCZTF1MzAvMStwUGpKRzlhNkt0SHdjcU5iYWNXVEo0cWZ4T25rRDBBCjdvVVlhelA1QWdNQkFBRUNnZ0VBY01SZC9vbWFCNjlHcGJjVlJZYURsTk5MZW5EbVdzbWlKVmMwY1JyeUtHdEMKc2xxTUtJaUdVTUowQTkvN09wQUNSUy9OTldGc3cra0NMdkJ4akZhN3YyeGR2eDBDc1lEMUhPV1ZaR1h0Sm5raQpJeDNnY3paT1JkNTdVcUN5LzN0ZUV5L0RWdHM0OUlxSGxoWXArMDdXVnU1N2pwbUM1S3hHU0Z2dVhTWTRYZXp3CitoYzlnbkx2NldaM2g0ZEFGQjRhZTAxWUNTQk00dUFmRXNSaWlGMFJRbXYrZHBCRkVzTHBHZ2pYNDF3MTNTMzAKMmFOZlZQUEFXaFlIYk5RUFNacnB0QTlwRTUvTHYzSGlBUXVsMC84VUNkNFovckZ6R0xMTmUrV1duSUx3NEtNQgplM3o0ekVDMm9pU3UvSXpRdE5Bd0FjSkg3OUtOZUgrcGZmQ3pQd1g2RVFLQmdRRElERmRpVmZnZkxMNC83OGZ5CmNhODJrTXp0WjdFTW1LVmZub0xIdEVKc2VSMEtHWVk3YURJbUYxYmJYVmhpdTlseHFIcEJFWm5ualJuLzBCS3EKU0sydnVFOG9DdEJGaVpCamtpdWFYdDZXSi9pZkY0dzk4Z3MrVG5hbzNZK3lkODhEbDF0NVhwL2o0SVhPYnR5cApnTmtjY3M4aVpZMkNIT1hVdFNNTzFhN2cvd0tCZ1FETExTTXVERFNkZ09OZzJEZTAyVGk1b1kwMGVwNnVFanI5CndXM1hzdVBUdlhpeDVTd2ZaOG10ZytPZlZqTU0rNkRqMmRkLzZMZGVCNS9kZUhraGNFL0UyYUFWSWNkSjJxTFIKeVYySzhVUS9Xak9VNGVyZ1JMOG9iMmw4bDRBMXpEWHROZ3JPNFFsUVRyNk1KaHlscThJMDRHb01tUXJXaVB6Tgp6OHdvemUvekJ3S0JnRmtiWmpFZktnNTQxNldUSVBVVlBuNkhzVUJ1VjZiTXQ1MEg5aWtPV2lnSEtyQTgvbFduCjYrNmJwc3kvbjRjYk5aZ3krNEhRWFVXT3pHM3VPT0l3eld6Z0pDSXA3dXVLZ3c1WEphVDFiU0JsWFpFLzQvQVQKeUg1UVpQcUM5bWNBaHUyS2xleFNBZFozUkNMWHJ1S3h5Z09xQUNuS0ltWTZpUVZlU2VkcHR5UHhBb0dBTFdidgp4cGw1cEh5cDB2bGVNVzZkSzNZN2JLKytCOTRSQ3FXUDJ6U2hqcTUzYXlGd0k3QjRzK3FXRWdRY01sbUVrWVliCmp2eTlCU2tsQTBPcHBkeElKeEFPb3NwQ2szRmxFd1l4Zmh2K0NUNHA2cW8xWjFwVmNUNjhUdGc0RVUySiszRXAKSnlQSWhnYWl0QVRNUUFWS3g3QWlZcUJNZUxaeDc3Znd3bW1LcGo4Q2dZQUZXU215ckdIdG1Qa1F4SjhRMEViRQpuWnl4aE56bFprc2ZTc2NtNm95OXhYeWFMWllMem0zdWdFSmVkb3cxdkJYdFJtaXJtT0pXTXRzK0ZIeXU2cDhKCjk1OTVLcmxMQ1p4WXJLaXpLc2xaUjV3VDI3aW5xdDF1dlJsb0prOWpudUU0cXdKdDlYSndQQXpoSzRDc3g4S1YKZXVZVU53Zy9GYTA0VWFEMFpYa245dz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
 ```
 
-② 创建YAML文件https.yaml
+**2、创建YAML文件https.yaml**
 
 ![image-20220621155809588](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220621155809588.png)
 
-> 特别注意：上面base64编码的证书内容之间不能有换行符，否则会有这种报错
->
-> ```bash
-> [root@node-1 ~]# kubectl apply -f https.yaml 
-> error: error parsing https.yml: error converting YAML to JSON: yaml: line 9: could not find expected ':'
-> ```
+注意事项：上面base64编码的证书内容之间不能有换行符，否则会有这种报错
+
+```bash
+[root@node-1 ~]# kubectl apply -f secret.yaml
+error: error parsing https.yml: error converting YAML to JSON: yaml: line 9: could not find expected ':'
+```
+
+**3、创建**
+
+```bash
+[root@node-1 ~]# kubectl apply -f secret.yaml
+secret/a.com created
+```
 
 :::
 
