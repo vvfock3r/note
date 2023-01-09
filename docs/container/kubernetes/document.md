@@ -4864,9 +4864,9 @@ demo-b46946dd8-lnczz   1/1     Running   0          3m33s   10.100.217.101   nod
 
 ### 滚动更新
 
-文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy)
-
 ::: details  配置说明
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy](https://kubernetes.io/zh-cn/docs/concepts/workloads/controllers/deployment/#strategy)
 
 | 字段                                                         | 可选字段 | 默认值          | 说明                                                         |
 | ------------------------------------------------------------ | -------- | --------------- | ------------------------------------------------------------ |
