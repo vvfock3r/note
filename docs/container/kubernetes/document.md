@@ -4902,7 +4902,7 @@ spec:
     spec:
       containers:
       - name: demo
-        image: busybox:latest
+        image: busybox:1.33
         command: ['sh', '-c', 'sleep 60 && touch /tmp/healthy && echo The app is running! && sleep 3600']
         readinessProbe:
           exec:
@@ -4977,9 +4977,11 @@ demo-b6466464-sqm79     1/1     Running       0          2m36s
 
 ### 蓝绿部署
 
+::: details  蓝绿部署示例
+
 ```bash
 # 创建Deployment blue版本
-[root@node-1 ~]# cat > demo-deployment-blue.yml <<- EOF
+[root@node-1 ~]# cat > deployment-blue.yaml <<- EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5003,14 +5005,13 @@ spec:
 EOF
 
 # 创建Deployment green版本
-cp demo-deployment-blue.yml demo-deployment-green.yml
-sed -ri 's/name: demo-blue/name: demo-green/' demo-deployment-green.yml    # 修改Deployment名字
-sed -ri 's/strategy: blue/strategy: green/' demo-deployment-green.yml      # 修改蓝绿版本标识符，这里使用标签来做
-sed -ri 's/image: nginx:1.22/image: nginx:1.23/' demo-deployment-green.yml # 新版本镜像升级
-
+cp deployment-blue.yaml deployment-green.yaml
+sed -ri 's/name: demo-blue/name: demo-green/'    deployment-green.yaml    # 修改Deployment名字
+sed -ri 's/strategy: blue/strategy: green/'      deployment-green.yaml    # 修改蓝绿版本标识符，这里使用标签来做
+sed -ri 's/image: nginx:1.22/image: nginx:1.23/' deployment-green.yaml    # 新版本镜像升级
 
 # 创建Service
-[root@node-1 ~]# cat > demo-service.yml <<- EOF
+[root@node-1 ~]# cat > service.yaml <<- EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -5028,47 +5029,63 @@ spec:
       nodePort: 31000
 EOF
 
-[root@node-1 ~]# kubectl get pods
-NAME                         READY   STATUS    RESTARTS   AGE
-demo-blue-79cff87869-4glmt   1/1     Running   0          3s
-demo-blue-79cff87869-m4gct   1/1     Running   0          3s
-demo-blue-79cff87869-zhsx7   1/1     Running   0          3s
-demo-green-98f4b7bbf-5f27q   1/1     Running   0          3s
-demo-green-98f4b7bbf-cnj88   1/1     Running   0          3s
-demo-green-98f4b7bbf-trs6f   1/1     Running   0          3s
+# 部署blue和greeen版本
+[root@node-1 ~]# kubectl apply -f deployment-blue.yaml
+deployment.apps/demo-blue created
 
+[root@node-1 ~]# kubectl apply -f deployment-green.yaml 
+deployment.apps/demo-green created
+
+[root@node-1 ~]# kubectl apply -f service.yaml 
+service/demo created
+
+# 查看Pod
+[root@node-1 ~]# kubectl get pods 
+NAME                          READY   STATUS    RESTARTS   AGE
+demo-blue-89db777c8-hnlrt     1/1     Running   0          2m37s
+demo-blue-89db777c8-qz62x     1/1     Running   0          6m
+demo-blue-89db777c8-tkm5v     1/1     Running   0          6m
+demo-green-57dff5b896-cx6qb   1/1     Running   0          5m23s
+demo-green-57dff5b896-dh7zv   1/1     Running   0          5m23s
+demo-green-57dff5b896-xqdf4   1/1     Running   0          5m23s
+
+# 查看Service
 [root@node-1 ~]# kubectl get svc
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-demo         NodePort    10.233.40.213   <none>        80:31000/TCP   9s
+demo         NodePort    10.200.229.23   <none>        80:31000/TCP   2m42s
+kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP        5d1h
 
-# 访问测试（blue版本）
-[root@node-1 ~]# curl http://192.168.48.142:31000 -I
+# 访问测试(blue版本)
+[root@node-1 ~]# curl http://192.168.48.151:31000 -I
 HTTP/1.1 200 OK
-Server: nginx/1.22.0
-Date: Tue, 30 Aug 2022 01:56:35 GMT
+Server: nginx/1.22.1
+Date: Mon, 09 Jan 2023 12:45:24 GMT
 Content-Type: text/html
 Content-Length: 615
-Last-Modified: Mon, 23 May 2022 23:59:19 GMT
+Last-Modified: Wed, 19 Oct 2022 08:02:20 GMT
 Connection: keep-alive
-ETag: "628c1fd7-267"
+ETag: "634faf0c-267"
 Accept-Ranges: bytes
 
-# 版本切换（人为修改service）
-sed -ri 's/strategy: blue/strategy: green/' demo-service.yml
-kubectl apply -f demo-service.yml
+# 版本切换(人为修改service)
+[root@node-1 ~]# sed -ri 's/strategy: blue/strategy: green/' service.yaml
+[root@node-1 ~]# kubectl apply -f service.yaml 
+service/demo configured
 
 # 再次访问
-[root@node-1 ~]# curl http://192.168.48.142:31000 -I
+[root@node-1 ~]# curl http://192.168.48.151:31000 -I
 HTTP/1.1 200 OK
-Server: nginx/1.23.1
-Date: Tue, 30 Aug 2022 01:59:43 GMT
+Server: nginx/1.23.3
+Date: Mon, 09 Jan 2023 12:46:14 GMT
 Content-Type: text/html
 Content-Length: 615
-Last-Modified: Tue, 19 Jul 2022 14:05:27 GMT
+Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
 Connection: keep-alive
-ETag: "62d6ba27-267"
+ETag: "6398a011-267"
 Accept-Ranges: bytes
 ```
+
+:::
 
 <br />
 
