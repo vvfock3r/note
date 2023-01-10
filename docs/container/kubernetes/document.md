@@ -5446,7 +5446,13 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 
 文档：[https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/)
 
-### 用户分类
+### 用户介绍
+
+<br />
+
+**用户分类**
+
+::: details  （1）用户分类
 
 **概述**
 
@@ -5464,9 +5470,11 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 | 主要认证方法 | Basic认证、X509证书认证      | Service Account token                                        |
 | 举例         | kubectl                      | Pod                                                          |
 
+:::
+
 <br />
 
-### 服务账号
+**服务账号**
 
 ::: details  （1）默认的ServiceAccount账号：default
 
@@ -5602,7 +5610,7 @@ pod/demo created
 
 <br />
 
-### 普通用户
+**普通用户**
 
 ::: details  （1）kubectl所使用的用户
 
@@ -5640,3 +5648,6 @@ users:
 ```
 
 :::
+
+<br />
+
