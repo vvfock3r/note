@@ -5284,6 +5284,38 @@ Events:
 # 接下来测试一下扩容
 [root@node-1 ~]# yum -y install httpd-tools
 [root@node-1 ~]# ab -n 100000 -c 100 http://10.200.140.52/
+
+# CPU已经使用到了 262% 了
+[root@node-1 ~]# kubectl get hpa
+NAME   REFERENCE         TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+demo   Deployment/demo   262%/60%   1         5         1          22m
+
+# 扩容到了5个
+[root@node-1 ~]# kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-79f76cc597-4txm9   1/1     Running   0          31m
+demo-79f76cc597-4vvh8   1/1     Running   0          17s
+demo-79f76cc597-b8zkr   1/1     Running   0          32s
+demo-79f76cc597-bkgdt   1/1     Running   0          32s
+demo-79f76cc597-gj8sn   1/1     Running   0          32s
+
+# 看一下HPA事件,先扩容到了4个，随后又扩容到5个
+[root@node-1 ~]# kubectl describe hpa demo
+Events:
+  Type    Reason             Age   From                       Message
+  ----    ------             ----  ----                       -------
+  Normal  SuccessfulRescale  17m   horizontal-pod-autoscaler  New size: 1; reason: All metrics below target
+  Normal  SuccessfulRescale  52s   horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target
+  Normal  SuccessfulRescale  36s   horizontal-pod-autoscaler  New size: 5; reason:
+  
+# 看一下资源使用率
+[root@node-1 ~]# kubectl top pod
+NAME                    CPU(cores)   MEMORY(bytes)   
+demo-79f76cc597-4txm9   0m           2Mi             
+demo-79f76cc597-4vvh8   0m           2Mi             
+demo-79f76cc597-b8zkr   0m           13Mi            
+demo-79f76cc597-bkgdt   0m           2Mi             
+demo-79f76cc597-gj8sn   0m           2Mi
 ```
 
 :::
@@ -5293,7 +5325,7 @@ Events:
 ```bash
 # 创建YAML文件
 [root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
-apiVersion: autoscaling/v2
+apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: demo
@@ -5304,39 +5336,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: demo
-  targetCPUUtilizationPercentage: 60  # 当整体的资源利用率超过60%的时候，会进行扩容
+  targetCPUUtilizationPercentage: 60  # 当整体的资源利用率超过60%的时候，会进行扩容,否则会进行缩容
 EOF
-
-# CPU已经使用到了234%
-[root@node-1 ~]# kubectl get hpa
-NAME       REFERENCE         TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
-demo-hpa   Deployment/demo   234%/60%   1         5         1          11m
-
-# 扩容到了4个
-[root@node-1 ~]# kubectl get pods
-NAME                    READY   STATUS    RESTARTS   AGE
-demo-78d8864777-7dmf5   1/1     Running   0          91s
-demo-78d8864777-j7n7p   1/1     Running   0          91s
-demo-78d8864777-nwphc   1/1     Running   0          17m
-demo-78d8864777-xzjrj   1/1     Running   0          91s
-
-[root@node-1 ~]# kubectl describe hpa demo-hpa
-Events:
-  Type    Reason             Age   From                       Message
-  ----    ------             ----  ----                       -------
-  Normal  SuccessfulRescale  10m   horizontal-pod-autoscaler  New size: 1; reason: All metrics below target
-  Normal  SuccessfulRescale  4m7s  horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target  # 扩容到4个
-  
-[root@node-1 ~]# kubectl get hpa
-NAME       REFERENCE         TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-demo-hpa   Deployment/demo   13%/60%   1         5         4          13m
-
-[root@node-1 ~]# kubectl top pod
-NAME                    CPU(cores)   MEMORY(bytes)   
-demo-78d8864777-7dmf5   27m          3Mi             
-demo-78d8864777-j7n7p   14m          3Mi             
-demo-78d8864777-nwphc   24m          3Mi             
-demo-78d8864777-xzjrj   14m          3Mi
 ```
 
 :::
@@ -5344,7 +5345,7 @@ demo-78d8864777-xzjrj   14m          3Mi
 ::: details  （3）基于CPU的弹性伸缩：使用kubectl autoscale命令创建HPA
 
 ```bash
-[root@node-1 ~]# kubectl autoscale deployment demo --name demo-hpa --cpu-percent=60 --min=1 --max=5
+[root@node-1 ~]# kubectl autoscale deployment demo --name demo --cpu-percent=60 --min=1 --max=5
 ```
 
 :::
