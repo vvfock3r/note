@@ -5448,7 +5448,7 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 
 <br />
 
-### 用户介绍
+### 配置用户
 
 **用户分类**
 
@@ -5793,3 +5793,13 @@ users:
 
 :::
 
+<br />
+
+### 配置角色
+
+::: details  （1）创建角色
+
+```bash
+```
+
+:::
