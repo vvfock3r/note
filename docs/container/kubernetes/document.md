@@ -5446,13 +5446,11 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 
 文档：[https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/)
 
-### 用户介绍
-
 <br />
 
-**用户分类**
+### 用户介绍
 
-**概述**
+**用户分类**
 
 在Kubernetes中，用户分为两类：
 
