@@ -5797,9 +5797,39 @@ users:
 
 ### 配置角色
 
+**角色分类**
+
+* 角色分为两类：`Role` 和 `ClusterRole `
+
+* `Role`只在某个命名空间下生效，`ClusterRole`在所有命名空间都生效
+
+<br />
+
 ::: details  （1）创建角色
 
 ```bash
+[root@node-1 ~]# kubectl create clusterrole reader --verb=get,list,watch --resource=* -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: "2023-01-10T12:32:37Z"
+  name: reader
+  resourceVersion: "218742"
+  uid: 26e9cf0c-46a1-4592-8a44-a965e44467d8
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+
+# rules说明
+#   apiGroups
+#   resources
+#   verbs
 ```
 
 :::
