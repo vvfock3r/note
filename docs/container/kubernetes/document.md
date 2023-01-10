@@ -5165,20 +5165,20 @@ service/demo created
 # 查看Pod
 [root@node-1 ~]# kubectl get pods
 NAME                    READY   STATUS    RESTARTS   AGE
-demo-79f76cc597-6qls4   1/1     Running   0          10s
-demo-79f76cc597-dvklz   1/1     Running   0          10s
-demo-79f76cc597-tbqgw   1/1     Running   0          10s
+demo-79f76cc597-4txm9   1/1     Running   0          117s
+demo-79f76cc597-gd886   1/1     Running   0          117s
+demo-79f76cc597-h442l   1/1     Running   0          117s
 
 # 查看Service
 [root@node-1 ~]# kubectl get svc demo
 NAME   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-demo   ClusterIP   10.200.221.29   <none>        80/TCP    20s
+demo   ClusterIP   10.200.140.52   <none>        80/TCP    2m6s
 
 # 访问测试
-[root@node-1 ~]# curl 10.200.221.29 -I
+[root@node-1 ~]# curl 10.200.140.52 -I
 HTTP/1.1 200 OK
 Server: nginx/1.23.3
-Date: Mon, 09 Jan 2023 12:54:27 GMT
+Date: Tue, 10 Jan 2023 05:43:19 GMT
 Content-Type: text/html
 Content-Length: 615
 Last-Modified: Tue, 13 Dec 2022 15:53:53 GMT
@@ -5189,15 +5189,15 @@ Accept-Ranges: bytes
 # 看一下Pod的资源使用率
 [root@node-1 ~]# kubectl top pod
 NAME                    CPU(cores)   MEMORY(bytes)   
-demo-79f76cc597-6qls4   0m           1Mi             
-demo-79f76cc597-dvklz   1m           2Mi             
-demo-79f76cc597-tbqgw   0m           1Mi
+demo-79f76cc597-4txm9   0m           1Mi             
+demo-79f76cc597-gd886   0m           1Mi             
+demo-79f76cc597-h442l   1m           2Mi
 
 # 看一下Deployment
 [root@node-1 ~]# kubectl describe deployment demo
 Name:                   demo
 Namespace:              default
-CreationTimestamp:      Mon, 09 Jan 2023 20:53:09 +0800
+CreationTimestamp:      Tue, 10 Jan 2023 13:41:00 +0800
 Labels:                 <none>
 Annotations:            deployment.kubernetes.io/revision: 1
 Selector:               app=web
@@ -5228,12 +5228,67 @@ NewReplicaSet:   demo-79f76cc597 (3/3 replicas created)
 Events:
   Type    Reason             Age    From                   Message
   ----    ------             ----   ----                   -------
-  Normal  ScalingReplicaSet  2m20s  deployment-controller  Scaled up replica set demo-79f76cc597 to 3
+  Normal  ScalingReplicaSet  2m38s  deployment-controller  Scaled up replica set demo-79f76cc597 to 3
 ```
 
 :::
 
-::: details  （1）基于CPU的弹性伸缩：HPA v1版本
+::: details  （1）基于CPU的弹性伸缩：HPA v2版本
+
+```bash
+# 创建YAML文件
+[root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:  
+  name: demo
+  namespace: default
+spec:
+  minReplicas: 1    # 允许缩容到的最小副本数
+  maxReplicas: 5    # 允许扩容到的最大副本数
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 60  # 当整体的资源利用率超过60%的时候，会进行扩容,否则会进行缩容
+        type: Utilization
+    type: Resource
+  scaleTargetRef:               # 目标资源, 表示当前要伸缩对象是谁
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo
+EOF
+
+# 部署
+[root@node-1 ~]# kubectl apply -f hpa-v2-cpu.yaml
+horizontalpodautoscaler.autoscaling/demo-hpa created
+
+# 查看HPA
+[root@node-1 ~]# kubectl get hpa
+NAME   REFERENCE         TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+demo   Deployment/demo   0%/60%    1         5         3          17s
+
+# 部署完成后等待5.6分钟，我们可以先测试HPA的缩容，看看会不会缩容到1个Pod
+[root@node-1 ~]# kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+demo-79f76cc597-4txm9   1/1     Running   0          22m  # 已经缩容到1个Pod了
+
+# 看一下HPA事件
+[root@node-1 ~]# kubectl describe hpa demo
+...
+Events:
+  Type    Reason             Age    From                       Message
+  ----    ------             ----   ----                       -------
+  Normal  SuccessfulRescale  9m15s  horizontal-pod-autoscaler  New size: 1; reason: All metrics below target  # 缩容到1个Pod
+  
+# 接下来测试一下扩容
+[root@node-1 ~]# yum -y install httpd-tools
+[root@node-1 ~]# ab -n 100000 -c 100 http://10.200.140.52/
+```
+
+:::
+
+::: details  （2）基于CPU的弹性伸缩：HPA v1版本
 
 ```bash
 # 创建YAML文件
@@ -5243,57 +5298,14 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: demo
 spec:
-  minReplicas: 1     # 允许缩容到的最小副本数
-  maxReplicas: 5     # 允许缩容到的最小副本数
+  minReplicas: 1     
+  maxReplicas: 5     
   scaleTargetRef:    # 目标资源, 表示当前要伸缩对象是谁
     apiVersion: apps/v1
     kind: Deployment
     name: demo
   targetCPUUtilizationPercentage: 60  # 当整体的资源利用率超过60%的时候，会进行扩容
 EOF
-
-# 部署
-[root@node-1 ~]# kubectl apply -f hpa-v1-cpu.yaml
-
-# 查看HPA
-[root@node-1 ~]# kubectl get hpa
-NAME       REFERENCE         TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-demo-hpa   Deployment/demo   0%/60%    1         5         3          116s
-
-
-# 部署完成后等待5.6分钟，我们可以先测试HPA的缩容，看看会不会缩容到1个Pod
-[root@node-1 ~]# kubectl get pods
-NAME                    READY   STATUS    RESTARTS   AGE
-demo-78d8864777-nwphc   1/1     Running   0          12m   # 缩容到1个了
-
-# 看一下HPA事件
-[root@node-1 ~]# kubectl describe hpa demo-hpa
-Warning: autoscaling/v2beta2 HorizontalPodAutoscaler is deprecated in v1.23+, unavailable in v1.26+; use autoscaling/v2 HorizontalPodAutoscaler
-Name:                                                  demo-hpa
-Namespace:                                             default
-Labels:                                                <none>
-Annotations:                                           <none>
-CreationTimestamp:                                     Wed, 24 Aug 2022 17:43:55 +0800
-Reference:                                             Deployment/demo
-Metrics:                                               ( current / target )
-  resource cpu on pods  (as a percentage of request):  0% (0) / 60%
-Min replicas:                                          1
-Max replicas:                                          5
-Deployment pods:                                       1 current / 1 desired
-Conditions:
-  Type            Status  Reason            Message
-  ----            ------  ------            -------
-  AbleToScale     True    ReadyForNewScale  recommended size matches current size
-  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
-  ScalingLimited  True    TooFewReplicas    the desired replica count is less than the minimum replica count
-Events:
-  Type    Reason             Age    From                       Message
-  ----    ------             ----   ----                       -------
-  Normal  SuccessfulRescale  3m31s  horizontal-pod-autoscaler  New size: 1; reason: All metrics below target # 缩容到1个Pod
-  
-# 接下来测试一下扩容
-[root@node-1 ~]# yum -y install httpd-tools
-[root@node-1 ~]# ab -n 100000 -c 100 http://10.233.140.171/
 
 # CPU已经使用到了234%
 [root@node-1 ~]# kubectl get hpa
@@ -5309,24 +5321,6 @@ demo-78d8864777-nwphc   1/1     Running   0          17m
 demo-78d8864777-xzjrj   1/1     Running   0          91s
 
 [root@node-1 ~]# kubectl describe hpa demo-hpa
-Warning: autoscaling/v2beta2 HorizontalPodAutoscaler is deprecated in v1.23+, unavailable in v1.26+; use autoscaling/v2 HorizontalPodAutoscaler
-Name:                                                  demo-hpa
-Namespace:                                             default
-Labels:                                                <none>
-Annotations:                                           <none>
-CreationTimestamp:                                     Wed, 24 Aug 2022 17:43:55 +0800
-Reference:                                             Deployment/demo
-Metrics:                                               ( current / target )
-  resource cpu on pods  (as a percentage of request):  19% (19m) / 60%
-Min replicas:                                          1
-Max replicas:                                          5
-Deployment pods:                                       4 current / 4 desired
-Conditions:
-  Type            Status  Reason               Message
-  ----            ------  ------               -------
-  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
-  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
-  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
 Events:
   Type    Reason             Age   From                       Message
   ----    ------             ----  ----                       -------
@@ -5343,38 +5337,6 @@ demo-78d8864777-7dmf5   27m          3Mi
 demo-78d8864777-j7n7p   14m          3Mi             
 demo-78d8864777-nwphc   24m          3Mi             
 demo-78d8864777-xzjrj   14m          3Mi
-```
-
-:::
-
-::: details  （2）基于CPU的弹性伸缩：HPA v2版本
-
-```bash
-# 创建YAML文件
-[root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:  
-  name: demo-hpa
-  namespace: default
-spec:
-  minReplicas: 1
-  maxReplicas: 5
-  metrics:
-  - resource:
-      name: cpu
-      target:
-        averageUtilization: 60
-        type: Utilization
-    type: Resource
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: demo
-EOF
-
-# 部署
-[root@node-1 ~]# kubectl apply -f hpa-v2-cpu.yaml
 ```
 
 :::
