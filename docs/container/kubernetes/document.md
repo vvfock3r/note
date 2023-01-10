@@ -190,8 +190,8 @@ Pause容器：[https://kubernetes.io/zh-cn/docs/concepts/windows/intro/#pause-co
 
 ```bash
 # 方式一：使用kubectl run
-[root@node-1 ~]# kubectl run nginx --image=nginx:latest
-pod/nginx created
+[root@node-1 ~]# kubectl run busybox --image=busybox:latest --command -- sleep 3600
+pod/busybox created
 
 # -------------------------------------------------------------------------
 
@@ -5360,8 +5360,7 @@ Github：[https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-auto
 
 ```bash
 # 创建YAML文件
-[root@node-1 ~]# cat > demo.yml <<EOF
----
+[root@node-1 ~]# cat > deployment.yaml <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5395,7 +5394,7 @@ spec:
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
 metadata:
-  name: demo-vpa
+  name: demo
 spec:
   updatePolicy:
     # VPA运行模式
@@ -5419,9 +5418,9 @@ spec:
 EOF
 
 # 部署
-[root@node-1 ~]# kubectl apply -f demo.yml
+[root@node-1 ~]# kubectl apply -f deployment.yaml
 deployment.apps/demo created
-verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
+verticalpodautoscaler.autoscaling.k8s.io/demo created
 
 # 等待几分钟
 
@@ -5469,42 +5468,34 @@ verticalpodautoscaler.autoscaling.k8s.io/demo-vpa created
 
 ### 服务账号
 
-以下三个独立组件协作完成服务账号相关的自动化：
-
-- `ServiceAccount` 准入控制器
-- `Token `控制器
-- `ServiceAccount` 控制器
-
 ::: details  （1）默认的ServiceAccount账号：default
 
 ```bash
 # (1) 获取当前命名空间下的服务账号
 [root@node-1 ~]# kubectl get sa
 NAME      SECRETS   AGE
-default   0         63d
+default   0         5d22h
 
 # 查看详情，这里看到它是ServiceAccount
 [root@node-1 ~]# kubectl get sa default -o yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  creationTimestamp: "2022-08-22T12:38:32Z"
+  creationTimestamp: "2023-01-04T10:52:59Z"
   name: default
   namespace: default
-  resourceVersion: "254"
-  uid: 3a35a907-1b29-4259-841d-571dbe5adb8c
+  resourceVersion: "339"
+  uid: 01c82354-fca9-4db4-9e8c-d71693bd31e5
   
 # (2) 当新建Namespace时会自动创建服务账号  
 # 创建一个新的命名空间
 [root@node-1 ~]# kubectl create namespace demo
 namespace/demo created
-[root@node-1 ~]# kubectl create namespace demo
-Error from server (AlreadyExists): namespaces "demo" already exists
 
 # 我们发现自动创建了一个ServiceAccount
 [root@node-1 ~]# kubectl -n demo get sa
 NAME      SECRETS   AGE
-default   0         24s
+default   0         17s
 
 # 查看详情
 [root@node-1 ~]# kubectl -n demo get sa default -o yaml
@@ -5524,63 +5515,87 @@ NAME      SECRETS   AGE
 default   0         1s
 
 # (4) 进入Pod查看ServiceAccount详情
-[root@node-1 ~]# kubectl exec -it pod-1 -- sh
+[root@node-1 ~]# kubectl run busybox --image=busybox:latest --command -- sleep 3600
+pod/busybox created
+
+[root@node-1 ~]# kubectl exec -it busybox -- sh
 / # ls -l /var/run/secrets/kubernetes.io/serviceaccount/
 total 0
-lrwxrwxrwx    1 root     root  13 Oct 27 06:54 ca.crt -> ..data/ca.crt       # 根证书
-lrwxrwxrwx    1 root     root  16 Oct 27 06:54 namespace -> ..data/namespace # 识这个service-account-token的作用域空间
-lrwxrwxrwx    1 root     root  12 Oct 27 06:54 token -> ..data/token         # 使用API Server私钥签名的JWT，用于访问API Server时验证
-```
+lrwxrwxrwx  1 root  root    13 Jan 10 09:04 ca.crt -> ..data/ca.crt       # CA公钥
+lrwxrwxrwx  1 root  root    16 Jan 10 09:04 namespace -> ..data/namespace # 识这个service-account-token的作用域空间
+lrwxrwxrwx  1 root  root    12 Jan 10 09:04 token -> ..data/token         # 使用API Server私钥签名的JWT，用于访问API Server时验证
 
-（5）每个命名空间下的default服务账号自动化工作由ServiceAccount控制器来完成
+~ # cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt ; echo
+-----BEGIN CERTIFICATE-----
+MIIC/jCCAeagAwIBAgIBADANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwprdWJl
+cm5ldGVzMB4XDTIzMDEwNDEwNTIzMVoXDTMzMDEwMTEwNTIzMVowFTETMBEGA1UE
+AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAO0d
+BKQ5BxmZGi73w1o9bicnggsBSPvKXBbUsQFk69Ne7y2YCsX3wMWqzKoklFTOuUx2
+t0Ti6Kz4qpPVWUHvFSbMm5iSBUbFO/rAngXGjHlto2JCjcvZZxSKjdl43tRkwHJY
+pwO8kshSJ08SIkFnmqFfuDc+caApFBhc7zxClufZMJ9WKYF63bYyQ/5Lw0vheoEE
+02PYnr5qvPgXSNafrLKoC357tyOp8xzcTf01gKX9Hc6yV1UckrqkQ+L8uiz1DpHL
+c9bVACDZKoSlCpu9iHlUm365et+YvLfFSqOq9LTTyP40tSiwTqRWKfsvxVVfBQ0m
+Vs76RYF1yoxgOlKnUnUCAwEAAaNZMFcwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB
+/wQFMAMBAf8wHQYDVR0OBBYEFKk+wr2HLiZ1SzBG+n+Rl5SIFQgpMBUGA1UdEQQO
+MAyCCmt1YmVybmV0ZXMwDQYJKoZIhvcNAQELBQADggEBABHjo0DBjvaDm/IHnS32
+QCfw8omB9eul+wBTRPAm+Xo77K2dcVwn0/SOd7S3mPSAYltdBwlF2EqJ8VkQ8z70
+Nao3wG5W2wY9Uic+vcJwf0Dj97qMQ8FeCGpSvH1fhOE/vP4Jy0hYpy77WbEu30QT
+WgB/ASF8UZP9OekBov+VQ5yAwnFBuvZe6qFBO1HpV33EfuU8XgTLiaVPm4Olqy4g
+5Ed0Zo/3H9dvxktbPJoX6jD8S1r8hEjg/F2OhIC2HB2HjJNT365ll2qLGZ55NVcZ
+RNOOc0JFUDvOk9YDODOoC7b/qSEw3hBxISfYAQTIE929ZE9ir5xZsAHXgW7KnPgo
+2sc=
+-----END CERTIFICATE-----
 
-![image-20221025103255863](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221025103255863.png)
+~ # cat /var/run/secrets/kubernetes.io/serviceaccount/namespace ; echo
+default
 
-（6）xxx自动化工作由ServiceAccount准入控制器来完成
-
-```bash
-# disable-admission-plugins标志接受一个（以逗号分隔的）准入控制插件列表，用于开启准入控制器
-[root@node-1 ~]# cat /etc/systemd/system/kube-apiserver.service | \
-                             grep -i 'enable-admission-plugins' | \
-                             grep -i ServiceAccount
-  --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
-  
-# disable-admission-plugins 标志，会将传入的（以逗号分隔的） 准入控制插件列表禁用，即使是默认启用的插件也会被禁用
+~ # cat /var/run/secrets/kubernetes.io/serviceaccount/token ; echo
+eyJhbGciOiJSUzI1NiIsImtpZCI6InhISDZQY0dxQkFKcVNLRmxkNGxUWDU0RXlkNU1FMXN1S1pJTTk4eXRJZFUifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzA0ODc3NDU5LCJpYXQiOjE2NzMzNDE0NTksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0IiwicG9kIjp7Im5hbWUiOiJidXN5Ym94IiwidWlkIjoiOWM0NDgwYTMtOWU5Mi00ZWE1LTg3MTgtZWNmYTI2YzE5ZDRmIn0sInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJkZWZhdWx0IiwidWlkIjoiMDFjODIzNTQtZmNhOS00ZGI0LTllOGMtZDcxNjkzYmQzMWU1In0sIndhcm5hZnRlciI6MTY3MzM0NTA2Nn0sIm5iZiI6MTY3MzM0MTQ1OSwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6ZGVmYXVsdCJ9.RstrSlDyF10uJiwna6V5UL5Cemsl6zVrK5xLcoN9oSTiF7jm6IlWPCyos7G1u_Uww5Ngp00h7-XFxUOXv_SWsETDM1W7C4UTiP2PA8sv_nmBJ86lqC8ft9DtZ_WXYFD-ukJj3SuC98vQiESCz71YpQskm2yBjl6uiIfzUh2FMb5AuD1tRyaNYg4Ictv0nM62_VcTsL9ZJBoQqVUHAHRUngSRPQT_psA-4ycTgXf99mWD1ZNROWgpZAOJ9J2QScz4TNJndeM-OCOLM_M2rsH2ctro9dFPQjLwJ_N2laau6qLRnMQTmER9Oqzl84Ntc7GzXDenJttmjE0gSubFvfMQ-g
 ```
 
 :::
 
-::: details  （2）创建自定义ServiceAccount账号（报错了~）
+::: details  （2）创建自定义ServiceAccount账号
 
 ```bash
+# 创建yaml文件
+[root@node-1 ~]# cat > serviceaccount.yaml <<- EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: my-service-account
+  name: demo
   namespace: default
 ---
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/service-account-token
 metadata:
-  name: my-service-account
-  namespace: default
+  name: demo
   annotations:
-    kubernetes.io/service-account.name: "my-service-account"
+    kubernetes.io/service-account.name: demo
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pod-1
-  namespace: demo
-  labels:
-    app: pod-1
+  name: demo
+  namespace: default
 spec:
-  serviceAccountName: my-service-account
+  serviceAccountName: demo
   containers:
-  - name: pod-1-busybox
-    image: busybox:1.28
+  - name: busybox
+    image: busybox:latest
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+EOF
+
+# 部署
+[root@node-1 ~]# kubectl apply -f serviceaccount.yaml 
+serviceaccount/demo created
+secret/demo created
+pod/demo created
+
+# 查看Pod所使用的serviceAccountName
+[root@node-1 ~]# kubectl get pod demo -o yaml | grep -i serviceAccountName:
+  serviceAccountName: demo
 ```
 
 :::
@@ -5589,37 +5604,39 @@ spec:
 
 ### 普通用户
 
-我们以`kubectl`客户端所使用的用户来讲解
+::: details  （1）kubectl所使用的用户
 
 ```bash
 # 查看默认的kubectl配置，此输出的内容等同于~/.kube/config，不同之处在于对一些私密的数据进行了隐藏显示
-[root@node-1 k8s]# kubectl config view
+[root@node-1 ~]# kubectl config view
 apiVersion: v1
 clusters:
 - cluster:
     certificate-authority-data: DATA+OMITTED
-    server: https://127.0.0.1:6443
+    server: https://api.k8s.local:6443
   name: kubernetes
 contexts:
 - context:
     cluster: kubernetes
-    user: admin
-  name: default
-current-context: default
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
 kind: Config
 preferences: {}
 users:
-- name: admin
+- name: kubernetes-admin
   user:
     client-certificate-data: REDACTED
     client-key-data: REDACTED
 
 # 说明
-clusters		集群列表
-users			用户列表
-contexts		kubelet的可用上下文列表，由用户列表中的某特定用户名称和集群列表中的某特定集群名称组合而成。
-current-context	kubelet当前使用的上下文名称，即上下文列表中的某个特定项
+# clusters		    集群列表,在这里我们只有一个集群
+# users			    用户列表,在这里我们只有一个用户 kubernetes-admin
+# contexts		    上下文列表，由用户列表中的某特定用户名称和集群列表中的某特定集群名称组合而成。
+# current-context	kubelet当前使用的上下文名称，即上下文列表中的某个特定项
 
-可以看到所使用的用户是admin
+# 总结
+# current-context作为入口,我们可以知道kubectl是 <使用哪个用户> 连接到 <哪个kubernetes集群>
 ```
 
+:::
