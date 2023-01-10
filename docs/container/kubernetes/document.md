@@ -5324,7 +5324,7 @@ demo-79f76cc597-gj8sn   0m           2Mi
 
 ```bash
 # 创建YAML文件
-[root@node-1 ~]# cat > hpa-v2-cpu.yaml <<EOF
+[root@node-1 ~]# cat > hpa-v1-cpu.yaml <<EOF
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
