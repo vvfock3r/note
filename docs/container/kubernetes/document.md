@@ -5645,8 +5645,150 @@ users:
 
 ::: details  （2）创建用户
 
-```bash
+我们仿照默认的`kubernetes-admin`用户创建一个新用户`kubernetes-jack`
 
+```bash
+# 定义变量
+[root@node-1 ~]# UserName=kubernetes-jack
+[root@node-1 ~]# ClusterName=kubernetes
+
+# 创建证书私钥文件
+[root@node-1 ~]# openssl genrsa -out ${UserName}.key 2048
+[root@node-1 ~]# ls -lh
+-rw-r--r-- 1 root root 1.7K Jan 10 19:58 kubernetes-jack.key  # 证书私钥文件
+
+# 创建证书请求文件
+#   CN代表用户名
+#   O代表组织,这里写啥好像都可以
+[root@node-1 ~]# openssl req -new \
+    -key ${UserName}.key \
+    -out ${UserName}.csr \
+    -subj "/CN=${UserName}/O=${ClusterName}"
+    
+[root@node-1 ~]# ls -lh
+total 8.0K
+-rw-r--r-- 1 root root  928 Jan 10 19:59 kubernetes-jack.csr  # 证书请求文件
+-rw-r--r-- 1 root root 1.7K Jan 10 19:58 kubernetes-jack.key
+
+# 生成证书
+#   注意CA文件位置是否正确
+#   有效期3650天,10年
+[root@node-1 ~]# openssl x509 -req \
+    -in ${UserName}.csr \
+    -CA /etc/kubernetes/pki/ca.crt \
+    -CAkey /etc/kubernetes/pki/ca.key \
+    -CAcreateserial \
+    -out ${UserName}.crt \
+    -days 3650
+
+[root@node-1 ~]# ls -lh
+total 12K
+-rw-r--r-- 1 root root 1013 Jan 10 20:00 kubernetes-jack.crt  # 证书公钥文件
+-rw-r--r-- 1 root root  928 Jan 10 19:59 kubernetes-jack.csr
+-rw-r--r-- 1 root root 1.7K Jan 10 19:58 kubernetes-jack.key
+
+# 配置用户
+[root@node-1 ~]# kubectl config set-credentials ${UserName} \
+    --client-certificate=${UserName}.crt \
+    --client-key=${UserName}.key
+
+# 查看用户
+[root@node-1 ~]# kubectl config view | yq .users
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+- name: kubernetes-jack
+  user:
+    client-certificate: /root/kubernetes-jack.crt
+    client-key: /root/kubernetes-jack.key
+
+# 配置Context
+[root@node-1 ~]# kubectl config set-context ${KubernetesUserName}@kubernetes \
+    --cluster=${ClusterName} \
+    --user=${KubernetesUserName}
+
+# 查看Context
+[root@node-1 ~]# kubectl config view | yq .contexts
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+- context:
+    cluster: kubernetes
+    namespace: kube-system
+    user: demo
+  name: kubernetes-jack@kubernetes
+
+# 测试报错了，因为我们还没有给用户赋予任何的权限
+[root@node-1 ~]# kubectl get pods --context=${KubernetesUserName}@${ClusterName}
+Error from server (Forbidden): pods is forbidden: User "kubernetes-jack" cannot list resource "pods" in API group "" in the namespace "default"
+```
+
+:::
+
+::: details  （3）删除用户
+
+```bash
+# 先查看一下配置
+[root@node-1 ~]# kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://api.k8s.local:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+- context:
+    cluster: kubernetes
+    user: kubernetes-jack
+  name: kubernetes-jack@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+- name: kubernetes-jack
+  user:
+    client-certificate: /root/kubernetes-jack.crt
+    client-key: /root/kubernetes-jack.key
+
+# 删除User
+[root@node-1 ~]# kubectl config delete-user kubernetes-jack
+deleted user kubernetes-jack from /root/.kube/config
+
+# 删除Context
+[root@node-1 ~]# kubectl config delete-context kubernetes-jack@kubernetes
+deleted context kubernetes-jack@kubernetes from /root/.kube/config
+
+# 查看配置
+[root@node-1 ~]# kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://api.k8s.local:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
 ```
 
 :::
