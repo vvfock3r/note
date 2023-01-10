@@ -5452,8 +5452,6 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 
 **用户分类**
 
-::: details  （1）用户分类
-
 **概述**
 
 在Kubernetes中，用户分为两类：
@@ -5469,8 +5467,6 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 | 生效范围     | 集群内全局生效（集群内唯一） | 某个Namespace下<br />（不同Namespace下相同的Service Account会被认为是不同的账号/资源） |
 | 主要认证方法 | Basic认证、X509证书认证      | Service Account token                                        |
 | 举例         | kubectl                      | Pod                                                          |
-
-:::
 
 <br />
 
@@ -5649,5 +5645,11 @@ users:
 
 :::
 
-<br />
+::: details  （2）创建用户
+
+```bash
+
+```
+
+:::
 
