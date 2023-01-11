@@ -1275,8 +1275,8 @@ ExecStart=/usr/local/frp/frpc -c /usr/local/frp/frpc.ini
 WantedBy=multi-user.target
 
 # 启动服务
-[root@ap-hongkang ~]# systemctl daemon-reload
-[root@ap-hongkang ~]# systemctl start frpc.service
+[root@localhost ~]# systemctl daemon-reload
+[root@localhost ~]# systemctl start frpc.service
 
 # 查看是否与服务端建立连接
 [root@localhost ~]# netstat -altnpu | grep frpc
@@ -1285,6 +1285,84 @@ tcp        0      0 192.168.48.160:39248    43.154.36.151:7000      ESTABLISHED 
 # 设置开启自启
 [root@localhost ~]# systemctl enable frpc.service
 Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to /etc/systemd/system/frpc.service.
+```
+
+:::
+
+<br />
+
+### proxychains
+
+有两个相关的仓库，我们选择`Star`多的`proxychains-ng`
+
+* [https://github.com/haad/proxychains](https://github.com/haad/proxychains)
+
+* [https://github.com/rofl0r/proxychains-ng](https://github.com/rofl0r/proxychains-ng)
+
+::: details （1）安装proxychains-ng
+
+```bash
+# 下载源码包
+[root@localhost ~]# wget -c https://github.com/rofl0r/proxychains-ng/releases/download/v4.16/proxychains-ng-4.16.tar.xz
+[root@localhost ~]# tar xf proxychains-ng-4.16.tar.xz
+
+# 编译安装
+[root@localhost ~]# cd proxychains-ng-4.16
+[root@localhost ~]# ./configure --prefix=/usr/local --sysconfdir=/etc
+[root@localhost ~]# make && make install
+
+
+# 安装配置文件
+[root@localhost proxychains-ng-4.16]# make install-config
+./tools/install.sh -D -m 644 src/proxychains.conf /etc/proxychains.conf
+
+# 测试一下命令
+[root@localhost ~]# proxychains4
+
+Usage:  proxychains4 -q -f config_file program_name [arguments]
+        -q makes proxychains quiet - this overrides the config setting
+        -f allows one to manually specify a configfile to use
+        for example : proxychains telnet somehost.com
+More help in README file
+```
+
+:::
+
+::: details （2）配置proxychains-ng
+
+```bash
+[root@localhost ~]# vim /etc/proxychains.conf
+quiet_mode                # 将注释打开,意思是开启静默模式,减少日志输出信息,但是并不能完全取消日志
+[ProxyList]
+# add proxy here ...
+# meanwile
+# defaults set to "tor"
+# socks4 127.0.0.1 9050   # 注释掉
+http 192.168.0.102 7890   # 新增一行
+```
+
+:::
+
+::: details （3）测试代理
+
+```bash
+# 使用方式：proxychains4 + 原本需要执行的命令
+
+# 测试curl命令
+[root@localhost ~]# proxychains4 curl ip.jinhui.dev
+[proxychains] config file found: /etc/proxychains.conf
+[proxychains] preloading /usr/local/lib/libproxychains4.so
+20.255.68.205
+
+# 测试docker下载镜像
+[root@localhost ~]# proxychains4 docker image pull registry.k8s.io/pause:3.7
+[proxychains] config file found: /etc/proxychains.conf
+[proxychains] preloading /usr/local/lib/libproxychains4.so
+3.7: Pulling from pause
+7582c2cc65ef: Pull complete 
+Digest: sha256:bb6ed397957e9ca7c65ada0db5c5d1c707c9c8afc80a94acbe69f3ae76988f0c
+Status: Downloaded newer image for registry.k8s.io/pause:3.7
+registry.k8s.io/pause:3.7
 ```
 
 :::
