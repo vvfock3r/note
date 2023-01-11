@@ -1307,10 +1307,10 @@ Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to
 [root@localhost ~]# tar xf proxychains-ng-4.16.tar.xz
 
 # 编译安装
+[root@localhost ~]# yum -y install gcc gcc-c++
 [root@localhost ~]# cd proxychains-ng-4.16
 [root@localhost ~]# ./configure --prefix=/usr/local --sysconfdir=/etc
 [root@localhost ~]# make && make install
-
 
 # 安装配置文件
 [root@localhost proxychains-ng-4.16]# make install-config
@@ -1332,7 +1332,9 @@ More help in README file
 
 ```bash
 [root@localhost ~]# vim /etc/proxychains.conf
+...
 quiet_mode                # 将注释打开,意思是开启静默模式,减少日志输出信息,但是并不能完全取消日志
+...
 [ProxyList]
 # add proxy here ...
 # meanwile
@@ -1354,15 +1356,12 @@ http 192.168.0.102 7890   # 新增一行
 [proxychains] preloading /usr/local/lib/libproxychains4.so
 20.255.68.205
 
-# 测试docker下载镜像
-[root@localhost ~]# proxychains4 docker image pull registry.k8s.io/pause:3.7
+# 测试docker下载镜像,是不行的，原因是：
+# 下载镜像是Docker服务端进程所执行的操作，而我们docker image pull只是给服务端发送了一个下载镜像的请求而已
+[root@localhost ~]# proxychains4 docker image pull registry.k8s.io/pause:3.8
 [proxychains] config file found: /etc/proxychains.conf
 [proxychains] preloading /usr/local/lib/libproxychains4.so
-3.7: Pulling from pause
-7582c2cc65ef: Pull complete 
-Digest: sha256:bb6ed397957e9ca7c65ada0db5c5d1c707c9c8afc80a94acbe69f3ae76988f0c
-Status: Downloaded newer image for registry.k8s.io/pause:3.7
-registry.k8s.io/pause:3.7
+Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artifacts-prod/images/pause/manifests/3.8": dial tcp 64.233.189.82:443: connect: connection refused
 ```
 
 :::
