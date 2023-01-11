@@ -10,7 +10,12 @@ const navbar = [
     {
         text: 'Linux',
         children: [
-            {text: '命令行工具', link: '/linux/shell'},
+            {
+			    text: '轻量级工具和服务',
+                children: [
+                    {text: '轻量级工具和服务', link: '/linux/shell'},
+                ]
+		    },
         ]
     },
     {
