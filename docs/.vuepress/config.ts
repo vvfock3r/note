@@ -11,7 +11,7 @@ const navbar = [
         text: 'Linux',
         children: [
             {
-			    text: '轻量级工具和服务',
+			    text: 'Shell',
                 children: [
                     {text: '轻量级工具和服务', link: '/linux/shell'},
                 ]
