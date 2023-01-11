@@ -1492,7 +1492,6 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 
 [root@node-1 ~]# source ~/.bashrc
 [root@node-1 ~]# etcdctl member list -w table
-[root@node-1 ansible]# etcdctl member list -w table
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
 |        ID        | STATUS  |  NAME  |         PEER ADDRS          |        CLIENT ADDRS         | IS LEARNER |
 +------------------+---------+--------+-----------------------------+-----------------------------+------------+
@@ -1744,6 +1743,8 @@ node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456 apiserver_ip=19
     -e "host='all'" \
     -e "shell='grep api.k8s.local /etc/hosts'"
 ```
+
+:::
 
 ### 部署高可用Calico服务
 

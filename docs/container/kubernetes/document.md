@@ -102,6 +102,35 @@ node-4   Ready    <none>          13m   v1.25.4
 ::: details 点击查看详情
 
 ```bash
+# 查看都有哪些version
+[root@node-1 ~]# kubectl api-versions
+admissionregistration.k8s.io/v1
+apiextensions.k8s.io/v1
+apiregistration.k8s.io/v1
+apps/v1
+authentication.k8s.io/v1
+authorization.k8s.io/v1
+autoscaling/v1
+autoscaling/v2
+autoscaling/v2beta2
+batch/v1
+certificates.k8s.io/v1
+coordination.k8s.io/v1
+crd.projectcalico.org/v1
+discovery.k8s.io/v1
+events.k8s.io/v1
+flowcontrol.apiserver.k8s.io/v1beta1
+flowcontrol.apiserver.k8s.io/v1beta2
+metrics.k8s.io/v1beta1
+networking.k8s.io/v1
+node.k8s.io/v1
+policy/v1
+rbac.authorization.k8s.io/v1
+scheduling.k8s.io/v1
+storage.k8s.io/v1
+storage.k8s.io/v1beta1
+v1
+
 # 查看都有哪些资源
 [root@node-1 ~]# kubectl api-resources
 NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
