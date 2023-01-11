@@ -1552,7 +1552,7 @@ node-4
 
 需要保证至少3个Etcd节点即可
 
-
+<br />
 
 ### 部署高可用APIServer
 
@@ -1746,6 +1746,8 @@ node-4  ansible_ssh_host=192.168.48.154  ansible_ssh_pass=123456 apiserver_ip=19
 
 :::
 
+<br />
+
 ### 部署高可用Calico服务
 
 ```bash
@@ -1771,6 +1773,8 @@ spec:
   replicas: 3
 ```
 
+<br />
+
 ### 部署高可用DNS服务
 
 ```bash
@@ -1792,6 +1796,8 @@ spec:
   progressDeadlineSeconds: 600
   replicas: 3
 ```
+
+<br />
 
 ### 最终高可用状态检查
 
