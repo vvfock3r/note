@@ -244,6 +244,27 @@ EOF
 # 创建Pod
 [root@node-1 ~]# kubectl apply -f busybox.yaml
 pod/busybox created
+
+# -------------------------------------------------------------------------
+
+# 扩展
+# 1.对于其他资源，需要使用 kubectl create 创建
+# 2.不管是kubectl run还是kubectl create都可以添加一个-o yaml参数，在创建资源的同时会将YAML文件输出
+[root@node-1 ~]# kubectl create namespace demo -o yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2023-01-12T11:56:13Z"
+  labels:
+    kubernetes.io/metadata.name: demo
+  name: demo
+  resourceVersion: "32766"
+  uid: b5dc2888-219e-4ece-8389-8a8655ed7627
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
 ```
 
 :::
@@ -5733,9 +5754,9 @@ total 12K
     client-key: /root/kubernetes-jack.key
 
 # 配置Context
-[root@node-1 ~]# kubectl config set-context ${KubernetesUserName}@kubernetes \
+[root@node-1 ~]# kubectl config set-context ${UserName}@kubernetes \
     --cluster=${ClusterName} \
-    --user=${KubernetesUserName}
+    --user=${UserName}
 
 # 查看Context
 [root@node-1 ~]# kubectl config view | yq .contexts
@@ -5750,7 +5771,7 @@ total 12K
   name: kubernetes-jack@kubernetes
 
 # 测试报错了，因为我们还没有给用户赋予任何的权限
-[root@node-1 ~]# kubectl get pods --context=${KubernetesUserName}@${ClusterName}
+[root@node-1 ~]# kubectl get pods --context=${UserName}@${ClusterName}
 Error from server (Forbidden): pods is forbidden: User "kubernetes-jack" cannot list resource "pods" in API group "" in the namespace "default"
 ```
 
@@ -5837,28 +5858,60 @@ users:
 ::: details  （1）创建角色
 
 ```bash
-[root@node-1 ~]# kubectl create clusterrole reader --verb=get,list,watch --resource=* -o yaml
+# 创建角色
+[root@node-1 ~]# kubectl create clusterrole cluster-reader \
+    --resource=pods,deployments,configmaps,cronjobs \
+    --verb=get,list,watch \
+    -o yaml
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: "2023-01-10T12:32:37Z"
-  name: reader
-  resourceVersion: "218742"
-  uid: 26e9cf0c-46a1-4592-8a44-a965e44467d8
+  creationTimestamp: "2023-01-12T11:40:36Z"
+  name: cluster-reader
+  resourceVersion: "31071"
+  uid: 245ad3b7-9bf3-4f5b-8eac-832f725bba40
 rules:
 - apiGroups:
   - ""
   resources:
-  - '*'
+  - pods
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps          # deployments 属于 apps 资源组
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch         # cronjobs 属于 apps 资源组
+  resources:
+  - cronjobs
   verbs:
   - get
   - list
   - watch
 
 # rules说明
-#   apiGroups
-#   resources
-#   verbs
+#   apiGroups  API资源组 kubectl api-resources -o wide 第三列(APIVERSION)就是组,但是不需要包含里面的版本号,比如v1
+#                       如果为空则代表核心组,即 APIVERSION=v1
+#                       使用命令行方式创建的话不需要我们显式指定apiGroups
+#   resources  资源对象  kubectl api-resources -o wide 第一列(NAME)就是所有的resources
+#   verbs      权限列表  kubectl api-resources -o wide 最后一列(VERBS)可以找到所有的权限列表
+
+# apiGroups和resources对照关系验证
+[root@node-1 ~]# kubectl api-resources | grep -Ei 'NAME\b|pods|deployments|configmaps|cronjobs'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+configmaps                        cm           v1                                     true         ConfigMap
+pods                              po           v1                                     true         Pod
+deployments                       deploy       apps/v1                                true         Deployment
+cronjobs                          cj           batch/v1                               true         CronJob
 ```
 
 :::
@@ -5866,7 +5919,49 @@ rules:
 ::: details  （2）用户和角色绑定
 
 ```bash
+[root@node-1 ~]# kubectl create clusterrolebinding cluster-reader \
+    --clusterrole=cluster-reader \
+    --user=kubernetes-jack \
+    -o yaml
 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: "2023-01-12T11:45:20Z"
+  name: cluster-reader
+  resourceVersion: "31558"
+  uid: 77566c03-2cd4-433b-b736-d954caa2daf2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-reader
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: kubernetes-jack
+  
+# 此时再进行测试就不报错了
+[root@node-1 ~]# kubectl get pods --context=kubernetes-jack@kubernetes
+
+# 如果我们要删除一个Pod，会报错没有权限
+[root@node-1 ~]# kubectl run busybox --image=busybox:latest --command -- sleep 3600
+
+[root@node-1 ~]# kubectl delete pod busybox --context=kubernetes-jack@kubernetes 
+Error from server (Forbidden): pods "busybox" is forbidden: User "kubernetes-jack" cannot delete resource "pods" in API group "" in the namespace "default"
+
+[root@node-1 ~]# kubectl delete pod busybox 
+pod "busybox" deleted
+
+# 测试其他资源
+[root@node-1 ~]# kubectl get configmaps --context=kubernetes-jack@kubernetes
+NAME               DATA   AGE
+kube-root-ca.crt   1      5h7m
+
+[root@node-1 ~]# kubectl get secrets --context=kubernetes-jack@kubernetes
+Error from server (Forbidden): secrets is forbidden: User "kubernetes-jack" cannot list resource "secrets" in API group "" in the namespace "default"
+
+[root@node-1 ~]# kubectl get daemonsets --context=kubernetes-jack@kubernetes
+Error from server (Forbidden): daemonsets.apps is forbidden: User "kubernetes-jack" cannot list resource "daemonsets" in API group "apps" in the namespace "default"
 ```
 
 :::
