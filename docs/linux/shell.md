@@ -1935,7 +1935,7 @@ FATA[2023-01-12 14:29:10] invalid bucket format, please check your cos.BaseURL
 
 :::
 
-::: details （3）上传下载单个文件
+::: details （3）上传、下载和删除单个文件
 
 ```bash
 # 上传
@@ -1949,6 +1949,11 @@ INFO[2023-01-12 14:34:08] Download cos://public/kubernetes-images-v1.25.4.tar.gz
 
 # 每次执行完命令会在当前目录下生成一个 coscli.log 的日志文件
 # 没有找到哪里可以配置日志参数?
+
+# 下载完删除
+[root@node-1 ~]# coscli rm -f cos://public/kubernetes-images-v1.25.4.tar.gz
+INFO[2023-01-12 15:12:31] Delete cos://public/kubernetes-images-v1.25.4.tar.gz successfully!
 ```
 
 :::
+
