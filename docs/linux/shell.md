@@ -1849,3 +1849,106 @@ D:\application\GoLand\demo\pki> go run client/main.go
 ![image-20221126172850473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126172850473.png)
 
 :::
+
+<br />
+
+## 对象存储
+
+### 腾讯云 - coscli
+
+工具概览：[https://cloud.tencent.com/document/product/436/6242](https://cloud.tencent.com/document/product/436/6242)
+
+COSCLI：[https://cloud.tencent.com/document/product/436/63143](https://cloud.tencent.com/document/product/436/63143)
+
+::: details （1）安装
+
+```bash
+# 下载
+[root@ap-hongkang ~]# wget -c https://github.com/tencentyun/coscli/releases/download/v0.12.0-beta/coscli-linux
+[root@ap-hongkang ~]# mv coscli-linux /usr/local/bin/coscli
+[root@ap-hongkang ~]# chmod 755 /usr/local/bin/coscli
+
+# 查看版本
+[root@ap-hongkang ~]# coscli --version
+coscli version v0.12.0-beta
+```
+
+:::
+
+::: details （2）配置
+
+```bash
+# 初始化配置
+[root@ap-hongkang ~]# coscli config init
+2023/01/12 14:19:15 Welcome to coscli!
+When you use coscli for the first time, you need to input some necessary information to generate the default configuration file of coscli.
+The path of the configuration file: /root/.cos.yaml
+Input Your Secret ID:
+# 填写Secret ID
+Input Your Secret Key:
+# 填写Secret Key
+Input Your Session Token:
+# 不用填写
+Input Your Bucket's Name:
+Format: <bucketname>-<appid>，Example: example-1234567890
+# 填写存储桶名称 public-1257805459
+Input Bucket's Endpoint:
+Format: cos.<region>.myqcloud.com，Example: cos.ap-beijing.myqcloud.com
+# 不要填写,测试中填写了以后执行命令会报错
+Input Bucket's Alias: (Input nothing will use the original name)
+# 给存储桶起个别名 public
+You have configured the bucket:
+- Name: public-1257805459       Endpoint:       Alias: public
+
+If you want to configure more buckets, you can use the "config add" command later.
+
+The configuration file is initialized successfully! 
+You can use "./coscli config show [-c <Config File Path>]" show the contents of the specified configuration file
+
+# 配置文件存储在这里
+[root@ap-hongkang ~]# vim ~/.cos.yaml
+cos:
+  base:
+    secretid: xxx
+    secretkey: xxx
+    sessiontoken: xxx    # 这个配置可以删掉
+    protocol: https
+  buckets:
+  - name: public-1257805459
+    alias: public
+    region: ap-beijing   # 改一下region
+    endpoint: ""         # 这个配置可以删掉
+    
+# 测试，没有报错就说明成功了
+[root@ap-hongkang ~]# coscli ls cos://public
+  KEY | TYPE |  LAST MODIFIED  | SIZE  
+------+------+-----------------+-------
+------+------+-----------------+-------
+               TOTAL OBJECTS:  |  0    
+             ------------------+-------
+             
+# 错误记录：如果endpoint填写上存储桶页面给出的域名,就会报下面这个错
+[root@ap-hongkang ~]# coscli ls cos://public
+INFO[2023-01-12 14:29:10] invalid bucket format, please check your cos.BaseURL 
+FATA[2023-01-12 14:29:10] invalid bucket format, please check your cos.BaseURL
+```
+
+:::
+
+::: details （3）上传下载单个文件
+
+```bash
+# 上传
+[root@ap-hongkang ~]# coscli cp kubernetes-images-v1.25.4.tar.gz cos://public/
+INFO[2023-01-12 14:32:39] Upload /root/kubernetes-images-v1.25.4.tar.gz => cos://public/kubernetes-images-v1.25.4.tar.gz 
+100% [##############################] 216228420/216228420 Bytes
+
+# 下载
+[root@node-1 ~]# coscli cp cos://public/kubernetes-images-v1.25.4.tar.gz .
+INFO[2023-01-12 14:34:08] Download cos://public/kubernetes-images-v1.25.4.tar.gz => /root/./kubernetes-images-v1.25.4.tar.gz
+
+# 每次执行完命令会在当前目录下生成一个 coscli.log 的日志文件
+# 没有找到哪里可以配置日志参数?
+```
+
+:::
