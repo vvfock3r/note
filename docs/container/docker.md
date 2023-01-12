@@ -547,7 +547,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 ### 2）镜像
 
-#### 修改镜像源
+#### 镜像加速
 
 使用Docker时需要首先下载一个官方镜像，例如`ubuntu`、`mysql`，默认会从[Docker Hub](https://hub.docker.com/)中去下载
 
@@ -559,7 +559,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 <br />
 
-#### 添加代理服务器
+#### 添加代理
 
 ::: details 点击查看详情
 
@@ -574,7 +574,9 @@ mkdir -p /usr/lib/systemd/system/docker.service.d/
 vim /usr/lib/systemd/system/docker.service.d/http-proxy.conf
 
 [Service]
-Environment="HTTP_PROXY=http://192.168.0.102:7890" "HTTPS_PROXY=http://192.168.0.102:7890" "NO_PROXY=127.0.0.1,localhost"
+Environment="HTTP_PROXY=http://192.168.0.102:7890"
+Environment="HTTPS_PROXY=http://192.168.0.102:7890"
+Environment="NO_PROXY=127.0.0.1,localhost"
 
 # 重启Docker
 systemctl daemon-reload
