@@ -865,7 +865,7 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 
 ```bash
 # 查看都需要哪些镜像
-[root@node-1 ~]# kubeadm config images list
+[root@node-1 ~]# kubeadm config images list --kubernetes-version=1.25.4
 registry.k8s.io/kube-apiserver:v1.25.4
 registry.k8s.io/kube-controller-manager:v1.25.4
 registry.k8s.io/kube-scheduler:v1.25.4
