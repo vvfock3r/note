@@ -6147,7 +6147,31 @@ rules:
 ::: details  （1）kubectl delete node NODE
 
 ```bash
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   29h   v1.25.4
+node-2   Ready    control-plane   29h   v1.25.4
+node-3   Ready    control-plane   29h   v1.25.4
+node-4   Ready    <none>          29h   v1.25.4
 
+[root@node-1 ~]# kubectl delete node node-4
+node "node-4" deleted
+
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   29h   v1.25.4
+node-2   Ready    control-plane   29h   v1.25.4
+node-3   Ready    control-plane   29h   v1.25.4
+
+# 如果要恢复的话需要重启kubelet服务
+[root@node-4 ~]# systemctl restart kubelet.service
+
+[root@node-1 ~]# kubectl get node
+NAME     STATUS   ROLES           AGE   VERSION
+node-1   Ready    control-plane   29h   v1.25.4
+node-2   Ready    control-plane   29h   v1.25.4
+node-3   Ready    control-plane   29h   v1.25.4
+node-4   Ready    <none>          25s   v1.25.4
 ```
 
 :::
