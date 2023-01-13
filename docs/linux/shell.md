@@ -887,6 +887,25 @@ option is v ,the value is V
 
 <br />
 
+**安装**
+
+::: details 点击查看详情
+
+```bash
+# 安装jq
+# 备注：jq也可以直接使用yum安装 yum -y install jq
+[root@node-1 ~]# wget -c https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O /usr/local/bin/jq
+[root@node-1 ~]# chmod 755 /usr/local/bin/jq
+
+# 安装yq
+[root@node-1 ~]# wget -c https://github.com/mikefarah/yq/releases/download/v4.30.6/yq_linux_amd64 -O /usr/local/bin/yq
+[root@node-1 ~]# chmod 755 /usr/local/bin/yq
+```
+
+:::
+
+<br />
+
 **准备数据**
 
 ::: details 点击查看详情

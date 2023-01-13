@@ -5695,12 +5695,11 @@ users:
 
 ::: details  （2）创建用户
 
-我们仿照默认的`kubernetes-admin`用户创建一个新用户`kubernetes-jack`
-
 ```bash
 # 定义变量
-[root@node-1 ~]# UserName=kubernetes-jack
-[root@node-1 ~]# ClusterName=kubernetes
+[root@node-1 ~]# UserName=kubernetes-jack  # 仿照默认的kubernetes-admin用户创建一个新用户
+[root@node-1 ~]# UserGroup=cluster-reader  # 用户组,可以自定义,在后面可以我们对单独的用户授权,也可以直接对一个组进行授权
+[root@node-1 ~]# ClusterName=kubernetes    # 集群名称,需要根据现有的集群名称来填写,可以从~/.kube/config中获取
 
 # 创建证书私钥文件
 [root@node-1 ~]# openssl genrsa -out ${UserName}.key 2048
@@ -5708,12 +5707,12 @@ users:
 -rw-r--r-- 1 root root 1.7K Jan 10 19:58 kubernetes-jack.key  # 证书私钥文件
 
 # 创建证书请求文件
-#   CN代表用户名
-#   O代表组织,这里写啥好像都可以
+#   CN代表用户
+#   O代表用户组
 [root@node-1 ~]# openssl req -new \
     -key ${UserName}.key \
     -out ${UserName}.csr \
-    -subj "/CN=${UserName}/O=${ClusterName}"
+    -subj "/CN=${UserName}/O=${UserGroup}"
     
 [root@node-1 ~]# ls -lh
 total 8.0K
@@ -5738,9 +5737,11 @@ total 12K
 -rw-r--r-- 1 root root 1.7K Jan 10 19:58 kubernetes-jack.key
 
 # 配置用户
+# --embed-certs 用于将证书文件内容写入到配置文件,否则只会将证书的路径写入到配置文件中
 [root@node-1 ~]# kubectl config set-credentials ${UserName} \
     --client-certificate=${UserName}.crt \
-    --client-key=${UserName}.key
+    --client-key=${UserName}.key \
+    --embed-certs=true
 
 # 查看用户
 [root@node-1 ~]# kubectl config view | yq .users
@@ -5750,8 +5751,8 @@ total 12K
     client-key-data: REDACTED
 - name: kubernetes-jack
   user:
-    client-certificate: /root/kubernetes-jack.crt
-    client-key: /root/kubernetes-jack.key
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
 
 # 配置Context
 [root@node-1 ~]# kubectl config set-context ${UserName}@kubernetes \
@@ -5873,7 +5874,7 @@ metadata:
   uid: 245ad3b7-9bf3-4f5b-8eac-832f725bba40
 rules:
 - apiGroups:
-  - ""
+  - ""          # pods、configmaps等属于核心组，组名为空
   resources:
   - pods
   - configmaps
@@ -5890,7 +5891,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - batch         # cronjobs 属于 apps 资源组
+  - batch         # cronjobs 属于 batch 资源组
   resources:
   - cronjobs
   verbs:
@@ -5962,6 +5963,179 @@ Error from server (Forbidden): secrets is forbidden: User "kubernetes-jack" cann
 
 [root@node-1 ~]# kubectl get daemonsets --context=kubernetes-jack@kubernetes
 Error from server (Forbidden): daemonsets.apps is forbidden: User "kubernetes-jack" cannot list resource "daemonsets" in API group "apps" in the namespace "default"
+```
+
+:::
+
+::: details  （3）用户组和角色绑定
+
+```bash
+[root@node-1 ~]# kubectl create clusterrolebinding cluster-reader \
+    --clusterrole=cluster-reader \
+    --group=cluster-reader \
+    -o yaml
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: "2023-01-13T10:31:43Z"
+  name: cluster-reader
+  resourceVersion: "39492"
+  uid: b8b40c4c-ef76-47a4-9644-4baae6d32a76
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-reader
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group          # 这里不再是User，而是Group
+  name: cluster-reader
+  
+# 此时再进行测试也不会报错
+[root@node-1 ~]# kubectl get pods --context=kubernetes-jack@kubernetes
+```
+
+:::
+
+<br />
+
+### kubectl用户的角色和权限
+
+::: details  （1）找到用户
+
+```bash
+# 看一下配置，找到所使用的用户
+[root@node-1 ~]# kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://api.k8s.local:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin                    # 2.找到对应的用户 kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes  # 1、从这里入手找到对应的context
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+
+# 也可以通过其他方式找到
+[root@node-1 ~]# kubectl config get-contexts
+CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+*         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin 
+```
+
+:::
+
+::: details  （2）找到用户所在的组
+
+```bash
+# 找到kubernetes-admin用户的client-certificate-data数据
+[root@node-1 ~]# kubectl config view --raw -o yaml | \
+    yq '.users[] | select(.name=="kubernetes-admin")' | \
+    yq '.user.client-certificate-data' | \
+    base64 -d > kubernetes-admin.pem
+
+[root@node-1 ~]# cat kubernetes-admin.pem 
+-----BEGIN CERTIFICATE-----
+MIIDITCCAgmgAwIBAgIIG2EFs8wVeLowDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+AxMKa3ViZXJuZXRlczAeFw0yMzAxMTIwNjQyMzRaFw0yNDAxMTIwNjQyMzdaMDQx
+FzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk
+bWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtaxw3H0GQgNuImF7
+neyXa75k19wqxbU9UmCdA/5nTi5sSO7Xspx7+JBkUV+luCFyTJVK2O4Yr324SVMO
+Eo1+7X9IngctPqiF9Psv7COD24q3COpU7nDJleX26pvxmwHK7pjBtO+pNvOzAYFm
+nKdgKyfMk8qqFw48dgFjhr9h2Hrm0eHN+RVD27vWYOEWOMoUb2NhiQFEo/H0c2DP
+KhgjccArYHaBvo7pAAnfJP+QEwwtsQCYNKunxFCWYqL3q0T+oL9QK8gPtea/h73V
+nvc2PqqtEw5f51rlfZu5dv6PaxPvpWtC82TIgfMZSeFJB24U2nrEvsGP0zaxCty/
+ae6JpQIDAQABo1YwVDAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH
+AwIwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBQJ1jamDLrlQtFoHPj5ikxvnFKp
+UTANBgkqhkiG9w0BAQsFAAOCAQEAXilqAlBbX8w2iUW7M0dmzQNayJV+eoIO4KnT
+yOoQ0ocwseQHtP6Ht2whHnPt7HyGvUpjnU+JLiqWIk79Y/LflfpKZOSOGL1PVSOf
+H5Gz0DIn4/wOGO8295Fzb8b0wjWpkAGbGRkZGV6/aywpEF0E7h60v11/8OKrBAmZ
+qeitYqo0ozqPnGiv6XXR/oAUjPHiXaqvWdEy3Ks6XOa7mod1blCeh9vOD57tp0Q4
+dsciUixKB8VObcu3fF2e2zJdmyI8+GBdl0ShVZIJsXlSOqk5F4UXTaUJ3PtdInZB
+S38so+s1M5Qy3Jv5MaOvBCGG88VnVYLt3P34nVpbMOiBrlP6KQ==
+-----END CERTIFICATE-----
+
+# 使用cfssl工具解密
+[root@node-1 ~]# cfssl certinfo --cert kubernetes-admin.pem
+{
+  "subject": {
+    "common_name": "kubernetes-admin",
+    "organization": "system:masters",         # 这里就是kubernetes-admin用户所在的组
+    "names": [
+      "system:masters",
+      "kubernetes-admin"
+    ]
+  },
+  "issuer": {
+    "common_name": "kubernetes",
+    "names": [
+      "kubernetes"
+    ]
+  },
+  "serial_number": "1972864381546231994",
+  "not_before": "2023-01-12T06:42:34Z",
+  "not_after": "2024-01-12T06:42:37Z",
+  "sigalg": "SHA256WithRSA",
+  "authority_key_id": "09:D6:36:A6:0C:BA:E5:42:D1:68:1C:F8:F9:8A:4C:6F:9C:52:A9:51",
+  "subject_key_id": "",
+  "pem": "-----BEGIN CERTIFICATE-----\nMIIDITCCAgmgAwIBAgIIG2EFs8wVeLowDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE\nAxMKa3ViZXJuZXRlczAeFw0yMzAxMTIwNjQyMzRaFw0yNDAxMTIwNjQyMzdaMDQx\nFzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk\nbWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtaxw3H0GQgNuImF7\nneyXa75k19wqxbU9UmCdA/5nTi5sSO7Xspx7+JBkUV+luCFyTJVK2O4Yr324SVMO\nEo1+7X9IngctPqiF9Psv7COD24q3COpU7nDJleX26pvxmwHK7pjBtO+pNvOzAYFm\nnKdgKyfMk8qqFw48dgFjhr9h2Hrm0eHN+RVD27vWYOEWOMoUb2NhiQFEo/H0c2DP\nKhgjccArYHaBvo7pAAnfJP+QEwwtsQCYNKunxFCWYqL3q0T+oL9QK8gPtea/h73V\nnvc2PqqtEw5f51rlfZu5dv6PaxPvpWtC82TIgfMZSeFJB24U2nrEvsGP0zaxCty/\nae6JpQIDAQABo1YwVDAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH\nAwIwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBQJ1jamDLrlQtFoHPj5ikxvnFKp\nUTANBgkqhkiG9w0BAQsFAAOCAQEAXilqAlBbX8w2iUW7M0dmzQNayJV+eoIO4KnT\nyOoQ0ocwseQHtP6Ht2whHnPt7HyGvUpjnU+JLiqWIk79Y/LflfpKZOSOGL1PVSOf\nH5Gz0DIn4/wOGO8295Fzb8b0wjWpkAGbGRkZGV6/aywpEF0E7h60v11/8OKrBAmZ\nqeitYqo0ozqPnGiv6XXR/oAUjPHiXaqvWdEy3Ks6XOa7mod1blCeh9vOD57tp0Q4\ndsciUixKB8VObcu3fF2e2zJdmyI8+GBdl0ShVZIJsXlSOqk5F4UXTaUJ3PtdInZB\nS38so+s1M5Qy3Jv5MaOvBCGG88VnVYLt3P34nVpbMOiBrlP6KQ==\n-----END CERTIFICATE-----\n"
+}
+```
+
+:::
+
+::: details  （3）找到用户或用户组绑定的角色
+
+```bash
+# 先使用用户搜索一次,输出为空,说明很有可能是绑定的用户组
+[root@node-1 ~]# kubectl get clusterrolebinding -o wide | grep -E 'NAME|kubernetes-admin'
+NAME               ROLE                           AGE   USERS     GROUPS            SERVICEACCOUNTS
+
+# 再使用用户组搜索一次, 可以发现对应的角色为：cluster-admin
+[root@node-1 ~]# kubectl get clusterrolebinding -o wide | grep -E 'NAME|system:masters'
+NAME               ROLE                           AGE   USERS     GROUPS            SERVICEACCOUNTS
+cluster-admin      ClusterRole/cluster-admin      28h             system:masters
+```
+
+:::
+
+::: details  （4）找到角色的权限
+
+```bash
+[root@node-1 ~]# kubectl get clusterrole cluster-admin -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  creationTimestamp: "2023-01-12T06:42:47Z"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: cluster-admin
+  resourceVersion: "73"
+  uid: aab7e61c-3f99-4c57-84a4-b4483e901111
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - '*'
+
+# 可以发现对所有的资源拥有所有的权限
 ```
 
 :::
