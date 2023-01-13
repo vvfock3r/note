@@ -1042,6 +1042,22 @@ etcd-3
 
 :::
 
+::: details （4）筛选
+
+```bash
+# 获取member名称为etcd-2的peerURLs
+[root@ap-hongkang ~]# cat etcd-member.json | jq '.members[] | select(.name=="etcd-2") | .peerURLs'
+[
+  "https://10.0.8.4:22380"
+]
+[root@ap-hongkang ~]# cat etcd-member.json | yq '.members[] | select(.name=="etcd-2") | .peerURLs' -o json
+[
+  "https://10.0.8.4:22380"
+]
+```
+
+:::
+
 **报错处理**
 
 ::: details （1）特殊符号引起的错误：key包含特殊字符或者以数字开头，使用'.key'会报错
@@ -1112,6 +1128,24 @@ null
 null
 [root@ap-hongkang ~]# echo '{"foo": null}' | yq '.foo'
 null
+```
+
+:::
+
+::: details （4）数字精度问题
+
+```bash
+# jq精度好像有些问题
+[root@ap-hongkang ~]# cat etcd-member.json | jq '.header.cluster_id'
+17381046135283786000
+[root@ap-hongkang ~]# cat etcd-member.json | yq '.header.cluster_id'
+17381046135283785533
+
+# 再进行测试一下
+[root@ap-hongkang ~]# echo 17381046135283785533 | jq
+17381046135283786000
+[root@ap-hongkang ~]# echo 17381046135283785533 | yq
+17381046135283785533
 ```
 
 :::
