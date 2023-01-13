@@ -6139,3 +6139,32 @@ rules:
 ```
 
 :::
+
+<br />
+
+## 节点下线与恢复
+
+::: details  （1）kubectl delete node NODE
+
+```bash
+
+```
+
+:::
+
+::: details  （2）kubectl cordon NODE
+
+```bash
+
+```
+
+:::
+
+::: details  （3）kubectl drain NODE
+
+```bash
+
+```
+
+:::
+
