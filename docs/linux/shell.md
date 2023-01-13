@@ -1139,7 +1139,7 @@ null
 ::: details （4）数字精度问题
 
 ```bash
-# jq精度好像有些问题
+# jq精度有些问题
 [root@ap-hongkang ~]# cat etcd-member.json | jq '.header.cluster_id'
 17381046135283786000
 [root@ap-hongkang ~]# cat etcd-member.json | yq '.header.cluster_id'
