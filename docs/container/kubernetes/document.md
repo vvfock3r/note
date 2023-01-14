@@ -6232,8 +6232,183 @@ rules:
 
 ::: details  （3）验证权限
 
-```go
+**1.使用client-go编写一段代码**
 
+* 代码需要运行在集群中
+* 实现的功能是监听kube-system下的所有Pod
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"log"
+)
+
+// NewClientSetByServiceAccount 在集群内部使用ServiceAccount进行认证
+func NewClientSetByServiceAccount() (*kubernetes.Clientset, error) {
+	// (1) 实例化*rest.Config对象
+	resetConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// (2) 实例化*ClientSet对象
+	clientset, err := kubernetes.NewForConfig(resetConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
+}
+
+func main() {
+	// (1) 实例化ClientSet
+	clientset, err := NewClientSetByServiceAccount()
+	if err != nil {
+		panic(err)
+	}
+
+	// (2) 查看 kubernetes 版本
+	serverVersionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		panic(err)
+	}
+	serverVersionJson, err := json.MarshalIndent(serverVersionInfo, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(serverVersionJson))
+
+	// (3) 监听kube-system下的所有Pod
+    // 实例化Watch对象
+	watcher, err := clientset.CoreV1().Pods("kube-system").Watch(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Stop()
+
+	// 通过channel接收监听的事件
+	for {
+		event, ok := <-watcher.ResultChan()
+		if !ok {
+			log.Printf("%-2s Error: Channel closed\n", "")
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			log.Printf("%-2s Error: Type Assertion to *corev1.Pod\n", "")
+			continue
+		}
+		log.Printf("%-2s 事件类型: %-8s Pod名称: %-40s Pod阶段: %s\n", "", event.Type, pod.Name, pod.Status.Phase)
+	}
+}
+```
+
+**2.Windows下编译并上传到Linux主机上**
+
+```bash
+D:\application\GoLand\example>SET CGO_ENABLED=0
+D:\application\GoLand\example>SET GOOS=linux
+D:\application\GoLand\example>SET GOARCH=amd64
+D:\application\GoLand\example>go build -o main ./main.go
+```
+
+**3.测试默认的ServiceAccount权限**
+
+```bash
+# 为了演示简单,这里直接将二进制拷贝进去，而不是编写Dockerfile再打镜像
+[root@node-1 ~]# kubectl -n kube-system cp main busybox:/
+
+# 进入到容器中执行
+[root@node-1 ~]# kubectl -n kube-system exec -it busybox -- sh
+/ # chmod 755 main 
+/ # ./main 
+{
+    "major": "1",
+    "minor": "25",
+    "gitVersion": "v1.25.4",
+    "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+    "gitTreeState": "clean",
+    "buildDate": "2022-11-09T13:29:58Z",
+    "goVersion": "go1.19.3",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+}
+panic: unknown (get pods)
+
+goroutine 1 [running]:
+main.main()
+        D:/application/GoLand/example/main.go:52 +0x405
+        
+# 可以看到kubernetes集群的版本输出出来了，但是watch操作报错了
+```
+
+**4.临时修改default ServiceAccount的权限**
+
+```bash
+# 开一个新终端修改权限
+[root@node-1 ~]# kubectl edit clusterrole system:service-account-issuer-discovery
+rules:
+- nonResourceURLs:
+  - /.well-known/openid-configuration
+  - /openid/v1/jwks
+  verbs:
+  - get
+- apiGroups:        # 新增这行及以下部分,给 default ServiceAccount最高的权限
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - '*'
+
+# 在上一步骤的终端继续测试，可以正常执行了
+/ # ./main
+{
+    "major": "1",
+    "minor": "25",
+    "gitVersion": "v1.25.4",
+    "gitCommit": "872a965c6c6526caa949f0c6ac028ef7aff3fb78",
+    "gitTreeState": "clean",
+    "buildDate": "2022-11-09T13:29:58Z",
+    "goVersion": "go1.19.3",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+}
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: calico-node-tkpkm                        Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-apiserver-node-1                    Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-controller-manager-node-2           Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-proxy-skqfc                         Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-scheduler-node-1                    Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: busybox                                  Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: calico-node-j9jw8                        Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: calico-node-vrn9t                        Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: etcd-node-2                              Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-proxy-87wnc                         Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-proxy-9fvlt                         Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: calico-node-fvq28                        Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: coredns-565d847f94-rz9rm                 Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: coredns-565d847f94-wqdb4                 Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-apiserver-node-3                    Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-controller-manager-node-1           Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: calico-kube-controllers-798cc86c47-jwg5l Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: etcd-node-1                              Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: etcd-node-3                              Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-apiserver-node-2                    Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-controller-manager-node-3           Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-proxy-lmn5s                         Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-scheduler-node-2                    Pod阶段: Running
+2023/01/14 02:53:02    事件类型: ADDED    Pod名称: kube-scheduler-node-3                    Pod阶段: Running
 ```
 
 :::
