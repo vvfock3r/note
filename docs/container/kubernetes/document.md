@@ -6516,7 +6516,190 @@ node/node-4 uncordoned
 
 <br />
 
-### TLS证书管理
+### 证书签名请求
 
+文档：[https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/certificate-signing-requests/#normal-user](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/certificate-signing-requests/#normal-user)
 
+下面演示使用证书签名请求来创建普通用户
+
+::: details （1）创建私钥和证书请求文件
+
+```bash
+# 定义变量
+[root@node-1 ~]# UserName=kubernetes-zhangsan  # 仿照默认的kubernetes-admin用户创建一个新用户
+[root@node-1 ~]# UserGroup=cluster-reader      # 用户组,可以自定义,在后面可以我们对单独的用户授权,也可以直接对一个组进行授权
+[root@node-1 ~]# ClusterName=kubernetes        # 集群名称,需要根据现有的集群名称来填写,可以从~/.kube/config中获取
+
+# 创建证书私钥
+[root@node-1 ~]# openssl genrsa -out ${UserName}.key 2048
+Generating RSA private key, 2048 bit long modulus
+.+++
+.....................+++
+e is 65537 (0x10001)
+
+# 创建证书请求文件
+[root@node-1 ~]# openssl req -new -key ${UserName}.key -out ${UserName}.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:
+State or Province Name (full name) []:
+Locality Name (eg, city) [Default City]:
+Organization Name (eg, company) [Default Company Ltd]:cluster-reader            # 用户组
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:kubernetes-zhangsan    # 用户名
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+```
+
+:::
+
+::: details （2）创建证书签名请求：CertificateSigningRequest
+
+```bash
+[root@node-1 ~]# request=$(cat ${UserName}.csr | base64 | tr -d "\n")
+[root@node-1 ~]# cat <<EOF | kubectl apply -f -
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: ${UserName}
+spec:
+  request: ${request}
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400  # 过期时间设置为1天
+  usages:
+  - client auth
+EOF
+
+certificatesigningrequest.certificates.k8s.io/kubernetes-zhangsan created
+```
+
+:::
+
+::: details （3）批准证书签名请求
+
+```bash
+# 先查看一下，最后一列是 Pending 状态
+[root@node-1 ~]# kubectl get csr
+NAME                  AGE   SIGNERNAME                            REQUESTOR          REQUESTEDDURATION   CONDITION
+kubernetes-zhangsan   4s    kubernetes.io/kube-apiserver-client   kubernetes-admin   24h                 Pending
+
+# 批准证书签名请求
+[root@node-1 ~]# kubectl certificate approve ${UserName}
+certificatesigningrequest.certificates.k8s.io/kubernetes-zhangsan approved
+
+# 再次查看,最后一列已经是 Approved,Issued
+[root@node-1 ~]# kubectl get csr
+NAME                  AGE    SIGNERNAME                            REQUESTOR          REQUESTEDDURATION   CONDITION
+kubernetes-zhangsan   2m1s   kubernetes.io/kube-apiserver-client   kubernetes-admin   24h                 Approved,Issued
+```
+
+:::
+
+::: details （4）导出证书
+
+```bash
+[root@node-1 ~]# kubectl get csr ${UserName} -o jsonpath='{.status.certificate}'| base64 -d > ${UserName}.crt
+
+[root@node-1 ~]# cat ${UserName}.crt
+-----BEGIN CERTIFICATE-----
+MIIDOjCCAiKgAwIBAgIQVQHoYldYgy4GnL3N5MF9jTANBgkqhkiG9w0BAQsFADAV
+MRMwEQYDVQQDEwprdWJlcm5ldGVzMB4XDTIzMDExNDA1NDkwN1oXDTIzMDExNTA1
+NDkwN1owVTELMAkGA1UEBhMCWFgxFTATBgNVBAcTDERlZmF1bHQgQ2l0eTEVMBMG
+A1UECgwMJHtVc2VyR3JvdXB9MRgwFgYDVQQDDA/Dr8K/JHtVc2VyTmFtZX0wggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC4ilgrsnsm5qDJxxdghQde0Ptl
+djsp96Ehax1fRz9NaHmDlvaRp+q/Q+zcl7BP3TePIxozC6mkS6qiidTR+lBmrDS3
+lwDkDjPKEe+FiG+xwo/77JnlkMroIn3OG0EATvbW9cJcWDUpOpsYn+liQVQDx+Z6
+poiFR4o+BYB150/zvVjvEcMzZR2lsr721/ANLb8i+6dsICkJmlv9Ys6Xh2OEqk6z
+60SeKm3TijAcD5dIgEu/Qtw14/faJ72FZA01Ct1OPP8bo5UVcm/BSmoEJzeZvAHB
+Qrp/XlBaE17gXonQPguSGVbkAAOnlncR9GgkfI+xWcFZ+zcPde8EaxheOmtHAgMB
+AAGjRjBEMBMGA1UdJQQMMAoGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHwYDVR0j
+BBgwFoAUCdY2pgy65ULRaBz4+YpMb5xSqVEwDQYJKoZIhvcNAQELBQADggEBAKeI
+L1kMw4Sxf0aZS/Nkw7s8G63+c8c0+U0VaLtMSgmO6abSS4pJ9aUW76vYxsSs4geq
+iFO+ZsIrFqbZte87YGLLtrs0SnZOtVUiUwWpzuvykcDpoC/GINA+G6DnrkfmAmCo
+9Z/ker780hKBpAWpENuhPbLJtVGZ9LlEf+5fC0qBtnToUX1oj0Z6qnB2+zdERHIN
+Jhh2FXZPgYhLlW4rEkb0JxTwZ3yJcMQBADeZfNJ12elafZ2C48/pbH/uzM/lZa/Z
+AUeV9F3eXt4d0ydcltSbQk6CCtQZMVQ3A1bxwDA0EWRXv0LqVpD8vqe+eS+ZxZQl
+vENQo9oAaVDn6hmUCb4=
+-----END CERTIFICATE-----
+```
+
+:::
+
+::: details （5）创建角色和角色绑定
+
+```bash
+# 创建角色
+[root@node-1 ~]# kubectl create clusterrole cluster-reader --resource=* --verb=get,list,watch
+clusterrole.rbac.authorization.k8s.io/cluster-reader created
+
+# 用户和角色绑定
+[root@node-1 ~]# kubectl create clusterrolebinding cluster-reader --clusterrole=cluster-reader --user=${UserName}
+clusterrolebinding.rbac.authorization.k8s.io/cluster-reader created
+```
+
+:::
+
+::: details （6）添加到 kubeconfig
+
+```bash
+# 添加用户
+[root@node-1 ~]# kubectl config set-credentials ${UserName} \
+    --client-key=${UserName}.key \
+    --client-certificate=${UserName}.crt \
+    --embed-certs=true
+
+User "kubernetes-zhangsan" set.
+
+# 添加context
+[root@node-1 ~]# kubectl config set-context ${UserName}@${ClusterName} --cluster=${ClusterName} --user=${UserName}
+Context "kubernetes-zhangsan@kubernetes" created.
+```
+
+:::
+
+::: details （7）测试
+
+```bash
+# Get权限没有问题
+[root@node-1 ~]# kubectl get pods --context=${UserName}@${ClusterName} -A
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS         AGE
+kube-system   calico-kube-controllers-798cc86c47-jwg5l   1/1     Running   8 (3h10m ago)    47h
+kube-system   calico-node-fvq28                          1/1     Running   9 (3h10m ago)    47h
+kube-system   calico-node-j9jw8                          1/1     Running   10 (3h10m ago)   47h
+kube-system   calico-node-tkpkm                          1/1     Running   10 (3h10m ago)   47h
+kube-system   calico-node-vrn9t                          1/1     Running   3 (3h10m ago)    18h
+kube-system   coredns-565d847f94-rz9rm                   1/1     Running   8 (3h10m ago)    47h
+kube-system   coredns-565d847f94-wqdb4                   1/1     Running   8 (3h10m ago)    47h
+kube-system   etcd-node-1                                1/1     Running   8 (3h10m ago)    47h
+kube-system   etcd-node-2                                1/1     Running   9 (3h10m ago)    47h
+kube-system   etcd-node-3                                1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-apiserver-node-1                      1/1     Running   13 (82m ago)     47h
+kube-system   kube-apiserver-node-2                      1/1     Running   16 (81m ago)     47h
+kube-system   kube-apiserver-node-3                      1/1     Running   10 (82m ago)     47h
+kube-system   kube-controller-manager-node-1             1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-controller-manager-node-2             1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-controller-manager-node-3             1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-proxy-87wnc                           1/1     Running   9 (3h10m ago)    47h
+kube-system   kube-proxy-9fvlt                           1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-proxy-lmn5s                           1/1     Running   3 (3h10m ago)    18h
+kube-system   kube-proxy-skqfc                           1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-scheduler-node-1                      1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-scheduler-node-2                      1/1     Running   8 (3h10m ago)    47h
+kube-system   kube-scheduler-node-3                      1/1     Running   8 (3h10m ago)    47h
+
+# 因为我们并没有对kubernetes-zhangsan授权Create权限,所以创建Pod时拒绝了
+[root@node-1 ~]# kubectl run nginx --image=nginx:latest --context=${UserName}@${ClusterName} 
+Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" cannot create resource "pods" in API group "" in the namespace "default"
+```
+
+:::
 
