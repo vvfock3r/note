@@ -6415,9 +6415,11 @@ rules:
 
 <br />
 
-## 节点下线与恢复
+## 节点管理
 
-::: details  （1）直接删除节点：kubectl delete node NODE
+### 临时下线与恢复
+
+::: details  （1）暴力删除节点：kubectl delete node NODE
 
 ```bash
 [root@node-1 ~]# kubectl get node
@@ -6449,10 +6451,9 @@ node-4   Ready    <none>          25s   v1.25.4
 
 :::
 
-::: details  （2）设置节点不可调度：kubectl cordon NODE
+::: details  （2）设置节点不可调度，不影响已经在运行中的Pod：kubectl cordon NODE
 
 ```bash
-# 设置节点不可调度，不影响已经在运行中的Pod等
 [root@node-1 ~]# kubectl get node
 NAME     STATUS   ROLES           AGE   VERSION
 node-1   Ready    control-plane   29h   v1.25.4
@@ -6460,6 +6461,7 @@ node-2   Ready    control-plane   29h   v1.25.4
 node-3   Ready    control-plane   29h   v1.25.4
 node-4   Ready    <none>          25m   v1.25.4
 
+# 设置节点不可调度
 [root@node-1 ~]# kubectl cordon node-4
 node/node-4 cordoned
 
@@ -6488,11 +6490,33 @@ node-4   Ready    <none>          26m   v1.25.4
 
 ```bash
 # 选项说明
-# --force              对于未声明控制器的Pod需要添加此参数
-# --ignore-daemonsets  忽略DaemonSet管理下的Pod
-# --delete-local-data  
-[root@node-1 ~]# kubectl drain node-4 --force --ignore-daemonsets --delete-local-data
+# --force                 对于未声明控制器的Pod需要添加此参数
+# --ignore-daemonsets     忽略DaemonSet管理下的Pod
+# --delete-emptydir-data  即使存在使用emptyDir的pod（节点耗尽时将删除的本地数据），也要继续
+
+# 为了平滑迁移,必须保证要驱逐的Pod副本数大于1
+[root@node-1 ~]# kubectl drain node-4 --force --ignore-daemonsets --delete-emptydir-data
+node/node-4 cordoned
+Warning: ignoring DaemonSet-managed Pods: kube-system/calico-node-vrn9t, kube-system/kube-proxy-lmn5s
+node/node-4 drained
+
+[root@node-1 ~]# kubectl get node
+NAME     STATUS                     ROLES           AGE   VERSION
+node-1   Ready                      control-plane   46h   v1.25.4
+node-2   Ready                      control-plane   46h   v1.25.4
+node-3   Ready                      control-plane   46h   v1.25.4
+node-4   Ready,SchedulingDisabled   <none>          16h   v1.25.4
+
+# 恢复节点可调度
+[root@node-1 ~]# kubectl uncordon node-4
+node/node-4 uncordoned
 ```
 
 :::
+
+<br />
+
+### TLS证书管理
+
+
 
