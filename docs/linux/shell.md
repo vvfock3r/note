@@ -862,6 +862,119 @@ option is v ,the value is V
 
 ### sed
 
+`sed`是一个行编辑神器
+
+<br />
+
+**流程分析**
+
+sed 基本流程
+
+1. 首先读取一行到一个称为 **模式空间（PATTERN SPACE） **的对象中去，如果模式空间有内容会被覆盖
+
+2. 然后执行 **多个子命令** 进行处理，在处理的过程中会涉及到另外一个空间称为 **保持空间（HOLD SPACE）**，这样可以支持一些复杂的操作
+
+   子命令举例：
+
+   * `p` 输出模式空间的内容
+   * `d` 删除模式空间的内容
+   * `h` 将模式空间的内容以覆盖的方式写入保持空间
+   * `G` 将保持空间的内容追加到模式空间
+
+3. 子命令执行完以后 **输出模式空间的内容（要求没有添加sed -n选项）** 并 **清空模式空间**
+
+4. 本行处理结束，接着处理下一行，如此循环，直到尾行
+
+::: details 调试工具安装：sedsed
+
+```bash
+# 安装sedsed
+[root@ap-hongkang ~]# pip3 install sedsed
+
+# 查看版本
+[root@ap-hongkang ~]# sedsed --version
+sedsed v2.0.0
+```
+
+:::
+
+::: details sedsed调试示例1
+
+```bash
+# 下面的示例效果是：什么也不做，原样输出原始行
+[root@ap-hongkang ~]# seq 3 | sed -n 'p'
+1
+2
+3
+
+# 使用sedsed进行调试,使用方法: 将sed替换为sedsed -d
+[root@ap-hongkang ~]# seq 3 | sedsed -d -n 'p'
+# 第1行处理
+PATT:1$    # 读取第一行所有内容到模式空间中，PATT代表模式空间，1代表模式空间的内容为1，$代表行尾或者说代表一个换行符
+HOLD:$     # 保持空间内容为空
+COMM:p     # 执行p命令，将模式空间内容输出到终端
+1          # 此时屏幕显示1
+PATT:1$    # sed所有的子命令执行完毕,模式空间内容为1，因为sed加了-n选项，所以不输出模式空间内容
+HOLD:$     # sed所有的子命令执行完毕,保持空间内容为空
+
+# 第2行处理
+PATT:2$
+HOLD:$
+COMM:p
+2
+PATT:2$
+HOLD:$
+
+# 第3行处理
+PATT:3$
+HOLD:$
+COMM:p
+3
+PATT:3$
+HOLD:$
+```
+
+:::
+
+::: details sedsed调试示例2
+
+```bash
+[root@ap-hongkang ~]# seq 3 | sed 'G'
+1
+
+2
+
+3
+
+[root@ap-hongkang ~]# seq 3 | sedsed -d 'G'
+PATT:1$
+HOLD:$
+COMM:G      # 执行G命令，将保持空间的内容追加到模式空间，因为保持空间内容为空，实际上是一个空行，所以模式空间的内容会加一个换行符
+PATT:1\n$   # sed所有的子命令执行完毕,模式空间内容为1\n，因为sed没有-n选项，所以输出模式空间内容
+HOLD:$      # sed所有的子命令执行完毕,保持空间内容为空
+1
+
+PATT:2$
+HOLD:$
+COMM:G
+PATT:2\n$
+HOLD:$
+2
+
+PATT:3$
+HOLD:$
+COMM:G
+PATT:3\n$
+HOLD:$
+3
+```
+
+:::
+
+<br />
+
+
+
 <br />
 
 ### awk
