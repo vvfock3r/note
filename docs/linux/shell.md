@@ -1152,14 +1152,64 @@ ifcfg-eth0
 ::: details （4）修改文件及注意事项
 
 ```bash
+# 添加行
+[root@ap-hongkang ~]# seq 3 > 1.txt
+[root@ap-hongkang ~]# sed -ri '1i第一行之前' 1.txt
+[root@ap-hongkang ~]# sed -ri '$a最后一行后' 1.txt
+[root@ap-hongkang ~]# cat 1.txt 
+第一行之前
+1
+2
+3
+最后一行后
 
+# 在每一行后插入一个空行，但最后一行除外
+[root@ap-hongkang ~]# seq 3 > 1.txt
+[root@ap-hongkang ~]# sed -ri '$!G' 1.txt
+[root@ap-hongkang ~]# cat 1.txt 
+1
+
+2
+
+3
+# 修改文件内容
+[root@ap-hongkang ~]# sed -ri 's/^(SELINUX=)(.*)/\1disabled/' /etc/selinux/config
+[root@ap-hongkang ~]# grep ^SELINUX= /etc/selinux/config
+SELINUX=disabled
+
+# 空白问题现象, a包含3个空格
+[root@ap-hongkang ~]# a='   123' && seq -f "%05g" 3 >1.txt
+[root@ap-hongkang ~]# sed -i "2i $a" 1.txt
+[root@ap-hongkang ~]# cat 1.txt
+00001
+123    # 前面的空白没了?
+00002
+00003
+
+# 解决空白问题
+[root@ap-hongkang ~]# a='   123' && seq -f "%05g" 3 >1.txt && sed -i "2i \ $a" 1.txt
+[root@ap-hongkang ~]# cat 1.txt 
+00001
+    123  # 空白还在,但是多了一个空格
+00002
+00003
+[root@ap-hongkang ~]# a='   123' && seq -f "%05g" 3 >1.txt && sed -i "2i \\$a" 1.txt
+[root@ap-hongkang ~]# cat 1.txt 
+00001
+   123  # 这次可以了
+00002
+00003
 ```
 
 :::
 
 <br />
 
-**2、专家命令（由于比较复杂不推荐使用）**
+**2、专家命令**
+
+由于此命令太过于霸道（复杂），故不推荐使用。
+
+当然如果要读懂别人写的专家命令，还是可以学一下的，然后可以使用我们熟悉的任何语言来进行改写和优化
 
 ::: details （1）标签
 
