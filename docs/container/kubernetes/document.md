@@ -6142,6 +6142,104 @@ rules:
 
 <br />
 
+### 默认的serviceaccount权限
+
+::: details  （1）启动一个容器，找到token
+
+```bash
+# 创建一个容器(注意不要在default命名空间下,这是为了和default的serviceaccount区分开)
+[root@node-1 ~]# kubectl -n kube-system run busybox --image=busybox:latest --command -- sleep 3600
+pod/busybox created
+
+# 将token文件拷贝出来，方便后面利用宿主机的工具和时区来分析
+[root@node-1 ~]# kubectl -n kube-system exec -it busybox -- ls -lha /var/run/secrets/kubernetes.io/serviceaccount
+total 0      
+drwxrwxrwt    3 root     root         140 Jan 14 01:03 .
+drwxr-xr-x    3 root     root          28 Jan 14 01:03 ..
+drwxr-xr-x    2 root     root         100 Jan 14 01:03 ..2023_01_14_01_03_54.681982277
+lrwxrwxrwx    1 root     root          31 Jan 14 01:03 ..data -> ..2023_01_14_01_03_54.681982277
+lrwxrwxrwx    1 root     root          13 Jan 14 01:03 ca.crt -> ..data/ca.crt
+lrwxrwxrwx    1 root     root          16 Jan 14 01:03 namespace -> ..data/namespace
+lrwxrwxrwx    1 root     root          12 Jan 14 01:03 token -> ..data/token
+
+[root@node-1 ~]# kubectl -n kube-system cp \
+    busybox:/var/run/secrets/kubernetes.io/serviceaccount/..2023_01_14_01_03_54.681982277/token \
+    token
+
+# 查看token
+[root@node-1 ~]# cat token ; echo
+eyJhbGciOiJSUzI1NiIsImtpZCI6Ik40SHBLeTUxMUhheVJSM2lzWklkeXlDS1IxUklnSkVFUU9NLTVVYk1UcHcifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzA1MTk0MjM0LCJpYXQiOjE2NzM2NTgyMzQsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsInBvZCI6eyJuYW1lIjoiYnVzeWJveCIsInVpZCI6IjM1ODk0MjA0LWFkNzUtNGVmNC05YmE0LWFlZDI0NGU2NTMyNSJ9LCJzZXJ2aWNlYWNjb3VudCI6eyJuYW1lIjoiZGVmYXVsdCIsInVpZCI6ImIyZDQ0NzkxLTUzOWMtNGJkZS1hYTg3LTY2ODFjODllNmU4YSJ9LCJ3YXJuYWZ0ZXIiOjE2NzM2NjE4NDF9LCJuYmYiOjE2NzM2NTgyMzQsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTpkZWZhdWx0In0.lp9HaBtHINn2K4yWylzT59zGP7zcU2hUO1n2DsCCzHE22yvcck_KmM9YajTE_biYdWDfsc-QLgQcqqdCjEckz3PGI5GfM11HSGnWwPnB5v5RtJVBVJey-FrkeK5lozIiIRkzxgcbN7zZb1zu_4koCuNX8_9D8q23euchhRTz6hdSgLJDIOF-PS1IyZDSWGRcXl2Ka-IWOxNbaYrxuOV1ui-fEH5_jlk1fKU80NyxkYYbi2kTV-9lgZuToEGavWjQrUXydmAv4qxu9RUloYtITAKZlKzxQQb6-wuBJMgU9Oj_Ps4q3nj1S2qnk-RX5gTJFOGvj7o3TFp_Lg1BvAk-nQ
+```
+
+:::
+
+::: details  （2）解密token
+
+![image-20230114093058795](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230114093058795.png)
+
+分析结果：
+
+* `HEADER`部分主要声明了alg（加密方式），kid是什么没有见过，先不管它
+
+* `PAYLOAD`部分是我们最主要的数据，可以看到有很多的字段，其中大部分都是JWT预定义的字段，比如`exp`用于指定token过期时间，
+
+  关于这部分可以参考：[https://jinhui.dev/coding/backend/Modules-for-Go.html#payload](https://jinhui.dev/coding/backend/Modules-for-Go.html#payload)
+
+* `PAYLOAD`中有一个`"sub": "system:serviceaccount:kube-system:default"`，看起来像是和角色相关的
+
+解密数据：
+
+```bash
+# token签发时间 - iat
+[root@node-1 ~]# date -d @1673658234 +"%Y-%m-%d %H:%M:%S"
+2023-01-14 09:03:54
+
+# token生效时间 - nbf
+[root@node-1 ~]# date -d @1673658234 +"%Y-%m-%d %H:%M:%S"
+2023-01-14 09:03:54
+
+# token过期时间 - exp
+[root@node-1 ~]# date -d @1705194234 +"%Y-%m-%d %H:%M:%S"
+2024-01-14 09:03:54
+
+# 查看绑定的角色(输出结果已经省略无关的信息)
+[root@node-1 ~]# kubectl get clusterrolebinding -n kube-system -o wide | grep -E 'NAME|serviceaccount'
+NAME                                    ROLE                                                 GROUPS                
+system:service-account-issuer-discovery ClusterRole/system:service-account-issuer-discovery  system:serviceaccounts
+
+# 查看角色权限
+[root@node-1 ~]# kubectl get clusterrole system:service-account-issuer-discovery -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  creationTimestamp: "2023-01-12T06:42:47Z"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:service-account-issuer-discovery
+  resourceVersion: "102"
+  uid: 6a98f1fd-e8f0-4c77-a091-32f0e3f1d608
+rules:
+- nonResourceURLs:
+  - /.well-known/openid-configuration
+  - /openid/v1/jwks
+  verbs:
+  - get
+```
+
+:::
+
+::: details  （3）验证权限
+
+```go
+
+```
+
+:::
+
+<br />
+
 ## 节点下线与恢复
 
 ::: details  （1）直接删除节点：kubectl delete node NODE
