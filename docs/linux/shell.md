@@ -1058,11 +1058,10 @@ HOLD:$
 10
 
 # 每隔N行输出一行
-[root@ap-hongkang ~]# seq 10 | sed -n '1~3p'
-1
-4
-7
-10
+[root@ap-hongkang ~]# seq 10 | sed -n '0~3p'
+3
+6
+9
 
 # -------------------------------------------------------
 
@@ -1211,7 +1210,31 @@ SELINUX=disabled
 
 当然如果要读懂别人写的专家命令，还是可以学一下的，然后可以使用我们熟悉的任何语言来进行改写和优化
 
-::: details （1）标签
+::: details 开胃菜
+
+```bash
+# 输出奇数行
+[root@ap-hongkang ~]# seq 10 | sed -n 'p;n'
+1
+3
+5
+7
+9
+
+# 输出偶数行
+[root@ap-hongkang ~]# seq 10 | sed -n 'n;p'
+2
+4
+6
+8
+10
+```
+
+:::
+
+::: details 重磅炸弹
+
+**1、第一个示例**
 
 ```bash
 [root@ap-hongkang ~]# cat 1.txt 
@@ -1223,7 +1246,49 @@ dd
 aa bb cc
 dd
 
-# 分析
+# 单个命令分析
+# :1       定义了一个叫做 1 的标签
+# N        读取下一行追加在模式空间，并在当前命令中继续处理
+# s替换     将换行符替换为空格
+# 0~3      起始行为0，步长为3,这会匹配3、6、9、12...行
+# b和t     是流程控制命令，除了这两个，还有一个 T
+# b label  跳转到标签，如果标签省略，则跳转到脚本结尾
+# t label  如果s命令执行成功，则执行t命令，如果t后面没有标签，则跳转到脚本结尾
+# T label  如果s命令执行失败，则执行T命令，如果T后面没有标签，则跳转到脚本结尾.T命令只有GNU sed才有
+
+# 汇总起来分析
+# 这其实就像是一个简单的循环
+# 1.当读取的行是3的倍数时一次sed命令处理完成，输出模式空间的结果。核心是 0~3b, b来控制一次sed命令处理完成
+# 2.当读取的行不是3的倍数时,读取下一行到模式空间,此时模式空间有两行或多行,然后替换换行符，然后跳转标签继续从头开始处理(t1)
+
+# 使用sedsed debug
+[root@ap-hongkang ~]# sedsed -d ':1;N;s/\n/ /;0~3b;t1' 1.txt
+PATT:aa$
+HOLD:$
+COMM::1
+COMM:N
+PATT:aa\nbb$
+HOLD:$
+COMM:s/\n/ /
+PATT:aa bb$
+HOLD:$
+COMM:0~3 b
+PATT:aa bb$
+HOLD:$
+COMM:t 1
+COMM:N
+PATT:aa bb\ncc$
+HOLD:$
+COMM:s/\n/ /
+PATT:aa bb cc$
+HOLD:$
+COMM:0~3 b
+aa bb cc
+PATT:dd$
+HOLD:$
+COMM::1
+COMM:N
+dd
 ```
 
 :::
