@@ -885,7 +885,7 @@ sed 基本流程
 
 4. 本行处理结束，接着处理下一行，如此循环，直到尾行
 
-::: details 调试工具安装：sedsed
+::: details sedsed 调试工具安装
 
 ```bash
 # 安装sedsed
@@ -898,7 +898,7 @@ sedsed v2.0.0
 
 :::
 
-::: details sedsed调试示例1
+::: details sedsed 调试示例1
 
 ```bash
 # 下面的示例效果是：什么也不做，原样输出原始行
@@ -936,7 +936,7 @@ HOLD:$
 
 :::
 
-::: details sedsed调试示例2
+::: details sedsed 调试示例2
 
 ```bash
 # 下面的示例是在每行后追加一个换行符，然后输出
@@ -1049,8 +1049,23 @@ HOLD:$
 7
 9
 
+[root@ap-hongkang ~]# seq 10 | sed -n 'p;n'
+1
+3
+5
+7
+9
+
 # 输出偶数行
 [root@ap-hongkang ~]# seq 10 | sed -n '2~2p'
+2
+4
+6
+8
+10
+
+# 输出偶数行
+[root@ap-hongkang ~]# seq 10 | sed -n 'n;p'
 2
 4
 6
@@ -1210,41 +1225,13 @@ SELINUX=disabled
 
 当然如果要读懂别人写的专家命令，还是可以学一下的，然后可以使用我们熟悉的任何语言来进行改写和优化
 
-::: details 开胃菜
+::: details （1）第一个示例
 
 ```bash
-# 输出奇数行
-[root@ap-hongkang ~]# seq 10 | sed -n 'p;n'
-1
-3
-5
-7
-9
-
-# 输出偶数行
-[root@ap-hongkang ~]# seq 10 | sed -n 'n;p'
-2
-4
-6
-8
-10
-```
-
-:::
-
-::: details 重磅炸弹
-
-**1、第一个示例**
-
-```bash
-[root@ap-hongkang ~]# cat 1.txt 
-aa
-bb
-cc
-dd
-[root@ap-hongkang ~]# sed ':1;N;s/\n/ /;0~3b;t1' 1.txt
-aa bb cc
-dd
+[root@ap-hongkang ~]# seq 9 | sed ':1;N;s/\n/ /;0~3b;t1' 
+1 2 3
+4 5 6
+7 8 9
 
 # 单个命令分析
 # :1       定义了一个叫做 1 的标签
@@ -1262,34 +1249,75 @@ dd
 # 2.当读取的行不是3的倍数时,读取下一行到模式空间,此时模式空间有两行或多行,然后替换换行符，然后跳转标签继续从头开始处理(t1)
 
 # 使用sedsed debug
-[root@ap-hongkang ~]# sedsed -d ':1;N;s/\n/ /;0~3b;t1' 1.txt
-PATT:aa$
+[root@ap-hongkang ~]# seq 9 | sedsed -d ':1;N;s/\n/ /;0~3b;t1' 
+PATT:1$
 HOLD:$
 COMM::1
 COMM:N
-PATT:aa\nbb$
+PATT:1\n2$
 HOLD:$
 COMM:s/\n/ /
-PATT:aa bb$
+PATT:1 2$
 HOLD:$
 COMM:0~3 b
-PATT:aa bb$
+PATT:1 2$
 HOLD:$
 COMM:t 1
 COMM:N
-PATT:aa bb\ncc$
+PATT:1 2\n3$
 HOLD:$
 COMM:s/\n/ /
-PATT:aa bb cc$
+PATT:1 2 3$
 HOLD:$
 COMM:0~3 b
-aa bb cc
-PATT:dd$
+1 2 3
+PATT:4$
 HOLD:$
 COMM::1
 COMM:N
-dd
+PATT:4\n5$
+HOLD:$
+COMM:s/\n/ /
+PATT:4 5$
+HOLD:$
+COMM:0~3 b
+PATT:4 5$
+HOLD:$
+COMM:t 1
+COMM:N
+PATT:4 5\n6$
+HOLD:$
+COMM:s/\n/ /
+PATT:4 5 6$
+HOLD:$
+COMM:0~3 b
+4 5 6
+PATT:7$
+HOLD:$
+COMM::1
+COMM:N
+PATT:7\n8$
+HOLD:$
+COMM:s/\n/ /
+PATT:7 8$
+HOLD:$
+COMM:0~3 b
+PATT:7 8$
+HOLD:$
+COMM:t 1
+COMM:N
+PATT:7 8\n9$
+HOLD:$
+COMM:s/\n/ /
+PATT:7 8 9$
+HOLD:$
+COMM:0~3 b
+7 8 9
 ```
+
+:::
+
+::: details （2）
 
 :::
 
