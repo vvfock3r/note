@@ -1225,7 +1225,7 @@ SELINUX=disabled
 
 当然如果要读懂别人写的专家命令，还是可以学一下的，然后可以使用我们熟悉的任何语言来进行改写和优化
 
-::: details （1）第一个示例
+::: details （1）每N行合并为一行
 
 ```bash
 [root@ap-hongkang ~]# seq 9 | sed ':1;N;s/\n/ /;0~3b;t1' 
@@ -1317,7 +1317,90 @@ COMM:0~3 b
 
 :::
 
-::: details （2）
+::: details （2）奇偶行处理
+
+```bash
+# 使用b标签跳转
+[root@ap-hongkang ~]# seq 9 | sed -n '1~2b1;s/$/  这是偶数行/p;b;:1;s/$/  这是奇数行/p'
+1  这是奇数行
+2  这是偶数行
+3  这是奇数行
+4  这是偶数行
+5  这是奇数行
+6  这是偶数行
+7  这是奇数行
+8  这是偶数行
+9  这是奇数行
+
+# 不使用标签
+[root@ap-hongkang ~]# seq 9 | sed -n 's/$/ 这是奇数行/p;n;s/$/ 这是偶数行/p'
+1 这是奇数行
+2 这是偶数行
+3 这是奇数行
+4 这是偶数行
+5 这是奇数行
+6 这是偶数行
+7 这是奇数行
+8 这是偶数行
+9 这是奇数行
+```
+
+:::
+
+::: details （3）指定起始行合并
+
+```bash
+# 所有行合并成一行
+[root@ap-hongkang ~]# seq 9 | sed ':a;N;s/\n//;ta'
+123456789
+
+# 指定起始行合并
+[root@ap-hongkang ~]# seq 9 | sed '2{:a;N;s/\n/ /;8!ba}'
+1
+2 3 4 5 6 7 8
+9
+```
+
+:::
+
+::: details （4）王炸：跨多行处理
+
+```bash
+# 题目描述: 搜索含有cat and dog的行
+[root@ap-hongkang ~]# cat > 1.txt <<EOF
+cat
+and
+dog
+n2thing cat and dog
+n4thing cat and
+dog n5thing
+cat
+cat
+and
+and
+dog
+dog
+EOF
+
+# 题解
+[root@ap-hongkang ~]# sed -n '/cat and dog/p' 1.txt 
+n2thing cat and dog
+
+# 增加要求: 跨两行情况下: 第五行的最后两个单词与第六行的第一个单词也符合，那么该如何搜索出来呢？
+[root@ap-hongkang ~]# sed '/cat and dog/b;$!N;h;s/.*\n//;/cat and dog/b;g;s/ *\n/ /;/cat and dog/{g;b};g;D' 1.txt
+n2thing cat and dog
+n4thing cat and
+dog n5thing
+
+# 增加要求: 跨三行情况下：第一二三行也是满足的，那么该如何搜索出来呢？
+[root@ap-hongkang ~]# sed -n '/cat/{/cat and/{/cat and dog/{p;b};:a;$!N;/\ndog/{p;b};D};$!{N;/\nand/ba;D}}' 1.txt
+cat
+and
+dog
+n2thing cat and dog
+n4thing cat and
+dog n5thing
+```
 
 :::
 
