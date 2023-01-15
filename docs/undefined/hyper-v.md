@@ -225,12 +225,14 @@ PS C:\Users\Administrator> Set-ExecutionPolicy -ExecutionPolicy Bypass
 
 ```powershell
 Get-VM | where {$_.State -eq 'Off'} | where {$_.Name -Like 'kubeadm-node-*'} | Start-VM
+Get-VM | where {$_.Name -Like 'kubeadm-node-*'}
 ```
 
 `k8s-stop.ps1`
 
 ```powershell
 Get-VM | where {$_.State -eq 'Running'} | where {$_.Name -Like 'kubeadm-node-*'} | Stop-VM
+Get-VM | where {$_.Name -Like 'kubeadm-node-*'}
 ```
 
 :::
@@ -239,7 +241,20 @@ Get-VM | where {$_.State -eq 'Running'} | where {$_.Name -Like 'kubeadm-node-*'}
 
 ```powershell
 PS C:\Users\Administrator> k8s-start
+Name           State   CPUUsage(%) MemoryAssigned(M) Uptime           Status   Version
+----           -----   ----------- ----------------- ------           ------   -------
+kubeadm-node-1 Running 2           4096              00:00:02.0810000 正常运行 9.0
+kubeadm-node-2 Running 2           4096              00:00:01.9350000 正常运行 9.0
+kubeadm-node-3 Running 0           4096              00:00:01.7860000 正常运行 9.0
+kubeadm-node-4 Running 0           4096              00:00:01.1080000 正常运行 9.0
+
 PS C:\Users\Administrator> k8s-stop
+Name           State CPUUsage(%) MemoryAssigned(M) Uptime   Status   Version
+----           ----- ----------- ----------------- ------   ------   -------
+kubeadm-node-1 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-2 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-3 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-4 Off   0           0                 00:00:00 正常运行 9.0
 ```
 
 :::
@@ -255,6 +270,7 @@ PS C:\Users\Administrator> k8s-stop
 ```bash
 @echo off
 PowerShell -Command "& { Get-VM | where {$_.State -eq 'Off'} | where {$_.Name -Like 'kubeadm-node-*'} | Start-VM }"
+PowerShell -Command "& { Get-VM | where {$_.Name -Like 'kubeadm-node-*'} }"
 ```
 
 `k8s-stop.bat`
@@ -262,6 +278,7 @@ PowerShell -Command "& { Get-VM | where {$_.State -eq 'Off'} | where {$_.Name -L
 ```bash
 @echo off
 PowerShell -Command "& { Get-VM | where {$_.State -eq 'Running'} | where {$_.Name -Like 'kubeadm-node-*'} | Stop-VM }"
+PowerShell -Command "& { Get-VM | where {$_.Name -Like 'kubeadm-node-*'} }"
 ```
 
 :::
@@ -270,7 +287,21 @@ PowerShell -Command "& { Get-VM | where {$_.State -eq 'Running'} | where {$_.Nam
 
 ```bash
 C:\Users\Administrator>k8s-start
+Name           State   CPUUsage(%) MemoryAssigned(M) Uptime           Status   Version
+----           -----   ----------- ----------------- ------           ------   -------
+kubeadm-node-1 Running 2           4096              00:00:02.0810000 正常运行 9.0
+kubeadm-node-2 Running 2           4096              00:00:01.9350000 正常运行 9.0
+kubeadm-node-3 Running 0           4096              00:00:01.7860000 正常运行 9.0
+kubeadm-node-4 Running 0           4096              00:00:01.1080000 正常运行 9.0
+
+
 C:\Users\Administrator>k8s-stop
+Name           State CPUUsage(%) MemoryAssigned(M) Uptime   Status   Version
+----           ----- ----------- ----------------- ------   ------   -------
+kubeadm-node-1 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-2 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-3 Off   0           0                 00:00:00 正常运行 9.0
+kubeadm-node-4 Off   0           0                 00:00:00 正常运行 9.0
 ```
 
 :::
