@@ -6707,6 +6707,8 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 ## Helm
 
+文档：[https://helm.sh/zh/docs/](https://helm.sh/zh/docs/)
+
 Artifact Hub：[https://artifacthub.io](https://artifacthub.io)
 
 <br />
@@ -6743,6 +6745,16 @@ gitlab  http://charts.gitlab.io/
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "gitlab" chart repository
 Update Complete. ⎈Happy Helming!⎈
+```
+
+:::
+
+::: details （3）数据存储位置
+
+文档：[https://helm.sh/zh/docs/helm/helm/](https://helm.sh/zh/docs/helm/helm/)
+
+```bash
+
 ```
 
 :::
