@@ -6703,3 +6703,46 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 :::
 
+<br />
+
+## Helm
+
+Artifact Hub：[https://artifacthub.io](https://artifacthub.io)
+
+<br />
+
+### 基础
+
+::: details （1）演示使用版本
+
+```bash
+[root@node-1 ~]# helm version --short
+v3.10.3+g835b733
+```
+
+:::
+
+::: details （2）仓库设置
+
+```bash
+# 添加仓库
+[root@node-1 ~]# helm repo add gitlab http://charts.gitlab.io/
+"gitlab" has been added to your repositories
+
+# 查看仓库列表
+[root@node-1 ~]# helm repo list
+NAME    URL                     
+gitlab  http://charts.gitlab.io/
+
+# 删除仓库
+[root@node-1 ~]# helm repo remove gitlab
+"gitlab" has been removed from your repositories
+
+# 更新仓库
+[root@node-1 ~]# helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "gitlab" chart repository
+Update Complete. ⎈Happy Helming!⎈
+```
+
+:::
