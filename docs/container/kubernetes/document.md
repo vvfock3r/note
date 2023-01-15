@@ -6713,7 +6713,7 @@ Artifact Hub：[https://artifacthub.io](https://artifacthub.io)
 
 <br />
 
-### 基础
+### 基础知识
 
 ::: details （1）演示使用版本
 
@@ -6724,7 +6724,19 @@ v3.10.3+g835b733
 
 :::
 
-::: details （2）仓库设置
+::: details （2）三大概念
+
+文档：[https://helm.sh/zh/docs/intro/using_helm/#%E4%B8%89%E5%A4%A7%E6%A6%82%E5%BF%B5](https://helm.sh/zh/docs/intro/using_helm/#%E4%B8%89%E5%A4%A7%E6%A6%82%E5%BF%B5)
+
+* *Chart* 代表着 Helm 包
+* *Repository（仓库）* 是用来存放和共享 charts 的地方
+* *Release* 是运行在 Kubernetes 集群中的 chart 的实例
+
+Helm 安装 *charts* 到 Kubernetes 集群中，每次安装都会创建一个新的 *release*
+
+:::
+
+::: details （3）仓库设置
 
 ```bash
 # 添加仓库
@@ -6749,9 +6761,150 @@ Update Complete. ⎈Happy Helming!⎈
 
 :::
 
-::: details （3）数据存储位置
+::: details （4）数据存储位置
 
 文档：[https://helm.sh/zh/docs/helm/helm/](https://helm.sh/zh/docs/helm/helm/)
+
+```bash
+# 默认的缓存路径
+[root@node-1 ~]# ls -lh $HOME/.cache/helm
+total 0
+drwxr-xr-x 2 root root 56 Jan 15 13:03 repository
+
+# 默认的配置路径
+[root@node-1 ~]# ls -lh $HOME/.config/helm
+total 4.0K
+-rw------- 1 root root   0 Jan 15 13:01 repositories.lock
+-rw-r--r-- 1 root root 246 Jan 15 13:03 repositories.yaml
+
+# 默认的数据路径,这里还没有任何数据
+[root@node-1 ~]# ls -lh $HOME/.local/share/helm
+ls: cannot access /root/.local/share/helm: No such file or directory
+```
+
+:::
+
+<br />
+
+### 创建一个Chart
+
+::: details （1）创建Chart
+
+文档：[https://helm.sh/zh/docs/chart_template_guide/getting_started/](https://helm.sh/zh/docs/chart_template_guide/getting_started/)
+
+```bash
+# 创建Chart
+[root@node-1 ~]# helm create mychart
+Creating mychart
+
+# 查看目录结构
+[root@node-1 ~]# cd mychart/
+[root@node-1 nginx]# tree
+.
+├── charts                       # 空目录
+├── Chart.yaml                   # Chart的描述信息
+├── templates                    # 模板目录
+│   ├── deployment.yaml          #      Deployment对象
+│   ├── _helpers.tpl             # 放置可以通过chart复用的模板辅助对象
+│   ├── hpa.yaml                 #      HPA对象
+│   ├── ingress.yaml             #      Ingress对象
+│   ├── NOTES.txt                # helm install后展示给用户的信息
+│   ├── serviceaccount.yaml      #      ServiceAccount对象
+│   ├── service.yaml             #      Service对象
+│   └── tests                    # 测试目录
+│       └── test-connection.yaml # 
+└── values.yaml                  # 用于渲染模板中引用的变量
+
+3 directories, 10 files
+```
+
+:::
+
+::: details （2）部署Chart和卸载
+
+```bash
+# 第一个参数是Name, 第二个参数是Chart目录
+[root@node-1 mychart]# helm install demo .
+NAME: demo
+LAST DEPLOYED: Sun Jan 15 20:08:39 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=mychart,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace default $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace default port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+# 查看已经部署Chart列表
+[root@node-1 mychart]# helm ls
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+demo    default         1               2023-01-15 20:08:39.026732741 +0800 CST deployed        mychart-0.1.0   1.16.0
+
+# 卸载Chart
+[root@node-1 mychart]# helm uninstall demo
+release "demo" uninstalled
+```
+
+:::
+
+::: details （3）检查部署了哪些对象
+
+```bash
+# 检查templates目录中的kubernetes对象是否已经部署
+
+# 自动部署了一个Deployment
+[root@node-1 mychart]# kubectl get deploy
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+demo-mychart   1/1     1            1           55s
+
+# Pod中跑的镜像是nginx:1.16.0
+[root@node-1 mychart]# kubectl get pods
+NAME                          READY   STATUS    RESTARTS   AGE
+demo-mychart-8fccf9c8-72z5x   1/1     Running   0          2m54s
+
+[root@node-1 mychart]# kubectl get pod -o yaml | yq '.items[] | .spec.containers[] | .image'
+nginx:1.16.0
+
+# 自动部署了一个Service
+[root@node-1 mychart]# kubectl get service
+NAME           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+demo-mychart   ClusterIP   10.200.46.91   <none>        80/TCP    66s
+kubernetes     ClusterIP   10.200.0.1     <none>        443/TCP   3d5h
+
+# 自动部署了一个ServiceAccount
+[root@node-1 mychart]# kubectl get serviceaccount
+NAME           SECRETS   AGE
+default        0         3d5h
+demo-mychart   0         76s
+
+# HPA没有自动部署
+[root@node-1 mychart]# kubectl get hpa
+No resources found in default namespace.
+
+# Ingress没有自动部署
+[root@node-1 mychart]# kubectl get ingress
+No resources found in default namespace.
+
+# 看看能不能访问
+[root@node-1 mychart]# curl 10.200.46.91 -I
+HTTP/1.1 200 OK
+Server: nginx/1.16.0
+Date: Sun, 15 Jan 2023 12:10:14 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Tue, 23 Apr 2019 10:18:21 GMT
+Connection: keep-alive
+ETag: "5cbee66d-264"
+Accept-Ranges: bytes
+
+# 默认情况下他会给我创建一个Nginx镜像的Deployment
+```
+
+:::
+
+::: details （4）Chart.yaml 和 values.yaml 说明
 
 ```bash
 
