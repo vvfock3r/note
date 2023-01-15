@@ -200,6 +200,8 @@ kubeadm-node-4 Off   0           0                 00:00:00 正常运行 9.0
 
 PowerShell脚本执行策略：[https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)
 
+PowerShell通配符说明：[https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_wildcards](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_wildcards)
+
 <br />
 
 **1、在PowerShell中执行PowerShell脚本**
