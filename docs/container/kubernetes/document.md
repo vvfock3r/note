@@ -6788,9 +6788,9 @@ ls: cannot access /root/.local/share/helm: No such file or directory
 
 ### Chart创建
 
-::: details （1）创建Chart
-
 文档：[https://helm.sh/zh/docs/chart_template_guide/getting_started/](https://helm.sh/zh/docs/chart_template_guide/getting_started/)
+
+::: details （1）创建Chart
 
 ```bash
 # 创建Chart
@@ -6820,10 +6820,10 @@ Creating mychart
 
 :::
 
-::: details （2）部署Chart和卸载
+::: details （2）部署和卸载Chart
 
 ```bash
-# 第一个参数是Name, 第二个参数是Chart目录
+# 第一个参数是Release Name, 第二个参数是Chart目录
 [root@node-1 mychart]# helm install demo .
 NAME: demo
 LAST DEPLOYED: Sun Jan 15 20:08:39 2023
@@ -7207,3 +7207,5 @@ busybox-mychart-54df4476bf-x9dpq   1/1     Running   0          47s
 <br />
 
 ### Chart模板
+
+文档：[https://helm.sh/zh/docs/chart_template_guide/getting_started/](https://helm.sh/zh/docs/chart_template_guide/getting_started/)
