@@ -6904,10 +6904,220 @@ Accept-Ranges: bytes
 
 :::
 
-::: details （4）Chart.yaml 和 values.yaml 说明
+::: details （4）查看最终渲染的YAML文件
 
 ```bash
+[root@node-1 mychart]# helm install demo . --dry-run 
+NAME: demo
+LAST DEPLOYED: Mon Jan 16 12:38:42 2023
+NAMESPACE: default
+STATUS: pending-install
+REVISION: 1
+HOOKS:
+---
+# Source: mychart/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "demo-mychart-test-connection"
+  labels:
+    helm.sh/chart: mychart-0.1.0
+    app.kubernetes.io/name: mychart
+    app.kubernetes.io/instance: demo
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['demo-mychart:80']
+  restartPolicy: Never
+MANIFEST:
+---
+# Source: mychart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-mychart
+  labels:
+    helm.sh/chart: mychart-0.1.0
+    app.kubernetes.io/name: mychart
+    app.kubernetes.io/instance: demo
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: mychart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-mychart
+  labels:
+    helm.sh/chart: mychart-0.1.0
+    app.kubernetes.io/name: mychart
+    app.kubernetes.io/instance: demo
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: mychart
+    app.kubernetes.io/instance: demo
+---
+# Source: mychart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mychart
+  labels:
+    helm.sh/chart: mychart-0.1.0
+    app.kubernetes.io/name: mychart
+    app.kubernetes.io/instance: demo
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mychart
+      app.kubernetes.io/instance: demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mychart
+        app.kubernetes.io/instance: demo
+    spec:
+      serviceAccountName: demo-mychart
+      securityContext:
+        {}
+      containers:
+        - name: mychart
+          securityContext:
+            {}
+          image: "nginx:1.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
 
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=mychart,app.kubernetes.io/instance=demo" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace default $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace default port-forward $POD_NAME 8080:$CONTAINER_PORT
+```
+
+:::
+
+::: details （5）Chart.yaml 和 values.yaml 简单说明
+
+```bash
+# Deployment配置
+[root@node-1 mychart]# vim values.yaml
+replicaCount: 1              # Pod副本数
+image:
+  repository: nginx          # 镜像名称，可以看到默认是nginx
+  pullPolicy: IfNotPresent   # 镜像拉取策略
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""                    # 镜像tag,若未设置则使用 Chart.yaml文件中的appVersion值
+imagePullSecrets: []
+nameOverride: ""             # 默认的name是  Chart.yaml文件中的name值，此值可以覆盖它
+fullnameOverride: ""         # 默认的fullname是: <helm install时的name>-<Chart.yaml.name>，此值可以覆盖它
+
+# Service配置
+service:
+  type: ClusterIP
+  port: 80
+
+# ServiceAccount配置
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true       # 默认开启
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""           # 默认使用fullname
+
+# Ingress配置
+ingress:
+  enabled: false      # 默认关闭
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+  
+# HPA配置
+autoscaling:
+  enabled: false   # 默认关闭
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+  
+# 资源限制设置
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  
+# 容器探针等其他设置，没有在values.yaml文件中，而在具体的资源模板中
+[root@node-1 mychart]# vim templates/deployment.yaml
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
 ```
 
 :::
