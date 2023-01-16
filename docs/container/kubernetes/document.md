@@ -6786,7 +6786,7 @@ ls: cannot access /root/.local/share/helm: No such file or directory
 
 <br />
 
-### 创建一个Chart
+### Chart创建
 
 ::: details （1）创建Chart
 
@@ -7121,3 +7121,89 @@ resources: {}
 ```
 
 :::
+
+::: details （6）定制：运行一个最简单的busybox:latest Pod
+
+```bash
+# 将不需要的模板文件全部删除
+[root@node-1 mychart]# [root@node-1 mychart]# rm -rf templates/hpa.yaml \
+    templates/ingress.yaml \
+    templates/serviceaccount.yaml \
+    templates/NOTES.txt \
+    templates/tests
+
+[root@node-1 mychart]# ls -lh templates/
+total 8.0K
+-rw-r--r-- 1 root root  594 Jan 16 17:27 deployment.yaml
+-rw-r--r-- 1 root root 1.8K Jan 15 20:07 _helpers.tpl
+
+# 修改deployment模板，只保留必要的配置
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mychart.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mychart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mychart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ['sh', '-c', 'sleep 3600']
+
+# 修改 values.yaml
+[root@node-1 mychart]# vim values.yaml
+# Default values for mychart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: busybox
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: latest
+
+nameOverride: ""
+fullnameOverride: ""
+
+# 部署
+[root@node-1 mychart]# helm install busybox . 
+NAME: busybox
+LAST DEPLOYED: Mon Jan 16 17:35:12 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+
+# 查看
+[root@node-1 mychart]# helm ls
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+busybox default         1               2023-01-16 17:35:12.340235152 +0800 CST deployed        mychart-0.1.0   1.16.0
+
+# 查看Deployment
+[root@node-1 mychart]# kubectl get deploy
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+busybox-mychart   3/3     3            3           45s
+
+# 查看Pod
+[root@node-1 mychart]# kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+busybox-mychart-54df4476bf-h7rx5   1/1     Running   0          47s
+busybox-mychart-54df4476bf-qc2ww   1/1     Running   0          47s
+busybox-mychart-54df4476bf-x9dpq   1/1     Running   0          47s
+```
+
+:::
+
+<br />
+
+### Chart模板
