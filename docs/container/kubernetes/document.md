@@ -7206,6 +7206,127 @@ busybox-mychart-54df4476bf-x9dpq   1/1     Running   0          47s
 
 <br />
 
-### Chart模板
+### Chart内置对象
 
 文档：[https://helm.sh/zh/docs/chart_template_guide/getting_started/](https://helm.sh/zh/docs/chart_template_guide/getting_started/)
+
+::: details （1）Release 对象描述了版本发布本身
+
+```bash
+# 编辑NOTES.txt
+[root@node-1 mychart]# vim templates/NOTES.txt
+Release对象描述了版本发布本身
+对象                        说明                                                                       渲染的值
+.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                     {{ .Release.Name }}
+.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）     {{ .Release.Namespace }}
+.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                 {{ .Release.IsInstall }}
+.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                           {{ .Release.IsUpgrade }}
+.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                        {{ .Release.Revision }}
+.Release.Service            该service用来渲染当前模板。Helm里始终Helm                                  {{ .Release.Service }}
+
+# 查看渲染的值
+[root@node-1 mychart]# helm install demo . --dry-run --namespace kube-system 
+NAME: demo
+LAST DEPLOYED: Tue Jan 17 12:34:20 2023
+NAMESPACE: kube-system
+STATUS: pending-install
+REVISION: 1
+TEST SUITE: None
+HOOKS:
+MANIFEST:
+---
+# Source: mychart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mychart
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mychart
+      app.kubernetes.io/instance: demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mychart
+        app.kubernetes.io/instance: demo
+    spec:
+      containers:
+        - name: mychart
+          image: "busybox:latest"
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c', 'sleep 3600']
+
+NOTES:
+Release对象描述了版本发布本身  
+对象                        说明                                                                       渲染的值
+.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                     demo
+.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）     kube-system
+.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                 true
+.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                           false
+.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                        1
+.Release.Service            该service用来渲染当前模板。Helm里始终Helm                                  Helm
+
+# 需要注意的是：
+# helm install 时可以传入 --namespace 参数，对应模板的 {{ .Release.Namespace }}，
+# 如果我们并没有在模板中并没有使用该变量，那么会给你造成一种错觉：
+# 我明明指定了命名空间为kube-system，为什么还是将Deployment部署在default命名空间中?
+
+# 此时可以修改 deployment.yaml
+[root@node-1 mychart]# vim templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mychart.fullname" . }}
+  namespace: {{ .Release.Namespace | default "default" }}  # 新增这一行
+...
+
+# 未传入命名空间时是default
+[root@node-1 mychart]# helm install demo . --dry-run | head -20
+NAME: demo
+LAST DEPLOYED: Tue Jan 17 12:40:13 2023
+NAMESPACE: default
+STATUS: pending-install
+REVISION: 1
+TEST SUITE: None
+HOOKS:
+MANIFEST:
+---
+# Source: mychart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mychart
+  namespace: default    # 默认命名空间
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mychart
+      
+# 传入命名空间后使用指定的值
+[root@node-1 mychart]# helm install demo . --dry-run --namespace kube-system | head -20
+NAME: demo
+LAST DEPLOYED: Tue Jan 17 12:41:11 2023
+NAMESPACE: kube-system
+STATUS: pending-install
+REVISION: 1
+TEST SUITE: None
+HOOKS:
+MANIFEST:
+---
+# Source: mychart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mychart
+  namespace: kube-system  # --namespace所传递的值
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mychart
+```
+
+:::
