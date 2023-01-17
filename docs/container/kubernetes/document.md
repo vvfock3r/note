@@ -7333,9 +7333,7 @@ spec:
 
 ::: details （2）Values对象是使用values.yaml文件提供的数据（主要控制变量的地方），Chart对象是使用Chart.yaml文件提供的数据
 
-```bash
-
-```
+举例忽略，没有特别好讲的
 
 :::
 
@@ -7366,6 +7364,31 @@ db01.intranet.mydomain.net
 db02.intranet.mydomain.net
 10.25.1.56
 10.25.1.57
+```
+
+:::
+
+::: details （4）Capabilities提供关于Kubernetes集群支持功能的信息
+
+```bash
+# 修改NOTES.txt
+[root@node-1 mychart]# vim templates/NOTES.txt
+Kubernetes版本:         {{ .Capabilities.KubeVersion.Version }}
+Helm版本:               {{ .Capabilities.HelmVersion.Version }}
+HPA v2版本是否安装:      {{ .Capabilities.APIVersions.Has "autoscaling/v2" }}
+
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run  | sed -rn '/NOTES:/,$'p
+NOTES:
+Kubernetes版本:         v1.25.4
+Helm版本:               v3.10.3
+是否安装HPA v2版本:       true
+
+# 使用kubectl检查HPA版本
+[root@node-1 mychart]# kubectl api-versions | grep autoscaling
+autoscaling/v1
+autoscaling/v2
+autoscaling/v2beta2
 ```
 
 :::
