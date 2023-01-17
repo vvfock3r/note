@@ -7216,13 +7216,13 @@ busybox-mychart-54df4476bf-x9dpq   1/1     Running   0          47s
 # 编辑NOTES.txt
 [root@node-1 mychart]# vim templates/NOTES.txt
 Release对象描述了版本发布本身
-对象                        说明                                                                       渲染的值
-.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                     {{ .Release.Name }}
-.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）     {{ .Release.Namespace }}
-.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                 {{ .Release.IsInstall }}
-.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                           {{ .Release.IsUpgrade }}
-.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                        {{ .Release.Revision }}
-.Release.Service            该service用来渲染当前模板。Helm里始终Helm                                  {{ .Release.Service }}
+对象                        说明                                                                渲染的值
+.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                 {{ .Release.Name }}
+.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）   {{ .Release.Namespace }}
+.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                {{ .Release.IsInstall }}
+.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                            {{ .Release.IsUpgrade }}
+.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                          {{ .Release.Revision }}
+.Release.Service            该service用来渲染当前模板。Helm里始终Helm                               {{ .Release.Service }}
 
 # 查看渲染的值
 [root@node-1 mychart]# helm install demo . --dry-run --namespace kube-system 
@@ -7260,13 +7260,13 @@ spec:
 
 NOTES:
 Release对象描述了版本发布本身  
-对象                        说明                                                                       渲染的值
-.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                     demo
-.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）     kube-system
-.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                 true
-.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                           false
-.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                        1
-.Release.Service            该service用来渲染当前模板。Helm里始终Helm                                  Helm
+对象                        说明                                                                   渲染的值
+.Release.Name               Release名称（helm install时指定的Name就是ReleaseName）                    demo
+.Release.Namespace          Release命名空间，默认是default（helm install --namespace可以指定该值）      kube-system
+.Release.IsInstall          如果当前操作是安装的话，该值将被设置为true                                   true
+.Release.IsUpgrade          如果当前操作是升级或回滚的话，该值将被设置为true                              false
+.Release.Revision           此次修订的版本号。安装时是1，每次升级或回滚都会自增                            1
+.Release.Service            该service用来渲染当前模板。Helm里始终Helm                                 Helm
 
 # 需要注意的是：
 # helm install 时可以传入 --namespace 参数，对应模板的 {{ .Release.Namespace }}，
@@ -7327,6 +7327,45 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: mychart
+```
+
+:::
+
+::: details （2）Values对象是使用values.yaml文件提供的数据（主要控制变量的地方），Chart对象是使用Chart.yaml文件提供的数据
+
+```bash
+
+```
+
+:::
+
+::: details （3）Files对象在chart中提供访问所有的非特殊文件的对象
+
+注意事项：[https://helm.sh/zh/docs/chart_template_guide/accessing_files/](https://helm.sh/zh/docs/chart_template_guide/accessing_files/)
+
+```bash
+# 这里只举一个最简单的例子
+
+# 修改NOTES.txt
+[root@node-1 mychart]# vim templates/NOTES.txt
+{{ .Files.Get "config.ini" }}
+
+# 在Chart根目录下创建文件
+[root@node-1 mychart]# vim config.ini
+[dbservers]
+db01.intranet.mydomain.net
+db02.intranet.mydomain.net
+10.25.1.56
+10.25.1.57
+
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run  | sed -rn '/NOTES:/,$'p
+NOTES:
+[dbservers]
+db01.intranet.mydomain.net
+db02.intranet.mydomain.net
+10.25.1.56
+10.25.1.57
 ```
 
 :::
