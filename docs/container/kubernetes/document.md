@@ -7392,3 +7392,128 @@ autoscaling/v2beta2
 ```
 
 :::
+
+::: details （5）Template对象 包含当前被执行的当前模板信息
+
+```bash
+# 修改NOTES.txt
+[root@node-1 mychart]# vim templates/NOTES.txt
+Template.Name        {{ .Template.Name }}
+Template.BasePath    {{ .Template.BasePath }}
+
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run  | sed -rn '/NOTES:/,$'p
+NOTES:
+Template.Name        mychart/templates/NOTES.txt
+Template.BasePath    mychart/templates
+```
+
+:::
+
+<br />
+
+### Chart模板函数
+
+说明：介绍一下如何避坑
+
+文档：
+
+* [https://helm.sh/zh/docs/chart_template_guide/functions_and_pipelines/](https://helm.sh/zh/docs/chart_template_guide/functions_and_pipelines/)
+* [https://helm.sh/zh/docs/chart_template_guide/function_list/](https://helm.sh/zh/docs/chart_template_guide/function_list/)
+
+::: details （1）查看对象类型，若类型不匹配在使用操作符（lt、gt）等可能会报错
+
+```bash
+[root@node-1 mychart]# vim templates/NOTES.txt
+{{ .Values.number            | printf "%T" }}
+{{ .Values.number | int      | printf "%T" }}
+{{ .Values.number | int64    | printf "%T" }}
+{{ .Values.number | toString | printf "%T" }}
+
+[root@node-1 mychart]# vim values.yaml
+number: 100
+
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
+NOTES:
+float64
+int
+int64
+string
+
+# 分析：
+# 1.values.yaml中的数字默认是float64类型的
+# 2.通过int、int64等可以转换为int类型
+# 3.通过toString可以转为字符串
+
+# 在官方文档printf函数中并没有提到 %T,不过没关系，Helm是用Go写的，有一些地方是相通的，测试一下便知道了
+```
+
+:::
+
+::: details （2）操作符是个函数，两种用法举例
+
+```bash
+# 用法1
+# gt 2 1 的意思是判断 2 > 1
+[root@node-1 mychart]# vim templates/NOTES.txt
+{{ if gt 2 1 }}
+2 > 1
+{{ else }}
+2 < 1
+{{ end }}
+
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
+NOTES:
+2 > 1
+
+# 用法2
+# 2 | gt 1 等同于 gt 1 2
+[root@node-1 mychart]# vim templates/NOTES.txt
+{{ if 2 | gt 1 }}
+1 > 2
+{{ else }}
+1 < 2
+{{ end }}
+
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
+NOTES:
+1 < 2
+
+# 如果两个数字类型不一致，在比较前要转换一下类型，否则会报错
+[root@node-1 mychart]# vim templates/NOTES.txt
+{{ if 2.0 | gt 1 }}
+1 > 2
+{{ else }}
+1 < 2
+{{ end }}
+
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
+Error: INSTALLATION FAILED: template: mychart/templates/NOTES.txt:1:12: executing "mychart/templates/NOTES.txt" at <gt 1>: error calling gt: incompatible types for comparison
+
+# 此时方法2就很好用，方法1我不知道如何转换类型
+{{ if 2.0 | int | gt 1 }}
+1 > 2
+{{ else }}
+1 < 2
+{{ end }}
+
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
+NOTES:
+1 < 2
+```
+
+:::
+
+<br />
+
+### Chart流程控制
+
+::: details （1）if 语句
+
+```bash
+[root@node-1 mychart]# ls -lh templates/
+total 4.0K
+-rw-r--r-- 1 root root 226 Jan 17 19:28 configmap.yaml
+```
+
+:::
