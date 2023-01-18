@@ -7500,6 +7500,8 @@ Error: INSTALLATION FAILED: template: mychart/templates/NOTES.txt:1:12: executin
 [root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/NOTES:/,$'p
 NOTES:
 1 < 2
+
+# 但在某些情况下方法1会更好用
 ```
 
 :::
@@ -7511,9 +7513,56 @@ NOTES:
 ::: details （1）if 语句
 
 ```bash
+# 编写values
+[root@node-1 mychart]# vim values.yaml
+score: 90
+
+# 编写template
 [root@node-1 mychart]# ls -lh templates/
 total 4.0K
 -rw-r--r-- 1 root root 226 Jan 17 19:28 configmap.yaml
+
+[root@node-1 mychart]# vim templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  key1: value1
+  {{ if ge .Values.score 90.0 }}
+  grade: "A"
+  {{ else if ge .Values.score 70.0 }}
+  grade: "B"
+  {{ else if ge .Values.score 60.0 }}
+  grade: "C"
+  {{ else }}
+  grade: "D"
+  {{ end }}
+  key3: value3
+
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run | sed -r '/^apiVersion/, $'p
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/^apiVersion/, $'p
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+data:
+  key1: value1
+  
+  grade: "A"
+  
+  key3: value3
+  
+# 看一下存在的问题
+# 1.渲染出来多了两行空白,需要删除掉
+# 2..Values.score我们并没有判断它的上限和下限，比如最高不能大于100，最低不能小于0
+# 3.if语句和固定值的k-v混合起来比较乱
+
+# 解决问题1: 渲染出来多了两行空白,需要删除掉
+
 ```
 
 :::
