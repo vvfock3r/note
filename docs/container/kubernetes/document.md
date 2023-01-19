@@ -7558,11 +7558,109 @@ data:
   
 # 看一下存在的问题
 # 1.渲染出来多了两行空白,需要删除掉
-# 2..Values.score我们并没有判断它的上限和下限，比如最高不能大于100，最低不能小于0
+# 2.Values.score我们并没有判断它的上限和下限，比如最高不能大于100，最低不能小于0
 # 3.if语句和固定值的k-v混合起来比较乱
 
 # 解决问题1: 渲染出来多了两行空白,需要删除掉
+# 将if左侧和end右侧的空白删除即可
+  {{- if ge .Values.score 90.0 }}
+  grade: "A"
+  {{ else if ge .Values.score 70.0 }}
+  grade: "B"
+  {{ else if ge .Values.score 60.0 }}
+  grade: "C"
+  {{ else }}
+  grade: "D"
+  {{ end -}}
 
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/^apiVersion/, $'p
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+data:
+  key1: value1
+  grade: "A"
+  key3: value3
+  
+# 解决问题2: Values.score我们并没有判断它的上限和下限，比如最高不能大于100，最低不能小于0
+# 通过if判断一下，如果大于100或小于0则给他报错
+# 但是并没有找到可以主动报错的函数，所以只能使用 required + 一个肯定不存在的变量 来变相达到目的
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  key1: value1
+  {{- if or ( gt .Values.score 100.0 ) ( lt .Values.score 0.0 ) }}
+  {{ required ".Values.score: The value cannot be greater than 100 or less than 0" .Values.nonkey }}
+  {{ else if ge .Values.score 90.0 }}
+  grade: "A"
+  {{ else if ge .Values.score 70.0 }}
+  grade: "B"
+  {{ else if ge .Values.score 60.0 }}
+  grade: "C"
+  {{ else }}
+  grade: "D"
+  {{ end -}}
+  key3: value3
+  
+[root@node-1 mychart]# cat values.yaml 
+score: 900
+[root@node-1 mychart]# helm install demo . --dry-run
+Error: INSTALLATION FAILED: execution error at (mychart/templates/configmap.yaml:9:5): .Values.score: The value cannot be greater than 100 or less than 0
+
+# 解决问题3: if语句和固定值的k-v混合起来比较乱
+# 利用nindent函数和删除空白组合操作，达到代码缩进的效果
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  key1: value1
+  {{- if or ( gt .Values.score 100.0 ) ( lt .Values.score 0.0 ) }}
+      {{ required ".Values.score: The value cannot be greater than 100 or less than 0" .Values.nonkey }}
+  {{ else if ge .Values.score 90.0 }}
+      {{- "grade: A" | nindent 2 }}
+  {{ else if ge .Values.score 70.0 }}
+      {{- "grade: B" | nindent 2 }}
+  {{ else if ge .Values.score 60.0 }}
+      {{- "grade: C" | nindent 2 }}
+  {{ else }}
+      {{- "grade: D" | nindent 2 }}
+  {{ end -}}
+  key3: value3
+
+# 也可以这样写
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  key1: value1
+  {{- if or ( gt .Values.score 100.0 ) ( lt .Values.score 0.0 ) }} {{ required ".Values.score: The value cannot be greater than 100 or less than 0" .Values.nonkey }}
+  {{ else if ge .Values.score 90.0 }} {{- "grade: A" | nindent 2 }}
+  {{ else if ge .Values.score 70.0 }} {{- "grade: B" | nindent 2 }}
+  {{ else if ge .Values.score 60.0 }} {{- "grade: C" | nindent 2 }}
+  {{ else }}                          {{- "grade: D" | nindent 2 }}
+  {{ end -}}
+  key3: value3
+
+# 渲染结果
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/^apiVersion/, $'p
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+data:
+  key1: value1
+  grade: A
+  key3: value3
 ```
 
 :::
