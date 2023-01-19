@@ -7764,3 +7764,30 @@ data:
 ### Chart模板管理
 
 文档：[https://helm.sh/zh/docs/chart_template_guide/named_templates/](https://helm.sh/zh/docs/chart_template_guide/named_templates/)
+
+::: details （1）定义模板：define
+
+```bash
+# 注意点：
+# 1.模板名称是全局的，如果声明两个相同名称的模板，哪个最后加载就使用哪个
+# 2.模板命名的常见惯例是使用chart名称作为模板前缀，比如 {{ define "mychart.labels" }}
+# 3.模板可以定义在具体的对象中比如Deployment，也可以定义在单独的文件中，一般以_xx.tpl命名,比如_helpers.tpl
+
+# 定义模板
+{{- define "mychart.labels" }}
+  labels:
+    generator: helm
+    date: {{ now | htmlDate }}
+{{- end }}
+```
+
+:::
+
+::: details （2）导入模板：template 和 include(推荐)
+
+```bash
+
+```
+
+:::
+
