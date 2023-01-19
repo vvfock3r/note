@@ -7510,7 +7510,9 @@ NOTES:
 
 ### Chart流程控制
 
-::: details （1）if 语句
+文档：[https://helm.sh/zh/docs/chart_template_guide/control_structures/](https://helm.sh/zh/docs/chart_template_guide/control_structures/)
+
+::: details （1）if  [ else if ]  [ else ] end 语句
 
 ```bash
 # 编写values
@@ -7661,6 +7663,58 @@ data:
   key1: value1
   grade: A
   key3: value3
+```
+
+:::
+
+::: details （2）with end 语句：指定作用域范围
+
+```bash
+# 还是使用if语句中的例子，我们给他加上作用域改写一下
+
+# 编写values
+[root@node-1 mychart]# cat values.yaml 
+score: 90
+
+# 使用with .Values ... end 后,在该作用域内我们直接可以使用.score
+# 同时他也会有限制，就是不能访问父级作用域的对象，但是我们可以使用$.Values来访问所有对象, $代表根作用域且不可改变
+[root@node-1 mychart]# vim templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  key1: value1
+  {{- with .Values }}
+  {{- if or ( gt .score 100.0 ) ( lt .score 0.0 ) }} {{ required ".Values.score: The value cannot be greater than 100 or less than 0" .nonkey }}
+  {{ else if ge .score 90.0 }} {{- "grade: A" | nindent 2 }}
+  {{ else if ge .score 70.0 }} {{- "grade: B" | nindent 2 }}
+  {{ else if ge .score 60.0 }} {{- "grade: C" | nindent 2 }}
+  {{ else }}                   {{- "grade: D" | nindent 2 }}
+  {{ end -}}
+  {{ end -}}
+  key3: value3
+
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/^apiVersion/, $'p
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+data:
+  key1: value1
+  grade: A
+  key3: value3
+```
+
+:::
+
+::: details （3）range end语句：循环操作
+
+```bash
+
 ```
 
 :::
