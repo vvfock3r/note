@@ -7717,7 +7717,50 @@ data:
 ::: details （3）range end语句：循环操作
 
 ```bash
+# 编写values
+[root@node-1 mychart]# vim values.yaml
+pizzaToppings:
+  - mushrooms
+  - cheese
+  - peppers
+  - onions
+  
+# 编写template
+[root@node-1 mychart]# vim templates/configmap.yaml 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+data:
+  toppings: |
+    key1: value1
+    {{- range $.Values.pizzaToppings }}
+    {{ . }}: true
+    {{- end }}
+    key3: value3
 
+# 渲染
+[root@node-1 mychart]# helm install demo . --dry-run | sed -rn '/^apiVersion/, $'p
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo
+  namespace: default
+data:
+  toppings: |
+    key1: value1
+    mushrooms: true
+    cheese: true
+    peppers: true
+    onions: true
+    key3: value3
 ```
 
 :::
+
+<br />
+
+### Chart模板管理
+
+文档：[https://helm.sh/zh/docs/chart_template_guide/named_templates/](https://helm.sh/zh/docs/chart_template_guide/named_templates/)
