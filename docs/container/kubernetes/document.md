@@ -3399,6 +3399,9 @@ data:
 # 设置为不可变更，这会导致
 #   (1) 保护应用，不能修改此ConfigMap，只能重新创建
 #   (2) 关闭K8S对此ConfigMap的监视，当ConfigMap数量特别多的时候能显著提升K8S性能
+#   (3) 还有一种写法是 fat.ini: |-
+#       |  文件最后一行添加换行符
+#       |- 文件最后一行不会添加换行符
 #immutable: true
 EOF
 
@@ -3455,7 +3458,7 @@ data:
     HOST  = 127.0.0.1
     PORT  = 80
     DEBUG = false
-  fat.ini: |
+  fat.ini: |-
     HOST  = 0.0.0.0
     PORT  = 8080
     DEBUG = true
@@ -3510,7 +3513,7 @@ DEBUG = false
 / # cat /etc/demo/FAT.ini
 HOST  = 0.0.0.0
 PORT  = 8080
-DEBUG = true
+DEBUG = true/ #    # 注意这里并没有换行符
 ```
 
 :::
