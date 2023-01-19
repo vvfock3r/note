@@ -1706,9 +1706,25 @@ null
 
 <br />
 
+## 系统管理
+
+### 进程管理 - systemd
+
+<br />
+
+## 自动化工具
+
+### 自动交互 - expect
+
+<br />
+
+### 批量执行 - ansible
+
+<br />
+
 ## 网络工具
 
-### frp
+### 内网穿透 - frp
 
 文档：[https://gofrp.org/](https://gofrp.org/)
 
@@ -1898,7 +1914,7 @@ Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to
 
 <br />
 
-### proxychains
+### 命令代理 - proxychains
 
 有两个相关的仓库，我们选择`Star`多的`proxychains-ng`
 
@@ -1977,7 +1993,7 @@ Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artif
 
 ## 安全工具
 
-### cfssl
+### TLS 证书 - cfssl
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
@@ -2456,6 +2472,14 @@ D:\application\GoLand\demo\pki> go run client/main.go
 ![image-20221126172850473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221126172850473.png)
 
 :::
+
+<br />
+
+### 文件加密 - veracrypt
+
+文档：[https://veracrypt.fr/](https://veracrypt.fr/)
+
+
 
 <br />
 
