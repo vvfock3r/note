@@ -6739,32 +6739,7 @@ Helm 安装 *charts* 到 Kubernetes 集群中，每次安装都会创建一个�
 
 :::
 
-::: details （3）仓库设置
-
-```bash
-# 添加仓库
-[root@node-1 ~]# helm repo add gitlab http://charts.gitlab.io/
-"gitlab" has been added to your repositories
-
-# 查看仓库列表
-[root@node-1 ~]# helm repo list
-NAME    URL                     
-gitlab  http://charts.gitlab.io/
-
-# 删除仓库
-[root@node-1 ~]# helm repo remove gitlab
-"gitlab" has been removed from your repositories
-
-# 更新仓库
-[root@node-1 ~]# helm repo update
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "gitlab" chart repository
-Update Complete. ⎈Happy Helming!⎈
-```
-
-:::
-
-::: details （4）数据存储位置
+::: details （3）数据存储位置
 
 文档：[https://helm.sh/zh/docs/helm/helm/](https://helm.sh/zh/docs/helm/helm/)
 
@@ -7798,3 +7773,73 @@ data:
 
 :::
 
+<br />
+
+### 客户端命令
+
+::: details （1）安装时优先使用命令行显式传递的值
+
+```bash
+# 创建chart
+[root@node-1 ~]# helm create mychart
+
+# 安装chart，使用set覆盖values.yaml文件中的值
+[root@node-1 ~]# helm install demo mychart --set replicaCount=3
+
+# 查看Pod数量
+[root@node-1 ~]# kubectl get pods -o wide
+NAME                          READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+demo-mychart-8fccf9c8-67d92   1/1     Running   0          9s    10.100.217.104   node-4   <none>           <none>
+demo-mychart-8fccf9c8-6xgn8   1/1     Running   0          9s    10.100.217.102   node-4   <none>           <none>
+demo-mychart-8fccf9c8-xc6ck   1/1     Running   0          9s    10.100.217.103   node-4   <none>           <none>
+```
+
+:::
+
+::: details （2）添加/更新和删除仓库
+
+```bash
+# 添加仓库
+[root@node-1 ~]# helm repo add gitlab http://charts.gitlab.io/
+"gitlab" has been added to your repositories
+
+# 查看仓库列表
+[root@node-1 ~]# helm repo list
+NAME    URL                     
+gitlab  http://charts.gitlab.io/
+
+# 删除仓库
+[root@node-1 ~]# helm repo remove gitlab
+"gitlab" has been removed from your repositories
+
+# 更新仓库
+[root@node-1 ~]# helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "gitlab" chart repository
+Update Complete. ⎈Happy Helming!⎈
+```
+
+:::
+
+::: details （3）拉取Chart编辑后再进行安装
+
+```bash
+# 安装ES官方源
+[root@node-1 ~]# helm repo add elastic https://helm.elastic.co
+"elastic" has been added to your repositories
+
+# 拉取指定版本的Chart并解压
+[root@node-1 ~]# helm pull elastic/elasticsearch --version 8.5.1 --untar
+
+# 查看
+[root@node-1 ~]# ls -l elasticsearch/
+total 76
+-rw-r--r--  1 root root   339 Jan 20 16:01 Chart.yaml
+drwxr-xr-x 14 root root   211 Jan 20 16:01 examples
+-rw-r--r--  1 root root    29 Jan 20 16:01 Makefile
+-rw-r--r--  1 root root 51906 Jan 20 16:01 README.md
+drwxr-xr-x  3 root root  4096 Jan 20 16:01 templates
+-rw-r--r--  1 root root  9581 Jan 20 16:01 values.yaml
+```
+
+:::
