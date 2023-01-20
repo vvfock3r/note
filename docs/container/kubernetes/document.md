@@ -7774,10 +7774,10 @@ data:
 # 3.模板可以定义在具体的对象中比如Deployment，也可以定义在单独的文件中，一般以_xx.tpl命名,比如_helpers.tpl
 
 # 定义模板
+[root@node-1 mychart]# vim templates/_helpers.tpl
+{{/* Generate basic labels */}}
 {{- define "mychart.labels" }}
-  labels:
-    generator: helm
-    date: {{ now | htmlDate }}
+  date: {{ now | htmlDate }}
 {{- end }}
 ```
 
@@ -7786,7 +7786,14 @@ data:
 ::: details （2）导入模板：template 和 include(推荐)
 
 ```bash
-
+[root@node-1 mychart]# vim templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace | default "default" }}
+  labels: {{ include "mychart.labels" . | indent 2 }}
+data:
 ```
 
 :::
