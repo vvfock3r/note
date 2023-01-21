@@ -3559,6 +3559,8 @@ go get -u go.uber.org/zap
 
 ### 默认的Logger
 
+::: details 点击查看完整代码
+
 ```go
 package main
 
@@ -3601,6 +3603,8 @@ C:\Users\Administrator\GolandProjects\demo>go run main.go
 {"level":"info","msg":"Hello World!"}
 {"level":"info","ts":1663367983.508526,"caller":"demo/main.go:28","msg":"2022-09-17 06:39:43.5085261 +0800 CST m=+0.018391001"}
 ```
+
+:::
 
 <br />
 
@@ -3662,8 +3666,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3688,6 +3690,8 @@ main.main()
         C:/Users/Administrator/GolandProjects/demo/main.go:50 +0x350                                               
 exit status 2
 ```
+
+:::
 
 <br />
 
