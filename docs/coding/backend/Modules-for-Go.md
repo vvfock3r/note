@@ -14784,6 +14784,8 @@ func main() {
 }
 ```
 
+![image-20230121140355239](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140355239.png)
+
 :::
 
 ::: details （2）查看一下源码
@@ -14883,6 +14885,8 @@ func main() {
 }
 ```
 
+![image-20230121140450764](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140450764.png)
+
 :::
 
 ::: details （4）对Windows CMD的支持
@@ -14904,6 +14908,8 @@ func main() {
 }
 ```
 
+![image-20230121140612588](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140612588.png)
+
 :::
 
 ::: details （5）设置其他样式：加粗、下划线等
@@ -14920,6 +14926,8 @@ func main() {
 	c.Println("Hello World!")
 }
 ```
+
+![image-20230121140644563](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140644563.png)
 
 :::
 
@@ -14971,6 +14979,8 @@ func main() {
 }
 ```
 
+![image-20230121140723949](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140723949.png)
+
 :::
 
 ::: details （2）对未知的报错信息上色
@@ -14994,6 +15004,8 @@ func main() {
 	<-ch
 }
 ```
+
+![image-20230121140813429](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121140813429.png)
 
 :::
 
@@ -15041,6 +15053,8 @@ func main() {
 }
 ```
 
+![image-20230121141241487](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121141241487.png)
+
 :::
 
 <br />
@@ -15071,5 +15085,7 @@ func main() {
 	c.Println("Hello World!")
 }
 ```
+
+![image-20230121141322156](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230121141322156.png)
 
 :::
