@@ -3557,7 +3557,7 @@ go get -u go.uber.org/zap
 
 <br />
 
-### 默认的Logger
+### 内置Logger
 
 ::: details 点击查看完整代码
 
@@ -3648,9 +3648,9 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
 		TimeKey:        "ts",             // JSON格式的时间Key
 		LevelKey:       "level",          // JSON格式的日志等级Key
-		NameKey:        "logger",         // 
+		NameKey:        "logger",         // logger名称Key
 		CallerKey:      "caller",         // JSON格式的日志由哪个文件第几行打印Key
-		FunctionKey:    zapcore.OmitKey,  // 
+		FunctionKey:    zapcore.OmitKey,  // JSON格式的日志由哪个函数调用的Key
 		MessageKey:     "msg",            // JSON格式的日志主体Key
 		StacktraceKey:  "stacktrace",     // 
 		LineEnding:     zapcore.DefaultLineEnding,       // 
@@ -3660,6 +3660,34 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 		EncodeCaller:   zapcore.ShortCallerEncoder,      // 
 	}
 }
+
+// Build方法
+// 1.zapcore.NewCore(encoder, writeSyncer, level)返回一个core
+// 2.zap.New(core)创建一个Logger
+func (cfg Config) Build(opts ...Option) (*Logger, error) {
+	enc, err := cfg.buildEncoder()
+	if err != nil {
+		return nil, err
+	}
+
+	sink, errSink, err := cfg.openSinks()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.Level == (AtomicLevel{}) {
+		return nil, errors.New("missing Level")
+	}
+
+	log := New(
+		zapcore.NewCore(enc, sink, cfg.Level),
+		cfg.buildOptions(errSink)...,
+	)
+	if len(opts) > 0 {
+		log = log.WithOptions(opts...)
+	}
+	return log, nil
+}
 ```
 
 :::
@@ -3668,7 +3696,7 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 
 ### 初始化Logger
 
-::: details 点击查看完整代码
+::: details （1）简单方式：生成Config对象，然后调用 Build() 创建Logger
 
 ```go
 package main
@@ -3690,8 +3718,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    
 	// 输出日志
 	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
 }
 ```
 
@@ -3699,7 +3730,68 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-{"level":"info","ts":1674304526.0120375,"caller":"example/main.go:25","msg":"Hello World!"}
+{"level":"info","ts":1674380444.8767374,"caller":"example/main.go:22","msg":"Hello World!"}
+{"level":"warn","ts":1674380444.877175,"caller":"example/main.go:23","msg":"Hello World!"}
+{"level":"error","ts":1674380444.877175,"caller":"example/main.go:24","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:24\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:
+250"}
+```
+
+:::
+
+::: details （2）复杂方式：生成Core对象，然后通过 zap.New(core) 创建Logger，这是最灵活的方法
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// 实例化 WriteSyncer
+	writeSyncer := zapcore.AddSync(os.Stdout)
+
+	// 实例化 LevelEnabler
+	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+
+	// 创建 Core
+	core := zapcore.NewCore(encoder, writeSyncer, level)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return logger, nil
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674380132.862975,"caller":"example/main.go:38","msg":"Hello World!"}
+{"level":"warn","ts":1674380132.863479,"caller":"example/main.go:39","msg":"Hello World!"}
+{"level":"error","ts":1674380132.8634932,"caller":"example/main.go:40","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:40\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go
+:250"}
 ```
 
 :::
@@ -3720,9 +3812,9 @@ func NewZapLogger() (*zap.Logger, error) {
 	// 实例化Config对象
 	zapConfig := zap.NewProductionConfig()
 
-	// 设置日志级别为Warn,推荐方式2，代码简短一些
-	zapConfig.Level = zap.NewAtomicLevelAt(zap.WarnLevel) // 方式1
-	zapConfig.Level.SetLevel(zap.WarnLevel)               // 方式2
+    // 默认日志级别为info,设置日志级别为Warn,推荐方式2，代码简短一些
+	//zapConfig.Level = zap.NewAtomicLevelAt(zap.WarnLevel) // 方式1
+	zapConfig.Level.SetLevel(zap.WarnLevel)                 // 方式2
 
 	// 生成Logger对象并返回
 	return zapConfig.Build()
@@ -3768,7 +3860,6 @@ func NewZapLogger() (*zap.Logger, error) {
 	zapConfig := zap.NewProductionConfig()
 
 	// 设置日志输出格式, 默认是json格式，可选择使用console
-	//zapConfig.Encoding = "json"
 	zapConfig.Encoding = "console"
 
 	// 生成Logger对象并返回
@@ -4054,7 +4145,7 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （1）zap.NewProductionConfig默认会把所有的日志全部输出到stderr
 
-```bash
+```go
 # 查看源码配置
 func NewProductionConfig() Config {
 	return Config{
@@ -4082,7 +4173,7 @@ func NewProductionConfig() Config {
 
 :::
 
-::: details （2）修改日志输出到stdout
+::: details （2）日志输出到stdout
 
 ```go
 package main
@@ -4152,6 +4243,14 @@ func main() {
   "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
 }
 exit status 1
+```
+
+:::
+
+::: details （3）日志输出到文件：简单版本
+
+```bash
+
 ```
 
 :::
