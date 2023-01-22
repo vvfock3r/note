@@ -3680,12 +3680,8 @@ func NewZapLogger() (*zap.Logger, error) {
 	// 实例化Config对象
 	zapConfig := zap.NewProductionConfig()
 
-	// 生成Logger对象
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
+	// 生成Logger对象并返回
+	return zapConfig.Build()
 }
 
 func main() {
@@ -3728,12 +3724,8 @@ func NewZapLogger() (*zap.Logger, error) {
 	zapConfig.Level = zap.NewAtomicLevelAt(zap.WarnLevel) // 方式1
 	zapConfig.Level.SetLevel(zap.WarnLevel)               // 方式2
 
-	// 生成Logger对象
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
+	// 生成Logger对象并返回
+	return zapConfig.Build()
 }
 
 func main() {
@@ -3779,12 +3771,8 @@ func NewZapLogger() (*zap.Logger, error) {
 	//zapConfig.Encoding = "json"
 	zapConfig.Encoding = "console"
 
-	// 生成Logger对象
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
+	// 生成Logger对象并返回
+	return zapConfig.Build()
 }
 
 func main() {
@@ -3810,7 +3798,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）日志记录格式字段解析
+::: details （2）日志记录格式字段说明
 
 ```go
 package main
@@ -3832,7 +3820,7 @@ func NewZapLogger() (*zap.Logger, error) {
 	//   1.下面这一段完全复制的NewProductionEncoderConfig函数返回值，然后再针对性的进行修改
 	//   2.只在JSON格式日志中有效：xxKey这种只有在JSON格式日志中才会用到，console格式直接使用的是Key的值，即Key字段下面的部分
 	//   3.只在JSON格式日志中有效：将Key设置为 zapcore.OmitKey，那么这个key将不会显示
-	//   4.
+    //   4.只在console格式日志中有效：ConsoleSeparator字段分隔符，默认为tab
 	zapConfig.EncoderConfig = zapcore.EncoderConfig{
 		TimeKey:       "ts",            // 时间戳，对应 EncodeTime
 		LevelKey:      "level",         // 日志等级, 对应 EncodeLevel
@@ -3855,12 +3843,8 @@ func NewZapLogger() (*zap.Logger, error) {
 		ConsoleSeparator: "",
 	}
 
-	// 生成Logger对象
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
+	// 生成Logger对象并返回
+	return zapConfig.Build()
 }
 
 func main() {
@@ -3894,6 +3878,280 @@ D:\application\GoLand\example>go run main.go
 {"level":"error","ts":1674308198.2475853,"caller":"example/main.go:61","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:61\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250"}
 {"level":"info","ts":1674308198.2475853,"logger":"authz","caller":"example/main.go:66","msg":"info"}
 {"level":"info","ts":1674308198.2475853,"logger":"authn","caller":"example/main.go:68","msg":"info"}
+```
+
+:::
+
+::: details （3）日志记录格式字段自定义
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
+	zapConfig.Encoding = "json"
+
+	// 设置日志记录格式
+	zapConfig.EncoderConfig = zapcore.EncoderConfig{
+		TimeKey:          "time",
+		LevelKey:         "level",
+		NameKey:          "logger",
+		CallerKey:        "caller",
+		FunctionKey:      "function",
+		MessageKey:       "message",
+		StacktraceKey:    "stacktrace",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime:       zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05"),
+		EncodeDuration:   zapcore.SecondsDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeName:       func(s string, encoder zapcore.PrimitiveArrayEncoder) { encoder.AppendString(s) },
+		ConsoleSeparator: "",
+	}
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	// 输出带logger名称的日志
+	authzLogger := logger.Named("authz")
+	authnLogger := logger.Named("authn")
+
+	// 输出日志
+	authzLogger.Info("Hello World!")
+	authzLogger.Warn("Hello World!")
+	authnLogger.Info("Hello World!")
+	authnLogger.Warn("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+# JSON格式
+D:\application\GoLand\example>go run main.go
+{"level":"INFO","time":"2023-01-22 11:34:57","logger":"authz","caller":"example/main.go:51","function":"main.main","message":"Hello World!"}
+{"level":"WARN","time":"2023-01-22 11:34:57","logger":"authz","caller":"example/main.go:52","function":"main.main","message":"Hello World!"}
+{"level":"INFO","time":"2023-01-22 11:34:57","logger":"authn","caller":"example/main.go:53","function":"main.main","message":"Hello World!"}
+{"level":"WARN","time":"2023-01-22 11:34:57","logger":"authn","caller":"example/main.go:54","function":"main.main","message":"Hello World!"}
+
+# Console格式
+D:\application\GoLand\example>go run main.go
+2023-01-22 11:36:25     INFO    authz   example/main.go:51      main.main       Hello World!
+2023-01-22 11:36:25     WARN    authz   example/main.go:52      main.main       Hello World!
+2023-01-22 11:36:25     INFO    authn   example/main.go:53      main.main       Hello World!
+2023-01-22 11:36:25     WARN    authn   example/main.go:54      main.main       Hello World!
+```
+
+:::
+
+::: details （4）Console格式字段如何排序?
+
+:::
+
+<br />
+
+### 设置Build选项
+
+::: details （1）添加一个新字段
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
+	zapConfig.Encoding = "json"
+
+	// 生成Logger对象
+	logger, err := zapConfig.Build()
+
+	// 方式1：使用下面代码生成logger
+	//logger, err := zapConfig.Build(zap.Fields(zap.String("appId", "demo")))
+
+	return logger, err
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	// 方式2
+	//logger = logger.WithOptions(zap.Fields(zap.String("appId", "demo")))
+
+	// 方式3
+	logger = logger.With(zap.String("appId", "demo"))
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+# JSON格式下显示良好
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674359587.5455246,"caller":"example/main.go:35","msg":"Hello World!","appId":"demo"}
+{"level":"warn","ts":1674359587.5455246,"caller":"example/main.go:36","msg":"Hello World!","appId":"demo"}
+{"level":"info","ts":1674359587.5460467,"caller":"example/main.go:37","msg":"Hello World!","appId":"demo"}
+{"level":"warn","ts":1674359587.5460467,"caller":"example/main.go:38","msg":"Hello World!","appId":"demo"}
+
+# Console格式下显得有些格格不入
+D:\application\GoLand\example>go run main.go
+1.674359666225286e+09   info    example/main.go:35      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  warn    example/main.go:36      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  info    example/main.go:37      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  warn    example/main.go:38      Hello World!    {"appId": "demo"}
+
+# 解决办法是通过message中手动注入新字段，但是这样的话在JSON格式下其实并不太好
+	// 方式3
+	// logger = logger.With(zap.String("appId", "demo"))
+
+	// 输出日志
+	logger.Info(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
+	logger.Warn(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
+
+D:\application\GoLand\example>go run main.go
+1.6743602714985135e+09  info    example/main.go:39      demo    Hello World!
+1.6743602714990304e+09  warn    example/main.go:40      demo    Hello World!
+```
+
+:::
+
+<br />
+
+### 输出日志位置
+
+::: details （1）zap.NewProductionConfig默认会把所有的日志全部输出到stderr
+
+```bash
+# 查看源码配置
+func NewProductionConfig() Config {
+	return Config{
+		Level:       NewAtomicLevelAt(InfoLevel),
+		Development: false,
+		Sampling: &SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stderr"},  // 日志输出位置,包含错误日志
+		ErrorOutputPaths: []string{"stderr"},  // zap内部的错误日志输出位置
+	}
+}
+
+# 测试
+[root@ap-hongkang demo]# go run main.go 1>1.txt 2>2.txt
+[root@ap-hongkang demo]# cat 1.txt 
+[root@ap-hongkang demo]# cat 2.txt
+{"level":"error","ts":1674360992.4000423,"caller":"demo/main.go:27","msg":"Hello World!","stacktrace":"main.main\n\t/root/demo/main.go:27\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"}
+{"level":"info","ts":1674360992.4000852,"caller":"demo/main.go:28","msg":"Hello World!"}
+{"level":"warn","ts":1674360992.4000897,"caller":"demo/main.go:29","msg":"Hello World!"}
+```
+
+:::
+
+::: details （2）修改日志输出到stdout
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
+	zapConfig.Encoding = "json"
+
+	// 所有的日志输出到stdout
+	zapConfig.OutputPaths = []string{"stdout"}
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Fatal("Hello World!") // Fatal执行后会退出程序
+}
+```
+
+输出结果
+
+```bash
+[root@ap-hongkang demo]# go run main.go  | jq
+{
+  "level": "info",
+  "ts": 1674364364.119415,
+  "caller": "demo/main.go:30",
+  "msg": "Hello World!"
+}
+{
+  "level": "warn",
+  "ts": 1674364364.1194427,
+  "caller": "demo/main.go:31",
+  "msg": "Hello World!"
+}
+{
+  "level": "error",
+  "ts": 1674364364.119447,
+  "caller": "demo/main.go:32",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+{
+  "level": "fatal",
+  "ts": 1674364364.1194553,
+  "caller": "demo/main.go:33",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+exit status 1
 ```
 
 :::
