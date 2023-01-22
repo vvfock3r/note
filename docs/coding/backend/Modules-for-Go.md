@@ -4478,15 +4478,15 @@ exit status 1
 
 lumberjack：[https://github.com/natefinch/lumberjack](https://github.com/natefinch/lumberjack)
 
+::: details 点击查看完整代码
+
 **安装**
 
 ```bash
 go get gopkg.in/natefinch/lumberjack.v2
 ```
 
-**使用**
-
-::: details 点击查看完整代码
+**示例**
 
 ```go
 package main
