@@ -3718,6 +3718,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
     
 	// 输出日志
 	logger.Info("Hello World!")
@@ -3732,7 +3733,7 @@ func main() {
 D:\application\GoLand\example>go run main.go
 {"level":"info","ts":1674380444.8767374,"caller":"example/main.go:22","msg":"Hello World!"}
 {"level":"warn","ts":1674380444.877175,"caller":"example/main.go:23","msg":"Hello World!"}
-{"level":"error","ts":1674380444.877175,"caller":"example/main.go:24","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:24\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:
+{"level":"error","ts":1674380444.877175,"caller":"example/main.go:24","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:24\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go:
 250"}
 ```
 
@@ -3756,13 +3757,13 @@ func NewZapLogger() (*zap.Logger, error) {
 	encoder := zapcore.NewJSONEncoder(encoderConfig)
 
 	// 实例化 WriteSyncer
-	writeSyncer := zapcore.AddSync(os.Stdout)
+	stdoutWriteSyncer := zapcore.AddSync(os.Stdout)
 
 	// 实例化 LevelEnabler
 	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
 
 	// 创建 Core
-	core := zapcore.NewCore(encoder, writeSyncer, level)
+	core := zapcore.NewCore(encoder, stdoutWriteSyncer, level)
 
 	// 创建 *Logger
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
@@ -3776,6 +3777,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
 
 	// 输出日志
 	logger.Info("Hello World!")
@@ -3790,7 +3792,7 @@ func main() {
 D:\application\GoLand\example>go run main.go
 {"level":"info","ts":1674380132.862975,"caller":"example/main.go:38","msg":"Hello World!"}
 {"level":"warn","ts":1674380132.863479,"caller":"example/main.go:39","msg":"Hello World!"}
-{"level":"error","ts":1674380132.8634932,"caller":"example/main.go:40","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:40\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go
+{"level":"error","ts":1674380132.8634932,"caller":"example/main.go:40","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:40\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go
 :250"}
 ```
 
@@ -3826,6 +3828,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
+    
 	// 输出日志
 	logger.Info("info")
 	logger.Warn("warn")
@@ -3838,7 +3842,7 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 {"level":"warn","ts":1674304864.7571805,"caller":"example/main.go:29","msg":"warn"}
-{"level":"error","ts":1674304864.7571805,"caller":"example/main.go:30","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:30\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250"}
+{"level":"error","ts":1674304864.7571805,"caller":"example/main.go:30","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:30\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go:250"}
 ```
 
 :::
@@ -3872,6 +3876,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
+    
 	// 输出日志
 	logger.Debug("debug")
 	logger.Info("info")
@@ -3944,6 +3950,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
+    
 	// 输出日志
 	logger.Debug("debug")
 	logger.Info("info")
@@ -3966,7 +3974,7 @@ func main() {
 D:\application\GoLand\example>go run main.go
 {"level":"info","ts":1674308198.2470381,"caller":"example/main.go:59","msg":"info"}
 {"level":"warn","ts":1674308198.2475853,"caller":"example/main.go:60","msg":"warn"}
-{"level":"error","ts":1674308198.2475853,"caller":"example/main.go:61","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:61\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250"}
+{"level":"error","ts":1674308198.2475853,"caller":"example/main.go:61","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:61\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go:250"}
 {"level":"info","ts":1674308198.2475853,"logger":"authz","caller":"example/main.go:66","msg":"info"}
 {"level":"info","ts":1674308198.2475853,"logger":"authn","caller":"example/main.go:68","msg":"info"}
 ```
@@ -4019,6 +4027,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
 
 	// 输出带logger名称的日志
 	authzLogger := logger.Named("authz")
@@ -4049,10 +4058,6 @@ D:\application\GoLand\example>go run main.go
 2023-01-22 11:36:25     INFO    authn   example/main.go:53      main.main       Hello World!
 2023-01-22 11:36:25     WARN    authn   example/main.go:54      main.main       Hello World!
 ```
-
-:::
-
-::: details （4）Console格式字段如何排序?
 
 :::
 
@@ -4092,6 +4097,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
 
 	// 方式2
 	//logger = logger.WithOptions(zap.Fields(zap.String("appId", "demo")))
@@ -4145,7 +4151,7 @@ D:\application\GoLand\example>go run main.go
 
 ::: details （1）zap.NewProductionConfig默认会把所有的日志全部输出到stderr
 
-```go
+```bash
 # 查看源码配置
 func NewProductionConfig() Config {
 	return Config{
@@ -4166,7 +4172,7 @@ func NewProductionConfig() Config {
 [root@ap-hongkang demo]# go run main.go 1>1.txt 2>2.txt
 [root@ap-hongkang demo]# cat 1.txt 
 [root@ap-hongkang demo]# cat 2.txt
-{"level":"error","ts":1674360992.4000423,"caller":"demo/main.go:27","msg":"Hello World!","stacktrace":"main.main\n\t/root/demo/main.go:27\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"}
+{"level":"error","ts":1674360992.4000423,"caller":"demo/main.go:27","msg":"Hello World!","stacktrace":"main.main\n\t/root/demo/main.go:27\nruntime.main\n\t/usr/local/go1.19.3/src/runtime/proc.go:250"}
 {"level":"info","ts":1674360992.4000852,"caller":"demo/main.go:28","msg":"Hello World!"}
 {"level":"warn","ts":1674360992.4000897,"caller":"demo/main.go:29","msg":"Hello World!"}
 ```
@@ -4203,6 +4209,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+    defer logger.Sync()
 
 	// 输出日志
 	logger.Info("Hello World!")
@@ -4233,184 +4240,218 @@ func main() {
   "ts": 1674364364.119447,
   "caller": "demo/main.go:32",
   "msg": "Hello World!",
-  "stacktrace": "main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+  "stacktrace": "main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.3/src/runtime/proc.go:250"
 }
 {
   "level": "fatal",
   "ts": 1674364364.1194553,
   "caller": "demo/main.go:33",
   "msg": "Hello World!",
-  "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+  "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.3/src/runtime/proc.go:250"
 }
 exit status 1
 ```
 
 :::
 
-::: details （3）日志输出到文件：简单版本
+::: details （3）日志输出到文件
 
-```bash
-
-```
-
-:::
-
-<br />
-
-### 自定义Logger
-
-::: details 点击查看完整代码
+* 优点是简单，缺点太过简单以至于无法实现一些自定义设置
+* 通过字符串控制的输入位置，只需要填写文件名即可
+* 文件不存在时自动创建，文件存在时以追加模式写入日志
+* 由于无法自定义设置，不推荐使用这种方法，仅作了解
 
 ```go
 package main
 
 import (
-	"fmt"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"os"
-	"time"
 )
 
-func getEncoer() zapcore.Encoder {
-	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.ConsoleSeparator = " "
-	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
-	}
-	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
-	}
-	encoder := zapcore.NewConsoleEncoder(encoderConfig)
-	return encoder
-}
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
 
-func getWriteSyncer() zapcore.WriteSyncer {
-	file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-	fileHandler := zapcore.AddSync(file)
-	stdoutHandler := zapcore.AddSync(os.Stdout)
-	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler, stdoutHandler)
-	return writeSyncer
+	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
+	zapConfig.Encoding = "json"
+
+	// 设置日志输出位置为 stdout和 文件
+	zapConfig.OutputPaths = []string{"stdout", "test.log"}
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
 }
 
 func main() {
-	// 初始化core
-	encoder := getEncoer()
-	writeSyncer := getWriteSyncer()
-	core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+    defer logger.Sync()
 
-	// 初始化logger
-	logger := zap.New(core, zap.AddCaller()).Sugar()
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Fatal("Hello World!") // Fatal执行后会退出程序
+}
+```
+
+输出结果
+
+![image-20230122200122974](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230122200122974.png)
+
+:::
+
+::: details （4）日志输出到任意位置：以文件举例
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// 实例化 WriteSyncer
+	var (
+		fileWriteSyncer   zapcore.WriteSyncer
+		stdoutWriteSyncer zapcore.WriteSyncer
+	)
+	file, err := os.OpenFile("test.log",
+		os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fileWriteSyncer = zapcore.Lock(zapcore.AddSync(file)) // 根据Lock函数的注释,使用锁保护一下，但是一般情况下不加锁也不会有问题
+	stdoutWriteSyncer = zapcore.AddSync(os.Stdout)
+	writeSyncer := zapcore.NewMultiWriteSyncer(fileWriteSyncer, stdoutWriteSyncer) // 将所有的WriteSyncer组合成一个
+
+	// 实例化 LevelEnabler
+	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+
+	// 创建 Core
+	core := zapcore.NewCore(encoder, writeSyncer, level)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return logger, nil
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+    defer logger.Sync()
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+	logger.Fatal("Hello World!") // Fatal执行后会退出程序
+}
+```
+
+输出结果
+
+![image-20230122213749704](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230122213749704.png)
+
+:::
+
+<br />
+
+### 使用多个Core
+
+使用多个Core，每个Core都可以有自己专属的配置，实现最大的灵活性
+
+::: details （1）设置stdout日志级别为Error，设置文件的日志级别为Debug
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// 实例化 Core: file WriteSyncer，日志级别为 Debug
+	file, err := os.OpenFile("test.log",
+		os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm,
+	)
+	if err != nil {
+		return nil, err
+	}
+	fileWriteSyncer := zapcore.Lock(zapcore.AddSync(file)) // 根据Lock函数的注释,使用锁保护一下，但是一般情况下不加锁也不会有问题
+	fileCore := zapcore.NewCore(encoder, fileWriteSyncer, zap.NewAtomicLevelAt(zapcore.DebugLevel))
+
+	// 实例化 Core: stdout WriteSyncer,日志级别为 Error
+	stdoutWriteSyncer := zapcore.AddSync(os.Stdout)
+	stdoutCore := zapcore.NewCore(encoder, stdoutWriteSyncer, zap.NewAtomicLevelAt(zapcore.ErrorLevel))
+
+	// 合并 Core
+	core := zapcore.NewTee(fileCore, stdoutCore)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return logger, nil
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+    defer logger.Sync()
 
 	// 输出日志
 	logger.Debug("Hello World!")
 	logger.Info("Hello World!")
 	logger.Warn("Hello World!")
 	logger.Error("Hello World!")
-	logger.Panic("Hello World!")
+	logger.Fatal("Hello World!") // Fatal执行后会退出程序
 }
 ```
 
 输出结果
 
 ```bash
-C:\Users\Administrator\GolandProjects\demo>go run main.go
-2022-09-17 08:31:15.933 [ DEBUG ] demo/main.go:46 Hello World!
-2022-09-17 08:31:15.947 [ INFO  ] demo/main.go:47 Hello World!
-2022-09-17 08:31:15.949 [ WARN  ] demo/main.go:48 Hello World!
-2022-09-17 08:31:15.949 [ ERROR ] demo/main.go:49 Hello World!
-2022-09-17 08:31:15.949 [ PANIC ] demo/main.go:50 Hello World!
-panic: Hello World!
+# 终端日志
+D:\application\GoLand\example>go run main.go
+{"level":"error","ts":1674393081.3178294,"caller":"example/main.go:49","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:49\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go
+:250"}
+{"level":"fatal","ts":1674393081.31836,"caller":"example/main.go:50","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:50\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:2
+50"}
+exit status 1
 
-goroutine 1 [running]:
-go.uber.org/zap/zapcore.CheckWriteAction.OnWrite(0x0?, 0x0?, {0x0?, 0x0?, 0xc000054560?})
-        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/zapcore/entry.go:198 +0x65
-go.uber.org/zap/zapcore.(*CheckedEntry).Write(0xc000024c30, {0x0, 0x0, 0x0})
-        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/zapcore/entry.go:264 +0x3ec
-go.uber.org/zap.(*SugaredLogger).log(0xc000109e98, 0x4, {0x0?, 0x0?}, {0xc000109ea0?, 0x1?, 0x1?}, {0x0, 0x0, 0x0})
-        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/sugar.go:287 +0xee
-go.uber.org/zap.(*SugaredLogger).Panic(...)
-        D:/application/GoPath/pkg/mod/go.uber.org/zap@v1.23.0/sugar.go:145
-main.main()
-        C:/Users/Administrator/GolandProjects/demo/main.go:50 +0x350                                               
-exit status 2
-```
+# 文件日志 test.log
+{"level":"debug","ts":1674393081.3178294,"caller":"example/main.go:46","msg":"Hello World!"}
+{"level":"info","ts":1674393081.3178294,"caller":"example/main.go:47","msg":"Hello World!"}
+{"level":"warn","ts":1674393081.3178294,"caller":"example/main.go:48","msg":"Hello World!"}
+{"level":"error","ts":1674393081.3178294,"caller":"example/main.go:49","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:49\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250"}
+{"level":"fatal","ts":1674393081.31836,"caller":"example/main.go:50","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:50\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.2/src/runtime/proc.go:250"}
 
-:::
-
-<br />
-
-### 合并多个Core
-
-假设我们需要做一些差异化配置，比如终端的日志级别为Debug，而文件的日志级别为WARN，
-
-这时可以生成多个Core，然后再进行合并Core操作
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"os"
-	"time"
-)
-
-func getEncoer() zapcore.Encoder {
-	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.ConsoleSeparator = " "
-	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
-	}
-	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
-	}
-	encoder := zapcore.NewConsoleEncoder(encoderConfig)
-	return encoder
-}
-
-func getFileWriteSyncer() zapcore.WriteSyncer {
-	file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-	fileHandler := zapcore.AddSync(file)
-	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler)
-	return writeSyncer
-}
-
-func getConsoleWriteSyncer() zapcore.WriteSyncer {
-	stdoutHandler := zapcore.AddSync(os.Stdout)
-	writeSyncer := zapcore.NewMultiWriteSyncer(stdoutHandler)
-	return writeSyncer
-}
-
-func main() {
-	// 初始化core
-	encoder := getEncoer()
-	core := zapcore.NewTee(
-		zapcore.NewCore(encoder, getConsoleWriteSyncer(), zapcore.DebugLevel),
-		zapcore.NewCore(encoder, getFileWriteSyncer(), zapcore.WarnLevel),
-	)
-
-	// 初始化logger
-	logger := zap.New(core, zap.AddCaller()).Sugar()
-
-	// 输出日志
-	logger.Debug("Hello World!")
-	logger.Info("Hello World!")
-	logger.Warn("Hello World!")
-	logger.Error("Hello World!")
-	logger.Panic("Hello World!")
-}
 ```
 
 :::
@@ -4435,68 +4476,72 @@ go get gopkg.in/natefinch/lumberjack.v2
 package main
 
 import (
-	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
-	"time"
+	"strconv"
 )
 
-func getEncoer() zapcore.Encoder {
-	// 使用预设的ProductionEncoder配置初始化encoder，并作一些修改
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.ConsoleSeparator = " "
-	encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
-	}
-	encoderConfig.EncodeLevel = func(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(fmt.Sprintf("[ %-5s ]", level.CapitalString()))
-	}
-	encoder := zapcore.NewConsoleEncoder(encoderConfig)
-	return encoder
-}
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
 
-func getFileWriteSyncer() zapcore.WriteSyncer {
+	// 实例化 Core: file WriteSyncer，日志级别为 Debug
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   "./test.log", // 日志文件
-		MaxSize:    10,           // 日志文件的最大大小(单位为MB)
-		MaxBackups: 5,            // 保留旧文件的最大个数
-		MaxAge:     30,           // 保留旧文件的最大时长(单位为天)
-		Compress:   false,        // 是否压缩/归档旧文件
+		Filename:   "test.log", // 日志文件
+		MaxSize:    1,          // 日志文件的最大大小(单位为MB)
+		MaxAge:     180,        // 保留旧文件的最大时长(单位为天)
+		MaxBackups: 10,         // 保留旧文件的最大个数
+		LocalTime:  true,       // 旧文件名使用本地时间,建议为true
+		Compress:   true,       // 是否压缩旧文件
 	}
-	fileHandler := zapcore.AddSync(lumberJackLogger)
-	writeSyncer := zapcore.NewMultiWriteSyncer(fileHandler)
-	return writeSyncer
-}
+	fileWriteSyncer := zapcore.Lock(zapcore.AddSync(lumberJackLogger)) // 根据Lock函数的注释,使用锁保护一下，但是一般情况下不加锁也不会有问题
+	fileCore := zapcore.NewCore(encoder, fileWriteSyncer, zap.NewAtomicLevelAt(zapcore.DebugLevel))
 
-func getConsoleWriteSyncer() zapcore.WriteSyncer {
-	stdoutHandler := zapcore.AddSync(os.Stdout)
-	writeSyncer := zapcore.NewMultiWriteSyncer(stdoutHandler)
-	return writeSyncer
+	// 实例化 Core: stdout WriteSyncer,日志级别为 Error
+	stdoutWriteSyncer := zapcore.AddSync(os.Stdout)
+	stdoutCore := zapcore.NewCore(encoder, stdoutWriteSyncer, zap.NewAtomicLevelAt(zapcore.ErrorLevel))
+
+	// 合并 Core
+	core := zapcore.NewTee(fileCore, stdoutCore)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return logger, nil
 }
 
 func main() {
-	// 初始化core
-	encoder := getEncoer()
-	core := zapcore.NewTee(
-		zapcore.NewCore(encoder, getConsoleWriteSyncer(), zapcore.DebugLevel),
-		zapcore.NewCore(encoder, getFileWriteSyncer(), zapcore.WarnLevel),
-	)
-
-	// 初始化logger
-	logger := zap.New(core, zap.AddCaller()).Sugar()
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+    defer logger.Sync()
 
 	// 输出日志
-	logger.Debug("Hello World!")
-	logger.Info("Hello World!")
-	logger.Warn("Hello World!")
-	logger.Error("Hello World!")
-	logger.Panic("Hello World!")
+	for i := 0; i < 100000; i++ {
+		logger.Info(strconv.Itoa(i))
+	}
 }
 ```
 
+输出结果
+
+![image-20230122213135390](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230122213135390.png)
+
+未压缩情况下
+
+![image-20230122213312312](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230122213312312.png)
+
 :::
+
+<br />
+
+
 
 <br />
 
