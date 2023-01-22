@@ -3802,7 +3802,7 @@ D:\application\GoLand\example>go run main.go
 
 ### 设置日志级别
 
-::: details 点击查看完整代码
+::: details （1）设置固定日志级别
 
 ```go
 package main
@@ -3843,6 +3843,22 @@ func main() {
 D:\application\GoLand\example>go run main.go
 {"level":"warn","ts":1674304864.7571805,"caller":"example/main.go:29","msg":"warn"}
 {"level":"error","ts":1674304864.7571805,"caller":"example/main.go:30","msg":"error","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:30\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go:250"}
+```
+
+:::
+
+::: details （2）动态调整日志级别
+
+```go
+
+```
+
+:::
+
+::: details （3）通过HTTP请求修改日志级别
+
+```go
+
 ```
 
 :::
