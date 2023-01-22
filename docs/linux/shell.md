@@ -1686,7 +1686,7 @@ null
 
 :::
 
-::: details （4）数字精度问题
+::: details （4）jq数字精度问题
 
 ```bash
 # jq精度有些问题
@@ -1700,6 +1700,117 @@ null
 17381046135283786000
 [root@ap-hongkang ~]# echo 17381046135283785533 | yq
 17381046135283785533
+```
+
+:::
+
+::: details （5）yq处理JSON日志问题
+
+```bash
+# 看一下日志
+[root@ap-hongkang ~]# cat 1.log
+{"level":"info","ts":1674365114.7207434,"caller":"demo/main.go:30","msg":"Hello World!"}
+{"level":"warn","ts":1674365114.7208,"caller":"demo/main.go:31","msg":"Hello World!"}
+{"level":"error","ts":1674365114.720805,"caller":"demo/main.go:32","msg":"Hello World!","stacktrace":"main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"}
+{"level":"fatal","ts":1674365114.7208123,"caller":"demo/main.go:33","msg":"Hello World!","stacktrace":"main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"}
+
+# 使用jq处理没有问题
+[root@ap-hongkang ~]# cat 1.log | jq
+{
+  "level": "info",
+  "ts": 1674365114.7207434,
+  "caller": "demo/main.go:30",
+  "msg": "Hello World!"
+}
+{
+  "level": "warn",
+  "ts": 1674365114.7208,
+  "caller": "demo/main.go:31",
+  "msg": "Hello World!"
+}
+{
+  "level": "error",
+  "ts": 1674365114.720805,
+  "caller": "demo/main.go:32",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+{
+  "level": "fatal",
+  "ts": 1674365114.7208123,
+  "caller": "demo/main.go:33",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+
+# 使用yq处理，直接处理有问题
+[root@ap-hongkang ~]# cat 1.log | yq -o json
+{
+  "level": "info",
+  "ts": 1674365114.7207434,
+  "caller": "demo/main.go:30",
+  "msg": "Hello World!"
+}
+Error: bad file '-': yaml: line 1: did not find expected <document start>
+
+# 换个思路，读取一行处理一行
+# 看起来没有问题，但是仔细观察, \n全部变成了n, 问题出在了while read line身上，简单测试便能知道
+[root@ap-hongkang ~]# cat 1.log | while read line; do echo "${line}" | yq -o json; done
+{
+  "level": "info",
+  "ts": 1674365114.7207434,
+  "caller": "demo/main.go:30",
+  "msg": "Hello World!"
+}
+{
+  "level": "warn",
+  "ts": 1674365114.7208,
+  "caller": "demo/main.go:31",
+  "msg": "Hello World!"
+}
+{
+  "level": "error",
+  "ts": 1674365114.720805,
+  "caller": "demo/main.go:32",
+  "msg": "Hello World!",
+  "stacktrace": "main.mainnt/root/demo/main.go:32nruntime.mainnt/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+{
+  "level": "fatal",
+  "ts": 1674365114.7208123,
+  "caller": "demo/main.go:33",
+  "msg": "Hello World!",
+  "stacktrace": "main.mainnt/root/demo/main.go:33nruntime.mainnt/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+
+# 使用sed代替while read line
+[root@ap-hongkang ~]# f=1.log; \n=$(wc -l ${f} | awk '{print $1}'); for i in `seq ${n}`; do sed -n "${i}p" ${f} | yq -o json; done
+{
+  "level": "info",
+  "ts": 1674365114.7207434,
+  "caller": "demo/main.go:30",
+  "msg": "Hello World!"
+}
+{
+  "level": "warn",
+  "ts": 1674365114.7208,
+  "caller": "demo/main.go:31",
+  "msg": "Hello World!"
+}
+{
+  "level": "error",
+  "ts": 1674365114.720805,
+  "caller": "demo/main.go:32",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:32\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
+{
+  "level": "fatal",
+  "ts": 1674365114.7208123,
+  "caller": "demo/main.go:33",
+  "msg": "Hello World!",
+  "stacktrace": "main.main\n\t/root/demo/main.go:33\nruntime.main\n\t/usr/local/go1.19.2/src/runtime/proc.go:250"
+}
 ```
 
 :::
