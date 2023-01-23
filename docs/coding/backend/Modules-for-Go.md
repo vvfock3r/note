@@ -4505,7 +4505,138 @@ func main() {
 ::: details （5）日志输出到任意位置：使用Config对象
 
 ```go
+package main
 
+import (
+	"bytes"
+	"go.uber.org/zap"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+// HTTPWriter 通过HTTP POST请求发送日志
+type HTTPWriter struct {
+	url         string
+	contentType string
+}
+
+// NewHTTPWriter 构造函数
+func NewHTTPWriter(url string, contentType string) *HTTPWriter {
+	return &HTTPWriter{url: url, contentType: contentType}
+}
+
+// Write 实现WriteSyncer之一
+func (w *HTTPWriter) Write(b []byte) (n int, err error) {
+	// 发送Post请求
+	_, err = http.Post(w.url, w.contentType, bytes.NewReader(b))
+	if err != nil {
+		return 0, err
+	}
+
+	return len(b), nil
+}
+
+// Sync 实现WriteSyncer之一
+func (w *HTTPWriter) Sync() error {
+	return nil
+}
+
+// Close 实现io.Closer
+func (w *HTTPWriter) Close() error {
+	return nil
+}
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 注册自定义 Sink
+	err := zap.RegisterSink("http", func(url *url.URL) (zap.Sink, error) {
+		return NewHTTPWriter(url.Scheme+"://"+url.Host, "application/json"), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 发送日志到stdout和HTTP接口
+	zapConfig.OutputPaths = []string{"stdout", "http://localhost:8080/"}
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// 输出日志
+	for i := 0; i < 10; i++ {
+		logger.Info(strconv.Itoa(i))
+		time.Sleep(time.Second)
+	}
+}
+```
+
+`server/main.go`
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		io.Copy(os.Stdout, request.Body)
+	})
+	log.Fatalln(http.ListenAndServe("127.0.0.1:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 启动HTTP Server
+D:\application\GoLand\example>go run server/main.go
+
+# 发送日志
+D:\application\GoLand\example>go run main.go
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674479622.3019233,"caller":"example/main.go:74","msg":"0"}
+{"level":"info","ts":1674479623.6322286,"caller":"example/main.go:74","msg":"1"}
+{"level":"info","ts":1674479624.6434062,"caller":"example/main.go:74","msg":"2"}
+{"level":"info","ts":1674479625.6534476,"caller":"example/main.go:74","msg":"3"}
+{"level":"info","ts":1674479626.6648703,"caller":"example/main.go:74","msg":"4"}
+{"level":"info","ts":1674479627.6705728,"caller":"example/main.go:74","msg":"5"}
+...
+
+# 服务端日志
+D:\application\GoLand\example>go run server/main.go
+{"level":"info","ts":1674479622.3019233,"caller":"example/main.go:74","msg":"0"}
+{"level":"info","ts":1674479623.6322286,"caller":"example/main.go:74","msg":"1"}
+{"level":"info","ts":1674479624.6434062,"caller":"example/main.go:74","msg":"2"}
+{"level":"info","ts":1674479625.6534476,"caller":"example/main.go:74","msg":"3"}
+{"level":"info","ts":1674479626.6648703,"caller":"example/main.go:74","msg":"4"}
+{"level":"info","ts":1674479627.6705728,"caller":"example/main.go:74","msg":"5"}
+...
+
+# 若服务端未启动则会报错,报错信息属于zap内部错误，会发送到 ErrorOutput(默认是stderr)
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674479822.3531852,"caller":"example/main.go:74","msg":"0"}
+2023-01-23 21:17:02.3531852 +0800 CST m=+0.004605301 write error: Post "http://localhost:8080": dial tcp [::1]:8080: connectex: No connection could be made because the target machine actively refused it.
+{"level":"info","ts":1674479825.7257688,"caller":"example/main.go:74","msg":"1"}
+2023-01-23 21:17:05.7257687 +0800 CST m=+3.377188801 write error: Post "http://localhost:8080": dial tcp [::1]:8080: connectex: No connection could be made because the target machine actively refused it.
 ```
 
 :::
