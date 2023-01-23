@@ -4389,12 +4389,7 @@ exit status 1
 
 :::
 
-::: details （3）日志输出到文件
-
-* 优点是简单，缺点太过简单以至于无法实现一些自定义设置
-* 通过字符串控制的输入位置，只需要填写文件名即可
-* 文件不存在时自动创建，文件存在时以追加模式写入日志
-* 由于无法自定义设置，不推荐使用这种方法，仅作了解
+::: details （3）日志输出到文件：使用Config对象
 
 ```go
 package main
@@ -4412,6 +4407,7 @@ func NewZapLogger() (*zap.Logger, error) {
 	zapConfig.Encoding = "json"
 
 	// 设置日志输出位置为 stdout和 文件
+    // 文件不存在时自动创建，文件存在时以追加模式写入日志
 	zapConfig.OutputPaths = []string{"stdout", "test.log"}
 
 	// 生成Logger对象并返回
@@ -4440,7 +4436,7 @@ func main() {
 
 :::
 
-::: details （4）日志输出到任意位置：以文件举例
+::: details （4）日志输出到文件：使用Core对象
 
 ```go
 package main
@@ -4503,6 +4499,22 @@ func main() {
 输出结果
 
 ![image-20230122213749704](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230122213749704.png)
+
+:::
+
+::: details （5）日志输出到任意位置：使用Config对象
+
+```go
+
+```
+
+:::
+
+::: details （6）日志输出到任意位置：使用Core对象
+
+```go
+
+```
 
 :::
 
