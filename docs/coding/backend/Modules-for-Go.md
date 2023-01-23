@@ -4513,7 +4513,139 @@ func main() {
 ::: details （6）日志输出到任意位置：使用Core对象
 
 ```go
+package main
 
+import (
+	"bytes"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+)
+
+// HTTPWriter 通过HTTP POST请求发送日志
+type HTTPWriter struct {
+	url         string
+	contentType string
+}
+
+// NewHTTPWriter 构造函数
+func NewHTTPWriter(url string, contentType string) *HTTPWriter {
+	return &HTTPWriter{url: url, contentType: contentType}
+}
+
+// Write 实现io.Writer
+func (w *HTTPWriter) Write(b []byte) (n int, err error) {
+	// 发送Post请求
+	_, err = http.Post(w.url, w.contentType, bytes.NewReader(b))
+	if err != nil {
+		return 0, err
+	}
+
+	return len(b), nil
+}
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// 实例化 WriteSyncer
+	var (
+		url             = "http://localhost:8080/"
+		contentType     = "application/json"
+		httpWriteSyncer zapcore.WriteSyncer
+
+		stdoutWriteSyncer zapcore.WriteSyncer
+	)
+	httpWriteSyncer = zapcore.Lock(zapcore.AddSync(NewHTTPWriter(url, contentType)))
+	stdoutWriteSyncer = zapcore.AddSync(os.Stdout)
+	writeSyncer := zapcore.NewMultiWriteSyncer(httpWriteSyncer, stdoutWriteSyncer)
+
+	// 实例化 LevelEnabler
+	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+
+	// 创建 Core
+	core := zapcore.NewCore(encoder, writeSyncer, level)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return logger, nil
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// 输出日志
+	for i := 0; i < 10; i++ {
+		logger.Info(strconv.Itoa(i))
+		time.Sleep(time.Second)
+	}
+}
+```
+
+`server/main.go`
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		io.Copy(os.Stdout, request.Body)
+	})
+	log.Fatalln(http.ListenAndServe("127.0.0.1:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 启动HTTP Server
+D:\application\GoLand\example>go run server/main.go
+
+# 发送日志
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674478245.920576,"caller":"example/main.go:75","msg":"0"}
+{"level":"info","ts":1674478247.2481759,"caller":"example/main.go:75","msg":"1"}
+{"level":"info","ts":1674478248.2584329,"caller":"example/main.go:75","msg":"2"}
+{"level":"info","ts":1674478249.2676933,"caller":"example/main.go:75","msg":"3"}
+{"level":"info","ts":1674478250.2789872,"caller":"example/main.go:75","msg":"4"}
+{"level":"info","ts":1674478251.290573,"caller":"example/main.go:75","msg":"5"}
+...
+
+# 服务端日志
+D:\application\GoLand\example>go run server/main.go
+{"level":"info","ts":1674478245.920576,"caller":"example/main.go:75","msg":"0"}
+{"level":"info","ts":1674478247.2481759,"caller":"example/main.go:75","msg":"1"}
+{"level":"info","ts":1674478248.2584329,"caller":"example/main.go:75","msg":"2"}
+{"level":"info","ts":1674478249.2676933,"caller":"example/main.go:75","msg":"3"}
+{"level":"info","ts":1674478250.2789872,"caller":"example/main.go:75","msg":"4"}
+{"level":"info","ts":1674478251.290573,"caller":"example/main.go:75","msg":"5"}
+...
+
+# 若服务端未启动则会报错,报错信息属于zap内部错误，会发送到 ErrorOutput(默认是stderr)
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674478294.1663451,"caller":"example/main.go:75","msg":"0"}
+2023-01-23 20:51:34.1663452 +0800 CST m=+0.004069101 write error: Post "http://localhost:8080/": dial tcp [::1]:8080: connectex: No connection could be made because the target machine actively refused it.
+{"level":"info","ts":1674478297.5306103,"caller":"example/main.go:75","msg":"1"}
+2023-01-23 20:51:37.5306104 +0800 CST m=+3.368334301 write error: Post "http://localhost:8080/": dial tcp [::1]:8080: connectex: No connection could be made because the target machine actively refused it.
+...
 ```
 
 :::
