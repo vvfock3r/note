@@ -3850,7 +3850,53 @@ D:\application\GoLand\example>go run main.go
 ::: details （2）动态调整日志级别
 
 ```go
+package main
 
+import "go.uber.org/zap"
+
+var atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 默认日志级别
+	zapConfig.Level = atomicLevel
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// 输出日志
+	logger.Debug("debug")
+	logger.Info("info")
+	logger.Warn("warn")
+
+	// 动态修改日志级别
+	atomicLevel.SetLevel(zap.WarnLevel)
+	logger.Debug("debug2")
+	logger.Info("info2")
+	logger.Warn("warn2")
+}
+```
+
+输出结果
+
+```bash
+# 可以看到动态修改日志级别后，info2并没有输出
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674471950.5494144,"caller":"example/main.go:29","msg":"info"}
+{"level":"warn","ts":1674471950.5494144,"caller":"example/main.go:30","msg":"warn"} 
+{"level":"warn","ts":1674471950.5494144,"caller":"example/main.go:36","msg":"warn2"}
 ```
 
 :::
@@ -3858,7 +3904,80 @@ D:\application\GoLand\example>go run main.go
 ::: details （3）通过HTTP请求修改日志级别
 
 ```go
+package main
 
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"log"
+	"net/http"
+	"time"
+)
+
+var atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 默认日志级别
+	zapConfig.Level = atomicLevel
+
+	// 生成Logger对象并返回
+	return zapConfig.Build()
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// 输出日志
+	go func() {
+		for {
+			logger.Debug("")
+			logger.Info("")
+			logger.Warn("")
+			fmt.Println()
+			time.Sleep(time.Second)
+		}
+	}()
+
+	// 注册路由
+	http.HandleFunc("/log/level", atomicLevel.ServeHTTP)
+
+	// 启动HTTP Server
+	log.Fatalln(http.ListenAndServe("127.0.0.1:8080", nil))
+}
+```
+
+输出结果
+
+```bash
+# 查看当前日志级别
+D:\application\GoLand\example>curl http://127.0.0.1:8080/log/level
+{"level":"info"}
+
+# 查看日志
+{"level":"info","ts":1674473281.3691077,"caller":"example/main.go:37","msg":""}
+{"level":"warn","ts":1674473281.3691752,"caller":"example/main.go:38","msg":""}
+
+# 修改日志级别为debug
+D:\application\GoLand\example>curl -X PUT localhost:8080/log/level -d level=debug
+{"level":"debug"}
+
+# 查看当前日志级别
+D:\application\GoLand\example>curl http://127.0.0.1:8080/log/level                                                           
+{"level":"debug"}
+
+# 查看日志
+{"level":"debug","ts":1674473310.8678765,"caller":"example/main.go:36","msg":""}
+{"level":"info","ts":1674473310.8679123,"caller":"example/main.go:37","msg":""}
+{"level":"warn","ts":1674473310.8679123,"caller":"example/main.go:38","msg":""}
 ```
 
 :::
