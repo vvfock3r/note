@@ -3800,6 +3800,153 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
+### 设置Options
+
+::: details （1）添加一个新字段
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化Config对象
+	zapConfig := zap.NewProductionConfig()
+
+	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
+	zapConfig.Encoding = "json"
+
+	// 生成Logger对象
+	logger, err := zapConfig.Build()
+
+	// 方式1：使用下面代码生成logger
+	//logger, err := zapConfig.Build(zap.Fields(zap.String("appId", "demo")))
+
+	return logger, err
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+    defer logger.Sync()
+
+	// 方式2
+	//logger = logger.WithOptions(zap.Fields(zap.String("appId", "demo")))
+
+	// 方式3
+	logger = logger.With(zap.String("appId", "demo"))
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+# JSON格式下显示良好
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674359587.5455246,"caller":"example/main.go:35","msg":"Hello World!","appId":"demo"}
+{"level":"warn","ts":1674359587.5455246,"caller":"example/main.go:36","msg":"Hello World!","appId":"demo"}
+{"level":"info","ts":1674359587.5460467,"caller":"example/main.go:37","msg":"Hello World!","appId":"demo"}
+{"level":"warn","ts":1674359587.5460467,"caller":"example/main.go:38","msg":"Hello World!","appId":"demo"}
+
+# Console格式下显得有些格格不入
+D:\application\GoLand\example>go run main.go
+1.674359666225286e+09   info    example/main.go:35      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  warn    example/main.go:36      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  info    example/main.go:37      Hello World!    {"appId": "demo"}
+1.6743596662258024e+09  warn    example/main.go:38      Hello World!    {"appId": "demo"}
+
+# 解决办法是通过message中手动注入新字段，但是这样的话在JSON格式下其实并不太好
+	// 方式3
+	// logger = logger.With(zap.String("appId", "demo"))
+
+	// 输出日志
+	logger.Info(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
+	logger.Warn(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
+
+D:\application\GoLand\example>go run main.go
+1.6743602714985135e+09  info    example/main.go:39      demo    Hello World!
+1.6743602714990304e+09  warn    example/main.go:40      demo    Hello World!
+```
+
+:::
+
+::: details （2）zap内部错误输出到其他位置
+
+```go
+package main
+
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+)
+
+// NewZapLogger 创建zap logger
+func NewZapLogger() (*zap.Logger, error) {
+	// 实例化 Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// 实例化 WriteSyncer
+	stdoutWriteSyncer := zapcore.AddSync(os.Stdout)
+
+	// 实例化 LevelEnabler
+	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+
+	// 创建 Core
+	core := zapcore.NewCore(encoder, stdoutWriteSyncer, level)
+
+	// 创建 *Logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	// zap内部错误输出到stdout
+	logger.WithOptions(zap.ErrorOutput(stdoutWriteSyncer))
+
+	return logger, nil
+}
+
+func main() {
+	// 实例化Logger
+	logger, err := NewZapLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	// 输出日志
+	logger.Info("Hello World!")
+	logger.Warn("Hello World!")
+	logger.Error("Hello World!")
+}
+```
+
+输出 结果
+
+```bash
+# 这个不太容易测试，在后面将日志输入到网络接口中可以测试这个功能
+D:\application\GoLand\example>go run main.go
+{"level":"info","ts":1674480290.0613134,"caller":"example/main.go:42","msg":"Hello World!"}
+{"level":"warn","ts":1674480290.0613134,"caller":"example/main.go:43","msg":"Hello World!"}
+{"level":"error","ts":1674480290.0618596,"caller":"example/main.go:44","msg":"Hello World!","stacktrace":"main.main\n\tD:/application/GoLand/example/main.go:44\nruntime.main\n\tC:/Users/Administrator/sdk/go1.19.3/src/runtime/proc.go
+:250"}
+```
+
+:::
+
+<br />
+
 ### 设置日志级别
 
 ::: details （1）设置固定日志级别
@@ -4198,90 +4345,6 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 设置Build选项
-
-::: details （1）添加一个新字段
-
-```go
-package main
-
-import (
-	"go.uber.org/zap"
-)
-
-// NewZapLogger 创建zap logger
-func NewZapLogger() (*zap.Logger, error) {
-	// 实例化Config对象
-	zapConfig := zap.NewProductionConfig()
-
-	// 设置日志输出格式, 默认是 json 格式，可选择使用 console
-	zapConfig.Encoding = "json"
-
-	// 生成Logger对象
-	logger, err := zapConfig.Build()
-
-	// 方式1：使用下面代码生成logger
-	//logger, err := zapConfig.Build(zap.Fields(zap.String("appId", "demo")))
-
-	return logger, err
-}
-
-func main() {
-	// 实例化Logger
-	logger, err := NewZapLogger()
-	if err != nil {
-		panic(err)
-	}
-    defer logger.Sync()
-
-	// 方式2
-	//logger = logger.WithOptions(zap.Fields(zap.String("appId", "demo")))
-
-	// 方式3
-	logger = logger.With(zap.String("appId", "demo"))
-
-	// 输出日志
-	logger.Info("Hello World!")
-	logger.Warn("Hello World!")
-	logger.Info("Hello World!")
-	logger.Warn("Hello World!")
-}
-```
-
-输出结果
-
-```bash
-# JSON格式下显示良好
-D:\application\GoLand\example>go run main.go
-{"level":"info","ts":1674359587.5455246,"caller":"example/main.go:35","msg":"Hello World!","appId":"demo"}
-{"level":"warn","ts":1674359587.5455246,"caller":"example/main.go:36","msg":"Hello World!","appId":"demo"}
-{"level":"info","ts":1674359587.5460467,"caller":"example/main.go:37","msg":"Hello World!","appId":"demo"}
-{"level":"warn","ts":1674359587.5460467,"caller":"example/main.go:38","msg":"Hello World!","appId":"demo"}
-
-# Console格式下显得有些格格不入
-D:\application\GoLand\example>go run main.go
-1.674359666225286e+09   info    example/main.go:35      Hello World!    {"appId": "demo"}
-1.6743596662258024e+09  warn    example/main.go:36      Hello World!    {"appId": "demo"}
-1.6743596662258024e+09  info    example/main.go:37      Hello World!    {"appId": "demo"}
-1.6743596662258024e+09  warn    example/main.go:38      Hello World!    {"appId": "demo"}
-
-# 解决办法是通过message中手动注入新字段，但是这样的话在JSON格式下其实并不太好
-	// 方式3
-	// logger = logger.With(zap.String("appId", "demo"))
-
-	// 输出日志
-	logger.Info(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
-	logger.Warn(fmt.Sprintf("%s\t%s", "demo", "Hello World!"))
-
-D:\application\GoLand\example>go run main.go
-1.6743602714985135e+09  info    example/main.go:39      demo    Hello World!
-1.6743602714990304e+09  warn    example/main.go:40      demo    Hello World!
-```
-
-:::
-
-<br />
-
 ### 输出日志位置
 
 ::: details （1）zap.NewProductionConfig默认会把所有的日志全部输出到stderr
@@ -4299,7 +4362,7 @@ func NewProductionConfig() Config {
 		Encoding:         "json",
 		EncoderConfig:    NewProductionEncoderConfig(),
 		OutputPaths:      []string{"stderr"},  // 日志输出位置,包含错误日志
-		ErrorOutputPaths: []string{"stderr"},  // zap内部的错误日志输出位置
+		ErrorOutputPaths: []string{"stderr"},  // zap内部的错误日志输出位置,比如将日志通过网络请求发送时发生的错误
 	}
 }
 
