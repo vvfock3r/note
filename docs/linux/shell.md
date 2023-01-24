@@ -1829,6 +1829,8 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 文档：[https://linux.die.net/man/1/expect](https://linux.die.net/man/1/expect)
 
+Wiki：[https://en.wikipedia.org/wiki/Expect](https://en.wikipedia.org/wiki/Expect)
+
 ::: details （1）常用命令说明
 
 ```bash
