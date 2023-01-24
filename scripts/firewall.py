@@ -165,7 +165,7 @@ class CommandCallback:
                 for i in range(3):
                     try:
                         r = requests.get(url, headers=headers, timeout=10)
-                        if r.status_code != 200:
+                        if r.status_code == 200:
                             return r.text.strip("\n")
                     except Exception:
                         continue
