@@ -16,7 +16,7 @@ import configparser
 from dataclasses import dataclass
 from typing import Optional, Dict, NoReturn, Union, List, Tuple, Callable
 
-import httpx
+import requests
 import click
 from rich.console import Console
 from rich.style import Style
@@ -26,7 +26,7 @@ from tencentcloud.common.exception.tencent_cloud_sdk_exception import (
 )
 from tencentcloud.lighthouse.v20200324 import lighthouse_client, models
 
-__version__ = "v0.0.2"
+__version__ = "v0.0.3"
 DEFAULT_CFG = "firewall.ini"
 
 
@@ -164,8 +164,8 @@ class CommandCallback:
             for url in urls:
                 for i in range(3):
                     try:
-                        r = httpx.get(url, headers=headers, timeout=10)
-                        if r.status_code == 200:
+                        r = requests.get(url, headers=headers, timeout=10)
+                        if r.status_code != 200:
                             return r.text.strip("\n")
                     except Exception:
                         continue
