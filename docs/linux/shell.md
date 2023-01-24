@@ -1819,23 +1819,198 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 ## 系统管理
 
-### 进程管理 - systemd
+### systemd
 
 <br />
 
 ## 自动化工具
 
-### 自动交互 - expect
+### expect
+
+文档：[https://linux.die.net/man/1/expect](https://linux.die.net/man/1/expect)
+
+::: details （1）常用命令说明
+
+```bash
+[root@node-1 ~]# yum -y install expect
+[root@node-1 ~]# expect -v
+expect version 5.45
+```
+
+**1、变量设置**
+
+* set：定义变量
+* puts：输出变量
+* set timeout：设置超时时间
+
+**2、启动要交互的进程**
+
+* spawn：启动新的交互进程，后面跟命令或者指定程序
+
+**3、匹配终端返回的结果**
+
+* expect：待匹配信息（部分匹配即可），如果匹配成功则执行expect后的动作，匹配失败则什么也不做
+* exp_continue：相当于又重新执行所在的expect语句
+
+**4、向终端发送命令**
+
+* send：向进程发送字符串或命令
+* send_user：打印后跟的字符串内容，相当于shell中的echo
+
+**5、退出或保持交互状态**
+
+* exit：退出expect脚本
+* eof：expect执行结束, 退出
+* interact：保持交互状态，此时Expect会把控制权交给控制台，变回手工操作
+
+:::
+
+::: details （2）与SSH服务端交互
+
+```bash
+# 写法1
+[root@node-1 ~]# vim expect-ssh.sh
+#!/bin/bash
+
+# 定义变量
+host=node-2
+port=22
+username=root
+password=123456
+
+# SSH交互
+expect <<EOF
+spawn ssh -p ${port} ${username}@${host}
+expect {
+    "(yes/no)?" { send "yes\n"; exp_continue }
+    "password:" { send "${password}\n" }
+}
+expect {
+    "# " { send "uptime\n" }
+}
+expect {
+    "# " { send "exit\n" }
+}
+expect eof
+EOF
+
+# ---------------------------------------------------------------
+
+# 写法2
+[root@node-1 ~]# vim expect-ssh.sh
+#!/bin/bash
+
+# 定义变量
+host=node-2
+port=22
+username=root
+password=123456
+
+# SSH交互
+expect <<EOF
+spawn ssh -p ${port} ${username}@${host}
+expect {
+    "(yes/no)?" { send "yes\n"; exp_continue }
+    "password:" { send "${password}\n" }
+}
+expect "# "
+send "uptime\n"
+
+expect "# "
+send "exit\n"
+
+expect eof
+EOF
+```
+
+输出结果
+
+```bash
+# 第一次执行
+[root@node-1 ~]# bash expect-ssh.sh
+spawn ssh -p 22 root@node-2
+The authenticity of host 'node-2 (192.168.48.152)' can't be established.
+ECDSA key fingerprint is SHA256:Py35pg5TtQSedZQPgDAc2V7/9pu7xr02hTc/N70QDPQ.
+ECDSA key fingerprint is MD5:da:28:8d:c3:29:54:ad:18:c7:88:83:75:90:de:e3:5e.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'node-2,192.168.48.152' (ECDSA) to the list of known hosts.
+root@node-2's password: 
+Last login: Tue Jan 24 11:07:26 2023 from api.k8s.local
+[root@node-2 ~]# uptime
+ 11:07:36 up  2:40,  1 user,  load average: 0.27, 0.34, 0.30
+[root@node-2 ~]# exit
+logout
+Connection to node-2 closed.
+
+# 再次执行
+[root@node-1 ~]# bash expect-ssh.sh
+spawn ssh -p 22 root@node-2
+root@node-2's password: 
+Last login: Tue Jan 24 11:07:36 2023 from api.k8s.local
+[root@node-2 ~]# uptime
+ 11:07:45 up  2:40,  1 user,  load average: 0.23, 0.33, 0.30
+[root@node-2 ~]# exit
+logout
+Connection to node-2 closed.
+```
+
+:::
+
+::: details （3）与Python解释器交互
+
+```bash
+[root@node-1 ~]# vim expect-python3.sh
+#!/bin/bash
+
+# Python解释器交互
+expect <<EOF
+spawn python3
+expect {
+    ">>> " { send "import sys\n" }
+}
+expect {
+    ">>> " { send "'.'.join(\[str(x) for x in sys.version_info\[:3\]\])\n" }  # []需要转义
+}
+expect {
+    ">>> " { send "exit()\n" }
+}
+expect eof
+EOF
+```
+
+输出结果
+
+```bash
+[root@node-1 ~]# bash expect-python3.sh
+spawn python3
+Python 3.6.8 (default, Nov 16 2020, 16:55:22) 
+[GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import sys
+>>> '.'.join([str(x) for x in sys.version_info[:3]])
+'3.6.8'
+>>> exit()
+[root@node-1 ~]# 
+```
+
+:::
+
+::: details （4）问题
+
+* send中最后使用`\n`或`\r`都可以，并且没有发现明显的区别?
+* Shell命令退出码获取起来比较困难
+
+:::
 
 <br />
 
-### 批量执行 - ansible
+### ansible
 
 <br />
 
 ## 网络工具
 
-### 内网穿透 - frp
+### frp
 
 文档：[https://gofrp.org/](https://gofrp.org/)
 
@@ -2025,7 +2200,7 @@ Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to
 
 <br />
 
-### 命令代理 - proxychains
+### proxychains
 
 有两个相关的仓库，我们选择`Star`多的`proxychains-ng`
 
@@ -2104,7 +2279,7 @@ Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artif
 
 ## 安全工具
 
-### TLS 证书 - cfssl
+### cfssl
 
 Github：[https://github.com/cloudflare/cfssl](https://github.com/cloudflare/cfssl)
 
@@ -2586,7 +2761,7 @@ D:\application\GoLand\demo\pki> go run client/main.go
 
 <br />
 
-### 文件加密 - veracrypt
+### veracrypt
 
 文档：[https://veracrypt.fr/](https://veracrypt.fr/)
 
