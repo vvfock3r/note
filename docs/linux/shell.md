@@ -1416,7 +1416,7 @@ dog n5thing
 
 **3、处理大文件时的问题**
 
-::: details （1）查看系统配置和sed版本生成一个大文件 .data.txt（6G）
+::: details （1）查看系统配置和sed版本
 
 ```bash
 # 系统信息
@@ -1568,8 +1568,8 @@ func main() {
 	// 定义变量
 	srcFileName := "go-data.txt"
 	dstFileName := "/tmp/.go-data.txt.tmp"
-	readBufferSize := 1024 * 128
-	writeBufferSize := 1024 * 128
+	readBufferSize := 1024 * 32
+	writeBufferSize := 1024 * 32
 
 	// 打开待处理的文件
 	src, err := os.Open(srcFileName)
