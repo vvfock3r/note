@@ -8,6 +8,8 @@ Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://promet
 
 AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
 
+Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
+
 <br />
 
 ## 服务部署
