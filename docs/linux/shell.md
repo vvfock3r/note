@@ -1414,6 +1414,270 @@ dog n5thing
 
 <br />
 
+**3、处理大文件时的问题**
+
+::: details （1）查看系统配置和sed版本生成一个大文件 .data.txt（6G）
+
+```bash
+# 系统信息
+#   OS     CentOS 7 64位
+#   CPU    4核
+#   Memory 8G
+[root@node-1 ~]# cat /etc/os-release | grep PRETTY_NAME=
+PRETTY_NAME="CentOS Linux 7 (Core)"
+
+[root@node-1 ~]# cat /proc/cpuinfo | grep "model name" | wc -l # 4核CPU
+4
+
+[root@node-1 ~]# free -m
+              total        used        free      shared  buff/cache   available
+Mem:           7821         469        6471           9         880        7116
+Swap:             0           0           0
+
+# sed版本
+[root@node-1 ~]# sed --version
+sed (GNU sed) 4.2.2
+...
+```
+
+:::
+
+::: details （2）生成一个大文件 .data.txt（6G）
+
+```bash
+# 生成一个6G的文件
+[root@node-1 ~]# time seq 1 1000000 > 1.txt
+
+[root@node-1 ~]# ls -lh 1.txt
+-rw-r--r-- 1 root root 6.6M Jan 25 09:27 1.txt
+
+[root@node-1 ~]# time for i in `seq 930`; do cat 1.txt >> .data.txt; done
+
+[root@node-1 ~]# ls -lh .data.txt 
+-rw-r--r-- 1 root root 6.0G Jan 25 09:28 .data.txt
+
+[root@node-1 ~]# wc -l .data.txt
+930000000 .data.txt
+
+[root@node-1 ~]# rm -vf 1.txt 
+removed ‘1.txt’
+```
+
+:::
+
+::: details （3）使用sed处理大文件时的潜在问题
+
+```bash
+# 将文件拷贝一份
+[root@node-1 ~]# cp -ra .data.txt sed-data.txt
+
+# 随便切换一个目录,后面会用到
+[root@node-1 ~]# cd /tmp
+
+# 将每一行所有的1替换为壹
+[root@node-1 tmp]# time sed -ri 's/1/壹/g' /root/sed-data.txt
+```
+
+输出结果
+
+![202301251213](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//202301251213.gif)
+
+分析
+
+* sed在处理过程中会先将数据写入临时文件，处理完成后再使用临时文件覆盖原始文件，
+
+  这就需要当前挂载点需要有足够的空间来存储临时文件，这可能是一个潜在的隐患
+
+* sed是一个流式编辑器，所以内存占用一直是比较稳定的，这一点表现比较好
+
+* sed不能很好的利用多核CPU，在大部分情况下会只会将单核CPU跑满，这通常是一个比较大的隐患
+
+细节
+
+```bash
+# 查看临时文件的Inode编号
+[root@node-1 ~]# ls -li
+total 8353608
+103873788 -rw-r--r-- 1 root root 6406673280 Jan 25 09:28 sed-data.txt
+103873760 -rw------- 1 root root 1923329778 Jan 25 12:27 sedkXbv6d
+
+# 处理所花费的时间
+[root@node-1 tmp]# time sed -ri 's/1/壹/g' /root/sed-data.txt
+
+real    18m12.906s
+user    8m54.945s
+sys     9m16.536s
+
+# 处理完成后再检查Inode编号，可以看到和sedkXbv6d的编号相同
+[root@node-1 ~]# ls -li
+total 7346364
+103873760 -rw-r--r-- 1 root root 7522675140 Jan 25 12:40 sed-data.txt
+```
+
+:::
+
+::: details （4）最简单的方式解决sed处理大文件问题之一
+
+说明：
+
+* 对于临时文件问题，没有找到sed有参数可以调整，所以这个问题先不解决，或者说先将原始文件拷贝到一个足够大的空间中去再弄sed修改
+* 对于CPU占用问题使用`cpulimit`命令来解决，CPU属于可压缩资源，所以我们可以放心的限制CPU使用率，付出的代价就是sed命令执行时间变长
+
+```bash
+# 将文件拷贝一份
+[root@node-1 ~]# cp -ra .data.txt cpulimit-sed-data.txt
+
+# 使用cpulimit限制CPU使用率为50%
+[root@node-1 ~]# time cpulimit -l 50 -z -i sed -ri 's/1/壹/g' cpulimit-sed-data.txt
+
+real    36m30.328s
+user    9m9.010s
+sys     10m13.746s
+```
+
+输出结果
+
+![image-20230125125535470](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230125125535470.png)
+
+:::
+
+::: details （5）使用Go完美解决sed处理大文件时的所有问题
+
+分析：
+
+* 处理流程：流式读文件 ---> 处理 ---> 写入新文件 --> ... ---> 使用新文件覆盖原始文件 ---> 程序结束
+* 临时文件问题：只需要写到其他目录即可
+* CPU占用问题：Go本身可以有效利用多核CPU，一般不会有问题，即使有问题还可以利用cpulimit来限制
+* 处理效率问题：我希望他能比sed更快的处理完成，为此我们添加了读buffer和写buffer，使用更多的内存来换取更少的系统调用，提高效率
+* 内存占用问题：由于使用了buffer，内存占用会比sed高，可根据实际情况调整
+
+编写Go代码：`main.go`
+
+```go
+package main
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+	"strings"
+)
+
+func main() {
+	// 定义变量
+	srcFileName := "go-data.txt"
+	dstFileName := "/tmp/.go-data.txt.tmp"
+	readBufferSize := 1024 * 128
+	writeBufferSize := 1024 * 128
+
+	// 打开待处理的文件
+	src, err := os.Open(srcFileName)
+	if err != nil {
+		log.Fatalf("open file error: %s\n", srcFileName)
+	}
+	defer src.Close()
+
+	// 创建要写入到的新文件
+	dst, err := os.OpenFile(dstFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		log.Fatalf("open file error: %s\n", dstFileName)
+	}
+	defer dst.Close()
+
+	// 处理逻辑
+	reader := bufio.NewReaderSize(src, readBufferSize)  // 读缓冲
+	writer := bufio.NewWriterSize(dst, writeBufferSize) // 写缓冲
+	for {
+		// 按行读取
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("read file error: %s\n", srcFileName)
+		}
+
+		// 处理行
+		line = strings.ReplaceAll(line, "1", "壹")
+
+		// 写入
+		_, err = writer.WriteString(line)
+		if err != nil {
+			log.Fatalf("write file error: %s\n", dstFileName)
+		}
+	}
+
+	// 刷新写缓冲区
+	if err := writer.Flush(); err != nil {
+		log.Fatalf("flush write buffer error: %s\n", dstFileName)
+	}
+
+	// 文件重命名
+	if err := os.Rename(dstFileName, srcFileName); err != nil {
+		log.Fatalf("rename file error: %s to %s\n", dstFileName, srcFileName)
+	}
+}
+```
+
+测试
+
+```bash
+# 将文件拷贝一份
+[root@node-1 ~]# cp -ra .data.txt go-data.txt
+
+# 查看Go版本
+[root@node-1 ~]# go version
+go version go1.18.4 linux/amd64
+
+# 编译Go程序
+[root@node-1 ~]# go build main.go
+[root@node-1 ~]# ls -lh main
+-rwxr-xr-x 1 root root 1.9M Jan 25 12:57 main
+
+# 执行测试
+[root@node-1 ~]# time ./main
+
+real    1m16.290s
+user    1m10.867s
+sys     0m6.124s
+
+# 对比一下字节大小和MD5，毕竟能正确的处理才是最重要的
+[root@node-1 ~]# ls -l *.txt
+-rw-r--r-- 1 root root 7522675140 Jan 25 13:23 cpulimit-sed-data.txt
+-rw-r--r-- 1 root root 7522675140 Jan 25 13:28 go-data.txt
+-rw-r--r-- 1 root root 7522675140 Jan 25 12:40 sed-data.txt
+
+[root@node-1 ~]# md5sum *.txt
+efb4e376b09c3deb8ddfc322dfd6a775  cpulimit-sed-data.txt
+efb4e376b09c3deb8ddfc322dfd6a775  go-data.txt
+efb4e376b09c3deb8ddfc322dfd6a775  sed-data.txt
+```
+
+可以看到CPU占用也很高，但是比较均匀
+
+![image-20230125132805424](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230125132805424.png)
+
+如果需要降低CPU使用率的话，同样可以使用`cpulimit`
+
+```bash
+# 将文件拷贝一份
+[root@node-1 ~]# cp -ra .data.txt go-data.txt
+
+# 测试
+[root@node-1 ~]# time cpulimit -l 50 -z -i ./main
+
+real    2m36.192s
+user    1m12.477s
+sys     0m11.046s
+```
+
+![image-20230125133510511](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230125133510511.png)
+
+:::
+
+<br />
+
 ### awk
 
 <br />
