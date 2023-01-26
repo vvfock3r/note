@@ -967,7 +967,227 @@ drwx------ 3 root root 17 Jan 26 05:03 systemd-private-c5dd9316255142399a45fd27b
 
 :::
 
-::: details （2）
+::: details （2）限定搜索深度
+
+```bash
+[root@node-1 ~]# find / -maxdepth 1
+/
+/boot
+/dev
+/home
+/proc
+/run
+/sys
+/etc
+/root
+/var
+/tmp
+/usr
+/bin
+/sbin
+/lib
+/lib64
+/media
+/mnt
+/opt
+/srv
+/.autorelabel
+
+# 请注意：如果使用-maxdepth选项则-maxdepth必须是第一个选项
+[root@node-1 ~]# find / -type f -maxdepth 1
+find: warning: you have specified the -maxdepth option after a non-option argument -type, but options are not positional (-maxdepth affects tests specified before it as well as those specified after it).  Please specify options before other arguments.
+
+/.autorelabel
+[root@node-1 ~]# find / -maxdepth 1 -type f
+/.autorelabel
+```
+
+:::
+
+::: details （3）限定文件类型
+
+```bash
+# 只搜索文件
+[root@node-1 ~]# find / -maxdepth 1 -type f
+/.autorelabel
+
+# 只搜索目录
+[root@node-1 ~]# find / -maxdepth 1 -type d
+/
+/boot
+/dev
+/home
+/proc
+/run
+/sys
+/etc
+/root
+/var
+/tmp
+/usr
+/media
+/mnt
+/opt
+/srv
+```
+
+:::
+
+::: details （3）限定文件名称
+
+```bash
+# 搜索文件类型，且文件名必须以.log结尾
+[root@node-1 ~]# find / -type f -name "*.log"
+/var/log/audit/audit.log
+/var/log/tuned/tuned.log
+/var/log/anaconda/anaconda.log
+/var/log/anaconda/X.log
+/var/log/anaconda/program.log
+/var/log/anaconda/packaging.log
+/var/log/anaconda/storage.log
+/var/log/anaconda/ifcfg.log
+/var/log/anaconda/ks-script-1Tfa8Y.log
+/var/log/anaconda/ks-script-qy7nS2.log
+/var/log/anaconda/journal.log
+...
+```
+
+:::
+
+::: details （4）限定文件大小
+
+```bash
+# 搜索所有大于100M的文件
+[root@node-1 ~]# find / -type f -size +100M
+/proc/kcore
+find: ‘/proc/13517/task/13517/fdinfo/6’: No such file or directory
+find: ‘/proc/13517/fdinfo/5’: No such file or directory
+/root/.data.txt
+/root/sed-data.txt
+/root/cpulimit-sed-data.txt
+/root/go-data.txt
+/var/cache/yum/x86_64/7/updates/gen/primary_db.sqlite
+/usr/bin/kubelet
+/usr/lib/locale/locale-archive
+/usr/local/kubernetes/kubeadm/kubernetes-images-v1.25.4.tar.gz
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar
+/usr/local/kubernetes/cni/calico.tar.gz
+/usr/local/kubernetes/cni/calico-cni-v3.24.5.tar
+/usr/local/kubernetes/cni/calico-node-v3.24.5.tar
+```
+
+:::
+
+::: details （5）排除一个或多个目录
+
+```bash
+# 注意事项：如果同时使用-depth或-maxdepth，那么-prune选项会被忽略,结果将于预期不符
+
+# 排除单个目录
+# -path "/proc" -prune 用于排除目录
+# -o                   逻辑或
+# -size +100M          搜索大于100M的文件
+# -print               不是必须要有的，但是如果后面要接管道|的话则必须要加上，所以建议一直加上
+[root@node-1 ~]# find / -path "/proc" -prune -o -type f -size +100M -print
+/root/.data.txt
+/root/sed-data.txt
+/root/cpulimit-sed-data.txt
+/root/go-data.txt
+/var/cache/yum/x86_64/7/updates/gen/primary_db.sqlite
+/usr/bin/kubelet
+/usr/lib/locale/locale-archive
+/usr/local/kubernetes/kubeadm/kubernetes-images-v1.25.4.tar.gz
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar
+/usr/local/kubernetes/cni/calico.tar.gz
+/usr/local/kubernetes/cni/calico-cni-v3.24.5.tar
+/usr/local/kubernetes/cni/calico-node-v3.24.5.tar
+
+# 排除多个目录
+[root@node-1 ~]# find / \( -path "/proc" -o -path "/root" \) -prune -o -type f -size +100M -print
+/var/cache/yum/x86_64/7/updates/gen/primary_db.sqlite
+/usr/bin/kubelet
+/usr/lib/locale/locale-archive
+/usr/local/kubernetes/kubeadm/kubernetes-images-v1.25.4.tar.gz
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.5.tar
+/usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar
+/usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar
+/usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar
+/usr/local/kubernetes/cni/calico.tar.gz
+/usr/local/kubernetes/cni/calico-cni-v3.24.5.tar
+/usr/local/kubernetes/cni/calico-node-v3.24.5.tar
+```
+
+:::
+
+::: details （6）与xargs配合使用
+
+```bash
+[root@node-1 ~]# find / \( -path "/proc" -o -path "/root" \) -prune -o -type f -size +100M -print | xargs ls -lh
+-rwxr-xr-x  1 root root 109M Nov 11 00:58 /usr/bin/kubelet
+-rw-r--r--. 1 root root 102M Jan 11 21:06 /usr/lib/locale/locale-archive
+-rw-------  1 root root 189M Jan 12 14:54 /usr/local/kubernetes/cni/calico-cni-v3.24.5.tar
+-rw-------  1 root root 219M Jan 12 14:54 /usr/local/kubernetes/cni/calico-node-v3.24.5.tar
+-rw-r-----  1 root root 188M Jan 12 14:58 /usr/local/kubernetes/cni/calico.tar.gz
+-rw-------  1 root root 288M Jan 12 14:31 /usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar
+-rw-------  1 root root 124M Jan 12 14:31 /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar
+-rw-------  1 root root 124M Jan 12 11:48 /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.5.tar
+-rw-------  1 root root 113M Jan 12 14:31 /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar
+-rw-------  1 root root 113M Jan 12 11:48 /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.5.tar
+-rw-r-----  1 root root 207M Jan 12 14:34 /usr/local/kubernetes/kubeadm/kubernetes-images-v1.25.4.tar.gz
+-rw-r--r--. 1 root root 105M Dec 20 01:52 /var/cache/yum/x86_64/7/updates/gen/primary_db.sqlite
+```
+
+:::
+
+::: details （7）限定修改时间
+
+```bash
+# 搜索/下(排除/proc和/sys目录)5分钟内修改过的文件
+#   说明：-mmin -5 代表5分钟之内，如果是+5则代表5分钟之外(之前)，如果是5则代表5分钟之前、10分钟之内
+#   注意：搜索出来的结果中有/proc和/sys目录,所以需要grep排除一下
+[root@node-1 ~]# find / \( -path "/proc" -o -path "/sys" \) -prune -o -type f -mmin -5 | grep -Ev '/proc|/sys' | xargs ls -lh
+...
+-rw-r--r--  1 root root  396 Jan 26 19:54 /var/lib/kubelet/pods/f47cf7c6bb70ee9fcffdf5765676c723/etc-hosts
+-rw-------  1 root root  124 Jan 26 19:55 /var/lib/rsyslog/imjournal.state
+-rw-------  1 root root 632K Jan 26 19:52 /var/log/audit/audit.log
+-rw-r--r--  1 root root 1.6M Jan 26 19:54 /var/log/calico/cni/cni.log
+-rw-r--r--. 1 root root 286K Jan 26 19:52 /var/log/lastlog
+-rw-------  1 root root  49M Jan 26 19:55 /var/log/messages
+-rw-rw-r--. 1 root utmp 230K Jan 26 19:52 /var/log/wtmp
+
+# 搜索/下(排除/proc和/sys目录)1天内修改过的文件
+[root@node-1 ~]# find / \( -path "/proc" -o -path "/sys" \) -prune -o -type f -mtime -1 | grep -Ev '/proc|/sys' | xargs ls -lh
+...
+-rw-------. 1 root    root       0 Jan 26 12:09 /var/log/boot.log
+-rw-------  1 root    root     26K Jan 26 12:09 /var/log/boot.log-20230126
+-rw-r--r--  1 root    root    1.6M Jan 26 19:58 /var/log/calico/cni/cni.log
+-rw-------  1 root    root    5.4K Jan 26 19:50 /var/log/cron
+-rw-------  1 root    root     19K Jan 26 12:09 /var/log/cron-20230126
+-rw-r--r--  1 root    root     34K Jan 26 05:03 /var/log/dmesg
+-rw-r--r--. 1 root    root    286K Jan 26 19:52 /var/log/lastlog
+-rw-------  1 root    root       0 Jan 26 12:09 /var/log/maillog
+-rw-------  1 root    root    1.5K Jan 26 05:03 /var/log/maillog-20230126
+-rw-------  1 root    root     49M Jan 26 19:58 /var/log/messages
+-rw-------  1 root    root     73M Jan 26 12:09 /var/log/messages-20230126
+-rw-r--r--  1 root    root    170K Jan 26 19:50 /var/log/sa/sa26
+-rw-------  1 root    root     657 Jan 26 14:49 /var/log/secure
+-rw-------  1 root    root     12K Jan 26 06:09 /var/log/secure-20230126
+-rw-------  1 root    root       0 Jan 26 12:09 /var/log/spooler
+-rw-r--r--. 1 root    root     79K Jan 26 05:03 /var/log/tuned/tuned.log
+-rw-rw-r--. 1 root    utmp    230K Jan 26 19:52 /var/log/wtmp
+-rw-------. 1 root    root       9 Jan 26 12:09 /var/spool/anacron/cron.daily
+-rw-------. 1 root    root       9 Jan 26 12:09 /var/spool/anacron/cron.weekly
+-rw-------  1 root    root      33 Jan 26 05:03 /var/spool/postfix/pid/master.pid
+```
 
 :::
 
