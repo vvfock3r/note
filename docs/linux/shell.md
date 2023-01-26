@@ -852,6 +852,10 @@ option is v ,the value is V
 
 ### find
 
+<br />
+
+**基础语法**
+
 ::: details （1）选项
 
 | 选项        | 说明                                                         |
@@ -865,7 +869,8 @@ option is v ,the value is V
 | `-perm`     | 指定文件权限                                                 |
 | `-maxdepth` | 指定文件查找的目录深度                                       |
 | `-prune`    | 使不在当前指定目录查找，如果同时使用`-depth`，那么`-prune`选项会被忽略 |
-| `-print`    | 输出到标准输出                                               |
+| `-print`    | 输出到stdout                                                 |
+| `-printf`   | 格式化输出到stdout                                           |
 | `-regex`    | 匹配正则表达式                                               |
 
 :::
@@ -876,22 +881,93 @@ option is v ,the value is V
 
 | 通配符 | 说明                 |
 | ------ | -------------------- |
-| *      | 任意长度的任意字符串 |
-| ?      | 任意单个字符         |
-| []     | 里面的任意一个       |
-| [^]    | 排除里面的所有       |
+| `*`    | 任意长度的任意字符串 |
+| `?`    | 任意单个字符         |
+| `[]`   | 里面的任意一个       |
+| `[^]`  | 排除里面的所有       |
 
 **运算符**
 
 | 运算符 | 说明 |
 | ------ | ---- |
-| !      | 非   |
-| -a     | 与   |
-| -o     | 或   |
+| `!`    | 非   |
+| `-a`   | 与   |
+| `-o`   | 或   |
 
 **格式化输出**
 
+| 格式化符号 | 说明                                       |
+| ---------- | ------------------------------------------ |
+| `%p`       | 输出完整路径的文件名                       |
+| `%P`       | 输出相对路径的文件名（相对于搜索路径而言） |
+| `%f`       | 仅输出文件名                               |
+| `%F`       | 输出文件所在的文件系统                     |
+| `%s`       | 输出文件大小                               |
+| `%i`       | 输出文件inode节点号                        |
+| `%y`       | 输出文件类型，等同于`ls -l`中的结果        |
 
+**可选表达式**
+
+| 表达式                | 说明                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| `-exec command {} \;` | 执行自定义命令，但更推荐使用 find 路径 选项 \| xargs command |
+| `-delete`             | 删除                                                         |
+
+:::
+
+<br />
+
+**使用示例**
+
+::: details （1）基础示例
+
+```bash
+[root@node-1 ~]# cd /tmp
+
+[root@node-1 tmp]# ls -lh
+total 0
+drwx------ 3 root root 17 Jan 26 05:03 systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss
+
+# 直接输入find,等同于find .
+# 1.会列出当前目录下的所有文件或目录
+# 2.默认支持隐藏文件
+# 3.默认支持递归
+# 4.输出结果默认包含目标目录,在这里是.(即当前目录)
+[root@node-1 tmp]# find
+.
+./.Test-unix
+./.font-unix
+./.XIM-unix
+./.X11-unix
+./.ICE-unix
+./systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss
+./systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss/tmp
+
+[root@node-1 tmp]# find .
+.
+./.Test-unix
+./.font-unix
+./.XIM-unix
+./.X11-unix
+./.ICE-unix
+./systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss
+./systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss/tmp
+
+# 对比一下和上面输出的有什么不同
+[root@node-1 tmp]# find /tmp
+/tmp
+/tmp/.Test-unix
+/tmp/.font-unix
+/tmp/.XIM-unix
+/tmp/.X11-unix
+/tmp/.ICE-unix
+/tmp/systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss
+/tmp/systemd-private-c5dd9316255142399a45fd27b3722f9a-chronyd.service-hg9mss/tmp
+```
+
+:::
+
+::: details （2）
 
 :::
 
