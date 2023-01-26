@@ -309,3 +309,52 @@ kubeadm-node-4 Off   0           0                 00:00:00 正常运行 9.0
 ```
 
 :::
+
+<br />
+
+## 解决重启后网络共享问题
+
+::: details （1）安装PowerShell模块
+
+Github：[https://github.com/loxia01/PSInternetConnectionSharing](https://github.com/loxia01/PSInternetConnectionSharing)
+
+```powershell
+# 安装PowerShell模块
+PS C:\Users\Administrator> Install-Module -Name PSInternetConnectionSharing
+```
+
+:::
+
+::: details （2）编写脚本
+
+`share.bat`
+
+```bash
+@echo off
+:: 禁用所有网卡的网络共享，如果有多块网卡共享需要调整这里针对单块网卡禁用
+PowerShell -Command "& { Disable-Ics } "
+
+:: 设置将WLAN 2共享给vEthernet (NAT)
+PowerShell -Command "& { Set-Ics -PublicConnectionName 'WLAN 2' -PrivateConnectionName 'vEthernet (NAT)' } "
+
+:: 重新设置NAT网关地址，下面实际是3条命令
+::  1.获取网卡,主要使用网卡的ifIndex属性
+::  2.添加一个网关IP，在这里是 192.168.48.1
+::  3.删除共享网络时自动设置的IP,默认是 192.168.137.1
+::  4.应该可以使用Set-NetIPAddress直接修改IP，还没有测试，以后再说
+PowerShell -Command "& { $adapter=Get-NetAdapter | where {$_.Name -eq 'vEthernet (NAT)'} ; New-NetIPAddress -IPAddress 192.168.48.1 -PrefixLength 24 -InterfaceIndex $adapter.ifIndex ; Remove-NetIPAddress -IPAddress 192.168.137.1 -PrefixLength 24 -InterfaceIndex $adapter.ifIndex -Confirm:$false }"
+```
+
+WLAN 2和vEthernet (NAT)需要根据实际情况修改，下面看一下对应关系：
+
+共享前：
+
+![image-20230126122910062](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230126122910062.png)
+
+共享后：
+
+![image-20230126123037950](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230126123037950.png)
+
+![image-20230126123154491](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230126123154491.png)
+
+:::
