@@ -1191,6 +1191,14 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 
 ### grep
 
+`grep`是一个行搜索神器，家族成员有
+
+* `grep`：提供基本的搜索功能
+* `egrep`：支持扩展的正则表达式，相当于`grep -E`
+* `fgrep`：不使用正则表达式，相当于`grep -F`
+
+
+
 <br />
 
 ### sed
