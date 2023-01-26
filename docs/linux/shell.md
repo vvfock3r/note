@@ -852,8 +852,6 @@ option is v ,the value is V
 
 ### find
 
-<br />
-
 **基础语法**
 
 ::: details （1）选项
@@ -914,8 +912,6 @@ option is v ,the value is V
 | `-delete`             | 删除                                                         |
 
 :::
-
-<br />
 
 **使用示例**
 
