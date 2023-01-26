@@ -1128,11 +1128,15 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 
 :::
 
-::: details （6）与xargs配合使用
+::: details （6）配合xargs使用，搜索大文件并按照文件大小排序
 
 ```bash
 # 搜索大于100M的文件，并按照文件大小从大到小排序
-[root@node-1 lib]# find / \( -path "/proc" -o -path "/root" \) -prune -o -type f -size +100M -print | xargs ls -lh --sort=size
+[root@node-1 lib]# find / -path "/proc" -prune -o -type f -size +100M -print | xargs ls -lh --sort=size
+-rw-r--r--  1 root root 7.1G Jan 25 13:23 /root/cpulimit-sed-data.txt
+-rw-r--r--  1 root root 7.1G Jan 25 17:22 /root/go-data.txt
+-rw-r--r--  1 root root 7.1G Jan 25 12:40 /root/sed-data.txt
+-rw-r--r--  1 root root 6.0G Jan 25 09:28 /root/.data.txt
 -rw-------  1 root root 288M Jan 12 14:31 /usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar
 -rw-------  1 root root 219M Jan 12 14:54 /usr/local/kubernetes/cni/calico-node-v3.24.5.tar
 -rw-r-----  1 root root 207M Jan 12 14:34 /usr/local/kubernetes/kubeadm/kubernetes-images-v1.25.4.tar.gz
@@ -1140,11 +1144,6 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 -rw-r-----  1 root root 188M Jan 12 14:58 /usr/local/kubernetes/cni/calico.tar.gz
 -rw-------  1 root root 124M Jan 12 11:48 /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.5.tar
 -rw-------  1 root root 124M Jan 12 14:31 /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar
--rw-------  1 root root 113M Jan 12 11:48 /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.5.tar
--rw-------  1 root root 113M Jan 12 14:31 /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar
--rwxr-xr-x  1 root root 109M Nov 11 00:58 /usr/bin/kubelet
--rw-r--r--. 1 root root 105M Dec 20 01:52 /var/cache/yum/x86_64/7/updates/gen/primary_db.sqlite
--rw-r--r--. 1 root root 102M Jan 11 21:06 /usr/lib/locale/locale-archive
 ```
 
 :::
