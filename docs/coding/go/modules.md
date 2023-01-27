@@ -39,7 +39,7 @@ sidebar: off
 * 安全保护
 
   * Token：jwt
-  * 加密：bcrypt
+  * 加密：[bcrypt](https://jinhui.dev/coding/go/modules/bcrypt.html)
   * RBAC：casbin
   * 验证器：validator
   * 限速器：time/rate
