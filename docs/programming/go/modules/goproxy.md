@@ -47,7 +47,7 @@ func main() {
 C:\Users\Administrator> curl ip.jinhui.dev                             
 183.197.xxx.xxx
 
-# 添加socks5代理
+# 添加http代理
 C:\Users\Administrator> curl --proxy http://jinhui.dev:8000 ip.jinhui.dev 
 43.154.36.151
 
