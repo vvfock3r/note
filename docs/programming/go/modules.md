@@ -39,7 +39,7 @@ sidebar: off
   * [gin](https://jinhui.dev/programming/go/modules/gin.html)：流行的Web Server
   * [grpc](https://jinhui.dev/programming/go/modules/grpc.html)：RPC Server
   * [go-socks5](https://jinhui.dev/programming/go/modules/go-socks5.html)：Socks5 Proxy
-  * goproxy：HTTP Proxy
+  * [goproxy](https://jinhui.dev/programming/go/modules/goproxy.html)：HTTP Proxy
 * 安全保护
 
   * [jwt](https://jinhui.dev/programming/go/modules/jwt.html)：JSON Web Token
