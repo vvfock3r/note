@@ -11,7 +11,7 @@ Github：[https://github.com/elazarl/goproxy](https://github.com/elazarl/goproxy
 ## 安装
 
 ```bash
-D:\application\GoLand\example>go get github.com/elazarl/goproxy
+D:\application\GoLand\example> go get github.com/elazarl/goproxy
 go: added github.com/elazarl/goproxy v0.0.0-20221015165544-a0805db90819
 ```
 

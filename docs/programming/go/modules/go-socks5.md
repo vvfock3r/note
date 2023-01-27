@@ -16,7 +16,9 @@ Github：[https://github.com/armon/go-socks5](https://github.com/armon/go-socks5
 ## 安装
 
 ```bash
-go get github.com/armon/go-socks5
+D:\application\GoLand\example> go get github.com/armon/go-socks5
+go: added github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
+go: added golang.org/x/net v0.5.0
 ```
 
 <br />
