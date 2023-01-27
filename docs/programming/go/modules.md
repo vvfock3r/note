@@ -22,10 +22,10 @@ sidebar: off
 * 正则：[regexp](https://jinhui.dev/programming/go/modules/regexp.html)
 * 信号：[signal](https://jinhui.dev/programming/go/modules/signal.html)
 * 随机数：[math/rand](https://jinhui.dev/programming/go/modules/math-rand.html)
-* 日志记录：[uber-go/zap](https://jinhui.dev/programming/go/modules/uber-go-zap.html)
-* 配置读写：[spf13/viper](https://jinhui.dev/programming/go/modules/spf13-viper.html)
-* 数据库：[go-gorm/gorm](https://jinhui.dev/programming/go/modules/go-gorm-gorm.html)
-* 计划任务：[robfig/cron](https://jinhui.dev/programming/go/modules/robfig-cron.html)
+* 日志记录：[zap](https://jinhui.dev/programming/go/modules/zap.html)
+* 配置读写：[viper](https://jinhui.dev/programming/go/modules/viper.html)
+* 数据库：[gorm](https://jinhui.dev/programming/go/modules/gorm.html)
+* 计划任务：[cron](https://jinhui.dev/programming/go/modules/cron.html)
 * 文件
 
   * 实时重载：[air](https://jinhui.dev/programming/go/modules/air.html)
