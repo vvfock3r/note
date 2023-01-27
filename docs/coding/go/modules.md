@@ -17,7 +17,7 @@ sidebar: off
 **模块列表**
 
 * 时间：[time](https://jinhui.dev/coding/go/modules/time.html)
-* 排序：sort
+* 排序：[sort](https://jinhui.dev/coding/go/modules/sort.html)
 * 序列化：json
 * 正则：regexp
 * 信号：signal
