@@ -34,6 +34,10 @@ sidebar: off
 * 命令行
   * 参数解析：[cobra](https://jinhui.dev/coding/go/modules/cobra.html)
   * 终端颜色：[color](https://jinhui.dev/coding/go/modules/color.html)
+* Web
+  * [net/http](https://jinhui.dev/coding/go/modules/net-http.html)
+  * [gin](https://jinhui.dev/coding/go/modules/gin.html)
+  * [grpc](https://jinhui.dev/coding/go/modules/grpc.html)
 * 安全保护
 
   * Token：[jwt](https://jinhui.dev/coding/go/modules/jwt.html)

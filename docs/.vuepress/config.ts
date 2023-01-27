@@ -93,7 +93,6 @@ const navbar = [
                 children: [
                     {text: 'Go核心语法', link: '/coding/go/document.html'},
 					{text: 'Go实用模块', link: '/coding/go/modules.html'},
-                    {text: 'Go Web开发', link: '/coding/go/web.html'},
                 ]
             },
 
