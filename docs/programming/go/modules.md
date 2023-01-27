@@ -35,9 +35,9 @@ sidebar: off
   * 参数解析：[cobra](https://jinhui.dev/programming/go/modules/cobra.html)
   * 终端颜色：[color](https://jinhui.dev/programming/go/modules/color.html)
 * Web
-  * [net/http](https://jinhui.dev/programming/go/modules/net-http.html)
-  * [gin](https://jinhui.dev/programming/go/modules/gin.html)
-  * [grpc](https://jinhui.dev/programming/go/modules/grpc.html)
+  * Web Server：[net/http](https://jinhui.dev/programming/go/modules/net-http.html)
+  * Web Server：[gin](https://jinhui.dev/programming/go/modules/gin.html)
+  * RPC Server：[grpc](https://jinhui.dev/programming/go/modules/grpc.html)
 * 安全保护
 
   * Token：[jwt](https://jinhui.dev/programming/go/modules/jwt.html)
