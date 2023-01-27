@@ -1197,7 +1197,110 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 * `egrep`：支持扩展的正则表达式，相当于`grep -E`
 * `fgrep`：不使用正则表达式，相当于`grep -F`
 
+::: details （1）推荐做个别名 grep --color=auto
 
+![image-20230127100940403](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230127100940403.png)
+
+```bash
+[root@node-1 ~]# vim ~/.bashrc
+...
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+
+[root@node-1 ~]# source ~/.bashrc
+```
+
+:::
+
+::: details （2）常用选项
+
+```bash
+# -E 启用扩展的正则表达式,对于?和+等字符会当作正则元字符而不是普通字符
+[root@node-1 ~]# echo -e "AB\nAAB\nAAAB" | grep '^A+B$'
+[root@node-1 ~]# echo -e "AB\nAAB\nAAAB" | grep -E '^A+B$'
+AB
+AAB
+AAAB
+
+[root@node-1 ~]# echo -e "AB\nAAB\nAAAB" | grep '^A?B$'
+[root@node-1 ~]# echo -e "AB\nAAB\nAAAB" | grep -E '^A?B$'
+AB
+
+# -i 忽略大小写
+[root@node-1 ~]# echo -e "abc\nABC" | grep 'abc'
+abc
+[root@node-1 ~]# echo -e "abc\nABC" | grep -i 'abc'
+abc
+ABC
+
+# -v 排除某些行，显示剩下的行，一般用作排除注释行和空行
+[root@node-1 ~]# grep -Ev '^#|^$' /etc/selinux/config
+SELINUX=disabled
+SELINUXTYPE=targeted
+
+# -n 显示匹配的行号
+[root@node-1 ~]# echo -e "abc\nABC" | grep -n 'ABC'
+2:ABC
+
+# -c 统计匹配到的行数量
+[root@node-1 ~]# echo -e "abc\nabc\nABC" | grep -c 'abc'
+2
+[root@node-1 ~]# echo -e "abc\nabc\nABC" | grep -ic 'abc'
+3
+
+# -l 如果匹配，则显示文件名
+[root@node-1 ~]# grep rootabc -l /etc/passwd
+[root@node-1 ~]# grep root -l /etc/passwd
+/etc/passwd
+
+# -r 递归搜索目录,不过更推荐使用find | xargs grep 来搜索
+[root@node-1 ~]# mkdir /tmp/1
+[root@node-1 ~]# seq 10 > /tmp/1/1.txt
+[root@node-1 ~]# seq 10 > /tmp/1.txt
+[root@node-1 ~]# grep -r 9 /tmp/
+/tmp/1.txt:9
+/tmp/1/1.txt:9
+[root@node-1 ~]# grep 9 /tmp/
+grep: /tmp/: Is a directory
+[root@node-1 ~]# grep 9 /tmp/*.txt
+9
+
+# -A n 输出匹配行和匹配行下面的n行 --after
+# -B n 输出匹配行和匹配行的前n行   --before
+# -C n 相当于-A和-B的合并
+[root@node-1 ~]# seq 10 | grep -A 3 5
+5
+6
+7
+8
+[root@node-1 ~]# seq 10 | grep -B 3 5
+2
+3
+4
+5
+[root@node-1 ~]# seq 10 | grep -C 3 5
+2
+3
+4
+5
+6
+7
+8
+
+# -o 仅输出匹配的内容，而不是输出行
+[root@node-1 ~]# grep root /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+operator:x:11:0:operator:/root:/sbin/nologin
+
+[root@node-1 ~]# grep -o root /etc/passwd
+root
+root
+root
+root
+```
+
+:::
 
 <br />
 
@@ -1507,7 +1610,7 @@ ABC
 
 # ------------------------------------------------------------------------------
 
-# 当匹配的内容包含/时，可以使用任意字符替换sed的语法中的/
+# 当匹配的内容包含/时，可以使用任意字符替换sed的语法中的/,比如#
 [root@ap-hongkang ~]# echo /etc/sysconfig/network-scripts/ifcfg-eth0 | sed -r 's#(.*)/(.*)#\2#'
 ifcfg-eth0
 ```
