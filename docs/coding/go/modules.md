@@ -32,9 +32,7 @@ sidebar: off
   * 文件路径：[path/filepath](https://jinhui.dev/coding/go/modules/path-filepath.html)
   * 打包静态文件：[embed](https://jinhui.dev/coding/go/modules/embed.html)
 * 命令行
-
   * 参数解析：[cobra](https://jinhui.dev/coding/go/modules/cobra.html)
-
   * 终端颜色：[color](https://jinhui.dev/coding/go/modules/color.html)
 * 安全保护
 
