@@ -6,6 +6,11 @@
 
 Github：[https://github.com/armon/go-socks5](https://github.com/armon/go-socks5)
 
+说明：
+
+* 最近更新时间在2016年
+* frp项目中在使用该库
+
 <br />
 
 ## 安装
