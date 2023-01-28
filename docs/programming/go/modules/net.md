@@ -215,7 +215,121 @@ world
 
 <br />
 
-### 2）大端小端
+### 2）字节序
+
+字节序，顾名思义就是字节的顺序。举个例子，`0x1234`使用两个字节储存，高位是`0x12`，低位是`0x34`
+
+<br />
+
+根据字节存储顺序可以分为：
+
+* 小端字节序（`Little endinan`）
+  * 低位字节在前，高位字节在后，比如`0x3412`
+* 大端字节序（`Big endian`）
+  * 高位字节在前，低位字节在后，符合人类读写数值的方式，比如`0x1234`
+
+<br />
+
+根据字节所处的位置可以分为：
+
+* 主机字节序：CPU存储时采用的字节顺序，不同的CPU设计时采用的字节序是不同的。Intel与AMD CPU，一般都是Little endian
+* 网络字节序：网络传输时采用的字节顺序，TCP/IP协议规定以大端字节序传输
+
+主机字节序和网络字节序的转换关系：
+
+* 主机发送数据到网络上，必须将主机字节序转换到网络字节序
+
+* 主机从网络中接收数据，必须将网络字节序转换为主机字节序
+* 如果主机字节序和网络字节序相同，那么转换函数就什么都不做
+
+<br />
+
+::: details （1）检查本地主机的字节序
+
+1、通过Shell命令检查
+
+```bash
+[root@ap-hongkang ~]# lscpu | grep 'Byte Order' | awk -F: '{print $2}'
+          Little Endian
+```
+
+2、编写Go代码检查
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+// IsLittleEndian 是否是小端字节序
+func IsLittleEndian() bool {
+	n := 0x1234
+	return *(*byte)(unsafe.Pointer(&n)) == 0x34
+}
+
+func main() {
+	fmt.Println(IsLittleEndian())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+true
+```
+
+:::
+
+::: details （2）大小端字节序转换
+
+```go
+package main
+
+import (
+	"encoding/binary"
+	"fmt"
+)
+
+func main() {
+	// 定义变量
+	v := 0x1234
+	b := make([]byte, 2)
+	l := make([]byte, 2)
+
+	// 转为大端存储
+	binary.BigEndian.PutUint16(b, uint16(v))
+	fmt.Printf("大端存储: %#v\n", b)
+
+	// 转为小端存储
+	binary.LittleEndian.PutUint16(l, uint16(v))
+	fmt.Printf("小端存储: %#v\n", l)
+
+	// 根据字节序的不同使用不同的方法转为uint类型
+	fmt.Println(binary.BigEndian.Uint16(b))
+	fmt.Println(binary.LittleEndian.Uint16(l))
+
+	// 如果使用错误的方法
+	fmt.Println(binary.BigEndian.Uint16(l))
+	fmt.Println(binary.LittleEndian.Uint16(b))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+大端存储: []byte{0x12, 0x34}
+小端存储: []byte{0x34, 0x12}
+4660
+4660
+13330
+13330
+```
+
+:::
 
 <br />
 
