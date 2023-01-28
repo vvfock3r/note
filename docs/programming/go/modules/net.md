@@ -27,42 +27,40 @@ import (
 )
 
 // process 连接处理函数
-func process(conn net.Conn, buffer []byte) {
+func process(conn net.Conn) {
 	// 关闭连接
 	defer conn.Close()
 
-	// 读写数据
+	// 读写对象
 	reader := bufio.NewReader(conn)
+	readBuffer := make([]byte, 1024)
+	writer := conn
+
+	// 读写数据
 	for {
 		// 读取数据
-		n, err := reader.Read(buffer[:])
+		n, err := reader.Read(readBuffer[:])
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("read failed from client: %s\n", err)
 			}
 			break
 		}
-		recvStr := string(buffer[:n])
+		recvStr := string(readBuffer[:n])
 		log.Println("received message from client：", recvStr)
 
-		// 写入数据
-		if _, err := conn.Write([]byte(recvStr)); err != nil {
+		// 原样写入数据
+		if _, err := writer.Write([]byte(recvStr)); err != nil {
 			log.Printf("send message failed to client: ", err)
 			break
 		}
+		log.Printf("send message to client: %s", recvStr)
 	}
 }
 
 func main() {
-	// 定义变量
-	var (
-		network = "tcp"
-		address = "127.0.0.1:60000"
-		buffer  = make([]byte, 4096)
-	)
-
 	// 监听端口
-	listener, err := net.Listen(network, address)
+	listener, err := net.Listen("tcp", "127.0.0.1:60000")
 	if err != nil {
 		log.Fatalf("listen failed: %s\n", err)
 	}
@@ -76,9 +74,10 @@ func main() {
 			log.Printf("accept failed: %s\n", err)
 			continue
 		}
+		log.Printf("connection established from %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
 
 		// 启动一个goroutine处理
-		go process(conn, buffer)
+		go process(conn)
 	}
 }
 ```
@@ -87,7 +86,7 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run server/main.go
-2023/01/28 12:33:19 listen at tcp://127.0.0.1:60000
+2023/01/28 12:26:42 listen at tcp://127.0.0.1:60000
 ```
 
 **（3）使用Socket调试工具进行测试，可根据实际情况选择一款自己喜欢的**
@@ -96,18 +95,20 @@ D:\application\GoLand\example>go run server/main.go
 
 ![image-20230128123447301](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128123447301.png)
 
-![image-20230128123534006](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128123534006.png)
+![image-20230128164113256](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128164113256.png)
+
+
 
 **（4）使用telnet工具测试**
 
 ```bash
 # telnet测试
 C:\Users\Administrator> telnet 127.0.0.1 60000
-aabb112233
+aabbcc112233
 
 # 服务端日志
 D:\application\GoLand\example>go run server/main.go
-2023/01/28 12:57:24 listen at tcp://127.0.0.1:60000
+...
 2023/01/28 13:02:17 received message from client： a
 2023/01/28 13:02:25 received message from client： b
 2023/01/28 13:02:26 received message from client： c
@@ -138,7 +139,6 @@ func main() {
 	var (
 		network = "tcp"
 		address = "127.0.0.1:60000"
-		buffer  = [4096]byte{}
 	)
 
 	// 建立连接
@@ -149,14 +149,19 @@ func main() {
 	}
 	defer conn.Close()
 
+	// 读写对象
+	stdout := bufio.NewReader(os.Stdin) // stdout读入
+	writer := conn                      // writer写入到服务端
+	reader := bufio.NewReader(conn)     // reader读取服务端响应
+	readBuffer := make([]byte, 1024)
+
 	// 读取用户输入并发送到服务端
-	reader := bufio.NewReader(os.Stdin)
 	for {
 		// 修改一下终端提示符
 		fmt.Printf(">>> ")
 
 		// 读取用户输入, Ctrl+C会触发io.EOF
-		input, err := reader.ReadString('\n')
+		input, err := stdout.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("read failed from input: %s\n", err)
@@ -178,20 +183,20 @@ func main() {
 		}
 
 		// 发送数据到服务端
-		if _, err = conn.Write([]byte(input)); err != nil {
+		if _, err = writer.Write([]byte(input)); err != nil {
 			log.Printf("send message failed: %s\n", err)
 			break
 		}
 
 		// 读取服务端响应的数据
-		n, err := conn.Read(buffer[:])
+		n, err := reader.Read(readBuffer[:])
 		if err != nil {
 			log.Printf("recv message failed: %s\n", err)
 			break
 		}
 
 		// 输出服务端响应结果
-		fmt.Println(string(buffer[:n]))
+		fmt.Println(string(readBuffer[:n]))
 	}
 }
 ```
@@ -201,7 +206,7 @@ func main() {
 ```bash
 # 启动服务端
 D:\application\GoLand\example>go run server/main.go
-2023/01/28 11:56:26 listen at tcp://127.0.0.1:60000
+2023/01/28 17:51:07 listen at tcp://127.0.0.1:60000
 
 # 启动客户端进行测试
 D:\application\GoLand\example>go run client/main.go
@@ -307,13 +312,13 @@ func main() {
 	binary.LittleEndian.PutUint16(l, uint16(v))
 	fmt.Printf("小端存储: %#v\n", l)
 
-	// 根据字节序的不同使用不同的方法转为uint类型
-	fmt.Println(binary.BigEndian.Uint16(b))
-	fmt.Println(binary.LittleEndian.Uint16(l))
+	// 根据字节序的不同使用不同的方法转为uint类型,并输出16进制数
+	fmt.Printf("%#x\n", binary.BigEndian.Uint16(b))
+	fmt.Printf("%#x\n", binary.LittleEndian.Uint16(l))
 
 	// 如果使用错误的方法
-	fmt.Println(binary.BigEndian.Uint16(l))
-	fmt.Println(binary.LittleEndian.Uint16(b))
+	fmt.Printf("%#x\n", binary.BigEndian.Uint16(l))
+	fmt.Printf("%#x\n", binary.LittleEndian.Uint16(b))
 }
 ```
 
@@ -323,11 +328,15 @@ func main() {
 D:\application\GoLand\example>go run main.go
 大端存储: []byte{0x12, 0x34}
 小端存储: []byte{0x34, 0x12}
-4660
-4660
-13330
-13330
+0x1234
+0x1234
+0x3412
+0x3412
 ```
+
+:::
+
+::: details （3）
 
 :::
 
