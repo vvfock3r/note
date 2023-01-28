@@ -34,6 +34,8 @@ sidebar: off
 * 命令行
   * [cobra](https://jinhui.dev/programming/go/modules/cobra.html)：参数解析
   * [color](https://jinhui.dev/programming/go/modules/color.html)：终端颜色
+* 网络
+  * [net](https://jinhui.dev/programming/go/modules/net.html)：基础网络库
 * Web
   * [net/http](https://jinhui.dev/programming/go/modules/net-http.html)：内置的Web Server
   * [gin](https://jinhui.dev/programming/go/modules/gin.html)：流行的Web Server
