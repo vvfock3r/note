@@ -14,13 +14,12 @@
 
 ::: details （1）TCP Server
 
-**（1）编写Go代码 `server/main.go`**
+`server/main.go`
 
 ```go
 package main
 
 import (
-	"bufio"
 	"io"
 	"log"
 	"net"
@@ -31,30 +30,28 @@ func process(conn net.Conn) {
 	// 关闭连接
 	defer conn.Close()
 
-	// 读写对象
-	reader := bufio.NewReader(conn)
-	readBuffer := make([]byte, 1024)
-	writer := conn
-
 	// 读写数据
+	buffer := make([]byte, 1024)
 	for {
 		// 读取数据
-		n, err := reader.Read(readBuffer[:])
+		n, err := conn.Read(buffer[:])
 		if err != nil {
-			if err != io.EOF {
-				log.Printf("read failed from client: %s\n", err)
+			if err == io.EOF {
+				log.Printf("connection broken from %s\n", conn.RemoteAddr().String())
+			} else {
+				log.Printf("read failed: %s\n", err)
 			}
 			break
 		}
-		recvStr := string(readBuffer[:n])
-		log.Println("received message from client：", recvStr)
+		recv := string(buffer[:n])
+		log.Printf("read message：%s\n", recv)
 
 		// 原样写入数据
-		if _, err := writer.Write([]byte(recvStr)); err != nil {
-			log.Printf("send message failed to client: ", err)
+		if _, err := conn.Write([]byte(recv)); err != nil {
+			log.Printf("send message failed: %s\n", err)
 			break
 		}
-		log.Printf("send message to client: %s", recvStr)
+		log.Printf("send message: %s\n", recv)
 	}
 }
 
@@ -74,7 +71,7 @@ func main() {
 			log.Printf("accept failed: %s\n", err)
 			continue
 		}
-		log.Printf("connection established from %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
+		log.Printf("connection established from %s\n", conn.RemoteAddr().String())
 
 		// 启动一个goroutine处理
 		go process(conn)
@@ -82,44 +79,384 @@ func main() {
 }
 ```
 
-**（2）启动服务端**
+:::
 
-```bash
-D:\application\GoLand\example>go run server/main.go
-2023/01/28 12:26:42 listen at tcp://127.0.0.1:60000
-```
+::: details （2）TCP Client
 
-**（3）使用Socket调试工具进行测试，可根据实际情况选择一款自己喜欢的**
+`client/main.go`
 
-![image-20230128123232787](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128123232787.png)
+```go
+package main
 
-![image-20230128123447301](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128123447301.png)
+import (
+	"fmt"
+	"log"
+	"net"
+	"strconv"
+)
 
-![image-20230128164113256](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128164113256.png)
+func main() {
+	// 定义变量
+	var (
+		network = "tcp"
+		address = "127.0.0.1:60000"
+	)
 
+	// 建立连接
+	conn, err := net.Dial(network, address)
+	if err != nil {
+		log.Fatalf("dial failed: %s: %s\n", network+"://"+address, err)
+	}
+	defer conn.Close()
 
+	// 数据处理
+	buffer := make([]byte, 1024)
+	for i := 0; i < 10; i++ {
+		// 发送数据到服务端
+		message := fmt.Sprintf("%-3s Hello World!", strconv.Itoa(i+1))
+		if _, err = conn.Write([]byte(message)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
 
-**（4）使用telnet工具测试**
+		// 读取服务端响应的数据
+		n, err := conn.Read(buffer[:])
+		if err != nil {
+			log.Printf("read message failed: %s\n", err)
+			break
+		}
 
-```bash
-# telnet测试
-C:\Users\Administrator> telnet 127.0.0.1 60000
-aabbcc112233
-
-# 服务端日志
-D:\application\GoLand\example>go run server/main.go
-...
-2023/01/28 13:02:17 received message from client： a
-2023/01/28 13:02:25 received message from client： b
-2023/01/28 13:02:26 received message from client： c
-2023/01/28 13:02:27 received message from client： 1
-2023/01/28 13:02:28 received message from client： 2
-2023/01/28 13:02:28 received message from client： 3
+		// 输出服务端响应结果
+		fmt.Printf("%s\n", string(buffer[:n]))
+	}
+}
 ```
 
 :::
 
-::: details （2）TCP Client
+::: details （3）测试
+
+```bash
+# 启动服务端
+D:\application\GoLand\example>go run server/main.go
+2023/01/29 14:30:43 listen at tcp://127.0.0.1:60000
+
+# 启动客户端
+D:\application\GoLand\example>go run client/main.go
+1   Hello World!
+2   Hello World!
+3   Hello World!
+4   Hello World!
+5   Hello World!
+6   Hello World!
+7   Hello World!
+8   Hello World!
+9   Hello World!
+10  Hello World!
+
+# 查看服务端日志
+D:\application\GoLand\example>go run server/main.go
+2023/01/29 14:30:43 listen at tcp://127.0.0.1:60000
+2023/01/29 14:31:06 connection established from 127.0.0.1:55745
+2023/01/29 14:31:06 read message：1   Hello World!
+2023/01/29 14:31:06 send message: 1   Hello World!
+2023/01/29 14:31:06 read message：2   Hello World!
+2023/01/29 14:31:06 send message: 2   Hello World!
+2023/01/29 14:31:06 read message：3   Hello World!
+2023/01/29 14:31:06 send message: 3   Hello World!
+2023/01/29 14:31:06 read message：4   Hello World!
+2023/01/29 14:31:06 send message: 4   Hello World!
+2023/01/29 14:31:06 read message：5   Hello World!
+2023/01/29 14:31:06 send message: 5   Hello World!
+2023/01/29 14:31:06 read message：6   Hello World!
+2023/01/29 14:31:06 send message: 6   Hello World!
+2023/01/29 14:31:06 read message：7   Hello World!
+2023/01/29 14:31:06 send message: 7   Hello World!
+2023/01/29 14:31:06 read message：8   Hello World!
+2023/01/29 14:31:06 send message: 8   Hello World!
+2023/01/29 14:31:06 read message：9   Hello World!
+2023/01/29 14:31:06 send message: 9   Hello World!
+2023/01/29 14:31:06 read message：10  Hello World!
+2023/01/29 14:31:06 send message: 10  Hello World!
+2023/01/29 14:31:06 connection broken from 127.0.0.1:55745
+```
+
+:::
+
+<br />
+
+### 2）压力测试
+
+::: details （1）测试服务端QPS
+
+`server/main.go`
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net"
+	"sync/atomic"
+	"time"
+)
+
+// QPS 统计QPS信息
+type QPS struct {
+	value *int32
+}
+
+func NewQPS() *QPS {
+	return &QPS{value: new(int32)}
+}
+
+// Inc +1
+func (q *QPS) Inc() {
+	atomic.AddInt32(q.value, 1)
+}
+
+// ValueWithReset 返回当前的值,并设置value为0重新计数
+func (q *QPS) ValueWithReset() int32 {
+	return atomic.SwapInt32(q.value, 0)
+}
+
+var qps = NewQPS()
+
+// process 连接处理函数
+func process(conn net.Conn) {
+	// 关闭连接
+	defer conn.Close()
+
+	// 读写数据
+	buffer := make([]byte, 1024)
+	for {
+		// 读取数据
+		n, err := conn.Read(buffer[:])
+		if err != nil {
+			if err == io.EOF {
+				log.Printf("connection broken from %s\n", conn.RemoteAddr().String())
+			} else {
+				log.Printf("read failed: %s\n", err)
+			}
+			break
+		}
+		recv := string(buffer[:n])
+		//log.Printf("read message：%s\n", recv)
+
+		// 原样写入数据
+		if _, err := conn.Write([]byte(recv)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
+		//log.Printf("send message: %s\n", recv)
+
+		// QPS +1
+		qps.Inc()
+	}
+}
+
+func main() {
+	// 监听端口
+	listener, err := net.Listen("tcp", "0.0.0.0:60000")
+	if err != nil {
+		log.Fatalf("listen failed: %s\n", err)
+	}
+	log.Printf("listen at %s\n", listener.Addr().Network()+"://"+listener.Addr().String())
+
+	// 实时输出QPS
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				value := qps.ValueWithReset()
+				if value != 0 {
+					log.Printf("Queries Per Second: %d\n", value)
+				}
+			default:
+			}
+		}
+	}()
+
+	// 处理请求
+	for {
+		// 等待连接
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("accept failed: %s\n", err)
+			continue
+		}
+		log.Printf("connection established from %s\n", conn.RemoteAddr().String())
+
+		// 启动一个goroutine处理
+		go process(conn)
+	}
+}
+```
+
+`client/main.go`
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net"
+)
+
+var (
+	h = flag.String("h", "127.0.0.1:60000", "host address")
+	c = flag.Int("c", 10, "connections number")
+)
+
+func main() {
+	// 解析命令行参数
+	flag.Parse()
+
+	// 定义变量
+	var network = "tcp"
+
+	// 建立连接
+	conns := []net.Conn{}
+	for i := 0; i < *c; i++ {
+		conn, err := net.Dial("tcp", *h)
+		if err != nil {
+			log.Fatalf("dial failed: %s: %s\n", network+"://"+*h, err)
+		}
+		defer conn.Close()
+		conns = append(conns, conn)
+	}
+
+	// 每个连接启一个Goroutine进行处理
+	for _, conn := range conns {
+		go func(conn net.Conn) {
+			for {
+				// 发送数据
+				message := fmt.Sprintf("Hello World!")
+				if _, err := conn.Write([]byte(message)); err != nil {
+					log.Printf("send message failed: %s\n", err)
+					return
+				}
+
+				// 读取服务端响应的数据
+				buffer := make([]byte, 1024)
+				n, err := conn.Read(buffer[:])
+				if err != nil {
+					log.Printf("read message failed: %s\n", err)
+					return
+				}
+
+				// 输出服务端响应结果
+				//fmt.Printf("%s\n", string(buffer[:n]))
+				n = n
+			}
+		}(conn)
+	}
+
+	select {}
+}
+```
+
+输出结果
+
+```bash
+# 本地回环接口测试
+[root@node-1 demo]# go run server/main.go  # 启动服务端
+[root@node-1 demo]# go run client/main.go  # 启动客户端
+
+# 服务端日志显示 QPS在7万左右
+[root@node-1 demo]# go run server/main.go
+2023/01/29 16:58:43 listen at tcp://[::]:60000
+2023/01/29 16:59:45 connection established from 127.0.0.1:42268
+2023/01/29 16:59:45 connection established from 127.0.0.1:42270
+2023/01/29 16:59:45 connection established from 127.0.0.1:42272
+2023/01/29 16:59:45 connection established from 127.0.0.1:42274
+2023/01/29 16:59:45 connection established from 127.0.0.1:42276
+2023/01/29 16:59:45 connection established from 127.0.0.1:42278
+2023/01/29 16:59:45 connection established from 127.0.0.1:42280
+2023/01/29 16:59:45 connection established from 127.0.0.1:42282
+2023/01/29 16:59:45 connection established from 127.0.0.1:42284
+2023/01/29 16:59:45 connection established from 127.0.0.1:42286
+2023/01/29 16:59:45 Queries Per Second: 11945
+2023/01/29 16:59:46 Queries Per Second: 80836
+2023/01/29 16:59:47 Queries Per Second: 77690
+2023/01/29 16:59:48 Queries Per Second: 75832
+2023/01/29 16:59:49 Queries Per Second: 76132
+2023/01/29 16:59:50 Queries Per Second: 68467
+2023/01/29 16:59:51 Queries Per Second: 64415
+2023/01/29 16:59:52 Queries Per Second: 76862
+2023/01/29 16:59:53 Queries Per Second: 75880
+2023/01/29 16:59:54 Queries Per Second: 76612
+2023/01/29 16:59:55 Queries Per Second: 78443
+
+# -------------------------------------------------------------------------
+
+# 局域网内测试
+[root@node-1 demo]# go run server/main.go                                # node-1上启动服务端
+[root@node-2 demo]# go run client/main.go -h 192.168.48.151:60000        # node-2上启动客户端
+
+# 服务端日志显示 QPS在3万左右
+[root@node-1 demo]# go run server/main.go
+2023/01/29 17:07:59 listen at tcp://[::]:60000
+2023/01/29 17:08:04 connection established from 192.168.48.152:60270
+2023/01/29 17:08:04 connection established from 192.168.48.152:60272
+2023/01/29 17:08:04 connection established from 192.168.48.152:60274
+2023/01/29 17:08:04 connection established from 192.168.48.152:60276
+2023/01/29 17:08:04 connection established from 192.168.48.152:60278
+2023/01/29 17:08:04 connection established from 192.168.48.152:60280
+2023/01/29 17:08:04 connection established from 192.168.48.152:60282
+2023/01/29 17:08:04 connection established from 192.168.48.152:60284
+2023/01/29 17:08:04 connection established from 192.168.48.152:60286
+2023/01/29 17:08:04 connection established from 192.168.48.152:60288
+2023/01/29 17:08:05 Queries Per Second: 21019
+2023/01/29 17:08:06 Queries Per Second: 32074
+2023/01/29 17:08:07 Queries Per Second: 33049
+2023/01/29 17:08:08 Queries Per Second: 32242
+2023/01/29 17:08:09 Queries Per Second: 33483
+2023/01/29 17:08:10 Queries Per Second: 33368
+2023/01/29 17:08:11 Queries Per Second: 31431
+2023/01/29 17:08:12 Queries Per Second: 33508
+
+# -------------------------------------------------------------------------
+
+# 本地到香港节点测试
+[root@ap-hongkang demo]# go run server/main.go                           # 香港节点上启动服务端
+[root@node-1 demo]# go run client/main.go -h 43.154.36.151:60000         # 本地虚机上启动客户端
+
+# 服务端日志显示 QPS在100左右
+[root@ap-hongkang demo]# go run server/main.go
+2023/01/29 17:10:05 listen at tcp://[::]:60000
+2023/01/29 17:12:01 connection established from 183.197.36.xxx:21215
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21216
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21217
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21218
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21219
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21220
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21221
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21222
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21223
+2023/01/29 17:12:02 connection established from 183.197.36.xxx:21224
+2023/01/29 17:12:03 Queries Per Second: 108
+2023/01/29 17:12:04 Queries Per Second: 135
+2023/01/29 17:12:05 Queries Per Second: 122
+2023/01/29 17:12:06 Queries Per Second: 137
+2023/01/29 17:12:07 Queries Per Second: 118
+2023/01/29 17:12:08 Queries Per Second: 130
+2023/01/29 17:12:09 Queries Per Second: 139
+2023/01/29 17:12:10 Queries Per Second: 136
+```
+
+:::
+
+<br />
+
+### 3）交互式
+
+::: details TCP Client
 
 ```go
 package main
@@ -153,7 +490,7 @@ func main() {
 	stdout := bufio.NewReader(os.Stdin) // stdout读入
 	writer := conn                      // writer写入到服务端
 	reader := bufio.NewReader(conn)     // reader读取服务端响应
-	readBuffer := make([]byte, 1024)
+	readBuffer := make([]byte, 1024)    // buffer
 
 	// 读取用户输入并发送到服务端
 	for {
@@ -336,10 +673,6 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）
-
-:::
-
 <br />
 
 ### 3）TCP 粘包
@@ -354,6 +687,7 @@ D:\application\GoLand\example>go run main.go
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -365,7 +699,6 @@ func main() {
 	var (
 		network = "tcp"
 		address = "127.0.0.1:60000"
-		buffer  = [4096]byte{}
 	)
 
 	// 建立连接
@@ -376,6 +709,11 @@ func main() {
 	}
 	defer conn.Close()
 
+	// 读写对象
+	writer := conn                   // writer写入到服务端
+	reader := bufio.NewReader(conn)  // reader读取服务端响应
+	readBuffer := make([]byte, 1024) // buffer
+
 	// 发送数据到服务端
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
@@ -383,23 +721,20 @@ func main() {
 		go func() {
 			defer wg.Done()
 			// 发送数据到服务端
-			if _, err = conn.Write([]byte("0123456789")); err != nil {
+			if _, err = writer.Write([]byte("0123456789")); err != nil {
 				log.Printf("send message failed: %s\n", err)
 				return
 			}
-
 			// 读取服务端响应的数据
-			n, err := conn.Read(buffer[:])
+			n, err := reader.Read(readBuffer[:])
 			if err != nil {
 				log.Printf("recv message failed: %s\n", err)
 				return
 			}
-
 			// 输出服务端响应结果
-			fmt.Println(string(buffer[:n]))
+			fmt.Println(string(readBuffer[:n]))
 		}()
 	}
-
 	wg.Wait()
 }
 ```
@@ -434,9 +769,10 @@ D:\application\GoLand\example>go run server/main.go
 
 **（3）粘包的原因和解决办法**
 
-* 原因：
-  * 根本原因在于接收方不确定将要传输的数据包的大小。
-  * 接收方conn.Read会读取一个固定大小的字节数，不能确定读取多少字节为一个完整的数据
+* 根本原因
+  * 【数据读取方】不能确定要读取数据包的边界
+  * 【数据读取方】可能是服务端也可能是客户端
+
 * 解决办法
   * 1、每条完整的数据后面加一个分隔符，接收方按照分隔符读取。但如果数据本身就包含分隔符，这就会有问题
   * 2、每条数据进行封装，加上固定长度的包头信息，里面存储了实际数据的长度
