@@ -108,6 +108,7 @@ func main() {
 		log.Fatalf("dial failed: %s: %s\n", network+"://"+address, err)
 	}
 	defer conn.Close()
+	log.Printf("connection established to %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
 
 	// 数据处理
 	buffer := make([]byte, 1024)
@@ -127,7 +128,7 @@ func main() {
 		}
 
 		// 输出服务端响应结果
-		fmt.Printf("%s\n", string(buffer[:n]))
+		log.Printf("%s\n", string(buffer[:n]))
 	}
 }
 ```
@@ -139,46 +140,47 @@ func main() {
 ```bash
 # 启动服务端
 D:\application\GoLand\example>go run server/main.go
-2023/01/29 14:30:43 listen at tcp://127.0.0.1:60000
+2023/01/29 20:22:09 listen at tcp://127.0.0.1:60000
 
 # 启动客户端
 D:\application\GoLand\example>go run client/main.go
-1   Hello World!
-2   Hello World!
-3   Hello World!
-4   Hello World!
-5   Hello World!
-6   Hello World!
-7   Hello World!
-8   Hello World!
-9   Hello World!
-10  Hello World!
+2023/01/29 20:22:28 connection established to tcp://127.0.0.1:60000
+2023/01/29 20:22:28 1   Hello World!
+2023/01/29 20:22:28 2   Hello World!
+2023/01/29 20:22:28 3   Hello World!
+2023/01/29 20:22:28 4   Hello World!
+2023/01/29 20:22:28 5   Hello World!
+2023/01/29 20:22:28 6   Hello World!
+2023/01/29 20:22:28 7   Hello World!
+2023/01/29 20:22:28 8   Hello World!
+2023/01/29 20:22:28 9   Hello World!
+2023/01/29 20:22:28 10  Hello World!
 
 # 查看服务端日志
 D:\application\GoLand\example>go run server/main.go
-2023/01/29 14:30:43 listen at tcp://127.0.0.1:60000
-2023/01/29 14:31:06 connection established from 127.0.0.1:55745
-2023/01/29 14:31:06 read message：1   Hello World!
-2023/01/29 14:31:06 send message: 1   Hello World!
-2023/01/29 14:31:06 read message：2   Hello World!
-2023/01/29 14:31:06 send message: 2   Hello World!
-2023/01/29 14:31:06 read message：3   Hello World!
-2023/01/29 14:31:06 send message: 3   Hello World!
-2023/01/29 14:31:06 read message：4   Hello World!
-2023/01/29 14:31:06 send message: 4   Hello World!
-2023/01/29 14:31:06 read message：5   Hello World!
-2023/01/29 14:31:06 send message: 5   Hello World!
-2023/01/29 14:31:06 read message：6   Hello World!
-2023/01/29 14:31:06 send message: 6   Hello World!
-2023/01/29 14:31:06 read message：7   Hello World!
-2023/01/29 14:31:06 send message: 7   Hello World!
-2023/01/29 14:31:06 read message：8   Hello World!
-2023/01/29 14:31:06 send message: 8   Hello World!
-2023/01/29 14:31:06 read message：9   Hello World!
-2023/01/29 14:31:06 send message: 9   Hello World!
-2023/01/29 14:31:06 read message：10  Hello World!
-2023/01/29 14:31:06 send message: 10  Hello World!
-2023/01/29 14:31:06 connection broken from 127.0.0.1:55745
+2023/01/29 20:22:09 listen at tcp://127.0.0.1:60000
+2023/01/29 20:22:28 connection established from 127.0.0.1:51519
+2023/01/29 20:22:28 read message：1   Hello World!
+2023/01/29 20:22:28 send message: 1   Hello World!
+2023/01/29 20:22:28 read message：2   Hello World!
+2023/01/29 20:22:28 send message: 2   Hello World!
+2023/01/29 20:22:28 read message：3   Hello World!
+2023/01/29 20:22:28 send message: 3   Hello World!
+2023/01/29 20:22:28 read message：4   Hello World!
+2023/01/29 20:22:28 send message: 4   Hello World!
+2023/01/29 20:22:28 read message：5   Hello World!
+2023/01/29 20:22:28 send message: 5   Hello World!
+2023/01/29 20:22:28 read message：6   Hello World!
+2023/01/29 20:22:28 send message: 6   Hello World!
+2023/01/29 20:22:28 read message：7   Hello World!
+2023/01/29 20:22:28 send message: 7   Hello World!
+2023/01/29 20:22:28 read message：8   Hello World!
+2023/01/29 20:22:28 send message: 8   Hello World!
+2023/01/29 20:22:28 read message：9   Hello World!
+2023/01/29 20:22:28 send message: 9   Hello World!
+2023/01/29 20:22:28 read message：10  Hello World!
+2023/01/29 20:22:28 send message: 10  Hello World!
+2023/01/29 20:22:28 connection broken from 127.0.0.1:51519
 ```
 
 :::
@@ -207,6 +209,7 @@ type QPS struct {
 	value *int32
 }
 
+// NewQPS QPS构造函数
 func NewQPS() *QPS {
 	return &QPS{value: new(int32)}
 }
@@ -335,7 +338,7 @@ func main() {
 		go func(conn net.Conn) {
 			for {
 				// 发送数据
-				message := fmt.Sprintf("Hello World!")
+				message := "Hello World!"
 				if _, err := conn.Write([]byte(message)); err != nil {
 					log.Printf("send message failed: %s\n", err)
 					return
@@ -363,6 +366,12 @@ func main() {
 输出结果
 
 ```bash
+# 测试说明
+# 1.测试的结果会受到多种因素影响，比如服务端CPU核心数、连接数、网络质量等，这里仅仅是做一个简单的演示
+# 2.默认的连接数设置的是10,机器配置都比较低,大多是2核4G配置
+
+# -------------------------------------------------------------------------
+
 # 本地回环接口测试
 [root@node-1 demo]# go run server/main.go  # 启动服务端
 [root@node-1 demo]# go run client/main.go  # 启动客户端
@@ -447,15 +456,28 @@ func main() {
 2023/01/29 17:12:08 Queries Per Second: 130
 2023/01/29 17:12:09 Queries Per Second: 139
 2023/01/29 17:12:10 Queries Per Second: 136
+
+# 调高连接数再测一次
+[root@node-1 demo]# go run client/main.go -h 43.154.36.151:60000 -c 300
+
+# 服务端日志显示 QPS在4000左右
+2023/01/29 20:13:39 Queries Per Second: 3740
+2023/01/29 20:13:40 Queries Per Second: 3998
+2023/01/29 20:13:41 Queries Per Second: 3738
+2023/01/29 20:13:42 Queries Per Second: 3702
+2023/01/29 20:13:43 Queries Per Second: 4045
+2023/01/29 20:13:44 Queries Per Second: 3950
+2023/01/29 20:13:45 Queries Per Second: 3126
+2023/01/29 20:13:46 Queries Per Second: 4027
 ```
 
 :::
 
 <br />
 
-### 3）交互式
+### 3）交互操作
 
-::: details TCP Client
+::: details 点击查看详情
 
 ```go
 package main
@@ -480,18 +502,13 @@ func main() {
 	// 建立连接
 	conn, err := net.Dial(network, address)
 	if err != nil {
-		log.Printf("dial failed: %s: %s\n", network+"://"+address, err)
-		return
+		log.Fatalf("dial failed: %s: %s\n", network+"://"+address, err)
 	}
 	defer conn.Close()
-
-	// 读写对象
-	stdout := bufio.NewReader(os.Stdin) // stdout读入
-	writer := conn                      // writer写入到服务端
-	reader := bufio.NewReader(conn)     // reader读取服务端响应
-	readBuffer := make([]byte, 1024)    // buffer
+	log.Printf("connection established to %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
 
 	// 读取用户输入并发送到服务端
+	stdout := bufio.NewReader(os.Stdin)
 	for {
 		// 修改一下终端提示符
 		fmt.Printf(">>> ")
@@ -500,7 +517,7 @@ func main() {
 		input, err := stdout.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
-				log.Printf("read failed from input: %s\n", err)
+				log.Printf("read message failed from input: %s\n", err)
 			}
 			break
 		}
@@ -519,20 +536,21 @@ func main() {
 		}
 
 		// 发送数据到服务端
-		if _, err = writer.Write([]byte(input)); err != nil {
+		if _, err = conn.Write([]byte(input)); err != nil {
 			log.Printf("send message failed: %s\n", err)
 			break
 		}
 
 		// 读取服务端响应的数据
-		n, err := reader.Read(readBuffer[:])
+		buffer := make([]byte, 1024)
+		n, err := conn.Read(buffer[:])
 		if err != nil {
-			log.Printf("recv message failed: %s\n", err)
+			log.Printf("read message failed: %s\n", err)
 			break
 		}
 
 		// 输出服务端响应结果
-		fmt.Println(string(readBuffer[:n]))
+		fmt.Println(string(buffer[:n]))
 	}
 }
 ```
@@ -542,21 +560,32 @@ func main() {
 ```bash
 # 启动服务端
 D:\application\GoLand\example>go run server/main.go
-2023/01/28 17:51:07 listen at tcp://127.0.0.1:60000
+2023/01/29 20:27:15 listen at tcp://127.0.0.1:60000
 
 # 启动客户端进行测试
 D:\application\GoLand\example>go run client/main.go
+2023/01/29 20:27:19 connection established to tcp://127.0.0.1:60000
 >>> hello
 hello
->>> world
-world
+>>>     world!
+    world!
+>>>       
+>>> 
+>>> 
+>>> 123
+123
+>>>
 ```
 
 :::
 
 <br />
 
-### 2）字节序
+### 4）读写缓冲
+
+<br />
+
+### 5）字节序
 
 字节序，顾名思义就是字节的顺序。举个例子，`0x1234`使用两个字节储存，高位是`0x12`，低位是`0x34`
 
@@ -674,7 +703,7 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 3）TCP 粘包
+### 6）TCP 粘包
 
 ::: details （1）问题复现及原因
 
@@ -948,18 +977,14 @@ func main() {
 
 <br />
 
-### 4）压力测试
+### 7）数据加密
 
 <br />
 
-### 5）数据加密
+### 8）数据压缩
 
 <br />
 
-### 6）数据压缩
-
-<br />
-
-### 7）心跳机制
+### 9）心跳机制
 
 <br />
