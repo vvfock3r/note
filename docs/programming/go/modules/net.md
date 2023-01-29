@@ -275,7 +275,6 @@ func main() {
 				if value != 0 {
 					log.Printf("Queries Per Second: %d\n", value)
 				}
-			default:
 			}
 		}
 	}()
