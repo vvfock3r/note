@@ -42,10 +42,13 @@ sidebar: off
   * [grpc](https://jinhui.dev/programming/go/modules/grpc.html)：RPC Server
   * [go-socks5](https://jinhui.dev/programming/go/modules/go-socks5.html)：Socks5 Proxy
   * [goproxy](https://jinhui.dev/programming/go/modules/goproxy.html)：HTTP Proxy
+* 加密相关
+  * crypto/tls：TLS 1.2和TLS 1.3实现
+  * crypto/x509：X.509证书解析
+  * [x/crypto/bcrypt](https://jinhui.dev/programming/go/modules/bcrypt.html)：bcrypt算法，常用于密码加密
 * 安全保护
 
   * [jwt](https://jinhui.dev/programming/go/modules/jwt.html)：JSON Web Token
-  * [bcrypt](https://jinhui.dev/programming/go/modules/bcrypt.html)：密码加密
   * [casbin](https://jinhui.dev/programming/go/modules/casbin.html)：访问控制模型，比如RBAC
   * [validator](https://jinhui.dev/programming/go/modules/validator.html)：验证器
   * [rate](https://jinhui.dev/programming/go/modules/rate.html)：限速器
