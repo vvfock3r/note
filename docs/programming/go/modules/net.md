@@ -1105,6 +1105,7 @@ func process(conn net.Conn) {
 		}
 
 		// 原样写入数据
+        // 为了演示代码简单，服务端返回数据并没有添加包头信息
 		if _, err := conn.Write([]byte(recv)); err != nil {
 			log.Printf("send message failed: %s\n", err)
 			break
