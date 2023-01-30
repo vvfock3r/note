@@ -756,6 +756,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+    "time"
 )
 
 func main() {
@@ -781,6 +782,7 @@ func main() {
 			break
 		}
 	}
+    time.Sleep(time.Second * 10)
 }
 ```
 
@@ -863,60 +865,42 @@ D:\application\GoLand\example>go run server/main.go
 
 :::
 
-::: details （3）解决方案之封包法：服务端
+::: details （3）解决方案之封包法：客户端
 
 ```go
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
+	"strconv"
 )
 
-// process 连接处理函数
-func process(conn net.Conn) {
-	// 关闭连接
-	defer conn.Close()
+// encode 数据编码，添加header，并返回完整的字节切片
+func encode(data string) ([]byte, error) {
+	//获取实际的消息大小, int32类型，固定占用4个字节
+	var header = int32(len(data))
 
-	// 读写数据
-	reader := bufio.NewReader(conn)
-	for {
-		// 读取消息头，获取消息体长度
-		head, err := reader.Peek(4)
-		if err != nil {
-			break
-		}
-		b := bytes.NewBuffer(head)
+	// 创建一个临时缓冲区
+	var buffer = new(bytes.Buffer)
 
-		var length int32
-		err = binary.Read(b, binary.BigEndian, &length)
-		if err != nil {
-			break
-		}
-
-		// Buffered返回缓冲中现有的可读取的字节数
-		if int32(reader.Buffered()) < length+4 {
-			break
-		}
-
-		// 读取真正的消息数据
-		pack := make([]byte, int(4+length))
-		_, err = reader.Read(pack)
-		if err != nil {
-			break
-		}
-		recvStr := string(pack[4:])
-		log.Println("received message from client：", recvStr)
-
-		// 写入数据
-		if _, err := conn.Write([]byte(recvStr)); err != nil {
-			log.Printf("send message failed to client: ", err)
-			break
-		}
+	// 写入头部信息，大端字节序
+	err := binary.Write(buffer, binary.BigEndian, header)
+	if err != nil {
+		return nil, err
 	}
+
+	// 写入消息主体
+	err = binary.Write(buffer, binary.BigEndian, []byte(data))
+	if err != nil {
+		return nil, err
+	}
+
+	// 返回由header和body组成的完整消息
+	return buffer.Bytes(), nil
 }
 
 func main() {
@@ -926,8 +910,101 @@ func main() {
 		address = "127.0.0.1:60000"
 	)
 
+	// 建立连接
+	conn, err := net.Dial(network, address)
+	if err != nil {
+		log.Fatalf("dial failed: %s: %s\n", network+"://"+address, err)
+	}
+	defer conn.Close()
+	log.Printf("connection established to %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
+
+	// 客户端数据发的太快
+	for i := 0; i < 10; i++ {
+		message, err := encode(fmt.Sprintf("%-3s Hello World!", strconv.Itoa(i+1)))  // 封包
+		if err != nil {
+			log.Printf("encode message failed: %s\n", err)
+			break
+		}
+		if _, err = conn.Write([]byte(message)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
+	}
+}
+```
+
+:::
+
+::: details （4）解决方案之封包法：服务端
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/binary"
+	"log"
+	"net"
+)
+
+// decode 解析消息头，返回实际消息体的长度。
+// 此函数会修改指针偏移，如果想要更加安全的方式可以考虑使用bufio reader Peek方法
+func decode(conn net.Conn) (int32, error) {
+	// 读取消息头
+	header := make([]byte, 4)
+	_, err := conn.Read(header)
+	if err != nil {
+		log.Printf("read message header failed：%s\n", err)
+		return 0, err
+	}
+	// 解析消息头，获取消息体长度
+	var size int32
+	err = binary.Read(bytes.NewReader(header), binary.BigEndian, &size)
+	if err != nil {
+		log.Printf("decode message header failed：%s\n", err)
+		return 0, err
+	}
+
+	return size, nil
+}
+
+// process 连接处理函数
+func process(conn net.Conn) {
+	// 关闭连接
+	defer conn.Close()
+
+	// 读写数据
+	for {
+		// 解码,获取实际的消息长度
+		size, err := decode(conn)
+		if err != nil {
+			log.Printf("decode message body failed：%s\n", err)
+			break
+		}
+
+		// 读取真正的消息数据
+        // 注意：这里的size是一个动态值，如果比较大的话很有可能撑爆内存，需要优化
+		buffer := make([]byte, size)
+		n, err := conn.Read(buffer)
+		if err != nil {
+			log.Printf("read message body failed：%s\n", err)
+			break
+		}
+        recv := string(buffer[:n])
+		log.Printf("read message：%s\n", recv)
+
+		// 原样写入数据
+		if _, err := conn.Write([]byte(recv)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
+		log.Printf("send message: %s\n", recv)
+	}
+}
+
+func main() {
 	// 监听端口
-	listener, err := net.Listen(network, address)
+	listener, err := net.Listen("tcp", "127.0.0.1:60000")
 	if err != nil {
 		log.Fatalf("listen failed: %s\n", err)
 	}
@@ -941,6 +1018,7 @@ func main() {
 			log.Printf("accept failed: %s\n", err)
 			continue
 		}
+		log.Printf("connection established from %s\n", conn.RemoteAddr().String())
 
 		// 启动一个goroutine处理
 		go process(conn)
@@ -950,83 +1028,10 @@ func main() {
 
 :::
 
-::: details （4）解决方案之封包法：客户端
+::: details （5）解决方案之封包法：服务端优化版本
 
 ```go
-package main
 
-import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-	"log"
-	"net"
-	"sync"
-)
-
-func Encode(message string) ([]byte, error) {
-	var length = int32(len(message))
-
-	var pkg = new(bytes.Buffer)
-	err := binary.Write(pkg, binary.BigEndian, length)
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(pkg, binary.BigEndian, []byte(message))
-	if err != nil {
-		return nil, err
-	}
-
-	return pkg.Bytes(), nil
-}
-
-func main() {
-	// 定义变量
-	var (
-		network = "tcp"
-		address = "127.0.0.1:60000"
-		buffer  = [4096]byte{}
-	)
-
-	// 建立连接
-	conn, err := net.Dial(network, address)
-	if err != nil {
-		log.Printf("dial failed: %s: %s\n", network+"://"+address, err)
-		return
-	}
-	defer conn.Close()
-
-	// 发送数据到服务端
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// 发送数据到服务端
-			b, err := Encode("0123456789")
-			if err != nil {
-				return
-			}
-			if _, err = conn.Write(b); err != nil {
-				log.Printf("send message failed: %s\n", err)
-				return
-			}
-
-			// 读取服务端响应的数据
-			n, err := conn.Read(buffer[:])
-			if err != nil {
-				log.Printf("recv message failed: %s\n", err)
-				return
-			}
-
-			// 输出服务端响应结果
-			fmt.Println(string(buffer[:n]))
-		}()
-	}
-
-	wg.Wait()
-}
 ```
 
 :::
