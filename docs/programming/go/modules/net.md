@@ -877,6 +877,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+    "time"
 )
 
 // encode 数据编码，添加header，并返回完整的字节切片
@@ -930,6 +931,7 @@ func main() {
 			break
 		}
 	}
+    time.Sleep(time.Second * 10)
 }
 ```
 
@@ -1031,7 +1033,108 @@ func main() {
 ::: details （5）解决方案之封包法：服务端优化版本
 
 ```go
+package main
 
+import (
+	"bytes"
+	"encoding/binary"
+	"log"
+	"net"
+)
+
+// decode 解析消息头，返回实际消息体的长度。
+// 此函数会修改指针偏移，如果想要更加安全的方式可以考虑使用bufio reader Peek方法
+func decode(conn net.Conn) (int32, error) {
+	// 读取消息头
+	header := make([]byte, 4)
+	_, err := conn.Read(header)
+	if err != nil {
+		log.Printf("read message header failed：%s\n", err)
+		return 0, err
+	}
+	// 解析消息头，获取消息体长度
+	var size int32
+	err = binary.Read(bytes.NewReader(header), binary.BigEndian, &size)
+	if err != nil {
+		log.Printf("decode message header failed：%s\n", err)
+		return 0, err
+	}
+
+	return size, nil
+}
+
+// process 连接处理函数
+func process(conn net.Conn) {
+	// 关闭连接
+	defer conn.Close()
+
+	// 读写数据
+	for {
+		// 解码,获取实际的消息长度
+		dataSize, err := decode(conn)
+		if err != nil {
+			log.Printf("decode message body failed：%s\n", err)
+			break
+		}
+
+		// 读取真正的消息数据，以流式读取header中的body大小数据		
+		var buffer []byte
+		var bufferSize int32 = 3
+		var recv string
+		for {
+			// 动态设置buffer
+			if dataSize <= 0 {
+				break
+			}
+			if bufferSize > dataSize {
+				bufferSize = dataSize
+			}
+			buffer = make([]byte, bufferSize)
+
+			// 读取数据
+			n, err := conn.Read(buffer)
+			if err != nil {
+				log.Printf("read message body failed：%s\n", err)
+				return
+			}
+			recv += string(buffer[:n])
+			log.Printf("read message：%s\n", string(buffer[:n]))
+
+			// 剩余可读取大小
+			dataSize -= int32(n)
+		}
+
+		// 原样写入数据
+		if _, err := conn.Write([]byte(recv)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
+		log.Printf("send message: %s", recv)
+	}
+}
+
+func main() {
+	// 监听端口
+	listener, err := net.Listen("tcp", "127.0.0.1:60000")
+	if err != nil {
+		log.Fatalf("listen failed: %s\n", err)
+	}
+	log.Printf("listen at %s\n", listener.Addr().Network()+"://"+listener.Addr().String())
+
+	// 处理请求
+	for {
+		// 等待连接
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("accept failed: %s\n", err)
+			continue
+		}
+		log.Printf("connection established from %s\n", conn.RemoteAddr().String())
+
+		// 启动一个goroutine处理
+		go process(conn)
+	}
+}
 ```
 
 :::
