@@ -479,6 +479,8 @@ func main() {
 
 ::: details 点击查看详情
 
+`client/main.go`
+
 ```go
 package main
 
@@ -581,11 +583,7 @@ hello
 
 <br />
 
-### 4）读写缓冲
-
-<br />
-
-### 5）字节序
+### 4）字节序
 
 字节序，顾名思义就是字节的顺序。举个例子，`0x1234`使用两个字节储存，高位是`0x12`，低位是`0x34`
 
@@ -703,11 +701,50 @@ D:\application\GoLand\example>go run main.go
 
 <br />
 
-### 6）TCP 粘包
+### 5）TCP 粘包
 
-::: details （1）问题复现及原因
+1、概念说明：TCP粘包和TCP拆包
 
-**（1）自己写代码测试，多个Goroutine同时发送数据**
+TCP是面向字节流的链接，根本就没有包的概念，所谓的"TCP粘包"说法并不准确，但是问题确实是存在的。举个例子：
+
+* 客户端向服务端发送两条数据"abc"和"123"，服务端收到了一条数据"abc123"，这就是粘包，两条或多条数据粘在一起了
+* 客户端向服务端发送一条数据"hello world!"，服务端收到了两条数据"hello"和"world!"，这就是拆包，一条完整的数据被拆分为两条或多条
+
+<br />
+
+2、产生原因
+
+粘包或拆包有可能发生在客户端也可能发生在服务端，但最终体现在【数据读取方】，根本原因在于【数据读取方】不能确定要读取数据的边界
+
+可能的原因如下：
+
+* 一些错误的用法或者说不具有普遍意义的用法：
+  * 发数据时写入（开发者自己定义的）缓冲区导致粘在一起
+  * 多个线程同时向一个TCP链接写数据导致粘在一起
+
+* TCP链接建立后，双方都有一个缓冲区，如果发数据时发的太快，就会导致缓冲区内包含多条数据一起发送
+* 读取方的边界设置的太小。读取方每次读取的字节太少，导致一条数据需要多次才能读完，但读取方却认为读取到了完整的多条数据
+
+<br />
+
+3、解决办法
+
+* 1）使用分隔符
+
+  每条完整的数据后面加一个分隔符，接收方按照分隔符读取。但如果数据本身就包含分隔符，这就会有问题
+
+  此时可以对数据进行编码，比如base64，然后从编码表外找一些字符作为分隔符
+
+* 2、使用封包法（推荐）
+
+  * 每条数据分为`header`和`body`
+  * `header`的长度是固定的，比如2个字节或4个字节，用于存储`body`的实际字节数
+  * `body`的长度是不固定的，是我们要发送的真正消息
+  * 读数据时先读取`header`部分，就能获取`body`的实际大小，就可以读取到一条完整的消息
+
+<br />
+
+::: details （1）粘包复现：客户端发送速度太快导致Socket缓冲区内的数据粘包
 
 `client/main.go`
 
@@ -715,11 +752,10 @@ D:\application\GoLand\example>go run main.go
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
-	"sync"
+	"strconv"
 )
 
 func main() {
@@ -732,38 +768,19 @@ func main() {
 	// 建立连接
 	conn, err := net.Dial(network, address)
 	if err != nil {
-		log.Printf("dial failed: %s: %s\n", network+"://"+address, err)
-		return
+		log.Fatalf("dial failed: %s: %s\n", network+"://"+address, err)
 	}
 	defer conn.Close()
+	log.Printf("connection established to %s\n", conn.RemoteAddr().Network()+"://"+conn.RemoteAddr().String())
 
-	// 读写对象
-	writer := conn                   // writer写入到服务端
-	reader := bufio.NewReader(conn)  // reader读取服务端响应
-	readBuffer := make([]byte, 1024) // buffer
-
-	// 发送数据到服务端
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// 发送数据到服务端
-			if _, err = writer.Write([]byte("0123456789")); err != nil {
-				log.Printf("send message failed: %s\n", err)
-				return
-			}
-			// 读取服务端响应的数据
-			n, err := reader.Read(readBuffer[:])
-			if err != nil {
-				log.Printf("recv message failed: %s\n", err)
-				return
-			}
-			// 输出服务端响应结果
-			fmt.Println(string(readBuffer[:n]))
-		}()
+	// 客户端数据发的太快
+	for i := 0; i < 10; i++ {
+		message := fmt.Sprintf("%-3s Hello World!", strconv.Itoa(i+1))
+		if _, err = conn.Write([]byte(message)); err != nil {
+			log.Printf("send message failed: %s\n", err)
+			break
+		}
 	}
-	wg.Wait()
 }
 ```
 
@@ -772,42 +789,81 @@ func main() {
 ```bash
 # 客户端
 D:\application\GoLand\example>go run client/main.go
-0123456789
-01234567890123456789012345678901234567890123456789
-0123456789
-012345678901234567890123456789
-0123456789
+2023/01/30 15:52:54 connection established to tcp://127.0.0.1:60000
 
 # 服务端日志
 D:\application\GoLand\example>go run server/main.go
-2023/01/28 13:13:13 listen at tcp://127.0.0.1:60000
-2023/01/28 13:14:38 received message from client： 0123456789
-2023/01/28 13:14:38 received message from client： 01234567890123456789012345678901234567890123456789
-2023/01/28 13:14:38 received message from client： 0123456789                                        
-2023/01/28 13:14:38 received message from client： 012345678901234567890123456789                    
-2023/01/28 13:14:38 received message from client： 0123456789                                        
-2023/01/28 13:14:38 received message from client： 0123456789                                        
-2023/01/28 13:14:38 received message from client： 01234567890123456789                              
-2023/01/28 13:14:38 received message from client： 012345678901234567890123456789
+2023/01/30 15:54:31 listen at tcp://127.0.0.1:60000
+2023/01/30 15:55:37 connection established from 127.0.0.1:56432
+2023/01/30 15:55:37 read message：1   Hello World!
+2023/01/30 15:55:37 send message: 1   Hello World!
+2023/01/30 15:55:37 read message：2   Hello World!3   Hello World!4   Hello World!5   Hello World!6   Hello World!
+2023/01/30 15:55:37 send message failed: write tcp 127.0.0.1:60000->127.0.0.1:56432: wsasend: An existing connection was forcibly closed by the remote host.
 ```
-
-**（2）使用Socket调试工具测试**
-
-![image-20230128131657646](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230128131657646.png)
-
-**（3）粘包的原因和解决办法**
-
-* 根本原因
-  * 【数据读取方】不能确定要读取数据包的边界
-  * 【数据读取方】可能是服务端也可能是客户端
-
-* 解决办法
-  * 1、每条完整的数据后面加一个分隔符，接收方按照分隔符读取。但如果数据本身就包含分隔符，这就会有问题
-  * 2、每条数据进行封装，加上固定长度的包头信息，里面存储了实际数据的长度
 
 :::
 
-::: details （2）服务端封包
+::: details （2）拆包复现：读取方的边界设置的太小
+
+```go
+// process 连接处理函数
+func process(conn net.Conn) {
+	// 关闭连接
+	defer conn.Close()
+
+	// 读写数据
+	buffer := make([]byte, 15)
+```
+
+输出结果
+
+```bash
+# 客户端日志
+D:\application\GoLand\example>go run client/main.go
+2023/01/30 16:06:12 connection established to tcp://127.0.0.1:60000
+2023/01/30 16:06:12 1   Hello World
+2023/01/30 16:06:12 !              
+2023/01/30 16:06:12 2   Hello World
+2023/01/30 16:06:12 !3   Hello Worl
+2023/01/30 16:06:12 d!4   Hello Wor
+2023/01/30 16:06:12 ld!5   Hello Wo
+2023/01/30 16:06:12 rld!6   Hello W
+2023/01/30 16:06:12 orld!
+2023/01/30 16:06:12 7   Hello World
+2023/01/30 16:06:12 !8   Hello Worl
+
+# 服务端日志
+D:\application\GoLand\example>go run server/main.go
+2023/01/30 16:06:11 listen at tcp://127.0.0.1:60000
+2023/01/30 16:06:12 connection established from 127.0.0.1:56875
+2023/01/30 16:06:12 read message：1   Hello World
+2023/01/30 16:06:12 send message: 1   Hello World
+2023/01/30 16:06:12 read message：!              
+2023/01/30 16:06:12 send message: !              
+2023/01/30 16:06:12 read message：2   Hello World
+2023/01/30 16:06:12 send message: 2   Hello World
+2023/01/30 16:06:12 read message：!3   Hello Worl
+2023/01/30 16:06:12 send message: !3   Hello Worl
+2023/01/30 16:06:12 read message：d!4   Hello Wor
+2023/01/30 16:06:12 send message: d!4   Hello Wor
+2023/01/30 16:06:12 read message：ld!5   Hello Wo
+2023/01/30 16:06:12 send message: ld!5   Hello Wo
+2023/01/30 16:06:12 read message：rld!6   Hello W
+2023/01/30 16:06:12 send message: rld!6   Hello W
+2023/01/30 16:06:12 read message：orld!          
+2023/01/30 16:06:12 send message: orld!          
+2023/01/30 16:06:12 read message：7   Hello World
+2023/01/30 16:06:12 send message: 7   Hello World
+2023/01/30 16:06:12 read message：!8   Hello Worl
+2023/01/30 16:06:12 send message: !8   Hello Worl
+2023/01/30 16:06:12 read message：d!9   Hello Wor
+2023/01/30 16:06:12 send message: d!9   Hello Wor
+2023/01/30 16:06:12 read failed: read tcp 127.0.0.1:60000->127.0.0.1:56875: wsarecv: An established connection was aborted by the software in your host machine
+```
+
+:::
+
+::: details （3）解决方案之封包法：服务端
 
 ```go
 package main
@@ -894,7 +950,7 @@ func main() {
 
 :::
 
-::: details （3）客户端封包
+::: details （4）解决方案之封包法：客户端
 
 ```go
 package main
@@ -977,14 +1033,16 @@ func main() {
 
 <br />
 
-### 7）数据加密
+### 6）数据加密
 
 <br />
 
-### 8）数据压缩
+### 7）数据压缩
 
 <br />
 
-### 9）心跳机制
+### 8）心跳机制
 
 <br />
+
+### 9）读写缓冲
