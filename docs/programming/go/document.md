@@ -1,10 +1,14 @@
 # Go核心语法
 
-官网：[https://golang.google.cn/](https://golang.google.cn/)
+文档：
 
-安装文档：[https://golang.google.cn/doc/install](https://golang.google.cn/doc/install)
+* 官网：[https://golang.google.cn/](https://golang.google.cn/)
 
-Go命令文档：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd/go/)
+* 安装：[https://golang.google.cn/doc/install](https://golang.google.cn/doc/install)
+
+* 命令：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd/go/)
+
+* FAQ：[https://go.dev/doc/faq](https://go.dev/doc/faq)
 
 <br />
 
@@ -21,7 +25,7 @@ drwxr-xr-x 10 root root 222 Nov  1 04:21 1.19.3    # 具体某个版本的Go
 drwxr-xr-x  4 root root  28 Nov 30 17:43 path      # GOPATH,这里将他设置为所有Go版本共用
 
 # -------------------------------------------------------------------------------------------------
-# 2、安装指定版本的G
+# 2、安装指定版本的Go
 
 # (1) 创建Go目录
 mkdir -p /usr/local/go && cd /usr/local/go
