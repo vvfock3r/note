@@ -14,7 +14,9 @@
 
 ## 第一个应用
 
-### Linux安装Go
+### 安装Go
+
+::: details 点击查看详情
 
 ```bash
 # 1、Go版本管理设想
@@ -50,9 +52,13 @@ go env -w GOPATH=/usr/local/go/path
 go env -w GOPROXY=https://goproxy.cn,direct
 ```
 
+:::
+
 <br />
 
 ### 环境变量
+
+::: details 点击查看详情
 
 **设置环境变量**
 
@@ -81,9 +87,13 @@ go env -w GOPROXY=https://goproxy.cn,direct
 
 更多环境变量：[https://golang.google.cn/cmd/go/#hdr-Environment_variables](https://golang.google.cn/cmd/go/#hdr-Environment_variables) 或`go help environment` 
 
+:::
+
 <br />
 
 ### 单文件应用
+
+::: details 点击查看详情
 
 `main.go`
 
@@ -148,6 +158,8 @@ main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mo
 see 'go help modules'
 ```
 
+:::
+
 <br />
 
 ### Go Module
@@ -157,8 +169,6 @@ see 'go help modules'
 包命名：[https://go.dev/blog/package-names](https://go.dev/blog/package-names)
 
 从`Go1.11`开始，官方推出Go module作为包管理工具
-
-
 
 ::: details （1）开启Go Module
 
