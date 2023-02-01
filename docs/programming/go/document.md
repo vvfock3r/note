@@ -16,7 +16,15 @@
 
 ### 安装Go
 
-::: details 点击查看详情
+::: details （1）使用包管理器安装
+
+```bash
+[root@node-1 ~]# yum -y install go
+```
+
+:::
+
+::: details （2）使用二进制包安装（推荐）
 
 ```bash
 # 1、Go版本管理设想
