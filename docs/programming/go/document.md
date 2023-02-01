@@ -8041,7 +8041,200 @@ func main() {
 
 ## 泛型
 
+### 泛型函数
 
+::: details （1）基础示例
+
+```go
+package main
+
+import "fmt"
+
+// Print 第一个泛型函数
+func Print[T any](arr []T) {
+	for _, v := range arr {
+		fmt.Println(v)
+	}
+}
+
+func main() {
+	// 正规的泛型函数调用方法,语法: function[参数类型](参数)
+	Print[int]([]int{1, 2, 3})
+	Print[string]([]string{"a", "b", "c"})
+
+	// 使用类型推导可以不用显示传递参数类型
+	Print([]float64{1.1, 1.2, 1.3})
+
+	// 这样也可以,但是我们一般都不会这样用
+	Print([]any{10, 10.5, "abc"})
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+1
+2
+3
+a
+b
+c
+1.1
+1.2
+1.3
+10
+10.5
+abc
+```
+
+:::
+
+::: details （2）类型约束
+
+编译失败的写法
+
+```go
+package main
+
+import "fmt"
+
+// Max 返回最大值
+func Max[T any](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func main() {
+	fmt.Println(Max(1, 2))
+}
+
+// 原因是a和b都属于T类型，而T类型属于any类型，两个any类型是不能比较的
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+# command-line-arguments
+.\main.go:7:5: invalid operation: a > b (type parameter T is not comparable with >)
+```
+
+修正后的写法
+
+```go
+package main
+
+import "fmt"
+
+// Comparable 定义可比较对象
+type Comparable interface {
+	int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint32 | uint64 |
+		float32 | float64 | string
+}
+
+// Max 返回最大值
+func Max[T Comparable](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// Max2 如果支持的类型比较少的话可以直接写在函数签名中
+func Max2[T int | string](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func main() {
+	fmt.Println(Max(1, 2))
+	fmt.Println(Max(0.1, -0.2))
+	fmt.Println(Max("你好", "世界"))
+	fmt.Println(Max2("你好", "世界"))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2
+0.1
+你好
+你好
+```
+
+:::
+
+::: details （3）支持衍生类型
+
+编译失败的写法
+
+```go
+package main
+
+import "fmt"
+
+// Comparable 定义可比较对象
+type Comparable interface {
+	int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint32 | uint64 |
+		float32 | float64 | string
+}
+
+// Max 返回最大值
+func Max[T Comparable](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// 自定义类型
+type MyInt int
+
+func main() {
+	fmt.Println(Max(1, 2))
+	fmt.Println(Max(MyInt(1), MyInt(2)))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+# command-line-arguments
+.\main.go:25:17: MyInt does not implement Comparable (possibly missing ~ for int in constraint Comparable)
+```
+
+修正后的写法
+
+```go
+// 只给出关键代码，int前面加一个~，代表支持其衍生类型
+
+// Comparable 定义可比较对象
+type Comparable interface {
+	~int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint32 | uint64 |
+		float32 | float64 | string
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2
+2
+```
+
+:::
 
 ## 
 
