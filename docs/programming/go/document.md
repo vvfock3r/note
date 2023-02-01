@@ -8236,6 +8236,52 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+::: details （4）内置的类型
+
+安装
+
+```bash
+D:\application\GoLand\example>go get golang.org/x/exp/constraints
+go: downloading golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
+go: added golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
+```
+
+使用
+
+```go
+package main
+
+import (
+	"fmt"
+	"golang.org/x/exp/constraints"
+)
+
+// Max 返回最大值
+func Max[T constraints.Ordered](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func main() {
+	fmt.Println(Max(1, 2))
+	fmt.Println(Max(0.1, -0.2))
+	fmt.Println(Max("你好", "世界"))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go                        
+2
+0.1
+你好
+```
+
+:::
+
 ## 
 
 ## 其他
