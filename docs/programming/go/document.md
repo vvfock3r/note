@@ -107,7 +107,7 @@ go env -w GOPROXY=https://goproxy.cn,direct
 
 <br />
 
-### 第一个应用
+### 单文件应用
 
 ::: details 点击查看详情
 
@@ -141,7 +141,7 @@ go build main.go        # 编译
 go run main.go
 ```
 
-如果我们导入的是一个第三方包，那么编译的时候会报错，如下所示
+如果我们导入的是一个第三方包，那么编译的时候会报错，如下所示，我们将在下一节解决这个问题
 
 `main.go`
 
@@ -189,9 +189,9 @@ see 'go help modules'
 
 包命名：[https://go.dev/blog/package-names](https://go.dev/blog/package-names)
 
-从`Go1.11`开始，官方推出Go module作为包管理工具
-
 ::: details （1）开启Go Module
+
+从`Go1.11`开始，官方推出Go module作为包管理工具
 
 `GO111MODULE`变量控制是否启用go modules，他有3个值：
 
@@ -212,7 +212,7 @@ on
 
 文档：[https://go.dev/ref/mod#go-mod-init](https://go.dev/ref/mod#go-mod-init)
 
-**基础使用**
+**1、基础使用**
 
 ```bash
 # 先创建我们的项目目录demo
@@ -235,7 +235,7 @@ module demo		# 模块名
 go 1.18			# go版本
 ```
 
-**我们来看几个Go明星项目的Module Name是如何写的**
+**2、我们来看几个Go明星项目的Module Name是如何写的**
 
 | Github地址                               | Module Name                               |
 | ---------------------------------------- | ----------------------------------------- |
@@ -245,14 +245,11 @@ go 1.18			# go版本
 
 仔细研究发现他们的格式都是`github.com/用户名/项目名`，这是为啥？先不管他，后面再说
 
-**举例使用第三方Web框架Gin**
+**（3）使用第三方模块**
 
-```bash
-[root@localhost demo]# ls -l
-total 8
--rw-r--r-- 1 root root  21 May 30 19:49 go.mod
--rw-r--r-- 1 root root 327 May 30 19:17 main.go
-[root@localhost demo]# cat main.go
+`main.go`
+
+```go
 package main
 
 import (
@@ -276,7 +273,19 @@ func main() {
         // 启动Gin Server
         log.Fatalln(r.Run(addr))
 }
-[root@localhost demo]# go run main.go		# 这次报错不一样了，让我们使用go get下载gin
+```
+
+输出结果
+
+```bash
+# 查看当前目录
+[root@localhost demo]# ls -l
+total 8
+-rw-r--r-- 1 root root  21 May 30 19:49 go.mod
+-rw-r--r-- 1 root root 327 May 30 19:17 main.go
+
+# 这次报错不一样了，让我们使用go get下载gin
+[root@localhost demo]# go run main.go		
 main.go:4:2: no required module provides package github.com/gin-gonic/gin; to add it:
         go get github.com/gin-gonic/gin
 ```
@@ -492,7 +501,11 @@ Use "go help mod <command>" for more information about a command.
 
 :::
 
-::: details （7）发布公共模块到 GitHub-1：先跑通一个最简单的发布流程
+<br />
+
+### 发布公共模块
+
+::: details （1）发布公共模块到 GitHub：先跑通一个最简单的发布流程
 
 ① 首先在Github上新建一个仓库test
 
@@ -567,7 +580,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （7）发布公共模块到 GitHub-2：更新第三方包延迟问题
+::: details （2）发布公共模块到 GitHub：更新第三方包延迟问题
 
 描述：我们对第三方模块`test`随便做一点修改并提交到GitHub，在`demo`项目中测试更新`test`模块是否正常
 
@@ -584,7 +597,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （7）发布公共模块到 GitHub-3：指定第三方包的版本
+::: details （3）发布公共模块到 GitHub：指定第三方包的版本
 
 如果我想让用户使用`go get github.com/vvfock3r/test@v1.0.0`这样的方式来安装指定版本，该如何做呢？
 
@@ -615,7 +628,7 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 :::
 
-::: details （7）发布公共模块到 GitHub-4：replace简介
+::: details （4）发布公共模块到 GitHub：replace简介
 
 replace可以让我们对包进行替换，可以达到这样的效果：导入的是`a`包，但实际使用的是`b`包
 
