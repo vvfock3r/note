@@ -5682,13 +5682,11 @@ func main() {
 
 <br />
 
-### Channel
+### Channel 基础
 
-#### 基础示例
+::: details （1）说明
 
 `Channel`用于`Goroutine`之间的通信，中文可以称为”管道"或"通道"
-
-
 
 **根据状态可以分为**
 
@@ -5696,14 +5694,10 @@ func main() {
 * 正常，声明并初始化的`Channel`
 * 关闭，使用`close(Channel)`
 
-
-
 **根据缓冲方式可以分为**
 
 * 无缓冲区`Channel`
 * 带缓冲区`Channel`
-
-
 
 **根据读写方式可以分为**
 
@@ -5711,9 +5705,9 @@ func main() {
 * 只读`Channel`
 * 只写`Channel`
 
+:::
 
-
-::: details （1）定义
+::: details （2）定义
 
 ```go
 package main
@@ -5742,7 +5736,7 @@ func main() {
 
 :::
 
-::: details （2）读和写
+::: details （3）读和写
 
 ```go
 // 写数据：将100写入到channel中
@@ -5769,7 +5763,7 @@ close(ch)
 
 <br />
 
-#### 无缓冲区`Channel`
+### Channel无缓冲区
 
 **定义**
 
@@ -5833,7 +5827,7 @@ func main() {
 
 <br />
 
-#### 带缓冲区`Channel`
+### `Channel`带缓冲区
 
 ```go
 ch := make(chan int, 3)	// 代表缓冲区长度为3，可以放3个数据
@@ -6115,11 +6109,9 @@ main.main()
 
 <br />
 
-#### 只读和只写限制
+### Channel只读和只写
 
 只是在原有的`Channel`上加了一层限制，只能读或只能写，默认的`Channel`是读写都支持的
-
-**示例代码**
 
 ::: details 点击查看完整代码
 
@@ -6169,7 +6161,7 @@ func main() {
 
 <br />
 
-#### 多路复用select
+### select多路复用
 
 **说明**
 
@@ -6180,11 +6172,7 @@ func main() {
 * 如果多个`case `都不能运行，若有`default `子句，则执行该语句，反之，`select `将阻塞，直到某个`case `可以运行
 * 空`select`会一直阻塞
 
-
-
-**示例代码**
-
-::: details 点击查看完整代码
+::: details （1）基础示例
 
 ```go
 package main
@@ -6232,11 +6220,11 @@ func main() {
 
 :::
 
-**for{ select }问题**
+::: details （2）for{ select }问题：只能跳出select不能跳出for循环
 
 当需要循环操作时需要与`for`连用，这时候如果`select`中含有`break`，那么只能跳出`select`层而不能跳出`for`循环，下面演示一下
 
-::: details 问题代码：for{ select }中只能跳出select不能跳出for循环
+问题代码
 
 ```go
 package main
@@ -6275,9 +6263,7 @@ func main() {
 }
 ```
 
-:::
-
-::: details 修正-方式1：使用break 标签
+修正-方式1：使用break 标签
 
 ```go
 package main
@@ -6317,9 +6303,7 @@ ForEnd:		// 添加一个标签
 }
 ```
 
-:::
-
-::: details 修正-方式2：使用goto 标签
+修正-方式2：使用goto 标签
 
 ```go
 package main
@@ -6361,11 +6345,9 @@ ForEnd: // 定义标签
 
 :::
 
-<br />
+::: details （3）练习：设置函数执行超时时间
 
-#### 练习:select:设置函数执行超时时间
-
-::: details 设置函数执行超时时间（有问题版本，主要是学习超时核心逻辑）
+有问题版本，主要是学习超时核心逻辑
 
 ```go
 package main
@@ -6409,9 +6391,9 @@ func main() {
 // (3) 该函数Add返回值没有包含错误，在实际场景中有些函数会有错误，错误如何传递？
 ```
 
-:::
+<br />
 
-::: details 设置函数执行超时时间（优化后版本，还算完美）
+优化后版本，还算完美
 
 * 单独封装了一个函数
 
@@ -6480,13 +6462,9 @@ func main() {
 
 :::
 
-<br />
-
-#### 练习:channel:多个协程顺序打印数字
+::: details （4）练习：多个协程顺序打印数字
 
 有4个`goroutine`，每个`goroutine`打印一个数字，要求按照1``/2/3/4``这样的顺序打印输出
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -6532,7 +6510,7 @@ func main() {
 
 <br />
 
-### Context
+### Context上下文管理
 
 官方文档：[https://pkg.go.dev/context](https://pkg.go.dev/context)
 
@@ -6546,7 +6524,7 @@ func main() {
 
 <br />
 
-#### `WithCancel`
+::: details （1）WithCancel：取消协程
 
 用来取消子协程，以及孙子协程，以及孙子的孙子协程等
 
@@ -6556,9 +6534,7 @@ func main() {
 func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
 ```
 
-示例代码
-
-::: details 先看一段正常的代码
+先看一段正常的代码
 
 ```go
 package main
@@ -6587,9 +6563,7 @@ func main() {
 }
 ```
 
-:::
-
-::: details 对协程发送退出信号
+增加取消功能
 
 ```go
 package main
@@ -6605,7 +6579,6 @@ func worker(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 LOOP:
 	for i := 0; i < 10; i++ {
-
 		// 退出信号
 		select {
 		case <-ctx.Done():
@@ -6639,22 +6612,17 @@ func main() {
 
 :::
 
-<br />
-
-#### `WithDeadline`和`WithTimeout`
-
-`WithDeadline`和`WithTimeout`是在`WithCancel`的基础上，增加了一个过期时间
+::: details （2）WithDeadline和WithTimeout：增加过期时间
 
 函数签名
 
 ```go
+// WithDeadline和WithTimeout是在WithCancel的基础上，增加了一个过期时间
 func WithDeadline(parent Context, d time.Time) (Context, CancelFunc)			// 增加一个具体的过期时间点
 func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)	// 增加一个相对的过期时间段
 ```
 
-示例代码
-
-::: details 函数超时控制
+函数超时控制
 
 ```go
 package main
@@ -6701,11 +6669,7 @@ func main() {
 
 :::
 
-<br />
-
-#### WithValue
-
-可以携带一个值
+::: details （3）WithValue：可以携带一个值
 
 函数签名
 
@@ -6714,8 +6678,6 @@ func WithValue(parent Context, key, val any) Context
 ```
 
 示例代码
-
-::: details 点击查看完整代码
 
 ```go
 package main
