@@ -7211,7 +7211,9 @@ func main() {
 
 :::
 
-#### 并发安全的字节池的2种实现
+<br />
+
+### Sync 并发安全的字节池
 
 ::: details （1）sync.Pool实现
 
@@ -7414,7 +7416,7 @@ var (
 
 <br />
 
-#### 条件变量
+### Sync 条件变量基础使用
 
 `sync.Cond`并不被推荐使用，这里权当了解一下
 
@@ -7466,7 +7468,7 @@ func main() {
 
 <br />
 
-### sync/atomic
+### Atomic 原子操作基础
 
 官方文档：[https://pkg.go.dev/sync/atomic](https://pkg.go.dev/sync/atomic)
 
@@ -7478,7 +7480,7 @@ func main() {
 * 原子操作是不允许中断的（`interrupt`），所以它必须很快，所以提供的原子方法数量很少
 * 原子操作由底层硬件实现，`Mutex`是由操作系统实现的，所以原子操作性能更好
 
-#### **基本数据类型-原子操作**
+::: details （1）基本数据类型-原子操作方法
 
 | 分类       | 方法                                                         | 说明                                                         |
 | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -7488,9 +7490,9 @@ func main() {
 | 加载       | (1)`LoadInt32(addr *int32) (val int32)`<br />(2)`LoadInt64(addr *int64) (val int64)`<br />(3)`LoadUint32(addr *uint32) (val uint32)`<br />(4)`LoadUint64(addr *uint64) (val uint64)`<br />(5)`LoadUintptr(addr *uintptr) (val uintptr)`<br />(6)`LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)` | "读取"变量的值                                               |
 | 存储       | (1)`StoreInt32(addr *int32, val int32)`<br />(2)`StoreInt64(addr *int64, val int64)`<br />(3)`StoreUint32(addr *uint32, val uint32)`<br />(4)`StoreUint64(addr *uint64, val uint64)`<br />(5)`StoreUintptr(addr *uintptr, val uintptr)`<br />(6)`StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)` | "赋值"不会返回旧值<br />这个和`Swap`系列函数很像             |
 
-示例代码
+:::
 
-::: details 点击查看完整代码
+::: details （2）基本数据类型-原子操作示例
 
 ```go
 package main
@@ -7588,9 +7590,7 @@ x = 222
 
 :::
 
-<br />
-
-#### 任意数据类型-原子操作
+::: details （3）任意数据类型-原子操作示例
 
 如果是其他类型的数据，`atomic`为我们提供了`Value`结构体来原子操作
 
@@ -7601,8 +7601,6 @@ x = 222
 * 切片、映射等不支持"比较并交换"
 
 示例代码
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -7637,11 +7635,7 @@ func main() {
 
 :::
 
-<br />
-
-#### 使用原子操作优化举例
-
-::: details 点击查看完整代码
+::: details （4）使用原子操作优化举例
 
 ```go
 package main
@@ -7674,7 +7668,7 @@ func main() {
 
 <br />
 
-### 数据竞争检测手段
+### 运行时数据竞争检测
 
 并发读写共享资源的时候会出现数据竞争`(data race)`，所以需要像锁等机制来进行保护
 
