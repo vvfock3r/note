@@ -8435,7 +8435,7 @@ Graphviz：[https://graphviz.org/](https://graphviz.org/)
 
 ```bash
 # 生成cpuprofile文件，注意选项必须要在最后面才能执行执行，不知道为啥
-D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out 
+D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out
 
 # 打开cpuprofile文件，进入交互式界面
 D:\application\GoLand\demo>go tool pprof cpu.out 
