@@ -8227,7 +8227,7 @@ D:\application\GoLand\example>go run main.go
 说明：
 
 * 文件名要以`_test.go`结尾
-* 函数签名要以`TestXX(t *testing.T)`
+* 函数签名`TestXXX(t *testing.T)`，其中`XXX`可以自定义，一般为我们要测试的函数
 * 测试当前目录下所有文件：`go test .`
 
 ::: details （1）单元测试举例
@@ -8387,10 +8387,12 @@ D:\application\GoLand\demo>go tool cover -html=c.out
 说明：
 
 * 文件名要以`_test.go`结尾
-* 函数签名一`BenchmarkXX(b *testing.B)`
+* 函数签名`BenchmarkXX(b *testing.B)`，，其中`XXX`可以自定义，一般为我们要测试的函数
 * 测试当前目录下所有文件：`go test -bench . `
 
 ::: details （1）性能测试举例
+
+`main_test.go`
 
 ```go
 package main
@@ -8422,9 +8424,20 @@ func BenchmarkAdd(b *testing.B) {
 输出结果
 
 ```bash
-BenchmarkAdd-8          1000000000               0.2460 ns/op
+D:\application\GoLand\example>go test -bench .
+goos: windows
+goarch: amd64
+pkg: example
+cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+BenchmarkAdd-8          1000000000               0.2540 ns/op
 PASS
-ok      learn   0.956s
+ok      example 2.602s
+
+# 说明
+# 1.BenchmarkAdd是我们的测试函数名称
+# 2.-8这里的8指的是主机的逻辑CPU个数
+# 3.1000000000指的是该函数运行的次数
+# 4.0.2540 ns/op指的是每次运行函数消耗的纳秒
 ```
 
 :::
