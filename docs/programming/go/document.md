@@ -4347,10 +4347,7 @@ func main() {
 
 **三、读取数据**
 
-**按字节从文件开始读取数据**
-`Read(b []byte) (n int, err error)`
-
-::: details 点击查看完整代码
+::: details （1）按字节从文件开始读取数据
 
 ```go
 package main
@@ -4403,11 +4400,7 @@ func main() {
 
 :::
 
-**按字节从文件任意位置读取数据**
-
-`ReadAt(b []byte, off int64) (n int, err error)`
-
-::: details 点击查看完整代码
+::: details （2）按字节从文件任意位置读取数据
 
 ```go
 package main
@@ -4450,13 +4443,9 @@ func main() {
 
 :::
 
-<br />
-
-#### 读取中文乱码问题
+::: details （3）读取中文乱码问题
 
 一个中文占3个字节，如果只是简单的使用`Read`按字节读取文件的话，有可能会遇到中文乱码问题
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -4666,8 +4655,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4720,13 +4707,11 @@ func main() {
 2022/04/25 15:56:39 显示文件内容: 国
 ```
 
-<br />
+:::
 
-#### 读写快捷函数
+::: details （4）读写快捷函数
 
 `os.WriteFile`和`os.ReadFile`底层调用的是`OpenFile`，一次性加载数据到内存中，适合读取小文件，大文件有撑爆内存的风险
-
-::: details 点击查看完整代码
 
 ```go
 package main
@@ -4776,8 +4761,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4787,6 +4770,8 @@ func main() {
 
 # 可以看到，4个多G的文件2秒钟读完了
 ```
+
+:::
 
 <br />
 
