@@ -4161,7 +4161,160 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 ## IO
 
-### `os`包：基础文件读写
+### `fmt`：格式化IO
+
+文档：[https://pkg.go.dev/fmt](https://pkg.go.dev/fmt)
+
+::: details （1）常用函数
+
+| 分类           | 函数                                  | 说明                            |
+| -------------- | ------------------------------------- | ------------------------------- |
+| 输出到控制台   | `fmt.Print(string)`                   | 不换行                          |
+|                | `fmt.Println(string)`                 | 自动换行，`ln`意为`line`        |
+|                | `fmt.Printf(格式化字符, 字符串)`      | 格式化输出                      |
+| 作为返回值返回 | `fmt.Sprint()`                        |                                 |
+|                | `fmt.Sprintln()`                      |                                 |
+|                | `fmt.Sprintf(格式化字符, 字符串对象)` |                                 |
+| 接收用户输入   | `fmt.Scan(指针对象)`                  | 将控制台接收的值 赋值给指针对象 |
+
+:::
+
+::: details （2）fmt.printf格式化字符串
+
+| 分类       | 修饰符       | 说明                                                         |
+| ---------- | ------------ | ------------------------------------------------------------ |
+| 常用       | `%T`         | 数据类型                                                     |
+|            | `%v`         | 获取数据的值，如果实现了 `error `接口，仅表示错误消息        |
+|            | `%+v`        | 获取数据的值，如果是结构体会携带字段名                       |
+|            | `%#v`        | 获取数据的值，如果是结构体会携带结构体名和字段名             |
+| 指针       | `%p`         | 指针地址（带 `0x`）                                          |
+|            | `%#p`        | 指针地址（不带 `0x`）                                        |
+| 字符串     | `%s`         | 字符串或字节切片                                             |
+|            | `%c`         | Unicode码点对应的字符                                        |
+|            | `%q`         | 对于字符串或字节切片，结果会加上双引号；<br />对于`byte`或`rune，`结果会加上单引号 |
+| 字符串宽度 | `%5s`        | 最小宽度为5（默认右对齐）                                    |
+|            | `%-5s`       | 最小宽度为5（左对齐）                                        |
+|            | `%.5s`       | 最大宽度为5，多出部分会截断                                  |
+|            | `%5.7s`      | 最小宽度为5，最大宽度为7                                     |
+|            | `%-5.7s`     | 最小宽度为5，最大宽度为7（左对齐）                           |
+|            | `%5.3s`      | 如果宽度大于3，则截断                                        |
+|            | `%05s`       | 如果宽度小于5，就会在字符串前面补零                          |
+| 整型       | `%b`         | 二进制数                                                     |
+|            | `%o`         | 八进制数                                                     |
+|            | `%#o`        | 八进制数                                                     |
+|            | `%d`         | 十进制数                                                     |
+|            | `%x`         | 打印16进制数，a-f                                            |
+|            | `%X`         | 打印16进制数，A-F                                            |
+|            | `%#x`、`%#X` | 打印16进制数，带`0x`、`0X`                                   |
+|            | `% x`、`% X` | 打印16进制数，前面带一个空格                                 |
+| 浮点数     | `%f`         | 浮点数, 默认保留6位小数，即`%.6`                             |
+|            | `%e`         | 科学计数法，默认保留6位小数，即`%.6e`                        |
+| 指针       | `%p`         | 指针，十六进制表示，带前缀`0x`                               |
+|            | `%#p`        | 指针，十六进制表示，不带前缀`0x`                             |
+| 布尔值     | `%t`         | 打印`true`或`false`                                          |
+
+:::
+
+::: details （3）fmt.printf示例
+
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func main() {
+	person := Person{Name: "Bob", Age: 20}
+	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	// 常用类型
+	fmt.Printf("%T\n", person)
+	fmt.Printf("%v\n", person)
+	fmt.Printf("%+v\n", person)
+	fmt.Printf("%#v\n", person)
+	//main.Person
+	//{Bob 20}
+	//{Name:Bob Age:20}
+	//main.Person{Name:"Bob", Age:20}
+
+	// 指针类型，值类型需要使用&获取指针地址，引用类型加不加&都可以
+	fmt.Printf("%p, %p\n", &person, numbers)
+	fmt.Printf("%#p, %#p\n", &person, &numbers)
+	//0xc000004078, 0xc0000161e0
+	//c000004078, c0000161e0
+
+	// 字符串
+	fmt.Printf("%s, %s\n", "北京", []byte("北京"))
+	fmt.Printf("%#x\n", []rune("北京")[0]) // 0x5317, 字符串 -> unicode -> 16进制
+	fmt.Printf("%c\n", 0x5317)
+	fmt.Printf("%q, %q, %q\n", "北京", []byte("北京"), 0x5317)
+	//北京, 北京
+	//0x5317
+	//北
+	//"北京", "北京", '北'
+
+	// 字符串宽度
+	fmt.Printf("%5s\n", "ABC")
+	fmt.Printf("%-5s\n", "ABC")
+	fmt.Printf("%.5s\n", "ABCDEF")
+	fmt.Printf("%5.3s\n", "ABCDEF")
+	//ABC
+	//ABC
+	//ABCDE
+	//ABC
+
+	// 整型
+	fmt.Printf("%b\n", 3)
+	fmt.Printf("%o\n", 9)
+	fmt.Printf("%#o\n", 9)
+	fmt.Printf("%x\n", 15)
+	fmt.Printf("%X\n", 15)
+	fmt.Printf("%X\n", 15)
+	fmt.Printf("%#x\n", 15)
+	fmt.Printf("%#X\n", 15)
+	fmt.Printf("% X\n", 15)
+	//11
+	//11
+	//011
+	//f
+	//F
+	//F
+	//0xf
+	//0XF
+	// F
+
+	// 	浮点数
+	fmt.Printf("%.2f\n", 2.985)                     // 并非四舍五入
+	fmt.Printf("%.2f\n", 2.986)                     // 也不是完全舍去小数
+	fmt.Printf("%f\n", 3.3333333333333333333333333) // 默认保留六位小数
+	fmt.Printf("%f\n", 3.0)                         // 默认保留六位小数，即%.06
+    
+    // 科学计数法
+    // 默认为%.6e；计算方法为：123456.789 = 1.23456789 * 10^5 = 1.23456789e5，又因为是保留6位小数，所以1.234568
+	fmt.Printf("%e\n", 123456.789)                  
+
+	// 指针
+	a := 1
+	fmt.Printf("%p\n", &a)
+	fmt.Printf("%#p\n", &a)
+	//0xc0000181c0
+	//c0000181c0
+
+	// 布尔值
+	fmt.Printf("%t\n", 1 > 2)
+	// false
+}
+```
+
+:::
+
+<br />
+
+### `os`：基础文件读写
 
 官方文档：[https://pkg.go.dev/os](https://pkg.go.dev/os)
 
@@ -4775,13 +4928,13 @@ func main() {
 
 <br />
 
-### `io`包：IO基本接口定义
+### `io`：IO基本接口定义
 
 官方文档：[https://pkg.go.dev/io](https://pkg.go.dev/io)
 
-#### Reader基本接口
+::: details （1）Reader基本接口
 
-**Reader定义**
+**1、Reader定义**
 
 ```go
 // io.Reader
@@ -4790,9 +4943,9 @@ type Reader interface {
 }
 ```
 
-> 根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`和`error`
+根据接口定义得到的信息：读取数据并填充到`p`中，最多填充`len(p)`个字节；返回实际读取到的字节数`n`和`error`
 
-**Reader读取规则**
+**2、Reader读取规则**
 
 （1）读取成功，数据全部填充至`p`，此时有` n == len(p)`、`err == nil`
 
@@ -4806,7 +4959,7 @@ type Reader interface {
 
 （4）<span style="color: blue; font-weight: bold;">允许数据没全部准备好时，返回部分数据，此时有`p`尚未填充满，同时`err == nil`</span>（这种情况要小心，可能写代码会出现一些坑）
 
-**Reader接口的几种实现**
+**3、Reader接口的几种实现**
 
 | 结构体/接口                                                  | 具体实现                           | 备注                                                         |
 | ------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------ |
@@ -4817,9 +4970,9 @@ type Reader interface {
 | 从缓冲中读：<br />`bytes.Buffer`结构体<br />`bufio.Reader`结构体 | 详细介绍见后面章节                 | 详细介绍见后面章节                                           |
 | 从网络连接中读：<br />`net.Conn`接口                         | 以后补充                           | 以后补充                                                     |
 
-示例代码
+:::
 
-::: details 点击查看完整代码
+::: details （2）Reader方法使用
 
 ```go
 package main
@@ -4892,8 +5045,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4905,9 +5056,9 @@ func main() {
 2022/04/24 16:52:32 好
 ```
 
-<br />
+:::
 
-#### Reader其他接口
+::: details （3）Reader其他接口
 
 ```go
 // 读取一次返回一个字节
@@ -4926,9 +5077,9 @@ type ReaderAt interface {
 }
 ```
 
-<br />
+:::
 
-#### Reader封装函数
+::: details （4）Reader封装函数
 
 | 函数                                                         | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -4938,9 +5089,9 @@ type ReaderAt interface {
 | `func LimitReader(r Reader, n int64) Reader`                 | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为0） |
 | `func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader` | 返回一个新`Reader`，该`Reader`最多只能读取`n`个字节（偏移为`off`） |
 
-<br />
+:::
 
-#### Writer和Closer接口
+::: details （5）Writer和Closer接口
 
 **接口定义**
 
@@ -4954,9 +5105,9 @@ type Closer interface {
 }
 ```
 
-<br />
+:::
 
-#### Reader和Writer复合函数
+::: details （6）Reader和Writer复合函数
 
 **io.Copy系列**
 
@@ -4987,24 +5138,25 @@ func Pipe() (*PipeReader, *PipeWriter)
 
 * 从w中写入，从r中读出
 * 线程安全
-
 * 本质上是无缓冲的`channel`，所以不能在同一个协程中读和写
+
+:::
 
 <br />
 
-### bufio包：带缓冲的IO包
+### bufio：带缓冲的IO包
 
 官方文档：[https://pkg.go.dev/bufio](https://pkg.go.dev/bufio)
 
-#### 缓冲原理
+::: details （1）缓冲原理
 
 ![bufio](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/bufio.png)
 
 本质上来讲，就是通过减少系统调用来提高效率，付出的代价就是内存占用变多
 
-<br />
+:::
 
-#### 构造函数
+::: details （2）构造函数
 
 ```go
 func NewReader(rd io.Reader) *Reader {
@@ -5018,11 +5170,9 @@ func NewWriter(w io.Writer) *Writer {
 // 默认的缓冲区大小defaultBufSize = 4096
 ```
 
-<br />
+:::
 
-#### 使用示例
-
-::: details Reader使用示例
+::: details （3）Reader使用示例
 
 ```go
 package main
@@ -5062,7 +5212,7 @@ func main() {
 
 :::
 
-::: details Writer使用示例
+::: details （4）Writer使用示例
 
 ```go
 package main
@@ -5099,13 +5249,7 @@ func main() {
 
 :::
 
-<br />
-
-#### 读写测试
-
-**写测试**
-
-::: details 写缓冲性能测试
+::: details （5）写缓冲性能测试
 
 ```go
 package main
@@ -5211,8 +5355,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -5230,9 +5372,9 @@ func main() {
 >
 > （2）但如果使用`io.Copy`方式读写文件，会使用`dst.ReadFrom(src)`方式读写，对我们这次测试来说并不准，用不用`bufio`，两者花费的时间几乎一致
 
-**读测试**
+:::
 
-::: details 读缓冲性能测试
+::: details （7）读缓冲性能测试
 
 ```go
 package main
@@ -5313,8 +5455,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -5324,13 +5464,15 @@ func main() {
 
 > 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
 
+:::
+
 <br />
 
-### ioutils包：已被os/io包代替
+### ioutils：已被os/io代替
 
 官方文档：[https://pkg.go.dev/io/ioutil](https://pkg.go.dev/io/ioutil)
 
-从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在新代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
+从Go 1.16开始，同样的功能现在由包`io`包或`os`包提供，在代码中应该优先使用这些实现。有关详细信息，请参阅特定功能文档。
 
 ## 
 
@@ -8129,148 +8271,6 @@ func main() {
 ```
 
 <br />
-
-### Print系列
-
-文档：[https://pkg.go.dev/fmt](https://pkg.go.dev/fmt)
-
-| 分类           | 函数                                  | 说明                            |
-| -------------- | ------------------------------------- | ------------------------------- |
-| 输出到控制台   | `fmt.Print(string)`                   | 不换行                          |
-|                | `fmt.Println(string)`                 | 自动换行，`ln`意为`line`        |
-|                | `fmt.Printf(格式化字符, 字符串)`      | 格式化输出                      |
-| 作为返回值返回 | `fmt.Sprint()`                        |                                 |
-|                | `fmt.Sprintln()`                      |                                 |
-|                | `fmt.Sprintf(格式化字符, 字符串对象)` |                                 |
-| 接收用户输入   | `fmt.Scan(指针对象)`                  | 将控制台接收的值 赋值给指针对象 |
-
-`printf`格式化字符串
-
-| 分类       | 修饰符       | 说明                                                         |
-| ---------- | ------------ | ------------------------------------------------------------ |
-| 常用       | `%T`         | 数据类型                                                     |
-|            | `%v`         | 获取数据的值，如果实现了 `error `接口，仅表示错误消息        |
-|            | `%+v`        | 获取数据的值，如果是结构体会携带字段名                       |
-|            | `%#v`        | 获取数据的值，如果是结构体会携带结构体名和字段名             |
-| 指针       | `%p`         | 指针地址（带 `0x`）                                          |
-|            | `%#p`        | 指针地址（不带 `0x`）                                        |
-| 字符串     | `%s`         | 字符串或字节切片                                             |
-|            | `%c`         | Unicode码点对应的字符                                        |
-|            | `%q`         | 对于字符串或字节切片，结果会加上双引号；<br />对于`byte`或`rune，`结果会加上单引号 |
-| 字符串宽度 | `%5s`        | 最小宽度为5（默认右对齐）                                    |
-|            | `%-5s`       | 最小宽度为5（左对齐）                                        |
-|            | `%.5s`       | 最大宽度为5，多出部分会截断                                  |
-|            | `%5.7s`      | 最小宽度为5，最大宽度为7                                     |
-|            | `%-5.7s`     | 最小宽度为5，最大宽度为7（左对齐）                           |
-|            | `%5.3s`      | 如果宽度大于3，则截断                                        |
-|            | `%05s`       | 如果宽度小于5，就会在字符串前面补零                          |
-| 整型       | `%b`         | 二进制数                                                     |
-|            | `%o`         | 八进制数                                                     |
-|            | `%#o`        | 八进制数                                                     |
-|            | `%d`         | 十进制数                                                     |
-|            | `%x`         | 打印16进制数，a-f                                            |
-|            | `%X`         | 打印16进制数，A-F                                            |
-|            | `%#x`、`%#X` | 打印16进制数，带`0x`、`0X`                                   |
-|            | `% x`、`% X` | 打印16进制数，前面带一个空格                                 |
-| 浮点数     | `%f`         | 浮点数, 默认保留6位小数，即`%.6`                             |
-|            | `%e`         | 科学计数法，默认保留6位小数，即`%.6e`                        |
-| 指针       | `%p`         | 指针，十六进制表示，带前缀`0x`                               |
-|            | `%#p`        | 指针，十六进制表示，不带前缀`0x`                             |
-| 布尔值     | `%t`         | 打印`true`或`false`                                          |
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import "fmt"
-
-type Person struct {
-	Name string
-	Age  int
-}
-
-func main() {
-	person := Person{Name: "Bob", Age: 20}
-	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-	// 常用类型
-	fmt.Printf("%T\n", person)
-	fmt.Printf("%v\n", person)
-	fmt.Printf("%+v\n", person)
-	fmt.Printf("%#v\n", person)
-	//main.Person
-	//{Bob 20}
-	//{Name:Bob Age:20}
-	//main.Person{Name:"Bob", Age:20}
-
-	// 指针类型，值类型需要使用&获取指针地址，引用类型加不加&都可以
-	fmt.Printf("%p, %p\n", &person, numbers)
-	fmt.Printf("%#p, %#p\n", &person, &numbers)
-	//0xc000004078, 0xc0000161e0
-	//c000004078, c0000161e0
-
-	// 字符串
-	fmt.Printf("%s, %s\n", "北京", []byte("北京"))
-	fmt.Printf("%#x\n", []rune("北京")[0]) // 0x5317, 字符串 -> unicode -> 16进制
-	fmt.Printf("%c\n", 0x5317)
-	fmt.Printf("%q, %q, %q\n", "北京", []byte("北京"), 0x5317)
-	//北京, 北京
-	//0x5317
-	//北
-	//"北京", "北京", '北'
-
-	// 字符串宽度
-	fmt.Printf("%5s\n", "ABC")
-	fmt.Printf("%-5s\n", "ABC")
-	fmt.Printf("%.5s\n", "ABCDEF")
-	fmt.Printf("%5.3s\n", "ABCDEF")
-	//ABC
-	//ABC
-	//ABCDE
-	//ABC
-
-	// 整型
-	fmt.Printf("%b\n", 3)
-	fmt.Printf("%o\n", 9)
-	fmt.Printf("%#o\n", 9)
-	fmt.Printf("%x\n", 15)
-	fmt.Printf("%X\n", 15)
-	fmt.Printf("%X\n", 15)
-	fmt.Printf("%#x\n", 15)
-	fmt.Printf("%#X\n", 15)
-	fmt.Printf("% X\n", 15)
-	//11
-	//11
-	//011
-	//f
-	//F
-	//F
-	//0xf
-	//0XF
-	// F
-
-	// 	浮点数
-	fmt.Printf("%.2f\n", 2.985)                     // 并非四舍五入
-	fmt.Printf("%.2f\n", 2.986)                     // 也不是完全舍去小数
-	fmt.Printf("%f\n", 3.3333333333333333333333333) // 默认保留六位小数
-	fmt.Printf("%f\n", 3.0)                         // 默认保留六位小数，即%.06
-	fmt.Printf("%e\n", 123456.789)                  // 科学计数法， 默认为%.6e；计算方法为：123456.789 = 1.23456789 * 10^5 = 1.23456789e5，又因为是保留6位小数，所以1.234568
-
-	// 指针
-	a := 1
-	fmt.Printf("%p\n", &a)
-	fmt.Printf("%#p\n", &a)
-	//0xc0000181c0
-	//c0000181c0
-
-	// 布尔值
-	fmt.Printf("%t\n", 1 > 2)
-	// false
-}
-```
-
-:::
 
 ### 代码测试
 
