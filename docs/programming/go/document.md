@@ -24,7 +24,7 @@
 
 :::
 
-::: details （2）使用二进制包安装（推荐）
+::: details （2）使用二进制包安装
 
 **1、Go版本管理设想**
 
@@ -859,7 +859,7 @@ func main() {
 
 ### 运算符
 
-::: details（1）算术运算符
+::: details （1）算术运算符
 
 运算符说明
 
@@ -999,7 +999,7 @@ func main() {
 
 :::
 
-::: details （3）位运算符：kb/mb/gb转换
+::: details （3）位运算符：KB/MB/GB转换
 
 ```go
 package main
