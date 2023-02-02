@@ -14,7 +14,7 @@
 
 ## 环境设置
 
-### 安装Go
+### 安装
 
 ::: details （1）使用包管理器安装
 
@@ -74,11 +74,7 @@ GOROOT="/usr/local/go/1.19.5"
 
 :::
 
-<br />
-
-### 环境变量
-
-::: details 点击查看详情
+::: details 环境变量说明
 
 **设置环境变量**
 
@@ -136,7 +132,7 @@ func main() {
 
 两种运行方式
 
-```go
+```bash
 # (1) 编译和运行
 go build main.go        # 编译
 ./main.exe              # 运行
@@ -147,8 +143,9 @@ go run main.go
 
 如果我们导入的是一个第三方包，那么编译的时候会报错，如下所示
 
-```bash
-[root@localhost ~]# cat main.go 
+`main.go`
+
+```go
 package main
 
 import (
@@ -172,7 +169,11 @@ func main() {
         // 启动Gin Server
         log.Fatalln(r.Run(addr))
 }
+```
 
+输出结果
+
+```bash
 [root@localhost ~]# go run main.go   # 在当前目录及父目录没有找到go.mod文件
 main.go:4:2: no required module provides package github.com/gin-gonic/gin: go.mod file not found in current directory or any parent directory;
 see 'go help modules'
@@ -641,7 +642,7 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
-## 
+<br />
 
 ## 基础入门
 
