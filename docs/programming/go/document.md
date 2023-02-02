@@ -671,7 +671,9 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 ## 基础入门
 
-### 声明
+### 变量
+
+::: details （1）声明关键字
 
 | 关键字  | 说明     |
 | ------- | -------- |
@@ -680,11 +682,9 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 | `func`  | 声明函数 |
 | `type`  | 声明类型 |
 
-<br />
+:::
 
-### 变量和常量
-
-::: details （1）声明变量并赋值
+::: details （2）声明变量并赋值
 
 ```go
 package main
@@ -737,7 +737,7 @@ func main() {
 
 :::
 
-::: details （2）声明变量不赋值
+::: details （3）声明变量不赋值
 
 ```go
 package main
@@ -754,7 +754,7 @@ func main() {
 
 :::
 
-::: details （3）声明常量
+::: details （4）声明常量
 
 常量使用`const`关键字声明，与`var`用法很类似，这里主要演示一下特殊的地方
 
@@ -803,19 +803,15 @@ func main() {
 
 :::
 
-<br />
+::: details （5）指针操作
 
-### 指针操作
+* 指针的值是变量的内存地址
 
-指针的值是变量的内存地址
+* 使用指针可以在无需知道变量名字的情况下，间接读取或更新变量的值
 
-使用指针可以在无需知道变量名字的情况下，间接读取或更新变量的值
+* 指针类型的零值是nil
 
-指针类型的零值是nil
-
-指针是可以比较的，当两个指针指向同一个变量或两个指针都为nil的时他们才相等
-
-::: details 点击查看完整代码
+* 指针是可以比较的，当两个指针指向同一个变量或两个指针都为nil的时他们才相等
 
 ```go
 package main
@@ -857,151 +853,15 @@ func main() {
 
 <br />
 
-### Print系列
 
-文档：[https://pkg.go.dev/fmt](https://pkg.go.dev/fmt)
-
-| 分类           | 函数                                  | 说明                            |
-| -------------- | ------------------------------------- | ------------------------------- |
-| 输出到控制台   | `fmt.Print(string)`                   | 不换行                          |
-|                | `fmt.Println(string)`                 | 自动换行，`ln`意为`line`        |
-|                | `fmt.Printf(格式化字符, 字符串)`      | 格式化输出                      |
-| 作为返回值返回 | `fmt.Sprint()`                        |                                 |
-|                | `fmt.Sprintln()`                      |                                 |
-|                | `fmt.Sprintf(格式化字符, 字符串对象)` |                                 |
-| 接收用户输入   | `fmt.Scan(指针对象)`                  | 将控制台接收的值 赋值给指针对象 |
-
-`printf`格式化字符串
-
-| 分类       | 修饰符       | 说明                                                         |
-| ---------- | ------------ | ------------------------------------------------------------ |
-| 常用       | `%T`         | 数据类型                                                     |
-|            | `%v`         | 获取数据的值，如果实现了 `error `接口，仅表示错误消息        |
-|            | `%+v`        | 获取数据的值，如果是结构体会携带字段名                       |
-|            | `%#v`        | 获取数据的值，如果是结构体会携带结构体名和字段名             |
-| 指针       | `%p`         | 指针地址（带 `0x`）                                          |
-|            | `%#p`        | 指针地址（不带 `0x`）                                        |
-| 字符串     | `%s`         | 字符串或字节切片                                             |
-|            | `%c`         | Unicode码点对应的字符                                        |
-|            | `%q`         | 对于字符串或字节切片，结果会加上双引号；<br />对于`byte`或`rune，`结果会加上单引号 |
-| 字符串宽度 | `%5s`        | 最小宽度为5（默认右对齐）                                    |
-|            | `%-5s`       | 最小宽度为5（左对齐）                                        |
-|            | `%.5s`       | 最大宽度为5，多出部分会截断                                  |
-|            | `%5.7s`      | 最小宽度为5，最大宽度为7                                     |
-|            | `%-5.7s`     | 最小宽度为5，最大宽度为7（左对齐）                           |
-|            | `%5.3s`      | 如果宽度大于3，则截断                                        |
-|            | `%05s`       | 如果宽度小于5，就会在字符串前面补零                          |
-| 整型       | `%b`         | 二进制数                                                     |
-|            | `%o`         | 八进制数                                                     |
-|            | `%#o`        | 八进制数                                                     |
-|            | `%d`         | 十进制数                                                     |
-|            | `%x`         | 打印16进制数，a-f                                            |
-|            | `%X`         | 打印16进制数，A-F                                            |
-|            | `%#x`、`%#X` | 打印16进制数，带`0x`、`0X`                                   |
-|            | `% x`、`% X` | 打印16进制数，前面带一个空格                                 |
-| 浮点数     | `%f`         | 浮点数, 默认保留6位小数，即`%.6`                             |
-|            | `%e`         | 科学计数法，默认保留6位小数，即`%.6e`                        |
-| 指针       | `%p`         | 指针，十六进制表示，带前缀`0x`                               |
-|            | `%#p`        | 指针，十六进制表示，不带前缀`0x`                             |
-| 布尔值     | `%t`         | 打印`true`或`false`                                          |
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import "fmt"
-
-type Person struct {
-	Name string
-	Age  int
-}
-
-func main() {
-	person := Person{Name: "Bob", Age: 20}
-	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-	// 常用类型
-	fmt.Printf("%T\n", person)
-	fmt.Printf("%v\n", person)
-	fmt.Printf("%+v\n", person)
-	fmt.Printf("%#v\n", person)
-	//main.Person
-	//{Bob 20}
-	//{Name:Bob Age:20}
-	//main.Person{Name:"Bob", Age:20}
-
-	// 指针类型，值类型需要使用&获取指针地址，引用类型加不加&都可以
-	fmt.Printf("%p, %p\n", &person, numbers)
-	fmt.Printf("%#p, %#p\n", &person, &numbers)
-	//0xc000004078, 0xc0000161e0
-	//c000004078, c0000161e0
-
-	// 字符串
-	fmt.Printf("%s, %s\n", "北京", []byte("北京"))
-	fmt.Printf("%#x\n", []rune("北京")[0]) // 0x5317, 字符串 -> unicode -> 16进制
-	fmt.Printf("%c\n", 0x5317)
-	fmt.Printf("%q, %q, %q\n", "北京", []byte("北京"), 0x5317)
-	//北京, 北京
-	//0x5317
-	//北
-	//"北京", "北京", '北'
-
-	// 字符串宽度
-	fmt.Printf("%5s\n", "ABC")
-	fmt.Printf("%-5s\n", "ABC")
-	fmt.Printf("%.5s\n", "ABCDEF")
-	fmt.Printf("%5.3s\n", "ABCDEF")
-	//ABC
-	//ABC
-	//ABCDE
-	//ABC
-
-	// 整型
-	fmt.Printf("%b\n", 3)
-	fmt.Printf("%o\n", 9)
-	fmt.Printf("%#o\n", 9)
-	fmt.Printf("%x\n", 15)
-	fmt.Printf("%X\n", 15)
-	fmt.Printf("%X\n", 15)
-	fmt.Printf("%#x\n", 15)
-	fmt.Printf("%#X\n", 15)
-	fmt.Printf("% X\n", 15)
-	//11
-	//11
-	//011
-	//f
-	//F
-	//F
-	//0xf
-	//0XF
-	// F
-
-	// 	浮点数
-	fmt.Printf("%.2f\n", 2.985)                     // 并非四舍五入
-	fmt.Printf("%.2f\n", 2.986)                     // 也不是完全舍去小数
-	fmt.Printf("%f\n", 3.3333333333333333333333333) // 默认保留六位小数
-	fmt.Printf("%f\n", 3.0)                         // 默认保留六位小数，即%.06
-	fmt.Printf("%e\n", 123456.789)                  // 科学计数法， 默认为%.6e；计算方法为：123456.789 = 1.23456789 * 10^5 = 1.23456789e5，又因为是保留6位小数，所以1.234568
-
-	// 指针
-	a := 1
-	fmt.Printf("%p\n", &a)
-	fmt.Printf("%#p\n", &a)
-	//0xc0000181c0
-	//c0000181c0
-
-	// 布尔值
-	fmt.Printf("%t\n", 1 > 2)
-	// false
-}
-```
-
-:::
 
 <br />
 
-### 算术运算符
+### 运算符
+
+::: details（1）算术运算符
+
+运算符说明
 
 | 运算符 | 说明                                                         |
 | ------ | ------------------------------------------------------------ |
@@ -1013,7 +873,7 @@ func main() {
 | ++     | 支持i++，但不支持++i                                         |
 | \--    | 同++                                                         |
 
-::: details 点击查看完整代码
+示例代码
 
 ```go
 package main
@@ -1043,7 +903,7 @@ func main() {
 
 :::
 
-### 位运算符
+::: details （2）位运算符：基础示例
 
 **原码反码补码**
 
@@ -1056,8 +916,6 @@ func main() {
   * 负数的补码等于反码+1
 
 **示例代码**
-
-::: details （1）基础使用
 
 ```go
 package main
@@ -1141,7 +999,7 @@ func main() {
 
 :::
 
-::: details （2）kb/mb/gb转换
+::: details （3）位运算符：kb/mb/gb转换
 
 ```go
 package main
@@ -1166,9 +1024,9 @@ func main() {
 
 <br />
 
-### 循环语句
+### 常用语句
 
-::: details 点击查看完整代码
+::: details （1）循环语句
 
 ```go
 package main
@@ -1272,11 +1130,7 @@ func main() {
 
 :::
 
-<br />
-
-### 判断语句
-
-::: details 点击查看完整代码
+::: details （2）判断语句
 
 ```go
 package main
@@ -1344,214 +1198,6 @@ switch-fallthrough判断
 :::
 
 <br />
-
-### 代码测试
-
-| 功能\属性 | 文件名要求               | 函数签名要求                | 执行命令                                    |
-| --------- | ------------------------ | --------------------------- | ------------------------------------------- |
-| 单元测试  | 文件名要以`_test.go`结尾 | `TestXX(t *testing.T)`      | 测试当前目录下所有文件：`go test .`         |
-| 性能测试  | 文件名要以`_test.go`结尾 | `BenchmarkXX(b *testing.B)` | 测试当前目录下所有文件：`go test -bench . ` |
-
-::: details （1）单元测试举例
-
-`main.go`
-
-```go
-package main
-
-import (
-	"fmt"
-)
-
-func Add(n1, n2 int) int {
-	return n1 + n2
-}
-
-func Fibonacci() func() int64 {
-	var a, b int64 = 0, 1
-	return func() int64 {
-		a, b = b, a+b
-		return a
-	}
-}
-
-func main() {
-	fib := Fibonacci()
-	for i := 0; i < 100; i++ {
-		fmt.Println(fib())
-	}
-}
-```
-
-`main_test.go`
-
-```go
-package main
-
-import "testing"
-
-func TestAdd(t *testing.T) {
-	tests := []struct{ a, b, c int }{
-		{1, 2, 3},
-		{4, 5, 9},
-		{5, 6, 11},
-		{6, 7, 14}, // 这里故意写错
-	}
-
-	for _, v := range tests {
-		if ret := Add(v.a, v.b); ret != v.c {
-			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
-		}
-	}
-}
-```
-
-输出结果
-
-```bash
-# 运行
-D:\application\GoLand\demo>go test .
---- FAIL: TestAdd (0.00s)
-    main_test.go:15: Add(6, 7) got 13, expectd 14
-FAIL
-FAIL    demo    0.628s
-FAIL
-```
-
-:::
-
-::: details （2）单元测试：还是使用上面的代码，同时输出代码覆盖率
-
-**（1）查看代码覆盖率**
-
-```bash
-# 同时输出代码覆盖率
-D:\application\GoLand\demo>go test -coverprofile=c.out .
---- FAIL: TestAdd (0.00s)
-    main_test.go:15: Add(6, 7) got 13, expectd 14
-FAIL
-coverage: 12.5% of statements        # 代码覆盖率只有12.5%
-FAIL    demo    0.593s
-FAIL
-
-# 看一下c.out的值, 看不懂没关系
-mode: set
-demo/main.go:7.26,9.2 1 1
-demo/main.go:11.31,13.22 2 0
-demo/main.go:13.22,16.3 2 0
-demo/main.go:19.13,21.27 2 0
-demo/main.go:21.27,23.3 1 0
-
-# 我怎么知道哪些没有覆盖到呢？使用下面的命令会打开浏览器
-D:\application\GoLand\demo>go tool cover -html=c.out
-```
-
-![image-20221119112441117](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119112441117.png)
-
-**（2）修正单元测试中的错误并优化代码覆盖率**
-
-```go
-package main
-
-import "testing"
-
-func TestAdd(t *testing.T) {
-	tests := []struct{ a, b, c int }{
-		{1, 2, 3},
-		{4, 5, 9},
-		{5, 6, 11},
-		{6, 7, 13}, // 修正错误
-	}
-
-	for _, v := range tests {
-		if ret := Add(v.a, v.b); ret != v.c {
-			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
-		}
-	}
-}
-
-func TestFibonacci(t *testing.T) {
-	tests := []int64{1, 1, 2, 3, 5, 8, 13, 21}
-
-	fib := Fibonacci()
-	for _, v := range tests {
-		if ret := fib(); ret != v {
-			t.Errorf("TestFibonacci()=>fib() got %d, expected %d\n", ret, v)
-		}
-	}
-}
-```
-
-再次测试
-
-```bash
-D:\application\GoLand\demo>go test -coverprofile=c.out .
-ok      demo    0.040s  coverage: 62.5% of statements      # 已经提高到62.5%
-
-D:\application\GoLand\demo>go tool cover -html=c.out
-```
-
-![image-20221119113455828](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119113455828.png)
-
-:::
-
-::: details （3）性能测试举例
-
-```go
-package main
-
-import "testing"
-
-// 为了演示方法，将实际的代码也在写这里
-func Add(n1, n2 int) int {
-	return n1 + n2
-}
-
-func BenchmarkAdd(b *testing.B) {
-	x := 10000
-	y := -25000
-	z := -15000
-
-	// 这里是重置时间，如果上面有耗时初始化的话可以添加这一句
-	b.ResetTimer()
-
-	// b.N是性能测试为我们提供的计数器
-	for i := 0; i < b.N; i++ {
-		if v := Add(x, y); v != z {
-			b.Errorf("Add(%d, %d) got %d, expectd %d\n", x, y, v, z)
-		}
-	}
-}
-```
-
-输出结果
-
-```bash
-BenchmarkAdd-8          1000000000               0.2460 ns/op
-PASS
-ok      learn   0.956s
-```
-
-:::
-
-::: details （4）性能测试：分析CPU性能
-
-Graphviz：[https://graphviz.org/](https://graphviz.org/)
-
-```bash
-# 生成cpuprofile文件，注意选项必须要在最后面才能执行执行，不知道为啥
-D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out 
-
-# 打开cpuprofile文件，进入交互式界面
-D:\application\GoLand\demo>go tool pprof cpu.out 
-(pprof) web  # 在这里输入web，不过需要提前安装Graphviz
-```
-
-:::
-
-<br />
-
-## 
 
 ## 基本数据类型
 
@@ -8492,3 +8138,350 @@ func main() {
 }
 ```
 
+<br />
+
+### Print系列
+
+文档：[https://pkg.go.dev/fmt](https://pkg.go.dev/fmt)
+
+| 分类           | 函数                                  | 说明                            |
+| -------------- | ------------------------------------- | ------------------------------- |
+| 输出到控制台   | `fmt.Print(string)`                   | 不换行                          |
+|                | `fmt.Println(string)`                 | 自动换行，`ln`意为`line`        |
+|                | `fmt.Printf(格式化字符, 字符串)`      | 格式化输出                      |
+| 作为返回值返回 | `fmt.Sprint()`                        |                                 |
+|                | `fmt.Sprintln()`                      |                                 |
+|                | `fmt.Sprintf(格式化字符, 字符串对象)` |                                 |
+| 接收用户输入   | `fmt.Scan(指针对象)`                  | 将控制台接收的值 赋值给指针对象 |
+
+`printf`格式化字符串
+
+| 分类       | 修饰符       | 说明                                                         |
+| ---------- | ------------ | ------------------------------------------------------------ |
+| 常用       | `%T`         | 数据类型                                                     |
+|            | `%v`         | 获取数据的值，如果实现了 `error `接口，仅表示错误消息        |
+|            | `%+v`        | 获取数据的值，如果是结构体会携带字段名                       |
+|            | `%#v`        | 获取数据的值，如果是结构体会携带结构体名和字段名             |
+| 指针       | `%p`         | 指针地址（带 `0x`）                                          |
+|            | `%#p`        | 指针地址（不带 `0x`）                                        |
+| 字符串     | `%s`         | 字符串或字节切片                                             |
+|            | `%c`         | Unicode码点对应的字符                                        |
+|            | `%q`         | 对于字符串或字节切片，结果会加上双引号；<br />对于`byte`或`rune，`结果会加上单引号 |
+| 字符串宽度 | `%5s`        | 最小宽度为5（默认右对齐）                                    |
+|            | `%-5s`       | 最小宽度为5（左对齐）                                        |
+|            | `%.5s`       | 最大宽度为5，多出部分会截断                                  |
+|            | `%5.7s`      | 最小宽度为5，最大宽度为7                                     |
+|            | `%-5.7s`     | 最小宽度为5，最大宽度为7（左对齐）                           |
+|            | `%5.3s`      | 如果宽度大于3，则截断                                        |
+|            | `%05s`       | 如果宽度小于5，就会在字符串前面补零                          |
+| 整型       | `%b`         | 二进制数                                                     |
+|            | `%o`         | 八进制数                                                     |
+|            | `%#o`        | 八进制数                                                     |
+|            | `%d`         | 十进制数                                                     |
+|            | `%x`         | 打印16进制数，a-f                                            |
+|            | `%X`         | 打印16进制数，A-F                                            |
+|            | `%#x`、`%#X` | 打印16进制数，带`0x`、`0X`                                   |
+|            | `% x`、`% X` | 打印16进制数，前面带一个空格                                 |
+| 浮点数     | `%f`         | 浮点数, 默认保留6位小数，即`%.6`                             |
+|            | `%e`         | 科学计数法，默认保留6位小数，即`%.6e`                        |
+| 指针       | `%p`         | 指针，十六进制表示，带前缀`0x`                               |
+|            | `%#p`        | 指针，十六进制表示，不带前缀`0x`                             |
+| 布尔值     | `%t`         | 打印`true`或`false`                                          |
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func main() {
+	person := Person{Name: "Bob", Age: 20}
+	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	// 常用类型
+	fmt.Printf("%T\n", person)
+	fmt.Printf("%v\n", person)
+	fmt.Printf("%+v\n", person)
+	fmt.Printf("%#v\n", person)
+	//main.Person
+	//{Bob 20}
+	//{Name:Bob Age:20}
+	//main.Person{Name:"Bob", Age:20}
+
+	// 指针类型，值类型需要使用&获取指针地址，引用类型加不加&都可以
+	fmt.Printf("%p, %p\n", &person, numbers)
+	fmt.Printf("%#p, %#p\n", &person, &numbers)
+	//0xc000004078, 0xc0000161e0
+	//c000004078, c0000161e0
+
+	// 字符串
+	fmt.Printf("%s, %s\n", "北京", []byte("北京"))
+	fmt.Printf("%#x\n", []rune("北京")[0]) // 0x5317, 字符串 -> unicode -> 16进制
+	fmt.Printf("%c\n", 0x5317)
+	fmt.Printf("%q, %q, %q\n", "北京", []byte("北京"), 0x5317)
+	//北京, 北京
+	//0x5317
+	//北
+	//"北京", "北京", '北'
+
+	// 字符串宽度
+	fmt.Printf("%5s\n", "ABC")
+	fmt.Printf("%-5s\n", "ABC")
+	fmt.Printf("%.5s\n", "ABCDEF")
+	fmt.Printf("%5.3s\n", "ABCDEF")
+	//ABC
+	//ABC
+	//ABCDE
+	//ABC
+
+	// 整型
+	fmt.Printf("%b\n", 3)
+	fmt.Printf("%o\n", 9)
+	fmt.Printf("%#o\n", 9)
+	fmt.Printf("%x\n", 15)
+	fmt.Printf("%X\n", 15)
+	fmt.Printf("%X\n", 15)
+	fmt.Printf("%#x\n", 15)
+	fmt.Printf("%#X\n", 15)
+	fmt.Printf("% X\n", 15)
+	//11
+	//11
+	//011
+	//f
+	//F
+	//F
+	//0xf
+	//0XF
+	// F
+
+	// 	浮点数
+	fmt.Printf("%.2f\n", 2.985)                     // 并非四舍五入
+	fmt.Printf("%.2f\n", 2.986)                     // 也不是完全舍去小数
+	fmt.Printf("%f\n", 3.3333333333333333333333333) // 默认保留六位小数
+	fmt.Printf("%f\n", 3.0)                         // 默认保留六位小数，即%.06
+	fmt.Printf("%e\n", 123456.789)                  // 科学计数法， 默认为%.6e；计算方法为：123456.789 = 1.23456789 * 10^5 = 1.23456789e5，又因为是保留6位小数，所以1.234568
+
+	// 指针
+	a := 1
+	fmt.Printf("%p\n", &a)
+	fmt.Printf("%#p\n", &a)
+	//0xc0000181c0
+	//c0000181c0
+
+	// 布尔值
+	fmt.Printf("%t\n", 1 > 2)
+	// false
+}
+```
+
+:::
+
+### 代码测试
+
+| 功能\属性 | 文件名要求               | 函数签名要求                | 执行命令                                    |
+| --------- | ------------------------ | --------------------------- | ------------------------------------------- |
+| 单元测试  | 文件名要以`_test.go`结尾 | `TestXX(t *testing.T)`      | 测试当前目录下所有文件：`go test .`         |
+| 性能测试  | 文件名要以`_test.go`结尾 | `BenchmarkXX(b *testing.B)` | 测试当前目录下所有文件：`go test -bench . ` |
+
+::: details （1）单元测试举例
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func Add(n1, n2 int) int {
+	return n1 + n2
+}
+
+func Fibonacci() func() int64 {
+	var a, b int64 = 0, 1
+	return func() int64 {
+		a, b = b, a+b
+		return a
+	}
+}
+
+func main() {
+	fib := Fibonacci()
+	for i := 0; i < 100; i++ {
+		fmt.Println(fib())
+	}
+}
+```
+
+`main_test.go`
+
+```go
+package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	tests := []struct{ a, b, c int }{
+		{1, 2, 3},
+		{4, 5, 9},
+		{5, 6, 11},
+		{6, 7, 14}, // 这里故意写错
+	}
+
+	for _, v := range tests {
+		if ret := Add(v.a, v.b); ret != v.c {
+			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+# 运行
+D:\application\GoLand\demo>go test .
+--- FAIL: TestAdd (0.00s)
+    main_test.go:15: Add(6, 7) got 13, expectd 14
+FAIL
+FAIL    demo    0.628s
+FAIL
+```
+
+:::
+
+::: details （2）单元测试：还是使用上面的代码，同时输出代码覆盖率
+
+**（1）查看代码覆盖率**
+
+```bash
+# 同时输出代码覆盖率
+D:\application\GoLand\demo>go test -coverprofile=c.out .
+--- FAIL: TestAdd (0.00s)
+    main_test.go:15: Add(6, 7) got 13, expectd 14
+FAIL
+coverage: 12.5% of statements        # 代码覆盖率只有12.5%
+FAIL    demo    0.593s
+FAIL
+
+# 看一下c.out的值, 看不懂没关系
+mode: set
+demo/main.go:7.26,9.2 1 1
+demo/main.go:11.31,13.22 2 0
+demo/main.go:13.22,16.3 2 0
+demo/main.go:19.13,21.27 2 0
+demo/main.go:21.27,23.3 1 0
+
+# 我怎么知道哪些没有覆盖到呢？使用下面的命令会打开浏览器
+D:\application\GoLand\demo>go tool cover -html=c.out
+```
+
+![image-20221119112441117](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119112441117.png)
+
+**（2）修正单元测试中的错误并优化代码覆盖率**
+
+```go
+package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	tests := []struct{ a, b, c int }{
+		{1, 2, 3},
+		{4, 5, 9},
+		{5, 6, 11},
+		{6, 7, 13}, // 修正错误
+	}
+
+	for _, v := range tests {
+		if ret := Add(v.a, v.b); ret != v.c {
+			t.Errorf("Add(%d, %d) got %d, expectd %d\n", v.a, v.b, ret, v.c)
+		}
+	}
+}
+
+func TestFibonacci(t *testing.T) {
+	tests := []int64{1, 1, 2, 3, 5, 8, 13, 21}
+
+	fib := Fibonacci()
+	for _, v := range tests {
+		if ret := fib(); ret != v {
+			t.Errorf("TestFibonacci()=>fib() got %d, expected %d\n", ret, v)
+		}
+	}
+}
+```
+
+再次测试
+
+```bash
+D:\application\GoLand\demo>go test -coverprofile=c.out .
+ok      demo    0.040s  coverage: 62.5% of statements      # 已经提高到62.5%
+
+D:\application\GoLand\demo>go tool cover -html=c.out
+```
+
+![image-20221119113455828](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119113455828.png)
+
+:::
+
+::: details （3）性能测试举例
+
+```go
+package main
+
+import "testing"
+
+// 为了演示方法，将实际的代码也在写这里
+func Add(n1, n2 int) int {
+	return n1 + n2
+}
+
+func BenchmarkAdd(b *testing.B) {
+	x := 10000
+	y := -25000
+	z := -15000
+
+	// 这里是重置时间，如果上面有耗时初始化的话可以添加这一句
+	b.ResetTimer()
+
+	// b.N是性能测试为我们提供的计数器
+	for i := 0; i < b.N; i++ {
+		if v := Add(x, y); v != z {
+			b.Errorf("Add(%d, %d) got %d, expectd %d\n", x, y, v, z)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+BenchmarkAdd-8          1000000000               0.2460 ns/op
+PASS
+ok      learn   0.956s
+```
+
+:::
+
+::: details （4）性能测试：分析CPU性能
+
+Graphviz：[https://graphviz.org/](https://graphviz.org/)
+
+```bash
+# 生成cpuprofile文件，注意选项必须要在最后面才能执行执行，不知道为啥
+D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out 
+
+# 打开cpuprofile文件，进入交互式界面
+D:\application\GoLand\demo>go tool pprof cpu.out 
+(pprof) web  # 在这里输入web，不过需要提前安装Graphviz
+```
+
+:::
