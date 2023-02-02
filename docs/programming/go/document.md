@@ -107,7 +107,7 @@ go env -w GOPROXY=https://goproxy.cn,direct
 
 <br />
 
-### 单文件应用
+### 第一个应用
 
 ::: details 点击查看详情
 
@@ -507,13 +507,16 @@ Use "go help mod <command>" for more information about a command.
 
 ::: details （1）发布公共模块到 GitHub：先跑通一个最简单的发布流程
 
-① 首先在Github上新建一个仓库test
+① 在Github上新建一个仓库test，并克隆代码到本地
 
-② 其次克隆代码，使用go mod初始化，要求module name必须是绝对路径（`github.com/用户名/项目名`）
+② 使用go mod初始化，要求module name必须是绝对路径（github.com/用户名/项目名），
+
+这样别人就可以导入我们的模块，或者是利用`go install`下载并编译我们的代码来生成二进制文件
 
 ```bash
 # 克隆
 git clone https://github.com/vvfock3r/test.git
+cd test
 
 # 初始化Go模块
 go mod init github.com/vvfock3r/test
@@ -537,12 +540,16 @@ git push -u origin main
 
 ④ 使用GoLand新建一个Go项目demo，进行测试
 
+添加依赖包
+
 ```bash
-# 添加依赖包
 C:\Users\Administrator\GolandProjects\demo>go get github.com/vvfock3r/test 
 go: downloading github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34
+```
 
-# 编写main.go
+编写`main.go`
+
+```go
 package main
 
 import (
@@ -553,8 +560,11 @@ import (
 func main() {
 	fmt.Println(test.Add(1, 2))
 }
+```
 
-# 测试执行
+测试执行
+
+```bash
 C:\Users\Administrator\GolandProjects\demo>go run .      
 3
 
@@ -568,9 +578,9 @@ require github.com/vvfock3r/test v0.0.0-20220601023617-b9d901edce34 // indirect
 
 总结几个关键点：
 
-（1）第三方模块的模块名：应使用`github.com/用户名/项目名`
+（1）第三方模块的模块名：应使用**github.com/用户名/项目名**
 
-（2）第三方模块的版本：若无版本，Go自动添加一个版本`v0.0.0-时间-提交ID`
+（2）第三方模块的版本：若无版本，Go自动添加一个版本**v0.0.0-时间-提交ID**
 
 * `v0.0.0`是固定的
 * 时间格式`年月日时分秒`
