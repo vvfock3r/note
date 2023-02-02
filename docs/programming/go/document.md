@@ -3585,6 +3585,8 @@ func main() {
 
 该模式解决的问题是如何更动态灵活地为对象配置参数
 
+::: details 点击查看详情
+
 ```go
 package main
 
@@ -3652,15 +3654,15 @@ func main() {
 }
 ```
 
+:::
+
 <br />
 
-### 结构体内存大小计算
+### 计算内存占用
 
 **结论**
 
 结构体内存占用大小是<span style="color: red; font-weight: bold;">每个字段内存对齐之后占用之和</span>，并不是每个字段占用之和
-
-
 
 **结构体内存对齐规则**
 
@@ -4163,17 +4165,17 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 官方文档：[https://pkg.go.dev/os](https://pkg.go.dev/os)
 
-#### 打开文件
+<br />
+
+**一、基础函数**
+
+::: details （1）打开文件的三种方式
 
 方式一：`OpenFile`
 
 ```go
-OpenFile(name string, flag int, perm FileMode) (*File, error)
-```
+// OpenFile(name string, flag int, perm FileMode) (*File, error)
 
-::: details 点击查看详细介绍
-
-```go
 // flag选项
 //	(1)打开模式（必须指定其一）
 //		os.O_RDONLY         以只读方式打开文件       如果文件不存在则报错
@@ -4199,8 +4201,6 @@ OpenFile(name string, flag int, perm FileMode) (*File, error)
 //	(2)内置常量os.ModePerm = 0777
 ```
 
-:::
-
 方式二：`Open`
 
 ```go
@@ -4222,9 +4222,9 @@ func Create(name string) (*File, error) {
 // 使用时多加注意，不要误清空了文件内容!!!
 ```
 
-<br />
+:::
 
-#### 常规操作函数
+::: details （2）常用的文件操作函数
 
 | 分类               | 函数                                             | 说明                                                         |
 | ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
@@ -4242,9 +4242,9 @@ func Create(name string) (*File, error) {
 |                    | `IsPermission(err error) bool`                   | 是否是权限错误                                               |
 |                    | `IsTimeout(err error) bool`                      | 是否是超时错误                                               |
 
-判断文件或目录是否存在
+:::
 
-::: details 点击查看完整代码
+::: details （3）判断文件或目录是否存在
 
 ```go
 package main
@@ -4277,8 +4277,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -4288,9 +4286,11 @@ test.log exist: false
 C:\Windows exist: true
 ```
 
+:::
+
 <br />
 
-#### 写入数据
+**二、写入数据**
 
 ::: details 点击查看完整代码
 
@@ -4345,7 +4345,7 @@ func main() {
 
 <br />
 
-#### 读取数据
+**三、读取数据**
 
 **按字节从文件开始读取数据**
 `Read(b []byte) (n int, err error)`
