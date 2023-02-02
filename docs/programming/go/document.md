@@ -5478,15 +5478,13 @@ func main() {
 
 ## 并发编程
 
-### `Goroutine`
+### Goroutine
 
-#### 基础示例
+::: details （1）基础示例
 
-Go语言中每个并发执行的单元叫`Goroutine`（协程），使用`go`关键字后接函数调用来创建一个`Goroutine`
-
-`Goroutine`是并发安全的
-
-::: details 测试协程代码
+* Go语言中每个并发执行的单元叫`Goroutine`（协程）
+* 使用`go`关键字后接函数调用来创建一个`Goroutine`
+* ``Goroutine`是并发安全的
 
 ```go
 package main
@@ -5525,11 +5523,7 @@ func main() {
 
 :::
 
-<br />
-
-####  等待Goroutine执行完成
-
-::: details 等待所有协程执行完再退出-使用WaitGroup-方式1
+::: details （2）等待所有协程执行完再退出：使用WaitGroup-方式1
 
 ```go
 package main
@@ -5576,7 +5570,7 @@ func main() {
 
 :::
 
-::: details 等待所有协程执行完再退出-使用WaitGroup-方式2（推荐）
+::: details （3）等待所有协程执行完再退出：使用WaitGroup-方式2
 
 ```go
 package main
@@ -5624,7 +5618,7 @@ func main() {
 
 :::
 
-::: details 等待所有协程执行完再退出-使用 Channel
+::: details （4）等待所有协程执行完再退出：使用 Channel
 
 ```go
 package main
@@ -5675,9 +5669,7 @@ func main() {
 
 :::
 
-<br />
-
-#### Goroutine相关函数
+::: details （5）Goroutine相关函数
 
 | 函数                     | 说明                                                         |
 | ------------------------ | ------------------------------------------------------------ |
@@ -5685,6 +5677,8 @@ func main() {
 | `runtime.Gosched()`      | 暂停当前`Goroutine`，由Go自动调度其他`Goroutine`执行         |
 | `runtime.Goexit()`       | 退出当前`Goroutine`                                          |
 | `runtime.GOMAXPROCS(n)`  | 设置可以使用的最大CPU数量，默认值为`runtime.NumCPU()`；返回上一次设置的值 |
+
+:::
 
 <br />
 
