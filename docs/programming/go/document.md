@@ -8220,14 +8220,15 @@ D:\application\GoLand\example>go run main.go
 
 ## 
 
-## 性能调优
+## 程序优化
 
-### 代码测试
+### 单元测试
 
-| 功能\属性 | 文件名要求               | 函数签名要求                | 执行命令                                    |
-| --------- | ------------------------ | --------------------------- | ------------------------------------------- |
-| 单元测试  | 文件名要以`_test.go`结尾 | `TestXX(t *testing.T)`      | 测试当前目录下所有文件：`go test .`         |
-| 性能测试  | 文件名要以`_test.go`结尾 | `BenchmarkXX(b *testing.B)` | 测试当前目录下所有文件：`go test -bench . ` |
+说明：
+
+* 文件名要以`_test.go`结尾
+* 函数签名要以`TestXX(t *testing.T)`
+* 测试当前目录下所有文件：`go test .`
 
 ::: details （1）单元测试举例
 
@@ -8297,12 +8298,11 @@ FAIL
 
 :::
 
-::: details （2）单元测试：还是使用上面的代码，同时输出代码覆盖率
+::: details （2）查看代码覆盖率
 
-**（1）查看代码覆盖率**
+1、还是使用上面的代码，在单元测试的同时输出代码覆盖率
 
 ```bash
-# 同时输出代码覆盖率
 D:\application\GoLand\demo>go test -coverprofile=c.out .
 --- FAIL: TestAdd (0.00s)
     main_test.go:15: Add(6, 7) got 13, expectd 14
@@ -8310,22 +8310,28 @@ FAIL
 coverage: 12.5% of statements        # 代码覆盖率只有12.5%
 FAIL    demo    0.593s
 FAIL
+```
 
-# 看一下c.out的值, 看不懂没关系
+2、看一下c.out的内容，看不懂，不过没关系
+
+```bash
 mode: set
 demo/main.go:7.26,9.2 1 1
 demo/main.go:11.31,13.22 2 0
 demo/main.go:13.22,16.3 2 0
 demo/main.go:19.13,21.27 2 0
 demo/main.go:21.27,23.3 1 0
+```
 
-# 我怎么知道哪些没有覆盖到呢？使用下面的命令会打开浏览器
+3、使用下面的命令会打开浏览器，红色的就是没有测试到的代码
+
+```bash
 D:\application\GoLand\demo>go tool cover -html=c.out
 ```
 
 ![image-20221119112441117](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221119112441117.png)
 
-**（2）修正单元测试中的错误并优化代码覆盖率**
+**4、修正单元测试中的错误并优化代码覆盖率**
 
 ```go
 package main
@@ -8359,12 +8365,14 @@ func TestFibonacci(t *testing.T) {
 }
 ```
 
-再次测试
+**5、再次测试**
 
 ```bash
+# 执行单元测试
 D:\application\GoLand\demo>go test -coverprofile=c.out .
 ok      demo    0.040s  coverage: 62.5% of statements      # 已经提高到62.5%
 
+# 查看哪些代码没有测试到
 D:\application\GoLand\demo>go tool cover -html=c.out
 ```
 
@@ -8372,7 +8380,17 @@ D:\application\GoLand\demo>go tool cover -html=c.out
 
 :::
 
-::: details （3）性能测试举例
+<br />
+
+### 性能测试
+
+说明：
+
+* 文件名要以`_test.go`结尾
+* 函数签名一`BenchmarkXX(b *testing.B)`
+* 测试当前目录下所有文件：`go test -bench . `
+
+::: details （1）性能测试举例
 
 ```go
 package main
@@ -8411,7 +8429,7 @@ ok      learn   0.956s
 
 :::
 
-::: details （4）性能测试：分析CPU性能
+::: details （2）性能测试：分析CPU性能
 
 Graphviz：[https://graphviz.org/](https://graphviz.org/)
 
