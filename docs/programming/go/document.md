@@ -667,6 +667,152 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
+<br />
+
+### 编译与反编译
+
+::: details （1）交叉编译
+
+交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
+
+对于`go`来说主要控制3个变量：
+
+* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
+* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
+* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
+
+```bash
+# Windows下编译Linux和Mac64位可执行程序
+SET CGO_ENABLED=0
+SET GOOS=linux
+SET GOARCH=amd64
+go build .
+
+SET CGO_ENABLED=0
+SET GOOS=darwin
+SET GOARCH=amd64
+go build .
+
+# Mac下编译Linux和Windows64位可执行程序
+CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+
+# Linux下编译Mac和Windows 64位可执行程序
+CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+```
+
+:::
+
+::: details （2）编译时自动添加版本
+
+> 提醒：这种方法对于`go install`很不友好
+
+`main.go`：这只是一段普通的、简单的Go代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+var (
+	Version   string
+	GoVersion string
+	GitCommit string
+	BuildTime string
+	OS        string
+	Arch      string
+)
+
+func main() {
+	args := os.Args
+	if len(args) >= 2 {
+		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
+			fmt.Printf("Version:             %s\n", Version)
+			fmt.Printf("Go version:          %s\n", GoVersion)
+			fmt.Printf("Git commit:          %s\n", GitCommit)
+			fmt.Printf("Build time:          %s\n", BuildTime)
+			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
+			return
+		}
+	}
+}
+```
+
+`build.sh`：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# =====================================
+# 描述: 编译Go项目为linux/amd64二进制命令
+# =====================================
+
+# 定义变量，用于编译时注入到Go程序中
+Version=$(go version | awk '{print $3}')
+GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
+OS=linux
+Arch=amd64
+
+# 交叉编译，若不需要直接注释下面3行即可
+# (1) 这里必须使用环境变量，否则设置不生效
+# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
+export CGO_ENABLED=0
+export GOOS=${OS}
+export GOARCH=${Arch}
+
+# 生成flags
+flags="-X main.Version=1.0.0 \
+       -X main.GoVersion=${Version} \
+       -X main.GitCommit=${GitCommit} \
+       -X 'main.BuildTime=${BuildTime}' \
+       -X main.OS=${OS} \
+       -X main.Arch=${Arch}"
+
+# go build的其他参数
+Options="$*"
+
+# 编译,通过ldflags注入变量信息
+go build -ldflags "${flags}" ${Options} main.go
+```
+
+输出结果
+
+```bash
+# 在Linux上执行
+[root@localhost ~]# bash build.sh
+[root@localhost ~]# ./main -v
+Version:             1.0.0
+Go version:          go1.18.1
+Git commit:          unknown
+Build time:          2022-09-04 21:34:06 CST +0800
+OS/Arch:             linux/amd64
+
+# 在Windows上执行
+Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
+$ sh build.sh -o demo
+# 传到Linux上去
+[root@localhost ~]# chmod 755 demo 
+[root@localhost ~]# ./demo -v
+Version:             1.0.0
+Go version:          go1.19
+Git commit:          unknown
+Build time:          2022-09-04 22:51:19 CST +0800
+OS/Arch:             linux/amd64
+```
+
+:::
+
+::: details （3）反编译
+
+:::
+
 ## 
 
 ## 基础入门
@@ -4215,7 +4361,7 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 :::
 
-::: details （3）fmt.printf示例
+::: details （3）fmt.printf示例1
 
 ```go
 package main
@@ -4307,6 +4453,36 @@ func main() {
 	// 布尔值
 	fmt.Printf("%t\n", 1 > 2)
 	// false
+}
+```
+
+:::
+
+::: details （3）fmt.printf示例2：多进度条实现原理
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+const (
+	PreviousLineClear = "\033[F" // 光标回到上一行行首并清空行
+	CurrentLineClear  = "\033[K" // 光标回到当前行行首并清空行
+)
+
+func main() {
+	for i := 11; i >= 1; i-- {
+		if i != 11 {
+			fmt.Printf(PreviousLineClear)
+			fmt.Printf(PreviousLineClear)
+		}
+		fmt.Printf("%s%d\n", CurrentLineClear, i)
+		fmt.Printf("%s%d\n", CurrentLineClear, i)
+		time.Sleep(time.Millisecond * 500)
+	}
 }
 ```
 
@@ -8044,177 +8220,7 @@ D:\application\GoLand\example>go run main.go
 
 ## 
 
-## 其他
-
-### 交叉编译
-
-交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
-
-对于`go`来说主要控制3个变量：
-
-* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
-* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
-* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
-
-```bash
-# Windows下编译Linux和Mac64位可执行程序
-SET CGO_ENABLED=0
-SET GOOS=linux
-SET GOARCH=amd64
-go build .
-
-SET CGO_ENABLED=0
-SET GOOS=darwin
-SET GOARCH=amd64
-go build .
-
-# Mac下编译Linux和Windows64位可执行程序
-CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-
-# Linux下编译Mac和Windows 64位可执行程序
-CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-```
-
-### 编译时自动添加版本
-
-::: details 点击查看完整代码
-
-`main.go`：这只是一段普通的、简单的Go代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-	"strings"
-)
-
-var (
-	Version   string
-	GoVersion string
-	GitCommit string
-	BuildTime string
-	OS        string
-	Arch      string
-)
-
-func main() {
-	args := os.Args
-	if len(args) >= 2 {
-		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
-			fmt.Printf("Version:             %s\n", Version)
-			fmt.Printf("Go version:          %s\n", GoVersion)
-			fmt.Printf("Git commit:          %s\n", GitCommit)
-			fmt.Printf("Build time:          %s\n", BuildTime)
-			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
-			return
-		}
-	}
-}
-```
-
-`build.sh`
-
-> 提醒：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-# =====================================
-# 描述: 编译Go项目为linux/amd64二进制命令
-# =====================================
-
-# 定义变量，用于编译时注入到Go程序中
-Version=$(go version | awk '{print $3}')
-GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
-BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
-OS=linux
-Arch=amd64
-
-# 交叉编译，若不需要直接注释下面3行即可
-# (1) 这里必须使用环境变量，否则设置不生效
-# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
-export CGO_ENABLED=0
-export GOOS=${OS}
-export GOARCH=${Arch}
-
-# 生成flags
-flags="-X main.Version=1.0.0 \
-       -X main.GoVersion=${Version} \
-       -X main.GitCommit=${GitCommit} \
-       -X 'main.BuildTime=${BuildTime}' \
-       -X main.OS=${OS} \
-       -X main.Arch=${Arch}"
-
-# go build的其他参数
-Options="$*"
-
-# 编译,通过ldflags注入变量信息
-go build -ldflags "${flags}" ${Options} main.go
-```
-
-:::
-
-输出结果
-
-```bash
-# 在Linux上执行
-[root@localhost ~]# bash build.sh
-[root@localhost ~]# ./main -v
-Version:             1.0.0
-Go version:          go1.18.1
-Git commit:          unknown
-Build time:          2022-09-04 21:34:06 CST +0800
-OS/Arch:             linux/amd64
-
-# 在Windows上执行
-Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
-$ sh build.sh -o demo
-# 传到Linux上去
-[root@localhost ~]# chmod 755 demo 
-[root@localhost ~]# ./demo -v
-Version:             1.0.0
-Go version:          go1.19
-Git commit:          unknown
-Build time:          2022-09-04 22:51:19 CST +0800
-OS/Arch:             linux/amd64
-```
-
-<br />
-
-### 多进度条实现原理
-
-```go
-package main
-
-import (
-	"fmt"
-	"time"
-)
-
-const (
-	PreviousLineClear = "\033[F" // 光标回到上一行行首并清空行
-	CurrentLineClear  = "\033[K" // 光标回到当前行行首并清空行
-)
-
-func main() {
-	for i := 11; i >= 1; i-- {
-		if i != 11 {
-			fmt.Printf(PreviousLineClear)
-			fmt.Printf(PreviousLineClear)
-		}
-		fmt.Printf("%s%d\n", CurrentLineClear, i)
-		fmt.Printf("%s%d\n", CurrentLineClear, i)
-		time.Sleep(time.Millisecond * 500)
-	}
-}
-```
-
-<br />
+## 性能调优
 
 ### 代码测试
 
