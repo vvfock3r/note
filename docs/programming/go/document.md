@@ -14,7 +14,7 @@
 
 ## 环境设置
 
-### 安装
+### 第一个应用
 
 ::: details （1）使用包管理器安装
 
@@ -63,7 +63,13 @@ source /etc/bashrc
 go env -w GO111MODULE=on
 go env -w GOPATH=/usr/local/go/path
 go env -w GOPROXY=https://goproxy.cn,direct
+```
 
+:::
+
+::: details （3）检查Go环境变量
+
+```bash
 # (7) 最终检查
 [root@node-1 go]# go env | grep -Ei 'GOROOT|GOPATH|GOPROXY|GO111MODULE'
 GO111MODULE="on"
@@ -74,7 +80,7 @@ GOROOT="/usr/local/go/1.19.5"
 
 :::
 
-::: details 环境变量说明
+::: details （4）环境变量说明
 
 **设置环境变量**
 
@@ -105,11 +111,7 @@ go env -w GOPROXY=https://goproxy.cn,direct
 
 :::
 
-<br />
-
-### 第一个应用
-
-::: details 点击查看详情
+::: details （5）第一个应用
 
 `main.go`
 
