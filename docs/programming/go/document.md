@@ -8296,17 +8296,189 @@ ok      example 2.602s
 
 :::
 
-::: details （2）性能测试：分析CPU性能
+<br />
 
-Graphviz：[https://graphviz.org/](https://graphviz.org/)
+### 性能分析
+
+文档：
+
+* [https://go.dev/doc/diagnostics](https://go.dev/doc/diagnostics)
+* [https://go.dev/blog/pprof](https://go.dev/blog/pprof)
+
+主要关注的性能指标
+
+* CPU Profile：报告程序的 CPU 使用情况，按照一定频率去采集应用程序在 CPU 和寄存器上面的数据
+* Memory Profile（Heap Profile）：报告程序的内存使用情况
+* Block Profiling：报告 goroutines 不在运行状态的情况，可以用来分析和查找死锁等性能瓶颈
+* Goroutine Profiling：报告 goroutines 的使用情况，有哪些 goroutine，它们的调用关系是怎样的
+
+Go标准库用于生成Profile
+
+* runtime/pprof：适用于工具类应用
+
+* net/http/pprof：适用于服务类应用
+
+第三方辅助工具
+
+* [Graphviz](https://graphviz.org/)：开源图形可视化软件
+
+<br />
+
+::: details （1）采集CPU Profile
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"runtime/pprof"
+	"time"
+)
+
+var (
+	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+)
+
+func A() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-A    running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+	n := 10000 * 10000 * 800
+	sum := 0
+	for i := 0; i < n; i++ {
+		sum += i
+	}
+	B()
+}
+
+func B() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-B    running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+	n := 10000 * 10000 * 200
+	sum := 0
+	for i := 0; i < n; i++ {
+		sum += i
+	}
+}
+
+func main() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-Main running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+
+	// 解析命令行参数
+	flag.Parse()
+
+	// 采集 CPU Profile
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			log.Fatal()
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	// 主要的代码区域
+	for i := 0; i < 1; i++ {
+		A()
+	}
+}
+```
+
+输出结果
 
 ```bash
-# 生成cpuprofile文件，注意选项必须要在最后面才能执行执行，不知道为啥
-D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out
+# 1、执行程序
+D:\application\GoLand\example>go run main.go -cpuprofile=cpu.prof
+Function-B    running time is 4.93 seconds
+Function-A    running time is 24.82 seconds
+Function-Main running time is 24.96 seconds
 
-# 打开cpuprofile文件，进入交互式界面
-D:\application\GoLand\demo>go tool pprof cpu.out 
-(pprof) web  # 在这里输入web，不过需要提前安装Graphviz
+# ----------------------------------------------------------------------------------
+
+# 2、打开CPU Profile文件
+D:\application\GoLand\example>go tool pprof cpu.prof
+File: main.exe                                                                                                               
+Build ID: ...\main.exe2023-02-03 17:41:29.1191263 +0800 CST
+Type: cpu                                                                                                                    
+Time: Feb 3, 2023 at 5:41pm (CST)                                                                                            
+Duration: 24.96s, Total samples = 15.51s (62.15%)                                                                            
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof)   
+
+# 说明
+# Duration: 24.96s                 程序运行的总时间，这与我们统计的 Function-Main 时间相同
+# Total samples = 15.51s (62.15%)  数据采样的总时间，15.51 / 24.96 ~= 0.62
+
+# ----------------------------------------------------------------------------------
+
+# 3、执行top命令
+(pprof) top                                                          
+Showing nodes accounting for 15.30s, 98.65% of 15.51s total            
+Dropped 33 nodes (cum <= 0.08s)                                        
+      flat  flat%   sum%        cum   cum%                             
+    12.34s 79.56% 79.56%     15.30s 98.65%  main.A
+     2.95s 19.02% 98.58%      2.96s 19.08%  main.B                     
+     0.01s 0.064% 98.65%      0.08s  0.52%  runtime.findRunnable       
+         0     0% 98.65%     15.30s 98.65%  main.main                  
+         0     0% 98.65%     15.30s 98.65%  runtime.main               
+         0     0% 98.65%      0.11s  0.71%  runtime.mcall              
+         0     0% 98.65%      0.10s  0.64%  runtime.park_m             
+         0     0% 98.65%      0.09s  0.58%  runtime.schedule           
+         0     0% 98.65%      0.10s  0.64%  runtime/pprof.profileWriter
+         
+# 说明
+# 15.30s指的是top列出来的采样时间，占据总的采样时间 15.51s 的 98.65%
+# 函数A的flat时间是12.34秒，指的是函数A中直接操作的时间，不包含调用其他函数的时间
+# 函数A的cum 时间是15.30秒，指的是函数A中直接操作的时间 + 调用其他函数的时间
+
+# ----------------------------------------------------------------------------------
+
+# 4、查看函数A的详细信息
+(pprof) list A
+Total: 15.51s
+ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
+    12.34s     15.30s (flat, cum) 98.65% of Total
+         .          .     16:func A() {
+         .          .     17:   // 程序计时
+         .          .     18:   start := time.Now()
+         .          .     19:   defer func() {
+         .          .     20:           fmt.Printf("Function-A    running time is %.2f seconds\n", time.Since(start).Seconds())
+         .          .     21:   }()
+         .          .     22:   n := 10000 * 10000 * 800
+         .          .     23:   sum := 0
+    12.34s     12.34s     24:   for i := 0; i < n; i++ {
+         .          .     25:           sum += i
+         .          .     26:   }
+         .      2.96s     27:   B()
+         .          .     28:}
+         .          .     29:
+         .          .     30:func B() {
+         .          .     31:   // 程序计时
+         .          .     32:   start := time.Now()
+```
+
+:::
+
+::: details （2）采集Memory Profile
+
+```bash
+D:\application\GoLand\example>go run main.go -memprofile=mem.prof
+D:\application\GoLand\example>go tool pprof mem.prof
 ```
 
 :::
