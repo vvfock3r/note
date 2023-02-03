@@ -8797,3 +8797,69 @@ OS/Arch:             linux/amd64
 ```
 
 :::
+
+<br />
+
+### 反编译
+
+::: details （1）查看编译基本信息
+
+```go
+package main
+
+import (
+        "github.com/gin-gonic/gin"
+        "log"
+        "net/http"
+)
+
+func main() {
+        // 监听地址
+        addr := "127.0.0.1:80"
+
+        // 实例化Gin路由引擎
+        r := gin.Default()
+
+        // 注册路由
+        r.GET("/", func(c *gin.Context) {
+                c.String(http.StatusOK, "Hello Gin!\n")
+        })
+
+        // 启动Gin Server
+        log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+# 编译
+[root@ap-hongkang demo]# go build -o main main.go
+
+# 通过二进制可以发现其依赖的第三方模块以及是否开启CGO等信息
+[root@ap-hongkang demo]# go version -m main
+main: go1.19.2
+        path    command-line-arguments
+        dep     github.com/gin-contrib/sse      v0.1.0  h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
+        dep     github.com/gin-gonic/gin        v1.8.2  h1:UzKToD9/PoFj/V4rvlKqTRKnQYyz8Sc1MJlv4JHPtvY=
+        dep     github.com/go-playground/locales        v0.14.1 h1:EWaQ/wswjilfKLTECiXz7Rh+3BjFhfDFKv/oXslEjJA=
+        dep     github.com/go-playground/universal-translator   v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJnYK9S473LQFuzCbDbfSFY=
+        dep     github.com/go-playground/validator/v10  v10.11.2        h1:q3SHpufmypg+erIExEKUmsgmhDTyhcJ38oeKGACXohU=
+        dep     github.com/leodido/go-urn       v1.2.1  h1:BqpAaACuzVSgi/VLzGZIobT2z4v53pjosyNd9Yv6n/w=
+        dep     github.com/mattn/go-isatty      v0.0.17 h1:BTarxUcIeDqL27Mc+vyvdWYSL28zpIhv3RoTdsLMPng=
+        dep     github.com/pelletier/go-toml/v2 v2.0.6  h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=
+        dep     github.com/ugorji/go/codec      v1.2.8  h1:sgBJS6COt0b/P40VouWKdseidkDgHxYGm0SAglUHfP0=
+        dep     golang.org/x/crypto     v0.5.0  h1:U/0M97KRkSFvyD/3FSmdP5W5swImpNgle/EHFhOsQPE=
+        dep     golang.org/x/net        v0.5.0  h1:GyT4nK/YDHSqa1c4753ouYCDajOYKTja9Xb/OHtgvSw=
+        dep     golang.org/x/sys        v0.4.0  h1:Zr2JFtRQNX3BCZ8YtxRE9hNJYC8J6I1MVbMg6owUp18=
+        dep     golang.org/x/text       v0.6.0  h1:3XmdazWV+ubf7QgHSTWeykHOci5oeekaGJBLkrkaw4k=
+        dep     google.golang.org/protobuf      v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=
+        dep     gopkg.in/yaml.v2        v2.4.0  h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
+        build   -compiler=gc
+        build   CGO_ENABLED=0
+        build   GOARCH=amd64
+        build   GOOS=linux
+        build   GOAMD64=v1
+```
+
+:::
