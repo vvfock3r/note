@@ -667,152 +667,6 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
-<br />
-
-### 编译与反编译
-
-::: details （1）交叉编译
-
-交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
-
-对于`go`来说主要控制3个变量：
-
-* `CGO_ENABLED=0`：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
-* `GOOS=<目标平台的操作系统>`，比如`windows`、`linux`、`darwin`、`freebsd`
-* `GOARCH=<目标平台的体系架构>`，比如`amd64`,`386`、`arm`
-
-```bash
-# Windows下编译Linux和Mac64位可执行程序
-SET CGO_ENABLED=0
-SET GOOS=linux
-SET GOARCH=amd64
-go build .
-
-SET CGO_ENABLED=0
-SET GOOS=darwin
-SET GOARCH=amd64
-go build .
-
-# Mac下编译Linux和Windows64位可执行程序
-CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-
-# Linux下编译Mac和Windows 64位可执行程序
-CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
-```
-
-:::
-
-::: details （2）编译时自动添加版本
-
-> 提醒：这种方法对于`go install`很不友好
-
-`main.go`：这只是一段普通的、简单的Go代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-	"strings"
-)
-
-var (
-	Version   string
-	GoVersion string
-	GitCommit string
-	BuildTime string
-	OS        string
-	Arch      string
-)
-
-func main() {
-	args := os.Args
-	if len(args) >= 2 {
-		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
-			fmt.Printf("Version:             %s\n", Version)
-			fmt.Printf("Go version:          %s\n", GoVersion)
-			fmt.Printf("Git commit:          %s\n", GitCommit)
-			fmt.Printf("Build time:          %s\n", BuildTime)
-			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
-			return
-		}
-	}
-}
-```
-
-`build.sh`：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-# =====================================
-# 描述: 编译Go项目为linux/amd64二进制命令
-# =====================================
-
-# 定义变量，用于编译时注入到Go程序中
-Version=$(go version | awk '{print $3}')
-GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
-BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
-OS=linux
-Arch=amd64
-
-# 交叉编译，若不需要直接注释下面3行即可
-# (1) 这里必须使用环境变量，否则设置不生效
-# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
-export CGO_ENABLED=0
-export GOOS=${OS}
-export GOARCH=${Arch}
-
-# 生成flags
-flags="-X main.Version=1.0.0 \
-       -X main.GoVersion=${Version} \
-       -X main.GitCommit=${GitCommit} \
-       -X 'main.BuildTime=${BuildTime}' \
-       -X main.OS=${OS} \
-       -X main.Arch=${Arch}"
-
-# go build的其他参数
-Options="$*"
-
-# 编译,通过ldflags注入变量信息
-go build -ldflags "${flags}" ${Options} main.go
-```
-
-输出结果
-
-```bash
-# 在Linux上执行
-[root@localhost ~]# bash build.sh
-[root@localhost ~]# ./main -v
-Version:             1.0.0
-Go version:          go1.18.1
-Git commit:          unknown
-Build time:          2022-09-04 21:34:06 CST +0800
-OS/Arch:             linux/amd64
-
-# 在Windows上执行
-Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
-$ sh build.sh -o demo
-# 传到Linux上去
-[root@localhost ~]# chmod 755 demo 
-[root@localhost ~]# ./demo -v
-Version:             1.0.0
-Go version:          go1.19
-Git commit:          unknown
-Build time:          2022-09-04 22:51:19 CST +0800
-OS/Arch:             linux/amd64
-```
-
-:::
-
-::: details （3）反编译
-
-:::
-
 ## 
 
 ## 基础入门
@@ -8453,6 +8307,493 @@ D:\application\GoLand\demo>go test -bench . -cpuprofile=cpu.out
 # 打开cpuprofile文件，进入交互式界面
 D:\application\GoLand\demo>go tool pprof cpu.out 
 (pprof) web  # 在这里输入web，不过需要提前安装Graphviz
+```
+
+:::
+
+## 
+
+## 编译与反编译
+
+### 编译过程
+
+`go help build`查看可使用的选项
+
+* -x：输出编译命令（会真正编译）
+* -n：输出编译命令（不真正编译）
+* -work：输出编译所用的临时目录，并且编译完成后不删除它
+
+::: details （1）查看编译过程
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go build -x main.go
+WORK=C:\Users\Administrator\AppData\Local\Temp\go-build300327017
+mkdir -p $WORK\b001\
+cat >C:\Users\Administrator\AppData\Local\Temp\go-build300327017\b001\importcfg.link << 'EOF' # internal
+packagefile command-line-arguments=C:\Users\Administrator\AppData\Local\go-build\e4\e498413c36444e3c92873cb373c63f54e2d7cc388ced920a146c16336010a6fe-d
+packagefile fmt=C:\Users\Administrator\AppData\Local\go-build\af\af957af9edcde92623760da8bbf015a49bf195d22b117b010e80c51678fda67d-d
+packagefile runtime=C:\Users\Administrator\AppData\Local\go-build\34\34bb7e361c7cd3bc02d2bff679aea4fbef29fea5cf9675d030642ec4d1fbb195-d
+packagefile errors=C:\Users\Administrator\AppData\Local\go-build\91\91718c006e6cfc1e1c4a497043965a0bcc7773ac8730c4cc591401fe6f850a66-d
+packagefile internal/fmtsort=C:\Users\Administrator\AppData\Local\go-build\95\95e2a90e0a824acb1a99d321da1f7c7613ce57b50f7595204e89174c2c9b7147-d
+packagefile io=C:\Users\Administrator\AppData\Local\go-build\27\27a9457dc5ef7d909fd1c438fc86eddecd6c33dc1d16144b513fc39c05c28ce5-d
+packagefile math=C:\Users\Administrator\AppData\Local\go-build\82\82685894fa5090cad70117775edeb001b999adef1f075f9286a5e0d617b9c7e4-d
+packagefile os=C:\Users\Administrator\AppData\Local\go-build\b9\b9d5e17fa067e73386444e409490ff4b650cd7d74975fbd170a79048d09ff688-d
+packagefile reflect=C:\Users\Administrator\AppData\Local\go-build\49\4946967e5d40bff21a43df46dec8b1b875c52ed1945453da227acc5bcb204cff-d
+packagefile sort=C:\Users\Administrator\AppData\Local\go-build\55\550db8b0251644e0e04451c9eefa46ab9c93aa08547e6f91bc71a562da5eaa50-d
+packagefile strconv=C:\Users\Administrator\AppData\Local\go-build\78\7855a10bb662f77657983687df1d1c50532c380c456b1426506d37cd2ea59e6d-d
+packagefile sync=C:\Users\Administrator\AppData\Local\go-build\d3\d33cfb910491472bf9b7bdaffcbe5937f6748e35415f6151177dc50b1bb8e64d-d
+packagefile unicode/utf8=C:\Users\Administrator\AppData\Local\go-build\06\06bf455f460aaf090de21ae1b25acfbd1ba8f228943e436aa3732c665de4c754-d
+packagefile internal/abi=C:\Users\Administrator\AppData\Local\go-build\82\826c9d981c2e8e6649aee7719b2269b25ef9a791ea7156a5ad131fe0d739b7fc-d
+packagefile internal/bytealg=C:\Users\Administrator\AppData\Local\go-build\47\47dff93c13cdc7aab9407202fd5664f2a0319282419a4013446be2d737a4a620-d
+packagefile internal/coverage/rtcov=C:\Users\Administrator\AppData\Local\go-build\7a\7a062020d134f8c53916c0aa9a7866836a96284c305cf9d9b6ec3718bac416a3-d
+packagefile internal/cpu=C:\Users\Administrator\AppData\Local\go-build\34\34e55cb3021352b3a5e39ea80243a9e0061590c9bb538ee19875bc50763d7ec4-d
+packagefile internal/goarch=C:\Users\Administrator\AppData\Local\go-build\50\502bd22f40b3126b7e1116bf7ff2427ab8a48008cb1cb4eb0f694316ccb9c35e-d
+packagefile internal/goexperiment=C:\Users\Administrator\AppData\Local\go-build\38\386a771d2be9ef039f5945b73529ca05c56237243448dbc12d5c7f9b487f6ecc-d
+packagefile internal/goos=C:\Users\Administrator\AppData\Local\go-build\7f\7f784d785260a2c34c09cf222f22fdfc5fc26d62958a4e1ea3c767ecb95f5107-d
+packagefile runtime/internal/atomic=C:\Users\Administrator\AppData\Local\go-build\bc\bc73b67c34d31be0588db34be52fa560cc9acd9f3f66dd34a59fcdf78b897e39-d
+packagefile runtime/internal/math=C:\Users\Administrator\AppData\Local\go-build\c2\c2cb1f20a52d47206265491ba4c3db5cd56997e737d1ae05c2fc9f2c4f85ebae-d
+packagefile runtime/internal/sys=C:\Users\Administrator\AppData\Local\go-build\11\1102904196c842aeaa2eec41e6a26e758bea750b2741384d9b43dd0b8bb35491-d
+packagefile internal/reflectlite=C:\Users\Administrator\AppData\Local\go-build\83\83696e8e04a0e9d95473346b7788ac834f991ee74b1063366fd17aa71937f019-d
+packagefile math/bits=C:\Users\Administrator\AppData\Local\go-build\9b\9b12594908ab6a82240ffe08a259a6da0405e942c2aa973cd1b4ed6611fc5568-d
+packagefile internal/itoa=C:\Users\Administrator\AppData\Local\go-build\61\61fb60ed802b1db056b0c87d0052431a6d0e1dfc6621cda09361eae0848625fe-d
+packagefile internal/poll=C:\Users\Administrator\AppData\Local\go-build\7e\7ef7d3c16712e0c50eb3e7a173a191a152d0ccc777d911ec575c6c2020896c90-d
+packagefile internal/safefilepath=C:\Users\Administrator\AppData\Local\go-build\3c\3c96ae53884e391af3b22a35f1b4c2488717ac6242d352abe5fe3df65abdad69-d
+packagefile internal/syscall/execenv=C:\Users\Administrator\AppData\Local\go-build\b1\b1cedc58b8d1e9e189c622e26248183fa20b312eba77652127a6222dcabe364b-d
+packagefile internal/syscall/windows=C:\Users\Administrator\AppData\Local\go-build\c7\c7247c32e6015148cbfd74cdf333a18a34803cf2614746403e64760718801ac9-d
+packagefile internal/testlog=C:\Users\Administrator\AppData\Local\go-build\fb\fb04a08527b7702141c9c4af08bffa1e5917dc63e2e5914478d08f66c32faec3-d
+packagefile io/fs=C:\Users\Administrator\AppData\Local\go-build\cc\ccdbc66d30ba6308c2a50368c5f34ca0592f8918889260824c65ae6754bc46af-d
+packagefile sync/atomic=C:\Users\Administrator\AppData\Local\go-build\2a\2a179921f1131a2409f1260fc3d9d4724f7b26365529daf06e3d8ae1aeddf633-d
+packagefile syscall=C:\Users\Administrator\AppData\Local\go-build\86\8658a9b081697569ebf6d330984b3264c3441bca5bd8ee7a5aa2f72036445193-d
+packagefile time=C:\Users\Administrator\AppData\Local\go-build\28\2809bc969dec98b30e2e2780248b542cabc211d94f04f8a47d9e0355d4e47188-d
+packagefile unicode/utf16=C:\Users\Administrator\AppData\Local\go-build\02\020ecaa6f82a265e139a56197e76bd5ca0f3f13ee88437b0724b32aae6b71ad8-d
+packagefile internal/unsafeheader=C:\Users\Administrator\AppData\Local\go-build\c8\c818e89f20fee21e19041cb2865c1b215dafc666c5bd1ab967b68dd5983f8da5-d
+packagefile unicode=C:\Users\Administrator\AppData\Local\go-build\2b\2bd3d7ee3de7f1d1839f640dd895e5f3def62b839cd0bff25430413d480369dc-d
+packagefile internal/race=C:\Users\Administrator\AppData\Local\go-build\fb\fb176abc79c341430e12f45d1e5bc9100fd2efcc323b15d55e92ceb3164cb5e3-d
+packagefile internal/syscall/windows/sysdll=C:\Users\Administrator\AppData\Local\go-build\42\42dc02d9771b089b65e34a36dd4615396ef21e893a13a99d94829cf92c16f4ba-d
+packagefile internal/oserror=C:\Users\Administrator\AppData\Local\go-build\84\841fe2b624b0319061625a52d8d7818331252f1328414d59b8261dbd7375cf84-d
+packagefile path=C:\Users\Administrator\AppData\Local\go-build\7e\7ed85684067031a04d94b6805f1a58a8e862aef7b4a676bec2c0e5d1dd69dc6e-d
+packagefile internal/syscall/windows/registry=C:\Users\Administrator\AppData\Local\go-build\c2\c2404f9ca8fe98f88eb3455afb84da6cb3f8d17709506c8c6b72787eaedc3558-d
+modinfo "0w\xaf\f\x92t\b\x02A\xe1\xc1\a\xe6\xd6\x18\xe6path\tcommand-line-arguments\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\tCGO_ENABLED=0\nbuild\tGOARCH=amd64\nbuild\tGOOS=windows\nbuild\tGOAMD64=v1\n\xf92C1\x86\x18 r\x0
+0\x82B\x10A\x16\xd8\xf2"
+EOF
+mkdir -p $WORK\b001\exe\
+cd .
+"D:\\software\\go1.20\\pkg\\tool\\windows_amd64\\link.exe" -o "$WORK\\b001\\exe\\a.out.exe" -importcfg "$WORK\\b001\\importcfg.link" -buildmode=pie -buildid=vu2V9fpN2UYdiBbImrfH/3hXYJDD_QQhwQFEedRvi/YCU8jcBvw7gKn-K0Gihj/vu2V9fpN2UYd
+iBbImrfH -extld=gcc "C:\\Users\\Administrator\\AppData\\Local\\go-build\\e4\\e498413c36444e3c92873cb373c63f54e2d7cc388ced920a146c16336010a6fe-d"
+"D:\\software\\go1.20\\pkg\\tool\\windows_amd64\\buildid.exe" -w "$WORK\\b001\\exe\\a.out.exe" # internal
+cp $WORK\b001\exe\a.out.exe main.exe
+rm -r $WORK\b001\
+
+```
+
+:::
+
+::: details （2）查看动态链接库
+
+**测试1：对于极简单的程序不会依赖任何动态链接库**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello World!")
+}
+```
+
+输出结果
+
+```bash
+# 编译
+[root@ap-hongkang demo]# go build main.go
+
+# 查看大小
+[root@ap-hongkang demo]# ls -lh main
+-rwxr-xr-x 1 root root 1.8M Feb  3 12:38 main
+
+# 查看动态链接库，没有任何依赖
+[root@ap-hongkang demo]# ldd main
+        not a dynamic executable
+```
+
+**测试2：对于部分标准库会依赖CGO相关的链接库**
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 注册路由
+	http.HandleFunc("/", indexHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+```
+
+输出结果
+
+```bash
+# 编译
+[root@ap-hongkang demo]# go build main.go 
+
+# 查看大小
+[root@ap-hongkang demo]# ls -lh main
+-rwxr-xr-x 1 root root 6.3M Feb  3 12:44 main
+
+# 查看动态链接库,发现依赖系统的动态链接库
+[root@ap-hongkang demo]# ldd main
+        linux-vdso.so.1 (0x00007fffd0bf6000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007ff3ad7c8000)
+        libc.so.6 => /lib64/libc.so.6 (0x00007ff3ad403000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007ff3ad9e8000)
+        
+# 关闭CGO，再重新编译一次，发现没有依赖
+[root@ap-hongkang demo]# CGO_ENABLED=0 go build main.go
+[root@ap-hongkang demo]# ls -lh main
+-rwxr-xr-x 1 root root 6.2M Feb  3 12:45 main
+[root@ap-hongkang demo]# ldd main
+        not a dynamic executable
+```
+
+:::
+
+<br />
+
+### 跨平台编译
+
+::: details （1）查看所支持的平台和架构
+
+```bash
+C:\Users\Administrator>go tool dist list
+aix/ppc64
+android/386
+android/amd64
+android/arm
+android/arm64
+darwin/amd64
+darwin/arm64
+dragonfly/amd64
+freebsd/386
+freebsd/amd64
+freebsd/arm
+freebsd/arm64
+freebsd/riscv64
+illumos/amd64
+ios/amd64
+ios/arm64
+js/wasm
+linux/386
+linux/amd64
+linux/arm
+linux/arm64
+linux/loong64
+linux/mips
+linux/mips64
+linux/mips64le
+linux/mipsle
+linux/ppc64
+linux/ppc64le
+linux/riscv64
+linux/s390x
+netbsd/386
+netbsd/amd64
+netbsd/arm
+netbsd/arm64
+openbsd/386
+openbsd/amd64
+openbsd/arm
+openbsd/arm64
+openbsd/mips64
+plan9/386
+plan9/amd64
+plan9/arm
+solaris/amd64
+windows/386
+windows/amd64
+windows/arm
+windows/arm64
+```
+
+:::
+
+::: details （2）交叉编译，或者叫做跨平台编译
+
+交叉编译简单来说指的是在当前平台上可以编译出其他平台的可执行程序，比如在Windows下编译Linux二进制程序
+
+对于`go`来说主要控制3个变量：
+
+* CGO_ENABLED=0：Go在编译时可以选择使用C链接库(C链接库不打包进程序)或纯Go编译(打包所有内容)，`CGO_ENABLED`参数控制是否启用`CGO`
+* GOOS=<目标平台的操作系统>，比如`windows`、`linux`、`darwin`、`freebsd`
+* GOARCH=<目标平台的体系架构>，比如`amd64`,`386`、`arm`
+
+```bash
+# Windows下编译Linux和Mac64位可执行程序
+SET CGO_ENABLED=0
+SET GOOS=linux
+SET GOARCH=amd64
+go build .
+
+SET CGO_ENABLED=0
+SET GOOS=darwin
+SET GOARCH=amd64
+go build .
+
+# Mac下编译Linux和Windows64位可执行程序
+CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+
+# Linux下编译Mac和Windows 64位可执行程序
+CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 go build .
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build .
+```
+
+:::
+
+::: details （3）条件编译：使用TAG
+
+* 源代码的开头第一行以注释的形式指定需要编译的平台
+* 编译条件的注释和package 语句之间一定要隔一行
+
+`main.go`
+
+```go
+package main
+
+func main() {
+	Hello()
+}
+```
+
+`hello1.go`
+
+```go
+//go:build windows
+
+package main
+
+import "fmt"
+
+func Hello() {
+	fmt.Println("Hello Windows!")
+}
+```
+
+`hello2.go`
+
+```go
+//go:build linux
+
+package main
+
+import "fmt"
+
+func Hello() {
+	fmt.Println("Hello Linux!")
+}
+```
+
+输出结果
+
+```bash
+# Windows上执行
+D:\application\GoLand\example>go run .
+Hello Windows!
+
+# Linux上执行
+[root@ap-hongkang demo]# go run .
+Hello Linux!
+```
+
+:::
+
+::: details （4）条件编译：使用文件后缀
+
+* 使用文件后缀名区分不同的编译平台
+
+`main.go`
+
+```go
+package main
+
+func main() {
+	Hello()
+}
+```
+
+`hello_windows.go`
+
+```go
+package main
+
+import "fmt"
+
+func Hello() {
+	fmt.Println("Hello Windows!")
+}
+```
+
+`hello_linux.go`
+
+```go
+package main
+
+import "fmt"
+
+func Hello() {
+	fmt.Println("Hello Linux!")
+}
+```
+
+输出结果
+
+```bash
+# Windows上执行
+D:\application\GoLand\example>go run .
+Hello Windows!
+
+# Linux上执行
+[root@ap-hongkang demo]# go run .
+Hello Linux!
+```
+
+:::
+
+<br />
+
+### 链接器标志
+
+* `ld`代表连接器，`ldflags` 代表链接器标志
+
+::: details （1）自动添加版本信息
+
+> 提醒：这种方法对于`go install`很不友好
+
+`main.go`：这只是一段普通的、简单的Go代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+var (
+	Version   string
+	GoVersion string
+	GitCommit string
+	BuildTime string
+	OS        string
+	Arch      string
+)
+
+func main() {
+	args := os.Args
+	if len(args) >= 2 {
+		if strings.ToLower(args[1]) == "--version" || strings.ToLower(args[1]) == "-v" {
+			fmt.Printf("Version:             %s\n", Version)
+			fmt.Printf("Go version:          %s\n", GoVersion)
+			fmt.Printf("Git commit:          %s\n", GitCommit)
+			fmt.Printf("Build time:          %s\n", BuildTime)
+			fmt.Printf("OS/Arch:             %s/%s\n", OS, Arch)
+			return
+		}
+	}
+}
+```
+
+`build.sh`：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# =====================================
+# 描述: 编译Go项目为linux/amd64二进制命令
+# =====================================
+
+# 定义变量，用于编译时注入到Go程序中
+Version=$(go version | awk '{print $3}')
+GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
+OS=linux
+Arch=amd64
+
+# 交叉编译，若不需要直接注释下面3行即可
+# (1) 这里必须使用环境变量，否则设置不生效
+# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
+export CGO_ENABLED=0
+export GOOS=${OS}
+export GOARCH=${Arch}
+
+# 生成flags
+flags="-X main.Version=1.0.0 \
+       -X main.GoVersion=${Version} \
+       -X main.GitCommit=${GitCommit} \
+       -X 'main.BuildTime=${BuildTime}' \
+       -X main.OS=${OS} \
+       -X main.Arch=${Arch}"
+
+# go build的其他参数
+Options="$*"
+
+# 编译,通过ldflags注入变量信息
+go build -ldflags "${flags}" ${Options} main.go
+```
+
+输出结果
+
+```bash
+# 在Linux上执行
+[root@localhost ~]# bash build.sh
+[root@localhost ~]# ./main -v
+Version:             1.0.0
+Go version:          go1.18.1
+Git commit:          unknown
+Build time:          2022-09-04 21:34:06 CST +0800
+OS/Arch:             linux/amd64
+
+# 在Windows上执行
+Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
+$ sh build.sh -o demo
+# 传到Linux上去
+[root@localhost ~]# chmod 755 demo 
+[root@localhost ~]# ./demo -v
+Version:             1.0.0
+Go version:          go1.19
+Git commit:          unknown
+Build time:          2022-09-04 22:51:19 CST +0800
+OS/Arch:             linux/amd64
 ```
 
 :::
