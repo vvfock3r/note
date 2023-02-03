@@ -8393,9 +8393,7 @@ func main() {
 	}
 
 	// 主要的代码区域
-	for i := 0; i < 1; i++ {
-		A()
-	}
+	A()
 }
 ```
 
@@ -8474,7 +8472,7 @@ ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
 
 :::
 
-::: details （2）采集Memory Profile
+::: details （2）采集堆内存Heap Memory Profile
 
 ```bash
 D:\application\GoLand\example>go run main.go -memprofile=mem.prof
