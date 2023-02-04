@@ -8757,7 +8757,9 @@ D:\application\GoLand\example> go tool pprof -http=:8080 goroutine.prof
 
 **2、HTTP服务方式采集Profile**
 
-::: details （1）使用方式：_ "net/http/pprof"
+::: details 点击查看详情
+
+* 只需要添加 `_ "net/http/pprof"` 即可
 
 ```go
 package main
