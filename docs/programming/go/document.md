@@ -8831,12 +8831,16 @@ Showing top 10 nodes out of 100
       10ms  4.55% 90.91%       10ms  4.55%  runtime.writeHeapBits.write           
       10ms  4.55% 95.45%       10ms  4.55%  runtime/internal/atomic.(*Uint64).Load
       10ms  4.55%   100%      140ms 63.64%  syscall.SyscallN
+```
 
-# 其他
-# 注意上的输出，他会把Profile文件下载到本地 Saved profile in xxx，所以我们还可以利用本地起一个HTTP Server来分析
+注意上的输出，他会把Profile文件下载到本地 Saved profile in xxx，所以我们还可以利用本地起一个HTTP Server来分析，来看一下火焰图
+
+```bash
 D:\application\GoLand\example>go tool pprof -http=:8080 C:\Users\Administrator\pprof\pprof.main.exe.samples.cpu.001.pb.gz 
 Serving web UI on http://localhost:8080
 ```
+
+![image-20230204170130522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204170130522.png)
 
 2、通过Web界面访问
 
