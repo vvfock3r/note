@@ -8305,12 +8305,14 @@ ok      example 2.602s
 * [https://go.dev/doc/diagnostics](https://go.dev/doc/diagnostics)
 * [https://go.dev/blog/pprof](https://go.dev/blog/pprof)
 
+<br />
+
 主要关注的性能指标
 
 * CPU Profile：报告程序的 CPU 使用情况，按照一定频率去采集应用程序在 CPU 和寄存器上面的数据
 * Memory Profile（Heap Profile）：报告程序的内存使用情况
-* Block Profiling：报告 goroutines 不在运行状态的情况，可以用来分析和查找死锁等性能瓶颈
 * Goroutine Profiling：报告 goroutines 的使用情况，有哪些 goroutine，它们的调用关系是怎样的
+* Block Profiling：报告 goroutines 不在运行状态的情况，可以用来分析和查找死锁等性能瓶颈
 
 Go标准库用于生成Profile
 
@@ -8321,8 +8323,6 @@ Go标准库用于生成Profile
 第三方辅助工具
 
 * [Graphviz](https://graphviz.org/)：开源图形可视化软件
-
-<br />
 
 ::: details （1）采集CPU Profile
 
@@ -8443,6 +8443,7 @@ Dropped 33 nodes (cum <= 0.08s)
 # 15.30s指的是top列出来的采样时间，占据总的采样时间 15.51s 的 98.65%
 # 函数A的flat时间是12.34秒，指的是函数A中直接操作的时间，不包含调用其他函数的时间
 # 函数A的cum 时间是15.30秒，指的是函数A中直接操作的时间 + 调用其他函数的时间
+# 注意：这里显示的CPU使用率会比程序实际占用的小的多
 
 # ----------------------------------------------------------------------------------
 
@@ -8474,10 +8475,175 @@ ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
 
 ::: details （2）采集堆内存Heap Memory Profile
 
-```bash
-D:\application\GoLand\example>go run main.go -memprofile=mem.prof
-D:\application\GoLand\example>go tool pprof mem.prof
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"runtime"
+	"runtime/pprof"
+	"strconv"
+	"time"
+)
+
+var (
+	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	memprofile = flag.String("memprofile", "", "write memory profile to file")
+)
+
+func A() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-A    running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+
+	// 程序逻辑
+	var s string
+	for i := 0; i < 10000*10; i++ {
+		s += strconv.Itoa(i)
+	}
+	s += "hello world!"
+	B()
+}
+
+func B() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-B    running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+
+	// 程序逻辑
+	data := make([]int, 0)
+	for i := 0; i < 10000*100; i++ {
+		data = append(data, i)
+	}
+}
+
+func main() {
+	// 程序计时
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Function-Main running time is %.2f seconds\n", time.Since(start).Seconds())
+	}()
+
+	// 解析命令行参数
+	flag.Parse()
+
+	// 采集 CPU Profile
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	// 采集 Memory Profile
+	if *memprofile != "" {
+        // 内存概要信息采样频率，代表每分配多少个字节，就对堆内存的使用情况进行一次采样
+		runtime.MemProfileRate = 1
+		defer func() {
+			f, err := os.Create(*memprofile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+
+			//runtime.GC()
+			err = pprof.WriteHeapProfile(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
+	// 主要的代码区域
+	A()
+}
 ```
+
+输出结果
+
+```bash
+# 1、执行程序
+D:\application\GoLand\example>go run main.go -memprofile=mem.prof
+Function-B    running time is 0.01 seconds
+Function-A    running time is 3.19 seconds
+Function-Main running time is 3.22 seconds
+
+# 2、打开Memory Profile文件
+D:\application\GoLand\example>go tool pprof mem.prof
+D:\application\GoLand\example> go tool pprof mem.prof
+File: main.exe
+Build ID: xxx\main.exe2023-02-04 11:42:05.8777094 +0800 CST
+Type: inuse_space  # 类型
+Time: Feb 4, 2023 at 11:42am (CST)
+Entering interactive mode (type "help" for commands, "o" for options)
+
+# 3、执行top命令
+(pprof) top
+(pprof) top
+Showing nodes accounting for 6602.41kB, 99.54% of 6632.62kB total
+Dropped 28 nodes (cum <= 33.16kB)
+      flat  flat%   sum%        cum   cum%
+ 6592.28kB 99.39% 99.39%  6592.28kB 99.39%  main.B
+   10.12kB  0.15% 99.54%  6606.34kB 99.60%  main.A
+         0     0% 99.54%  6606.34kB 99.60%  main.main
+         0     0% 99.54%  6606.34kB 99.60%  runtime.main
+
+# 3、修改显示单位为MB
+(pprof) unit=mb
+(pprof) top
+Showing nodes accounting for 6.45MB, 99.54% of 6.48MB total
+Dropped 28 nodes (cum <= 0.03MB)
+      flat  flat%   sum%        cum   cum%
+    6.44MB 99.39% 99.39%     6.44MB 99.39%  main.B
+    0.01MB  0.15% 99.54%     6.45MB 99.60%  main.A
+         0     0% 99.54%     6.45MB 99.60%  main.main
+         0     0% 99.54%     6.45MB 99.60%  runtime.main
+
+# 说明
+# 采集了6.45MB，top显示的包含了6.48MB
+# 函数A的flat大小是0.01MB，指的是函数A中直接操作占用的内存，不包含调用其他函数的占用内存
+# 函数A的cum 时间是6.45MB，指的是函数A中直接操作占用的内存 + 调用其他函数占用的内存
+# 注意：这里显示的内存会比程序实际占用的小的多
+
+# 4、查看函数B详情
+pprof) list B
+Total: 6.48MB
+ROUTINE ======================== main.B in D:\application\GoLand\example\main.go
+    6.44MB     6.44MB (flat, cum) 99.39% of Total
+         .          .     35:func B() {
+         .          .     36:   // 程序计时
+         .          .     37:   start := time.Now()
+         .          .     38:   defer func() {
+         .          .     39:           fmt.Printf("Function-B    running time is %.2f seconds\n", time.Since(start).Seconds())
+         .          .     40:   }()
+         .          .     41:
+         .          .     42:   // 程序逻辑
+         .          .     43:   data := make([]int, 0)
+         .          .     44:   for i := 0; i < 10000*100; i++ {
+    6.44MB     6.44MB     45:           data = append(data, i)
+         .          .     46:   }
+         .          .     47:}
+         .          .     48:
+         .          .     49:func main() {
+         .          .     50:   // 程序计时
+...
+```
+
+:::
+
+::: details （3）采集Goroutine信息
 
 :::
 
