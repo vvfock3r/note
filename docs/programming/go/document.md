@@ -8385,6 +8385,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+        defer f.Close()
 		err = pprof.StartCPUProfile(f)
 		if err != nil {
 			log.Fatal()
@@ -8540,6 +8541,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+        defer f.Close()
 		err = pprof.StartCPUProfile(f)
 		if err != nil {
 			log.Fatal(err)
@@ -8644,6 +8646,18 @@ ROUTINE ======================== main.B in D:\application\GoLand\example\main.go
 :::
 
 ::: details （3）采集Goroutine信息
+
+```bash
+# 1、执行程序
+D:\application\GoLand\example>go run main.go -goroutineprofile=goroutine.prof
+Function-A    running time is 1.04 seconds
+Function-Main running time is 1.06 seconds
+
+# 2、打开Goroutine Profile文件
+D:\application\GoLand\example>go tool pprof goroutine.prof
+```
+
+
 
 :::
 
