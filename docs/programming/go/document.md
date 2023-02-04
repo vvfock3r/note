@@ -8322,9 +8322,13 @@ Go标准库用于生成Profile
 
 第三方辅助工具
 
-* [Graphviz](https://graphviz.org/)：开源图形可视化软件
+* [Graphviz](https://graphviz.org/)：开源图形可视化软件，强烈建议安装
 
-::: details （1）本地文件方式：采集CPU Profile
+<br />
+
+**1、本地文件方式采集Profile**
+
+::: details （1）采集CPU Profile：详细介绍版
 
 ```go
 package main
@@ -8411,7 +8415,7 @@ Function-Main running time is 25.12 seconds
 
 ```bash
 # 1、打开Profile文件
-D:\application\GoLand\example>go tool pprof cpu.prof
+D:\application\GoLand\example> go tool pprof cpu.prof
 File: main.exe
 Build ID: xxx\main.exe2023-02-04 15:13:07.8986166 +0800 CST
 Type: cpu
@@ -8426,33 +8430,54 @@ Entering interactive mode (type "help" for commands, "o" for options)
 # ----------------------------------------------------------------------------------
 
 # 2、执行top命令
-(pprof) top                                                          
-Showing nodes accounting for 15.30s, 98.65% of 15.51s total            
-Dropped 33 nodes (cum <= 0.08s)                                        
-      flat  flat%   sum%        cum   cum%                             
-    12.34s 79.56% 79.56%     15.30s 98.65%  main.A
-     2.95s 19.02% 98.58%      2.96s 19.08%  main.B                     
-     0.01s 0.064% 98.65%      0.08s  0.52%  runtime.findRunnable       
-         0     0% 98.65%     15.30s 98.65%  main.main                  
-         0     0% 98.65%     15.30s 98.65%  runtime.main               
-         0     0% 98.65%      0.11s  0.71%  runtime.mcall              
-         0     0% 98.65%      0.10s  0.64%  runtime.park_m             
-         0     0% 98.65%      0.09s  0.58%  runtime.schedule           
-         0     0% 98.65%      0.10s  0.64%  runtime/pprof.profileWriter
+(pprof) top
+Showing nodes accounting for 15.22s, 98.32% of 15.48s total
+Dropped 31 nodes (cum <= 0.08s)
+Showing top 10 nodes out of 14
+      flat  flat%   sum%        cum   cum%
+    12.07s 77.97% 77.97%     15.13s 97.74%  main.A
+     3.04s 19.64% 97.61%      3.05s 19.70%  main.B
+     0.08s  0.52% 98.13%      0.08s  0.52%  runtime.stdcall1
+     0.02s  0.13% 98.26%      0.20s  1.29%  runtime.findRunnable
+     0.01s 0.065% 98.32%      0.09s  0.58%  runtime.startm
+         0     0% 98.32%     15.13s 97.74%  main.main
+         0     0% 98.32%     15.13s 97.74%  runtime.main
+         0     0% 98.32%      0.32s  2.07%  runtime.mcall
+         0     0% 98.32%      0.08s  0.52%  runtime.notewakeup
+         0     0% 98.32%      0.31s  2.00%  runtime.park_m
          
 # 说明
-# 15.30s指的是top列出来的采样时间，占据总的采样时间 15.51s 的 98.65%
-# 函数A的flat时间是12.34秒，指的是函数A中直接操作的时间，不包含调用其他函数的时间
-# 函数A的cum 时间是15.30秒，指的是函数A中直接操作的时间 + 调用其他函数的时间
-# 注意：这里显示的CPU使用率会比程序实际占用的小的多
+# 15.22s指的是top列出来的采样时间，占据总的采样时间15.48s 的 98.32%
+# 函数main.A的flat时间是12.07秒，指的是函数A中直接操作的时间，不包含调用其他函数的时间
+# 函数main.A的cum 时间是15.13秒，指的是函数A中直接操作的时间 + 调用其他函数的时间
 
 # ----------------------------------------------------------------------------------
 
-# 3、查看函数A的详细信息
-(pprof) list A
-Total: 15.51s
+# 3、调整显示单位
+(pprof) unit=milliseconds 
+(pprof) top
+Showing nodes accounting for 15220ms, 98.32% of 15480ms total
+Dropped 31 nodes (cum <= 77.40ms)
+Showing top 10 nodes out of 14
+      flat  flat%   sum%        cum   cum%
+   12070ms 77.97% 77.97%    15130ms 97.74%  main.A
+    3040ms 19.64% 97.61%     3050ms 19.70%  main.B
+      80ms  0.52% 98.13%       80ms  0.52%  runtime.stdcall1
+      20ms  0.13% 98.26%      200ms  1.29%  runtime.findRunnable
+      10ms 0.065% 98.32%       90ms  0.58%  runtime.startm
+         0     0% 98.32%    15130ms 97.74%  main.main
+         0     0% 98.32%    15130ms 97.74%  runtime.main
+         0     0% 98.32%      320ms  2.07%  runtime.mcall
+         0     0% 98.32%       80ms  0.52%  runtime.notewakeup
+         0     0% 98.32%      310ms  2.00%  runtime.park_m
+
+# ----------------------------------------------------------------------------------
+
+# 4、查看函数A的详细信息
+(pprof) list A 
+Total: 15480ms
 ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
-    12.34s     15.30s (flat, cum) 98.65% of Total
+   12070ms    15130ms (flat, cum) 97.74% of Total
          .          .     16:func A() {
          .          .     17:   // 程序计时
          .          .     18:   start := time.Now()
@@ -8461,10 +8486,10 @@ ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
          .          .     21:   }()
          .          .     22:   n := 10000 * 10000 * 800
          .          .     23:   sum := 0
-    12.34s     12.34s     24:   for i := 0; i < n; i++ {
+   12070ms    12080ms     24:   for i := 0; i < n; i++ {
          .          .     25:           sum += i
          .          .     26:   }
-         .      2.96s     27:   B()
+         .     3050ms     27:   B()
          .          .     28:}
          .          .     29:
          .          .     30:func B() {
@@ -8480,11 +8505,27 @@ D:\application\GoLand\example> go tool pprof -http=:8080 cpu.prof
 Serving web UI on http://localhost:8080
 ```
 
+（1）Graph视图：默认视图
 
+* runtime.main调用了main方法，main方法调用了A方法，A方法又调用了B方法
+* 12.07 / 15.13和3.04 / 3.05就是我们之前看到的flat和cum值
+
+![image-20230204154458824](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204154458824.png)
+
+（2）Top视图：View --> Top
+
+* 点击对应的列可以进行升序或降序排序
+* 修改显示单位的话需要手动修改URL查询字符串，比如 http://localhost:8080/ui/top?unit=milliseconds
+
+![image-20230204154808874](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204154808874.png)
+
+（3）火焰图：View --> Flame Graph
+
+![image-20230204155316910](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204155316910.png)
 
 :::
 
-::: details （2）本地文件方式：采集堆内存Heap Memory Profile
+::: details （2）采集堆内存Heap Memory Profile
 
 ```go
 package main
@@ -8587,75 +8628,30 @@ func main() {
 
 ```bash
 # 1、执行程序
-D:\application\GoLand\example>go run main.go -memprofile=mem.prof
+D:\application\GoLand\example> go run main.go -memprofile=mem.prof
 Function-B    running time is 0.01 seconds
 Function-A    running time is 3.19 seconds
 Function-Main running time is 3.22 seconds
 
 # 2、打开Memory Profile文件
-D:\application\GoLand\example>go tool pprof mem.prof
-D:\application\GoLand\example> go tool pprof mem.prof
-File: main.exe
-Build ID: xxx\main.exe2023-02-04 11:42:05.8777094 +0800 CST
-Type: inuse_space  # 类型
-Time: Feb 4, 2023 at 11:42am (CST)
-Entering interactive mode (type "help" for commands, "o" for options)
-
-# 3、执行top命令
-(pprof) top
-(pprof) top
-Showing nodes accounting for 6602.41kB, 99.54% of 6632.62kB total
-Dropped 28 nodes (cum <= 33.16kB)
-      flat  flat%   sum%        cum   cum%
- 6592.28kB 99.39% 99.39%  6592.28kB 99.39%  main.B
-   10.12kB  0.15% 99.54%  6606.34kB 99.60%  main.A
-         0     0% 99.54%  6606.34kB 99.60%  main.main
-         0     0% 99.54%  6606.34kB 99.60%  runtime.main
-
-# 3、修改显示单位为MB
-(pprof) unit=mb
-(pprof) top
-Showing nodes accounting for 6.45MB, 99.54% of 6.48MB total
-Dropped 28 nodes (cum <= 0.03MB)
-      flat  flat%   sum%        cum   cum%
-    6.44MB 99.39% 99.39%     6.44MB 99.39%  main.B
-    0.01MB  0.15% 99.54%     6.45MB 99.60%  main.A
-         0     0% 99.54%     6.45MB 99.60%  main.main
-         0     0% 99.54%     6.45MB 99.60%  runtime.main
-
-# 说明
-# 采集了6.45MB，top显示的包含了6.48MB
-# 函数A的flat大小是0.01MB，指的是函数A中直接操作占用的内存，不包含调用其他函数的占用内存
-# 函数A的cum 时间是6.45MB，指的是函数A中直接操作占用的内存 + 调用其他函数占用的内存
-# 注意：这里显示的内存会比程序实际占用的小的多
-
-# 4、查看函数B详情
-pprof) list B
-Total: 6.48MB
-ROUTINE ======================== main.B in D:\application\GoLand\example\main.go
-    6.44MB     6.44MB (flat, cum) 99.39% of Total
-         .          .     35:func B() {
-         .          .     36:   // 程序计时
-         .          .     37:   start := time.Now()
-         .          .     38:   defer func() {
-         .          .     39:           fmt.Printf("Function-B    running time is %.2f seconds\n", time.Since(start).Seconds())
-         .          .     40:   }()
-         .          .     41:
-         .          .     42:   // 程序逻辑
-         .          .     43:   data := make([]int, 0)
-         .          .     44:   for i := 0; i < 10000*100; i++ {
-    6.44MB     6.44MB     45:           data = append(data, i)
-         .          .     46:   }
-         .          .     47:}
-         .          .     48:
-         .          .     49:func main() {
-         .          .     50:   // 程序计时
-...
+D:\application\GoLand\example> go tool pprof -http=:8080 mem.prof 
+Serving web UI on http://localhost:8080
 ```
+
+**1、Top视图：SAMPLE类型默认是inuse_space**
+
+![image-20230204155817805](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204155817805.png)
+
+**2、内存SAMPLE说明**
+
+* inuse_space：已分配但尚未释放的内存量
+* inuse_objects：已分配但尚未释放的对象数量
+* alloc_space：分配的内存总量（包含已释放的）
+* alloc_objects：分配的对象总数（包含已释放的）
 
 :::
 
-::: details （3）本地文件方式：采集Goroutine信息
+::: details （3）采集Goroutine信息
 
 ```go
 package main
@@ -8747,37 +8743,21 @@ func main() {
 
 ```bash
 # 1、执行程序
-D:\application\GoLand\example>go run main.go -goroutineprofile=goroutine.prof
+D:\application\GoLand\example> go run main.go -goroutineprofile=goroutine.prof
 
 # 2、打开Goroutine Profile文件
-D:\application\GoLand\example>go tool pprof goroutine.prof
-
-# 3、输入traces
-(pprof) traces
-File: main.exe
-Build ID: xxx\main.exe2023-02-04 14:17:51.0529256 +0800 CST
-Type: goroutine
-Time: Feb 4, 2023 at 2:17pm (CST)
------------+-------------------------------------------------------
-        10   runtime.asyncPreempt2
-             runtime.asyncPreempt
-             main.main.func3
------------+-------------------------------------------------------
-         1   runtime.goroutineProfileWithLabels
-             runtime/pprof.runtime_goroutineProfileWithLabels
-             runtime/pprof.writeRuntimeProfile
-             runtime/pprof.writeGoroutine
-             runtime/pprof.(*Profile).WriteTo
-             main.main.func2
-             main.main
-             runtime.main
------------+-------------------------------------------------------
-(pprof)
+D:\application\GoLand\example> go tool pprof -http=:8080 goroutine.prof
 ```
+
+![image-20230204162627192](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204162627192.png)
 
 :::
 
-::: details （4）HTTP服务方式：采集所有信息
+<br />
+
+**2、HTTP服务方式采集Profile**
+
+::: details （1）
 
 ```go
 
