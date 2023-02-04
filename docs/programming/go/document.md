@@ -8757,9 +8757,51 @@ D:\application\GoLand\example> go tool pprof -http=:8080 goroutine.prof
 
 **2、HTTP服务方式采集Profile**
 
-::: details （1）
+::: details （1）使用方式：_ "net/http/pprof"
 
 ```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 注册路由
+	http.HandleFunc("/", indexHandler)
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+* Running on http://127.0.0.1:80
+```
+
+![image-20230204163241665](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204163241665.png)
+
+:::
+
+::: details （2）下载Profile文件
+
+```bash
 
 ```
 
