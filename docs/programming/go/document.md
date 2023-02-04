@@ -8328,7 +8328,7 @@ Go标准库用于生成Profile
 
 **1、本地文件方式采集Profile**
 
-::: details （1）采集CPU Profile：详细介绍版
+::: details （1）采集CPU Profile：通用步骤详细介绍版
 
 ```go
 package main
@@ -8795,15 +8795,50 @@ D:\application\GoLand\example>go run main.go
 * Running on http://127.0.0.1:80
 ```
 
-![image-20230204163241665](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204163241665.png)
-
-:::
-
-::: details （2）下载Profile文件
+1、通过交互式终端访问
 
 ```bash
+# 执行命令
+# 1.需要等待指定的seconds秒数，这里是60秒
+# 2.在等待期间手动或者使用命令访问几次Web服务，否则PProf抓取不到数据，在这里使用 ab -c 10 -n 1000 http://127.0.0.1/ 访问1000次
+D:\application\GoLand\example>go tool pprof http://127.0.0.1:80/debug/pprof/profile?seconds=60   
+Fetching profile over HTTP from http://127.0.0.1:80/debug/pprof/profile?seconds=60
+Saved profile in C:\Users\Administrator\pprof\pprof.main.exe.samples.cpu.001.pb.gz
+File: main.exe
+Build ID: C:\Users\Administrator\AppData\Local\Temp\go-build201671595\b001\exe\main.exe2023-02-04 16:28:41.4866189 +0800 CST
+Type: cpu
+Time: Feb 4, 2023 at 4:36pm (CST)
+Duration: 60.01s, Total samples = 0
+No samples were found with the default sample value type.
+Try "sample_index" command to analyze different sample values.
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof)
 
+# 查看数据
+(pprof) top
+Showing nodes accounting for 220ms, 100% of 220ms total                           
+Showing top 10 nodes out of 100                                                   
+      flat  flat%   sum%        cum   cum%                                        
+     130ms 59.09% 59.09%      130ms 59.09%  runtime.cgocall                       
+      10ms  4.55% 63.64%       10ms  4.55%  net/http.htmlSig.match                
+      10ms  4.55% 68.18%       10ms  4.55%  runtime.(*mheap).initSpan             
+      10ms  4.55% 72.73%       10ms  4.55%  runtime.lockextra                     
+      10ms  4.55% 77.27%       10ms  4.55%  runtime.readUintptr                   
+      10ms  4.55% 81.82%       10ms  4.55%  runtime.stdcall1                      
+      10ms  4.55% 86.36%       10ms  4.55%  runtime.stdcall2                      
+      10ms  4.55% 90.91%       10ms  4.55%  runtime.writeHeapBits.write           
+      10ms  4.55% 95.45%       10ms  4.55%  runtime/internal/atomic.(*Uint64).Load
+      10ms  4.55%   100%      140ms 63.64%  syscall.SyscallN
+
+# 其他
+# 注意上的输出，他会把Profile文件下载到本地 Saved profile in xxx，所以我们还可以利用本地起一个HTTP Server来分析
+D:\application\GoLand\example>go tool pprof -http=:8080 C:\Users\Administrator\pprof\pprof.main.exe.samples.cpu.001.pb.gz 
+Serving web UI on http://localhost:8080
 ```
+
+2、通过Web界面访问
+
+![image-20230204164525538](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230204164525538.png)
 
 :::
 
