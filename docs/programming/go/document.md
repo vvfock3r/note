@@ -8298,7 +8298,7 @@ ok      example 2.602s
 
 <br />
 
-### 性能分析
+### PProf简介
 
 文档：
 
@@ -8324,7 +8324,7 @@ Go标准库用于生成Profile
 
 * [Graphviz](https://graphviz.org/)：开源图形可视化软件
 
-::: details （1）采集CPU Profile
+::: details （1）本地文件方式：采集CPU Profile
 
 ```go
 package main
@@ -8398,34 +8398,34 @@ func main() {
 }
 ```
 
-输出结果
+1、执行程序
 
 ```bash
-# 1、执行程序
 D:\application\GoLand\example>go run main.go -cpuprofile=cpu.prof
-Function-B    running time is 4.93 seconds
-Function-A    running time is 24.82 seconds
-Function-Main running time is 24.96 seconds
+Function-B    running time is 5.00 seconds
+Function-A    running time is 24.99 seconds
+Function-Main running time is 25.12 seconds
+```
 
-# ----------------------------------------------------------------------------------
+2、以终端方式解析CPU Profile文件
 
-# 2、打开CPU Profile文件
+```bash
+# 1、打开Profile文件
 D:\application\GoLand\example>go tool pprof cpu.prof
-File: main.exe                                                                                                               
-Build ID: ...\main.exe2023-02-03 17:41:29.1191263 +0800 CST
-Type: cpu                                                                                                                    
-Time: Feb 3, 2023 at 5:41pm (CST)                                                                                            
-Duration: 24.96s, Total samples = 15.51s (62.15%)                                                                            
+File: main.exe
+Build ID: xxx\main.exe2023-02-04 15:13:07.8986166 +0800 CST
+Type: cpu
+Time: Feb 4, 2023 at 3:13pm (CST)
+Duration: 25.12s, Total samples = 15.48s (61.63%)
 Entering interactive mode (type "help" for commands, "o" for options)
-(pprof)   
 
 # 说明
-# Duration: 24.96s                 程序运行的总时间，这与我们统计的 Function-Main 时间相同
-# Total samples = 15.51s (62.15%)  数据采样的总时间，15.51 / 24.96 ~= 0.62
+# Duration: 25.12s                 程序运行的总时间，这与我们统计的 Function-Main 时间相同
+# Total samples = 15.48s (61.63%)  数据采样的总时间，15.48 / 25.12 ~= 61.63%
 
 # ----------------------------------------------------------------------------------
 
-# 3、执行top命令
+# 2、执行top命令
 (pprof) top                                                          
 Showing nodes accounting for 15.30s, 98.65% of 15.51s total            
 Dropped 33 nodes (cum <= 0.08s)                                        
@@ -8448,7 +8448,7 @@ Dropped 33 nodes (cum <= 0.08s)
 
 # ----------------------------------------------------------------------------------
 
-# 4、查看函数A的详细信息
+# 3、查看函数A的详细信息
 (pprof) list A
 Total: 15.51s
 ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
@@ -8472,9 +8472,19 @@ ROUTINE ======================== main.A in D:\application\GoLand\example\main.go
          .          .     32:   start := time.Now()
 ```
 
+3、以Web方式解析CPU Profile文件
+
+```bash
+# 打开Profile文件
+D:\application\GoLand\example> go tool pprof -http=:8080 cpu.prof  
+Serving web UI on http://localhost:8080
+```
+
+
+
 :::
 
-::: details （2）采集堆内存Heap Memory Profile
+::: details （2）本地文件方式：采集堆内存Heap Memory Profile
 
 ```go
 package main
@@ -8645,19 +8655,133 @@ ROUTINE ======================== main.B in D:\application\GoLand\example\main.go
 
 :::
 
-::: details （3）采集Goroutine信息
+::: details （3）本地文件方式：采集Goroutine信息
+
+```go
+package main
+
+import (
+	"flag"
+	"log"
+	"os"
+	"runtime"
+	"runtime/pprof"
+	"time"
+)
+
+var (
+	cpuprofile       = flag.String("cpuprofile", "", "write cpu profile to file")
+	memprofile       = flag.String("memprofile", "", "write memory profile to file")
+	goroutineprofile = flag.String("goroutineprofile", "", "write goroutine profile to file")
+)
+
+func main() {
+	// 解析命令行参数
+	flag.Parse()
+
+	// 采集 CPU Profile
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	// 采集 Memory Profile
+	if *memprofile != "" {
+		runtime.MemProfileRate = 1
+		defer func() {
+			f, err := os.Create(*memprofile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+
+			//runtime.GC()
+			err = pprof.WriteHeapProfile(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
+	// 采集 Goroutine Profile
+	if *goroutineprofile != "" {
+		defer func() {
+			f, err := os.Create(*goroutineprofile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+			goroutineProfile := pprof.Lookup("goroutine")
+			if goroutineProfile == nil {
+				log.Fatal("pprof not found goroutine profile")
+			}
+			err = goroutineProfile.WriteTo(f, 0)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
+	// 主要的代码区域
+	for i := 0; i < 10; i++ {
+		go func() {
+			for {
+			}
+		}()
+	}
+
+	// 休眠1秒钟，等待所有的Goroutine都运行起来
+	time.Sleep(time.Second)
+}
+```
+
+输出结果
 
 ```bash
 # 1、执行程序
 D:\application\GoLand\example>go run main.go -goroutineprofile=goroutine.prof
-Function-A    running time is 1.04 seconds
-Function-Main running time is 1.06 seconds
 
 # 2、打开Goroutine Profile文件
 D:\application\GoLand\example>go tool pprof goroutine.prof
+
+# 3、输入traces
+(pprof) traces
+File: main.exe
+Build ID: xxx\main.exe2023-02-04 14:17:51.0529256 +0800 CST
+Type: goroutine
+Time: Feb 4, 2023 at 2:17pm (CST)
+-----------+-------------------------------------------------------
+        10   runtime.asyncPreempt2
+             runtime.asyncPreempt
+             main.main.func3
+-----------+-------------------------------------------------------
+         1   runtime.goroutineProfileWithLabels
+             runtime/pprof.runtime_goroutineProfileWithLabels
+             runtime/pprof.writeRuntimeProfile
+             runtime/pprof.writeGoroutine
+             runtime/pprof.(*Profile).WriteTo
+             main.main.func2
+             main.main
+             runtime.main
+-----------+-------------------------------------------------------
+(pprof)
 ```
 
+:::
 
+::: details （4）HTTP服务方式：采集所有信息
+
+```go
+
+```
 
 :::
 
