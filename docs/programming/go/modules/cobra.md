@@ -995,8 +995,6 @@ var Cmd = &cobra.Command{
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -1021,9 +1019,13 @@ init command args:  []
 200 <nil>
 ```
 
+:::
+
 <br />
 
 ### （2）必选选项
+
+::: details 点击查看完整代码
 
 `cmd/init/init.go`
 
@@ -1058,6 +1060,8 @@ Flags:
 
 required flag(s) "output" not setexit status 1
 ```
+
+:::
 
 <br />
 
@@ -1105,8 +1109,6 @@ func init() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -1117,6 +1119,8 @@ init command args:  []
 output:  json
 value:  [1 2 3]
 ```
+
+:::
 
 <br />
 
@@ -1168,8 +1172,6 @@ func init() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -1209,6 +1211,8 @@ yaml:  false
 username:  root
 password:  123456
 ```
+
+:::
 
 <br />
 
