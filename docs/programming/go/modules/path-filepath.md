@@ -577,6 +577,43 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+::: details （7）filepath.ToSlash：替换分隔符为/，这对于处理Windows路径非常友好
+
+```go
+package main
+
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"path/filepath"
+)
+
+func main() {
+	path := "C:\\Users\\Administrator\\Desktop"
+	slash := filepath.ToSlash(path)
+
+	fmt.Println(path)
+	fmt.Println(slash)
+
+	logger, _ := zap.NewProduction()
+	logger.Info("info", zap.String("filename", path))
+	logger.Info("info", zap.String("filename", slash))
+}
+
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go                   
+C:\Users\Administrator\Desktop
+C:/Users/Administrator/Desktop
+{"level":"info","ts":1675667896.014864,"caller":"cli-tpl/main.go:18","msg":"info","filename":"C:\\Users\\Administrator\\Desktop"}
+{"level":"info","ts":1675667896.014864,"caller":"cli-tpl/main.go:19","msg":"info","filename":"C:/Users/Administrator/Desktop"}
+```
+
+:::
+
 <br />
 
 ## 模式匹配
