@@ -8076,6 +8076,102 @@ D:\application\GoLand\example>go run main.go
 
 ## 程序优化
 
+### 基础优化
+
+::: details （1）gofmt格式化代码
+
+说明：
+
+* `gofmt`是一个内置的独立的二进制命令，推荐使用
+* `go fmt`是一个精简版的gofmt，相当于`gofmt -l -w`
+
+推荐命令
+
+```bash
+gofmt -w -r "interface{} -> any" .
+
+# 参数解释
+# -w 会修改源文件
+# -r 指定了一条重写规则,将所有的interface{}替换为any
+```
+
+测试用例
+
+```go
+package main
+
+import "fmt"
+
+func Ge(a, b int) bool {
+	if a >= b {
+		return true
+	} else {
+		return false
+	}
+}
+
+func main() {
+a := 1
+b := 2
+	fmt.Println(Ge(a, b))
+}
+```
+
+输出结果
+
+```go
+package main
+
+import "fmt"
+
+func Ge(a, b int) bool {
+	if a >= b {
+		return true
+	} else {
+		return false
+	}
+}
+
+func main() {
+    a := 1
+    b := 2
+	fmt.Println(Ge(a, b))
+}
+
+// a和b的缩进已经被正确格式化
+// 对于Ge函数，并没有格式化成 return a >= b
+```
+
+:::
+
+::: details （2）go vet静态代码检查
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("%d\n", "hello world!")
+}
+
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop\example>go run main.go
+%!d(string=hello world!)
+
+C:\Users\Administrator\Desktop\cli-tpl>go vet .       
+# example
+.\main.go:6:2: fmt.Printf format %d has arg "hello world!" of wrong type string
+```
+
+:::
+
+<br />
+
 ### 单元测试
 
 说明：
