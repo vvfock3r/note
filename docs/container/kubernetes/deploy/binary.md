@@ -2631,6 +2631,8 @@ nfs-client-provisioner-d846f54bd-r6f77      1/1     Running   0                 
 
 Github：[https://github.com/istio/istio](https://github.com/istio/istio)
 
+版本支持说明：[https://istio.io/latest/docs/releases/supported-releases/](https://istio.io/latest/docs/releases/supported-releases/)
+
 安装方式说明：[https://istio.io/latest/docs/setup/install/](https://istio.io/latest/docs/setup/install/)
 
 （1）安装 istioctl
