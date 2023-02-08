@@ -8948,7 +8948,72 @@ Serving web UI on http://localhost:8080
 
 ### 高效字符串拼接
 
+::: details 点击查看详情
 
+`main_test.go`
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"strings"
+	"testing"
+)
+
+var s = "hello world!"
+
+func BenchmarkStringAdd(b *testing.B) {
+	var str string
+	for i := 0; i < b.N; i++ {
+		str += s
+	}
+}
+
+func BenchmarkFmtSprintf(b *testing.B) {
+	var str string
+	for i := 0; i < b.N; i++ {
+		str = fmt.Sprintf("%s%s", str, s)
+	}
+}
+
+func BenchmarkByteBuffer(b *testing.B) {
+	var buffer bytes.Buffer
+	for i := 0; i < b.N; i++ {
+		buffer.WriteString(s)
+	}
+	_ = buffer.String()
+}
+
+func BenchmarkStringsBuilder(b *testing.B) {
+	var builder strings.Builder
+	for i := 0; i < b.N; i++ {
+		builder.WriteString(s)
+	}
+	_ = builder.String()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go test -bench .
+goos: windows
+goarch: amd64
+pkg: example
+cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+BenchmarkStringAdd-8              108938            117779 ns/op
+BenchmarkFmtSprintf-8              35947            117132 ns/op
+BenchmarkByteBuffer-8           51002842                21.09 ns/op
+BenchmarkStringsBuilder-8       80014401                15.30 ns/op
+PASS
+ok      example 21.414s
+
+# 分析结果: 推荐使用strings.Builder
+```
+
+:::
 
 ## 
 
