@@ -242,3 +242,159 @@ b
 ```
 
 :::
+
+<br />
+
+## 相对路径问题
+
+::: details （1）问题复现
+
+目录结构
+
+```bash
+D:\application\GoLand\example>tree /F
+卷 本地磁盘 的文件夹 PATH 列表
+卷序列号为 5867-A979
+D:.
+│  go.mod
+│  go.sum
+│  main.go
+├─etc
+│   version.txt
+└─sub
+    sub.go
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"example/sub"
+)
+
+func main() {
+	sub.Print()
+}
+```
+
+`sub/sub.go`
+
+```go
+package sub
+
+import (
+	_ "embed"
+)
+
+//go:embed ../etc/version.txt
+var Version string
+
+func Print() {
+	fmt.Println(Version)
+}
+```
+
+`etc/version.txt`
+
+```
+v1.0.0
+```
+
+输出结果
+
+```bash
+# 直接执行会报错
+D:\application\GoLand\example>go run main.go
+sub\sub.go:7:12: pattern ../etc/version.txt: invalid pattern syntax
+
+# 原因是官方的说法是：embed路径中不能包含.和..
+```
+
+:::
+
+::: details （2）尝试解决问题：使用 \ 代替 / ，只针对Windows有效
+
+`sub/sub.go`
+
+```go
+package sub
+
+import (
+	_ "embed"
+	"fmt"
+)
+
+//go:embed ..\etc\version.txt
+var Version string
+
+func Print() {
+	fmt.Println(Version)
+}
+```
+
+输出结果
+
+```bash
+# Windows10下表现良好，但不能确定所有Windows系列都有效
+D:\application\GoLand\example>go run main.go
+v1.0.0
+
+# Linux下依旧会报错
+[root@localhost example]# go run main.go
+sub/sub.go:7:12: pattern ..\etc\version.txt: no matching files found
+```
+
+:::
+
+::: details （3）解决问题
+
+`main.go`
+
+```go
+package main
+
+import (
+	_ "embed"
+	"example/sub"
+)
+
+//go:embed etc/version.txt
+var version string
+
+func main() {
+	sub.Version = version
+	sub.Print()
+}
+```
+
+`sub/sub.go`
+
+```go
+package sub
+
+import (
+	"fmt"
+)
+
+var Version string
+
+func Print() {
+	fmt.Println(Version)
+}
+```
+
+输出结果
+
+```bash
+# Windows
+D:\application\GoLand\example>go run main.go
+v1.0.0
+
+# Linux
+[root@localhost example]# go run main.go
+v1.0.0
+```
+
+:::
