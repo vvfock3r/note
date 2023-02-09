@@ -8001,7 +8001,7 @@ reviews-v1-569db879f5-jqz76      2/2     Running   0          51s
 reviews-v2-65c4dc6fdc-cbk6k      2/2     Running   0          51s
 reviews-v3-c9c4fb987-55qht       2/2     Running   0          51s
 
-# 查看容器名称和镜像
+# 查看Pod中的容器名称和镜像
 [root@node-1 istio-1.16.2]# kubectl get pod details-v1-5ffd6b64f7-lccmd -o yaml | yq '.spec.containers[] | {.name: .image}'
 details: docker.io/istio/examples-bookinfo-details-v1:1.17.0
 istio-proxy: docker.io/istio/proxyv2:1.16.2
@@ -8057,3 +8057,7 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 ![image-20230209125715425](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209125715425.png)
 
 :::
+
+<br />
+
+### Bookinfo应用：流量管理
