@@ -8087,7 +8087,11 @@ reviews       reviews       2s
 
 ### Bookinfo应用：可观察性
 
-::: details （1）可视化
+文档：[https://istio.io/latest/zh/docs/tasks/observability/](https://istio.io/latest/zh/docs/tasks/observability/)
+
+::: details （1）网格可视化
+
+文档：[https://istio.io/latest/zh/docs/tasks/observability/kiali/](https://istio.io/latest/zh/docs/tasks/observability/kiali/)
 
 ```bash
 
