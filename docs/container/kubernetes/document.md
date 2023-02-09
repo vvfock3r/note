@@ -8168,6 +8168,32 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
 
+::: details （1）虚拟服务（Virtual Service）和目标规则（DestinationRule）说明
+
+**查看Kind名称**
+
+```bash
+# 查看虚拟服务
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|VirtualService'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+virtualservices                   vs           networking.istio.io/v1beta1            true         VirtualService
+
+# 查看目标规则
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|DestinationRule'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+destinationrules                  dr           networking.istio.io/v1beta1            true         DestinationRule
+
+# 后面我们就使用短名称vs和dr
+```
+
+**xx**
+
+```bash
+
+```
+
+:::
+
 ::: details （1）配置请求路由：
 
 :::
