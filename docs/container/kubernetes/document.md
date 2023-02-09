@@ -8155,3 +8155,8 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 ![image-20230209162329377](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209162329377.png)
 
 :::
+
+<br />
+
+### Bookinfo应用：流量管理
+
