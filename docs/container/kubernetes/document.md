@@ -8194,7 +8194,96 @@ destinationrules                  dr           networking.istio.io/v1beta1      
 **流量是如何转发的**
 
 ```bash
+# 查看网关
+[root@node-1 istio-1.16.2]# kubectl get gw 
+NAME               AGE
+bookinfo-gateway   4h33m
 
+[root@node-1 istio-1.16.2]# kubectl get gw bookinfo-gateway -o yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  annotations: ...    
+  creationTimestamp: "2023-02-09T05:29:24Z"
+  generation: 1
+  name: bookinfo-gateway
+  namespace: default
+  resourceVersion: "290314"
+  uid: 54455aff-9cc0-4f69-afda-6c30cf016548
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - hosts:
+    - '*'               # 允许向此网关发送所有主机的请求
+    port:
+      name: http
+      number: 80        # 只允许允许80端口
+      protocol: HTTP    # 只允许HTTP协议
+      
+# 虚拟服务: 需要绑定网关
+[root@node-1 istio-1.16.2]# kubectl get vs
+NAME       GATEWAYS               HOSTS   AGE
+bookinfo   ["bookinfo-gateway"]   ["*"]   4h37m
+
+[root@node-1 istio-1.16.2]# kubectl get vs bookinfo -o yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  annotations: ...    
+  generation: 1
+  name: bookinfo
+  namespace: default
+  resourceVersion: "290315"
+  uid: 084c062a-9154-4551-b5bc-f1913eb4f1c1
+spec:
+  gateways:
+  - bookinfo-gateway          # 绑定网关
+  hosts:
+  - '*'                       # 允许向此虚拟服务发送所有主机的请求
+  http:
+  - match:                    # 允许哪些路径,exact完全匹配
+    - uri:
+        exact: /productpage
+    - uri:
+        prefix: /static
+    - uri:
+        exact: /login
+    - uri:
+        exact: /logout
+    - uri:
+        prefix: /api/v1/products
+    route:                   # 路由到哪个目标规则
+    - destination:
+        host: productpage    # 路由到productpage DestinationRule
+        port:
+          number: 9080
+
+# 目标规则
+[root@node-1 istio-1.16.2]# kubectl get dr
+NAME          HOST          AGE
+details       details       3h36m
+productpage   productpage   3h36m
+ratings       ratings       3h36m
+reviews       reviews       3h36m
+
+[root@node-1 istio-1.16.2]# kubectl get dr productpage -o yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations: ...
+  creationTimestamp: "2023-02-09T06:33:14Z"
+  generation: 1
+  name: productpage
+  namespace: default
+  resourceVersion: "298911"
+  uid: 7a5b1211-2ef7-4687-9ec2-f1d0ad9a714f
+spec:
+  host: productpage   # 服务名称
+  subsets:            # Service Endpoints 子集
+  - labels:           # 标签，可以认为这是一个选择器，选择符合要求的Pod
+      version: v1
+    name: v1
 ```
 
 :::
