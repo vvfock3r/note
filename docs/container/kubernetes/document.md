@@ -1,11 +1,5 @@
 # Kubernetes
 
-## 目录
-
-[TOC]
-
-<br />
-
 ## 文档
 
 官方文档：[https://kubernetes.io/zh-cn/docs/home/](https://kubernetes.io/zh-cn/docs/home/)
@@ -7856,6 +7850,10 @@ drwxr-xr-x  3 root root  4096 Jan 20 16:01 templates
 
 ## Istio
 
+文档：[https://istio.io/latest/zh/docs/](https://istio.io/latest/zh/docs/)
+
+<br />
+
 ### 演示版本
 
 ::: details 点击查看详情
@@ -8151,7 +8149,7 @@ http://192.168.48.151:20001/kiali
 Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 # 写段Shell命令持续发送请求，这样kiali才能将流量可视化
-[root@node-1 ~]# for i in `seq 1000`; do curl -I http://192.168.48.154:30053/productpage ; sleep 1; done
+[root@node-1 ~]# while true ; do curl -I http://192.168.48.154:30053/productpage ; sleep 1; done
 ```
 
 **服务调用关系：**
@@ -8168,3 +8166,8 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 ### Bookinfo应用：流量管理
 
+文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
+
+::: details （1）配置请求路由：
+
+:::
