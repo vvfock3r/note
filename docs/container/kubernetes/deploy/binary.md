@@ -2640,20 +2640,20 @@ Github：[https://github.com/istio/istio](https://github.com/istio/istio)
 文档：[https://istio.io/latest/docs/setup/getting-started/#download](https://istio.io/latest/docs/setup/getting-started/#download)
 
 ```bash
-# 下载1.14.3版本Istio软件包
-[root@node-1 pkg]# curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.14.3 TARGET_ARCH=x86_64 sh -
+# 下载1.16.2版本Istio软件包
+[root@node-1 ~]# ISTIO_VERSION=1.16.2
+[root@node-1 ~]# wget -c https://github.com/istio/istio/releases/download/${ISTIO_VERSION}/istio-${ISTIO_VERSION}-linux-amd64.tar.gz
 
-# 下载下来是个目录
-[root@node-1 pkg]# ls -ld istio-1.14.3
-drwxr-x--- 6 root root 115 Jul 29 06:30 istio-1.14.3
+# 解压
+[root@node-1 ~]# tar zxf istio-${ISTIO_VERSION}-linux-amd64.tar.gz
 
 # 拷贝二进制文件到PATH目录下
-root@node-1 pkg]# cp istio-1.14.3/bin/istioctl /usr/local/bin/
+[root@node-1 ~]# cp istio-${ISTIO_VERSION}/bin/istioctl /usr/local/bin/
 
 # 查看版本
-[root@node-1 pkg]# istioctl version
+[root@node-1 ~]# istioctl version
 no running Istio pods in "istio-system"
-1.14.3
+1.16.2
 ```
 
 （2）使用 Istioctl 安装（推荐此种安装方式）
@@ -2687,9 +2687,9 @@ istiod-6b5bb85ffb-jxsb2                 1/1     Running   0          67m   10.20
 
 # 再次查看版本
 [root@node-1 ~]# istioctl version
-client version: 1.14.3
-control plane version: 1.14.3           # 控制平面
-data plane version: 1.14.3 (1 proxies)	# 数据平面
+client version: 1.16.2
+control plane version: 1.16.2            # 控制平面
+data plane version: 1.16.2 (1 proxies)   # 数据平面
 ```
 
 ### 部署包管理器Helm（可选）
