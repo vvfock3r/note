@@ -8089,9 +8089,27 @@ reviews       reviews       2s
 
 文档：[https://istio.io/latest/zh/docs/tasks/observability/](https://istio.io/latest/zh/docs/tasks/observability/)
 
-::: details （1）网格可视化
+::: details （1）集成Prometheus
+
+```bash
+# 部署
+[root@node-1 ~]# kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.16/samples/addons/prometheus.yaml
+
+# 查看Pod
+[root@node-1 ~]# kubectl -n istio-system get pods
+NAME                                    READY   STATUS    RESTARTS        AGE
+istio-ingressgateway-6cc5d8b655-t6h9d   1/1     Running   2 (5h44m ago)   23h
+istiod-784bcfdd5d-mj66c                 1/1     Running   2 (5h44m ago)   23h
+prometheus-85949fddb-r9bjv              2/2     Running   0               3m
+```
+
+:::
+
+::: details （2）网格可视化
 
 文档：[https://istio.io/latest/zh/docs/tasks/observability/kiali/](https://istio.io/latest/zh/docs/tasks/observability/kiali/)
+
+**注意：需要先集成Prometheus插件，否则overview页面会报错**
 
 ```bash
 # 安装Kiali
@@ -8112,7 +8130,7 @@ deployment.apps/kiali created
 NAME                                    READY   STATUS    RESTARTS        AGE
 istio-ingressgateway-6cc5d8b655-t6h9d   1/1     Running   2 (4h18m ago)   21h
 istiod-784bcfdd5d-mj66c                 1/1     Running   2 (4h17m ago)   21h
-kiali-849958788-8dqxj                   0/1     Running   0               40s
+kiali-849958788-8dqxj                   1/1     Running   0               40s
 
 # 查看Service
 [root@node-1 ~]# kubectl -n istio-system get svc kiali
@@ -8123,8 +8141,17 @@ kiali   ClusterIP   10.200.20.232   <none>        20001/TCP,9090/TCP   52s
 [root@node-1 ~]# istioctl dashboard kiali --address=192.168.48.151
 http://192.168.48.151:20001/kiali
 Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
+
+# 写段Shell命令持续发送请求，这样kiali才能将流量可视化
+[root@node-1 ~]# for i in `seq 1000`; do curl -I http://192.168.48.154:30053/productpage ; sleep 1; done
 ```
 
+**服务调用关系：**
 
+![image-20230209162052106](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209162052106.png)
+
+**服务版本之间的调用关系**
+
+![image-20230209162329377](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209162329377.png)
 
 :::
