@@ -8168,9 +8168,7 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
 
-::: details （1）网关（Gateway）、虚拟服务（Virtual Service）和目标规则（DestinationRule）说明
-
-**查看Kind名称**
+::: details （1）查看API短名称
 
 ```bash
 # 查看Gateway
@@ -8191,7 +8189,11 @@ destinationrules                  dr           networking.istio.io/v1beta1      
 # 后面我们就使用短名称gw、vs和dr
 ```
 
-**流量是如何转发的**
+:::
+
+::: details （2）流量是如何转发的
+
+**1、网关 ---> productpage服务**
 
 ```bash
 # 查看网关
@@ -8220,7 +8222,8 @@ spec:
       name: http
       number: 80        # 只允许允许80端口
       protocol: HTTP    # 只允许HTTP协议
-      
+
+# 网关是如何将请求转发到productpage服务的？
 # 虚拟服务: 需要绑定网关
 [root@node-1 istio-1.16.2]# kubectl get vs
 NAME       GATEWAYS               HOSTS   AGE
@@ -8253,41 +8256,40 @@ spec:
         exact: /logout
     - uri:
         prefix: /api/v1/products
-    route:                   # 路由到哪个目标规则
+    route:                   # 路由
     - destination:
-        host: productpage    # 路由到productpage DestinationRule
+        host: productpage    # 路由到productpage Service
         port:
           number: 9080
 
-# 目标规则
-[root@node-1 istio-1.16.2]# kubectl get dr
-NAME          HOST          AGE
-details       details       3h36m
-productpage   productpage   3h36m
-ratings       ratings       3h36m
-reviews       reviews       3h36m
+# 跳过Gateway，手动访问 productpage Service，看看会发生什么
+[root@node-1 istio-1.16.2]# kubectl get svc productpage
+NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+productpage   ClusterIP   10.200.218.162   <none>        9080/TCP   6m47s
 
-[root@node-1 istio-1.16.2]# kubectl get dr productpage -o yaml
-apiVersion: networking.istio.io/v1beta1
-kind: DestinationRule
-metadata:
-  annotations: ...
-  creationTimestamp: "2023-02-09T06:33:14Z"
-  generation: 1
-  name: productpage
-  namespace: default
-  resourceVersion: "298911"
-  uid: 7a5b1211-2ef7-4687-9ec2-f1d0ad9a714f
-spec:
-  host: productpage   # 服务名称
-  subsets:            # Service Endpoints 子集
-  - labels:           # 标签，可以认为这是一个选择器，选择符合要求的Pod
-      version: v1
-    name: v1
+# 访问成功了，转到Web界面(如下图)，会发现有一条unknown的流量访问了productpage
+[root@node-1 istio-1.16.2]# curl -I 10.200.218.162:9080/productpage
+HTTP/1.1 200 OK
+content-type: text/html; charset=utf-8
+content-length: 5294
+server: istio-envoy
+date: Thu, 09 Feb 2023 14:01:16 GMT
+x-envoy-upstream-service-time: 46
+x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
 ```
+
+![image-20230209220312776](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209220312776.png)
+
+**2、productpage ---> reviews的三个版本**
+
+
 
 :::
 
 ::: details （1）配置请求路由：
+
+文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
+
+
 
 :::
