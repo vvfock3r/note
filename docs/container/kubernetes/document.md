@@ -8220,11 +8220,11 @@ spec:
     - '*'               # 允许向此网关发送所有主机的请求
     port:
       name: http
-      number: 80        # 只允许允许80端口
+      number: 80        # 只允许80端口
       protocol: HTTP    # 只允许HTTP协议
 
-# 网关是如何将请求转发到productpage服务的？
-# 虚拟服务: 需要绑定网关
+# 问：网关是如何将请求转发到productpage服务的？
+# 答：使用虚拟服务绑定网关即可
 [root@node-1 istio-1.16.2]# kubectl get vs
 NAME       GATEWAYS               HOSTS   AGE
 bookinfo   ["bookinfo-gateway"]   ["*"]   4h37m
@@ -8282,7 +8282,56 @@ x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
 
 **2、productpage ---> reviews的三个版本**
 
+* 这一部分和Istio没有关系
+* productpage通过K8S DNS名称访问到reviews的Service
+* Service Endpoint绑定了3个版本的reviews
+* 所以就能同时访问3个版本的reviews服务
 
+下面来进行验证一下，并顺便看一下productpage的代码
+
+```bash
+# 1.以root权限进入到productpage容器
+
+
+# 2.查看系统信息
+# cat /etc/os-release
+PRETTY_NAME="Debian GNU/Linux 10 (buster)"
+NAME="Debian GNU/Linux"
+VERSION_ID="10"
+VERSION="10 (buster)"
+VERSION_CODENAME=buster
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+
+# 3.解决方向键和Tab键不管用的问题，输入bash后就可以解决问题
+# bash
+root@productpage-v1-578b8d4595-gtlmr:/opt/microservices# 
+
+# 4.更新系统 和 安装常用软件包
+apt upgrade # 更新源
+apt update # 更新软件包
+apt-get install vim # vim
+apt install procps  # ps
+apt install -y inetutils-ping # ping
+apt-get install dnsutils  # nslookup
+alias ll='ls -l --color'
+
+# 5.查看进程
+root@productpage-v1-578b8d4595-gtlmr:~# ps aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.3  43004 30536 ?        Ss   14:18   0:00 python productpage.py 9080
+root      1060  0.0  0.0   2376   668 pts/1    Ss+  14:23   0:00 sh
+root      1590  0.0  0.0   2376   648 pts/0    Ss   14:32   0:00 sh
+root      2092  0.0  0.0   5740  2188 pts/0    S    14:38   0:00 bash
+root      2693  1.4  0.3 190556 30928 ?        Sl   14:46   0:13 /usr/local/bin/python /opt/microservices/productpage.py 9080
+root      3884  0.0  0.0   9380  1520 pts/0    R+   15:01   0:00 ps aux
+
+# 6.查看代码
+cd /opt/microservices
+
+```
 
 :::
 
