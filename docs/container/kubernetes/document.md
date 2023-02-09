@@ -7843,3 +7843,129 @@ drwxr-xr-x  3 root root  4096 Jan 20 16:01 templates
 ```
 
 :::
+
+<br />
+
+## Istio
+
+### 演示版本
+
+```bash
+[root@node-1 ~]# istioctl version
+client version: 1.16.2
+control plane version: 1.16.2
+data plane version: 1.16.2 (1 proxies)
+```
+
+<br />
+
+### Bookinfo应用
+
+文档：[https://istio.io/latest/zh/docs/examples/bookinfo/](https://istio.io/latest/zh/docs/examples/bookinfo/)
+
+::: details （1）部署Bookinfo应用
+
+```bash
+# 为default命名空间打上标签 istio-injection=enabled，Istio会默认自动注入Sidecar
+[root@node-1 ~]# kubectl label namespace default istio-injection=enabled
+
+# 查看labels
+[root@node-1 ~]# kubectl get ns default -o yaml | yq .metadata.labels
+istio-injection: enabled
+kubernetes.io/metadata.name: default
+
+# 进入istio目录，部署bookinfo应用
+[root@node-1 ~]# cd istio-1.16.2
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+service/details created
+serviceaccount/bookinfo-details created
+deployment.apps/details-v1 created
+service/ratings created
+serviceaccount/bookinfo-ratings created
+deployment.apps/ratings-v1 created
+service/reviews created
+serviceaccount/bookinfo-reviews created
+deployment.apps/reviews-v1 created
+deployment.apps/reviews-v2 created
+deployment.apps/reviews-v3 created
+service/productpage created
+serviceaccount/bookinfo-productpage created
+deployment.apps/productpage-v1 created
+
+# 查看原始的Deployment,containers中只包含一个容器
+[root@node-1 istio-1.16.2]# vim samples/bookinfo/platform/kube/bookinfo.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: details-v1
+  labels:
+    app: details
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: details
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: details
+        version: v1
+    spec:
+      serviceAccountName: bookinfo-details
+      containers:
+      - name: details
+        image: docker.io/istio/examples-bookinfo-details-v1:1.17.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9080
+        securityContext:
+          runAsUser: 1000
+          
+# 查看Pods,注意所有的READY都是2，意味着每个Pod中都包含两个容器,意味着istio自动注入是成功的
+[root@node-1 istio-1.16.2]# kubectl get pods
+NAME                             READY   STATUS    RESTARTS   AGE
+details-v1-5ffd6b64f7-lccmd      2/2     Running   0          33s
+productpage-v1-979d4d9fc-hzk4f   2/2     Running   0          33s
+ratings-v1-5f9699cfdf-qqg8k      2/2     Running   0          33s
+reviews-v1-569db879f5-7skzj      2/2     Running   0          33s
+reviews-v2-65c4dc6fdc-qpn67      2/2     Running   0          33s
+reviews-v3-c9c4fb987-2g8cc       2/2     Running   0          33s
+
+# 查看容器名称和镜像
+[root@node-1 istio-1.16.2]# kubectl get pod details-v1-5ffd6b64f7-lccmd -o yaml | yq '.spec.containers[] | {.name: .image}'
+details: docker.io/istio/examples-bookinfo-details-v1:1.17.0
+istio-proxy: docker.io/istio/proxyv2:1.16.2
+
+# 在容器内执行命令验证某个应用是否正常
+[root@node-1 istio-1.16.2]# kubectl exec -it $(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}') -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
+<title>Simple Bookstore App</title>
+
+# Service全部是ClusterIP类型，意味着在外部还不能直接访问我们的应用
+[root@node-1 istio-1.16.2]# kubectl get service 
+NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+details       ClusterIP   10.200.170.236   <none>        9080/TCP   5m34s
+kubernetes    ClusterIP   10.200.0.1       <none>        443/TCP    27d
+productpage   ClusterIP   10.200.86.64     <none>        9080/TCP   5m34s
+ratings       ClusterIP   10.200.24.209    <none>        9080/TCP   5m34s
+reviews       ClusterIP   10.200.136.49    <none>        9080/TCP   5m34s
+```
+
+:::
+
+::: details （2）外部访问Bookinfo应用：使用 K8S Gateway
+
+```bash
+
+```
+
+:::
+
+::: details （3）外部访问Bookinfo应用：使用 Istio Gateway
+
+```bash
+
+```
+
+:::
