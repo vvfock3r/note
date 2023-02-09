@@ -8058,6 +8058,39 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 
 :::
 
+::: details （4）Istio Gateway：定义服务版本
+
+```bash
+# 先查看一下，是空的
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+No resources found in default namespace.
+
+# 部署
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
+destinationrule.networking.istio.io/productpage created
+destinationrule.networking.istio.io/reviews created
+destinationrule.networking.istio.io/ratings created
+destinationrule.networking.istio.io/details created
+
+# 再次查看
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+NAME          HOST          AGE
+details       details       2s
+productpage   productpage   2s
+ratings       ratings       2s
+reviews       reviews       2s
+```
+
+:::
+
 <br />
 
-### Bookinfo应用：流量管理
+### Bookinfo应用：可观察性
+
+::: details （1）可视化
+
+```bash
+
+```
+
+:::
