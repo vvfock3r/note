@@ -7850,12 +7850,16 @@ drwxr-xr-x  3 root root  4096 Jan 20 16:01 templates
 
 ### 演示版本
 
+::: details 点击查看详情
+
 ```bash
 [root@node-1 ~]# istioctl version
 client version: 1.16.2
 control plane version: 1.16.2
 data plane version: 1.16.2 (1 proxies)
 ```
+
+:::
 
 <br />
 
@@ -7865,34 +7869,22 @@ data plane version: 1.16.2 (1 proxies)
 
 ::: details （1）部署Bookinfo应用
 
+**部署前记录信息**
+
 ```bash
-# 为default命名空间打上标签 istio-injection=enabled，Istio会默认自动注入Sidecar
-[root@node-1 ~]# kubectl label namespace default istio-injection=enabled
+# 查看Proxy个数，这里是1个
+[root@node-1 ~]# istioctl version
+client version: 1.16.2
+control plane version: 1.16.2
+data plane version: 1.16.2 (1 proxies)
 
-# 查看labels
-[root@node-1 ~]# kubectl get ns default -o yaml | yq .metadata.labels
-istio-injection: enabled
-kubernetes.io/metadata.name: default
+# 查看Proxy列表，输出内容太多省略一部分列
+[root@node-1 ~]# istioctl proxy-status
+NAME                         CLUSTER        CDS        LDS       ISTIOD                      VERSION
+istio-ingressgateway-xxx     Kubernetes     SYNCED     SYNCED    istiod-784bcfdd5d-mj66c     1.16.2
 
-# 进入istio目录，部署bookinfo应用
+# 查看要部署的Deployment,重点关注containers，每个Deployment只包含一个容器
 [root@node-1 ~]# cd istio-1.16.2
-[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
-service/details created
-serviceaccount/bookinfo-details created
-deployment.apps/details-v1 created
-service/ratings created
-serviceaccount/bookinfo-ratings created
-deployment.apps/ratings-v1 created
-service/reviews created
-serviceaccount/bookinfo-reviews created
-deployment.apps/reviews-v1 created
-deployment.apps/reviews-v2 created
-deployment.apps/reviews-v3 created
-service/productpage created
-serviceaccount/bookinfo-productpage created
-deployment.apps/productpage-v1 created
-
-# 查看原始的Deployment,containers中只包含一个容器
 [root@node-1 istio-1.16.2]# vim samples/bookinfo/platform/kube/bookinfo.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -7922,27 +7914,52 @@ spec:
         - containerPort: 9080
         securityContext:
           runAsUser: 1000
-          
-# 查看Pods,注意所有的READY都是2，意味着每个Pod中都包含两个容器,意味着istio自动注入是成功的
+```
+
+**部署**
+
+```bash
+# 为default命名空间打上标签 istio-injection=enabled，Istio会默认自动注入Sidecar
+[root@node-1 istio-1.16.2]# kubectl label namespace default istio-injection=enabled
+
+# 查看labels
+[root@node-1 istio-1.16.2]# kubectl get ns default -o yaml | yq .metadata.labels
+istio-injection: enabled
+kubernetes.io/metadata.name: default
+
+# 部署bookinfo应用
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+service/details created
+serviceaccount/bookinfo-details created
+deployment.apps/details-v1 created
+service/ratings created
+serviceaccount/bookinfo-ratings created
+deployment.apps/ratings-v1 created
+service/reviews created
+serviceaccount/bookinfo-reviews created
+deployment.apps/reviews-v1 created
+deployment.apps/reviews-v2 created
+deployment.apps/reviews-v3 created
+service/productpage created
+serviceaccount/bookinfo-productpage created
+deployment.apps/productpage-v1 created
+
+# 检查Pod是否已正常启动
 [root@node-1 istio-1.16.2]# kubectl get pods
 NAME                             READY   STATUS    RESTARTS   AGE
-details-v1-5ffd6b64f7-lccmd      2/2     Running   0          33s
-productpage-v1-979d4d9fc-hzk4f   2/2     Running   0          33s
-ratings-v1-5f9699cfdf-qqg8k      2/2     Running   0          33s
-reviews-v1-569db879f5-7skzj      2/2     Running   0          33s
-reviews-v2-65c4dc6fdc-qpn67      2/2     Running   0          33s
-reviews-v3-c9c4fb987-2g8cc       2/2     Running   0          33s
-
-# 查看容器名称和镜像
-[root@node-1 istio-1.16.2]# kubectl get pod details-v1-5ffd6b64f7-lccmd -o yaml | yq '.spec.containers[] | {.name: .image}'
-details: docker.io/istio/examples-bookinfo-details-v1:1.17.0
-istio-proxy: docker.io/istio/proxyv2:1.16.2
+details-v1-5ffd6b64f7-d9w6z      2/2     Running   0          15s
+productpage-v1-979d4d9fc-njr26   2/2     Running   0          15s
+ratings-v1-5f9699cfdf-z8flq      2/2     Running   0          15s
+reviews-v1-569db879f5-jqz76      2/2     Running   0          15s
+reviews-v2-65c4dc6fdc-cbk6k      2/2     Running   0          15s
+reviews-v3-c9c4fb987-55qht       2/2     Running   0          15s
 
 # 在容器内执行命令验证某个应用是否正常
 [root@node-1 istio-1.16.2]# kubectl exec -it $(kubectl get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}') -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
+
 <title>Simple Bookstore App</title>
 
-# Service全部是ClusterIP类型，意味着在外部还不能直接访问我们的应用
+# Service全部是ClusterIP类型，意味着在外部还不能直接访问服务
 [root@node-1 istio-1.16.2]# kubectl get svc
 NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 details       ClusterIP   10.200.170.236   <none>        9080/TCP   5m34s
@@ -7952,11 +7969,47 @@ ratings       ClusterIP   10.200.24.209    <none>        9080/TCP   5m34s
 reviews       ClusterIP   10.200.136.49    <none>        9080/TCP   5m34s
 ```
 
+**部署前后对比**
+
+```bash
+# Proxy数量变成了7个
+[root@node-1 istio-1.16.2]# istioctl version
+client version: 1.16.2
+control plane version: 1.16.2
+data plane version: 1.16.2 (7 proxies)
+
+# 查看Proxy列表，输出内容太多省略一部分列
+[root@node-1 istio-1.16.2]# istioctl proxy-status
+NAME                                               CLUSTER        ISTIOD                      VERSION
+details-v1-5ffd6b64f7-d9w6z.default                Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+istio-ingressgateway-6cc5d8b655-t6h9d.istio-system Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+productpage-v1-979d4d9fc-njr26.default             Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+ratings-v1-5f9699cfdf-z8flq.default                Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+reviews-v1-569db879f5-jqz76.default                Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+reviews-v2-65c4dc6fdc-cbk6k.default                Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+reviews-v3-c9c4fb987-55qht.default                 Kubernetes     istiod-784bcfdd5d-mj66c     1.16.2
+
+# ----------------------------------------------------------------------------------------------------
+
+# 查看Pods,注意所有的READY都是2，意味着每个Pod中都包含两个容器,意味着istio自动注入是成功的
+[root@node-1 istio-1.16.2]# kubectl get pods
+NAME                             READY   STATUS    RESTARTS   AGE
+details-v1-5ffd6b64f7-d9w6z      2/2     Running   0          51s
+productpage-v1-979d4d9fc-njr26   2/2     Running   0          51s
+ratings-v1-5f9699cfdf-z8flq      2/2     Running   0          51s
+reviews-v1-569db879f5-jqz76      2/2     Running   0          51s
+reviews-v2-65c4dc6fdc-cbk6k      2/2     Running   0          51s
+reviews-v3-c9c4fb987-55qht       2/2     Running   0          51s
+
+# 查看容器名称和镜像
+[root@node-1 istio-1.16.2]# kubectl get pod details-v1-5ffd6b64f7-lccmd -o yaml | yq '.spec.containers[] | {.name: .image}'
+details: docker.io/istio/examples-bookinfo-details-v1:1.17.0
+istio-proxy: docker.io/istio/proxyv2:1.16.2
+```
+
 :::
 
-::: details （2）外部访问Bookinfo应用：使用 Gateway API
-
-Gateway API需要额外安装，以后再补充
+::: details （2）外部访问Bookinfo应用：使用 Gateway API（Gateway API需要额外安装，以后再补充）
 
 :::
 
@@ -8001,6 +8054,6 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 192.168.48.154
 ```
 
-
+![image-20230209125715425](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209125715425.png)
 
 :::
