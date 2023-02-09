@@ -7863,7 +7863,7 @@ data plane version: 1.16.2 (1 proxies)
 
 <br />
 
-### Bookinfo应用
+### Bookinfo应用：部署
 
 文档：[https://istio.io/latest/zh/docs/examples/bookinfo/](https://istio.io/latest/zh/docs/examples/bookinfo/)
 
