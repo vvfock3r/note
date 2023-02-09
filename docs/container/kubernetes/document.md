@@ -7943,7 +7943,7 @@ istio-proxy: docker.io/istio/proxyv2:1.16.2
 <title>Simple Bookstore App</title>
 
 # Service全部是ClusterIP类型，意味着在外部还不能直接访问我们的应用
-[root@node-1 istio-1.16.2]# kubectl get service 
+[root@node-1 istio-1.16.2]# kubectl get svc
 NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 details       ClusterIP   10.200.170.236   <none>        9080/TCP   5m34s
 kubernetes    ClusterIP   10.200.0.1       <none>        443/TCP    27d
@@ -7954,18 +7954,51 @@ reviews       ClusterIP   10.200.136.49    <none>        9080/TCP   5m34s
 
 :::
 
-::: details （2）外部访问Bookinfo应用：使用 K8S Gateway
+::: details （2）外部访问Bookinfo应用：使用 Gateway API
 
-```bash
-
-```
+Gateway API需要额外安装，以后再补充
 
 :::
 
 ::: details （3）外部访问Bookinfo应用：使用 Istio Gateway
 
 ```bash
+# 创建Gateway
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+gateway.networking.istio.io/bookinfo-gateway created
+virtualservice.networking.istio.io/bookinfo created
 
+# 查看Gateway
+[root@node-1 istio-1.16.2]# kubectl get gateway
+NAME               AGE
+bookinfo-gateway   12s
+
+# 确定 Ingress IP 和端口
+# 如果 EXTERNAL-IP 值已设置，说明环境正在使用外部负载均衡，可以用其为 Ingress Gateway 提供服务。
+# 如果 EXTERNAL-IP 值为 <none> （或持续显示<pending>），说明环境没有为 Ingress Gateway 提供外部负载均衡，无法使用 Ingress Gateway
+# 在这种情况下，您可以使用服务的 Node Port 访问网关
+[root@node-1 istio-1.16.2]# kubectl -n istio-system get svc istio-ingressgateway
+NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                                      AGE
+istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/TCP,80:30053/TCP,443:30511/TCP   19h
+
+# ------------------------------------------------------------------------------------------------------------------
+
+# 使用NodePort方式访问网关
+
+# Ingress HTTP Port
+[root@node-1 istio-1.16.2]# kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}' ; echo
+30053
+
+# Ingress HTTPS Port
+[root@node-1 istio-1.16.2]# kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}' ; echo
+30511
+
+# Ingress TCP Port(输出为空)
+[root@node-1 istio-1.16.2]# kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="tcp")].nodePort}' ; echo
+
+# Ingress Host
+[root@node-1 istio-1.16.2]# kubectl -n istio-system get po -l istio=ingressgateway -o jsonpath='{.items[0].status.hostIP}' ; echo
+192.168.48.154
 ```
 
 :::
