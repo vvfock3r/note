@@ -4215,7 +4215,7 @@ String: 大家好, 我是张三, 性别男, 年龄18
 
 :::
 
-::: details （3）fmt.printf示例1
+::: details （3）fmt.Printf：基础示例
 
 ```go
 package main
@@ -4312,7 +4312,7 @@ func main() {
 
 :::
 
-::: details （3）fmt.printf示例2：多进度条实现原理
+::: details （4）fmt.Printf：多进度条实现原理
 
 ```go
 package main
@@ -4338,6 +4338,54 @@ func main() {
 		time.Sleep(time.Millisecond * 500)
 	}
 }
+```
+
+:::
+
+::: details （5）fmt.Printf：动态指定宽度
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("|%-10s|\n", "Hello World!")    // 左对齐，并指定宽度为10
+	fmt.Printf("|%-*s|\n", 20, "Hello World!") // 左对齐，并动态指定宽度为20
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+|Hello World!|
+|Hello World!        |
+```
+
+:::
+
+::: details （6）fmt.Printf：位置引用
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("%s %s\n", "1", "2")             // 正常的使用方法
+	fmt.Printf("%[2]s %[1]s\n", "1", "2")       // [2]引用第二个变量, [1]引用第一个变量
+	fmt.Printf("%[2]s %[2]s %[2]s\n", "1", "2") // 多次引用没有问题
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+1 2
+2 1
+2 2 2
 ```
 
 :::
