@@ -8409,10 +8409,9 @@ Address: 10.200.24.124
 NAME      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 reviews   ClusterIP   10.200.24.124   <none>        9080/TCP   58m
 
-# 14.查看EndPoint,和reviews的3个版本的Pod IP正好能对应上
-[root@node-1 ~]# kubectl get ep reviews
-NAME      ENDPOINTS                                                     AGE
-reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   59m
+# 14.查看EndpointSlice,和reviews的3个版本的Pod IP正好能对应上
+[root@node-1 istio-1.16.2]# kubectl get endpointslices | grep review
+reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.217.120   60m
 ```
 
 :::
@@ -8473,10 +8472,9 @@ virtualservice.networking.istio.io/reviews created
 **3、如何实现的将流量导入到某一个或多个版本？**
 
 ```bash
-# 查看Endpoint依旧是3个版本Pod的IP
-[root@node-1 istio-1.16.2]# kubectl get ep reviews
-NAME      ENDPOINTS                                                     AGE
-reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   103m
+# 查看EndpointSlice，依旧是3个版本Pod的IP
+[root@node-1 istio-1.16.2]# kubectl get endpointslices | grep review
+reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.217.120   60m
 ```
 
 :::
