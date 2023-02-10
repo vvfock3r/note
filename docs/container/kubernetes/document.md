@@ -8493,7 +8493,49 @@ reviews                           ["reviews"]   4h10m
 
 :::
 
-::: details （4）
+::: details （4）配置请求路由：基于用户身份的路由
+
+文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/#route-based-on-user-identity](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/#route-based-on-user-identity)
+
+```bash
+# 查看YAML，注意下面两个route的层级关系
+[root@node-1 istio-1.16.2]# cat samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+    - reviews
+  http:
+  - match:
+    - headers:
+        end-user:        # productpage向reviews发请求时会添加请求头：end-user=<username>
+          exact: jason   # 当匹配到username是jason的时候
+    route:               # 路由到下面的DR：reviews v2
+    - destination:
+        host: reviews
+        subset: v2
+  - route:               # 其他请求则路由到reviews v1
+    - destination:
+        host: reviews
+        subset: v1
+
+# 部署
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml
+```
+
+当以jason用户（密码不用输入）登录的时候路由到reviews v2
+
+![image-20230210193435464](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210193435464.png)
+
+其他用户则路由到reviews v1
+
+![image-20230210193510419](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210193510419.png)
+
+我们可以看到reviews只有v1和v2版本可以收到请求
+
+![image-20230210193822305](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210193822305.png)
 
 :::
 
