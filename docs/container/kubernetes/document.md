@@ -8292,11 +8292,11 @@ x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
 下面来进行验证一下，并顺便看一下productpage的代码
 
 ```bash
-# 1.以root权限进入到productpage容器
-
-
-# 2.查看系统信息
-# cat /etc/os-release
+# 1.直接进入容器，并不是root权限，啥也干不了
+[root@node-1 ~]# kubectl exec -it productpage-v1-979d4d9fc-gmpb7  -- sh
+$ ps aux
+sh: 1: ps: not found
+$ cat /etc/os-release
 PRETTY_NAME="Debian GNU/Linux 10 (buster)"
 NAME="Debian GNU/Linux"
 VERSION_ID="10"
@@ -8307,21 +8307,40 @@ HOME_URL="https://www.debian.org/"
 SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
 
+# 2.以root权限进入到productpage容器
+[root@node-1 ~]# kubectl get deploy
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+details-v1       1/1     1            1           39m
+productpage-v1   1/1     1            1           39m
+ratings-v1       1/1     1            1           39m
+reviews-v1       1/1     1            1           39m
+reviews-v2       1/1     1            1           39m
+reviews-v3       1/1     1            1           39m
+[root@node-1 ~]# kubectl edit deploy productpage-v1
+    spec:
+      containers:
+      - image: docker.io/istio/examples-bookinfo-productpage-v1:1.17.0
+        ...
+        securityContext:
+          runAsUser: 1000  # 删掉这一行
+[root@node-1 ~]# kubectl exec -it productpage-v1-578b8d4595-75crm  -- sh
+# 
+
 # 3.解决方向键和Tab键不管用的问题，输入bash后就可以解决问题
 # bash
-root@productpage-v1-578b8d4595-gtlmr:/opt/microservices# 
+root@productpage-v1-578b8d4595-75crm:/opt/microservices#
 
 # 4.更新系统 和 安装常用软件包
 apt upgrade # 更新源
 apt update # 更新软件包
-apt-get install vim # vim
-apt install procps  # ps
+apt-get install -y vim # vim
+apt install -y procps  # ps
 apt install -y inetutils-ping # ping
-apt-get install dnsutils  # nslookup
+apt-get install -y dnsutils  # nslookup
 alias ll='ls -l --color'
 
 # 5.查看进程
-root@productpage-v1-578b8d4595-gtlmr:~# ps aux
+root@productpage-v1-578b8d4595-75crm:/opt/microservices# ps aux
 USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 root         1  0.0  0.3  43004 30536 ?        Ss   14:18   0:00 python productpage.py 9080
 root      1060  0.0  0.0   2376   668 pts/1    Ss+  14:23   0:00 sh
@@ -8331,16 +8350,93 @@ root      2693  1.4  0.3 190556 30928 ?        Sl   14:46   0:13 /usr/local/bin/
 root      3884  0.0  0.0   9380  1520 pts/0    R+   15:01   0:00 ps aux
 
 # 6.查看代码
-cd /opt/microservices
+root@productpage-v1-578b8d4595-75crm:/opt/microservices# cd /opt/microservices
+root@productpage-v1-578b8d4595-75crm:/opt/microservices# ll
+total 24
+drwxr-xr-x 2 root root    79 Sep  6 15:35 __pycache__
+-rwxr-xr-x 1 root root 15365 Sep  2 19:49 productpage.py
+-rw-r--r-- 1 root root   522 Sep  5 15:03 requirements.txt
+drwxr-xr-x 3 root root    44 Sep  6 15:35 static
+drwxr-xr-x 2 root root    48 Sep  6 15:35 templates
+-rw-r--r-- 1 root root  3218 Sep  2 19:49 test_productpage.py
 
+# 7.看一下路由处理函数
+@app.route('/productpage')
+@trace()
+def front():
+    product_id = 0  # TODO: replace default value
+    headers = getForwardHeaders(request)
+    user = session.get('user', '')
+    product = getProduct(product_id)
+    detailsStatus, details = getProductDetails(product_id, headers)
+
+    if flood_factor > 0:
+        floodReviews(product_id, headers)
+
+    reviewsStatus, reviews = getProductReviews(product_id, headers)
+    return render_template(
+        'productpage.html',
+        detailsStatus=detailsStatus,
+        reviewsStatus=reviewsStatus,
+        product=product,
+        details=details,
+        reviews=reviews,
+        user=user)
+
+# 8.看一下向reviews发请求的代码
+def getProductReviews(product_id, headers):
+    # Do not remove. Bug introduced explicitly for illustration in fault injection task
+    # TODO: Figure out how to achieve the same effect using Envoy retries/timeouts
+    for _ in range(2):
+        try:
+            url = reviews['name'] + "/" + reviews['endpoint'] + "/" + str(product_id)
+            res = requests.get(url, headers=headers, timeout=3.0)
+        except BaseException:
+            res = None
+        if res and res.status_code == 200:
+            return 200, res.json()
+    status = res.status_code if res is not None and res.status_code else 500
+    return status, {'error': 'Sorry, product reviews are currently unavailable for this book.'}
+
+# 9.reviews字典存储了url
+reviews = {
+    "name": "http://{0}{1}:9080".format(reviewsHostname, servicesDomain),
+    "endpoint": "reviews",
+    "children": [ratings]
+}
+
+# 10.reviewsHostname是真正的URL
+reviewsHostname = "reviews" if (os.environ.get("REVIEWS_HOSTNAME") is None) else os.environ.get("REVIEWS_HOSTNAME")
+
+# 11.打开Python REPL验证一下
+>>> import os
+>>> reviewsHostname = "reviews" if (os.environ.get("REVIEWS_HOSTNAME") is None) else os.environ.get("REVIEWS_HOSTNAME")
+>>> reviewsHostname
+'reviews'
+
+# 12.解析一个reviews
+root@productpage-v1-578b8d4595-75crm:/opt/microservices# nslookup reviews
+Server:         10.200.0.10
+Address:        10.200.0.10#53
+
+Name:   reviews.default.svc.cluster.local
+Address: 10.200.24.124
+
+# 13.查看Service
+[root@node-1 ~]# kubectl get svc reviews
+NAME      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+reviews   ClusterIP   10.200.24.124   <none>        9080/TCP   58m
+
+# 14.查看EndPoint,和reviews的3个版本的Pod IP正好能对应上
+[root@node-1 ~]# kubectl get ep reviews
+NAME      ENDPOINTS                                                     AGE
+reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   59m
 ```
 
 :::
 
-::: details （1）配置请求路由：
+::: details （3）配置请求路由：
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
-
-
 
 :::
