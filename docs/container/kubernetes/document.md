@@ -7873,9 +7873,7 @@ data plane version: 1.16.2 (1 proxies)
 
 文档：[https://istio.io/latest/zh/docs/examples/bookinfo/](https://istio.io/latest/zh/docs/examples/bookinfo/)
 
-::: details （1）部署Bookinfo应用
-
-**部署前记录信息**
+::: details （1）部署前记录信息
 
 ```bash
 # 查看Proxy个数，这里是1个
@@ -7922,7 +7920,9 @@ spec:
           runAsUser: 1000
 ```
 
-**部署**
+:::
+
+::: details （2）部署Bookinfo应用
 
 ```bash
 # 为default命名空间打上标签 istio-injection=enabled，Istio会默认自动注入Sidecar
@@ -7975,7 +7975,9 @@ ratings       ClusterIP   10.200.24.209    <none>        9080/TCP   5m34s
 reviews       ClusterIP   10.200.136.49    <none>        9080/TCP   5m34s
 ```
 
-**部署前后对比**
+:::
+
+::: details （3）部署前后对比
 
 ```bash
 # Proxy数量变成了7个
@@ -8015,11 +8017,11 @@ istio-proxy: docker.io/istio/proxyv2:1.16.2
 
 :::
 
-::: details （2）外部访问Bookinfo应用：使用 Gateway API（Gateway API需要额外安装，以后再补充）
+::: details （4）外部访问Bookinfo应用：使用 Gateway API（Gateway API需要额外安装，以后再补充）
 
 :::
 
-::: details （3）外部访问Bookinfo应用：使用 Istio Gateway
+::: details （5）外部访问Bookinfo应用：使用 Istio Gateway
 
 ```bash
 # 创建Gateway
@@ -8064,7 +8066,7 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 
 :::
 
-::: details （4）Istio Gateway：定义服务版本
+::: details （6）Istio Gateway：定义服务版本
 
 ```bash
 # 先查看一下，是空的
