@@ -8171,9 +8171,7 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
 
-::: details （1）流量是如何转发的
-
-**1、网关 ---> productpage服务**
+::: details （1）流量是如何转发的：网关 ---> productpage服务
 
 ```bash
 # 查看网关
@@ -8256,18 +8254,23 @@ server: istio-envoy
 date: Thu, 09 Feb 2023 14:01:16 GMT
 x-envoy-upstream-service-time: 46
 x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
+
+# 或者也可以访问对应Endpoint地址
+[root@node-1 istio-1.16.2]# curl -I 10.100.217.74:9080/productpage
+HTTP/1.1 200 OK
+content-type: text/html; charset=utf-8
+content-length: 1683
+server: istio-envoy
+date: Fri, 10 Feb 2023 06:08:58 GMT
+x-envoy-upstream-service-time: 2
+x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
 ```
 
 ![image-20230209220312776](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230209220312776.png)
 
-**2、productpage ---> reviews的三个版本**
+:::
 
-* 这一部分和Istio没有关系
-* productpage通过K8S DNS名称访问到reviews的Service
-* Service Endpoint绑定了3个版本的reviews
-* 所以就能同时访问3个版本的reviews服务
-
-下面来进行验证一下，并顺便看一下productpage的代码
+::: details （2）流量是如何转发的：productpage ---> reviews的三个版本
 
 ```bash
 # 1.直接进入容器，并不是root权限，啥也干不了
@@ -8414,7 +8417,7 @@ reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   59m
 
 :::
 
-::: details （2）配置请求路由：将流量路由到指定版本
+::: details （3）配置请求路由：将流量路由到指定版本
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
 
