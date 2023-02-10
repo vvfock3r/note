@@ -8177,7 +8177,9 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 ### Bookinfo应用：流量管理
 
-文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
+流量管理文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
+
+流量管理最佳实践：[https://istio.io/latest/zh/docs/ops/best-practices/traffic-management/](https://istio.io/latest/zh/docs/ops/best-practices/traffic-management/)
 
 ::: details （1）流量是如何转发的：网关 ---> productpage服务
 
