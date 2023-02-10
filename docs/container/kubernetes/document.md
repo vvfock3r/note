@@ -8106,7 +8106,9 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 
 ### Bookinfo应用：可观察性
 
-文档：[https://istio.io/latest/zh/docs/tasks/observability/](https://istio.io/latest/zh/docs/tasks/observability/)
+可观察性文档：[https://istio.io/latest/zh/docs/tasks/observability/](https://istio.io/latest/zh/docs/tasks/observability/)
+
+可观察性最佳实践：[https://istio.io/latest/zh/docs/ops/best-practices/observability/](https://istio.io/latest/zh/docs/ops/best-practices/observability/)
 
 ::: details （1）集成Prometheus
 
