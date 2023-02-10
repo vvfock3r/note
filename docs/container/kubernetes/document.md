@@ -8479,6 +8479,10 @@ virtualservice.networking.istio.io/reviews created
 reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.217.120   60m
 
 # 原因还是在于VirtualService
+[root@node-1 istio-1.16.2]# kubectl get vs
+NAME       GATEWAYS               HOSTS         AGE
+bookinfo   ["bookinfo-gateway"]   ["*"]         29h
+reviews                           ["reviews"]   4h10m
 ```
 
 :::
