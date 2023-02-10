@@ -8066,31 +8066,6 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 
 :::
 
-::: details （6）Istio Gateway：定义服务版本
-
-```bash
-# 先查看一下，是空的
-[root@node-1 istio-1.16.2]# kubectl get destinationrules 
-No resources found in default namespace.
-
-# 部署
-[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
-destinationrule.networking.istio.io/productpage created
-destinationrule.networking.istio.io/reviews created
-destinationrule.networking.istio.io/ratings created
-destinationrule.networking.istio.io/details created
-
-# 再次查看
-[root@node-1 istio-1.16.2]# kubectl get destinationrules 
-NAME          HOST          AGE
-details       details       2s
-productpage   productpage   2s
-ratings       ratings       2s
-reviews       reviews       2s
-```
-
-:::
-
 <br />
 
 ### Bookinfo应用：可观察性
@@ -8435,8 +8410,63 @@ reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   59m
 
 :::
 
-::: details （3）配置请求路由：
+::: details （3）配置请求路由：将流量路由到指定版本
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
 
+**1、定义服务版本：DestinationRule中定义subset**
+
+```bash
+# 先查看一下，是空的
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+No resources found in default namespace.
+
+# 部署
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
+destinationrule.networking.istio.io/productpage created
+destinationrule.networking.istio.io/reviews created
+destinationrule.networking.istio.io/ratings created
+destinationrule.networking.istio.io/details created
+
+# 再次查看
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+NAME          HOST          AGE
+details       details       2s
+productpage   productpage   2s
+ratings       ratings       2s
+reviews       reviews       2s
+```
+
+**2、将流量全部导入到reviews v2版本**
+
+```bash
+[root@node-1 istio-1.16.2]# cat > reviews-v2.yaml << EOF
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+  - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v2
+EOF
+
+[root@node-1 istio-1.16.2]# kubectl apply -f reviews-v2.yaml 
+virtualservice.networking.istio.io/reviews created
+```
+
+![image-20230210124745301](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210124745301.png)
+
+![image-20230210125105716](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210125105716.png)
+
 :::
+
+::: details （4）
+
+:::
+
+### 1
