@@ -8463,6 +8463,15 @@ virtualservice.networking.istio.io/reviews created
 
 ![image-20230210125105716](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210125105716.png)
 
+**3、如何实现的将流量导入到某一个或多个版本？**
+
+```bash
+# 查看Endpoint依旧是3个版本Pod的IP
+[root@node-1 istio-1.16.2]# kubectl get ep reviews
+NAME      ENDPOINTS                                                     AGE
+reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   103m
+```
+
 :::
 
 ::: details （4）
