@@ -8047,6 +8047,8 @@ destinationrules                  dr           networking.istio.io/v1beta1      
 [root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|ServiceEntry'
 NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
 serviceentries                    se           networking.istio.io/v1beta1            true         ServiceEntry
+
+# 分析：他们都是区分Namespace的
 ```
 
 :::
