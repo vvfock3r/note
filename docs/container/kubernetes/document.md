@@ -8017,11 +8017,37 @@ istio-proxy: docker.io/istio/proxyv2:1.16.2
 
 :::
 
-::: details （4）外部访问Bookinfo应用：使用 Gateway API（Gateway API需要额外安装，以后再补充）
+::: details （4）查看API短名称
+
+```bash
+# 查看Gateway
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|gateway'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+gateways                          gw           networking.istio.io/v1beta1            true         Gateway
+
+# 查看虚拟服务
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|VirtualService'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+virtualservices                   vs           networking.istio.io/v1beta1            true         VirtualService
+
+# 查看目标规则
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|DestinationRule'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+destinationrules                  dr           networking.istio.io/v1beta1            true         DestinationRule
+
+# 查看ServiceEntry
+[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|ServiceEntry'
+NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
+serviceentries                    se           networking.istio.io/v1beta1            true         ServiceEntry
+```
 
 :::
 
-::: details （5）外部访问Bookinfo应用：使用 Istio Gateway
+::: details （5）外部访问Bookinfo应用：使用 Gateway API（Gateway API需要额外安装，以后再补充）
+
+:::
+
+::: details （6）外部访问Bookinfo应用：使用 Istio Gateway
 
 ```bash
 # 创建Gateway
@@ -8145,30 +8171,7 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
 
-::: details （1）查看API短名称
-
-```bash
-# 查看Gateway
-[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|gateway'
-NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
-gateways                          gw           networking.istio.io/v1beta1            true         Gateway
-
-# 查看虚拟服务
-[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|VirtualService'
-NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
-virtualservices                   vs           networking.istio.io/v1beta1            true         VirtualService
-
-# 查看目标规则
-[root@node-1 istio-1.16.2]# kubectl api-resources | grep -Ei '\bNAMESPACED\b|DestinationRule'
-NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
-destinationrules                  dr           networking.istio.io/v1beta1            true         DestinationRule
-
-# 后面我们就使用短名称gw、vs和dr
-```
-
-:::
-
-::: details （2）流量是如何转发的
+::: details （1）流量是如何转发的
 
 **1、网关 ---> productpage服务**
 
@@ -8308,6 +8311,7 @@ root@productpage-v1-578b8d4595-75crm:/opt/microservices#
 # 4.更新系统 和 安装常用软件包
 apt upgrade # 更新源
 apt update # 更新软件包
+apt install -y curl  # curl
 apt-get install -y vim # vim
 apt install -y procps  # ps
 apt install -y inetutils-ping # ping
@@ -8410,7 +8414,7 @@ reviews   10.100.217.119:9080,10.100.217.120:9080,10.100.217.125:9080   59m
 
 :::
 
-::: details （3）配置请求路由：将流量路由到指定版本
+::: details （2）配置请求路由：将流量路由到指定版本
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
 
