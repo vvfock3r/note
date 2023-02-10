@@ -8474,9 +8474,11 @@ virtualservice.networking.istio.io/reviews created
 **3、如何实现的将流量导入到某一个或多个版本？**
 
 ```bash
-# 查看EndpointSlice，依旧是3个版本Pod的IP
+# 查看EndpointSlice，依旧是3个版本Pod的IP，说明并没有修改EndpointSlice
 [root@node-1 istio-1.16.2]# kubectl get endpointslices | grep review
 reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.217.120   60m
+
+# 原因还是在于VirtualService
 ```
 
 :::
