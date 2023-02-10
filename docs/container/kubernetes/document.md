@@ -8,6 +8,8 @@ API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23
 
 Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
 
+版本更新日志：[https://github.com/kubernetes/kubernetes/tree/master/CHANGELOG](https://github.com/kubernetes/kubernetes/tree/master/CHANGELOG)
+
 <br />
 
 ## 组件说明
