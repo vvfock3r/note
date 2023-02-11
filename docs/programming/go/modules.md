@@ -54,3 +54,4 @@ sidebar: off
   * [casbin](https://jinhui.dev/programming/go/modules/casbin.html)：访问控制模型，比如RBAC
   * [validator](https://jinhui.dev/programming/go/modules/validator.html)：验证器
   * [rate](https://jinhui.dev/programming/go/modules/rate.html)：限速器
+  * [otp](https://jinhui.dev/programming/go/modules/otp.html)：双因素认证
