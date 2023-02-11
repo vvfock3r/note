@@ -12,13 +12,12 @@ sidebar: off
 **测试环境**
 
 * 系统：Windows 10
-* 版本：Go 1.19.3
+* 版本：Go 1.19.5
 
 **模块列表**
 
 * [time](https://jinhui.dev/programming/go/modules/time.html)：时间
 * [sort](https://jinhui.dev/programming/go/modules/sort.html)：排序
-* [json](https://jinhui.dev/programming/go/modules/json.html)：JSON序列化
 * [regexp](https://jinhui.dev/programming/go/modules/regexp.html)：正则表达式
 * [signal](https://jinhui.dev/programming/go/modules/signal.html)：系统信号
 * [math/rand](https://jinhui.dev/programming/go/modules/math-rand.html)：随机数
@@ -26,6 +25,9 @@ sidebar: off
 * [viper](https://jinhui.dev/programming/go/modules/viper.html)：配置读写
 * [gorm](https://jinhui.dev/programming/go/modules/gorm.html)：数据库
 * [cron](https://jinhui.dev/programming/go/modules/cron.html)：计划任务
+* 编码和序列化
+  * [json](https://jinhui.dev/programming/go/modules/json.html)：JSON序列化
+  * [encoding/base64](https://jinhui.dev/programming/go/modules/encoding-base64.html)：base64编码
 * 文件
 
   * [air](https://jinhui.dev/programming/go/modules/air.html)：实时重载
