@@ -214,11 +214,16 @@ type GenerateOpts struct {
 	Algorithm otp.Algorithm   // 用于HMAC的算法,默认为SHA1	
 	Rand io.Reader            // Reader to use for generating TOTP Key.
 }
+
+// 简单理解一下
+// Issuer和AccountName组合起来可以标识一个平台的用户
+// Secret标识该用户的密钥
+// 若不同用户拥有相同的密钥，则在手机端显示的动态口令也一致
 ```
 
 :::
 
-::: details （2）使用固定的Secret，避免每次重启程序会生成随机的Secret，导致验证器失效
+::: details （2）仅用于测试环境：使用固定的Secret，避免每次重启程序会生成随机的Secret，导致验证器失效
 
 ```go
 package main
