@@ -267,3 +267,82 @@ jq
 ```
 
 :::
+
+::: details （4）查询某个索引下的数据
+
+```bash
+curl \
+  -s \
+  -X POST 'http://localhost:7700/indexes/movies/search' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer ww3fMuYE2xfJyB5e' \
+  --data-binary '{ "q": "botman", "limit": 2 }' | \
+jq
+
+{
+  "hits": [
+    {
+      "id": 268,
+      "title": "Batman",
+      "overview": "Batman must face his most ruthless nemesis when a deformed madman calling himself \"The Joker\" seizes control of Gotham's criminal underworld.",
+      "genres": [
+        "Fantasy",
+        "Action"
+      ],
+      "poster": "https://image.tmdb.org/t/p/w500/hztwplhxe2X9sq24CIcvkUy2DHZ.jpg",
+      "release_date": 614563200
+    },
+    {
+      "id": 272,
+      "title": "Batman Begins",
+      "overview": "Driven by tragedy, billionaire Bruce Wayne dedicates his life to uncovering and defeating the corruption that plagues his home, Gotham City.  Unable to work within the system, he instead creates a new identity, a symbol of fear for the criminal underworld - The Batman.",
+      "genres": [
+        "Action",
+        "Crime",
+        "Drama"
+      ],
+      "poster": "https://image.tmdb.org/t/p/w500/1P3ZyEq02wcTMd3iE4ebtLvncvH.jpg",
+      "release_date": 1118361600
+    }
+  ],
+  "query": "botman",
+  "processingTimeMs": 1,
+  "limit": 2,
+  "offset": 0,
+  "estimatedTotalHits": 70
+}
+```
+
+:::
+
+::: details （5）限制返回指定字段
+
+```bash
+curl \
+  -s \
+  -X POST 'http://localhost:7700/indexes/movies/search' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer ww3fMuYE2xfJyB5e' \
+  --data-binary '{ "q": "botman", "limit": 2, "attributesToRetrieve":["id", "title"] }' | \
+jq
+
+{
+  "hits": [
+    {
+      "id": 268,
+      "title": "Batman"
+    },
+    {
+      "id": 272,
+      "title": "Batman Begins"
+    }
+  ],
+  "query": "botman",
+  "processingTimeMs": 1,
+  "limit": 2,
+  "offset": 0,
+  "estimatedTotalHits": 70
+}
+```
+
+:::
