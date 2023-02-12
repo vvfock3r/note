@@ -218,7 +218,7 @@ echo
 # 同一数据可以多次导入
 
 # 4、通过taskUid查询导入结果
-[root@node-1 ~]# curl -s -X GET 'http://localhost:7700/tasks/24' -H 'Authorization: Bearer ww3fMuYE2xfJyB5e'  | jq
+[root@node-1 ~]# curl -s -H 'Authorization: Bearer ww3fMuYE2xfJyB5e' -X GET 'http://localhost:7700/tasks/24' | jq
 {
   "uid": 24,
   "indexUid": "movies",
@@ -579,4 +579,6 @@ D:\application\GoLand\example>go run main.go
 
   在v1.0.0版本中不支持多索引搜索，不过在 [公开的路线图](https://roadmap.meilisearch.com/) 中可以看到多索引搜索已经在开发当中
 
-* 删除所有文档后如何回收空间？
+* 如何回收磁盘空间
+
+  * 直接将索引删除即可（只删除所有文档是不会回收磁盘空间的）
