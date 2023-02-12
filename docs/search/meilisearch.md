@@ -570,3 +570,11 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+<br />
+
+## 想法记录
+
+* 多索引搜索
+
+  在v1.0.0版本中不支持多索引搜索，不过在 [公开的路线图](https://roadmap.meilisearch.com/) 中可以看到多索引搜索已经在开发当中
