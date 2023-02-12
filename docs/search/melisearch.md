@@ -51,13 +51,6 @@ API文档：[https://docs.meilisearch.com/reference/api/overview.html](https://d
 # 下载JSON文件
 [root@node-1 ~]# wget -c https://docs.meilisearch.com/movies.json 
 
-[root@node-1 ~]# ls -lh movies.json 
--rw-rw-rw- 1 root root 16M Feb 11 21:25 movies.json
-
-# 导入数据前看一下存储目录大小
-[root@node-1 ~]# du -sh /opt/meili_data/
-96K     /opt/meili_data/
-
 # 导入数据,注意Authorization中填写启动服务时指定的MASTER_KEY
 [root@node-1 ~]# curl \
   -X POST 'http://localhost:7700/indexes/movies/documents?primaryKey=id' \
@@ -67,10 +60,6 @@ API文档：[https://docs.meilisearch.com/reference/api/overview.html](https://d
 echo
 
 {"taskUid":0,"indexUid":"movies","status":"enqueued","type":"documentAdditionOrUpdate","enqueuedAt":"2023-02-11T17:04:06.739852519Z"}
-
-# 导入数据后再看一下存储目录大小
-[root@node-1 ~]# du -sh /opt/meili_data/
-328M    /opt/meili_data/
 ```
 
 :::
@@ -190,6 +179,66 @@ jq
   "limit": 20,
   "total": 2
 }
+```
+
+:::
+
+<br />
+
+## 导入数据
+
+文档：[https://docs.meilisearch.com/reference/api/documents.html](https://docs.meilisearch.com/reference/api/documents.html)
+
+::: details （1）curl 导入数据
+
+```bash
+# 1、下载JSON文件
+[root@node-1 ~]# wget -c https://docs.meilisearch.com/movies.json 
+
+[root@node-1 ~]# ls -lh movies.json 
+-rw-rw-rw- 1 root root 16M Feb 11 21:25 movies.json
+
+# 2、导入数据前看一下存储目录大小
+[root@node-1 ~]# du -sh /opt/meili_data/
+96K     /opt/meili_data/
+
+# 3、导入数据,注意Authorization中填写启动服务时指定的MASTER_KEY
+[root@node-1 ~]# curl \
+  -X POST 'http://localhost:7700/indexes/movies/documents?primaryKey=id' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer ww3fMuYE2xfJyB5e' \
+  --data-binary @movies.json ; \
+echo
+
+{"taskUid":0,"indexUid":"movies","status":"enqueued","type":"documentAdditionOrUpdate","enqueuedAt":"2023-02-11T17:04:06.739852519Z"}
+
+# 导入是异步的，status需要重点关注一下
+# 如果status字段的值为enqueued或processing，您所要做的就是稍等片刻，然后再次检查
+# 如果status字段的值succeeded代表导入成功
+# 同一数据可以多次导入
+
+# 4、通过taskUid查询导入结果
+[root@node-1 ~]# curl -s -X GET 'http://localhost:7700/tasks/24' -H 'Authorization: Bearer ww3fMuYE2xfJyB5e'  | jq
+{
+  "uid": 24,
+  "indexUid": "movies",
+  "status": "succeeded",
+  "type": "documentAdditionOrUpdate",
+  "canceledBy": null,
+  "details": {
+    "receivedDocuments": 31944,
+    "indexedDocuments": 31944
+  },
+  "error": null,
+  "duration": "PT0.324941231S",
+  "enqueuedAt": "2023-02-12T07:09:07.586970514Z",
+  "startedAt": "2023-02-12T07:09:07.595216794Z",
+  "finishedAt": "2023-02-12T07:09:07.920158025Z"
+}
+
+# 5、导入数据后再看一下存储目录大小
+[root@node-1 ~]# du -sh /opt/meili_data/
+328M    /opt/meili_data/
 ```
 
 :::
@@ -343,6 +392,95 @@ jq
   "offset": 0,
   "estimatedTotalHits": 70
 }
+```
+
+:::
+
+<br />
+
+## GO SDK
+
+::: details （1）导入数据
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"github.com/meilisearch/meilisearch-go"
+	"io"
+	"log"
+	"os"
+	"time"
+)
+
+func main() {
+	// 实例化客户端
+	client := meilisearch.NewClient(meilisearch.ClientConfig{
+		Host:   "http://192.168.48.151:7700",
+		APIKey: "ww3fMuYE2xfJyB5e",
+	})
+
+	// 打开文件
+	f, err := os.Open("movies.json")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	// 读取文件
+	data, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+
+	// JSON反序列化
+	var movies []map[string]any
+	err = json.Unmarshal(data, &movies)
+	if err != nil {
+		panic(err)
+	}
+
+	// 添加文档
+	taskInfo, err := client.Index("movies").AddDocuments(movies)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("文档添加成功")
+
+	// 查询任务状态
+Loop:
+	for {
+		// 查询任务状态,第一次其实不需要查，以后再优化
+		task, err := client.GetTask(taskInfo.TaskUID)
+		if err != nil {
+			panic(err)
+		}
+
+		switch task.Status {
+		// 如果任务正在排队或者正在处理中，则休眠几秒再进行查询
+		case meilisearch.TaskStatusEnqueued, meilisearch.TaskStatusProcessing:
+			log.Println("文档正在处理")
+			time.Sleep(time.Second)
+			continue
+		case meilisearch.TaskStatusSucceeded:
+			log.Println("文档处理成功")
+			break Loop
+		case meilisearch.TaskStatusFailed, meilisearch.TaskStatusUnknown:
+			log.Println("文档处理失败")
+			break Loop
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023/02/12 15:46:19 文档添加成功
+2023/02/12 15:46:19 文档正在处理
+2023/02/12 15:46:20 文档处理成功
 ```
 
 :::
