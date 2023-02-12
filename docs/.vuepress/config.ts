@@ -77,7 +77,7 @@ const navbar = [
             {
                 text: '可视化',
                 children: [
-                    {text: '浏览器原生绘图', link: '/frontend/browser-native-drawing.html'},
+                    {text: '浏览器原生绘图', link: '/frontend/Browser-Native-Drawing.html'},
                     {text: 'Apache Echarts', link: '/frontend/echarts'},
                 ]
             },
