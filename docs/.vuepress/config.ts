@@ -39,11 +39,11 @@ const navbar = [
             {
                 text: '容器编排',
                 children: [
-                    {text: 'Kubernetes: 部署', link: '/container/kubernetes/deploy.html'},
-                    {text: 'Kubernetes: 使用', link: '/container/kubernetes/document.html'},
-					{text: 'Kubernetes: 扩展', link: '/container/kubernetes/extend.html'},
-					{text: 'Kubernetes: 源码', link: '/container/kubernetes/source.html'},
-                    {text: 'Kubernetes: Etcd', link: '/container/kubernetes/etcd'},
+                    {text: 'Kubernetes: 部署', link: '/kubernetes/deploy.html'},
+                    {text: 'Kubernetes: 使用', link: '/kubernetes/document.html'},
+					{text: 'Kubernetes: 扩展', link: '/kubernetes/extend.html'},
+					{text: 'Kubernetes: 源码', link: '/kubernetes/source.html'},
+                    {text: 'Kubernetes: Etcd', link: '/kubernetes/etcd.html'},
                 ]
             },
             {
