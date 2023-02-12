@@ -62,23 +62,23 @@ const navbar = [
             {
                 text: '前端基础',
                 children: [
-                    {text: 'CSS', link: '/coding/frontend/css'},
-                    {text: 'JavaScript', link: '/coding/frontend/javascript'},
+                    {text: 'CSS', link: '/frontend/css'},
+                    {text: 'JavaScript', link: '/frontend/javascript'},
                 ]
             },
             {
                 text: '工程化',
                 children: [
-                    {text: 'Vue', link: '/coding/frontend/vue'},
-                    {text: 'Node包管理器和Vite脚手架', link: '/coding/frontend/node-package-manager'},
-                    {text: 'TypeScript核心语法', link: '/coding/frontend/typeScript'},
+                    {text: 'Vue', link: '/frontend/vue'},
+                    {text: 'Node包管理器和Vite脚手架', link: '/frontend/node-package-manager'},
+                    {text: 'TypeScript核心语法', link: '/frontend/typeScript'},
                 ]
             },
             {
                 text: '可视化',
                 children: [
-                    {text: '浏览器原生绘图', link: '/coding/frontend/browser-native-drawing.html'},
-                    {text: 'Apache Echarts', link: '/coding/frontend/echarts'},
+                    {text: '浏览器原生绘图', link: '/frontend/browser-native-drawing.html'},
+                    {text: 'Apache Echarts', link: '/frontend/echarts'},
                 ]
             },
             {
@@ -95,14 +95,14 @@ const navbar = [
 					{text: 'Go实用模块', link: '/go/modules.html'},
                 ]
             },
-
-            {
-                text: '其他',
-                children: [
-                    {text: 'Web安全入门', link: '/coding/other/web-security'},
-                    {text: '通用算法入门', link: '/coding/other/algorithm'},
-                ]
-            },
+        ]
+    },
+	{
+        text: 'Undefined',
+        children: [
+            {text: 'Web安全入门', link: '/undefined/web-security'},
+            {text: '通用算法入门', link: '/undefined/algorithm'},
+			{text: 'Hyper-V', link: '/undefined/hyper-v'},
         ]
     },
     {text: 'Github', link: 'https://github.com/VVFock3r/Notes'},
