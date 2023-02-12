@@ -398,9 +398,17 @@ jq
 
 <br />
 
-## GO SDK
+## 前端集成
 
-::: details （1）安装
+文档：[https://docs.meilisearch.com/learn/getting_started/quick_start.html#front-end-integration](https://docs.meilisearch.com/learn/getting_started/quick_start.html#front-end-integration)
+
+Github：[https://github.com/meilisearch/instant-meilisearch](https://github.com/meilisearch/instant-meilisearch)
+
+<br />
+
+## 后端集成
+
+::: details （1）安装GO模块
 
 ```bash
 D:\application\GoLand\example>go get github.com/meilisearch/meilisearch-go
