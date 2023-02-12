@@ -400,7 +400,23 @@ jq
 
 ## GO SDK
 
-::: details （1）导入数据
+::: details （1）安装
+
+```bash
+D:\application\GoLand\example>go get github.com/meilisearch/meilisearch-go
+go: added github.com/andybalholm/brotli v1.0.4
+go: added github.com/golang-jwt/jwt/v4 v4.4.3
+go: added github.com/josharian/intern v1.0.0
+go: added github.com/klauspost/compress v1.15.6
+go: added github.com/mailru/easyjson v0.7.7
+go: added github.com/meilisearch/meilisearch-go v0.23.0
+go: added github.com/valyala/bytebufferpool v1.0.0
+go: added github.com/valyala/fasthttp v1.37.1-0.20220607072126-8a320890c08d
+```
+
+:::
+
+::: details （2）导入数据
 
 ```go
 package main
@@ -481,6 +497,68 @@ D:\application\GoLand\example>go run main.go
 2023/02/12 15:46:19 文档添加成功
 2023/02/12 15:46:19 文档正在处理
 2023/02/12 15:46:20 文档处理成功
+```
+
+:::
+
+::: details （3）全文搜索
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/meilisearch/meilisearch-go"
+)
+
+func main() {
+	// 实例化客户端
+	client := meilisearch.NewClient(meilisearch.ClientConfig{
+		Host:   "http://192.168.48.151:7700",
+		APIKey: "ww3fMuYE2xfJyB5e",
+	})
+
+	// 查询,限制返回结果为1个
+	resp, err := client.Index("movies").Search("botman", &meilisearch.SearchRequest{
+		Limit: 1,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// JSON序列化
+	data, err := json.MarshalIndent(resp, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(data))
+}
+```
+
+输出结果
+
+```json
+D:\application\GoLand\example>go run main.go
+{                 
+  "hits": [
+    {
+      "genres": [ 
+        "Fantasy",
+        "Action"  
+      ],          
+      "id": 268,  
+      "overview": "Batman must face his most ruthless nemesis when a deformed madman calling himself \"The Joker\" seizes control of Gotham's criminal underworld.",
+      "poster": "https://image.tmdb.org/t/p/w500/hztwplhxe2X9sq24CIcvkUy2DHZ.jpg",
+      "release_date": 614563200,
+      "title": "Batman"
+    }
+  ],
+  "estimatedTotalHits": 70,
+  "limit": 1,
+  "processingTimeMs": 1,
+  "query": "botman"
+}
 ```
 
 :::
