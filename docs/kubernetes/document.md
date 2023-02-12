@@ -3991,7 +3991,7 @@ drwx------    2 root     root             6 Jan  8 10:44 vmware-root_793-4248746
 
 **准备工作**
 
-安装NFS Server及依赖：[https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
+安装NFS Server及依赖：[https://jinhui.dev/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
 
 **测试NFS**
 
@@ -4697,7 +4697,7 @@ Events:
 
 安装依赖：
 
-* [https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/container/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
+* [https://jinhui.dev/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8](https://jinhui.dev/kubernetes/deploy/binary.html#_5-nfs%E5%AD%98%E5%82%A8)
 
 :::
 
@@ -6190,7 +6190,7 @@ eyJhbGciOiJSUzI1NiIsImtpZCI6Ik40SHBLeTUxMUhheVJSM2lzWklkeXlDS1IxUklnSkVFUU9NLTVV
 
 * `PAYLOAD`部分是我们最主要的数据，可以看到有很多的字段，其中大部分都是JWT预定义的字段，比如`exp`用于指定token过期时间，
 
-  关于这部分可以参考：[https://jinhui.dev/coding/backend/Modules-for-Go.html#payload](https://jinhui.dev/coding/backend/Modules-for-Go.html#payload)
+  关于这部分可以参考：[https://jinhui.dev/go/modules/jwt.html#payload](https://jinhui.dev/go/modules/jwt.html#payload)
 
 * `PAYLOAD`中有一个`"sub": "system:serviceaccount:kube-system:default"`，看起来像是和角色相关的
 
