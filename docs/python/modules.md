@@ -121,7 +121,7 @@
     </tr>            
     <tr>
         <td></td>
-        <td><a href="https://jinhui.dev/backend/learned/Python-argparse.html" style="text-decoration:none;">argparse</a></td>
+        <td><a href="https://jinhui.dev/python/modules/argparse.html" style="text-decoration:none;">argparse</a></td>
         <td><li><code>Python 3.10.5</code></li></td>
         <td><code>yum</code>/<code>dnf</code></td>
         <td>不推荐使用，原因是原生不支持从环境变量、配置文件取值</td>

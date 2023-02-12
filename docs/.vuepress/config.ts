@@ -84,15 +84,15 @@ const navbar = [
             {
                 text: 'Python',
                 children: [
-                    {text: 'Python核心语法', link: '/coding/backend/Python'},
-                    {text: 'Python实用模块', link: '/coding/backend/Modules-for-Python'},
+                    {text: 'Python核心语法', link: '/python/document.html'},
+                    {text: 'Python实用模块', link: '/python/modules.html'},
                 ]
             },
             {
                 text: 'Go',
                 children: [
-                    {text: 'Go核心语法', link: '/programming/go/document.html'},
-					{text: 'Go实用模块', link: '/programming/go/modules.html'},
+                    {text: 'Go核心语法', link: '/go/document.html'},
+					{text: 'Go实用模块', link: '/go/modules.html'},
                 ]
             },
 
