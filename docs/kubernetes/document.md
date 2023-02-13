@@ -8619,11 +8619,48 @@ spec:
 
 :::
 
-::: details （6）故障注入：HTTP abort 故障：期望的目标是页面能够立即加载
+::: details （6）故障注入：HTTP abort 故障：期望的目标是页面能够立即返回
+
+文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/fault-injection/#injecting-an-http-abort-fault](https://istio.io/latest/zh/docs/tasks/traffic-management/fault-injection/#injecting-an-http-abort-fault)
 
 ```bash
-
+[root@node-1 istio-1.16.2]# cat samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      abort:
+        percentage:
+          value: 100.0
+        httpStatus: 500
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
+        
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
 ```
+
+*Ratings* 故障，但是页面立即返回
+
+![image-20230213131818018](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213131818018.png)
+
+查看调用链路
+
+![image-20230213132107166](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213132107166.png)
 
 :::
 
