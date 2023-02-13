@@ -564,3 +564,237 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+<br />
+
+### 基础函数
+
+::: details （1）管道函数（重要）
+
+使用`|`作为管道，很类似于Shell中的管道
+
+注意：前一个命令的输出结果是作为下一个命令的最后一个参数，比如`{{ .b | ge .a }}`等同于 `{{ ge .a .b }}`
+
+:::
+
+::: details （2）比较函数：基础示例
+
+比较函数
+
+比较函数：
+
+* eq：等于
+* ne：不等于
+* lt：小于
+* le：小于等于
+* gt：大于
+* ge：大于等于
+
+两种写法（a>=b）：
+
+* 直接调用函数传参：`{{ ge .a .b }}`
+* 通过管道传递参数：`{{ .b | ge .a }}`，这里这里的顺序，管道前的值会放到ge函数最后一个值
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `
+{{- if eq .a .b -}}
+    a == b
+{{- else if lt .a .b -}}
+    a < b
+{{- else -}}
+    a > b
+{{- end -}}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+a < b
+```
+
+:::
+
+::: details （3）比较函数：eq比较特殊，可以接收多个参数。{{ eq .a .b .c .d }} 等于 .a == .b || .a == .c || .a == .d
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `
+{{- if eq .a .b .c .d .e -}}
+   yes
+{{- else -}}
+    no
+{{- end -}}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11, "c": 12, "d": 10, "e": 15}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+yes
+```
+
+:::
+
+::: details （4）逻辑函数
+
+逻辑函数：
+
+* and：与
+* or：或
+* not：非
+
+:::
+
+<br />
+
+### 自定义函数
+
+::: details （1）注册全局函数
+
+**写法1：适用于全局函数参数等一直不会变的情况**
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `最大值: {{ max .a .b }}`
+
+	// 注册全局函数，并解析字符串模板
+	// 注意事项：
+	// 1.若模板中使用了全局函数：
+	//       1.则必须在【解析模板前】注册好函数，否则解析会报错
+	//       2.可以注册一个虚假的函数骗过解析，然后在渲染之前再重新注册真正的函数，以达到更灵活的目的
+	// 2.若模板中没有使用全局函数：
+	//       那么什么时候注册都可以
+	// 3.注册全局函数是并发安全的
+	// 4.函数可以有一个返回值，也可以有两个返回值，但是第二个返回值必须是error类型
+	tpl, err := template.New("hello").Funcs(template.FuncMap{
+		"max": func(a, b int) int {
+			if a > b {
+				return a
+			}
+			return b
+		},
+	}).Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+**写法2：先注册一个假的函数骗过解析，然后再注册真正的函数**
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `最大值: {{ max .a .b }}`
+
+	// 注册全局函数，并解析字符串模板
+	// 注意事项：
+	// 1.若模板中使用了全局函数：
+	//       1.则必须在【解析模板前】注册好函数，否则解析会报错
+	//       2.可以注册一个虚假的函数骗过解析，然后在渲染之前再重新注册真正的函数，以达到更灵活的目的
+	// 2.若模板中没有使用全局函数：
+	//       那么什么时候注册都可以
+	// 3.注册全局函数是并发安全的
+	// 4.函数可以有一个返回值，也可以有两个返回值，但是第二个返回值必须是error类型
+	tpl, err := template.New("hello").Funcs(template.FuncMap{"max": func() {}}).Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	tpl.Funcs(template.FuncMap{
+		"max": func(a, b int) int {
+			if a > b {
+				return a
+			}
+			return b
+		},
+	})
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+最大值: 11
+```
+
+:::
+
+::: details （2）调用结构体方法
+
+:::
