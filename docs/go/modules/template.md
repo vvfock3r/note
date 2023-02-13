@@ -326,6 +326,15 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Name: jack
+Age: 18
+Phone: [1 3 7 8 8 8 8 8 8 8 8]
+```
+
 :::
 
 ::: details （2）切片、Map取值：使用index根据索引取值
@@ -373,7 +382,185 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Name: jack
+Age: 18
+Phone: 3
+Map: value
+```
+
 :::
 
 <br />
+
+### 判断语句
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := "{{ if .name }} {{ .name }} {{ else }} Unknown {{ end }}"
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{
+		"name": "jack",
+		"age":  18,
+	}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+ jack
+```
+
+:::
+
+<br />
+
+### 循环语句
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	// 循环体内会改变作用域，.代表当前循环的对象
+	msg := `{{ range $key, $value := .number }}
+{{ $key }} --> {{ $value }}
+{{ end }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{
+		"number": []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+	}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+
+0 --> 1
+
+1 --> 2
+
+2 --> 3
+
+3 --> 4
+
+4 --> 5
+
+5 --> 6
+
+6 --> 7
+
+7 --> 8
+
+8 --> 9
+
+9 --> 0
+
+```
+
+:::
+
+<br />
+
+### 移除空白
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	// {{- $key }}   移除左侧的空白
+	// {{ $key -}}   移除右侧的空白
+	// {{- $key -}}  移除两侧的空白
+	msg := `{{ range $key, $value := .number }}
+{{- $key }} --> {{ $value }}
+{{ end }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{
+		"number": []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+	}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+0 --> 1
+1 --> 2
+2 --> 3
+3 --> 4
+4 --> 5
+5 --> 6
+6 --> 7
+7 --> 8
+8 --> 9
+9 --> 0
+```
+
+:::
 
