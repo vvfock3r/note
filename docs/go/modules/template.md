@@ -29,7 +29,7 @@ html template：[https://pkg.go.dev/html/template](https://pkg.go.dev/html/templ
 
 <br />
 
-## 示例
+## 基础示例
 
 ::: details （1）字符串模板
 
@@ -69,7 +69,7 @@ Hello world!
 
 :::
 
-::: details （2）文件模板：写法与字符串模板有较大不同
+::: details （2）文件模板：解析单文件
 
 `template/hello.tpl`
 
@@ -97,11 +97,7 @@ func main() {
 	//}
 
 	// 正确的写法：解析文件模板
-	var (
-		tpl *template.Template
-		err error
-	)
-	tpl, err = template.ParseFiles("template/hello.tpl")
+	tpl, err := template.ParseFiles("template/hello.tpl")
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +120,260 @@ Hello world!
 
 :::
 
+::: details （3）文件模板：解析多文件
+
+`template/hello.tpl`
+
+```
+Hello  {{ . }}
+```
+
+`template/hello2.tpl`
+
+```
+Hello2  {{ . }}
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 解析文件模板
+	tpl, err := template.ParseFiles("template/hello.tpl", "template/hello2.tpl")
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板
+	data := "world!"
+
+	// 渲染方法1：使用ExecuteTemplate方法指定模板名
+	for _, name := range []string{"hello.tpl", "hello2.tpl"} {
+		err = tpl.ExecuteTemplate(os.Stdout, name, data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println()
+	}
+
+	// 渲染方法2：使用Lookup查找对应模板，然后执行Execute渲染
+	for _, name := range []string{"hello.tpl", "hello2.tpl"} {
+		tpl = tpl.Lookup(name)
+		err = tpl.Execute(os.Stdout, data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println()
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Hello  world!
+Hello2  world!
+Hello  world!
+Hello2  world!
+```
+
+:::
+
 <br />
 
+## 模板语法
 
+### 添加注释
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `
+{{/* 单行注释 */}}
+{{/*
+    多行
+    注释 
+*/}}
+Hello {{ . }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := "world!"
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+
+
+
+Hello world!
+```
+
+:::
+
+<br />
+
+### 设置变量
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板：变量定义和引用
+	msg := `{{ $name := "我是变量" }}Hello {{ . }} {{ $name }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := "world!"
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Hello world! 我是变量
+```
+
+:::
+
+<br />
+
+### 取值操作
+
+::: details （1）结构体取值：使用 .FieldName
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+type Person struct {
+	Name  string
+	Age   int
+	Phone [11]int
+}
+
+func main() {
+	// 定义字符串模板：若想要解析\n，不能使用``来定义字符串
+	msg := "Name: {{ .Name }}\nAge: {{ .Age }}\nPhone: {{ .Phone }}"
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := Person{
+		Name:  "jack",
+		Age:   18,
+		Phone: [11]int{1, 3, 7, 8, 8, 8, 8, 8, 8, 8, 8},
+	}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+:::
+
+::: details （2）切片、Map取值：使用index根据索引取值
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+type Person struct {
+	Name  string
+	Age   int
+	Phone [11]int
+	Map   map[string]string
+}
+
+func main() {
+	// 定义字符串模板
+	// 取单个值：
+	//     {{ index .Phone 1 }}   等于 .Phone[1]
+	//     {{ index .Map "key" }} 等于 .Map["key"]
+	// 取多个值：需要使用循环语句
+	msg := "Name: {{ .Name }}\nAge: {{ .Age }}\nPhone: {{ index .Phone 1 }}\nMap: {{ index .Map \"key\" }}"
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := Person{
+		Name:  "jack",
+		Age:   18,
+		Phone: [11]int{1, 3, 7, 8, 8, 8, 8, 8, 8, 8, 8},
+		Map:   map[string]string{"key": "value"},
+	}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+:::
+
+<br />
 
