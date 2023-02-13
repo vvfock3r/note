@@ -7871,7 +7871,7 @@ data plane version: 1.16.2 (1 proxies)
 
 <br />
 
-### 应用程序要求
+### Istio对应用程序要求
 
 应用程序要求：[https://istio.io/latest/zh/docs/ops/deployment/requirements/](https://istio.io/latest/zh/docs/ops/deployment/requirements/)
 
@@ -8104,7 +8104,7 @@ istio-ingressgateway   LoadBalancer   10.200.78.163   <pending>     15021:32313/
 
 <br />
 
-### Bookinfo应用：可观察性
+### Bookinfo应用：测试可观察性
 
 可观察性文档：[https://istio.io/latest/zh/docs/tasks/observability/](https://istio.io/latest/zh/docs/tasks/observability/)
 
@@ -8179,7 +8179,39 @@ Failed to open browser; open http://192.168.48.151:20001/kiali in your browser.
 
 <br />
 
-### Bookinfo应用：流量管理
+### Bookinfo应用：定义服务版本
+
+* 定义服务版本不是必须的，因为默认会将请求发送到所有版本
+* 在后面的流量管理等我们会用到服务版本，所以推荐提前设置好
+
+::: details 点击查看详情
+
+```bash
+# 先查看一下，是空的
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+No resources found in default namespace.
+
+# 部署destination rule
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
+destinationrule.networking.istio.io/productpage created
+destinationrule.networking.istio.io/reviews created
+destinationrule.networking.istio.io/ratings created
+destinationrule.networking.istio.io/details created
+
+# 再次查看
+[root@node-1 istio-1.16.2]# kubectl get destinationrules 
+NAME          HOST          AGE
+details       details       2s
+productpage   productpage   2s
+ratings       ratings       2s
+reviews       reviews       2s
+```
+
+:::
+
+<br />
+
+### Bookinfo应用：测试流量管理
 
 流量管理文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/](https://istio.io/latest/zh/docs/tasks/traffic-management/)
 
@@ -8434,30 +8466,7 @@ reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.2
 
 文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/](https://istio.io/latest/zh/docs/tasks/traffic-management/request-routing/)
 
-**1、定义服务版本：DestinationRule中定义subset**
-
-```bash
-# 先查看一下，是空的
-[root@node-1 istio-1.16.2]# kubectl get destinationrules 
-No resources found in default namespace.
-
-# 部署destination rule
-[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
-destinationrule.networking.istio.io/productpage created
-destinationrule.networking.istio.io/reviews created
-destinationrule.networking.istio.io/ratings created
-destinationrule.networking.istio.io/details created
-
-# 再次查看
-[root@node-1 istio-1.16.2]# kubectl get destinationrules 
-NAME          HOST          AGE
-details       details       2s
-productpage   productpage   2s
-ratings       ratings       2s
-reviews       reviews       2s
-```
-
-**2、将流量全部导入到reviews v2版本**
+**1、将流量全部导入到reviews v2版本**
 
 ```bash
 [root@node-1 istio-1.16.2]# cat > reviews-v2.yaml << EOF
@@ -8483,7 +8492,7 @@ virtualservice.networking.istio.io/reviews created
 
 ![image-20230210125105716](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210125105716.png)
 
-**3、如何实现的将流量导入到某一个或多个版本？**
+**2、如何实现的将流量导入到某一个或多个版本？**
 
 ```bash
 # 查看EndpointSlice，依旧是3个版本Pod的IP，说明并没有修改EndpointSlice
