@@ -8609,7 +8609,11 @@ spec:
 
 ![image-20230213130604994](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213130604994.png)
 
-**3、修复办法**
+**3、查看调用链路**
+
+![image-20230213131359578](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213131359578.png)
+
+**4、修复办法**
 
 最上游调大超时时间（大于所有下游最大超时时间） 或 最下游减少超时时间（小于最上游超时时间）
 
