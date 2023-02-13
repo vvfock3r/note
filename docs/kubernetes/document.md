@@ -8441,7 +8441,7 @@ reviews-xf7cz       IPv4          9080    10.100.217.125,10.100.217.119,10.100.2
 [root@node-1 istio-1.16.2]# kubectl get destinationrules 
 No resources found in default namespace.
 
-# 部署
+# 部署destination rule
 [root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
 destinationrule.networking.istio.io/productpage created
 destinationrule.networking.istio.io/reviews created
@@ -8542,6 +8542,84 @@ spec:
 我们可以看到reviews只有v1和v2版本可以收到请求
 
 ![image-20230210193822305](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230210193822305.png)
+
+:::
+
+::: details （5）故障注入：HTTP延迟故障：上游调用下游的超时时间 小于 下游调用下下游的超时时间
+
+文档：[https://istio.io/latest/zh/docs/tasks/traffic-management/fault-injection/](https://istio.io/latest/zh/docs/tasks/traffic-management/fault-injection/)
+
+**1、配置环境**
+
+```bash
+# 配置环境
+[root@node-1 istio-1.16.2]# kubectl get vs    # 确保除了bookinfo没有其他的虚拟服务
+NAME       GATEWAYS               HOSTS   AGE
+bookinfo   ["bookinfo-gateway"]   ["*"]   3d22h
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml
+
+# 经过上面的配置，下面是请求的流程：
+
+# productpage -------------------------------> reviews:v2 -------------> ratings (针对 jason 用户)
+#             3秒超时 + 1次重试，总共6秒超时                      10秒超时
+
+# productpage -------------------------------> reviews:v1(其他用户)
+#             3秒超时 + 1次重试，总共6秒超时                  
+```
+
+![image-20230213125702391](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213125702391.png)
+
+**2、注入 HTTP 延迟故障**
+
+```bash
+# 发送到ratings服务的HTTP请求中，若Header中匹配end-user=jason时，则延迟7秒，并发送ratings v1
+# 其他用户直接发送到ratings v1
+[root@node-1 istio-1.16.2]# cat samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      delay:
+        percentage:
+          value: 100.0
+        fixedDelay: 7s
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
+        
+[root@node-1 istio-1.16.2]# kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml
+```
+
+多次刷新页面，发现总是6秒就超时
+
+![image-20230213130604994](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230213130604994.png)
+
+**3、修复办法**
+
+最上游调大超时时间（大于所有下游最大超时时间） 或 最下游减少超时时间（小于最上游超时时间）
+
+:::
+
+::: details （6）故障注入：HTTP abort 故障：期望的目标是页面能够立即加载
+
+```bash
+
+```
 
 :::
 
