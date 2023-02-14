@@ -744,3 +744,58 @@ a < b
 ```
 
 :::
+
+::: details （3）比较函数：eq比较特殊，可以接收多个参数。{{ eq .a .b .c .d }} 等于 .a == .b || .a == .c || .a == .d
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `
+{{- if eq .a .b .c .d .e -}}
+   yes
+{{- else -}}
+    no
+{{- end -}}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11, "c": 12, "d": 10, "e": 15}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+yes
+```
+
+:::
+
+::: details （4）逻辑函数
+
+逻辑函数：
+
+* and：与
+* or：或
+* not：非
+
+:::
+
+<br />
