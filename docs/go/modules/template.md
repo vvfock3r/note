@@ -801,3 +801,380 @@ yes
 :::
 
 <br />
+
+### 自定义函数
+
+::: details （1）注册全局函数
+
+**写法1：适用于全局函数参数等一直不会变的情况**
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `最大值: {{ max .a .b }}`
+
+	// 注册全局函数，并解析字符串模板
+	// 注意事项：
+	// 1.若模板中使用了全局函数：
+	//       1.则必须在【解析模板前】注册好函数，否则解析会报错
+	//       2.可以注册一个虚假的函数骗过解析，然后在渲染之前再重新注册真正的函数，以达到更灵活的目的
+	// 2.若模板中没有使用全局函数：
+	//       那么什么时候注册都可以
+	// 3.注册全局函数是并发安全的
+	// 4.函数可以有一个返回值，也可以有两个返回值，但是第二个返回值必须是error类型
+	tpl, err := template.New("hello").Funcs(template.FuncMap{
+		"max": func(a, b int) int {
+			if a > b {
+				return a
+			}
+			return b
+		},
+	}).Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+**写法2：先注册一个假的函数骗过解析，然后再注册真正的函数**
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `最大值: {{ max .a .b }}`
+
+	// 注册全局函数，并解析字符串模板
+	// 注意事项：
+	// 1.若模板中使用了全局函数：
+	//       1.则必须在【解析模板前】注册好函数，否则解析会报错
+	//       2.可以注册一个虚假的函数骗过解析，然后在渲染之前再重新注册真正的函数，以达到更灵活的目的
+	// 2.若模板中没有使用全局函数：
+	//       那么什么时候注册都可以
+	// 3.注册全局函数是并发安全的
+	// 4.函数可以有一个返回值，也可以有两个返回值，但是第二个返回值必须是error类型
+	tpl, err := template.New("hello").Funcs(template.FuncMap{"max": func() {}}).Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	tpl.Funcs(template.FuncMap{
+		"max": func(a, b int) int {
+			if a > b {
+				return a
+			}
+			return b
+		},
+	})
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+最大值: 11
+```
+
+:::
+
+::: details （2）调用结构体方法
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+type Empty struct{}
+
+func (u *Empty) Say(msg string) string {
+	return "Say: " + msg
+}
+
+func main() {
+	// 定义字符串模板
+	msg := `{{ .Say "hello world!" }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := &Empty{}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Say: hello world!
+```
+
+:::
+
+::: details （3）调用结构体字段（字段是一个方法，使用call调用）
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+type Empty struct {
+	Say func(msg string) string
+}
+
+func main() {
+	// 定义字符串模板,如果要与if语句连用，可以将call语句加一个括号
+	msg := `{{ call .Say "hello world!" }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := &Empty{Say: func(msg string) string {
+		return "Say: " + msg
+	}}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Say: hello world!
+```
+
+:::
+
+<br />
+
+### 第三方函数库
+
+Github：[https://github.com/Masterminds/sprig](https://github.com/Masterminds/sprig)
+
+文档：[https://masterminds.github.io/sprig/](https://masterminds.github.io/sprig/)
+
+::: details 示例
+
+**安装**
+
+```bash
+D:\application\GoLand\example>go get github.com/Masterminds/sprig/v3
+go: downloading github.com/Masterminds/sprig v2.22.0+incompatible
+go: downloading github.com/Masterminds/sprig/v3 v3.2.3
+go: downloading github.com/Masterminds/goutils v1.1.1
+go: downloading github.com/Masterminds/semver/v3 v3.2.0
+go: downloading github.com/huandu/xstrings v1.3.3
+go: downloading github.com/imdario/mergo v0.3.11
+go: downloading github.com/mitchellh/copystructure v1.0.0
+go: downloading golang.org/x/crypto v0.3.0
+go: downloading github.com/mitchellh/reflectwalk v1.0.0
+go: added github.com/Masterminds/goutils v1.1.1
+go: added github.com/Masterminds/semver/v3 v3.2.0
+go: added github.com/Masterminds/sprig/v3 v3.2.3
+go: added github.com/google/uuid v1.1.1
+go: added github.com/huandu/xstrings v1.3.3
+go: added github.com/imdario/mergo v0.3.11
+go: added github.com/mitchellh/copystructure v1.0.0
+go: added github.com/mitchellh/reflectwalk v1.0.0
+go: added github.com/shopspring/decimal v1.2.0
+go: added github.com/spf13/cast v1.3.1
+go: upgraded golang.org/x/crypto v0.0.0-20220214200702-86341886e292 => v0.3.0
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `{{ now | date "2006-01-02 15:04:05"  }}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Funcs(sprig.FuncMap()).Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := "hello world!"
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+2023-02-14 13:50:01
+```
+
+:::
+
+<br />
+
+## 模板嵌套
+
+::: details （1）定义模板和引用模板
+
+`template/header.tpl`
+
+```bash
+{{- define "header" -}}
+header
+{{- end -}}
+```
+
+`template/index.tpl`
+
+```
+{{ template "header" }}
+body
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 解析文件模板
+	tpl, err := template.ParseGlob("template/*.tpl")
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板
+	data := "Hello world!"
+	err = tpl.ExecuteTemplate(os.Stdout, "index.tpl", data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+header
+body
+```
+
+:::
+
+::: details （2）模板之间传递变量
+
+`template/header.tpl`
+
+```
+{{- define "header" -}}
+header data: {{ . }}
+{{- end -}}
+```
+
+`template/index.tpl`
+
+```
+{{ template "header" . }}
+body
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 解析文件模板
+	tpl, err := template.ParseGlob("template/*.tpl")
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板
+	data := "Hello world!"
+	err = tpl.ExecuteTemplate(os.Stdout, "index.tpl", data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+header data: Hello world!
+body
+```
+
+:::
