@@ -674,3 +674,73 @@ bob
 
 <br />
 
+### 基础函数
+
+::: details （1）管道函数（重要）
+
+使用`|`作为管道，很类似于Shell中的管道
+
+注意：前一个命令的输出结果是作为下一个命令的最后一个参数，比如`{{ .b | ge .a }}`等同于 `{{ ge .a .b }}`
+
+:::
+
+::: details （2）比较函数：基础示例
+
+比较函数
+
+比较函数：
+
+* eq：等于
+* ne：不等于
+* lt：小于
+* le：小于等于
+* gt：大于
+* ge：大于等于
+
+两种写法（a>=b）：
+
+* 直接调用函数传参：`{{ ge .a .b }}`
+* 通过管道传递参数：`{{ .b | ge .a }}`，这里这里的顺序，管道前的值会放到ge函数最后一个值
+
+```go
+package main
+
+import (
+	"os"
+	"text/template"
+)
+
+func main() {
+	// 定义字符串模板
+	msg := `
+{{- if eq .a .b -}}
+    a == b
+{{- else if lt .a .b -}}
+    a < b
+{{- else -}}
+    a > b
+{{- end -}}`
+
+	// 解析字符串模板
+	tpl, err := template.New("hello").Parse(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 提供数据，渲染模板，并输出到标准输出
+	data := map[string]any{"a": 10, "b": 11}
+	err = tpl.Execute(os.Stdout, data)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+a < b
+```
+
+:::
