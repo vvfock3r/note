@@ -25,6 +25,7 @@ sidebar: off
 * [viper](https://jinhui.dev/go/modules/viper.html)：配置读写
 * [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务
+* [template](https://jinhui.dev/go/modules/template.html)：模板
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
