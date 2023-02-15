@@ -590,7 +590,7 @@ func main() {
 		Timeout:   time.Second * 15,
 	}
 
-	// 生成request对象, https://api.ip.sb/ip能以文本格式输出我们当前的IP,可以用这个网站来检测我们的代理是否生效
+	// 生成request对象, https://api.ip.sb/ip 能以文本格式输出我们当前的IP,可以用这个网站来检测我们的代理是否生效
 	req, err := http.NewRequest("GET", "https://api.ip.sb/ip", nil)
 	if err != nil {
 		log.Fatalln(err)

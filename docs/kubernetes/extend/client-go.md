@@ -2928,8 +2928,7 @@ me/proc.go:250"}
 # (4) 修改日志级别
 D:\application\GoLand\example>go run main.go -log_format=json -log_level=10
 {"level":"INFO","ts":"2022-12-25 17:25:26.18","caller":"clientcmd/loader.go:374","msg":"Config loaded from file:  .kube.config\n"}
-{"level":"INFO","ts":"2022-12-25 17:25:26.18","caller":"transport/round_trippers.go:466","msg":"curl -v -XGET  -H \"Accept: application/json, */*\" -H \"User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format\" 'https://api.k
-8s.local:6443/version'\n"}
+{"level":"INFO","ts":"2022-12-25 17:25:26.18","caller":"transport/round_trippers.go:466","msg":"curl -v -XGET  -H \"Accept: application/json, */*\" -H \"User-Agent: main.exe/v0.0.0 (windows/amd64) kubernetes/$Format\" 'https://api.k8s.local:6443/version'\n"}
 {"level":"INFO","ts":"2022-12-25 17:25:26.19","caller":"transport/round_trippers.go:495","msg":"HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.151 }]\n"}
 {"level":"INFO","ts":"2022-12-25 17:25:26.19","caller":"transport/round_trippers.go:510","msg":"HTTP Trace: Dial to tcp:192.168.48.151:6443 succeed\n"}
 {"level":"INFO","ts":"2022-12-25 17:25:26.20","caller":"transport/round_trippers.go:553","msg":"GET https://api.k8s.local:6443/version 200 OK in 16 milliseconds\n"}
