@@ -148,7 +148,7 @@ source ~/.bashrc
 # (3) 安装网络插件calico
 # minikube start 可以指定以下选项安装calico，但是启动会报错，所以手动安装calico
 # --network-plugin=cni --cni=calico
-curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
 vim calico.yaml
 # 修改前
             - name: IP

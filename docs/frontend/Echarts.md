@@ -4,7 +4,7 @@
 
 官网示例：[https://echarts.apache.org/examples/zh/index.html](https://echarts.apache.org/examples/zh/index.html)
 
-第三方示例：[https://www.makeapie.com/explore.html](https://www.makeapie.com/explore.html)
+第三方示例：[https://www.makeapie.cn/echarts](https://www.makeapie.cn/echarts)
 
 
 

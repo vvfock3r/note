@@ -1002,7 +1002,7 @@ parser = argparse.ArgumentParser(
         copying jq's input to its output unmodified (except for
         formatting).
         For more advanced filters see the jq(1) manpage ("man jq")
-        and/or https://stedolan.github.io/jq''',
+        and/or https://stedolan.github.io/jq ''',
     epilog='''
         ENVIRONMENT:
           HTTP_PROXY    proxy for HTTP requests; complete URL or HOST[:PORT]

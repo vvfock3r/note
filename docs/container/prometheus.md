@@ -323,7 +323,7 @@ EOF
 [root@localhost ~]# netstat -atlnpu | grep -i 9093
 tcp6       0      0 :::9093                 :::*                    LISTEN      1071/alertmanager
 
-# 浏览器访问：http://<ip>:9093
+# 浏览器访问：http://192.168.48.133:9093
 ```
 
 :::

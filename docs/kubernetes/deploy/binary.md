@@ -1814,7 +1814,7 @@ node-3   NotReady   <none>   4m24s   v1.24.4
 （1）下载YAML文件
 
 ```bash
-curl https://projectcalico.docs.tigera.io/manifests/calico.yaml -O
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
 ```
 
 （2）修改IP自动发现
