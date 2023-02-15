@@ -1211,7 +1211,7 @@ b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
     -e "shell='mkdir -p /usr/local/kubernetes/cni'"
 
 # (2) 下载YAML文件
-[root@node-1 ansible]# wget -c https://projectcalico.docs.tigera.io/manifests/calico.yaml
+[root@node-1 ansible]# wget -c https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
 
 # (3) 查看一下所需的镜像
 [root@node-1 ansible]# cat calico.yaml | grep -i 'image:' | sort -u
