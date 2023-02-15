@@ -106,7 +106,7 @@ tcp6       0      0 :::9090                 :::*                    LISTEN      
 tcp6       0      0 ::1:35726               ::1:9090                ESTABLISHED 1827/prometheus     
 tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 1827/prometheus     
 
-# 浏览器访问：http://<ip>:9090
+# 浏览器访问：http://192.168.48.133:9090
 ```
 
 :::
@@ -357,7 +357,7 @@ docker container rm -f get-alertmanager-config
 129e52ab3c42   prom/alertmanager:v0.24.0   "/bin/alertmanager -…"   About a minute ago   Up About a minute   127.0.0.1:9093->9093/tcp                              alertmanager
 
 # 测试
-# 浏览器访问：http://<ip>:9093
+# 浏览器访问：http://192.168.48.133:9093
 ```
 
 <br />
