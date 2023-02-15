@@ -227,7 +227,7 @@ curl -XPOST 127.0.0.1:3000/api/annotations \
   --data @- << EOF
   {
     "text": "发布新版本\n
-      <a href=\"https://https://github.com/grafana/grafana\">Gitlab (8ba7fb80)</a>\n
+      <a href=\"https://github.com/grafana/grafana\">Gitlab (8ba7fb80)</a>\n
       <a href=\"https://www.jenkins.io/\">Jenkins (#32)</a>",
     "tags": [
       "passport",
