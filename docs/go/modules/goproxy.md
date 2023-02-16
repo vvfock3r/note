@@ -44,7 +44,7 @@ func main() {
 [root@ap-hongkang demo]# go run main.go
 
 # 获取一下本地的IP地址
-C:\Users\Administrator> curl ip.jinhui.dev                             
+C:\Users\Administrator> curl ip.jinhui.dev
 183.197.xxx.xxx
 
 # 添加http代理
