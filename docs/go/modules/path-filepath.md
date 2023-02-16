@@ -614,6 +614,34 @@ C:/Users/Administrator/Desktop
 
 :::
 
+::: details （8）filepath.Ext：获取文件扩展名
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+)
+
+func main() {
+	fmt.Printf("%#v\n", filepath.Ext("C:/Users/Administrator/Desktop/1.txt"))
+	fmt.Printf("%#v\n", filepath.Ext("C:/Users/Administrator/Desktop/2"))
+	fmt.Printf("%#v\n", filepath.Ext("C:/Users/Administrator/Desktop/3."))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+".txt"
+""
+"."
+```
+
+:::
+
 <br />
 
 ## 模式匹配
