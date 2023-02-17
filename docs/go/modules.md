@@ -39,6 +39,7 @@ sidebar: off
   * [color](https://jinhui.dev/go/modules/color.html)：终端颜色
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
+  * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
 * Web
   * [net/http](https://jinhui.dev/go/modules/net-http.html)：内置的Web Server
   * [gin](https://jinhui.dev/go/modules/gin.html)：流行的Web Server
