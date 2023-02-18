@@ -19,7 +19,7 @@ go: added github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+in
 
 **简单分析**
 
-* 关于协议：`SMTP`协议用于发邮件，`POP3/IMAP`协议用于收邮件
+* 关于协议：`SMTP`协议用于发邮件，`POP3/IMAP`协议用于收和管理邮件
 * 关于SMTP端口：
   *   25端口：标准SMTP端口，使用`Send`方法发送邮件，明文传输所以不建议使用
   * 465端口：基于SSL的SMTP，使用`SendWithTLS`发送邮件
