@@ -1028,6 +1028,8 @@
 
 ## 布局2：定位布局（非常重要）
 
+::: details （1）定位布局理论
+
 **定位布局要点**
 
 * 相对定位：盒子可以相对自己原来的位置进行位置调整
@@ -1096,13 +1098,9 @@
 
 `z-index`属性是一个没有单位的正整数，数值大的能够压盖数值小的
 
+:::
 
-
-
-
-### 测试1：相对定位
-
-`demo.html`
+::: details （2）相对定位
 
 ```html
 <!doctype html>
@@ -1180,7 +1178,9 @@
 
 ![image-20211103212840158](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103212840158.png)
 
-### 测试2：绝对定位演示
+:::
+
+::: details （3）绝对定位-示例
 
 将测试1中的代码修改为绝对定位
 
@@ -1195,9 +1195,9 @@
 
 ![image-20211103215200172](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103215200172.png)
 
-### 测试3：绝对定位水平垂直居中
+:::
 
-`demo.html`
+::: details （4）绝对定位水-平垂直居中
 
 ```html
 <!doctype html>
@@ -1259,9 +1259,9 @@
 
 ![image-20211103221009935](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211103221009935.png)
 
-### 测试4：绝对定位-轮播图压盖效果
+:::
 
-`demo.html`
+::: details （5）绝对定位-轮播图压盖效果
 
 ```html
 <!doctype html>
@@ -1367,9 +1367,9 @@
 
 ![image-20211106141136470](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211106141136470.png)
 
-### 测试5：固定定位-楼层导航特效
+:::
 
-`demo.html`
+::: details （6）固定定位-楼层导航特效
 
 ```html
 <!doctype html>
@@ -1627,11 +1627,9 @@ floorBox.addEventListener("click", (e) => {
 
 ![image-20211106141136470](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%8A%A8%E7%94%BB23.gif)
 
+:::
 
-
-### 测试6：z-index
-
-`demo.html`
+::: details （7）z-index
 
 ```html
 <!DOCTYPE html>
@@ -1657,8 +1655,7 @@ floorBox.addEventListener("click", (e) => {
             background-color: red;
             position: absolute;
             top: 0;
-            left: 50px;
-            /* z-index */
+            left: 50px;            
             /*z-index: 999;*/
         }
 
@@ -1681,11 +1678,13 @@ floorBox.addEventListener("click", (e) => {
 
 ![image-20211108173144694](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/FWsG8gjk6zTBdGPA.png)
 
+:::
 
-
-
+<br />
 
 ## 布局3：弹性布局（非常重要）
+
+::: details （1）弹性布局理论
 
 **主轴和交叉轴**
 
@@ -1711,9 +1710,11 @@ floorBox.addEventListener("click", (e) => {
 
 * PC端和移动端布局支持良好，推荐使用
 
+:::
 
+::: details （2）容器和项目属性
 
-### 容器属性
+**1、容器属性**
 
 | 属性                   | 值                   | 说明                                                         |
 | ---------------------- | -------------------- | ------------------------------------------------------------ |
@@ -1744,9 +1745,9 @@ floorBox.addEventListener("click", (e) => {
 |                        | `space-between`      | 两端对齐，项目之间的间隔相等                                 |
 |                        | `space-around`       | 每个项目两侧间隔相等，即意味着项目之间的间隔比项目与边框之间的间隔大一倍 |
 
+<br />
 
-
-### 项目属性
+**2、项目属性**
 
 | 属性          | 值             | 说明                                                         |
 | ------------- | -------------- | ------------------------------------------------------------ |
@@ -1760,11 +1761,9 @@ floorBox.addEventListener("click", (e) => {
 |               | `none`         | `0 0 auto`，不放大也不缩小                                   |
 | `align-self`  | `auto`         | 运行单个项目有与其他项目不一样的对齐方式，可覆盖`align-items`<br />默认值`auto`代表继父元素的`align-items`属性，如果没有父元素，等同于`stretch` |
 
+:::
 
-
-### 测试1：水平垂直居中
-
-`demo.html`
+::: details （3）水平垂直居中
 
 ```html
 <!doctype html>
@@ -1829,11 +1828,9 @@ floorBox.addEventListener("click", (e) => {
 
 > 水平垂直居中使用`flex`布局，相比较使用使用定位布局，不再需要关心子元素有多高有多宽（margin-xx），推荐这种写法
 
+:::
 
-
-### 测试2：移动端布局测试
-
-`demo.html`
+::: details （4）移动端布局
 
 ```html
 <!DOCTYPE html>
@@ -1984,7 +1981,9 @@ floorBox.addEventListener("click", (e) => {
 
 ![image-20211107123638175](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211107123638175.png)
 
+:::
 
+<br />
 
 ## `2D`变形和`3D`旋转
 
