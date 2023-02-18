@@ -1,5 +1,9 @@
 # CSS
 
+## 资料
+
+文档：[https://developer.mozilla.org/zh-CN/docs/Web/CSS](https://developer.mozilla.org/zh-CN/docs/Web/CSS)
+
 <br />
 
 ## 选择器分类
@@ -42,8 +46,6 @@
 | 子选择器（使用>）       | div>p  | div的子标签p，注意对孙子辈的不生效           |
 | 相邻兄弟选择器（使用+） | img+p  | img后面紧跟着的p标签                         |
 | 通用兄弟选择器（使用~） | p~span | p标签之后所有的同级标签span，注意是p标签之后 |
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -341,19 +343,15 @@
 
 ## 样式继承性
 
-文本相关的样式普遍具有继承性，只需要给祖先标签设置，即可在后代所有标签中生效
+::: details 点击查看详情
 
-具有继承性的属性有：
+文本相关的样式普遍具有继承性，只需要给祖先标签设置，即可在后代所有标签中生效。具有继承性的属性有：
 
 * color
 * font-开头的
 * list-开头的
 * text-开头的
 * line-开头的
-
-::: details 点击查看详情
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -396,7 +394,7 @@
 
 :::
 
-::: details （2）直接定义的样式（非继承样式）
+::: details （2）直接定义的样式权重对比
 
 **规则1：简单选择器权重**
 
@@ -407,8 +405,6 @@
 通过`(id个数, class个数, 标签个数)`的形式计算权重，对比的时候先对比第一位，如果相同则对比第二位，如果还相同则对比第三位
 
 <br />
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -451,11 +447,9 @@
 
 :::
 
-::: details （3）直接定义和继承样式
+::: details （3）直接定义和继承样式权重对比
 
 直接定义的样式权重最大
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -511,11 +505,9 @@
 
 :::
 
-::: details （4）提升选择器权重
+::: details （4）选择器权重提升
 
 可以在属性后面加上`!import`将权重提升到最大（小于行内样式），如果有多个`!import`，那么还会按照上面讲的规则进行比较
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -558,21 +550,27 @@
 
 ## 盒模型
 
-### 盒模型概念
+::: details （1）盒模型概念
 
 所有的HTML标签都可以看成是矩形盒子，由`width`、`height`、`padding`、`border`组成
 
 ![image-20211031173501044](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031173501044.png)
 
-### 盒子宽度和高度计算方法
+:::
+
+::: details （2）盒子宽度和高度计算方法
+
+**说明**
 
 盒子宽高的计算方法与盒子的`box-sizing`属性有关，当`box-sizing`为不同的值时，计算方法不同
 
+**border-sizing简介**
 
+`boxder-sizing`属性大量应用于移动端网页制作中，因为它结合百分比布局、弹性布局等非常好用，很多前端框架默认会将它的值设置为`border-box`
 
-**`box-sizing`为默认值得情况下(即没有手动设置过)**
+<br />
 
-`demo.html`
+**1、`box-sizing`为默认值得情况下(即没有手动设置过该值)**
 
 ```html
 <!doctype html>
@@ -589,7 +587,7 @@
             height: 50px;
             padding: 10px;
             border: 2px solid green;
-            /* box-sizing的默认值为content-box，即下面的语句写不写都是一样的 */            
+            /* box-sizing的默认值为content-box，下面的语句写不写都是一样的 */            
             box-sizing: content-box;
         }
     </style>
@@ -611,9 +609,9 @@
 盒子内容区域高 = height = 50
 ```
 
+<br />
 
-
-**`box-sizing` 等于`border-box`的时候**
+**2、`box-sizing` 等于`border-box`的时候**
 
 将上面的代码改为`box-sizing: border-box;`，然后查看浏览器中盒子宽高
 
@@ -628,21 +626,13 @@
 盒子内容区域高 = 盒子高(50)  - 上下padding(10 * 2) - 上下border(2*2) = 50  - 20 - 4 = 26
 ```
 
+:::
 
-
-**border-sizing简介**
-
-`boxder-sizing`属性大量应用于移动端网页制作中，因为它结合百分比布局、弹性布局等非常好用，很多前端框架默认会将它的值设置为`border-box`
-
-
-
-### 盒子宽高特性
+::: details （3）盒子宽高特性
 
 `width`和`height`表示盒子内容宽和高，通常使用`px`固定单位，也可以使用百分比、`rem`等单位，
 
 当没有设置宽高时，盒子宽高会被内部的元素撑开，自动得到一个宽高，当内部没有元素时，宽高为0
-
-`demo.html`
 
 ```html
 <!doctype html>
@@ -687,9 +677,9 @@
 >
 > 注意：这个对性能有影响，通常在学习测试的时候才会这么写，到线上的话有专门的解决办法，比如使用`resetcss`或`normalize.css`等
 
+:::
 
-
-### 盒子的内边距
+::: details （4）盒子的内边距
 
 * 四个方向的内边距，可以分别使用小属性进行设置
 
@@ -727,9 +717,9 @@
   padding: 10px; -> 等同于 padding: 10px 10px 10px 10px;
   ```
 
+:::
 
-
-### 盒子的外边距
+::: details （5）盒子的外边距
 
 * **margin简介**
 
@@ -739,11 +729,7 @@
 
 同时也有一些元素是默认带有`margin`属性的，可以自己测试一下
 
-
-
-* **使盒子水平居中**
-
-`demo.html`
+**1、使盒子水平居中**
 
 ```html
 <!doctype html>
@@ -776,59 +762,60 @@
 
 
 
-* **margin竖直方向塌陷问题**
+**2、margin竖直方向塌陷问题**
 
-  `demo.html`
+```html
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .div1 {
+            width: 200px;
+            height: 200px;
+            background-color: green;
+            /* 向下外边距为10px */
+            margin-bottom: 10px;
+        }
 
-  ```html
-  <!doctype html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport"
-            content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-      <meta http-equiv="X-UA-Compatible" content="ie=edge">
-      <title>Document</title>
-      <style>
-          .div1 {
-              width: 200px;
-              height: 200px;
-              background-color: green;
-              /* 向下外边距为10px */
-              margin-bottom: 10px;
-          }
-  
-          .div2 {
-              width: 200px;
-              height: 200px;
-              background-color: red;
-              /* 向上外边距为20px */
-              margin-top: 20px;
-          }
-  
-          /*
-              问题来了：两个盒子之间的边距有多大？
-  
-              按照正常来说，应该是：10px + 20px = 30px，实际情况是20px
-          	原因是：竖直方向的margin有塌陷现象，小的margin会塌陷到大的margin里面，从而导致小的margin不生效，只生效大的margin，所以是20px
-          	注意点：是竖直方向的margin，水平方向的margin没有影响
-          */
-      </style>
-  </head>
-  <body>
-  <div>
-      <div class="div1"></div>
-      <div class="div2"></div>
-  </div>
-  </body>
-  </html>
-  ```
+        .div2 {
+            width: 200px;
+            height: 200px;
+            background-color: red;
+            /* 向上外边距为20px */
+            margin-top: 20px;
+        }
 
-  
+        /*
+            问题来了：两个盒子之间的边距有多大？
+        
+            按照正常来说，应该是：10px + 20px = 30px，实际情况是20px
+        	原因是：竖直方向的margin有塌陷现象，小的margin会塌陷到大的margin里面，从而导致小的margin不生效，只生效大的margin，所以是20px
+        
+        	注意点：是竖直方向的margin，水平方向的margin没有影响
+        */
+    </style>
+</head>
+<body>
+<div>
+    <div class="div1"></div>
+    <div class="div2"></div>
+</div>
+</body>
+</html>
+```
+
+
 
 ![image-20211031204909456](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211031204909456.png)
 
+:::
 
+<br />
 
 ## 布局1：浮动布局
 
