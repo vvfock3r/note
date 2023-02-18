@@ -162,7 +162,7 @@ func main() {
 	}
 
 	// 发送邮件,带上重试功能，在极端情况下可能发送重复邮件，比如 c.Quit() 报错的情况，此时邮件已经发送了
-	for i := 3; i <= 1; i-- {
+	for i := 3; i >= 1; i-- {
 		err := e.SendWithStartTLS(host+":"+port, auth, tlsConfig)
 		if err == nil {
 			break
@@ -185,6 +185,10 @@ QQ邮箱Web端显示结果
 163邮箱Web端显示结果
 
 ![image-20230218150539166](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230218150539166.png)
+
+手机QQ显示结果
+
+![20230218155232](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230218155232.png)
 
 :::
 
