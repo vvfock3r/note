@@ -1985,7 +1985,7 @@ floorBox.addEventListener("click", (e) => {
 
 <br />
 
-## `2D`变形和`3D`旋转
+## 2D变形和3D旋转
 
 
 
