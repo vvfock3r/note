@@ -33,7 +33,7 @@ go: added github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+in
 * 关于超文本细节
   * 支持HTML/CSS，但是不支持JavaScript
   * 部分客户端（比如企业微信）可能不支持`<style>`标签，这就意味着CSS样式必须内嵌到HTML标签中
-  * 要发送图片可以使用`<img src="https://xxx">`外链图片链接，但很多情况下图片是本地的，此时可以使用
+  * 要发送图片可以使用`<img src="https://example.com/xx.png">`外链图片链接，但很多情况下图片是本地的，此时可以使用
     * `<img alt="图片显示失败时的说明文字" src="data:image/png;base64, xxx >`将base64编码的本地图片内嵌到邮件中
     * 也可以使用CSS`background-image`属性加base64编码用作背景图片，也是一种选择
     * base64在线转换参考：[https://codebeautify.org/image-to-base64-converter](https://codebeautify.org/image-to-base64-converter)
