@@ -2348,7 +2348,9 @@ floorBox.addEventListener("click", (e) => {
 
 <br />
 
-## 过渡
+## 过渡效果
+
+::: details （1）过渡说明
 
 `transition`过渡属性可以为一个元素在不同样式之间变化自动添加"补间动画"
 
@@ -2373,13 +2375,9 @@ transition: width       1s      linear        0s;
 
 * display（参考下面**元素隐藏与显示过渡效果说明**）
 
+:::
 
-
-**过渡效果测试**
-
-::: details 点击查看完整代码
-
-`demo.html`
+::: details （2）过渡测试
 
 ```html
 <!DOCTYPE html>
@@ -2682,11 +2680,7 @@ transition: width       1s      linear        0s;
 
 ![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C.gif)
 
-
-
-**元素隐藏与显示过渡效果说明**
-
-`demo.html`
+::: details （2）元素隐藏与显示过渡效果说明
 
 ```html
 <!doctype html>
@@ -2819,19 +2813,21 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
-![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%85%83%E7%B4%A0%E9%9A%90%E8%97%8F%E4%B8%8E%E6%98%BE%E7%A4%BA%E8%BF%87%E6%B8%A1%E6%95%88%E6%9E%9C%E8%AF%B4%E6%98%8E.gif)
+:::
 
+![20230219154650.png](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230219154650.png.gif)
 
+<br />
 
-## 动画
+## 动画效果
+
+::: details （1）动画说明
 
 动画是比过渡更加智能、功能更强大的的CSS样式
 
 制作动画分为两步骤
 
 * 定义动画
-
-  ::: details 点击查看完整代码
 
   ```css
   /* 两帧动画 */
@@ -2866,9 +2862,7 @@ transition: width       1s      linear        0s;
       }    
   }
   ```
-
-  :::
-
+  
 * 调用动画
 
   使用`animation`来调用动画，用法与过渡类似
@@ -2880,11 +2874,9 @@ transition: width       1s      linear        0s;
 
   > 动画执行次数还可以写`infinite`，表示动画一直执行
 
+:::
 
-
-::: details 基础示例
-
-`demo.html`
+::: details （2）动画示例
 
 ```html
 <!DOCTYPE html>
@@ -3159,7 +3151,7 @@ transition: width       1s      linear        0s;
 
 ![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%8A%A8%E7%94%BB%E5%AD%A6%E4%B9%A0.gif)
 
-
+<br />
 
 ## 移动端基础
 
