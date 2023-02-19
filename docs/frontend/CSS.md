@@ -1,4 +1,4 @@
-CSS
+# CSS
 
 ## 资料
 
@@ -2044,12 +2044,16 @@ floorBox.addEventListener("click", (e) => {
 
 **1、旋转变形**
 
+::: details （1）语法
+
 | 属性               | 值                | 说明                                                         |
 | ------------------ | ----------------- | ------------------------------------------------------------ |
 | `transform`        | `rotate(<n>deg);` | 旋转变形；若角度n为正值，则顺时针旋转，否则逆时针旋转<br />旋转一周的角度是360度，即正旋转300度(`rotate(300deg);`)和<br />负旋转60度(`rotate(-60deg);`)是一样的效果 |
 | `transform-origin` | `0 0;`            | 设置旋转中心；`0 0;`就是左上角，`0 100%;`左下角，其他也类似  |
 
-::: details （1）盒子旋转45度，内部的元素也会跟着旋转
+:::
+
+::: details （2）盒子旋转45度，内部的元素也会跟着旋转
 
 ```css
         .description:after {
@@ -2075,7 +2079,7 @@ floorBox.addEventListener("click", (e) => {
 
 :::
 
-::: details （2）只旋转图片
+::: details （3）只旋转图片
 
 ```css
         .description:after {
@@ -2100,7 +2104,7 @@ floorBox.addEventListener("click", (e) => {
 
 :::
 
-::: details （3）盒子顺时针转，图片逆时针转
+::: details （4）盒子顺时针转，图片逆时针转
 
 ```css
         .description:after {
@@ -2127,7 +2131,7 @@ floorBox.addEventListener("click", (e) => {
 
 :::
 
-::: details （4）以盒子左上角为旋转点旋转45度
+::: details （5）以盒子左上角为旋转点旋转45度
 
 ```css
         .description:after {
@@ -2157,11 +2161,15 @@ floorBox.addEventListener("click", (e) => {
 
 **2、缩放变形**
 
+::: details （1）语法
+
 | 属性        | 值            | 说明                                                         |
 | ----------- | ------------- | ------------------------------------------------------------ |
 | `transform` | `scale(<n>);` | 缩放变形；n代表缩放倍数；也可以写两个值，分别代表宽和高缩放的倍数<br />当数值大于1时表示放大倍数，小于1时表示缩小倍数 |
 
-::: details （1）将盒子放大2倍
+:::
+
+::: details （2）将盒子放大2倍
 
 ```css
         .description:after {
@@ -2187,7 +2195,7 @@ floorBox.addEventListener("click", (e) => {
 
 :::
 
-::: details （2）将盒子缩放至原来的二分之一
+::: details （3）将盒子缩放至原来的二分之一
 
 ```css
        .description:after {
@@ -2218,11 +2226,15 @@ floorBox.addEventListener("click", (e) => {
 
 **3、斜切变形**
 
+::: details （1）语法
+
 | 属性        | 值                            | 说明                                                         |
 | ----------- | ----------------------------- | ------------------------------------------------------------ |
 | `transform` | `skew(x斜切角度，y斜切角度);` | 角度单位为`deg`<br />注意：当只有一个参数的时候，第二个参数默认为`0deg` |
 
-::: details （1）斜切变形
+:::
+
+::: details （2）斜切变形
 
 ```css
         .description:after {
@@ -2251,11 +2263,15 @@ floorBox.addEventListener("click", (e) => {
 
 **4、位移变形**
 
+::: details （1）语法
+
 | 属性        | 值                        | 说明                                                         |
 | ----------- | ------------------------- | ------------------------------------------------------------ |
 | `transform` | `translate(300px, 10px);` | 两个值分别代表向右移动300像素，向下移动10像素<br />这与相对定位很类似，也会在"老家留坑" |
 
-::: details （1）位移变形
+:::
+
+::: details （2）位移变形
 
 ```css
         .description:after {
@@ -2286,12 +2302,16 @@ floorBox.addEventListener("click", (e) => {
 
 **5、3D旋转**
 
+::: details （1）语法
+
 | 属性          | 值                                         | 说明                                                         |
 | ------------- | ------------------------------------------ | ------------------------------------------------------------ |
 | `transform`   | `rotateX(<n>deg);`<br />`rotateY(<n>deg);` | 分别代表绕横轴和绕纵轴旋转，两个可以一块写，使用逗号隔开     |
 | `perspective` | 像素                                       | 用来定义透视的强度，可以理解为"人眼到舞台的距离"，单位是像素<br />这个属性一般设置在`3D`旋转元素的父元素上 |
 
-::: details （1）3D旋转
+:::
+
+::: details （2）3D旋转
 
 ```html
 <!doctype html>
@@ -3155,9 +3175,13 @@ transition: width       1s      linear        0s;
 
 ## 移动端基础
 
+<br />
 
+**1、像素和视口**
 
-### 像素
+::: details （1）像素和视口概念
+
+**像素**
 
 | 概念                                                         | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -3168,9 +3192,7 @@ transition: width       1s      linear        0s;
 | 缩放                                                         | 缩放改变的是`CSS`像素对应物理像素的个数                      |
 | `PPI`/ `DPI`                                                 | 每英寸的物理像素点，（宽的平方+高的平方）开根号 / 对角线长度 |
 
-
-
-### 视口(`viewport`)
+**视口(viewport)**
 
 视口的概念是在移动端才提出来的，视口的意思就是 可视化窗口
 
@@ -3186,11 +3208,9 @@ transition: width       1s      linear        0s;
 >
 > * PC端浏览器是否有缩放（`Ctrl+鼠标滚轮`会缩放网页大小，按`Ctrl+小键盘数字0`可以取消缩放）
 
+:::
 
-
-**测试1：默认的视口宽度**
-
-`demo.html`
+::: details （2）默认的视口宽度
 
 ```html
 <!doctype html>
@@ -3224,11 +3244,9 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
+:::
 
-
-**测试2：默认视口下，盒子在移动端会进行缩放**
-
-`demo.html`
+::: details （3）默认视口下，盒子在移动端会进行缩放
 
 ```html
 <!doctype html>
@@ -3270,9 +3288,9 @@ transition: width       1s      linear        0s;
 
 > 可以看到，盒子大小是一致的了
 
+:::
 
-
-**测试3：兼容不同宽度移动端设备**
+::: details （4）兼容不同宽度移动端设备
 
 上面我们代码中手动指定了宽度为`414px`，但是不同的移动端有不同的宽度，如何兼容呢？
 
@@ -3295,11 +3313,11 @@ transition: width       1s      linear        0s;
 
 ![image-20211114162011771](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211114162011771.png)
 
+:::
 
+::: details （5）用户可缩放和缩放比
 
-**测试4：用户可缩放和缩放比**
-
-缩放比
+**缩放比**
 
 ```html
 <!doctype html>
@@ -3319,9 +3337,7 @@ transition: width       1s      linear        0s;
 
 还有一个参数就是控制是否允许缩放，就是`user-scalable`,值为`yes`或`no`，一般我们设置为`no`，但是部分浏览器会忽略这个属性
 
-
-
-**测试5：最终的写法**
+**最终的写法**
 
 为了浏览器兼容性，一般用的时候我们都会把上面几个属性都写上（其实他们实现的都是同一个功能，就是调整视口）
 
@@ -3345,13 +3361,15 @@ transition: width       1s      linear        0s;
 
 > 注：在`IDE`中（`WebStorm`或`VSCode`），在空白网页输入`!`，并按下`Tab`即可出来上面的代码
 
+:::
 
+<br />
 
-### 媒体查询（media query）
+**2、媒体查询（media query）**
+
+::: details （1）媒体查询语法
 
 媒体查询就是查询屏幕大小，根据不同的屏幕大小，我们可以设置不同的`CSS`属性
-
-**语法**
 
 ```css
 <!doctype html>
@@ -3400,9 +3418,9 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
+:::
 
-
-**断点**
+::: details （2）媒体查询断点
 
 在我们实际写页面的时候，对于不同屏幕有没有一些业界公认的划分规范呢，这时候可以参考一下Bootstrap是如何划分的，
 
@@ -3410,9 +3428,9 @@ transition: width       1s      linear        0s;
 
 ![image-20211115210507671](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211115210507671.png)
 
-**示例**
+:::
 
-`demo.html`
+::: details （3）媒体查询示例
 
 ```html
 <!doctype html>
@@ -3528,11 +3546,15 @@ transition: width       1s      linear        0s;
 </html>
 ```
 
+![20230219160306.png](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230219160306.png.gif)
 
+:::
 
-![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/%E5%AA%92%E4%BD%93%E6%9F%A5%E8%AF%A2.gif)
+<br />
 
-### 移动端常用单位
+**3、移动端常用单位**
+
+::: details （1）常用单位
 
 ```css
     <style>
@@ -3557,9 +3579,9 @@ transition: width       1s      linear        0s;
     </style>
 ```
 
-**测试1：使用em来缩进段落**
+:::
 
-`demo.html`
+::: details （2）使用em来缩进段落
 
 ```html
 <!doctype html>
@@ -3597,9 +3619,11 @@ transition: width       1s      linear        0s;
 
 ![image-20211115221120865](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211115221120865.png)
 
+:::
 
+<br />
 
-## `CSS`变量
+## CSS变量
 
 使用`CSS`变量可以方便的实现<span style="color:red;">换肤功能</span>、<span style="color:red;">暗黑模式</span>等功能
 
