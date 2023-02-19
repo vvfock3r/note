@@ -2,15 +2,15 @@
 
 ## 参考资料
 
-CSS强相关
+CSS
 
 * CSS属性参考：[https://cssreference.io/](https://cssreference.io/)
 
-**综合类**
+综合类
 
 * MDN：[https://developer.mozilla.org/zh-CN/docs/Web/CSS](https://developer.mozilla.org/zh-CN/docs/Web/CSS)
 
-* web.dev：[https://web.dev/learn/](https://web.dev/learn/)
+* web.dev：[https://web.dev/learn/css/](https://web.dev/learn/css/)
 
 工具类
 
