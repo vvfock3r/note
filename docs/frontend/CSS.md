@@ -1,4 +1,4 @@
-# CSS
+CSS
 
 ## 资料
 
@@ -1987,11 +1987,9 @@ floorBox.addEventListener("click", (e) => {
 
 ## 2D变形和3D旋转
 
+**准备工作**
 
-
-### 准备工作
-
-`demo.html`
+::: details 点击查看详情
 
 ```html
 <!DOCTYPE html>
@@ -2013,9 +2011,9 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
         }
 
@@ -2028,7 +2026,7 @@ floorBox.addEventListener("click", (e) => {
 <div class="main">
     <h2 class="description"></h2>
     <div class="box">
-        <img src="https://img2.baidu.com/it/u=2129210531,2234000365&fm=26&fmt=auto" alt="">
+        <img alt="" src="https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230219093704.png">
     </div>
 </div>
 
@@ -2036,30 +2034,31 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211108222443722](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222443722.png)
+![image-20230219100211067](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219100211067.png)
 
+:::
 
+<br />
 
-### 旋转变形
+**旋转变形**
 
 | 属性               | 值                | 说明                                                         |
 | ------------------ | ----------------- | ------------------------------------------------------------ |
 | `transform`        | `rotate(<n>deg);` | 旋转变形；若角度n为正值，则顺时针旋转，否则逆时针旋转<br />旋转一周的角度是360度，即正旋转300度(`rotate(300deg);`)和<br />负旋转60度(`rotate(-60deg);`)是一样的效果 |
 | `transform-origin` | `0 0;`            | 设置旋转中心；`0 0;`就是左上角，`0 100%;`左下角，其他也类似  |
 
-
-
-#### 测试1：盒子旋转45度
+::: details （1）盒子旋转45度，内部的元素也会跟着旋转
 
 ```css
         .description:after {
             content: "盒子旋转45度，内部的元素也会跟着旋转";
         }
+
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
 
             /* 盒子旋转45度 */
@@ -2070,11 +2069,11 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
+![image-20230219100135241](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219100135241.png)
 
+:::
 
-![image-20211108220129891](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220129891.png)
-
-#### 测试2：只旋转图片
+::: details （2）只旋转图片
 
 ```css
         .description:after {
@@ -2083,9 +2082,9 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
         }
 
@@ -2095,9 +2094,11 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108220549546](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220549546.png)
+![image-20230219100431374](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219100431374.png)
 
-#### 测试3：盒子顺时针转，图片逆时针转
+:::
+
+::: details （3）盒子顺时针转，图片逆时针转
 
 ```css
         .description:after {
@@ -2106,9 +2107,9 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
             /* 盒子旋转45度 */
             transform: rotate(45deg);
@@ -2120,9 +2121,11 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108220854953](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108220854953.png)
+![image-20230219100603917](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219100603917.png)
 
-#### 测试4：以盒子左上角为旋转点旋转45度
+:::
+
+::: details （4）以盒子左上角为旋转点旋转45度
 
 ```css
         .description:after {
@@ -2131,22 +2134,24 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
-
             /* 以盒子左上角为旋转点旋转45度 */
             transform: rotate(45deg);
             transform-origin: 0 0;
         }
 
         .box img {
-
         }
 ```
 
-![image-20211108221332997](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108221332997.png)
+![image-20230219100812052](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219100812052.png)
+
+:::
+
+<br />
 
 ### 缩放变形
 
