@@ -3625,9 +3625,9 @@ transition: width       1s      linear        0s;
 
 ## CSS变量
 
-使用`CSS`变量可以方便的实现<span style="color:red;">换肤功能</span>、<span style="color:red;">暗黑模式</span>等功能
+::: details 点击查看详情
 
-`demo.html`
+使用`CSS`变量可以方便的实现<span style="color:red;">换肤功能</span>、<span style="color:red;">暗黑模式</span>等功能
 
 ```html
 <!DOCTYPE html>
@@ -3692,6 +3692,8 @@ transition: width       1s      linear        0s;
 ```
 
 ![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/CSS-Var.gif)
+
+:::
 
 
 
