@@ -1987,6 +1987,8 @@ floorBox.addEventListener("click", (e) => {
 
 ## 2D变形和3D旋转
 
+<br />
+
 **准备工作**
 
 ::: details 点击查看详情
@@ -2040,7 +2042,7 @@ floorBox.addEventListener("click", (e) => {
 
 <br />
 
-**旋转变形**
+**1、旋转变形**
 
 | 属性               | 值                | 说明                                                         |
 | ------------------ | ----------------- | ------------------------------------------------------------ |
@@ -2153,15 +2155,13 @@ floorBox.addEventListener("click", (e) => {
 
 <br />
 
-### 缩放变形
+**2、缩放变形**
 
 | 属性        | 值            | 说明                                                         |
 | ----------- | ------------- | ------------------------------------------------------------ |
 | `transform` | `scale(<n>);` | 缩放变形；n代表缩放倍数；也可以写两个值，分别代表宽和高缩放的倍数<br />当数值大于1时表示放大倍数，小于1时表示缩小倍数 |
 
-
-
-#### 测试1：将盒子放大2倍
+::: details （1）将盒子放大2倍
 
 ```css
         .description:after {
@@ -2170,23 +2170,24 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            /* 内边距调大一些,不然会遮盖字体*/
+            padding: 50px;
             margin: 60px auto;
-
             /* 将盒子放大2倍 */
             transform: scale(2);
         }
 
         .box img {
-
         }
 ```
 
-![image-20211108222559382](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222559382.png)
+![image-20230219152948652](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219152948652.png)
 
-#### 测试2：将盒子缩放至原来的二分之一
+:::
+
+::: details （2）将盒子缩放至原来的二分之一
 
 ```css
        .description:after {
@@ -2209,15 +2210,19 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108222822196](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108222822196.png)
+![image-20230219153102704](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219153102704.png)
 
-### 斜切变形
+:::
+
+<br />
+
+**3、斜切变形**
 
 | 属性        | 值                            | 说明                                                         |
 | ----------- | ----------------------------- | ------------------------------------------------------------ |
 | `transform` | `skew(x斜切角度，y斜切角度);` | 角度单位为`deg`<br />注意：当只有一个参数的时候，第二个参数默认为`0deg` |
 
-**测试1：斜切变形**
+::: details （1）斜切变形
 
 ```css
         .description:after {
@@ -2226,29 +2231,31 @@ floorBox.addEventListener("click", (e) => {
 
         .box {
             width: 180px;
-            height: 246px;
-            border: 5px solid green;
-            padding: 80px;
+            height: 220px;
+            border: 3px solid green;
+            padding: 40px;
             margin: 60px auto;
-
             /* 斜切变形 */
             transform: skew(-20deg, -10deg);
         }
 
         .box img {
-
         }
 ```
 
-![image-20211108223528671](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108223528671.png)
+![image-20230219153325175](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219153325175.png)
 
-### 位移变形
+:::
+
+<br />
+
+**4、位移变形**
 
 | 属性        | 值                        | 说明                                                         |
 | ----------- | ------------------------- | ------------------------------------------------------------ |
 | `transform` | `translate(300px, 10px);` | 两个值分别代表向右移动300像素，向下移动10像素<br />这与相对定位很类似，也会在"老家留坑" |
 
-**测试1：位移变形**
+::: details （1）位移变形
 
 ```css
         .description:after {
@@ -2271,18 +2278,20 @@ floorBox.addEventListener("click", (e) => {
         }
 ```
 
-![image-20211108224227593](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20211108224227593.png)
+![image-20230219153458833](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230219153458833.png)
 
-### `3D`旋转
+:::
+
+<br />
+
+**5、3D旋转**
 
 | 属性          | 值                                         | 说明                                                         |
 | ------------- | ------------------------------------------ | ------------------------------------------------------------ |
 | `transform`   | `rotateX(<n>deg);`<br />`rotateY(<n>deg);` | 分别代表绕横轴和绕纵轴旋转，两个可以一块写，使用逗号隔开     |
 | `perspective` | 像素                                       | 用来定义透视的强度，可以理解为"人眼到舞台的距离"，单位是像素<br />这个属性一般设置在`3D`旋转元素的父元素上 |
 
-**测试1：简单旋转测试**
-
-`demo.html`
+::: details （1）3D旋转
 
 ```html
 <!doctype html>
@@ -2333,7 +2342,11 @@ floorBox.addEventListener("click", (e) => {
 </html>
 ```
 
-![image-20211108224227593](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/3d%E6%97%8B%E8%BD%AC%E6%B5%8B%E8%AF%95.gif)
+![20230219153704](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230219153704.gif)
+
+:::
+
+<br />
 
 ## 过渡
 
