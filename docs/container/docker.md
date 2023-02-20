@@ -3252,6 +3252,93 @@ security:
 
 <br />
 
+#### Redis
+
+官方文档：[https://redis.io/docs/](https://redis.io/docs/)
+
+Docker Hub：[https://hub.docker.com/_/redis](https://hub.docker.com/_/redis)
+
+::: details （1）获取配置文件并修改
+
+```bash
+# 下载7.0.8版本的源码包
+[root@ap-hongkang ~]# wget -c https://download.redis.io/releases/redis-7.0.8.tar.gz
+[root@ap-hongkang ~]# tar zxf redis-7.0.8.tar.gz
+
+# 创建本地持久目录,用于存放配置文件
+[root@ap-hongkang ~]# mkdir -p /etc/redis
+[root@ap-hongkang ~]# cp redis-7.0.8/redis.conf /etc/redis/redis.conf
+
+# 修改配置文件
+[root@ap-hongkang ~]# vim /etc/redis/redis.conf
+aclfile /etc/redis/users.acl # 将注释打开,启用aclfile模式
+[root@ap-hongkang ~]# touch /etc/redis/users.acl
+[root@ap-hongkang ~]# chmod -R 777 /etc/redis
+
+# 清理
+[root@ap-hongkang ~]# rm -rf redis-7.0.8 redis-7.0.8.tar.gz
+```
+
+:::
+
+::: details （2）启动容器
+
+```bash
+[root@ap-hongkang ~]# docker container run \
+    --name redis \
+    -p 6379:6379 \
+    -v /etc/redis:/etc/redis \
+    --memory 1g \
+    -d \
+    --restart=always \
+  redis:7.0.8 redis-server /etc/redis/redis.conf
+```
+
+:::
+
+::: details （3）配置用户名和密码
+
+```bash
+# 查看acl列表
+[root@ap-hongkang ~]# docker exec -it redis redis-cli -h 127.0.0.1 -p 6379
+127.0.0.1:6379> acl list
+1) "user default on nopass ~* &* +@all"
+
+# 添加用户, zhangsan是用户名, on代表启用用户, 123456是密码(>是固定字符), ~*表示允许操作所有的key, +@all表示可以执行所有的命令
+127.0.0.1:6379> acl setuser zhangsan on >123456 ~* +@all
+OK
+
+# 禁用默认的用户
+127.0.0.1:6379> acl setuser default off
+OK
+
+# 查看acl
+127.0.0.1:6379> acl list
+1) "user default off nopass ~* &* +@all"
+2) "user zhangsan on #8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92 ~* resetchannels +@all"
+
+# 持久化到aclfile
+127.0.0.1:6379> acl save
+OK
+
+# 未输入用户名和密码则无任何权限
+[root@ap-hongkang ~]# docker exec -it redis redis-cli -h 127.0.0.1 -p 6379
+127.0.0.1:6379> set a b
+(error) NOAUTH Authentication required.
+
+# 认证
+127.0.0.1:6379> auth zhangsan 123456
+OK
+127.0.0.1:6379> set a b
+OK
+127.0.0.1:6379> get a
+"b"
+```
+
+:::
+
+<br />
+
 ### 8）杂项汇总
 
 #### 修改存储目录
