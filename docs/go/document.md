@@ -9280,6 +9280,115 @@ ok      example 21.414s
 
 :::
 
+<br />
+
+### 内联函数
+
+* 内联概念：比如说函数A调用了函数B，那么将函数B内联优化后，在函数A中会展开函数B的内容，而不是调用函数B
+* 内联优势：避免了函数调用所带来的开销，使运行速度更快
+* 内联劣势：编译后二进制体积会更大
+* 何时发生：
+  * 默认情况下由编译器决定是否内联
+  * 使用`go build -gcflags="-l"`参数可设置全局关闭内联，若使用`-l -l`或更多的`-l`则又会打开内联，并启用更激进的内联策略
+  * 使用`//go:noinline`（写在函数定义的上一行, //和go之间不能有空格）可以禁止编译器针对某个函数不要进行内联
+
+::: details （1）使用内联和不使用内联性能对比
+
+```go
+package main
+
+import "testing"
+
+//go:noinline
+func maxNoinline(a, b int) int {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func maxInline(a, b int) int {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func BenchmarkNoInline(b *testing.B) {
+	x, y := 1, 2
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		maxNoinline(x, y)
+	}
+}
+
+func BenchmarkInline(b *testing.B) {
+	x, y := 1, 2
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		maxInline(x, y)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go test -bench .
+goos: windows
+goarch: amd64
+pkg: example
+cpu: Intel(R) Core(TM) i7-4790K CPU @ 4.00GHz
+BenchmarkNoInline-8     794989972                1.436 ns/op
+BenchmarkInline-8       1000000000               0.2432 ns/op
+PASS
+ok      example 3.981s
+```
+
+:::
+
+::: details （2）查看编译器优化策略
+
+```bash
+package main
+
+func add(a, b int) int {
+	return a + b
+}
+
+func sub(a, b int) int {
+	return a - b
+}
+
+func main() {
+	add(1, 2)
+	sub(1, 2)
+}
+```
+
+输出结果
+
+```bash
+# -gcflags="-m" 用于输出编译器优化策略，如果使用两个-m则输出更多内容
+D:\application\GoLand\example>go build -gcflags="-m" main.go    
+# command-line-arguments
+.\main.go:3:6: can inline add
+.\main.go:7:6: can inline sub
+.\main.go:11:6: can inline main
+.\main.go:12:5: inlining call to add
+.\main.go:13:5: inlining call to sub
+
+D:\application\GoLand\example>go build -gcflags="-m -m" main.go 
+# command-line-arguments
+.\main.go:3:6: can inline add with cost 4 as: func(int, int) int { return a + b }
+.\main.go:7:6: can inline sub with cost 4 as: func(int, int) int { return a - b }
+.\main.go:11:6: can inline main with cost 16 as: func() { add(1, 2); sub(1, 2) }
+.\main.go:12:5: inlining call to add
+.\main.go:13:5: inlining call to sub
+```
+
+:::
+
 ## 
 
 ## 编译与反编译
