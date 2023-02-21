@@ -667,6 +667,221 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 :::
 
+<br />
+
+### Go命令文档
+
+::: details （1）查看顶层帮助文档： go 或 go -h 或 go --help
+
+```bash
+D:\application\GoLand\example>go -h
+Go is a tool for managing Go source code.                              
+                                                                       
+Usage:                                                                 
+                                                                       
+        go <command> [arguments]                                       
+                                                                       
+The commands are:                                                      
+                                                                       
+        bug         start a bug report                                 
+        build       compile packages and dependencies                  
+        clean       remove object files and cached files               
+        doc         show documentation for package or symbol           
+        env         print Go environment information                   
+        fix         update packages to use new APIs                    
+        fmt         gofmt (reformat) package sources                   
+        generate    generate Go files by processing source             
+        get         add dependencies to current module and install them
+        install     compile and install packages and dependencies      
+        list        list packages or modules                           
+        mod         module maintenance                                 
+        work        workspace maintenance                              
+        run         compile and run Go program                         
+        test        test packages                                      
+        tool        run specified go tool                              
+        version     print Go version                                   
+        vet         report likely mistakes in packages                 
+                                                                       
+Use "go help <command>" for more information about a command.          
+                                                                       
+Additional help topics:                                                
+                                                                       
+        buildconstraint build constraints                              
+        buildmode       build modes                                    
+        c               calling between Go and C
+        cache           build and test caching
+        environment     environment variables
+        filetype        file types
+        go.mod          the go.mod file
+        gopath          GOPATH environment variable
+        gopath-get      legacy GOPATH go get
+        goproxy         module proxy protocol
+        importpath      import path syntax
+        modules         modules, module versions, and more
+        module-get      module-aware go get
+        module-auth     module authentication using go.sum
+        packages        package lists and patterns
+        private         configuration for downloading non-public code
+        testflag        testing flags
+        testfunc        testing functions
+        vcs             controlling version control with GOVCS
+
+Use "go help <topic>" for more information about that topic.
+```
+
+:::
+
+::: details （2）查看子命令帮助文档：go help <sub-command>
+
+```bash
+# 1、使用-h和--help, 输出内容太过于简单，根本没有参考意义。它告诉我们要使用 go help build
+D:\application\GoLand\example>go build -h
+usage: go build [-o output] [build flags] [packages]
+Run 'go help build' for details.
+
+D:\application\GoLand\example>go build --help
+usage: go build [-o output] [build flags] [packages]
+Run 'go help build' for details.
+
+# 2、go help build,内容很详细
+D:\application\GoLand\example>go help build
+usage: go build [-o output] [build flags] [packages]
+
+...
+
+The build flags are shared by the build, clean, get, install, list, run,
+and test commands:
+
+        -C dir
+                Change to dir before running the command.
+                Any files named on the command line are interpreted after
+                changing directories.
+        -a
+                force rebuilding of packages that are already up-to-date.
+        -n
+                print the commands but do not run them.
+        -p n
+                the number of programs, such as build commands or
+                test binaries, that can be run in parallel.
+                The default is GOMAXPROCS, normally the number of CPUs available.
+        -race
+                enable data race detection.
+                Supported only on linux/amd64, freebsd/amd64, darwin/amd64, darwin/arm64, windows/amd64,
+                linux/ppc64le and linux/arm64 (only for 48-bit VMA).
+        -msan
+                enable interoperation with memory sanitizer.
+                Supported only on linux/amd64, linux/arm64, freebsd/amd64
+                and only with Clang/LLVM as the host C compiler.
+                PIE build mode will be used on all platforms except linux/amd64.
+...
+        -ldflags '[pattern=]arg list'
+                arguments to pass on each go tool link invocation.
+...
+```
+
+:::
+
+::: details （3）查看某个选项可接收的参数列表：go <sub-command> <option> --help
+
+```bash
+# go build -ldflags选项接收一个列表作为值
+# 注意必须使用--help，不能使用-h
+D:\application\GoLand\example>go build -ldflags --help
+# example
+usage: link [options] main.o
+  -B note
+        add an ELF NT_GNU_BUILD_ID note when using ELF               
+  -E entry                                                           
+        set entry symbol name                                        
+  -H type                                                            
+        set header type                                              
+  -I linker                                                          
+        use linker as ELF dynamic linker                             
+  -L directory                                                       
+        add specified directory to library path                      
+  -R quantum                                                         
+        set address rounding quantum (default -1)                    
+  -T address                                                         
+        set text segment address (default -1)                        
+  -V    print version and exit                                       
+  -X definition                                                      
+        add string value definition of the form importpath.name=value
+  -a    no-op (deprecated)                                           
+  -asan                                                              
+        enable ASan interface                                        
+  -aslr                                                              
+        enable ASLR for buildmode=c-shared on windows (default true) 
+  -benchmark string                                                  
+        set to 'mem' or 'cpu' to enable phase benchmarking           
+  -benchmarkprofile base                                             
+        emit phase profiles to base_phase.{cpu,mem}prof              
+  -buildid id                                                        
+        record id as Go toolchain build id                           
+  -buildmode mode                                                    
+        set build mode                                               
+  -c    dump call graph                                              
+  -capturehostobjs string
+        capture host object files loaded during internal linking to specified dir
+  -compressdwarf
+        compress DWARF if possible (default true)
+  -cpuprofile file
+        write cpu profile to file
+  -d    disable dynamic executable
+  -debugnosplit
+        dump nosplit call graph
+  -debugtextsize int
+        debug text section max size
+  -debugtramp int
+        debug trampolines
+  -dumpdep
+        dump symbol dependency graph
+  -extar string
+        archive program for buildmode=c-archive
+  -extld linker
+        use linker when linking in external mode
+  -extldflags flags
+        pass flags to external linker
+  -f    ignore version mismatch
+  -g    disable go package data checks
+  -h    halt on error
+  -importcfg file
+        read import configuration from file
+  -installsuffix suffix
+        set package directory suffix
+  -k symbol
+        set field tracking symbol
+  -libgcc string
+        compiler support lib for internal linking; use "none" to disable
+  -linkmode mode
+        set link mode
+  -linkshared
+        link against installed Go shared libraries
+  -memprofile file
+        write memory profile to file
+  -memprofilerate rate
+        set runtime.MemProfileRate to rate
+  -msan
+        enable MSan interface
+  -n    dump symbol table
+  -o file
+        write output to file
+  -pluginpath string
+        full path name for plugin
+  -r path
+        set the ELF dynamic linker search path to dir1:dir2:...
+  -race
+        enable race detector
+  -s    disable symbol table
+  -strictdups int
+        sanity check duplicate symbol contents during object file reading (1=warn 2=err).
+  -tmpdir directory
+        use directory for temporary files
+  -v    print link trace
+  -w    disable DWARF generation
+```
+
+:::
+
 ## 
 
 ## 基础入门
@@ -9058,7 +9273,9 @@ BenchmarkStringsBuilder-8       80014401                15.30 ns/op
 PASS
 ok      example 21.414s
 
-# 分析结果: 推荐使用strings.Builder
+# 分析结果: 
+# 1、推荐使用strings.Builder
+# 2、还有一个常用的函数strings.Join用于将字符串类型的切片转为字符串，其内部也是调用的strings.Builder
 ```
 
 :::
