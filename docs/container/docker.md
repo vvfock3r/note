@@ -3341,6 +3341,56 @@ OK
 
 ### 8）杂项汇总
 
+<br />
+
+#### 安装基础命令
+
+::: details deb包系列
+
+```bash
+# 新建容器(以Redis镜像举例)
+[root@ap-hongkang ~]# docker container run --name redis -d redis:7.0.8
+dafcbdca81d95b393b455623648b5191154c26ac735a8fe46ca1b1dcc00fc329
+
+# 查看系统(通用方法)
+# cat /etc/os-release
+PRETTY_NAME="Debian GNU/Linux 11 (bullseye)"
+NAME="Debian GNU/Linux"
+VERSION_ID="11"
+VERSION="11 (bullseye)"
+VERSION_CODENAME=bullseye
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+
+# 1、部分容器内的方向键和Tab键不管用，一般切换到bash后即可解决
+[root@ap-hongkang ~]# docker container exec -it redis sh
+# bash
+root@dafcbdca81d9:/data# 
+
+# 2、安装基础命令
+apt upgrade -y                # 更新源
+apt update  -y                # 更新软件包
+apt install -y curl           # curl
+apt install -y telnet         # telnet
+apt install -y vim            # vim
+apt install -y procps         # ps
+apt install -y inetutils-ping # ping
+apt install -y dnsutils       # nslookup
+apt install -y net-tools      # netstat/ifconfig
+apt install -y iproute2       # ip
+
+# 3、设置别名s
+alias ls='ls --color'
+alias ll='ls -l --color'
+alias grep='grep --color'
+```
+
+:::
+
+<br />
+
 #### 修改存储目录
 
 ::: details 点击查看详情
