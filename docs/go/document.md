@@ -671,7 +671,7 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 ### Go命令文档
 
-::: details （1）查看顶层帮助文档： go 或 go -h 或 go --help
+::: details （1）查看顶层帮助文档： go 或 go   -h 或 go   --help
 
 ```bash
 D:\application\GoLand\example>go -h
@@ -731,7 +731,7 @@ Use "go help <topic>" for more information about that topic.
 
 :::
 
-::: details （2）查看子命令帮助文档：go help <sub-command>
+::: details （2）查看子命令帮助文档：go   help   sub-command
 
 ```bash
 # 1、使用-h和--help, 输出内容太过于简单，根本没有参考意义。它告诉我们要使用 go help build
@@ -781,7 +781,7 @@ and test commands:
 
 :::
 
-::: details （3）查看某个选项可接收的参数列表：go <sub-command> <option> --help
+::: details （3）查看某个选项可接收的参数列表：go   sub-command   option   --help
 
 ```bash
 # go build -ldflags选项接收一个列表作为值
