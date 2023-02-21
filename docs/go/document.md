@@ -671,7 +671,7 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 ### Go命令文档
 
-::: details （1）查看顶层帮助文档： go 或 go   -h 或 go   --help
+::: details （1）查看顶层帮助文档： go 或 go -h 或 go --help
 
 ```bash
 D:\application\GoLand\example>go -h
