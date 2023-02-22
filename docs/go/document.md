@@ -9393,17 +9393,15 @@ D:\application\GoLand\example>go build -gcflags="-m -m" main.go
 
 ### 指针运算
 
-unsafe包允许程序在安全限制之外直接操作内存，从而提高程序性能。但需要格外小心，因为这种操作可能会引入各种安全问题，包括内存泄漏、缓冲区溢出、指针错误等
-
 **Pointer**
 
-* `unsafe.Pointer`是一个`*ArbitraryType`指针类型：`type Pointer *ArbitraryType`
-* `unsafe.Pointer`指针可以和任意类型的指针互相转换
+* `unsafe.Pointer`是一个指针类型，表示一个通用类型的指针
+* `unsafe.Pointer`指针和任意类型的指针互相转换
 * `unsafe.Pointer`指针不可以参与运算
 
 **uintptr**
 
-* `uintptr`是一个uintptr类型：`type uintptr uintptr`，底层是int类型，其大小足以容纳任何指针
+* `uintptr`是一个整数类型，其大小足以容纳任何指针
 * `uintptr`可以与`unsafe.Pointer`互相转换
 * `uintptr`的主要作用就是参与指针运算
 
@@ -9526,7 +9524,7 @@ string "最可爱的人"
 
 :::
 
-::: details （4）String 和 []Byte 的互相转换：推荐做法（Go 1.20+）
+::: details （4）String 和 []Byte 的互相转换：推荐做法（要求Go 1.20+）
 
 ```go
 package main
