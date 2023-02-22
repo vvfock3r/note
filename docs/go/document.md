@@ -9563,6 +9563,49 @@ string "最可爱的人"
 
 :::
 
+::: details （5）uintptr基础示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+type Point struct {
+	X int
+	Y int
+}
+
+func main() {
+	// 实例化Point对象
+	p := Point{X: 10, Y: 20}
+
+	// 修改X的值
+	xPtr := (*int)(unsafe.Pointer(&p))
+	*xPtr = 100
+
+	// 修改Y的值，此时需要通过uintptr进行参与计算，找到Y的指针地址
+	yPtr := (*int)(unsafe.Pointer(
+		uintptr(unsafe.Pointer(&p)) + unsafe.Offsetof(p.Y)),
+	)
+	*yPtr = 200
+
+	// 输出
+	fmt.Printf("%#v\n", p)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+main.Point{X:100, Y:200}
+```
+
+:::
+
 ## 
 
 ## 编译与反编译
