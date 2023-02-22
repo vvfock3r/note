@@ -62,23 +62,23 @@ const navbar = [
             {
                 text: '前端基础',
                 children: [
-                    {text: 'CSS', link: '/frontend/css.html'},
-                    {text: 'JavaScript', link: '/frontend/javascript.html'},
+                    {text: 'CSS', link: '/frontend/css'},
+                    {text: 'JavaScript', link: '/frontend/javascript'},
                 ]
             },
             {
                 text: '工程化',
                 children: [
-                    {text: 'Vue', link: '/frontend/vue.html'},
-                    {text: 'Node包管理器和Vite脚手架', link: '/frontend/node-package-manager.html'},
-                    {text: 'TypeScript核心语法', link: '/frontend/typescript.html'},
+                    {text: 'Vue', link: '/frontend/vue'},
+                    {text: 'Node包管理器和Vite脚手架', link: '/frontend/node-package-manager'},
+                    {text: 'TypeScript核心语法', link: '/frontend/typescript'},
                 ]
             },
             {
                 text: '可视化',
                 children: [
                     {text: '浏览器原生绘图', link: '/frontend/Browser-Native-Drawing.html'},
-                    {text: 'Apache Echarts', link: '/frontend/echarts.html'},
+                    {text: 'Apache Echarts', link: '/frontend/echarts'},
                 ]
             },
             {
