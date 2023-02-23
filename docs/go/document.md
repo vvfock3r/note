@@ -10093,6 +10093,64 @@ OS/Arch:             linux/amd64
 
 <br />
 
+### 查看汇编
+
+::: details （1）查看汇编代码
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	s := make([]int, 0)
+	m := make(map[string]string)
+	c := make(chan struct{})
+
+	fmt.Println(s)
+	fmt.Println(m)
+	fmt.Println(c)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go build -gcflags="-S" main.go
+# command-line-arguments
+main.main STEXT size=293 args=0x0 locals=0x78 funcid=0x0 align=0x0
+        0x0000 00000 (D:\application\GoLand\example\main.go:5)  TEXT    main.main(SB), ABIInternal, $120-0
+        0x0000 00000 (D:\application\GoLand\example\main.go:5)  CMPQ    SP, 16(R14)
+        0x0004 00004 (D:\application\GoLand\example\main.go:5)  PCDATA  $0, $-2
+        0x0004 00004 (D:\application\GoLand\example\main.go:5)  JLS     280
+        0x000a 00010 (D:\application\GoLand\example\main.go:5)  PCDATA  $0, $-1
+        0x000a 00010 (D:\application\GoLand\example\main.go:5)  SUBQ    $120, SP
+        0x000e 00014 (D:\application\GoLand\example\main.go:5)  MOVQ    BP, 112(SP)
+        0x0013 00019 (D:\application\GoLand\example\main.go:5)  LEAQ    112(SP), BP
+        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $0, gclocals·3CgL1OMj4PK20UKKkS8Bfw==(SB)
+        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $1, gclocals·QQTUN2YG00BipaYa0pUiNw==(SB)
+        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $2, main.main.stkobj(SB)
+        0x0018 00024 (D:\application\GoLand\example\main.go:6)  LEAQ    type:int(SB), AX
+        0x001f 00031 (D:\application\GoLand\example\main.go:6)  XORL    BX, BX
+        0x0021 00033 (D:\application\GoLand\example\main.go:6)  MOVQ    BX, CX
+        0x0024 00036 (D:\application\GoLand\example\main.go:6)  PCDATA  $1, $0
+        0x0024 00036 (D:\application\GoLand\example\main.go:6)  CALL    runtime.makeslice(SB)
+        0x0029 00041 (D:\application\GoLand\example\main.go:6)  MOVQ    AX, main..autotmp_39+56(SP)
+        0x002e 00046 (D:\application\GoLand\example\main.go:7)  PCDATA  $1, $1
+        0x002e 00046 (D:\application\GoLand\example\main.go:7)  CALL    runtime.makemap_small(SB)
+        0x0033 00051 (D:\application\GoLand\example\main.go:7)  MOVQ    AX, main.m+40(SP)
+        0x0038 00056 (D:\application\GoLand\example\main.go:8)  XORL    BX, BX
+        0x003a 00058 (D:\application\GoLand\example\main.go:8)  LEAQ    type:chan struct {}(SB), AX
+        0x0041 00065 (D:\application\GoLand\example\main.go:8)  PCDATA  $1, $2
+        0x0041 00065 (D:\application\GoLand\example\main.go:8)  CALL    runtime.makechan(SB)
+        0x0046 00070 (D:\application\GoLand\example\main.go:8)  MOVQ    AX, main.c+48(SP)
+        ...
+```
+
+:::
+
+<br />
+
 ### 反编译
 
 ::: details （1）查看编译基本信息
@@ -10154,10 +10212,6 @@ main: go1.19.2
         build   GOOS=linux
         build   GOAMD64=v1
 ```
-
-:::
-
-::: details （2）查看汇编代码
 
 :::
 
