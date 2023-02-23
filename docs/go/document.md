@@ -10092,7 +10092,7 @@ OS/Arch:             linux/amd64
 
 <br />
 
-### 查看汇编
+### 汇编和反编译
 
 ::: details （1）查看汇编代码
 
@@ -10206,11 +10206,7 @@ func main() {
 
 :::
 
-<br />
-
-### 反编译
-
-::: details （1）查看编译基本信息
+::: details （2）查看二进制所依赖的第三方包
 
 ```go
 package main
