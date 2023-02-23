@@ -9632,63 +9632,62 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go build -x main.go
-WORK=C:\Users\Administrator\AppData\Local\Temp\go-build300327017
+WORK=C:\Users\Administrator\AppData\Local\Temp\go-build1315443961
 mkdir -p $WORK\b001\
-cat >C:\Users\Administrator\AppData\Local\Temp\go-build300327017\b001\importcfg.link << 'EOF' # internal
-packagefile command-line-arguments=C:\Users\Administrator\AppData\Local\go-build\e4\e498413c36444e3c92873cb373c63f54e2d7cc388ced920a146c16336010a6fe-d
-packagefile fmt=C:\Users\Administrator\AppData\Local\go-build\af\af957af9edcde92623760da8bbf015a49bf195d22b117b010e80c51678fda67d-d
-packagefile runtime=C:\Users\Administrator\AppData\Local\go-build\34\34bb7e361c7cd3bc02d2bff679aea4fbef29fea5cf9675d030642ec4d1fbb195-d
-packagefile errors=C:\Users\Administrator\AppData\Local\go-build\91\91718c006e6cfc1e1c4a497043965a0bcc7773ac8730c4cc591401fe6f850a66-d
-packagefile internal/fmtsort=C:\Users\Administrator\AppData\Local\go-build\95\95e2a90e0a824acb1a99d321da1f7c7613ce57b50f7595204e89174c2c9b7147-d
-packagefile io=C:\Users\Administrator\AppData\Local\go-build\27\27a9457dc5ef7d909fd1c438fc86eddecd6c33dc1d16144b513fc39c05c28ce5-d
-packagefile math=C:\Users\Administrator\AppData\Local\go-build\82\82685894fa5090cad70117775edeb001b999adef1f075f9286a5e0d617b9c7e4-d
-packagefile os=C:\Users\Administrator\AppData\Local\go-build\b9\b9d5e17fa067e73386444e409490ff4b650cd7d74975fbd170a79048d09ff688-d
-packagefile reflect=C:\Users\Administrator\AppData\Local\go-build\49\4946967e5d40bff21a43df46dec8b1b875c52ed1945453da227acc5bcb204cff-d
-packagefile sort=C:\Users\Administrator\AppData\Local\go-build\55\550db8b0251644e0e04451c9eefa46ab9c93aa08547e6f91bc71a562da5eaa50-d
-packagefile strconv=C:\Users\Administrator\AppData\Local\go-build\78\7855a10bb662f77657983687df1d1c50532c380c456b1426506d37cd2ea59e6d-d
-packagefile sync=C:\Users\Administrator\AppData\Local\go-build\d3\d33cfb910491472bf9b7bdaffcbe5937f6748e35415f6151177dc50b1bb8e64d-d
-packagefile unicode/utf8=C:\Users\Administrator\AppData\Local\go-build\06\06bf455f460aaf090de21ae1b25acfbd1ba8f228943e436aa3732c665de4c754-d
-packagefile internal/abi=C:\Users\Administrator\AppData\Local\go-build\82\826c9d981c2e8e6649aee7719b2269b25ef9a791ea7156a5ad131fe0d739b7fc-d
-packagefile internal/bytealg=C:\Users\Administrator\AppData\Local\go-build\47\47dff93c13cdc7aab9407202fd5664f2a0319282419a4013446be2d737a4a620-d
-packagefile internal/coverage/rtcov=C:\Users\Administrator\AppData\Local\go-build\7a\7a062020d134f8c53916c0aa9a7866836a96284c305cf9d9b6ec3718bac416a3-d
-packagefile internal/cpu=C:\Users\Administrator\AppData\Local\go-build\34\34e55cb3021352b3a5e39ea80243a9e0061590c9bb538ee19875bc50763d7ec4-d
-packagefile internal/goarch=C:\Users\Administrator\AppData\Local\go-build\50\502bd22f40b3126b7e1116bf7ff2427ab8a48008cb1cb4eb0f694316ccb9c35e-d
-packagefile internal/goexperiment=C:\Users\Administrator\AppData\Local\go-build\38\386a771d2be9ef039f5945b73529ca05c56237243448dbc12d5c7f9b487f6ecc-d
-packagefile internal/goos=C:\Users\Administrator\AppData\Local\go-build\7f\7f784d785260a2c34c09cf222f22fdfc5fc26d62958a4e1ea3c767ecb95f5107-d
-packagefile runtime/internal/atomic=C:\Users\Administrator\AppData\Local\go-build\bc\bc73b67c34d31be0588db34be52fa560cc9acd9f3f66dd34a59fcdf78b897e39-d
-packagefile runtime/internal/math=C:\Users\Administrator\AppData\Local\go-build\c2\c2cb1f20a52d47206265491ba4c3db5cd56997e737d1ae05c2fc9f2c4f85ebae-d
-packagefile runtime/internal/sys=C:\Users\Administrator\AppData\Local\go-build\11\1102904196c842aeaa2eec41e6a26e758bea750b2741384d9b43dd0b8bb35491-d
-packagefile internal/reflectlite=C:\Users\Administrator\AppData\Local\go-build\83\83696e8e04a0e9d95473346b7788ac834f991ee74b1063366fd17aa71937f019-d
-packagefile math/bits=C:\Users\Administrator\AppData\Local\go-build\9b\9b12594908ab6a82240ffe08a259a6da0405e942c2aa973cd1b4ed6611fc5568-d
-packagefile internal/itoa=C:\Users\Administrator\AppData\Local\go-build\61\61fb60ed802b1db056b0c87d0052431a6d0e1dfc6621cda09361eae0848625fe-d
-packagefile internal/poll=C:\Users\Administrator\AppData\Local\go-build\7e\7ef7d3c16712e0c50eb3e7a173a191a152d0ccc777d911ec575c6c2020896c90-d
-packagefile internal/safefilepath=C:\Users\Administrator\AppData\Local\go-build\3c\3c96ae53884e391af3b22a35f1b4c2488717ac6242d352abe5fe3df65abdad69-d
-packagefile internal/syscall/execenv=C:\Users\Administrator\AppData\Local\go-build\b1\b1cedc58b8d1e9e189c622e26248183fa20b312eba77652127a6222dcabe364b-d
-packagefile internal/syscall/windows=C:\Users\Administrator\AppData\Local\go-build\c7\c7247c32e6015148cbfd74cdf333a18a34803cf2614746403e64760718801ac9-d
-packagefile internal/testlog=C:\Users\Administrator\AppData\Local\go-build\fb\fb04a08527b7702141c9c4af08bffa1e5917dc63e2e5914478d08f66c32faec3-d
-packagefile io/fs=C:\Users\Administrator\AppData\Local\go-build\cc\ccdbc66d30ba6308c2a50368c5f34ca0592f8918889260824c65ae6754bc46af-d
-packagefile sync/atomic=C:\Users\Administrator\AppData\Local\go-build\2a\2a179921f1131a2409f1260fc3d9d4724f7b26365529daf06e3d8ae1aeddf633-d
-packagefile syscall=C:\Users\Administrator\AppData\Local\go-build\86\8658a9b081697569ebf6d330984b3264c3441bca5bd8ee7a5aa2f72036445193-d
-packagefile time=C:\Users\Administrator\AppData\Local\go-build\28\2809bc969dec98b30e2e2780248b542cabc211d94f04f8a47d9e0355d4e47188-d
-packagefile unicode/utf16=C:\Users\Administrator\AppData\Local\go-build\02\020ecaa6f82a265e139a56197e76bd5ca0f3f13ee88437b0724b32aae6b71ad8-d
-packagefile internal/unsafeheader=C:\Users\Administrator\AppData\Local\go-build\c8\c818e89f20fee21e19041cb2865c1b215dafc666c5bd1ab967b68dd5983f8da5-d
-packagefile unicode=C:\Users\Administrator\AppData\Local\go-build\2b\2bd3d7ee3de7f1d1839f640dd895e5f3def62b839cd0bff25430413d480369dc-d
-packagefile internal/race=C:\Users\Administrator\AppData\Local\go-build\fb\fb176abc79c341430e12f45d1e5bc9100fd2efcc323b15d55e92ceb3164cb5e3-d
-packagefile internal/syscall/windows/sysdll=C:\Users\Administrator\AppData\Local\go-build\42\42dc02d9771b089b65e34a36dd4615396ef21e893a13a99d94829cf92c16f4ba-d
-packagefile internal/oserror=C:\Users\Administrator\AppData\Local\go-build\84\841fe2b624b0319061625a52d8d7818331252f1328414d59b8261dbd7375cf84-d
-packagefile path=C:\Users\Administrator\AppData\Local\go-build\7e\7ed85684067031a04d94b6805f1a58a8e862aef7b4a676bec2c0e5d1dd69dc6e-d
-packagefile internal/syscall/windows/registry=C:\Users\Administrator\AppData\Local\go-build\c2\c2404f9ca8fe98f88eb3455afb84da6cb3f8d17709506c8c6b72787eaedc3558-d
+cat >C:\Users\Administrator\AppData\Local\Temp\go-build1315443961\b001\importcfg << 'EOF' # internal
+# import config
+packagefile fmt=C:\Users\Administrator\AppData\Local\go-build\d0\d008751497390b11b47f716af2d48f0a52b4e4f15ad4e96f852ce896600f7a11-d
+packagefile runtime=C:\Users\Administrator\AppData\Local\go-build\dc\dca431b4db090566a675628d7dcbf136445f9a95f641dae937f91ea22bd2d4d9-d
+EOF
+cd D:\application\GoLand\example
+"D:\\software\\go1.21\\pkg\\tool\\windows_amd64\\compile.exe" -o "$WORK\\b001\\_pkg_.a" -trimpath "$WORK\\b001=>" -p main -complete -buildid Lvvb2G_hP_XZ3usgOuTV/Lvvb2G_hP_XZ3usgOuTV -goversion go1.20.1 -c=4 -nolocalimports -importc
+fg "$WORK\\b001\\importcfg" -pack "D:\\application\\GoLand\\example\\main.go"
+"D:\\software\\go1.21\\pkg\\tool\\windows_amd64\\buildid.exe" -w "$WORK\\b001\\_pkg_.a" # internal
+cp "$WORK\\b001\\_pkg_.a" "C:\\Users\\Administrator\\AppData\\Local\\go-build\\d3\\d3b4da9f72bf2ddd499f74a20719b0b6f0653ba57a010820a6af34ee295b013e-d" # internal
+cat >C:\Users\Administrator\AppData\Local\Temp\go-build1315443961\b001\importcfg.link << 'EOF' # internal   
+packagefile command-line-arguments=C:\Users\Administrator\AppData\Local\Temp\go-build1315443961\b001\_pkg_.a
+packagefile fmt=C:\Users\Administrator\AppData\Local\go-build\d0\d008751497390b11b47f716af2d48f0a52b4e4f15ad4e96f852ce896600f7a11-d
+packagefile runtime=C:\Users\Administrator\AppData\Local\go-build\dc\dca431b4db090566a675628d7dcbf136445f9a95f641dae937f91ea22bd2d4d9-d
+packagefile errors=C:\Users\Administrator\AppData\Local\go-build\22\22340e4366791f28988f6f3a7575d8aa9d265a337f86db249f8e2d1646b8536a-d
+packagefile internal/fmtsort=C:\Users\Administrator\AppData\Local\go-build\3f\3fd6aa7af7a08e705df8e8cb9fb108ed65ef986360dbda26bf751410c3a39a92-d
+packagefile io=C:\Users\Administrator\AppData\Local\go-build\97\97df67bc71f7570fa8f4eac00d9b9c61b439b1de1302e129b1115865e7d7c3f0-d
+packagefile math=C:\Users\Administrator\AppData\Local\go-build\2b\2ba07274a733f57ed10ea4bdf76311e25cecf552eca3b8fad78933c66fc6c4eb-d
+packagefile os=C:\Users\Administrator\AppData\Local\go-build\ce\ce5c7fa71ee246560c70b4617e2378a9350cd6ab635aa8b563c2ef491ad6999d-d
+packagefile reflect=C:\Users\Administrator\AppData\Local\go-build\d4\d43a8556707f808aab38d01959b7cb7fecc6c439d9cf9c48f482245fb7b5c657-d
+packagefile sort=C:\Users\Administrator\AppData\Local\go-build\27\27c3c6071b32e60ae3120228932bc2b694f17920cd6e2ee32638509bb77da635-d
+packagefile strconv=C:\Users\Administrator\AppData\Local\go-build\c8\c8a4ee954af0570536683f4073282acd047a0cceae89f6ab5b88b1cb4bd79100-d
+packagefile sync=C:\Users\Administrator\AppData\Local\go-build\45\45d5d1367ce2963835a3a556257da29e1c92365e2de346f0ae0dbbc16d6aae18-d
+packagefile unicode/utf8=C:\Users\Administrator\AppData\Local\go-build\eb\eba51109f217adfb74fee345457554f88b19d810b0cbc1e412f9ef0a1a1cbb12-d
+packagefile internal/abi=C:\Users\Administrator\AppData\Local\go-build\46\464fe3375423d934b34e66de338c0fc9fe28461865b53cf759e0947f7c938936-d
+packagefile internal/bytealg=C:\Users\Administrator\AppData\Local\go-build\c5\c56ae7575c75d81e23ce7b391325acf8a179ab64977582e69841577685ebae2a-d
+packagefile internal/coverage/rtcov=C:\Users\Administrator\AppData\Local\go-build\c3\c3d14dd3818d67f1128aff71e06ed75535a4a02bcc17061e441c5350b3ada97b-d
+packagefile internal/cpu=C:\Users\Administrator\AppData\Local\go-build\e9\e95f1c11f5b671b30445e88a4c3e1287fa414d9b26b7ba2d52c185b483ad90d6-d
+packagefile internal/goarch=C:\Users\Administrator\AppData\Local\go-build\6f\6fad28715acd394720e72837056967c0edb9d25d9346ab5af37884d9664f83d7-d
+packagefile internal/goexperiment=C:\Users\Administrator\AppData\Local\go-build\df\dfb99caf170c7d7fafecf1cc7e1646789b9fd36a4ce5d1c1729ef6b231e18e43-d
+packagefile internal/goos=C:\Users\Administrator\AppData\Local\go-build\8d\8dce0662be9de7e7187efcf7d7b9f7ce6fd2bc8a818da5e97448d07453ce9487-d
+packagefile runtime/internal/atomic=C:\Users\Administrator\AppData\Local\go-build\87\87eb5a1df29da1e540d700507b81647a113070d4bfac796f39a9b5bb72951e83-d
+packagefile runtime/internal/math=C:\Users\Administrator\AppData\Local\go-build\fb\fbfe122c54f39c16e6248588247c633785bfdd1803e61aa866db9d8382df41da-d
+packagefile runtime/internal/sys=C:\Users\Administrator\AppData\Local\go-build\1a\1a232e62b66e49a4736220bfbd16f052741940834787ebda972f48457f4b6c35-d
+packagefile internal/reflectlite=C:\Users\Administrator\AppData\Local\go-build\ee\eea138a62871ca89d08372e85ed43910b9b00ca6ec2b1f329943541efec00800-d
+packagefile math/bits=C:\Users\Administrator\AppData\Local\go-build\e3\e3e4d7abc7d9de219db31dbb3e6e841f078950ef083351ac654c5725acf9ef51-d
+packagefile internal/itoa=C:\Users\Administrator\AppData\Local\go-build\70\708a7883b82e58fa8ba023ac983f961b6a66327d6f6bd54a07b76a39e033c741-d
+packagefile internal/poll=C:\Users\Administrator\AppData\Local\go-build\0c\0c05dccbfddcfae4266371c925b634dd7e7f5e0e5312581ac079a21b6333ebef-d
+packagefile unicode=C:\Users\Administrator\AppData\Local\go-build\69\69ea000512b7cca606b0b6ec1602da34f5310f13a3bfc8053f92f2423746938e-d
+packagefile internal/race=C:\Users\Administrator\AppData\Local\go-build\af\af16ab7bf9027876983a2bbdb41af8fa9b8470171ed55f94e994ae573ac5176f-d
+packagefile internal/syscall/windows/sysdll=C:\Users\Administrator\AppData\Local\go-build\e2\e285864ad3bee135571cefd7bc643a2acfb030eacf31c4232c65a6ed99095f58-d
+packagefile internal/oserror=C:\Users\Administrator\AppData\Local\go-build\33\33e7514715431c2090d782d02f563a1addb0a540224befae479b38957c4ff56f-d
+packagefile path=C:\Users\Administrator\AppData\Local\go-build\3d\3d7bdea151cf8ecea3f0e470bdc6b0bb45a5fc8d20519b2b4834c848fb33f1ab-d
+packagefile internal/syscall/windows/registry=C:\Users\Administrator\AppData\Local\go-build\30\30f31e001bc5b82d506417871d973383a64464e8794fde68194efca52d56d663-d
 modinfo "0w\xaf\f\x92t\b\x02A\xe1\xc1\a\xe6\xd6\x18\xe6path\tcommand-line-arguments\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\tCGO_ENABLED=0\nbuild\tGOARCH=amd64\nbuild\tGOOS=windows\nbuild\tGOAMD64=v1\n\xf92C1\x86\x18 r\x0
 0\x82B\x10A\x16\xd8\xf2"
 EOF
 mkdir -p $WORK\b001\exe\
 cd .
-"D:\\software\\go1.20\\pkg\\tool\\windows_amd64\\link.exe" -o "$WORK\\b001\\exe\\a.out.exe" -importcfg "$WORK\\b001\\importcfg.link" -buildmode=pie -buildid=vu2V9fpN2UYdiBbImrfH/3hXYJDD_QQhwQFEedRvi/YCU8jcBvw7gKn-K0Gihj/vu2V9fpN2UYd
-iBbImrfH -extld=gcc "C:\\Users\\Administrator\\AppData\\Local\\go-build\\e4\\e498413c36444e3c92873cb373c63f54e2d7cc388ced920a146c16336010a6fe-d"
-"D:\\software\\go1.20\\pkg\\tool\\windows_amd64\\buildid.exe" -w "$WORK\\b001\\exe\\a.out.exe" # internal
+"D:\\software\\go1.21\\pkg\\tool\\windows_amd64\\link.exe" -o "$WORK\\b001\\exe\\a.out.exe" -importcfg "$WORK\\b001\\importcfg.link" -buildmode=pie -buildid=Syb1GKdua8HgR-f5H8Sf/Lvvb2G_hP_XZ3usgOuTV/PnPlne2vLU_3XuTkyDQG/Syb1GKdua8Hg
+R-f5H8Sf -extld=gcc "$WORK\\b001\\_pkg_.a"
+"D:\\software\\go1.21\\pkg\\tool\\windows_amd64\\buildid.exe" -w "$WORK\\b001\\exe\\a.out.exe" # internal
 cp $WORK\b001\exe\a.out.exe main.exe
 rm -r $WORK\b001\
-
 ```
 
 :::
@@ -9984,7 +9983,7 @@ Hello Linux!
 
 ### 链接器标志
 
-* `ld`代表连接器，`ldflags` 代表链接器标志
+* `ld`代表链接器，`ldflags` 代表链接器标志
 
 ::: details （1）自动添加版本信息
 
@@ -10097,16 +10096,37 @@ OS/Arch:             linux/amd64
 
 ::: details （1）查看汇编代码
 
+我们通过分析`new`、`make`、`go`等关键字的汇编代码，查找他们实际运行的代码
+
 ```go
 package main
 
 import "fmt"
 
-func main() {
-	s := make([]int, 0)
-	m := make(map[string]string)
-	c := make(chan struct{})
+type Empty struct{}
 
+type Point struct {
+	X int
+	Y int
+}
+
+func main() {
+	// new
+	empty := new(Empty) // 第14行
+	point := new(Point) // 第15行
+
+	// make
+	s := make([]int, 0)          // 第18行
+	m := make(map[string]string) // 第19行
+	c := make(chan struct{})     // 第20行
+
+	// go
+	go func() { // 第23行
+		fmt.Println("Hello World!")
+	}()
+
+	fmt.Println(empty) // 第27行
+	fmt.Println(point)
 	fmt.Println(s)
 	fmt.Println(m)
 	fmt.Println(c)
@@ -10116,35 +10136,72 @@ func main() {
 输出结果
 
 ```bash
-D:\application\GoLand\example>go build -gcflags="-S" main.go
-# command-line-arguments
-main.main STEXT size=293 args=0x0 locals=0x78 funcid=0x0 align=0x0
-        0x0000 00000 (D:\application\GoLand\example\main.go:5)  TEXT    main.main(SB), ABIInternal, $120-0
-        0x0000 00000 (D:\application\GoLand\example\main.go:5)  CMPQ    SP, 16(R14)
-        0x0004 00004 (D:\application\GoLand\example\main.go:5)  PCDATA  $0, $-2
-        0x0004 00004 (D:\application\GoLand\example\main.go:5)  JLS     280
-        0x000a 00010 (D:\application\GoLand\example\main.go:5)  PCDATA  $0, $-1
-        0x000a 00010 (D:\application\GoLand\example\main.go:5)  SUBQ    $120, SP
-        0x000e 00014 (D:\application\GoLand\example\main.go:5)  MOVQ    BP, 112(SP)
-        0x0013 00019 (D:\application\GoLand\example\main.go:5)  LEAQ    112(SP), BP
-        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $0, gclocals·3CgL1OMj4PK20UKKkS8Bfw==(SB)
-        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $1, gclocals·QQTUN2YG00BipaYa0pUiNw==(SB)
-        0x0018 00024 (D:\application\GoLand\example\main.go:5)  FUNCDATA        $2, main.main.stkobj(SB)
-        0x0018 00024 (D:\application\GoLand\example\main.go:6)  LEAQ    type:int(SB), AX
-        0x001f 00031 (D:\application\GoLand\example\main.go:6)  XORL    BX, BX
-        0x0021 00033 (D:\application\GoLand\example\main.go:6)  MOVQ    BX, CX
-        0x0024 00036 (D:\application\GoLand\example\main.go:6)  PCDATA  $1, $0
-        0x0024 00036 (D:\application\GoLand\example\main.go:6)  CALL    runtime.makeslice(SB)
-        0x0029 00041 (D:\application\GoLand\example\main.go:6)  MOVQ    AX, main..autotmp_39+56(SP)
-        0x002e 00046 (D:\application\GoLand\example\main.go:7)  PCDATA  $1, $1
-        0x002e 00046 (D:\application\GoLand\example\main.go:7)  CALL    runtime.makemap_small(SB)
-        0x0033 00051 (D:\application\GoLand\example\main.go:7)  MOVQ    AX, main.m+40(SP)
-        0x0038 00056 (D:\application\GoLand\example\main.go:8)  XORL    BX, BX
-        0x003a 00058 (D:\application\GoLand\example\main.go:8)  LEAQ    type:chan struct {}(SB), AX
-        0x0041 00065 (D:\application\GoLand\example\main.go:8)  PCDATA  $1, $2
-        0x0041 00065 (D:\application\GoLand\example\main.go:8)  CALL    runtime.makechan(SB)
-        0x0046 00070 (D:\application\GoLand\example\main.go:8)  MOVQ    AX, main.c+48(SP)
+# 方式1
+[root@ap-hongkang ~]# go build -gcflags="-S" main.go 2>&1 | grep -E 'main.go:' | grep -E ':14|:15|:18|:19|:20|:23|:27'
+        0x0026 00038 (/root/main.go:15) LEAQ    type:main.Point(SB), AX
+        0x002d 00045 (/root/main.go:15) PCDATA  $1, $0
+        0x002d 00045 (/root/main.go:15) CALL    runtime.newobject(SB) # new(Point)调用的是runtime.newobject函数
+        0x0032 00050 (/root/main.go:15) MOVQ    AX, main.point+40(SP)
+        0x0037 00055 (/root/main.go:18) XORL    BX, BX
+        0x0039 00057 (/root/main.go:18) MOVQ    BX, CX
+        0x003c 00060 (/root/main.go:18) LEAQ    type:int(SB), AX
+        0x0043 00067 (/root/main.go:18) PCDATA  $1, $1
+        0x0043 00067 (/root/main.go:18) CALL    runtime.makeslice(SB)  # make初始化切片调用的是runtime.makeslice函数
+        0x0048 00072 (/root/main.go:18) MOVQ    AX, main..autotmp_61+64(SP)
+        0x004d 00077 (/root/main.go:19) PCDATA  $1, $2
+        0x004d 00077 (/root/main.go:19) CALL    runtime.makemap_small(SB) # make初始化map调用的是runtime.makemap_small函数
+        0x0052 00082 (/root/main.go:19) MOVQ    AX, main.m+48(SP)
+        0x0057 00087 (/root/main.go:20) XORL    BX, BX
+        0x0059 00089 (/root/main.go:20) LEAQ    type:chan struct {}(SB), AX
+        0x0060 00096 (/root/main.go:20) PCDATA  $1, $3
+        0x0060 00096 (/root/main.go:20) CALL    runtime.makechan(SB) # make初始化channel调用的是runtime.makechan函数
+        0x0065 00101 (/root/main.go:20) MOVQ    AX, main.c+56(SP)
+        0x006a 00106 (/root/main.go:23) LEAQ    main.main.func1·f(SB), AX
+        0x0071 00113 (/root/main.go:23) PCDATA  $1, $4
+        0x0071 00113 (/root/main.go:23) CALL    runtime.newproc(SB)  # go关键字调用的是runtime.newproc函数
+        0x0076 00118 (/root/main.go:27) MOVUPS  X15, main..autotmp_33+136(SP)
+        0x007f 00127 (/root/main.go:27) LEAQ    type:*main.Empty(SB), CX
+        0x0086 00134 (/root/main.go:27) MOVQ    CX, main..autotmp_33+136(SP)
+        0x008e 00142 (/root/main.go:27) LEAQ    runtime.zerobase(SB), CX  # 空结构体就是一个变量: var zerobase uintptr
+        0x0095 00149 (/root/main.go:27) MOVQ    CX, main..autotmp_33+144(SP)
+        0x0000 00000 (/root/main.go:23) TEXT    main.main.func1(SB), ABIInternal, $64-0# 这里又到了23行说明输出顺序与行号并不完全一致
         ...
+        # 分析
+        # 1、首先new(Empty)对应的代码调用并没有输出出来，这说明new对于空结构体和非空结构体的初始化可能是不一样的，还需要进一步分析
+        # 2、通过第27行发现new初始化空结构体本质上是返回了一个全局的uintptr变量
+        # 3、make初始化map调用的是runtime.makemap_small,根据名字可以看出可能有多种初始化map的方法
+
+# 方式2
+[root@ap-hongkang ~]# go build main.go && go tool objdump ./main | grep -E 'main.go:' | grep -E ':14|:15|:18|:19|:20|:23|:27'
+  main.go:15            0x4804e6                488d05b3d60000          LEAQ 0xd6b3(IP), AX
+  main.go:15            0x4804ed                e80ebcf8ff              CALL runtime.newobject(SB)
+  main.go:15            0x4804f2                4889442428              MOVQ AX, 0x28(SP)
+  main.go:18            0x4804f7                31db                    XORL BX, BX
+  main.go:18            0x4804f9                4889d9                  MOVQ BX, CX
+  main.go:18            0x4804fc                488d05fd790000          LEAQ 0x79fd(IP), AX
+  main.go:18            0x480503                e8985afcff              CALL runtime.makeslice(SB)
+  main.go:18            0x480508                4889442440              MOVQ AX, 0x40(SP)
+  main.go:19            0x48050d                e82ec7f8ff              CALL runtime.makemap_small(SB)
+  main.go:19            0x480512                4889442430              MOVQ AX, 0x30(SP)
+  main.go:20            0x480517                31db                    XORL BX, BX
+  main.go:20            0x480519                488d05e0740000          LEAQ 0x74e0(IP), AX
+  main.go:20            0x480520                e8db41f8ff              CALL runtime.makechan(SB)
+  main.go:20            0x480525                4889442438              MOVQ AX, 0x38(SP)
+  main.go:23            0x48052a                488d058f070200          LEAQ 0x2078f(IP), AX
+  main.go:23            0x480531                e84ab7fbff              CALL runtime.newproc(SB)
+  main.go:27            0x480536                440f11bc2488000000      MOVUPS X15, 0x88(SP)
+  main.go:27            0x48053f                488d0dfa540000          LEAQ 0x54fa(IP), CX
+  main.go:27            0x480546                48898c2488000000        MOVQ CX, 0x88(SP)
+  main.go:27            0x48054e                488d0dfb890d00          LEAQ runtime.zerobase(SB), CX
+  main.go:27            0x480555                48898c2490000000        MOVQ CX, 0x90(SP)
+  main.go:23            0x4806a0                493b6610                CMPQ 0x10(R14), SP
+  main.go:23            0x4806a4                7656                    JBE 0x4806fc
+  main.go:23            0x4806a6                4883ec40                SUBQ $0x40, SP
+  main.go:23            0x4806aa                48896c2438              MOVQ BP, 0x38(SP)
+  main.go:23            0x4806af                488d6c2438              LEAQ 0x38(SP), BP
+  main.go:23            0x4806fc                0f1f4000                NOPL 0(AX)
+  main.go:23            0x480700                e8fbaffdff              CALL runtime.morestack_noctxt.abi0(SB)
+  main.go:23            0x480705                eb99                    JMP main.main.func1(SB)
 ```
 
 :::
