@@ -58,3 +58,5 @@ sidebar: off
   * [validator](https://jinhui.dev/go/modules/validator.html)：验证器
   * [rate](https://jinhui.dev/go/modules/rate.html)：限速器
   * [otp](https://jinhui.dev/go/modules/otp.html)：双因素认证
+* GUI
+  * wails：基于Go + Vue/React等
