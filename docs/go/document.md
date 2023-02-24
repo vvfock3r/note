@@ -8593,6 +8593,199 @@ D:\application\GoLand\demo>go tool cover -html=c.out
 
 <br />
 
+### 模糊测试
+
+文档：[https://go.dev/security/fuzz/](https://go.dev/security/fuzz/)
+
+::: details （1）模糊测试：若测试不通过则会退出
+
+`main_test.go`
+
+```go
+package main
+
+import "testing"
+
+func Equal(a []byte, b []byte) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func FuzzEqual(f *testing.F) {
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		Equal(a, b)
+	})
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go test -fuzz .
+fuzz: elapsed: 0s, gathering baseline coverage: 0/10 completed
+failure while testing seed corpus entry: FuzzEqual/84ed65595ad05a58
+fuzz: elapsed: 0s, gathering baseline coverage: 0/10 completed
+--- FAIL: FuzzEqual (0.04s)                                                                                  
+    --- FAIL: FuzzEqual (0.00s)                                                                              
+        testing.go:1485: panic: runtime error: index out of range [0] with length 0                          
+            goroutine 14 [running]:                                                                          
+            runtime/debug.Stack()                                                                            
+                D:/software/go1.21/src/runtime/debug/stack.go:24 +0x9e                                       
+            testing.tRunner.func1()                                                                          
+                D:/software/go1.21/src/testing/testing.go:1485 +0x1f6                                        
+            panic({0x9c2f80, 0xc00000e168})                                                                  
+                D:/software/go1.21/src/runtime/panic.go:884 +0x213                                           
+            example.Equal(...)                                                                               
+                D:/application/GoLand/example/main_test.go:7                                                 
+            example.FuzzEqual.func1(0x7?, {0xc000010648?, 0x1?, 0x0?}, {0xb793b0?, 0x0?, 0x0?})              
+                D:/application/GoLand/example/main_test.go:16 +0x13d                                         
+            reflect.Value.call({0x9a3660?, 0x9e3158?, 0x80ea96?}, {0x9d28b3, 0x4}, {0xc00005e3c0, 0x3, 0x4?})
+                D:/software/go1.21/src/reflect/value.go:586 +0xb07                                           
+            reflect.Value.Call({0x9a3660?, 0x9e3158?, 0xae9230?}, {0xc00005e3c0?, 0x9d1ea0?, 0xc000010660?}) 
+                D:/software/go1.21/src/reflect/value.go:370 +0xbc                                            
+            testing.(*F).Fuzz.func1.1(0x0?)
+                D:/software/go1.21/src/testing/fuzz.go:335 +0x3f3
+            testing.tRunner(0xc0000d0000, 0xc0000b0480)
+                D:/software/go1.21/src/testing/testing.go:1576 +0x10b
+            created by testing.(*F).Fuzz.func1
+                D:/software/go1.21/src/testing/fuzz.go:322 +0x5b9
+
+
+FAIL
+exit status 1
+FAIL    example 0.068s
+```
+
+:::
+
+::: details （2）模糊测试：修正代码，测试会一直持续下去，知道遇到测试失败的用例
+
+```go
+package main
+
+import "testing"
+
+func Equal(a []byte, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func FuzzEqual(f *testing.F) {
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		Equal(a, b)
+	})
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go test -fuzz .
+fuzz: elapsed: 0s, gathering baseline coverage: 0/10 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 10/10 completed, now fuzzing with 8 workers
+fuzz: elapsed: 3s, execs: 479364 (159361/sec), new interesting: 0 (total: 10)
+fuzz: elapsed: 6s, execs: 987591 (169596/sec), new interesting: 0 (total: 10)
+fuzz: elapsed: 9s, execs: 1483634 (165532/sec), new interesting: 0 (total: 10)
+fuzz: elapsed: 12s, execs: 1979287 (165039/sec), new interesting: 0 (total: 10)
+fuzz: elapsed: 15s, execs: 2496426 (172389/sec), new interesting: 0 (total: 10)
+fuzz: elapsed: 18s, execs: 3019692 (173678/sec), new interesting: 0 (total: 10)
+...
+```
+
+:::
+
+::: details （3）模糊测试：手动添加测试用例
+
+```go
+package main
+
+import "testing"
+
+func Equal(a []byte, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func FuzzEqual(f *testing.F) {
+	f.Add([]byte{'a', 'b', 'c'}, []byte{'a', 'b', 'c'})
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		Equal(a, b)
+	})
+}
+```
+
+输出结果
+
+```bash
+fuzz: elapsed: 0s, gathering baseline coverage: 0/11 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 11/11 completed, now fuzzing with 8 workers
+fuzz: elapsed: 3s, execs: 507288 (168238/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 6s, execs: 1019869 (171634/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 9s, execs: 1550486 (176602/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 12s, execs: 2075441 (174965/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 15s, execs: 2582182 (168777/sec), new interesting: 0 (total: 11)
+...
+```
+
+:::
+
+::: details （4）模糊测试：指定测试时长
+
+```bash
+# 注意这里-fuzz=Fuzz
+# 1、-fuzz 其实后面还有个值 regexp, 写一个正则用来测试哪些函数
+# 2、当仅用-fuzz的时候不写值也没问题，但是如果后面还有选项，则必须写成这种形式 -fuzz=regexp
+# 3、所有的模糊测试函数都要以Fuzz开头，所以这里我们直接就写Fuzz，用于测试所有的函数
+D:\application\GoLand\example>go test -fuzz=Fuzz -fuzztime=10s .
+fuzz: elapsed: 0s, gathering baseline coverage: 0/11 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 11/11 completed, now fuzzing with 8 workers
+fuzz: elapsed: 3s, execs: 478618 (158705/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 6s, execs: 980187 (167299/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 9s, execs: 1508852 (176493/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 10s, execs: 1690426 (161845/sec), new interesting: 0 (total: 11)
+PASS
+ok      example 10.164s
+```
+
+:::
+
+::: details （4）模糊测试：指定进程数
+
+```bash
+# 默认启动的进程数等于逻辑CPU核心数
+D:\application\GoLand\example>go test -fuzz=Fuzz -fuzztime=10s -parallel=1 . 
+fuzz: elapsed: 0s, gathering baseline coverage: 0/11 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 11/11 completed, now fuzzing with 1 workers
+fuzz: elapsed: 3s, execs: 113279 (37629/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 6s, execs: 224589 (37204/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 9s, execs: 340262 (38555/sec), new interesting: 0 (total: 11)
+fuzz: elapsed: 10s, execs: 379884 (36828/sec), new interesting: 0 (total: 11)
+PASS
+ok      example 10.109s
+```
+
+:::
+
+<br />
+
 ### 性能测试
 
 说明：
