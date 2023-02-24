@@ -8662,7 +8662,7 @@ FAIL    example 0.068s
 
 :::
 
-::: details （2）模糊测试：修正代码，测试会一直持续下去，知道遇到测试失败的用例
+::: details （2）模糊测试：修正代码，测试会一直持续下去，直到遇到测试失败的用例
 
 ```go
 package main
@@ -8770,7 +8770,7 @@ ok      example 10.164s
 ::: details （4）模糊测试：指定进程数
 
 ```bash
-# 默认启动的进程数等于逻辑CPU核心数
+# 默认启动的进程数等于逻辑CPU核心数,这会消耗比较多的资源, -parallel指定进程数
 D:\application\GoLand\example>go test -fuzz=Fuzz -fuzztime=10s -parallel=1 . 
 fuzz: elapsed: 0s, gathering baseline coverage: 0/11 completed
 fuzz: elapsed: 0s, gathering baseline coverage: 11/11 completed, now fuzzing with 1 workers
