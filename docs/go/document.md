@@ -10403,6 +10403,8 @@ func main() {
 
 Github：[https://github.com/loov/lensm](https://github.com/loov/lensm)
 
+**1、基础使用**
+
 ```bash
 # 安装
 go install loov.dev/lensm@main
@@ -10429,6 +10431,19 @@ lensm -text-size=20 --filter main main.exe
 ```
 
 ![image-20230225114831320](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225114831320.png)
+
+**2、解决中文乱码问题**
+
+```bash
+# 指定一个可以显示中文的字体,注意并不是所有的字体都支持
+lensm -text-size=20 --font "C:\Windows\Fonts\simkai.ttf" --filter main main.exe
+```
+
+![image-20230225124432270](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124432270.png)
+
+字体文件名获取方法
+
+![image-20230225124648047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124648047.png)
 
 :::
 
