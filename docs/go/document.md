@@ -10436,7 +10436,7 @@ lensm -text-size=20 --filter main main.exe
 
 ```bash
 # 指定一个可以显示中文的字体,注意并不是所有的字体都支持
-lensm -text-size=20 --font "C:\Windows\Fonts\simkai.ttf" --filter main main.exe
+lensm -text-size=20 --font C:\Windows\Fonts\simkai.ttf --filter main main.exe
 ```
 
 ![image-20230225124432270](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124432270.png)
@@ -10444,6 +10444,16 @@ lensm -text-size=20 --font "C:\Windows\Fonts\simkai.ttf" --filter main main.exe
 字体文件名获取方法
 
 ![image-20230225124648047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124648047.png)
+
+**3、临时设置别名**
+
+```bash
+# 临时设置别名
+doskey lensm=lensm -text-size=16 --font C:\Windows\Fonts\simkai.ttf $*
+
+# 使用
+lensm --filter main main.exe
+```
 
 :::
 
