@@ -10287,7 +10287,7 @@ OS/Arch:             linux/amd64
 
 ### 汇编和反编译
 
-::: details （1）查看汇编代码
+::: details （1）查看汇编代码：使用Go原生方法
 
 我们通过分析`new`、`make`、`go`等关键字的汇编代码，查找他们实际运行的代码
 
@@ -10399,7 +10399,40 @@ func main() {
 
 :::
 
-::: details （2）查看二进制所依赖的第三方包
+::: details （2）查看汇编代码：使用可视化工具
+
+Github：[https://github.com/loov/lensm](https://github.com/loov/lensm)
+
+```bash
+# 安装
+go install loov.dev/lensm@main
+
+# 编译程序
+go build .
+
+# 查看帮助
+D:\application\GoLand\example>lensm --help
+Usage of lensm:
+  -context int                         
+        source line context (default 3)
+  -filter string                       
+        filter the functions by regexp 
+  -font string                         
+        user font                      
+  -text-size int                       
+        default font size (default 12) 
+  -watch                               
+        auto reload executable
+
+# 使用lensm查看汇编
+lensm -text-size=20 --filter main main.exe
+```
+
+![image-20230225114831320](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225114831320.png)
+
+:::
+
+::: details （3）查看二进制所依赖的第三方包
 
 ```go
 package main
