@@ -10540,7 +10540,68 @@ Go runtime提供的功能如下：
 
 :::
 
-::: details （2）
+::: details （2）数据可视化
+
+Github：[https://github.com/arl/statsviz](https://github.com/arl/statsviz)
+
+**1、安装**
+
+```bash
+D:\application\GoLand\example>go get github.com/arl/statsviz@latest
+go: downloading github.com/arl/statsviz v0.5.1
+go: added github.com/arl/statsviz v0.5.1
+go: added github.com/gorilla/websocket v1.4.2
+```
+
+**2、编写代码**
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/arl/statsviz"
+	"io"
+	"log"
+	"net/http"
+)
+
+// 处理器
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "Hello, world!\n")
+}
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 注册路由
+	http.HandleFunc("/", indexHandler)
+
+	// 注册可视化路由
+	err := statsviz.RegisterDefault()
+	if err != nil {
+		panic(err)
+	}
+
+	// 启动服务
+	fmt.Println("* Running on http://" + addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
+}
+```
+
+**3、启动服务**
+
+```bash
+# 启动服务
+D:\application\GoLand\example>go run main.go
+* Running on http://127.0.0.1:80
+
+# 浏览器访问
+http://127.0.0.1/debug/statsviz/
+```
+
+![image-20230225131519895](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225131519895.png)
 
 :::
 
