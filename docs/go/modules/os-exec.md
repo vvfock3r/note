@@ -706,7 +706,7 @@ func main() {
 
 :::
 
-::: details （3）使用CommandContext设置超时：修复孙子进程问题
+::: details （3）使用CommandContext设置超时：修复孙子进程问题，仅支持Linux
 
 `test.sh`
 
@@ -719,13 +719,71 @@ sleep 300
 `main.go`
 
 ```go
+package main
 
+import (
+	"context"
+	"flag"
+	"log"
+	"os/exec"
+	"syscall"
+	"time"
+)
+
+func main() {
+	// 定义命令行参数
+	newproc := flag.Bool("newproc", false, "Start command in new process")
+	flag.Parse()
+
+	//设置context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	// 实例化CommandContext对象
+	var cmd *exec.Cmd
+	if *newproc {
+		cmd = exec.CommandContext(ctx, "sh", "-c", "bash test.sh")
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", "sleep 300")
+	}
+
+	// 设置Cmd.WaitDelay,用于ctx超时后,我们的程序可以正常往下执行
+	cmd.WaitDelay = time.Duration(-1)
+
+	//创建一个新的进程组
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// 执行Shell命令
+	log.Printf("Start")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error: %#v\n", err.Error())
+		// 向进程组发送Kill信号
+		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
+	log.Printf("Output: %s\n", string(output))
+
+	// 模拟常驻内存的程序
+	log.Println("Cmd run complete")
+	time.Sleep(time.Hour)
+}
 ```
 
 输出结果
 
 ```bash
+# 先确认一下当前系统没有启动sleep进程
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
 
+# 启动程序
+[root@ap-hongkang example]# go run main.go -newproc
+2023/02/26 17:05:43 Start
+2023/02/26 17:05:48 Error: "signal: killed"
+2023/02/26 17:05:48 Output: 
+2023/02/26 17:05:48 Cmd run complete
+
+# ctx超时后再检查一下孙子进程，发现已经被干掉了
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
 ```
 
 :::
