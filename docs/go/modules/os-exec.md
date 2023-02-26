@@ -124,7 +124,10 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: %#v\n", err.Error())
 	}
-	fmt.Printf("Output: %#v\n", string(output))
+	fmt.Printf("Output: %s\n", string(output))
+
+	// 执行其他代码
+	fmt.Println("End")
 }
 ```
 
@@ -133,14 +136,16 @@ func main() {
 ```bash
 # 命令执行正确时的结果
 D:\application\GoLand\example>go run main.go
-Output: "go version go1.20.1 windows/amd64\n"
+Output: go version go1.20.1 windows/amd64
+
 End
 
 # 命令执行错误时的结果,比如 cmd := exec.Command("go", "version2")
 D:\application\GoLand\example>go run main.go
 Error: "exit status 2"
-Output: ""
+Output: 
 End
+
 
 # 分析
 # 1、输出结果末尾会有换行符
@@ -170,7 +175,10 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: %#v\n", err.Error())
 	}
-	fmt.Printf("Output: %#v\n", string(output))
+	fmt.Printf("Output: %s\n", string(output))
+
+	// 执行其他代码
+	fmt.Println("End")
 }
 ```
 
@@ -179,13 +187,16 @@ func main() {
 ```bash
 # 命令执行正确时的结果
 D:\application\GoLand\example>go run main.go
-Output: "go version go1.20.1 windows/amd64\n"
+Output: go version go1.20.1 windows/amd64
+
 End
 
 # 命令执行错误时的结果,比如 cmd := exec.Command("go", "version2")
 D:\application\GoLand\example>go run main.go
 Error: "exit status 2"
-Output: "go version2: unknown command\nRun 'go help' for usage.\n"
+Output: go version2: unknown command
+Run 'go help' for usage.
+
 End
 
 # 分析
@@ -279,7 +290,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: %#v\n", err.Error())
 	}
-	fmt.Printf("Output: %#v\n", string(output))
+	fmt.Printf("Output: %s\n", string(output))
 }
 ```
 
@@ -295,13 +306,13 @@ Usage of C:\Users\Administrator\AppData\Local\Temp\go-build2084943688\b001\exe\m
 # --------------------------------------------------------------------------------------------
 
 # Windows: 直接执行cd命令报错了, 因为cd是CMD的内建命令
-D:\application\GoLand\example>go run main.go       
+D:\application\GoLand\example>go run main.go
 Error: "exec: \"cd\": executable file not found in %PATH%"
-Output: ""
+Output:
 
 # Windows: 在CMD中执行cd命令
 D:\application\GoLand\example>go run main.go -shell
-Output: "D:\\application\\GoLand\\example\r\n"
+Output: D:\application\GoLand\example
 
 # --------------------------------------------------------------------------------------------
 
@@ -311,11 +322,11 @@ mv /usr/bin/pwd /usr/bin/pwd2
 # Linux：直接执行pwd命令报错了
 [root@ap-hongkang ~]# go run main.go
 Error: "exec: \"pwd\": executable file not found in $PATH"
-Output: ""
+Output: 
 
 # Linux：在Shell中执行pwd
 [root@ap-hongkang ~]# go run main.go -shell
-Output: "/root\n"
+Output: /root
 
 # 测试完成, 恢复pwd命令
 mv /usr/bin/pwd2 /usr/bin/pwd
@@ -443,4 +454,6 @@ Output: total 4.0K
 :::
 
 <br />
+
+## 工作目录
 
