@@ -349,7 +349,7 @@ mv /usr/bin/pwd2 /usr/bin/pwd
 
 ## 环境变量
 
-::: details 点击查看详情
+::: details （1）新增一个不存在的环境变量
 
 ```go
 package main
@@ -362,7 +362,7 @@ import (
 
 func main() {
 	// 实例化Command对象
-	cmd := exec.Command("cmd", "/C", "go version && echo %MyKey%")
+	cmd := exec.Command("sh", "-c", "echo $MyKey")
 
 	// 说明
 	// 设置环境变量,格式为 key=value
@@ -375,15 +375,69 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error: %#v\n", err.Error())
 	}
-	fmt.Printf("Output: %#v\n", string(output))
+	fmt.Printf("Output: %s\n", string(output))
 }
 ```
 
 输出结果
 
 ```bash
-D:\application\GoLand\example>go run main.go 
-Output: "go version go1.20.1 windows/amd64\nMyValue\r\n"
+[root@ap-hongkang ~]# go run main.go
+Output: MyValue
+```
+
+:::
+
+::: details （2）新增一个已存在的环境变量
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+)
+
+func main() {
+	// 实例化Command对象
+	cmd := exec.Command("sh", "-c", "ls -lh && echo $PATH")
+
+	// 错误的写法，这会覆盖PATH原来的值
+	//cmd.Env = append(os.Environ(), "PATH=/tmp")
+
+	// 正确的写法
+	// 1.先获取当前PATH变量
+	// 2.组合出新PATH变量
+	// 3.将新PATH加入到环境变量中
+	// 注意此时变量中会有两个PATH变量,cmd.Env运行重复的key,会使用最后一个key,所以对我们并没有影响
+	var oldPath = strings.TrimSpace(os.Getenv("PATH"))
+	var newPath = strings.Join([]string{oldPath, "/tmp"}, string(os.PathListSeparator))
+	cmd.Env = append(os.Environ(), "PATH="+newPath)
+
+	// 执行Shell命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error: %#v\n", err.Error())
+	}
+	fmt.Printf("Output: %s\n", string(output))
+}
+```
+
+输出结果
+
+```bash
+# 错误的
+[root@ap-hongkang ~]# go run main.go
+Error: "exit status 127"
+Output: sh: ls: command not found
+
+# 正确的
+[root@ap-hongkang ~]# go run main.go
+Output: total 4.0K
+-rw-r--r-- 1 root root 651 Feb 26 13:32 main.go
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/local/go/root/bin:/usr/local/go/path/bin:/usr/local/go/root/bin:/usr/local/go/path/bin:/root/bin:/tmp
 ```
 
 :::
