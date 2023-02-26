@@ -551,7 +551,7 @@ kubectl              /usr/bin/kubectl
 
 <br />
 
-## 设置超时
+## 超时设置
 
 ::: details （1）关于是否产生新的shell进程的说明
 
