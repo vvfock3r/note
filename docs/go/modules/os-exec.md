@@ -752,14 +752,17 @@ func main() {
 
 	//杀掉孙子进程方式(1/2): 创建一个新的进程组
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		// 杀掉孙子进程方式(2/2): 向进程组发送Kill信号
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		return cmd.Process.Kill()
+	}
 
 	// 执行Shell命令
 	log.Printf("Start")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Error: %#v\n", err.Error())
-		// 杀掉孙子进程方式(2/2): 向进程组发送Kill信号
-		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 	log.Printf("Output: %s\n", string(output))
 
