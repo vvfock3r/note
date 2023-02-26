@@ -572,7 +572,7 @@ kubectl              /usr/bin/kubectl
 
 :::
 
-::: details （2）使用CommandContext设置超时，子进程有效，孙子进程无效
+::: details （2）使用CommandContext设置超时：测试子进程完美，测试孙子进程发现问题
 
 `test.sh`
 
@@ -612,9 +612,6 @@ func main() {
 		cmd = exec.CommandContext(ctx, "sh", "-c", "sleep 300")
 	}
 
-	// 设置Cmd.Wait超时时间
-	//cmd.WaitDelay = time.Second * 10
-
 	// 执行Shell命令
 	log.Printf("Start")
 	output, err := cmd.CombinedOutput()
@@ -629,12 +626,105 @@ func main() {
 }
 ```
 
-输出结果
+测试执行子进程
 
 ```bash
 # 先确认一下当前系统没有启动sleep进程
 [root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
 
+# 执行程序,默认以子进程的方式运行外部命令
+[root@ap-hongkang example]# go run main.go
+2023/02/26 16:16:45 Start
+2023/02/26 16:16:50 Error: "signal: killed"
+2023/02/26 16:16:50 Output: 
+2023/02/26 16:16:50 Cmd run complete
+
+# ctx超时时间内查看一下进程树
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+           |              |-{polkitd}(903)
+           |              `-{polkitd}(931)
+           |-rsyslogd(1114)-+-{rsyslogd}(1128)
+           |                `-{rsyslogd}(1287)
+           |-sgagent(2205)---{sgagent}(2206)
+           |-sshd(5831)-+-sshd(3061036)---sshd(3061049)-+-bash(3061804)---go(3132241)-+-main(3132276)-+-sleep(3132282)
+           |            |                               |                             |               |-{main}(3132278)
+           |            |                               |                             |               |-{main}(3132279)
+           |            |                               |                             |               |-{main}(3132280)
+           |            |                               |                             |               `-{main}(3132281)
+           |            |                               |                             |-{go}(3132242)
+
+# ctx超时以后再查看一下子进程是否存在
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+
+# 总结：很完美
+```
+
+测试执行孙子进程
+
+```bash
+# 先确认一下当前系统没有启动sleep进程
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+
+# 执行程序,这会新开一个sh进程，然后再执行具体的命令
+[root@ap-hongkang example]# go run main.go -newproc
+2023/02/26 16:19:06 Start
+
+# ctx超时时间内查看进程树
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+           |              |-{polkitd}(903)
+           |              `-{polkitd}(931)
+           |-rsyslogd(1114)-+-{rsyslogd}(1128)
+           |                `-{rsyslogd}(1287)
+           |-sgagent(2205)---{sgagent}(2206)
+           |-sshd(5831)-+-sshd(3061036)---sshd(3061049)-+-bash(3061804)---go(3132641)-+-main(3132674)-+-bash(3132678)---sleep(31326+
+           |            |                               |                             |               |-{main}(3132675)
+           |            |                               |                             |               |-{main}(3132676)
+           |            |                               |                             |               `-{main}(3132677)
+           |            |                               |                             |-{go}(3132642)
+           |            |                               |                             |-{go}(3132643)
+
+# ctx超时时间后查看进程树,sleep进程已经脱离父进程
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+           |              |-{polkitd}(903)
+           |              `-{polkitd}(931)
+           |-rsyslogd(1114)-+-{rsyslogd}(1128)
+           |                `-{rsyslogd}(1287)
+           |-sgagent(2205)---{sgagent}(2206)
+           |-sleep(3132679)
+           |-sshd(5831)-+-sshd(3061036)---sshd(3061049)-+-bash(3061804)---go(3132641)-+-main(3132674)-+-{main}(3132675)
+           |            |                               |                             |               |-{main}(3132676)
+           |            |                               |                             |               `-{main}(3132677)
+           |            |                               |                             |-{go}(3132642)
+           |            |                               |                             |-{go}(3132643)
+
+# 此时我们的代码也并没有向下执行(没有输出后面的日志)，而像是卡住了一样
+
+# 问题总结：
+# 1、孙子进程并没有被超时机制所杀死
+# 2、父进程会卡住，并不会继续向下执行代码
+```
+
+:::
+
+::: details （3）使用CommandContext设置超时：修复孙子进程问题
+
+`test.sh`
+
+```bash
+#!/usr/bin/env bash
+
+sleep 300
+```
+
+`main.go`
+
+```go
+
+```
+
+输出结果
+
+```bash
 
 ```
 
