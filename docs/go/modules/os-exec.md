@@ -750,7 +750,7 @@ func main() {
 	// 设置Cmd.WaitDelay,用于ctx超时后,我们的程序可以正常往下执行
 	cmd.WaitDelay = time.Duration(-1)
 
-	//创建一个新的进程组
+	//创建一个新的进程组,用于解决孙子进程杀不到的问题
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// 执行Shell命令
@@ -758,7 +758,7 @@ func main() {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Error: %#v\n", err.Error())
-		// 向进程组发送Kill信号
+		// 向进程组发送Kill信号,用于解决孙子进程杀不到的问题
 		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 	log.Printf("Output: %s\n", string(output))
