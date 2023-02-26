@@ -457,3 +457,110 @@ Output: total 4.0K
 
 ## 工作目录
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os/exec"
+)
+
+func main() {
+	// 定义选项
+	var dir = flag.String("dir", "", "work dir")
+	flag.Parse()
+
+	// 实例化Command对象
+	cmd := exec.Command("sh", "-c", "pwd")
+
+	// 设置工作目录
+	cmd.Dir = *dir
+
+	// 执行Shell命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error: %#v\n", err.Error())
+	}
+	fmt.Printf("Output: %s\n", string(output))
+}
+```
+
+输出结果
+
+```bash
+# 默认会在当前目录下执行，这里是/root目录
+[root@ap-hongkang ~]# go run main.go 
+Output: /root
+
+# 切换到/tmp目录
+[root@ap-hongkang ~]# go run main.go -dir /tmp
+Output: /tmp
+
+# 当进入到一个不存在的目录时会报错
+[root@ap-hongkang ~]# go run main.go -dir /abc
+Error: "chdir /abc: no such file or directory"
+Output: 
+```
+
+:::
+
+<br />
+
+## 命令预检
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"os/exec"
+)
+
+func main() {
+	// 有时候执行一个外部命令的时候需要先检查它是否存在,此时LookPath就很好用
+	// 如果传入参数包含路径分隔符，那么它会基于Cmd.Dir的相对路径或者绝对路径查找这个程序
+	//如果不包含路径分隔符，那么会从PATH环境变量中查找文件
+	for _, command := range []string{"echo", "sed", "awk", "jq", "yq", "cfssl", "kubectl"} {
+		path, err := exec.LookPath(command)
+		if err != nil {
+			fmt.Printf("%-20s not found\n", command)
+		} else {
+			fmt.Printf("%-20s %s\n", command, path)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+# Windows
+D:\application\GoLand\example>go run main.go
+echo                 not found
+sed                  not found
+awk                  not found
+jq                   not found
+yq                   D:\tools\yq.exe
+cfssl                D:\tools\cfssl\cfssl.exe
+kubectl              D:\tools\kubectl.exe
+
+# Linux
+[root@ap-hongkang ~]# go run main.go 
+echo                 /usr/bin/echo
+sed                  /usr/bin/sed
+awk                  /usr/bin/awk
+jq                   /usr/bin/jq
+yq                   not found
+cfssl                /usr/local/bin/cfssl
+kubectl              /usr/bin/kubectl
+```
+
+:::
+
+<br />
+
