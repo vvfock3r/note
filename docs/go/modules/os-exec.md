@@ -339,22 +339,6 @@ mv /usr/bin/pwd2 /usr/bin/pwd
 # 2、命令可以连在一起写: cmd = exec.Command("sh", "-c", "ls -l /var/log/*.log") // 正确写法
 # 3、支持通配符，参考命令如上
 # 4、终端其他的特性
-
-
-# --------------------------------------------------------------------------------------------
-
-# 关于是否产生新进程的问题
-# 说明：通过pstree -p | grep xxx可以查看进程的父子关系
-
-# /root/sleep.sh            产生一个新的sh进程,并在里面执行脚本
-# ./sleep.sh                产生一个新的sh进程,并在里面执行脚本
-# bash /root/sleep.sh       产生一个新的sh进程,并在里面执行脚本
-# . /root/sleep.sh          在当前sh中执行脚本
-# source /root/sleep.sh     在当前sh中执行脚本
-
-# bash -c 方式有可能会产生新bash进程，也有可能在当前bash中执行，取决于运行的命令是什么
-# bash -c "sleep 120"       对于单条命令会在当前sh中执行脚本
-# bash -c "source sleep.sh" 对于多条命令,会产生一个新的sh进程,并在里面执行脚本
 ```
 
 :::
@@ -567,3 +551,91 @@ kubectl              /usr/bin/kubectl
 
 <br />
 
+## 设置超时
+
+::: details （1）关于是否产生新的shell进程的说明
+
+```bash
+# 关于是否产生新进程的问题
+# 说明：通过pstree -p | grep -C 5 xxx可以查看进程的父子关系
+
+# /root/sleep.sh            产生一个新的sh进程,并在里面执行脚本
+# ./sleep.sh                产生一个新的sh进程,并在里面执行脚本
+# bash /root/sleep.sh       产生一个新的sh进程,并在里面执行脚本
+# . /root/sleep.sh          在当前sh中执行脚本
+# source /root/sleep.sh     在当前sh中执行脚本
+
+# bash -c 方式有可能会产生新bash进程，也有可能在当前bash中执行，取决于运行的命令是什么
+# bash -c "sleep 120"       对于单条命令会在当前sh中执行脚本
+# bash -c "source sleep.sh" 对于多条命令,会产生一个新的sh进程,并在里面执行脚本
+```
+
+:::
+
+::: details （2）使用CommandContext设置超时，子进程有效，孙子进程无效
+
+`test.sh`
+
+```bash
+#!/usr/bin/env bash
+
+sleep 300
+```
+
+`main.go`
+
+```go
+package main
+
+import (
+	"context"
+	"flag"
+	"log"
+	"os/exec"
+	"time"
+)
+
+func main() {
+	// 定义命令行参数
+	newproc := flag.Bool("newproc", false, "Start command in new process")
+	flag.Parse()
+
+	//设置context
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	// 实例化CommandContext对象
+	var cmd *exec.Cmd
+	if *newproc {
+		cmd = exec.CommandContext(ctx, "sh", "-c", "bash test.sh")
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", "sleep 300")
+	}
+
+	// 设置Cmd.Wait超时时间
+	//cmd.WaitDelay = time.Second * 10
+
+	// 执行Shell命令
+	log.Printf("Start")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error: %#v\n", err.Error())
+	}
+	log.Printf("Output: %s\n", string(output))
+
+	// 模拟常驻内存的程序
+	log.Println("Cmd run complete")
+	time.Sleep(time.Hour)
+}
+```
+
+输出结果
+
+```bash
+# 先确认一下当前系统没有启动sleep进程
+[root@ap-hongkang ~]# pstree -p | grep -C 5 sleep
+
+
+```
+
+:::
