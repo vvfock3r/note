@@ -142,6 +142,55 @@ maxprocs: 1
 
 <br />
 
+## 修改日志
+
+::: details 修改日志输出格式，与其他日志模块集成
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+
+	"go.uber.org/automaxprocs/maxprocs"
+	"go.uber.org/zap"
+)
+
+func main() {
+	// 初始化Logger
+	logger, _ := zap.NewProduction()
+
+	// 自动调整 runtime.GOMAXPROCS
+	maxprocsLogFunc := func(format string, v ...any) {
+		logger.Warn(fmt.Sprintf(format, v))
+	}
+	_, _ = maxprocs.Set(maxprocs.Logger(maxprocsLogFunc))
+
+	// 获取CPU核心数
+	fmt.Printf("cpu core: %d\n", runtime.NumCPU())
+
+	// 获取GOMAXPROCS
+	fmt.Printf("maxprocs: %d\n", runtime.GOMAXPROCS(0))
+
+	time.Sleep(time.Hour)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+{"level":"warn","ts":1677480181.0991318,"caller":"example/main.go:18","msg":"maxprocs: Leaving GOMAXPROCS=[8]: CPU quota undefined"}
+cpu core: 8
+maxprocs: 8
+```
+
+:::
+
+<br />
+
 ## 原理分析
 
 **基本原理是啥？**
