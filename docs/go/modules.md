@@ -27,7 +27,8 @@ sidebar: off
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务
 * [template](https://jinhui.dev/go/modules/template.html)：模板
 * [email](https://jinhui.dev/go/modules/email.html)：发送邮件
-* automaxprocs：识别容器允许使用的核心数并自动调整
+* [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
+* [automaxprocs](https://jinhui.dev/go/modules/automaxprocs.html)：识别容器允许使用的核心数并自动调整
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
