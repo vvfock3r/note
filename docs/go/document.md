@@ -9817,7 +9817,7 @@ main.Point{X:100, Y:200}
 
 ```bash
 # 安装stringer
-D:\application\GoLand\example>go install golang.org/x/tools/cmd/stringer
+D:\application\GoLand\example>go install golang.org/x/tools/cmd/stringer@latest
 
 # 查看帮助
 D:\application\GoLand\example>stringer -h
