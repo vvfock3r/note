@@ -9873,7 +9873,7 @@ D:\application\GoLand\example>go generate ./...
 D:\application\GoLand\example>stringer -type=Weekday weekday/weekday.go
 ```
 
-4、查看新生成的代码
+4、查看新生成的代码：看不懂没关系，这就不是给人看的
 
 `weekday_string.go`
 
@@ -9931,8 +9931,6 @@ func main() {
 D:\application\GoLand\example>go run main.go
 Sunday  # 默认会使用变量名作为String()的返回值
 ```
-
-------
 
 6、修改返回值（添加-linecomment参数）
 
