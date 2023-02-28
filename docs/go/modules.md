@@ -59,7 +59,7 @@ sidebar: off
   * [jwt](https://jinhui.dev/go/modules/jwt.html)：JSON Web Token
   * [casbin](https://jinhui.dev/go/modules/casbin.html)：访问控制模型，比如RBAC
   * [validator](https://jinhui.dev/go/modules/validator.html)：验证器
-  * [rate](https://jinhui.dev/go/modules/rate.html)：限速器
+  * [x/time/rate](https://jinhui.dev/go/modules/x-time-rate.html)：限速器
   * [otp](https://jinhui.dev/go/modules/otp.html)：双因素认证
 * GUI
   * wails：基于Go + Vue/React等
