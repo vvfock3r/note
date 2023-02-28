@@ -85,6 +85,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -121,8 +122,8 @@ func main() {
 		output, err = simplifiedchinese.GB18030.NewDecoder().Bytes(output)
 	}
 
-	// 输出结果
-	fmt.Printf("%s", string(output))
+	// 输出结果,并删除一下行末的空白
+	fmt.Printf("%#v\n", strings.TrimSpace(string(output)))
 }
 ```
 
@@ -130,12 +131,12 @@ func main() {
 
 ```bash
 # Windows CMD下输出正常
-D:\application\GoLand\example>go run main.go           
-台湾省通辽市大兴沈阳路r座 316753
+D:\application\GoLand\example>go run main.go
+"广东省拉萨县沈北新苏街c座 403711"
 
 # Linux显示正常
 [root@ap-hongkang example]# go run main.go
-江苏省武汉市大兴济南街F座 938073
+"安徽省上海县双滦刘路r座 617719"
 ```
 
 :::
