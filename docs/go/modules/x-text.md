@@ -85,6 +85,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"unicode/utf8"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
@@ -105,11 +106,18 @@ func main() {
 		fmt.Printf("Error: %#v\n", err.Error())
 	}
 
-	// 编码转换
+	// 编码转换，转为UTF-8编码
 	// 1、用于解决Windows乱码问题
 	// 2、Linux不需要执行此操作
-	switch runtime.GOOS {
-	case "windows":
+
+	// 方式1
+	//switch runtime.GOOS {
+	//case "windows":
+	//	output, err = simplifiedchinese.GB18030.NewDecoder().Bytes(output)
+	//}
+
+	// 方式2 - 推荐
+	if !utf8.Valid(output) {
 		output, err = simplifiedchinese.GB18030.NewDecoder().Bytes(output)
 	}
 
