@@ -4,7 +4,7 @@
 
 <br />
 
-## 安装
+## 安装模块
 
 ```bash
 D:\application\GoLand\example>go get golang.org/x/text
@@ -13,7 +13,7 @@ go: added golang.org/x/text v0.7.0
 
 <br />
 
-## 解决Windows下的中文乱码
+## 修复中文乱码
 
 ::: details （1）准备环境：faker命令
 
