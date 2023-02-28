@@ -1,11 +1,14 @@
-# rate
+# x/time/rate
 
 文档：[https://pkg.go.dev/golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate)
+
+<br />
 
 ## 安装
 
 ```bash
-go get golang.org/x/time/rate
+D:\application\GoLand\example>go get golang.org/x/time/rate
+go: added golang.org/x/time v0.3.0
 ```
 
 ## 初始化桶
