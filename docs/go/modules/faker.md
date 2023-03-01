@@ -492,8 +492,7 @@ func NewFaker() *Faker {
 }
 
 // True 每次调用本函数, 有percent%的概率返回true, 有(100-percent)%的概率返回false
-// percent >= 100 时永远返回true
-// percent <= 0   时永远返回false
+// percent >= 100 时永远返回true, percent <= 0 时永远返回false
 func (f *Faker) True(percent int) bool {
 	if percent >= 100 {
 		return true
