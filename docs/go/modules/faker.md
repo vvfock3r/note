@@ -48,7 +48,6 @@ package main
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -63,7 +62,7 @@ func RandomChineseName() (string, error) {
 # --*-- coding:utf-8 --*--
 from faker import Faker
 fake = Faker(['zh_CN'])
-print(fake.name())
+print(fake.name(), end="")
 `
 	// 实例化Command对象
 	cmd := exec.Command("python", "-c", pyCode)
@@ -83,7 +82,7 @@ print(fake.name())
 	}
 
 	// 返回结果,并删除一下行末的空白
-	return strings.TrimSpace(string(output)), nil
+	return string(output), nil
 }
 
 func main() {
@@ -122,15 +121,77 @@ Used: 133 milliseconds
 
 :::
 
-::: details （3）代码优化：支持调用任意方法
+::: details （3）存放Python代码的三个位置
+
+**第一种**
 
 ```go
+	// Python代码
+	var pyCode = `
+#!/usr/bin/env python
+# --*-- coding:utf-8 --*--
+from faker import Faker
+fake = Faker(['zh_CN'])
+print(fake.name(), end="")
+`
 
+	// 实例化Command对象
+	cmd := exec.Command("python", "-c", pyCode)
+    
+// 分析：巨丑
 ```
 
-输出结果
+**第二种**
 
-```bash
+```go
+	// Python代码
+	var pyCode = []string{
+		"#!/usr/bin/env python",
+		"# --*-- coding:utf-8 --*--",
+		"from faker import Faker",
+		"fake = Faker(['zh_CN'])",
+		"print(fake.name(), end='')",
+	}
+
+	// 实例化Command对象
+	cmd := exec.Command("python", "-c", strings.Join(pyCode, "\n"))
+
+// 分析：适合小代码量
+```
+
+**第三种**
+
+`main.py`
+
+```python
+#!/usr/bin/env python
+# --*-- coding:utf-8 --*--
+
+from faker import Faker
+fake = Faker(['zh_CN'])
+print(fake.name(), end="")
+```
+
+`main.go`
+
+```go
+	// Python代码
+	pyCode, err := os.ReadFile("main.py")
+	if err != nil {
+		return "", err
+	}
+
+	// 实例化Command对象
+	cmd := exec.Command("python", "-c", string(pyCode))
+
+// 分析：适合大代码量，Go编译后需要依赖外部Python文件，这个问题可以通过embda来解决
+```
+
+:::
+
+::: details （4）代码优化：支持调用任意多个方法
+
+```go
 
 ```
 
