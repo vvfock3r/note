@@ -3,18 +3,17 @@
 ## 说明
 
 * faker用于生成大量**虚假的真实数据**，用于测试和开发
+* 一般情况下生成大量数据会有一部分重复数据
 * 所有的Go模块都完美的支持生成英文数据
 * 所有的Go模块**几乎都不支持**生成中文数据，此时需要考虑一些其他的手段来实现
   * 调用在线接口生成数据
   * 调用外部命令生成数据（本文档采用此种方法）
   * 内嵌脚本语言生成数据
   * ...
-  * 由于没有找到其他优质的库，最好的情况下是自己去实现
-
 
 <br />
 
-## 中文数据
+## faker
 
 Faker官网：[https://fakerjs.dev/](https://fakerjs.dev/)
 
@@ -298,8 +297,221 @@ func main() {
 
 <br />
 
-## 英文数据
+## gofakeit
 
 Github：[https://github.com/brianvoe/gofakeit](https://github.com/brianvoe/gofakeit)
 
 文档：[https://pkg.go.dev/github.com/brianvoe/gofakeit/v6](https://pkg.go.dev/github.com/brianvoe/gofakeit/v6)
+
+<br />
+
+### 安装
+
+```bash
+D:\application\GoLand\example>go get github.com/brianvoe/gofakeit/v6
+go: added github.com/brianvoe/gofakeit/v6 v6.20.1
+```
+
+<br />
+
+### 示例
+
+::: details （1）生成用户信息
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
+)
+
+func main() {
+	format := "%-18s %-15s %-30s %-15s %-15s\n"
+	fmt.Printf(format, "Username", "Password", "Email", "Phone", "Created")
+	for i := 0; i < 10; i++ {
+		fmt.Printf(
+			format,
+			gofakeit.Username(),
+			gofakeit.Password(true, true, true, true, false, 12),
+			gofakeit.Email(),
+			gofakeit.Phone(),
+			gofakeit.DateRange(time.Now().AddDate(-5, 0, 0), time.Now()).Format(time.DateTime),
+		)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+Username           Password        Email                          Phone           Created     
+Breitenberg2121    dTp8AW$J6.&G    cortezferry@wolf.biz           9865090801      2019-05-11 19:30:19
+Conn3643           Ag(w<nV$_P3J    autumnhirthe@batz.biz          2809772716      2023-01-16 05:25:37
+Ernser6827         (49AcBjOd*%J    murielmorar@cruickshank.net    5649474666      2020-01-04 10:09:55
+Hirthe5070         4FUsWj?Nq11z    isabelstokes@zieme.info        1230251729      2022-05-29 13:31:28
+Rath8592           (s_cMgew0hTN    lenniefeil@schuster.biz        4078951563      2022-05-02 07:01:16
+Nicolas8021        Y67uf0gb&x7f    florineshanahan@stamm.info     2522916686      2022-07-15 23:53:02
+Marks2108          W7_q$bXA-VH:    elsehayes@thiel.io             4575615410      2020-05-04 13:47:06
+Ondricka5913       nB@qk=1BXDpI    stephenmohr@hoeger.name        1247716221      2022-02-10 22:53:49
+Sporer4601         j35uk:>oSd:Y    coralielittel@mckenzie.com     5668375535      2018-03-26 15:08:34
+Borer6711          h8B=nMl?Wr4>    kittyturner@abbott.io          5239053471      2022-06-01 05:19:27
+```
+
+:::
+
+<br />
+
+### 解析结构体
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
+)
+
+type User struct {
+	Username string `fake:"{username}"`
+	Password string `fake:"{password}"`
+	Created  time.Time
+}
+
+func main() {
+	var u User
+	err := gofakeit.Struct(&u)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", u)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+main.User{Username:"Kozey7491", Password:"NG|!y7if6pY2", Created:time.Date(1927, time.February, 1, 15, 8, 37, 496554266, time.UTC)}
+```
+
+:::
+
+<br />
+
+### 自定义数据
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/brianvoe/gofakeit/v6"
+)
+
+func main() {
+	data := []string{
+		"北京",
+		"上海",
+		"天津",
+		"重庆",
+		"哈尔滨",
+		"长春",
+		"沈阳",
+		"呼和浩特",
+		"石家庄",
+		"乌鲁木齐",
+		"兰州",
+		"西宁",
+		"西安",
+		"银川",
+		"郑州",
+		"济南",
+		"太原",
+		"合肥",
+		"武汉",
+		"长沙",
+		"南京",
+		"成都",
+		"贵阳",
+		"昆明",
+		"南宁",
+		"拉萨",
+		"杭州",
+		"南昌",
+		"广州",
+		"福州",
+		"台北",
+		"海口",
+		"香港",
+		"澳门",
+		"通辽",
+		"兴安盟",
+		"太原",
+		"辛集",
+		"邯郸",
+		"沈阳",
+		"辽阳",
+		"兴城",
+		"北镇",
+		"阜新",
+		"哈尔滨",
+		"齐齐哈尔",
+		"淮安",
+		"张家港",
+		"海门",
+		"六安",
+		"巢湖",
+		"马鞍山",
+		"永安",
+		"宁德",
+		"嘉禾",
+		"荆门",
+		"潜江",
+		"大冶",
+		"宜都",
+		"佛山",
+		"深圳",
+		"潮州",
+		"惠州",
+		"汕尾",
+		"东莞",
+		"梧州",
+		"柳州",
+		"合山",
+		"六盘水",
+		"关岭",
+	}
+	for i := 0; i < 10; i++ {
+		fmt.Println(gofakeit.RandomString(data))
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+六盘水
+巢湖
+北镇
+东莞
+通辽
+潮州
+南昌
+贵阳
+石家庄
+辛集
+```
+
+:::
