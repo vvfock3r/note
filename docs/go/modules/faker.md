@@ -81,7 +81,7 @@ print(fake.name(), end="")
 		}
 	}
 
-	// 返回结果,并删除一下行末的空白
+	// 返回结果
 	return string(output), nil
 }
 
