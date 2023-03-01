@@ -513,5 +513,125 @@ func main() {
 
 ## 自己编写特定数据随机函数
 
+### 1、初始化
 
+::: details （1）定义一个空结构体，用于集中管理函数
 
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+type Faker struct{}
+
+func NewFaker() *Faker {
+	return &Faker{}
+}
+
+func main() {
+
+}
+```
+
+:::
+
+::: details （2）定义计算概率的方法，在某些时候可能很有用
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+type Faker struct{}
+
+func NewFaker() *Faker {
+	return &Faker{}
+}
+
+// True 每次调用本函数, 有percent%的概率返回true, 有(100-percent)%的概率返回false
+// percent >= 100 时永远返回true
+// percent <= 0 时永远返回false
+func (f *Faker) True(percent int) bool {
+	if rand.Intn(100)+1 > percent {
+		return false
+	}
+	return true
+}
+
+func main() {
+	faker := NewFaker()
+	for i := 0; i < 10; i++ {
+		fmt.Println(faker.True(20))
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+false
+false
+false
+false
+true 
+true 
+false
+false
+false
+false
+```
+
+:::
+
+<br />
+
+### 2、城市名称
+
+::: details 核心代码如下
+
+```go
+func (f *Faker) City() string {
+	data := []string{
+		"北京", "上海", "天津", "重庆", "哈尔滨", "长春", "沈阳", "呼和浩特", "石家庄",
+		"乌鲁木齐", "兰州", "西宁", "西安", "银川", "郑州", "济南", "太原", "合肥", "武汉",
+		"长沙", "南京", "成都", "贵阳", "昆明", "南宁", "拉萨", "杭州", "南昌", "广州", "福州",
+		"台北", "海口", "香港", "澳门", "通辽", "兴安盟", "太原", "辛集", "邯郸", "沈阳",
+		"辽阳", "兴城", "北镇", "阜新", "哈尔滨", "齐齐哈尔", "淮安", "张家港", "海门", "六安",
+		"巢湖", "马鞍山", "永安", "宁德", "嘉禾", "荆门", "潜江", "大冶", "宜都", "佛山", "深圳",
+		"潮州", "惠州", "汕尾", "东莞", "梧州", "柳州", "合山", "六盘水", "关岭",
+	}
+	return data[rand.Intn(len(data))]
+}
+
+func main() {
+	faker := NewFaker()
+	for i := 0; i < 10; i++ {
+		fmt.Println(faker.City())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+沈阳
+北镇
+海口
+巢湖
+海门
+长春
+长沙
+长春
+南京
+台北
+```
+
+:::
