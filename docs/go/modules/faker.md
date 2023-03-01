@@ -500,10 +500,7 @@ func (f *Faker) True(percent int) bool {
 	if percent <= 0 {
 		return false
 	}
-	if rand.Intn(100)+1 > percent {
-		return false
-	}
-	return true
+	return rand.Intn(100)+1 < percent
 }
 
 func main() {
