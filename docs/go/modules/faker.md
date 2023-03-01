@@ -9,6 +9,7 @@
   * 调用外部命令生成数据（本文档采用此种方法）
   * 内嵌脚本语言生成数据
   * ...
+  * 由于没有找到其他优质的库，最好的情况下是自己去实现
 
 
 <br />
@@ -88,6 +89,10 @@ print(fake.name(), end="")
 func main() {
 	// 统计耗时
 	start := time.Now()
+	defer func() {
+		used := time.Since(start).Milliseconds()
+        fmt.Printf("Used: %d milliseconds\n", used)
+	}()
 
 	// 生成随机中文姓名
 	name, err := RandomChineseName()
@@ -96,8 +101,7 @@ func main() {
 	}
 
 	// 输出结果
-	fmt.Printf("Data: %s\n", name)
-	fmt.Printf("Used: %d milliseconds\n", time.Since(start).Milliseconds())
+	fmt.Printf("Data: %s\n", name)	
 }
 ```
 
@@ -121,7 +125,7 @@ Used: 133 milliseconds
 
 :::
 
-::: details （3）存放Python代码的三个位置
+::: details （3）Python代码的存放位置
 
 **第一种**
 
@@ -187,12 +191,107 @@ print(fake.name(), end="")
 // 分析：适合大代码量，Go编译后需要依赖外部Python文件，这个问题可以通过embda来解决
 ```
 
+**其他**
+
+可以使用Go语言模板与上面几种方式组合
+
 :::
 
 ::: details （4）代码优化：支持调用任意多个方法
 
 ```go
+package main
 
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"strings"
+	"text/template"
+	"time"
+	"unicode/utf8"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+)
+
+// 生成随机数据
+func PythonFakerInterface(funcList []string) ([]string, error) {
+	if len(funcList) <= 0 {
+		return nil, errors.New("function list cannot be empty")
+	}
+
+	// Python代码
+	var pyCodeTpl = []string{
+		"#!/usr/bin/env python",
+		"# --*-- coding:utf-8 --*--",
+		"from faker import Faker",
+		"fake = Faker(['zh_CN'])",
+		"{{- range $index, $function := . }}",
+		"print(fake.{{ $function }},end=',')",
+		"{{- end -}}",
+	}
+
+	// 解析模板
+	tpl, err := template.New("py").Parse(strings.Join(pyCodeTpl, "\n"))
+	if err != nil {
+		return nil, err
+	}
+
+	// 渲染模板
+	var buf strings.Builder
+	err = tpl.Execute(&buf, funcList)
+	if err != nil {
+		return nil, err
+	}
+
+	// 实例化Command对象
+	cmd := exec.Command("python", "-c", buf.String())
+
+	// 执行Shell命令
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	// Windows CMD下需要转为UTF-8编码
+	if !utf8.Valid(output) {
+		output, err = simplifiedchinese.GB18030.NewDecoder().Bytes(output)
+		if err != nil {
+			return nil, nil
+		}
+	}
+
+	// 返回结果
+	result := strings.Split(string(output), ",")
+	return result[:len(result)-1], nil
+}
+
+func main() {
+	// 统计耗时
+	start := time.Now()
+	defer func() {
+		used := time.Since(start).Milliseconds()
+		fmt.Printf("Used: %d milliseconds\n", used)
+	}()
+
+	// 定义函数列表
+	functionList := []string{
+		"country()",        // 国
+		"province()",       // 省
+		"city()",           // 市或县
+		"district()",       // 区
+		"street_address()", // 路
+	}
+
+	// 生成数据
+	name, err := PythonFakerInterface(functionList)
+	if err != nil {
+		panic(err)
+	}
+
+	// 输出结果
+	fmt.Printf("Data: %#v\n", name)
+}
 ```
 
 :::
