@@ -8809,18 +8809,12 @@ func Add(n1, n2 int) int {
 }
 
 func BenchmarkAdd(b *testing.B) {
-	x := 10000
-	y := -25000
-	z := -15000
-
 	// 这里是重置时间，如果上面有耗时初始化的话可以添加这一句
 	b.ResetTimer()
 
 	// b.N是性能测试为我们提供的计数器
 	for i := 0; i < b.N; i++ {
-		if v := Add(x, y); v != z {
-			b.Errorf("Add(%d, %d) got %d, expectd %d\n", x, y, v, z)
-		}
+		Add(i, 1)
 	}
 }
 ```
@@ -8828,6 +8822,7 @@ func BenchmarkAdd(b *testing.B) {
 输出结果
 
 ```bash
+# 基本参数
 D:\application\GoLand\example>go test -bench .
 goos: windows
 goarch: amd64
@@ -8842,6 +8837,12 @@ ok      example 2.602s
 # 2.-8这里的8指的是主机的逻辑CPU个数
 # 3.1000000000指的是该函数运行的次数
 # 4.0.2540 ns/op指的是每次运行函数消耗的纳秒
+
+# 其他参数
+-benchmem        输出内存分配统计信息(B/op 每次分配内存大小, allocs/op 每次分配内存次数) go test -bench . -benchmem
+
+-benchtime 1s    指定每个函数运行时长,默认为1s                    go test -bench . -benchtime 10s
+-benchtime 1000x 指定每个函数运行次数,注意后面要加个x,默认为十亿次    go test -bench . -benchtime 100x
 ```
 
 :::
