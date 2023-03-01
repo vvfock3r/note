@@ -13,6 +13,7 @@
 | Ctrl + Alt + S      | 设置，注意这与Windows下的QQ屏幕录制快捷键有冲突 |
 | Shift（快速按两次） | 全局搜索                                        |
 | Ctrl + Alt + L      | 代码格式化                                      |
+| Shift + F6          | 文件/变量重命名                                 |
 
 <br />
 
