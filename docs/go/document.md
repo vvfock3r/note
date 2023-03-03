@@ -10290,7 +10290,7 @@ func main() {
 }
 ```
 
-`hello_windows.go`
+`hello_windows_amd64.go`
 
 ```go
 package main
@@ -10302,7 +10302,7 @@ func Hello() {
 }
 ```
 
-`hello_linux.go`
+`hello_linux_amd64.go`
 
 ```go
 package main
