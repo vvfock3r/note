@@ -8,9 +8,24 @@
 
 PE / ELF / Mach-O
 
-ELF文件格式
+**1、Linux ELF文件格式**
 
-::: details readelf
+::: details （1）ELF文件：格式说明
+
+ELF 是 Executable and Linkable Format 的缩写，是一种用于可执行文件、目标文件、共享库和核心转储(core dump)的标准文件格式。
+
+ELF 文件 **通常** 是编译器之类的输出，并且是二进制格式。以 Go 编译出的可执行文件为例，我们使用 file 命令即可看到其具体类型
+
+```bash
+[root@ap-hongkang example]# file main
+main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, with debug_info, not stripped
+```
+
+使用 ELF 文件格式的可执行文件是由 **ELF 头（ELF Header）** 开始，后跟 **程序头（Program Header）** 或 **节头（Section Header）** 或两者均有组成的
+
+:::
+
+::: details （2）读取ELF Header
 
 ```bash
 # 显示ELF文件Header
@@ -35,7 +50,13 @@ ELF Header:
   Size of section headers:           64 (bytes)
   Number of section headers:         23
   Section header string table index: 3
-  
+```
+
+:::
+
+::: details （3）读取Program Header
+
+```bash
 # 显示程序头部
 [root@ap-hongkang example]# readelf -l main
 
@@ -71,6 +92,8 @@ Program Headers:
    05     
    06
 ```
+
+
 
 :::
 
