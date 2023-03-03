@@ -186,27 +186,116 @@ package main
 
 import (
 	"debug/elf"
+	"encoding/binary"
 	"fmt"
 	"os"
-	"text/tabwriter"
+	"strings"
+
+	"github.com/alexeyco/simpletable"
 )
+
+func PrintFileHeader(f *os.File) {
+	// 转为 elf.File
+	e, err := elf.NewFile(f)
+	if err != nil {
+		panic(err)
+	}
+
+	// 判断是32位还是64位,这里为了简单只处理64位
+	switch e.FileHeader.Class {
+	case elf.ELFCLASS64:
+		// 读取数据写入到Header64结构体中
+		header64 := new(elf.Header64)
+		err := binary.Read(f, e.FileHeader.ByteOrder, header64)
+		if err != nil {
+			panic(err)
+		}
+
+		// Magic
+		var ident []string
+		for _, i := range header64.Ident {
+			ident = append(ident, fmt.Sprintf("%.2x", i))
+		}
+		magic := strings.Join(ident, " ")
+
+		fmt.Printf("ELF Header:\n")
+		fmt.Printf("%-40s %s\n", "  Magic:", magic)
+		fmt.Printf("%-40s %s\n", "  Class:", e.FileHeader.Class)
+		fmt.Printf("%-40s %s\n", "  Data:", e.FileHeader.Data)
+		fmt.Printf("%-40s %s\n", "  Version:", e.FileHeader.Version)
+		fmt.Printf("%-40s %d\n", "  OS/ABI:", e.FileHeader.ABIVersion)
+		fmt.Printf("%-40s %s\n", "  Type:", e.FileHeader.Type)
+		fmt.Printf("%-40s %s\n", "  Machine:", e.FileHeader.Machine)
+		fmt.Printf("%-40s %#x\n", "  Version:", header64.Version)
+		fmt.Printf("%-40s %#x\n", "  Entry point address:", e.FileHeader.Entry)
+		fmt.Printf("%-40s %d\n", "  Start of program headers:", header64.Phoff)
+		fmt.Printf("%-40s %d\n", "  Start of section headers:", header64.Shoff)
+		fmt.Printf("%-40s %#v\n", "  Flags:", header64.Flags)
+		fmt.Printf("%-40s %d\n", "  Size of this header:", header64.Ehsize)
+		fmt.Printf("%-40s %d\n", "  Size of program headers:", header64.Phentsize)
+		fmt.Printf("%-40s %d\n", "  Number of program headers:", header64.Phnum)
+		fmt.Printf("%-40s %d\n", "  Size of section headers:", header64.Shentsize)
+		fmt.Printf("%-40s %d\n", "  Number of section headers:", header64.Shnum)
+		fmt.Printf("%-40s %d\n", "  Section header string table index:", header64.Shstrndx)
+	case elf.ELFCLASSNONE:
+		panic("Unknown class")
+	}
+}
+
+func ProgramHeaders(f *elf.File) string {
+	// 实例化table
+	table := simpletable.New()
+
+	// 设置Header
+	table.Header = &simpletable.Header{
+		Cells: []*simpletable.Cell{
+			{Text: "Type"},
+			{Text: "Offset"},
+			{Text: "VirtAddr"},
+			{Text: "PhysAddr"},
+			{Text: "FileSiz"},
+			{Text: "MemSiz"},
+			{Text: "Flags"},
+			{Text: "Align"},
+		},
+	}
+
+	// 读取 Program Header
+	for _, p := range f.Progs {
+		row := []*simpletable.Cell{
+			{Text: p.Type.String()},
+			{Text: fmt.Sprintf("%#.16x", p.Off)},
+			{Text: fmt.Sprintf("%#.16x", p.Vaddr)},
+			{Text: fmt.Sprintf("%#.16x", p.Paddr)},
+			{Text: fmt.Sprintf("%#.16x", p.Filesz)},
+			{Text: fmt.Sprintf("%#.16x", p.Memsz)},
+			{Text: p.Flags.String()},
+			{Text: fmt.Sprintf("%#x", p.Align)},
+		}
+		table.Body.Cells = append(table.Body.Cells, row)
+	}
+
+	return table.String()
+}
 
 func main() {
 	// 打开ELF文件
-	f, err := elf.Open("main2")
+	f, err := os.Open("main")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	// 读取 Program Header
-	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
-	defer tw.Flush()
-	fmt.Fprintf(tw, "No.\tType\tFlags\tVAddr\tMemSize\n")
+	// 读取程序头
+	PrintFileHeader(f)
 
-	for idx, p := range f.Progs {
-		fmt.Fprintf(tw, "%d\t%v\t%v\t%#x\t%d\n", idx, p.Type, p.Flags, p.Vaddr, p.Memsz)
-	}
+	// 读取程序头
+	//fmt.Println(ProgramHeaders(f))
+
+	//f1, _ := os.Open("main")
+	//hdr := new(elf.Header64)
+	//binary.Read(f1, binary.LittleEndian, hdr)
+	//fmt.Println(hdr)
 }
 ```
 
