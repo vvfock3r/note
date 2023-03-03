@@ -173,6 +173,8 @@ Key to Flags:
   L (link order), O (extra OS processing required), G (group), T (TLS),
   C (compressed), x (unknown), o (OS specific), E (exclude),
   l (large), p (processor specific)
+  
+# 注意这里有个 .go.buildinfo 的节头
 ```
 
 :::
