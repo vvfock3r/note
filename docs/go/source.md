@@ -194,7 +194,7 @@ import (
 	"github.com/alexeyco/simpletable"
 )
 
-func PrintFileHeader(f *os.File) {
+func PrintFileHeaders(f *os.File) {
 	// 转为 elf.File
 	e, err := elf.NewFile(f)
 	if err != nil {
@@ -242,7 +242,13 @@ func PrintFileHeader(f *os.File) {
 	}
 }
 
-func ProgramHeaders(f *elf.File) string {
+func PrintProgramHeaders(f *os.File) {
+	// 转为 elf.File
+	e, err := elf.NewFile(f)
+	if err != nil {
+		panic(err)
+	}
+
 	// 实例化table
 	table := simpletable.New()
 
@@ -261,7 +267,7 @@ func ProgramHeaders(f *elf.File) string {
 	}
 
 	// 读取 Program Header
-	for _, p := range f.Progs {
+	for _, p := range e.Progs {
 		row := []*simpletable.Cell{
 			{Text: p.Type.String()},
 			{Text: fmt.Sprintf("%#.16x", p.Off)},
@@ -275,27 +281,24 @@ func ProgramHeaders(f *elf.File) string {
 		table.Body.Cells = append(table.Body.Cells, row)
 	}
 
-	return table.String()
+	fmt.Println("Program Headers:")
+	fmt.Println(table.String())
 }
 
 func main() {
-	// 打开ELF文件
+	// 打开文件
 	f, err := os.Open("main")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	// 读取程序头
-	PrintFileHeader(f)
+	// 读取文件头
+	PrintFileHeaders(f)
 
 	// 读取程序头
-	//fmt.Println(ProgramHeaders(f))
-
-	//f1, _ := os.Open("main")
-	//hdr := new(elf.Header64)
-	//binary.Read(f1, binary.LittleEndian, hdr)
-	//fmt.Println(hdr)
+	fmt.Println()
+	PrintProgramHeaders(f)
 }
 ```
 
