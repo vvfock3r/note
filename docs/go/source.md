@@ -25,7 +25,7 @@ main: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, wi
 
 :::
 
-::: details （2）读取ELF Header
+::: details （2）readelf：读取ELF Header
 
 ```bash
 # 显示ELF文件Header
@@ -71,13 +71,13 @@ ELF Header:
         	#define ELFDATA2MSB     2
         # 第7个字节 01 与Version字段对应
 
-# 程序头开始位置 64, 程序头结束位置: 64 + 7 * 56    = 456
-# 节头开始位置  456, 节头结束位置:   456 + 23 * 64 = 1928
+# 程序头开始位置 64, 程序头结束位置: 64  + 7 * 56  = 456
+# 节头开始位置  456, 节头结束位置:  456 + 23 * 64 = 1928
 ```
 
 :::
 
-::: details （3）读取Program Header 和 Section Header
+::: details （3）readelf：读取Program Header 和 Section Header
 
 ```bash
 # 读取程序头
@@ -175,6 +175,39 @@ Key to Flags:
   l (large), p (processor specific)
   
 # 注意这里有个 .go.buildinfo 的节头
+```
+
+:::
+
+::: details （4）Go：读取ELF文件
+
+```go
+package main
+
+import (
+	"debug/elf"
+	"fmt"
+	"os"
+	"text/tabwriter"
+)
+
+func main() {
+	// 打开ELF文件
+	f, err := elf.Open("main2")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	// 读取 Program Header
+	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
+	defer tw.Flush()
+	fmt.Fprintf(tw, "No.\tType\tFlags\tVAddr\tMemSize\n")
+
+	for idx, p := range f.Progs {
+		fmt.Fprintf(tw, "%d\t%v\t%v\t%#x\t%d\n", idx, p.Type, p.Flags, p.Vaddr, p.Memsz)
+	}
+}
 ```
 
 :::
