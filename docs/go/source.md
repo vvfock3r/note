@@ -316,5 +316,202 @@ func main() {
 
 <br />
 
-## 底层数据结构
+## string 底层结构
 
+::: details （1）现象
+
+```go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	// 定义一个字符串
+	str1 := "张三"
+	str2 := "中华人民共和国"
+
+	// 如何解释以下输出?
+	fmt.Println(unsafe.Sizeof(str1), unsafe.Sizeof(str2))
+	fmt.Println(len(str1), len(str2))
+	fmt.Println(str1[0], str2[0])
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+16 16
+6 21
+229 228
+```
+
+:::
+
+::: details （2）字符串的底层结构是 runtime.stringStruct
+
+**先上结论**
+
+```go
+type stringStruct struct {
+	str unsafe.Pointer
+	len int
+}
+
+// 有什么依据说明字符串的底层数据结构是stringStruct呢?
+// 暂时没找到
+
+// str 是一个通用指针,指向真正存储字符串数据的虚拟内存地址, 那么底层是用什么存储的呢?
+// 字节数组
+
+// len 长度代表的是字符串的长度还是底层结构的长度呢?
+// 字节数组的长度
+```
+
+**字符串结构体**
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func main() {
+	// 定义一个字符串
+	strMsg := "张三"
+
+	// 字符串的底层结构是 stringStruct 结构体, 是非可导出的
+	// 但是reflect.StringHeader 提供了与 stringStruct 相同的数据结构,并且是可导出的
+	// type StringHeader struct {
+	//	 Data uintptr --> uintptr与unsafe.Pointer是可以互相转化的,所以我们可以认为两个结构体是相同的数据结构
+	//	 Len  int
+	// }
+	// 将 stringStruct 结构体 强转为 StringHeader 结构体
+	strHeader := (*reflect.StringHeader)(unsafe.Pointer(&strMsg))
+	fmt.Printf("%#v\n", strHeader)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+&reflect.StringHeader{Data:0x4453a4, Len:6}
+```
+
+**str底层数组**
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func main() {
+	// 定义一个字符串
+	strMsg := "张三"
+
+	// 将 stringStruct 结构体 强转为 StringHeader 结构体
+	strHeader := (*reflect.StringHeader)(unsafe.Pointer(&strMsg))
+
+	// 将 StringHeader.Data(也就是stringStruct.str) 强转为 []byte
+	fmt.Println(*(*[]byte)(unsafe.Pointer(&strHeader.Data)))
+
+	// 按字节遍历字符串
+	for _, v := range []byte(strMsg) {
+		fmt.Println(v)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+[229 188 160 228 184 137]
+229
+188
+160
+228
+184
+137
+```
+
+:::
+
+::: details （3）字符串底层是可变长编码
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	// 定义一个字符串
+	str1 := "张三"
+	str2 := "张三2"
+
+	// 每个汉字占用3个字节, 每个ASCII字符占用1个字节
+	fmt.Println(len(str1), len(str2))
+
+	// 查看底层数组
+	fmt.Println([]byte(str1))
+	fmt.Println([]byte(str2))
+
+	// 如果判断底层的字节数组是解码成汉字还是ASCII?
+	// utf8包可以判断
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+6 7
+[229 188 160 228 184 137]
+[229 188 160 228 184 137 50]
+```
+
+:::
+
+::: details （4）汉字切分
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 定义一个字符串
+	str := "张三"
+
+	// 我想获得第一个汉字,该如何做呢?
+
+	// 错误的方法: 获取的是字节切片的第一个字节
+	fmt.Println(str[0])
+
+	// 转为rune切片,取值,然后再转为字符串
+	fmt.Println(string(([]rune(str))[0]))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+229
+张
+```
+
+:::
