@@ -1,0 +1,391 @@
+# reflect
+
+文档：[https://pkg.go.dev/reflect](https://pkg.go.dev/reflect)
+
+法则：[https://go.dev/blog/laws-of-reflection](https://go.dev/blog/laws-of-reflection)
+
+<br />
+
+## 基础用法
+
+::: details （1）TypeOf 和 ValueOf
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// TypeOf 运行时类型反射,返回 Type接口类型
+	// 如果输入的是nil则返回nil
+	fmt.Println(reflect.TypeOf("hello world!"))
+	fmt.Println(reflect.TypeOf(nil))
+
+	// ValueOf 运行时值反射, 返回 Value结构体
+	// 如果输入的是nil则返回nil
+	fmt.Println(reflect.ValueOf("hello world!"))
+	fmt.Println(reflect.ValueOf(nil))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+string
+<nil>
+hello world!
+<invalid reflect.Value>
+```
+
+:::
+
+<br />
+
+## TypeOf
+
+::: details （1）类型和名称
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := "hello world!"
+	v2 := User{name: "v2"}
+	v3 := &User{name: "v3"}
+	v4 := *exec.Command("go", "version")
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+	t4 := reflect.TypeOf(v4)
+
+	// Type接口方法
+
+	// Kind Kind类型(底层是uint类型)
+	fmt.Printf("类型: %s\n", t1.Kind())
+	fmt.Printf("类型: %s\n", t2.Kind())
+	fmt.Printf("类型: %s\n", t3.Kind())
+	fmt.Printf("类型: %s\n", t4.Kind())
+
+	// 类型名称 string
+	fmt.Printf("名称: %s\n", t1.Name())
+	fmt.Printf("名称: %s\n", t2.Name())
+	fmt.Printf("名称: %s\n", t3.Name()) // 指针没有获取到类型名称
+	fmt.Printf("名称: %s\n", t4.Name())
+
+	// String表示方法 string
+	fmt.Printf("字符串表示: %s\n", t1.String())
+	fmt.Printf("字符串表示: %s\n", t2.String())
+	fmt.Printf("字符串表示: %s\n", t3.String())
+	fmt.Printf("字符串表示: %s\n", t4.String())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+类型: string
+类型: struct          
+类型: ptr             
+类型: struct          
+名称: string          
+名称: User            
+名称:                 
+名称: Cmd             
+字符串表示: string    
+字符串表示: main.User 
+字符串表示: *main.User
+字符串表示: exec.Cmd
+```
+
+:::
+
+::: details （2）方法
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := "hello world!"
+	v2 := User{name: "v2"}
+	v3 := &User{name: "v3"}
+	v4 := *exec.Command("go", "version")
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+	t4 := reflect.TypeOf(v4)
+
+	// Type接口方法
+
+	// 方法 Method struct
+	fmt.Printf("方法个数: %d\n", t1.NumMethod())
+	fmt.Printf("方法个数: %d\n", t2.NumMethod()) // 我们的方法定义在指针接收者上,这里反射的是值,所以取不到
+	fmt.Printf("方法个数: %d\n", t3.NumMethod())
+	fmt.Printf("方法个数: %d\n", t4.NumMethod())
+
+	// 通过索引取方法: 取第i个方法,i需要满足 [0, NumMethod()],否则会panic
+	// 返回 Method struct
+	fmt.Printf("方法名称: %s\n", t3.Method(0).Name)
+
+	// 通过名称取方法, 返回 Method struct
+	method, ok := t3.MethodByName("Name")
+	if ok {
+		fmt.Printf("方法名称: %s\n", method.Name)
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+类型: string
+类型: struct
+方法个数: 0
+方法个数: 0
+方法个数: 2
+方法个数: 0
+方法名称: Error
+方法名称: Name
+```
+
+:::
+
+::: details （3）测试类（检查是否实现了/可以xxx）
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := "hello world!"
+	v2 := User{name: "v2"}
+	v3 := &User{name: "v3"}
+	v4 := *exec.Command("go", "version")
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+	t4 := reflect.TypeOf(v4)
+
+	// Type接口方法
+
+	// 是否实现某个接口类型 bool
+	{
+		// tN类型是否实现了error类型
+
+		// 将error接口转为 Type 接口, (*error)(nil) 写法挺有意思
+		ErrorType := reflect.TypeOf((*error)(nil)).Elem()
+		fmt.Printf("是否实现error接口: %t\n", t1.Implements(ErrorType))
+		fmt.Printf("是否实现error接口: %t\n", t2.Implements(ErrorType))
+		fmt.Printf("是否实现error接口: %t\n", t3.Implements(ErrorType))
+		fmt.Printf("是否实现error接口: %t\n", t4.Implements(ErrorType))
+	}
+
+	// 是否可以赋值给指定类型 bool
+	{
+		// tN类型是否可以赋值给string类型
+		StringType := reflect.TypeOf((*string)(nil)).Elem()
+		fmt.Printf("是否可以赋值给指定类型: %t\n", t1.AssignableTo(StringType))
+		fmt.Printf("是否可以赋值给指定类型: %t\n", t2.AssignableTo(StringType))
+		fmt.Printf("是否可以赋值给指定类型: %t\n", t3.AssignableTo(StringType))
+		fmt.Printf("是否可以赋值给指定类型: %t\n", t4.AssignableTo(StringType))
+	}
+
+	// 一个类型的值是否可以转换成另一个类型的值 bool
+	{
+		// tN类型的值是否可以转为string类型的值
+		StringType := reflect.TypeOf((*string)(nil)).Elem()
+		fmt.Printf("是否可以转为指定类型的值: %t\n", t1.ConvertibleTo(StringType))
+		fmt.Printf("是否可以转为指定类型的值: %t\n", t2.ConvertibleTo(StringType))
+		fmt.Printf("是否可以转为指定类型的值: %t\n", t3.ConvertibleTo(StringType))
+		fmt.Printf("是否可以转为指定类型的值: %t\n", t4.ConvertibleTo(StringType))
+	}
+
+	// 类型是否可比较 bool
+	{
+		fmt.Printf("类型是否可比较: %t\n", t1.Comparable())
+		fmt.Printf("类型是否可比较: %t\n", t2.Comparable())
+		fmt.Printf("类型是否可比较: %t\n", t3.Comparable())
+		fmt.Printf("类型是否可比较: %t\n", t4.Comparable())
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+是否实现error接口: false
+是否实现error接口: false       
+是否实现error接口: true        
+是否实现error接口: false       
+是否可以赋值给指定类型: true   
+是否可以赋值给指定类型: false  
+是否可以赋值给指定类型: false  
+是否可以赋值给指定类型: false  
+是否可以转为指定类型的值: true 
+是否可以转为指定类型的值: false
+是否可以转为指定类型的值: false
+是否可以转为指定类型的值: false
+类型是否可比较: true           
+类型是否可比较: true           
+类型是否可比较: true           
+类型是否可比较: false
+```
+
+:::
+
+::: details 其他
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := "hello world!"
+	v2 := User{name: "v2"}
+	v3 := &User{name: "v3"}
+	v4 := *exec.Command("go", "version")
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+	t4 := reflect.TypeOf(v4)
+
+	// Type接口方法
+
+	// 内存对齐系数 int
+	fmt.Printf("内存对齐系数: %d\n", t1.Align())
+	fmt.Printf("内存对齐系数: %d\n", t2.Align())
+	fmt.Printf("内存对齐系数: %d\n", t3.FieldAlign()) // 用于结构体的对其系数,怎么用还不清楚
+	fmt.Printf("内存对齐系数: %d\n", t4.Align())
+
+	// 模块路径 string
+	fmt.Printf("模块路径: %s\n", t1.PkgPath())
+	fmt.Printf("模块路径: %s\n", t2.PkgPath())
+	fmt.Printf("模块路径: %s\n", t3.PkgPath())
+	fmt.Printf("模块路径: %s\n", t4.PkgPath()) // 注意指针类型类型获取不到,上面我们使用的是值类型
+
+	// 大小 uintptr 类似于(不等同于?)unsafe.SizeOf
+	fmt.Printf("对象大小: %d\n", t1.Size())
+	fmt.Printf("对象大小: %d\n", t2.Size())
+	fmt.Printf("对象大小: %d\n", t3.Size())
+	fmt.Printf("对象大小: %d\n", t4.Size())
+
+	// Bits() 返回类型的size，以bit计算，但如果类型不是Int、Uint、Float、Complex之一则panic
+	//fmt.Printf("对象大小: %d\n", t1.Bits()) // panic
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+内存对齐系数: 8
+内存对齐系数: 8  
+内存对齐系数: 8  
+内存对齐系数: 8  
+模块路径:        
+模块路径: main   
+模块路径:        
+模块路径: os/exec
+对象大小: 16     
+对象大小: 24     
+对象大小: 8      
+对象大小: 352
+```
+
+:::
