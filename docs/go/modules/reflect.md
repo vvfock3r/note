@@ -47,6 +47,11 @@ hello world!
 
 ## TypeOf
 
+说明：
+
+* 并不是每个类型都可以调用所有方法
+* 有些方法只对函数类型有意义，有的只对Struct有意义，否则会引发panic
+
 ::: details （1）类型和名称
 
 ```go
@@ -303,6 +308,109 @@ D:\application\GoLand\example>go run main.go
 类型是否可比较: true           
 类型是否可比较: true           
 类型是否可比较: false
+```
+
+:::
+
+::: details （4）channel
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	v1 := make(chan int)
+	v2 := make(<-chan int)
+	v3 := make(chan<- int)
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+
+	// 比如 chan、<-chan、<-chan
+	fmt.Printf("返回channel的方向: %s\n", t1.ChanDir())
+	fmt.Printf("返回channel的方向: %s\n", t2.ChanDir())
+	fmt.Printf("返回channel的方向: %s\n", t3.ChanDir())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+返回channel的方向: chan
+返回channel的方向: <-chan     
+返回channel的方向: chan<-
+```
+
+:::
+
+::: details （5）函数
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	v1 := func() bool { return false }
+	v2 := func(args ...int) int { return 1 }
+	v3 := func(a, b, c int, d string) (int, error) { return 2, nil }
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+
+	// 函数参数是否可变参数 bool
+	fmt.Printf("函数参数是否可变参数: %t\n", t1.IsVariadic())
+	fmt.Printf("函数参数是否可变参数: %t\n", t2.IsVariadic())
+	fmt.Printf("函数参数是否可变参数: %t\n", t3.IsVariadic())
+
+	// 函数入参个数 int
+	fmt.Printf("函数入参个数: %d\n", t1.NumIn())
+	fmt.Printf("函数入参个数: %d\n", t2.NumIn())
+	fmt.Printf("函数入参个数: %d\n", t3.NumIn())
+
+	// 函数返回值个数 int
+	fmt.Printf("函数返回值个数: %d\n", t1.NumOut())
+	fmt.Printf("函数返回值个数: %d\n", t2.NumOut())
+	fmt.Printf("函数返回值个数: %d\n", t3.NumOut())
+
+	// 取第i个入参/出参
+	fmt.Printf("第3个入参类型: %s\n", t3.In(3).Kind())
+	fmt.Printf("第1个出参类型: %s\n", t3.Out(1).Kind())
+	fmt.Printf("第1个出参名称: %s\n", t3.Out(1).Name())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+函数参数是否可变参数: false
+函数参数是否可变参数: true 
+函数参数是否可变参数: false
+函数入参个数: 0            
+函数入参个数: 1            
+函数入参个数: 4            
+函数返回值个数: 1          
+函数返回值个数: 1          
+函数返回值个数: 2          
+第3个入参类型: string      
+第1个出参类型: interface   
+第1个出参名称: error
 ```
 
 :::
