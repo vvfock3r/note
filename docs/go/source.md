@@ -560,8 +560,8 @@ import (
 
 func main() {
 	// 定义两个字符串
-	str1 := "ab"
-	str2 := "cd"
+	str1 := "abc"
+	str2 := "def"
 
 	// 下面展示如何偷梁换柱
 	// 将两个字符串stringStruct结构体中的Pointer指针互换
@@ -573,9 +573,16 @@ func main() {
 	// 互换值
 	header1.Data, header2.Data = header2.Data, header1.Data
 
-	// 输出字符串
-	fmt.Println(str1)
-	fmt.Println(str2)
+	// 输出
+	fmt.Println(str1, len(str1))
+	fmt.Println(str2, len(str2))
+
+	// 修改一个假的长度
+	// 访问的时候会把字节切片转为字符串,会用到此长度,所以不能随便修改
+	header1.Len, header2.Len = 1, 2
+
+	fmt.Println(str1, len(str1))
+	fmt.Println(str2, len(str2))
 }
 ```
 
@@ -583,8 +590,10 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-cd
-ab
+def 3
+abc 3
+d 1
+ab 2
 ```
 
 :::
