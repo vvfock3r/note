@@ -356,6 +356,13 @@ D:\application\GoLand\example>go run main.go
 **先上结论**
 
 ```go
+// 先看一下类型
+// string is the set of all strings of 8-bit bytes, conventionally but not
+// necessarily representing UTF-8-encoded text. A string may be empty, but
+// not nil. Values of string type are immutable.
+type string string
+
+// 底层的结构体
 type stringStruct struct {
 	str unsafe.Pointer
 	len int
