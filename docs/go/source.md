@@ -387,7 +387,7 @@ func main() {
 	strMsg := "张三"
 
 	// 字符串的底层结构是 stringStruct 结构体, 是非可导出的
-	// 但是reflect.StringHeader 提供了与 stringStruct 相同的数据结构,并且是可导出的
+	// 但是 reflect.StringHeader 提供了与 stringStruct 相同的数据结构,并且是可导出的
 	// type StringHeader struct {
 	//	 Data uintptr --> uintptr与unsafe.Pointer是可以互相转化的,所以我们可以认为两个结构体是相同的数据结构
 	//	 Len  int
@@ -395,6 +395,8 @@ func main() {
 	// 将 stringStruct 结构体 强转为 StringHeader 结构体
 	strHeader := (*reflect.StringHeader)(unsafe.Pointer(&strMsg))
 	fmt.Printf("%#v\n", strHeader)
+    
+    // 根据 reflect.StringHeader 的思路，我们将string转为一个我们自定义的可导出的结构体，然后进行一些hack操作
 }
 ```
 
