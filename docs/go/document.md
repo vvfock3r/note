@@ -10601,7 +10601,7 @@ lensm -text-size=20 --font C:\Windows\Fonts\simkai.ttf --filter main main.exe
 
 ![image-20230225124648047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124648047.png)
 
-**3、临时设置别名**
+**3、设置别名**
 
 ```bash
 # 临时设置别名
@@ -10609,6 +10609,15 @@ doskey lensm=lensm -text-size=16 --font C:\Windows\Fonts\simkai.ttf $*
 
 # 使用
 lensm --filter main main.exe
+
+# 永久设置别名
+# 1、到GOPATH/bin目录下找到lensm.exe文件,改一个任意名字,比如 lensm-original.exe
+# 2、新建一个lensm.bat文件, 使用 lensm --filter main.exe 即可
+@echo off
+lensm-original -text-size=16 --font C:\Windows\Fonts\simkai.ttf %*
+# 3、新建一个lensmm.bat文件,用于固定 --filter main 参数， 使用 lensmm main.exe 即可
+@echo off
+lensm-original -text-size=16 --font C:\Windows\Fonts\simkai.ttf --filter main %*
 ```
 
 :::
