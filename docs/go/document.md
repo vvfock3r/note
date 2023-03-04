@@ -10686,6 +10686,88 @@ main: go1.19.2
 
 ## 
 
+## reflect
+
+::: details （1）访问和修改非结构体导出字段
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+type T struct {
+	a string
+	b int
+	c bool
+	d []string
+	e map[int]int
+}
+
+// GetUnExportedField 访问结构体非可导出字段值
+func GetUnExportedField(source any, field string) reflect.Value {
+	// 获取非导出字段反射对象
+	v := reflect.ValueOf(source).Elem().FieldByName(field)
+	// 构建指向该字段的可寻址（addressable）反射对象
+	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
+}
+
+// SetUnExportedField 修改结构体非导出字段值
+func SetUnExportedField(source any, field string, value any) error {
+	v := GetUnExportedField(source, field)
+	rv := reflect.ValueOf(value)
+	if v.Kind() != rv.Kind() {
+		return fmt.Errorf("invalid kind: expected kind %v, got kind: %v", v.Kind(), rv.Kind())
+	}
+	v.Set(rv)
+	return nil
+}
+
+func main() {
+	// 实例化结构体
+	t := T{
+		a: "hello",
+		b: 99,
+		c: true,
+		d: []string{"a", "b", "c"},
+		e: map[int]int{10: 11},
+	}
+
+	// 获取结构体非导出字段的值
+	fmt.Println(GetUnExportedField(&t, "a").String())
+	fmt.Println(GetUnExportedField(&t, "b").Int())
+	fmt.Println(GetUnExportedField(&t, "c").Bool())
+	fmt.Println(GetUnExportedField(&t, "d").Index(1))
+	fmt.Println(GetUnExportedField(&t, "e").MapIndex(reflect.ValueOf(10)))
+
+	// 修改结构体非导出字段的值
+	err := SetUnExportedField(&t, "a", "world!")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(GetUnExportedField(&t, "a").String())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+hello
+99
+true
+b
+11
+world!
+```
+
+:::
+
+
+
 ## runtime
 
 ### 基础
