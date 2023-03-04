@@ -405,7 +405,7 @@ D:\application\GoLand\example>go run main.go
 &reflect.StringHeader{Data:0x4453a4, Len:6}
 ```
 
-**str底层数组**
+**string 底层数组**
 
 ```go
 package main
@@ -485,7 +485,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （4）汉字切分
+::: details （4）使用下标获取正确的中文
 
 ```go
 package main
@@ -496,13 +496,13 @@ func main() {
 	// 定义一个字符串
 	str := "张三"
 
-	// 我想获得第一个汉字,该如何做呢?
+	// 我想获得第2个汉字,该如何做呢?
 
 	// 错误的方法: 获取的是字节切片的第一个字节
-	fmt.Println(str[0])
+	fmt.Println(str[1])
 
-	// 转为rune切片,取值,然后再转为字符串
-	fmt.Println(string(([]rune(str))[0]))
+	// 转为rune切片,取值,然后再转为字符串, 此方法对ASCII同样适用
+	fmt.Println(string(([]rune(str))[1]))
 }
 ```
 
@@ -510,8 +510,8 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-229
-张
+188
+三
 ```
 
 :::
