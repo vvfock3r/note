@@ -517,3 +517,67 @@ D:\application\GoLand\example>go run main.go
 ```
 
 :::
+
+::: details （5）底层的是只读的字节切片
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	str := "ab"
+
+	// string底层是字节切片，可以访问
+	fmt.Println(str[0])
+	
+	// 编译时会报错： cannot assign to str[0] (value of type byte)
+    // 那么为什么不能修改?
+	// 原因是：string底层的切片是只读切片，会被分配到只读段
+	str[0] = "a"
+}
+```
+
+:::
+
+::: details （6）字符串是不可变的，但是结构体中的指针是可变的
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func main() {
+	// 定义两个字符串
+	str1 := "ab"
+	str2 := "cd"
+
+	// 下面展示如何偷梁换柱
+	// 将两个字符串stringStruct结构体中的Pointer指针互换
+
+	// 获取结构体指针
+	header1 := (*reflect.StringHeader)(unsafe.Pointer(&str1))
+	header2 := (*reflect.StringHeader)(unsafe.Pointer(&str2))
+
+	// 互换值
+	header1.Data, header2.Data = header2.Data, header1.Data
+
+	// 输出字符串
+	fmt.Println(str1)
+	fmt.Println(str2)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+cd
+ab
+```
+
+:::
