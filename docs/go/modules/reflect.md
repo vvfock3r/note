@@ -52,37 +52,32 @@ hello world!
 * 并不是每个类型都可以调用所有方法
 * 有些方法只对函数类型有意义，有的只对Struct有意义，否则会引发panic
 
-::: details （1）类型和名称
+::: details （1）通用：类型和名称
 
 ```go
 package main
 
 import (
-	"errors"
 	"fmt"
-	"os/exec"
 	"reflect"
 )
 
-type User struct {
-	name string
-	vip  bool
-}
+type Empty struct{}
 
-func (u *User) Name() string {
-	return u.name
-}
+func (e Empty) a() {}
+func (e Empty) B() {}
 
-func (u *User) Error() string {
-	return errors.New("nothing").Error()
-}
+func (e *Empty) c() {}
+func (e *Empty) D() {}
 
 func main() {
 	// 定义对象
-	v1 := "hello world!"
-	v2 := User{name: "v2"}
-	v3 := &User{name: "v3"}
-	v4 := *exec.Command("go", "version")
+	var (
+		v1 = "hello world!"      // 字符串
+		v2 = make(chan struct{}) // channel
+		v3 = Empty{}             // 结构体
+		v4 = &Empty{}            // 指针
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
@@ -90,25 +85,25 @@ func main() {
 	t3 := reflect.TypeOf(v3)
 	t4 := reflect.TypeOf(v4)
 
-	// Type接口方法
-
-	// Kind Kind类型(底层是uint类型)
+	// 返回Kind类型(type Kind uint)
 	fmt.Printf("类型: %s\n", t1.Kind())
 	fmt.Printf("类型: %s\n", t2.Kind())
 	fmt.Printf("类型: %s\n", t3.Kind())
 	fmt.Printf("类型: %s\n", t4.Kind())
+	fmt.Println()
 
-	// 类型名称 string
+	// 返回类型名称(string)
 	fmt.Printf("名称: %s\n", t1.Name())
-	fmt.Printf("名称: %s\n", t2.Name())
-	fmt.Printf("名称: %s\n", t3.Name()) // 指针没有获取到类型名称
-	fmt.Printf("名称: %s\n", t4.Name())
+	fmt.Printf("名称: %s\n", t2.Name()) // channel没有获取到类型名称
+	fmt.Printf("名称: %s\n", t3.Name())
+	fmt.Printf("名称: %s\n", t4.Name()) // 指针类型没有获取到类型名称
+	fmt.Println()
 
-	// String表示方法 string
-	fmt.Printf("字符串表示: %s\n", t1.String())
-	fmt.Printf("字符串表示: %s\n", t2.String())
-	fmt.Printf("字符串表示: %s\n", t3.String())
-	fmt.Printf("字符串表示: %s\n", t4.String())
+	// 返回字符串表示方法(string)
+	fmt.Printf("字符串: %s\n", t1.String())
+	fmt.Printf("字符串: %s\n", t2.String())
+	fmt.Printf("字符串: %s\n", t3.String())
+	fmt.Printf("字符串: %s\n", t4.String())
 }
 ```
 
@@ -117,56 +112,50 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 类型: string
-类型: struct          
-类型: ptr             
-类型: struct          
-名称: string          
-名称: User            
-名称:                 
-名称: Cmd             
-字符串表示: string    
-字符串表示: main.User 
-字符串表示: *main.User
-字符串表示: exec.Cmd
+类型: chan
+类型: struct
+类型: ptr
+
+名称: string
+名称:
+名称: Empty
+名称:
+
+字符串: string
+字符串: chan struct {}
+字符串: main.Empty
+字符串: *main.Empty
 ```
 
 :::
 
-::: details （2）方法
+::: details （2）通用：方法
 
 ```go
 package main
 
 import (
-	"errors"
 	"fmt"
-	"os/exec"
+	"math/rand"
 	"reflect"
 )
 
-type User struct {
-	name string
-	vip  bool
-}
+type Empty struct{}
 
-func (u *User) Name() string {
-	return u.name
-}
+func (e Empty) a() {}
+func (e Empty) B() {}
 
-func (u *User) Set(name string) {
-	u.name = name
-}
-
-func (u *User) Error() string {
-	return errors.New("nothing").Error()
-}
+func (e *Empty) c()          {}
+func (e *Empty) D(n int) int { return rand.Intn(n) }
 
 func main() {
 	// 定义对象
-	v1 := "hello world!"
-	v2 := User{name: "v2"}
-	v3 := &User{name: "v3"}
-	v4 := *exec.Command("go", "version")
+	var (
+		v1 = "hello world!"      // 字符串
+		v2 = make(chan struct{}) // channel
+		v3 = Empty{}             // 结构体
+		v4 = &Empty{}            // 指针
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
@@ -174,29 +163,38 @@ func main() {
 	t3 := reflect.TypeOf(v3)
 	t4 := reflect.TypeOf(v4)
 
-	// Type接口方法
-
-	// 方法 Method struct
+	// 返回方法个数(int)
+	// 1.对于结构体而言,值方法可以使用结构体指针获取到,但是反过来则不行
+	// 2.对于结构体而言，只能获取可导出的方法
 	fmt.Printf("方法个数: %d\n", t1.NumMethod())
-	fmt.Printf("方法个数: %d\n", t2.NumMethod()) // 我们的方法定义在指针接收者上,这里反射的是值,所以取不到
+	fmt.Printf("方法个数: %d\n", t2.NumMethod())
 	fmt.Printf("方法个数: %d\n", t3.NumMethod())
-	fmt.Printf("方法个数: %d\n", t4.NumMethod())
+	fmt.Printf("方法个数: %d\n", t4.NumMethod()) // 也可以获取到值方法,原理是编译器会为值方法添加指针方法
+	fmt.Println()
 
-	// 通过索引取方法: 取第i个方法,i需要满足 [0, NumMethod()],否则会panic
-	// 返回 Method struct
-	fmt.Printf("方法名称: %s\n", t3.Method(0).Name)
+	// 通过索引获取方法,索引必须满足 [0, NumMethod()),返回Method结构体
+	fmt.Printf("通过索引获取方法: %s\n", t4.Method(0).Name)
 
-	// 通过名称取方法, 返回 Method struct
-	method, ok := t3.MethodByName("Set")
-	if ok {
-		fmt.Printf("方法名称: %s\n", method.Name)
+	// 通过名称获取方法,第二个参数代表方法是否存在,返回Method结构体
+	method, ok := t4.MethodByName("D")
+	if !ok {
+		panic("method not found")
 	}
+	fmt.Printf("通过名称获取方法: %s\n", method.Name)
 
-	// 方法调用
-	args := []reflect.Value{reflect.ValueOf(v3), reflect.ValueOf("Bob")} // 构造参数，第一个参数为对象本身
-	ret := method.Func.Call(args)                                        // 调用函数
-	fmt.Println(ret)                                                     // 没有返回值
-	fmt.Println(v3.Name())                                               // 值已经被修改
+	// 方法调用1: method是D方法
+	args := []reflect.Value{ // 构造参数，第一个参数为对象本身
+		reflect.ValueOf(v4),
+		reflect.ValueOf(100),
+	}
+	n := method.Func.Call(args)    // 调用函数
+	fmt.Printf("方法调用: %d\n", n[0]) // 返回值
+
+	// 方法调用2: 通过ValueOf进行方法调用更简单,但是方法若获取不到直接panic
+	m := reflect.ValueOf(v4).MethodByName("D").Call(
+		[]reflect.Value{reflect.ValueOf(100)},
+	)
+	fmt.Printf("方法调用: %d\n", m[0]) // 返回值
 }
 ```
 
@@ -205,13 +203,14 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 方法个数: 0
-方法个数: 0    
-方法个数: 3    
-方法个数: 0    
-方法名称: Error
-方法名称: Set  
-[]
-Bob
+方法个数: 0
+方法个数: 1
+方法个数: 2
+
+通过索引获取方法: B
+通过名称获取方法: D
+方法调用: 55
+方法调用: 93
 ```
 
 :::
