@@ -707,7 +707,52 @@ D:\application\GoLand\example>go run main.go
 
 ## ValueOf
 
-::: details （1）是否可寻址
+::: details （1）可寻址与不可寻址
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type T struct {
+	a string
+	b int
+	c bool
+	d []string
+	e map[int]int
+}
+
+func main() {
+	// 定义对象
+	var (
+		x1 = "hello world!"
+		x2 = []int{1, 2, 3}
+	)
+	// 运行时反射其值
+	v1 := reflect.ValueOf(x1)
+	v2 := reflect.ValueOf(&x2)
+
+	// 是否可寻址,即是否可以使用Addr()获取值的地址
+	// 1、默认情况下Value都是不可寻址的
+	// 2、若要支持寻址，使用 ValueOf(指针).Elem()
+	// 3、这就好像是
+	//    Elem() 返回指针，类似于 &x
+	//    Addr() 返回指针值，类似于 *x
+	fmt.Printf("是否可寻址: %t\n", v1.CanAddr())
+	fmt.Printf("是否可寻址: %t\n", v2.Elem().CanAddr())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+是否可寻址: false
+是否可寻址: true
+```
 
 :::
 
