@@ -153,6 +153,10 @@ func (u *User) Name() string {
 	return u.name
 }
 
+func (u *User) Set(name string) {
+	u.name = name
+}
+
 func (u *User) Error() string {
 	return errors.New("nothing").Error()
 }
@@ -183,10 +187,16 @@ func main() {
 	fmt.Printf("方法名称: %s\n", t3.Method(0).Name)
 
 	// 通过名称取方法, 返回 Method struct
-	method, ok := t3.MethodByName("Name")
+	method, ok := t3.MethodByName("Set")
 	if ok {
 		fmt.Printf("方法名称: %s\n", method.Name)
 	}
+
+	// 方法调用
+	args := []reflect.Value{reflect.ValueOf(v3), reflect.ValueOf("Bob")} // 构造参数，第一个参数为对象本身
+	ret := method.Func.Call(args)                                        // 调用函数
+	fmt.Println(ret)                                                     // 没有返回值
+	fmt.Println(v3.Name())                                               // 值已经被修改
 }
 ```
 
@@ -194,19 +204,82 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-类型: string
-类型: struct
 方法个数: 0
-方法个数: 0
-方法个数: 2
-方法个数: 0
+方法个数: 0    
+方法个数: 3    
+方法个数: 0    
 方法名称: Error
-方法名称: Name
+方法名称: Set  
+[]
+Bob
 ```
 
 :::
 
-::: details （3）测试类（检查是否实现了/可以xxx）
+::: details （3）函数
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	v1 := func() bool { return false }
+	v2 := func(args ...int) int { return 1 }
+	v3 := func(a, b, c int, d string) (int, error) { return 2, nil }
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+
+	// 函数参数是否可变参数 bool
+	fmt.Printf("函数参数是否可变参数: %t\n", t1.IsVariadic())
+	fmt.Printf("函数参数是否可变参数: %t\n", t2.IsVariadic())
+	fmt.Printf("函数参数是否可变参数: %t\n", t3.IsVariadic())
+
+	// 函数入参个数 int
+	fmt.Printf("函数入参个数: %d\n", t1.NumIn())
+	fmt.Printf("函数入参个数: %d\n", t2.NumIn())
+	fmt.Printf("函数入参个数: %d\n", t3.NumIn())
+
+	// 函数返回值个数 int
+	fmt.Printf("函数返回值个数: %d\n", t1.NumOut())
+	fmt.Printf("函数返回值个数: %d\n", t2.NumOut())
+	fmt.Printf("函数返回值个数: %d\n", t3.NumOut())
+
+	// 取第i个入参/出参
+	fmt.Printf("第3个入参类型: %s\n", t3.In(3).Kind())
+	fmt.Printf("第1个出参类型: %s\n", t3.Out(1).Kind())
+	fmt.Printf("第1个出参名称: %s\n", t3.Out(1).Name())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+函数参数是否可变参数: false
+函数参数是否可变参数: true 
+函数参数是否可变参数: false
+函数入参个数: 0            
+函数入参个数: 1            
+函数入参个数: 4            
+函数返回值个数: 1          
+函数返回值个数: 1          
+函数返回值个数: 2          
+第3个入参类型: string      
+第1个出参类型: interface   
+第1个出参名称: error
+```
+
+:::
+
+::: details （4）测试类（检查是否实现了/可以xxx）
 
 ```go
 package main
@@ -312,7 +385,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （4）channel
+::: details （5）channel
 
 ```go
 package main
@@ -352,7 +425,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （5）函数
+::: details （7）Array, Chan, Map, Pointer, or Slice内部的元素类型
 
 ```go
 package main
@@ -364,34 +437,15 @@ import (
 
 func main() {
 	// 定义对象
-	v1 := func() bool { return false }
-	v2 := func(args ...int) int { return 1 }
-	v3 := func(a, b, c int, d string) (int, error) { return 2, nil }
+	v1 := make([]int, 0)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
-	t2 := reflect.TypeOf(v2)
-	t3 := reflect.TypeOf(v3)
 
-	// 函数参数是否可变参数 bool
-	fmt.Printf("函数参数是否可变参数: %t\n", t1.IsVariadic())
-	fmt.Printf("函数参数是否可变参数: %t\n", t2.IsVariadic())
-	fmt.Printf("函数参数是否可变参数: %t\n", t3.IsVariadic())
+	// Type接口方法
 
-	// 函数入参个数 int
-	fmt.Printf("函数入参个数: %d\n", t1.NumIn())
-	fmt.Printf("函数入参个数: %d\n", t2.NumIn())
-	fmt.Printf("函数入参个数: %d\n", t3.NumIn())
-
-	// 函数返回值个数 int
-	fmt.Printf("函数返回值个数: %d\n", t1.NumOut())
-	fmt.Printf("函数返回值个数: %d\n", t2.NumOut())
-	fmt.Printf("函数返回值个数: %d\n", t3.NumOut())
-
-	// 取第i个入参/出参
-	fmt.Printf("第3个入参类型: %s\n", t3.In(3).Kind())
-	fmt.Printf("第1个出参类型: %s\n", t3.Out(1).Kind())
-	fmt.Printf("第1个出参名称: %s\n", t3.Out(1).Name())
+	// 返回Array, Chan, Map, Pointer, or Slice的元素类型, Type
+	fmt.Printf("元素类型名称: %s\n", t1.Elem().Name())
 }
 ```
 
@@ -399,23 +453,157 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-函数参数是否可变参数: false
-函数参数是否可变参数: true 
-函数参数是否可变参数: false
-函数入参个数: 0            
-函数入参个数: 1            
-函数入参个数: 4            
-函数返回值个数: 1          
-函数返回值个数: 1          
-函数返回值个数: 2          
-第3个入参类型: string      
-第1个出参类型: interface   
-第1个出参名称: error
+元素类型名称: int
 ```
 
 :::
 
-::: details 其他
+::: details （8）结构体字段
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+	info Info
+}
+
+type Info struct {
+	age   int
+	hobby []string
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Set(name string) {
+	u.name = name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := User{name: "v1"}
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+
+	// Type接口方法
+
+	// 通过名称找结构体字段
+	field, ok := t1.FieldByName("name")
+	if !ok {
+		panic("field not found")
+	}
+	fmt.Printf("字段名称: %s\n", field.Name)
+	fmt.Printf("字段类型: %s\n", field.Type.Kind().String())
+
+	// 也可以通过索引找字段  Field(i int) StructField
+
+	// 当结构体字段还是一个结构体时,可以继续调用子结构体的字段
+	// 2代表当前结构体索引为2的字段,该值必须是一个结构体,否则会报错，1代表子结构体索引为1的字段
+	fmt.Printf("子结构体字段名称: %s\n", t1.FieldByIndex([]int{2, 1}).Name)
+
+	// 根据一个函数筛选字段，返回第一个符合条件的字段
+	field, ok = t1.FieldByNameFunc(func(s string) bool {
+		return s == "info"
+	})
+	if !ok {
+		panic("not found")
+	}
+	fmt.Println(field)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+字段名称: name
+字段类型: string                   
+子结构体字段名称: hobby            
+{info main main.Info  24 [2] false}
+```
+
+:::
+
+::: details （9）数组和Map
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	name string
+	vip  bool
+	info Info
+}
+
+type Info struct {
+	age   int
+	hobby []string
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Set(name string) {
+	u.name = name
+}
+
+func (u *User) Error() string {
+	return errors.New("nothing").Error()
+}
+
+func main() {
+	// 定义对象
+	v1 := make([]int, 0)
+	v2 := [...]int{1, 2, 3}
+	v3 := make(map[string]string)
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+
+	// 返回数组长度
+	//fmt.Println(t1.Len())  // 切片不能使用此方法
+	t1 = t1
+	fmt.Println(t2.Len())
+
+	// 返回key类型
+	fmt.Println(t3.Key())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+3
+string
+```
+
+:::
+
+::: details （10）其他
 
 ```go
 package main
