@@ -756,7 +756,69 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）结构体：访问和修改不可导出字段
+::: details （2）获取原始对象
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type T struct {
+	a string
+	b int
+	c bool
+	d []string
+	e map[int]int
+}
+
+func main() {
+	// 定义对象
+	x := []int{100, 200, 300}
+
+	// 运行时反射其值
+	v := reflect.ValueOf(x)
+
+	// 获取原始值步骤
+	// 1、Interface()  返回一个interface{}
+	// 2、使用断言机制强制转为普通类型
+	value, ok := v.Interface().([]int)
+	if !ok {
+		panic("convert err")
+	}
+	fmt.Printf("%#v\n", value)
+	fmt.Printf("%d\n", value[0])
+	fmt.Printf("%T\n", value)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+[]int{100, 200, 300}
+100  
+[]int
+```
+
+:::
+
+::: details （3）修改原始对象
+
+```go
+```
+
+输出结果
+
+```bash
+
+```
+
+:::
+
+::: details （4）结构体：访问和修改不可导出字段
 
 ```go
 package main
