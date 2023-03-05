@@ -559,37 +559,39 @@ type Info struct {
 
 func main() {
 	// 定义对象
-	v1 := User{}
+	v := User{}
 
 	// 运行时反射其类型
-	t1 := reflect.TypeOf(v1)
+	t := reflect.TypeOf(v)
 
-	// 通过名称找结构体字段
-	field, ok := t1.FieldByName("name")
+	// 1、字段数量
+	fmt.Printf("字段数量: %d\n", t.NumField())
+
+	// 2、通过索引找字段: Field(i int) StructField
+	fmt.Printf("通过索引找字段: %s\n", t.Field(0).Name)
+
+	// 3、通过名称找结构体字段
+	field, ok := t.FieldByName("name")
 	if !ok {
 		panic("field not found")
 	}
-	fmt.Printf("字段名称: %s\n", field.Name)
-	fmt.Printf("字段类型: %s\n", field.Type.Kind().String())
+	fmt.Printf("通过名称找字段: %s\n", field.Name)
 
-	// 也可以通过索引找字段  Field(i int) StructField
+	// 4、直接获取嵌套的结构体字段, 2: 当前结构体索引为2的字段, 1:子结构体索引为1的字段
+	fmt.Printf("子结构体字段名称: %s\n", t.FieldByIndex([]int{2, 1}).Name)
 
-	// 获取Tag
-	validate := field.Tag.Get("validate")
-	fmt.Printf("字段Tag值: %s\n", validate)
-
-	// 当结构体字段还是一个结构体时,可以继续调用子结构体的字段
-	// 第一个参数2代表当前结构体索引为2的字段,该值必须是一个结构体,否则会报错，1代表子结构体索引为1的字段
-	fmt.Printf("子结构体字段名称: %s\n", t1.FieldByIndex([]int{2, 1}).Name)
-
-	// 根据一个函数筛选字段，返回第一个符合条件的字段
-	info, ok := t1.FieldByNameFunc(func(s string) bool {
+	// 5、根据一个函数筛选字段，返回第一个符合条件的字段
+	info, ok := t.FieldByNameFunc(func(s string) bool {
 		return s == "info"
 	})
 	if !ok {
 		panic("not found")
 	}
 	fmt.Printf("使用函数筛选字段: %v\n", info.Name)
+
+	// 6、获取字段Tag值
+	validate := field.Tag.Get("validate")
+	fmt.Printf("字段Tag值: %s\n", validate)
 }
 ```
 
@@ -597,11 +599,12 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-字段名称: name
-字段类型: string                
-字段Tag值: required,min=4,max=15
+字段数量: 3
+通过索引找字段: name            
+通过名称找字段: name            
 子结构体字段名称: hobby         
-使用函数筛选字段: info
+使用函数筛选字段: info          
+字段Tag值: required,min=4,max=15
 ```
 
 :::
