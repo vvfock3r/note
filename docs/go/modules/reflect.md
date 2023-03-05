@@ -215,89 +215,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）函数
-
-```go
-package main
-
-import (
-	"fmt"
-	"reflect"
-)
-
-func v1() {}
-
-func v2(args ...int) int { return 0 }
-
-func v3(a, b, c string) (int, int, error) { return 0, 0, nil }
-
-func main() {
-	// 运行时反射其类型
-	t1 := reflect.TypeOf(v1)
-	t2 := reflect.TypeOf(v2)
-	t3 := reflect.TypeOf(v3)
-
-	// 函数参数是否是可变参数 bool
-	fmt.Printf("可变参数: %t\n", t1.IsVariadic())
-	fmt.Printf("可变参数: %t\n", t2.IsVariadic())
-	fmt.Printf("可变参数: %t\n", t3.IsVariadic())
-	fmt.Println()
-
-	// 函数入参个数 int
-	fmt.Printf("入参个数: %d\n", t1.NumIn())
-	fmt.Printf("入参个数: %d\n", t2.NumIn())
-	fmt.Printf("入参个数: %d\n", t3.NumIn())
-	fmt.Println()
-
-	// 函数返回值个数 int
-	fmt.Printf("返回值个数: %d\n", t1.NumOut())
-	fmt.Printf("返回值个数: %d\n", t2.NumOut())
-	fmt.Printf("返回值个数: %d\n", t3.NumOut())
-	fmt.Println()
-
-	// 取第i个入参/出参
-	fmt.Printf("第1个入参类型: %s\n", t3.In(1).Kind())
-	fmt.Printf("第1个入参名称: %s\n", t3.In(1).Name())
-	fmt.Printf("第1个返回值类型: %s\n", t3.Out(1).Kind())
-	fmt.Printf("第1个返回值名称: %s\n", t3.Out(1).Name())
-    fmt.Println()
-    
-	// 函数调用, 需要借助 ValueOf, 和方法调用类似
-	fmt.Println(reflect.ValueOf(v3).Call([]reflect.Value{
-		reflect.ValueOf("1"),
-		reflect.ValueOf("2"),
-		reflect.ValueOf("3"),
-	}))
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go
-可变参数: false
-可变参数: true
-可变参数: false
-
-入参个数: 0
-入参个数: 1
-入参个数: 3
-
-返回值个数: 0
-返回值个数: 1
-返回值个数: 3
-
-第1个入参类型: string
-第1个入参名称: string
-第1个返回值类型: int
-第1个返回值名称: int
-
-[<int Value> <int Value> <error Value>]
-```
-
-:::
-
-::: details （4）测试类（检查是否实现了/可以xxx）
+::: details （3）通用：检查
 
 ```go
 package main
@@ -399,6 +317,88 @@ D:\application\GoLand\example>go run main.go
 类型是否可比较: true           
 类型是否可比较: true           
 类型是否可比较: false
+```
+
+:::
+
+::: details （4）函数
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func v1() {}
+
+func v2(args ...int) int { return 0 }
+
+func v3(a, b, c string) (int, int, error) { return 0, 0, nil }
+
+func main() {
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+	t3 := reflect.TypeOf(v3)
+
+	// 函数参数是否是可变参数 bool
+	fmt.Printf("可变参数: %t\n", t1.IsVariadic())
+	fmt.Printf("可变参数: %t\n", t2.IsVariadic())
+	fmt.Printf("可变参数: %t\n", t3.IsVariadic())
+	fmt.Println()
+
+	// 函数入参个数 int
+	fmt.Printf("入参个数: %d\n", t1.NumIn())
+	fmt.Printf("入参个数: %d\n", t2.NumIn())
+	fmt.Printf("入参个数: %d\n", t3.NumIn())
+	fmt.Println()
+
+	// 函数返回值个数 int
+	fmt.Printf("返回值个数: %d\n", t1.NumOut())
+	fmt.Printf("返回值个数: %d\n", t2.NumOut())
+	fmt.Printf("返回值个数: %d\n", t3.NumOut())
+	fmt.Println()
+
+	// 取第i个入参/出参
+	fmt.Printf("第1个入参类型: %s\n", t3.In(1).Kind())
+	fmt.Printf("第1个入参名称: %s\n", t3.In(1).Name())
+	fmt.Printf("第1个返回值类型: %s\n", t3.Out(1).Kind())
+	fmt.Printf("第1个返回值名称: %s\n", t3.Out(1).Name())
+    fmt.Println()
+    
+	// 函数调用, 需要借助 ValueOf, 和方法调用类似
+	fmt.Println(reflect.ValueOf(v3).Call([]reflect.Value{
+		reflect.ValueOf("1"),
+		reflect.ValueOf("2"),
+		reflect.ValueOf("3"),
+	}))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+可变参数: false
+可变参数: true
+可变参数: false
+
+入参个数: 0
+入参个数: 1
+入参个数: 3
+
+返回值个数: 0
+返回值个数: 1
+返回值个数: 3
+
+第1个入参类型: string
+第1个入参名称: string
+第1个返回值类型: int
+第1个返回值名称: int
+
+[<int Value> <int Value> <error Value>]
 ```
 
 :::
