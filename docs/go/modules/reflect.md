@@ -215,7 +215,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）通用：检查
+::: details （3）通用：检测，比如将error接口转为Type接口：reflect.TypeOf((*error)(nil)).Elem()
 
 ```go
 package main
@@ -707,7 +707,11 @@ D:\application\GoLand\example>go run main.go
 
 ## ValueOf
 
-::: details （1）结构体：访问和修改不可导出字段
+::: details （1）是否可寻址
+
+:::
+
+::: details （2）结构体：访问和修改不可导出字段
 
 ```go
 package main
