@@ -735,3 +735,38 @@ true
 ```
 
 :::
+
+::: details （1）结构体：同一个结构体的非导出字段也会进行比较
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type Point struct {
+	X int
+	Y int
+	z int
+}
+
+func main() {
+	// 同一个结构体,相同的值
+	fmt.Println(reflect.DeepEqual(Point{1, 2, 3}, Point{1, 2, 3}))
+
+	// 同一个结构体,非导出字段不同的值
+	fmt.Println(reflect.DeepEqual(Point{1, 2, 3}, Point{1, 2, 4}))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+true
+false
+```
+
+:::
