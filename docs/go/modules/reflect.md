@@ -313,7 +313,44 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （4）函数
+::: details （4）返回Array, Chan, Map, Pointer, or Slice内部的元素类型
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	var (
+		v1 = make([]int, 1024)
+		v2 = make(map[string]string)
+	)
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+	t2 := reflect.TypeOf(v2)
+
+	// 返回Array, Chan, Map, Pointer, or Slice的元素类型, Type
+	fmt.Printf("元素类型名称: %s\n", t1.Elem().Name())
+	fmt.Printf("元素类型名称: %s\n", t2.Elem().Name())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+元素类型名称: int
+元素类型名称: string
+```
+
+:::
+
+::: details （5）函数
 
 ```go
 package main
@@ -395,7 +432,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （5）channel
+::: details （6）channel
 
 ```go
 package main
@@ -436,44 +473,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （7）Elem()：Array, Chan, Map, Pointer, or Slice内部的元素类型
-
-```go
-package main
-
-import (
-	"fmt"
-	"reflect"
-)
-
-func main() {
-	// 定义对象
-	var (
-		v1 = make([]int, 1024)
-		v2 = make(map[string]string)
-	)
-
-	// 运行时反射其类型
-	t1 := reflect.TypeOf(v1)
-	t2 := reflect.TypeOf(v2)
-
-	// 返回Array, Chan, Map, Pointer, or Slice的元素类型, Type
-	fmt.Printf("元素类型名称: %s\n", t1.Elem().Name())
-	fmt.Printf("元素类型名称: %s\n", t2.Elem().Name())
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go
-元素类型名称: int
-元素类型名称: string
-```
-
-:::
-
-::: details （8）Array
+::: details （7）Array
 
 ```go
 package main
@@ -606,7 +606,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （10）其他
+::: details （10）其他：对齐、模块路径、对象大小
 
 ```go
 package main
@@ -688,6 +688,50 @@ D:\application\GoLand\example>go run main.go
 对象大小: 352
 对象大小: 56
 对象大小: 8
+```
+
+:::
+
+<br />
+
+## ValueOf
+
+<br />
+
+## 深度相等
+
+::: details （1）结构体：两个结构一样的结构体深度也是不相等的
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type A struct {
+	X int
+}
+
+type B struct {
+	X int
+}
+
+func main() {
+	fmt.Println(reflect.DeepEqual(A{X: 1}, B{1}))
+	fmt.Println(reflect.DeepEqual(A{X: 1}, A{1}))
+	fmt.Println(reflect.DeepEqual(B{X: 1}, B{1}))
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+false
+true
+true
 ```
 
 :::
