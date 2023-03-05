@@ -313,7 +313,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （4）返回Array, Chan, Map, Pointer, or Slice内部的元素类型
+::: details （4）Elem()：返回子对象Type，父对象必须为 Array, Chan, Map, Pointer, or Slice其中之一
 
 ```go
 package main
@@ -549,7 +549,7 @@ import (
 type User struct {
 	name string `validate:"required,min=4,max=15"`
 	vip  bool
-	info Info
+	Info
 }
 
 type Info struct {
@@ -582,16 +582,22 @@ func main() {
 
 	// 5、根据一个函数筛选字段，返回第一个符合条件的字段
 	info, ok := t.FieldByNameFunc(func(s string) bool {
-		return s == "info"
+		return s == "Info"
 	})
 	if !ok {
 		panic("not found")
 	}
 	fmt.Printf("使用函数筛选字段: %v\n", info.Name)
 
-	// 6、获取字段Tag值
+	// 6、是否是匿名字段
+	fmt.Printf("是否是匿名字段: %t\n", info.Anonymous)
+
+	// 7、是否可导出
+	fmt.Printf("是否是可导出字段: %t\n", field.IsExported())
+
+	// 8、获取字段Tag值
 	validate := field.Tag.Get("validate")
-	fmt.Printf("字段Tag值: %s\n", validate)
+	fmt.Printf("获取字段的Tag值: %s\n", validate)
 }
 ```
 
@@ -600,11 +606,13 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 字段数量: 3
-通过索引找字段: name            
-通过名称找字段: name            
-子结构体字段名称: hobby         
-使用函数筛选字段: info          
-字段Tag值: required,min=4,max=15
+通过索引找字段: name
+通过名称找字段: name
+子结构体字段名称: hobby
+使用函数筛选字段: Info
+是否是匿名字段: true
+是否是可导出字段: false
+获取字段的Tag值: required,min=4,max=15
 ```
 
 :::
@@ -698,6 +706,8 @@ D:\application\GoLand\example>go run main.go
 <br />
 
 ## ValueOf
+
+
 
 <br />
 
