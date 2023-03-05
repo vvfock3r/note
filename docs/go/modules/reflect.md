@@ -227,25 +227,26 @@ import (
 	"reflect"
 )
 
-type User struct {
+type Example struct {
 	name string
-	vip  bool
 }
 
-func (u *User) Name() string {
-	return u.name
+func (e *Example) Name() string {
+	return e.name
 }
 
-func (u *User) Error() string {
+func (e *Example) Error() string {
 	return errors.New("nothing").Error()
 }
 
 func main() {
 	// 定义对象
-	v1 := "hello world!"
-	v2 := User{name: "v2"}
-	v3 := &User{name: "v3"}
-	v4 := *exec.Command("go", "version")
+	var (
+		v1 = "hello world!"
+		v2 = *exec.Command("go", "version")
+		v3 = Example{name: "v2"}
+		v4 = &Example{name: "v3"}
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
@@ -253,47 +254,35 @@ func main() {
 	t3 := reflect.TypeOf(v3)
 	t4 := reflect.TypeOf(v4)
 
-	// Type接口方法
+	// tN是否实现某个接口类型 bool
+	// 将error接口转为 Type 接口, (*error)(nil) 写法挺有意思
+	ErrorType := reflect.TypeOf((*error)(nil)).Elem()
+	fmt.Printf("是否实现error接口: %t\n", t1.Implements(ErrorType))
+	fmt.Printf("是否实现error接口: %t\n", t2.Implements(ErrorType))
+	fmt.Printf("是否实现error接口: %t\n", t3.Implements(ErrorType))
+	fmt.Printf("是否实现error接口: %t\n", t4.Implements(ErrorType))
+	fmt.Println()
 
-	// 是否实现某个接口类型 bool
-	{
-		// tN类型是否实现了error类型
+	// tN是否可以赋值给指定类型 bool
+	StringType := reflect.TypeOf((*string)(nil)).Elem()
+	fmt.Printf("是否可以赋值给String类型: %t\n", t1.AssignableTo(StringType))
+	fmt.Printf("是否可以赋值给String类型: %t\n", t2.AssignableTo(StringType))
+	fmt.Printf("是否可以赋值给String类型: %t\n", t3.AssignableTo(StringType))
+	fmt.Printf("是否可以赋值给String类型: %t\n", t4.AssignableTo(StringType))
+	fmt.Println()
 
-		// 将error接口转为 Type 接口, (*error)(nil) 写法挺有意思
-		ErrorType := reflect.TypeOf((*error)(nil)).Elem()
-		fmt.Printf("是否实现error接口: %t\n", t1.Implements(ErrorType))
-		fmt.Printf("是否实现error接口: %t\n", t2.Implements(ErrorType))
-		fmt.Printf("是否实现error接口: %t\n", t3.Implements(ErrorType))
-		fmt.Printf("是否实现error接口: %t\n", t4.Implements(ErrorType))
-	}
+	// tN类型的值是否可以转换成另一个类型的值 bool
+	fmt.Printf("是否可以转为String类型的值: %t\n", t1.ConvertibleTo(StringType))
+	fmt.Printf("是否可以转为String类型的值: %t\n", t2.ConvertibleTo(StringType))
+	fmt.Printf("是否可以转为String类型的值: %t\n", t3.ConvertibleTo(StringType))
+	fmt.Printf("是否可以转为String类型的值: %t\n", t4.ConvertibleTo(StringType))
+	fmt.Println()
 
-	// 是否可以赋值给指定类型 bool
-	{
-		// tN类型是否可以赋值给string类型
-		StringType := reflect.TypeOf((*string)(nil)).Elem()
-		fmt.Printf("是否可以赋值给指定类型: %t\n", t1.AssignableTo(StringType))
-		fmt.Printf("是否可以赋值给指定类型: %t\n", t2.AssignableTo(StringType))
-		fmt.Printf("是否可以赋值给指定类型: %t\n", t3.AssignableTo(StringType))
-		fmt.Printf("是否可以赋值给指定类型: %t\n", t4.AssignableTo(StringType))
-	}
-
-	// 一个类型的值是否可以转换成另一个类型的值 bool
-	{
-		// tN类型的值是否可以转为string类型的值
-		StringType := reflect.TypeOf((*string)(nil)).Elem()
-		fmt.Printf("是否可以转为指定类型的值: %t\n", t1.ConvertibleTo(StringType))
-		fmt.Printf("是否可以转为指定类型的值: %t\n", t2.ConvertibleTo(StringType))
-		fmt.Printf("是否可以转为指定类型的值: %t\n", t3.ConvertibleTo(StringType))
-		fmt.Printf("是否可以转为指定类型的值: %t\n", t4.ConvertibleTo(StringType))
-	}
-
-	// 类型是否可比较 bool
-	{
-		fmt.Printf("类型是否可比较: %t\n", t1.Comparable())
-		fmt.Printf("类型是否可比较: %t\n", t2.Comparable())
-		fmt.Printf("类型是否可比较: %t\n", t3.Comparable())
-		fmt.Printf("类型是否可比较: %t\n", t4.Comparable())
-	}
+	// tN类型是否可比较 bool
+	fmt.Printf("类型是否可比较: %t\n", t1.Comparable())
+	fmt.Printf("类型是否可比较: %t\n", t2.Comparable())
+	fmt.Printf("类型是否可比较: %t\n", t3.Comparable())
+	fmt.Printf("类型是否可比较: %t\n", t4.Comparable())
 }
 ```
 
@@ -302,21 +291,24 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 是否实现error接口: false
-是否实现error接口: false       
-是否实现error接口: true        
-是否实现error接口: false       
-是否可以赋值给指定类型: true   
-是否可以赋值给指定类型: false  
-是否可以赋值给指定类型: false  
-是否可以赋值给指定类型: false  
-是否可以转为指定类型的值: true 
-是否可以转为指定类型的值: false
-是否可以转为指定类型的值: false
-是否可以转为指定类型的值: false
-类型是否可比较: true           
-类型是否可比较: true           
-类型是否可比较: true           
-类型是否可比较: false
+是否实现error接口: false         
+是否实现error接口: false         
+是否实现error接口: true          
+                                 
+是否可以赋值给String类型: true   
+是否可以赋值给String类型: false  
+是否可以赋值给String类型: false  
+是否可以赋值给String类型: false  
+                                 
+是否可以转为String类型的值: true 
+是否可以转为String类型的值: false
+是否可以转为String类型的值: false
+是否可以转为String类型的值: false
+                                 
+类型是否可比较: true             
+类型是否可比较: false            
+类型是否可比较: true             
+类型是否可比较: true
 ```
 
 :::
@@ -409,23 +401,24 @@ D:\application\GoLand\example>go run main.go
 package main
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
 
 func main() {
 	// 定义对象
-	v1 := make(chan int)
-	v2 := make(<-chan int)
-	v3 := make(chan<- int)
+	var (
+		v1 = make(chan int)
+		v2 = make(<-chan int)
+		v3 = make(chan<- int)
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
 	t2 := reflect.TypeOf(v2)
 	t3 := reflect.TypeOf(v3)
 
-	// 比如 chan、<-chan、<-chan
+	// 返回channel的方向(type ChanDir int)
 	fmt.Printf("返回channel的方向: %s\n", t1.ChanDir())
 	fmt.Printf("返回channel的方向: %s\n", t2.ChanDir())
 	fmt.Printf("返回channel的方向: %s\n", t3.ChanDir())
@@ -437,13 +430,13 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 返回channel的方向: chan
-返回channel的方向: <-chan     
+返回channel的方向: <-chan
 返回channel的方向: chan<-
 ```
 
 :::
 
-::: details （7）Array, Chan, Map, Pointer, or Slice内部的元素类型
+::: details （7）Elem()：Array, Chan, Map, Pointer, or Slice内部的元素类型
 
 ```go
 package main
@@ -455,15 +448,18 @@ import (
 
 func main() {
 	// 定义对象
-	v1 := make([]int, 0)
+	var (
+		v1 = make([]int, 1024)
+		v2 = make(map[string]string)
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
-
-	// Type接口方法
+	t2 := reflect.TypeOf(v2)
 
 	// 返回Array, Chan, Map, Pointer, or Slice的元素类型, Type
 	fmt.Printf("元素类型名称: %s\n", t1.Elem().Name())
+	fmt.Printf("元素类型名称: %s\n", t2.Elem().Name())
 }
 ```
 
@@ -472,23 +468,86 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 元素类型名称: int
+元素类型名称: string
 ```
 
 :::
 
-::: details （8）结构体字段
+::: details （8）Array
 
 ```go
 package main
 
 import (
-	"errors"
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	v1 := [...]int{1, 2, 3}
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+
+	// 返回数组长度, Int
+	// 切片不能使用此方法
+	fmt.Println(t1.Len())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+3
+```
+
+:::
+
+::: details （8）Map
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	v1 := make(map[string]int)
+
+	// 运行时反射其类型
+	t1 := reflect.TypeOf(v1)
+
+	// 返回key类型
+	fmt.Println(t1.Key())
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+string
+```
+
+:::
+
+::: details （9）Struct
+
+```go
+package main
+
+import (
 	"fmt"
 	"reflect"
 )
 
 type User struct {
-	name string
+	name string `validate:"required,min=4,max=15"`
 	vip  bool
 	info Info
 }
@@ -498,26 +557,12 @@ type Info struct {
 	hobby []string
 }
 
-func (u *User) Name() string {
-	return u.name
-}
-
-func (u *User) Set(name string) {
-	u.name = name
-}
-
-func (u *User) Error() string {
-	return errors.New("nothing").Error()
-}
-
 func main() {
 	// 定义对象
-	v1 := User{name: "v1"}
+	v1 := User{}
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
-
-	// Type接口方法
 
 	// 通过名称找结构体字段
 	field, ok := t1.FieldByName("name")
@@ -529,18 +574,22 @@ func main() {
 
 	// 也可以通过索引找字段  Field(i int) StructField
 
+	// 获取Tag
+	validate := field.Tag.Get("validate")
+	fmt.Printf("字段Tag值: %s\n", validate)
+
 	// 当结构体字段还是一个结构体时,可以继续调用子结构体的字段
-	// 2代表当前结构体索引为2的字段,该值必须是一个结构体,否则会报错，1代表子结构体索引为1的字段
+	// 第一个参数2代表当前结构体索引为2的字段,该值必须是一个结构体,否则会报错，1代表子结构体索引为1的字段
 	fmt.Printf("子结构体字段名称: %s\n", t1.FieldByIndex([]int{2, 1}).Name)
 
 	// 根据一个函数筛选字段，返回第一个符合条件的字段
-	field, ok = t1.FieldByNameFunc(func(s string) bool {
+	info, ok := t1.FieldByNameFunc(func(s string) bool {
 		return s == "info"
 	})
 	if !ok {
 		panic("not found")
 	}
-	fmt.Println(field)
+	fmt.Printf("使用函数筛选字段: %v\n", info.Name)
 }
 ```
 
@@ -549,21 +598,22 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 字段名称: name
-字段类型: string                   
-子结构体字段名称: hobby            
-{info main main.Info  24 [2] false}
+字段类型: string                
+字段Tag值: required,min=4,max=15
+子结构体字段名称: hobby         
+使用函数筛选字段: info
 ```
 
 :::
 
-::: details （9）数组和Map
+::: details （10）其他
 
 ```go
 package main
 
 import (
-	"errors"
 	"fmt"
+	"os/exec"
 	"reflect"
 )
 
@@ -578,80 +628,14 @@ type Info struct {
 	hobby []string
 }
 
-func (u *User) Name() string {
-	return u.name
-}
-
-func (u *User) Set(name string) {
-	u.name = name
-}
-
-func (u *User) Error() string {
-	return errors.New("nothing").Error()
-}
-
 func main() {
 	// 定义对象
-	v1 := make([]int, 0)
-	v2 := [...]int{1, 2, 3}
-	v3 := make(map[string]string)
-
-	// 运行时反射其类型
-	t1 := reflect.TypeOf(v1)
-	t2 := reflect.TypeOf(v2)
-	t3 := reflect.TypeOf(v3)
-
-	// 返回数组长度
-	//fmt.Println(t1.Len())  // 切片不能使用此方法
-	t1 = t1
-	fmt.Println(t2.Len())
-
-	// 返回key类型
-	fmt.Println(t3.Key())
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go
-3
-string
-```
-
-:::
-
-::: details （10）其他
-
-```go
-package main
-
-import (
-	"errors"
-	"fmt"
-	"os/exec"
-	"reflect"
-)
-
-type User struct {
-	name string
-	vip  bool
-}
-
-func (u *User) Name() string {
-	return u.name
-}
-
-func (u *User) Error() string {
-	return errors.New("nothing").Error()
-}
-
-func main() {
-	// 定义对象
-	v1 := "hello world!"
-	v2 := User{name: "v2"}
-	v3 := &User{name: "v3"}
-	v4 := *exec.Command("go", "version")
+	var (
+		v1 = "hello world!"
+		v2 = *exec.Command("go", "version")
+		v3 = User{}
+		v4 = &User{}
+	)
 
 	// 运行时反射其类型
 	t1 := reflect.TypeOf(v1)
@@ -659,19 +643,21 @@ func main() {
 	t3 := reflect.TypeOf(v3)
 	t4 := reflect.TypeOf(v4)
 
-	// Type接口方法
-
 	// 内存对齐系数 int
 	fmt.Printf("内存对齐系数: %d\n", t1.Align())
 	fmt.Printf("内存对齐系数: %d\n", t2.Align())
-	fmt.Printf("内存对齐系数: %d\n", t3.FieldAlign()) // 用于结构体的对其系数,怎么用还不清楚
+	fmt.Printf("内存对齐系数: %d\n", t3.Align())
 	fmt.Printf("内存对齐系数: %d\n", t4.Align())
+	fmt.Println()
+
+	// FieldAlign 怎么用还不清楚
 
 	// 模块路径 string
 	fmt.Printf("模块路径: %s\n", t1.PkgPath())
-	fmt.Printf("模块路径: %s\n", t2.PkgPath())
+	fmt.Printf("模块路径: %s\n", t2.PkgPath()) // 指针可以获取到
 	fmt.Printf("模块路径: %s\n", t3.PkgPath())
-	fmt.Printf("模块路径: %s\n", t4.PkgPath()) // 注意指针类型类型获取不到,上面我们使用的是值类型
+	fmt.Printf("模块路径: %s\n", t4.PkgPath()) // 指针不能获取到
+	fmt.Println()
 
 	// 大小 uintptr 类似于(不等同于?)unsafe.SizeOf
 	fmt.Printf("对象大小: %d\n", t1.Size())
@@ -689,17 +675,19 @@ func main() {
 ```bash
 D:\application\GoLand\example>go run main.go
 内存对齐系数: 8
-内存对齐系数: 8  
-内存对齐系数: 8  
-内存对齐系数: 8  
-模块路径:        
-模块路径: main   
-模块路径:        
+内存对齐系数: 8
+内存对齐系数: 8
+内存对齐系数: 8
+
+模块路径:
 模块路径: os/exec
-对象大小: 16     
-对象大小: 24     
-对象大小: 8      
+模块路径: main
+模块路径:
+
+对象大小: 16
 对象大小: 352
+对象大小: 56
+对象大小: 8
 ```
 
 :::
