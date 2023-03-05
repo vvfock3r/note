@@ -998,7 +998,89 @@ Asia/Shanghai
 
 <br />
 
-### 定时器
+### 一次性定时器
+
+#### 1）结构体
+
+```go
+type Timer struct {
+	C <-chan Time
+	r runtimeTimer
+}
+```
+
+<br />
+
+#### 2）用法
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func main() {
+	// time.NewTimer 同步执行
+	{
+		fmt.Println("当前时间: ", time.Now())
+
+		// 一次性定时器基本使用
+		timer := time.NewTimer(time.Second * 1)
+		defer timer.Stop()
+		fmt.Println("当前时间: ", <-timer.C)
+
+		// 重置时间，当延时器处于活跃状态时返回false，当处理已停止或已过期时返回false
+		fmt.Println(timer.Reset(time.Second * 2))
+		fmt.Println("当前时间: ", <-timer.C)
+	}
+
+	// time.NewTimer 同步执行
+	{
+		// 一次性定时器基本使用
+		timer := time.NewTimer(time.Second * 3)
+		select {
+		case <-timer.C:
+			fmt.Println("当前时间: ", time.Now())
+		}
+	}
+	// time.AfterFunc 异步执行
+	{
+		var wg sync.WaitGroup
+		wg.Add(1)
+		timer := time.AfterFunc(time.Second*4, func() {
+			defer wg.Done()
+			fmt.Println("当前时间: ", time.Now())
+		})
+		defer timer.Stop()
+		wg.Wait()
+	}
+
+	// 其他
+	//time.After是对NewTimer的一层封装，与time.Tick类似，不推荐使用
+}
+```
+
+输出结果
+
+```bash
+当前时间:  2022-10-14 13:08:53.4813516 +0800 CST m=+0.002699601
+当前时间:  2022-10-14 13:08:54.5037902 +0800 CST m=+1.025138201
+false
+当前时间:  2022-10-14 13:08:56.5141258 +0800 CST m=+3.035473801
+当前时间:  2022-10-14 13:08:59.5199525 +0800 CST m=+6.041300501
+当前时间:  2022-10-14 13:09:03.5254777 +0800 CST m=+10.04682570
+```
+
+:::
+
+<br />
+
+### 周期性定时器
 
 #### 1）结构体
 
@@ -1401,90 +1483,6 @@ func main() {
 ```
 
 ![image-20221013191512953](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20221013191512953.png)
-
-:::
-
-<br />
-
-### 延时器
-
-#### 1）结构体
-
-```go
-type Timer struct {
-	C <-chan Time
-	r runtimeTimer
-}
-```
-
-<br />
-
-#### 2）用法总结
-
-延时器和定时器很类似
-
-::: details 点击查看详情
-
-```go
-package main
-
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
-func main() {
-	// time.NewTimer 同步执行
-	{
-		fmt.Println("当前时间: ", time.Now())
-
-		// 延时器基本使用
-		timer := time.NewTimer(time.Second * 1)
-		defer timer.Stop()
-		fmt.Println("当前时间: ", <-timer.C)
-
-		// 重置时间，当延时器处于活跃状态时返回false，当处理已停止或已过期时返回false
-		fmt.Println(timer.Reset(time.Second * 2))
-		fmt.Println("当前时间: ", <-timer.C)
-	}
-
-	// time.NewTimer 同步执行
-	{
-		// 延时器基本使用
-		timer := time.NewTimer(time.Second * 3)
-		select {
-		case <-timer.C:
-			fmt.Println("当前时间: ", time.Now())
-		}
-	}
-	// time.AfterFunc 异步执行
-	{
-		var wg sync.WaitGroup
-		wg.Add(1)
-		timer := time.AfterFunc(time.Second*4, func() {
-			defer wg.Done()
-			fmt.Println("当前时间: ", time.Now())
-		})
-		defer timer.Stop()
-		wg.Wait()
-	}
-
-	// 其他
-	//time.After是对NewTimer的一层封装，与time.Tick类似，不推荐使用
-}
-```
-
-输出结果
-
-```bash
-当前时间:  2022-10-14 13:08:53.4813516 +0800 CST m=+0.002699601
-当前时间:  2022-10-14 13:08:54.5037902 +0800 CST m=+1.025138201
-false
-当前时间:  2022-10-14 13:08:56.5141258 +0800 CST m=+3.035473801
-当前时间:  2022-10-14 13:08:59.5199525 +0800 CST m=+6.041300501
-当前时间:  2022-10-14 13:09:03.5254777 +0800 CST m=+10.04682570
-```
 
 :::
 
