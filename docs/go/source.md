@@ -10,15 +10,11 @@ https://go.dev/doc/asm
 
 <br />
 
-## 可执行文件
-
-PE / ELF / Mach-O
-
-**1、Linux ELF文件格式**
+## ELF 文件
 
 ::: details （1）ELF文件：格式说明
 
-ELF 是 Executable and Linkable Format 的缩写，是一种用于可执行文件、目标文件、共享库和核心转储(core dump)的标准文件格式。
+ELF 是 Executable and Linkable Format 的缩写，是一种用于Linux可执行文件、目标文件、共享库和核心转储(core dump)的标准文件格式。
 
 ELF 文件 **通常** 是编译器之类的输出，并且是二进制格式。以 Go 编译出的可执行文件为例，我们使用 file 命令即可看到其具体类型
 
@@ -314,11 +310,58 @@ func main() {
 
 ## 编译原理
 
+
+
+## 代码调试
+
+Github：[https://github.com/go-delve/delve](https://github.com/go-delve/delve)
+
+说明：GoLand默认的就是DLV 调试工具
+
+::: details （1）dlv工具安装
+
+```bash
+# 安装最新版本
+go install github.com/go-delve/delve/cmd/dlv@latest
+
+# 安装指定版本
+go install github.com/go-delve/delve/cmd/dlv@v1.20.1
+
+# 查看版本信息
+C:\Users\Administrator> dlv version
+Delve Debugger
+Version: 1.20.1
+Build: $Id: 96e65b6c615845d42e0e31d903f6475b0e4ece6e $
+```
+
+:::
+
+::: details （2）dlv调试程序命令
+
+```bash
+# 方式1：自动编译源文件并开启调试：dlv debug [package] [flags]
+D:\application\GoLand\example>dlv debug .
+Type 'help' for list of commands.
+(dlv)
+
+# 方式2：直接调试二进制文件：dlv exec <path/to/binary> [flags]
+D:\application\GoLand\example>dlv exec main.exe
+Type 'help' for list of commands.
+(dlv)
+
+# 方式3：对正在运行的进程直接进行调试：dlv attach pid [executable] [flags]
+dlv attach 
+```
+
+:::
+
+
+
 * Go编译入口：rt0.s汇编文件 + 文件名后缀的条件编译
 
 <br />
 
-## string 底层结构
+## string
 
 ::: details （1）现象
 
