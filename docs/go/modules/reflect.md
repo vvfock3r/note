@@ -707,7 +707,151 @@ D:\application\GoLand\example>go run main.go
 
 ## ValueOf
 
-::: details （1）可寻址与不可寻址
+::: details （1）获取原始值：使用内置的方法，仅支持部分对象 String Int Float Bool Bytes
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	// 定义对象
+	var (
+		x1 = "a"
+		x2 = 10
+		x3 = 3.14
+		x4 = []byte("hello world!")
+	)
+
+	// 运行时反射其值
+	value1 := reflect.ValueOf(x1)
+	value2 := reflect.ValueOf(x2)
+	value3 := reflect.ValueOf(x3)
+	value4 := reflect.ValueOf(x4)
+
+	// 转换到某个具体类型, String Int Float Bool Bytes
+	v1 := value1.String()
+	v2 := value2.Int()   // 可能会panic,可以先使用 CanInt 判断一下
+	v3 := value3.Float() // 可能会panic,可以先使用 CanFloat 判断一下
+	v4 := value4.Bytes()
+
+	// 输出值, [1]是位置引用
+	fmt.Printf("%[1]T %#[1]v\n", v1)
+	fmt.Printf("%[1]T %#[1]v\n", v2)
+	fmt.Printf("%[1]T %#[1]v\n", v3)
+	fmt.Printf("%[1]T %#[1]v\n", v4)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+string "a"
+int64 10
+float64 3.14
+[]uint8 []byte{0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21}
+```
+
+:::
+
+::: details （2）获取原始值：使用Interface获取通用接口 + 类型断言
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type User struct {
+	name string
+}
+
+func main() {
+	// 定义对象
+	var (
+		x1 = User{name: "bob"}
+		x2 = map[string]int{"b": 2}
+	)
+
+	// 运行时反射其值
+	v1 := reflect.ValueOf(x1)
+	v2 := reflect.ValueOf(x2)
+
+	// 使用Interface获取通用接口
+	value1 := v1.Interface().(User)
+	value2 := v2.Interface().(map[string]int)
+
+	// 输出值, [1]是位置引用
+	fmt.Printf("%[1]T %#[1]v\n", value1.name)
+	fmt.Printf("%[1]T %#[1]v\n", value2["b"])
+
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+string "bob"
+int 2
+```
+
+:::
+
+::: details （3）获取原始值：实战获取结构体不可导出字段值
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"time"
+)
+
+func main() {
+	// 定义对象
+	t := time.Now()
+
+	// 运行时反射
+	value := reflect.ValueOf(t)
+
+	// 遍历所有的字段
+	fmt.Printf("type %s %s {\n", value.Type().Name(), value.Kind().String())
+	for i := 0; i < value.NumField(); i++ {
+		fieldName := value.Type().Field(i).Name // 相当于 TypeOf(t).Field(i).Name
+		fieldType := value.Type().Field(i).Type // 相当于 TypeOf(t).Field(i).Type
+		fieldValue := value.Field(i)
+		fmt.Printf("  %-6s %-16s %v\n", fieldName, fieldType, fieldValue)
+	}
+	fmt.Println("}")
+
+	// 备注:
+	// value.Type().Name()   ---> Time
+	// value.Type().String() ---> time.Time
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+type Time struct {
+  wall   uint64           13905278706020708460
+  ext    int64            4713801             
+  loc    *time.Location   &{ [] []  0 0 <nil>}
+}
+```
+
+:::
+
+::: details （4）可寻址与不可寻址的概念
 
 ```go
 package main
