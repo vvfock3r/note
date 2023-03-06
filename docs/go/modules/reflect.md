@@ -1046,55 +1046,66 @@ import (
 )
 
 type T struct {
-	a string
-	b int
-	c bool
-	d []string
-	e map[int]int
+	a bool
+	b []string
+	c map[string]int
 }
 
-// GetUnExportedField 访问结构体非可导出字段值
-func GetUnExportedField(source any, field string) reflect.Value {
-	// 获取非导出字段反射对象
-	v := reflect.ValueOf(source).Elem().FieldByName(field)
-    // 构建指向该字段的可寻址(addressable)反射对象
-	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
-}
-
-// SetUnExportedField 修改结构体非导出字段值
-func SetUnExportedField(source any, field string, value any) error {
-	v := GetUnExportedField(source, field)
-	rv := reflect.ValueOf(value)
-	if v.Kind() != rv.Kind() {
-		return fmt.Errorf("invalid kind: expected kind %v, got kind: %v", v.Kind(), rv.Kind())
+// GetField 访问结构体非可导出字段值
+func GetField(source any, field string) reflect.Value {
+	v := reflect.ValueOf(source)
+	// 这里做一次判断,既可以传递指针,也可以传值
+	switch v.Kind() {
+	case reflect.Ptr:
+		return v.Elem().FieldByName(field)
+	default:
+		return v.FieldByName(field)
 	}
-	v.Set(rv)
-	return nil
+
+}
+
+// SetField 修改结构体非导出字段值
+func SetField(source any, field string, value any) (err error) {
+	defer func() error {
+		if e := recover(); e != nil {
+			err = fmt.Errorf(e.(string))
+		}
+		return err
+	}()
+	v := reflect.ValueOf(source).Elem().FieldByName(field)
+	v = reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
+	v.Set(reflect.ValueOf(value))
+	return
 }
 
 func main() {
 	// 实例化结构体
 	t := T{
-		a: "hello",
-		b: 99,
-		c: true,
-		d: []string{"a", "b", "c"},
-		e: map[int]int{10: 11},
+		a: true,
+		b: []string{"a", "b", "c"},
+		c: map[string]int{"x": 100},
 	}
 
 	// 获取结构体非导出字段的值
-	fmt.Println(GetUnExportedField(&t, "a").String())
-	fmt.Println(GetUnExportedField(&t, "b").Int())
-	fmt.Println(GetUnExportedField(&t, "c").Bool())
-	fmt.Println(GetUnExportedField(&t, "d").Index(1))
-	fmt.Println(GetUnExportedField(&t, "e").MapIndex(reflect.ValueOf(10)))
+	fmt.Printf("get a: %t\n", GetField(&t, "a"))
+	fmt.Printf("get b: %#v\n", GetField(t, "b"))
+	fmt.Printf("get c: %#v\n", GetField(t, "c"))
+	fmt.Println()
 
 	// 修改结构体非导出字段的值
-	err := SetUnExportedField(&t, "a", "world!")
-	if err != nil {
+	if err := SetField(&t, "a", false); err != nil {
 		panic(err)
 	}
-	fmt.Println(GetUnExportedField(&t, "a").String())
+	if err := SetField(&t, "b", []string{"d", "e"}); err != nil {
+		panic(err)
+	}
+	if err := SetField(&t, "c", map[string]int{"x": 200}); err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("get a: %t\n", GetField(&t, "a"))
+	fmt.Printf("get b: %#v\n", GetField(t, "b"))
+	fmt.Printf("get c: %#v\n", GetField(t, "c"))
 }
 ```
 
@@ -1102,12 +1113,13 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-hello
-99    
-true  
-b     
-11    
-world!
+get a: true
+get b: []string{"a", "b", "c"}
+get c: map[string]int{"x":100}
+                              
+get a: false                  
+get b: []string{"d", "e"}     
+get c: map[string]int{"x":200}
 ```
 
 :::
