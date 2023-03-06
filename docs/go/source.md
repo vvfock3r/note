@@ -350,12 +350,12 @@ Type 'help' for list of commands.
 (dlv)
 
 # 方式3：对正在运行的进程直接进行调试：dlv attach pid [executable] [flags]
-dlv attach 
+D:\application\GoLand\example>dlv attach 15304
+Type 'help' for list of commands.
+(dlv)
 ```
 
 :::
-
-
 
 * Go编译入口：rt0.s汇编文件 + 文件名后缀的条件编译
 
