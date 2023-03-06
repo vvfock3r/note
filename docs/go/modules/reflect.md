@@ -971,7 +971,7 @@ main.T{a:"A", b:0, c:false, d:[]string(nil), e:map[int]int(nil)}
 
 :::
 
-::: details （4）修改原始对象：方法2：
+::: details （6）修改原始对象：方法2：可寻址对象 + ... + Set(value)
 
 ```go
 package main
@@ -983,38 +983,43 @@ import (
 )
 
 type T struct {
-	a string
+	A string
 	b int
-	c bool
-	d []string
-	e map[int]int
 }
 
 func main() {
 	// 定义对象
 	x := T{}
+	y := []int{1, 2, 3}
+	z := map[string]int{"a": 1}
 
 	// 运行时反射其值
 	v1 := reflect.ValueOf(&x)
+	v2 := reflect.ValueOf(&y)
+	v3 := reflect.ValueOf(&z)
 
-	// 修改值: 方法2
-	// 1、要求对象是可寻址的:
-	//      v = reflect.ValueOf(&x) 传递指针对象
-	//      v.Elem()
-	// 2、获取要修改的字段
-	// 3、如果是可导出字段，则直接使用 field2.Set(reflect.ValueOf(true)) 即可修改
-	// 4、如果是非可导出字段，需要使用 reflect.NewAt
-	field1 := v1.Elem().FieldByName("c")
+	// 说明
+	// 1、在使用Set函数前, 可以调用CanSet()来检测是否可修改
+	// 2、Set(reflect.ValueOf(99))通用方法 可以简写成 SetInt(99)、SetString、Setxxx
 
-	// 适用于可导出字段
-	//field1.Set(reflect.ValueOf(true))
+	// 1、适用于结构体可导出字段
+	v1.Elem().FieldByName("A").SetString("Hello World!")
 
-	// 适用于可导出字段和非可导出字段
-	field1 = reflect.NewAt(field1.Type(), unsafe.Pointer(field1.UnsafeAddr())).Elem()
-	field1.Set(reflect.ValueOf(true))
+	// 2、适用于结构体可导出和非可导出字段
+	field := v1.Elem().FieldByName("b")
+	field = reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
+	field.SetInt(101)
+
+	// 3、修改切片,注意调用的是Index
+	v2.Elem().Index(1).SetInt(102)
+
+	// 3、修改Map, 若key不存在会新增, 可以先使用MapIndex查询判断再决定是否修改
+	v3.Elem().SetMapIndex(reflect.ValueOf("a"), reflect.ValueOf(103))
 
 	// 输出值
-	fmt.Println(x)
+	fmt.Printf("%#v\n", x)
+	fmt.Printf("%#v\n", y)
+	fmt.Printf("%#v\n", z)
 }
 ```
 
@@ -1022,12 +1027,14 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-{ 0 true [] map[]}
+main.T{A:"Hello World!", b:101}
+[]int{1, 102, 3}       
+map[string]int{"a":103}
 ```
 
 :::
 
-::: details （5）结构体：访问和修改不可导出字段
+::: details （7）结构体：访问和修改不可导出字段
 
 ```go
 package main
