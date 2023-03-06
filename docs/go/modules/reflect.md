@@ -835,6 +835,9 @@ func main() {
 	// 备注:
 	// value.Type().Name()   ---> Time
 	// value.Type().String() ---> time.Time
+
+	// value.Type().Field(i).Name --> ext
+	// value.Type().Field(i).Type --> uint64
 }
 ```
 
@@ -881,12 +884,15 @@ func main() {
 
 	// 是否可寻址,即是否可以使用Addr()获取值的地址
 	// 1、默认情况下Value都是不可寻址的
-	// 2、若要支持寻址，使用 ValueOf(指针).Elem()
-	// 3、这就好像是
-	//    Elem() 返回指针，类似于 &x
-	//    Addr() 返回指针值，类似于 *x
-	fmt.Printf("是否可寻址: %t\n", v1.CanAddr())
-	fmt.Printf("是否可寻址: %t\n", v2.Elem().CanAddr())
+	// 2、若要支持寻址，使用 1、ValueOf(指针).Elem() 2、如果不是指针调用Elem()会panic
+	// 3、Elem()方法：返回interface的值 或 指针指向的值, 类似于 *x, 如果不是Interface或Pointer会panic
+	fmt.Printf("v1 是否可寻址: %t\n", v1.CanAddr()) // 调用Elem()会panic
+	fmt.Printf("v2 是否可寻址: %t\n", v2.Elem().CanAddr())
+	fmt.Println()
+
+	// 寻址, 返回指针,类似于 &x
+	//fmt.Printf("v1 寻址: %t\n", v1.Addr()) // 会panic
+	fmt.Printf("v2 寻址: %#v\n", v2.Elem().Addr())
 }
 ```
 
@@ -894,62 +900,15 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-是否可寻址: false
-是否可寻址: true
+v1 是否可寻址: false
+v2 是否可寻址: true     
+                        
+v2 寻址: &[]int{1, 2, 3}
 ```
 
 :::
 
-::: details （2）获取原始对象
-
-```go
-package main
-
-import (
-	"fmt"
-	"reflect"
-)
-
-type T struct {
-	a string
-	b int
-	c bool
-	d []string
-	e map[int]int
-}
-
-func main() {
-	// 定义对象
-	x := []int{100, 200, 300}
-
-	// 运行时反射其值
-	v := reflect.ValueOf(x)
-
-	// 获取原始值步骤
-	// 1、Interface()  返回一个interface{}
-	// 2、使用断言机制强制转为普通类型
-	value, ok := v.Interface().([]int)
-	if !ok {
-		panic("convert err")
-	}
-	fmt.Printf("%#v\n", value)
-	fmt.Printf("%d\n", value[0])
-	fmt.Printf("%T\n", value)
-}
-```
-
-输出结果
-
-```bash
-D:\application\GoLand\example>go run main.go
-[]int{100, 200, 300}
-100  
-[]int
-```
-
-:::
-
-::: details （3）修改原始对象：方法1
+::: details （5）修改原始对象：方法1：可寻址对象 + 类型断言 + 修改值
 
 ```go
 package main
@@ -976,13 +935,13 @@ func main() {
 	v1 := reflect.ValueOf(&x)
 	v2 := reflect.ValueOf(&y)
 
-	// 修改原始值步骤
-	// 1、要求对象是可寻址的:
-	//      v = reflect.ValueOf(&x) 传递指针对象
-	//      v.Elem()
-	// 1、.Addr()       返回指向变量的指针
-	// 2、.Interface()  返回一个interface{}
-	// 3、使用断言机制强制转为普通类型
+	// 修改原始值方法
+	// 1、对象是可寻址的   reflect.ValueOf(&x).Elem()
+	// 2、.Addr()       返回指向变量的指针
+	// 3、.Interface()  返回一个interface{}
+	// 4、使用断言机制强制转为普通类型
+
+	// 1、获取原始对象
 	value1, ok := v1.Elem().Addr().Interface().(*[]int)
 	if !ok {
 		panic("convert err")
@@ -992,13 +951,13 @@ func main() {
 		panic("convert err")
 	}
 
-	// 修改值: 方法1
+	// 2、修改值
 	(*value1)[0] = 99
 	(*value2).a = "A"
 
 	// 输出值
-	fmt.Println(x)
-	fmt.Println(y)
+	fmt.Printf("%#v\n", x)
+	fmt.Printf("%#v\n", y)
 }
 ```
 
@@ -1006,13 +965,13 @@ func main() {
 
 ```bash
 D:\application\GoLand\example>go run main.go
-[99 200 300]
-{A 0 false [] map[]}
+[]int{99, 200, 300}
+main.T{a:"A", b:0, c:false, d:[]string(nil), e:map[int]int(nil)}
 ```
 
 :::
 
-::: details （4）修改原始对象：方法2
+::: details （4）修改原始对象：方法2：
 
 ```go
 package main
