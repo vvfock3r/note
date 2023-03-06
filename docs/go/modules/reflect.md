@@ -805,20 +805,126 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （3）修改原始对象
+::: details （3）修改原始对象：方法1
 
 ```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type T struct {
+	a string
+	b int
+	c bool
+	d []string
+	e map[int]int
+}
+
+func main() {
+	// 定义对象
+	x := []int{100, 200, 300}
+	y := T{a: "a"}
+
+	// 运行时反射其值
+	v1 := reflect.ValueOf(&x)
+	v2 := reflect.ValueOf(&y)
+
+	// 修改原始值步骤
+	// 1、要求对象是可寻址的:
+	//      v = reflect.ValueOf(&x) 传递指针对象
+	//      v.Elem()
+	// 1、.Addr()       返回指向变量的指针
+	// 2、.Interface()  返回一个interface{}
+	// 3、使用断言机制强制转为普通类型
+	value1, ok := v1.Elem().Addr().Interface().(*[]int)
+	if !ok {
+		panic("convert err")
+	}
+	value2, ok := v2.Elem().Addr().Interface().(*T)
+	if !ok {
+		panic("convert err")
+	}
+
+	// 修改值: 方法1
+	(*value1)[0] = 99
+	(*value2).a = "A"
+
+	// 输出值
+	fmt.Println(x)
+	fmt.Println(y)
+}
 ```
 
 输出结果
 
 ```bash
-
+D:\application\GoLand\example>go run main.go
+[99 200 300]
+{A 0 false [] map[]}
 ```
 
 :::
 
-::: details （4）结构体：访问和修改不可导出字段
+::: details （4）修改原始对象：方法2
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+type T struct {
+	a string
+	b int
+	c bool
+	d []string
+	e map[int]int
+}
+
+func main() {
+	// 定义对象
+	x := T{}
+
+	// 运行时反射其值
+	v1 := reflect.ValueOf(&x)
+
+	// 修改值: 方法2
+	// 1、要求对象是可寻址的:
+	//      v = reflect.ValueOf(&x) 传递指针对象
+	//      v.Elem()
+	// 2、获取要修改的字段
+	// 3、如果是可导出字段，则直接使用 field2.Set(reflect.ValueOf(true)) 即可修改
+	// 4、如果是非可导出字段，需要使用 reflect.NewAt
+	field1 := v1.Elem().FieldByName("c")
+
+	// 适用于可导出字段
+	//field1.Set(reflect.ValueOf(true))
+
+	// 适用于可导出字段和非可导出字段
+	field1 = reflect.NewAt(field1.Type(), unsafe.Pointer(field1.UnsafeAddr())).Elem()
+	field1.Set(reflect.ValueOf(true))
+
+	// 输出值
+	fmt.Println(x)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run main.go
+{ 0 true [] map[]}
+```
+
+:::
+
+::: details （5）结构体：访问和修改不可导出字段
 
 ```go
 package main
@@ -841,7 +947,7 @@ type T struct {
 func GetUnExportedField(source any, field string) reflect.Value {
 	// 获取非导出字段反射对象
 	v := reflect.ValueOf(source).Elem().FieldByName(field)
-	// 构建指向该字段的可寻址（addressable）反射对象
+    // 构建指向该字段的可寻址(addressable)反射对象
 	return reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem()
 }
 
