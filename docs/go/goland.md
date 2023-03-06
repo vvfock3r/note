@@ -69,3 +69,16 @@
 
 ## 远程同步
 
+<br />
+
+## 设置DLV
+
+`Help ---> Edit Custom Properties...`
+
+```bash
+# 设置DLV路径, 任选一种正确的写法即可, 然后重启GoLand
+dlv.path=D:/application/GoPath/bin/dlv.exe         # 写法1: 正确写法
+dlv.path=D:\\application\\GoPath\\bin\\dlv.exe     # 写法2: 正确写法
+dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
+```
+
