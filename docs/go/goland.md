@@ -73,7 +73,11 @@
 
 ## 设置DLV
 
-`Help ---> Edit Custom Properties...`
+最新版的GoLand有时候不能调试最新版Go SDK，原因是GoLand中的调试工具DLV太旧了，如下图
+
+![image-20230307103943104](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230307103943104.png)
+
+安装最新版DLV并修改GoLand中的路径：`Help ---> Edit Custom Properties...`
 
 ```bash
 # 设置DLV路径, 任选一种正确的写法即可, 然后重启GoLand
@@ -82,3 +86,10 @@ dlv.path=D:\\application\\GoPath\\bin\\dlv.exe     # 写法2: 正确写法
 dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 ```
 
+<br />
+
+## 配置内存
+
+`Help ---> Change Memory Settings`
+
+![image-20230307104122350](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230307104122350.png)
