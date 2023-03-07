@@ -96,16 +96,19 @@ import (
 	"time"
 )
 
-func main() {
+func Print() {
 	g := runtime.NumGoroutine()
 	m := pprof.Lookup("threadcreate").Count()
 	p := runtime.GOMAXPROCS(0)
 
-	fmt.Printf("                     Pid: %d\n", g)
+	fmt.Printf("Pid: %d\n", g)
 	fmt.Printf("Current Goroutine Number: %d\n", g)
 	fmt.Printf("Current Machine   Number: %d\n", m)
 	fmt.Printf("Current Processor Number: %d\n", p)
+}
 
+func main() {
+    Print()
 	time.Sleep(time.Hour)
 }
 ```
@@ -131,7 +134,72 @@ Current Processor Number: 2
 
 :::
 
-::: details （2）GMP：修改最大限额
+::: details （3）GMP：修改最大限额
+
+```go
+package main
+
+import (
+	"fmt"
+	"os/exec"
+	"runtime"
+	"runtime/debug"
+	"runtime/pprof"
+	"time"
+)
+
+func Print() {
+	g := runtime.NumGoroutine()
+	m := pprof.Lookup("threadcreate").Count()
+	p := runtime.GOMAXPROCS(0)
+
+	fmt.Printf("Pid: %d\n", g)
+	fmt.Printf("Current Goroutine Number: %d\n", g)
+	fmt.Printf("Current Machine   Number: %d\n", m)
+	fmt.Printf("Current Processor Number: %d\n", p)
+}
+
+func main() {
+	// Goroutine没有提供接口配置限额
+
+	// Machine 默认最大是10000, 超过最大限额会后panic
+	debug.SetMaxThreads(1024)
+
+	// Processor 默认是 runtime.NumCPU(), 超过后不会panic
+	runtime.GOMAXPROCS(2)
+
+	// 起一些Goroutine
+	for i := 0; i < 1000; i++ {
+		go func() {
+			cmd := exec.Command("sh", "-c", "sleep 300")
+			_, err := cmd.CombinedOutput()
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
+    
+	// 再次查看	
+    time.Sleep(time.Second * 5)
+	Print()
+
+	time.Sleep(time.Hour)
+}
+```
+
+输出结果
+
+```bash
+[root@ap-hongkang example]# go run main.go
+                     Pid: 2001
+Current Goroutine Number: 2001
+Current Machine   Number: 1004
+Current Processor Number: 2
+```
+
+:::
+
+::: details （3）读取CPU和内存使用量
 
 ```go
 ```
