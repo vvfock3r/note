@@ -84,9 +84,61 @@ http://127.0.0.1/debug/statsviz/
 
 :::
 
-::: details （2）GMP：查看当前个数和调整最大限额
+::: details （2）GMP：查看当前个数
 
 ```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"runtime/pprof"
+	"time"
+)
+
+func main() {
+	g := runtime.NumGoroutine()
+	m := pprof.Lookup("threadcreate").Count()
+	p := runtime.GOMAXPROCS(0)
+
+	fmt.Printf("                     Pid: %d\n", g)
+	fmt.Printf("Current Goroutine Number: %d\n", g)
+	fmt.Printf("Current Machine   Number: %d\n", m)
+	fmt.Printf("Current Processor Number: %d\n", p)
+
+	time.Sleep(time.Hour)
+}
+```
+
+输出结果
+
+```bash
+[root@ap-hongkang example]# go run main.go
+Pid: 900645
+Current Goroutine Number: 1
+Current Machine   Number: 5
+Current Processor Number: 2
+
+# 同时还可以使用top命令来验证一下系统线程数量
+[root@ap-hongkang ~]# top -H -p900645
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                                   
+ 900645 root      20   0  710612   1828   1344 S   0.0   0.1   0:00.00 main
+ 900646 root      20   0  710612   1828   1344 S   0.0   0.1   0:00.00 main
+ 900647 root      20   0  710612   1828   1344 S   0.0   0.1   0:00.00 main
+ 900648 root      20   0  710612   1828   1344 S   0.0   0.1   0:00.00 main
+ 900649 root      20   0  710612   1828   1344 S   0.0   0.1   0:00.00 main
+```
+
+:::
+
+::: details （2）GMP：修改最大限额
+
+```go
+```
+
+输出结果
+
+```bash
 
 ```
 
