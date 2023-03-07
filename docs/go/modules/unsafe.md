@@ -340,9 +340,9 @@ func main() {
 	//*zPtr = 300
 
 	// 方式三：上面两种方式的本质就是加上偏移地址,所以可以通过提前计算好偏移,直接相加,对与非导出字段这很好用
-	//yPtr := (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&p)) + uintptr(8)))
+	//yPtr := (*int)(unsafe.Add(unsafe.Pointer(&p), uintptr(8)))
 	//*yPtr = 200
-	//zPtr := (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&p)) + uintptr(16)))
+	//zPtr := (*int)(unsafe.Add(unsafe.Pointer(&p), uintptr(16)))
 	//*zPtr = 300
 
 	// 输出
