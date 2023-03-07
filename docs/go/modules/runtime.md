@@ -1,8 +1,8 @@
 # runtime
 
-## 基础
+## 基础概念
 
-::: details （1）runtime概念
+runtime概念
 
 runtime就是程序的运行环境，很多语言都有runtime，比如说Java的runtime（虚拟机），JavaScript的runtime（浏览器内核）
 
@@ -15,9 +15,11 @@ Go runtime提供的功能如下：
 * 协程调度（GMP）
 * ...
 
-:::
+<br />
 
-::: details （2）数据可视化
+## 指标数据
+
+::: details （1）数据可视化
 
 Github：[https://github.com/arl/statsviz](https://github.com/arl/statsviz)
 
@@ -82,7 +84,15 @@ http://127.0.0.1/debug/statsviz/
 
 :::
 
-<br />
+::: details （2）GMP：查看当前个数和调整最大限额
+
+```go
+
+```
+
+:::
+
+
 
 
 
