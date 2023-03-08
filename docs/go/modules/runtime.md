@@ -199,15 +199,107 @@ Current Processor Number: 2
 
 :::
 
-::: details （3）读取CPU和内存使用量
+::: details （3）读取内存信息
 
 ```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func PrintMemStats() {
+	// 读取内存
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	// 堆内存统计信息
+	fmt.Println("堆内存统计信息:")
+	fmt.Printf("  分配的活动的堆内存字节: %d\n", m.HeapAlloc) // 等于 m.Alloc
+	fmt.Printf("  分配的累计的堆内存字节: %d\n", m.TotalAlloc)
+	fmt.Println()
+	fmt.Printf("  活动的堆对象的累积计数: %d\n", m.HeapObjects) // 等于 m.Mallocs-m.Frees
+	fmt.Printf("  释放的堆对象的累积计数: %d\n", m.Frees)
+	fmt.Printf("  分配的堆对象的累积计数: %d\n", m.Mallocs)
+	fmt.Println()
+
+	fmt.Printf("  从操作系统申请的堆内存字节数:   %d\n", m.HeapSys)
+	fmt.Printf("  返还给操作系统的物理内存字节数: %d\n", m.HeapReleased)
+	fmt.Println()
+
+	fmt.Printf("  正在使用的Span的字节数: %d\n", m.HeapInuse)
+	fmt.Printf("  未被使用的Span的字节数: %d\n", m.HeapIdle)
+	fmt.Println()
+
+	// 栈内存统计信息
+	fmt.Println("栈内存统计信息:")
+	fmt.Printf("  栈Span使用的字节数: %d\n", m.StackInuse)
+	fmt.Printf("  从操作系统取得的栈内存大小: %d\n", m.StackSys)
+	fmt.Printf("  分配的mspan数据结构的字节数: %d\n", m.MSpanInuse)
+	fmt.Printf("  从操作系统为mspan获取的内存字节数: %d\n", m.MSpanSys)
+	fmt.Println()
+
+	// 垃圾回收统计信息
+	fmt.Println("垃圾回收统计信息:")
+	fmt.Printf("  是否允许GC:   %t\n", m.EnableGC) // 永远为true,即使是设置了GOGC=off
+	fmt.Printf("  完成GC的次数: %d\n", m.NumGC)
+	fmt.Printf("  强制GC的次数: %d\n", m.NumForcedGC)
+	fmt.Println()
+
+	fmt.Printf("  下一次GC目标的堆大小: %d\n", m.NextGC)
+	fmt.Printf("  上一次GC纳秒级时间戳: %d\n", m.LastGC)
+	fmt.Println()
+
+	fmt.Printf("  STW暂停的累积纳秒数: %d\n", m.PauseTotalNs)
+	fmt.Printf("  GC占用的CPU可用时间: %f\n", m.GCCPUFraction)
+	fmt.Println()
+
+	fmt.Printf("  垃圾回收元数据使用的内存字节数: %d\n", m.GCSys)
+	fmt.Println()
+}
+
+func main() {
+	PrintMemStats()
+}
 ```
 
 输出结果
 
 ```bash
+D:\application\GoLand\example>go run main.go
+堆内存统计信息:
+  分配的活动的堆内存字节: 128736
+  分配的累计的堆内存字节: 128736
 
+  活动的堆对象的累积计数: 206
+  释放的堆对象的累积计数: 2
+  分配的堆对象的累积计数: 208
+
+  从操作系统申请的堆内存字节数:   4096000 
+  返还给操作系统的物理内存字节数: 3612672 
+
+  正在使用的Span的字节数: 483328
+  未被使用的Span的字节数: 3612672
+
+栈内存统计信息:
+  栈Span使用的字节数: 98304
+  从操作系统取得的栈内存大小: 98304       
+  分配的mspan数据结构的字节数: 24160      
+  从操作系统为mspan获取的内存字节数: 32640
+
+垃圾回收统计信息:
+  是否允许GC:   true
+  完成GC的次数: 0
+  强制GC的次数: 0
+
+  下一次GC目标的堆大小: 4194304
+  上一次GC纳秒级时间戳: 0
+
+  STW暂停的累积纳秒数: 0
+  GC占用的CPU可用时间: 0.000000
+
+  垃圾回收元数据使用的内存字节数: 5787976
 ```
 
 :::
