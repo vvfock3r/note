@@ -1,5 +1,9 @@
 # 深入理解Go
 
+## 参考资料
+
+* [奇伢云存储](https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg3NTU3OTgxOA==&action=getalbum&album_id=1749948750287978500#wechat_redirect)
+
 <br />
 
 ## 汇编基础
