@@ -1,6 +1,6 @@
 # runtime
 
-## 基础概念
+## 概念
 
 runtime概念
 
@@ -77,15 +77,11 @@ Num CgoCall:         32
 
 :::
 
-::: details （2）
-
-:::
-
 <br />
 
 ## 指标数据
 
-::: details （1）数据可视化
+::: details （1）第三方库：数据可视化
 
 Github：[https://github.com/arl/statsviz](https://github.com/arl/statsviz)
 
@@ -150,7 +146,17 @@ http://127.0.0.1/debug/statsviz/
 
 :::
 
-::: details （2）GMP：查看当前个数
+::: details （2）第三方库：命令行调试工具
+
+Github：[https://github.com/google/gops](https://github.com/google/gops)
+
+```bash
+
+```
+
+:::
+
+::: details （3）GMP：查看当前个数
 
 ```go
 package main
@@ -200,7 +206,7 @@ Current Processor Number: 2
 
 :::
 
-::: details （3）GMP：修改最大限额
+::: details （4）GMP：修改最大限额
 
 ```go
 package main
@@ -265,7 +271,7 @@ Current Processor Number: 2
 
 :::
 
-::: details （3）读取内存信息
+::: details （5）读取内存信息
 
 ```go
 package main
