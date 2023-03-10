@@ -17,6 +17,72 @@ Go runtime提供的功能如下：
 
 <br />
 
+## 基础函数
+
+::: details （1）系统、Go和个数统计信息
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+	// 系统信息（运行时获取）
+	fmt.Printf("%-20s %s\n", "GOOS:", runtime.GOOS)
+	fmt.Printf("%-20s %s\n", "GOARCH:", runtime.GOARCH)
+	fmt.Println()
+
+	// Go信息（注意这里是编译时的Go信息）
+	fmt.Printf("%-20s %s\n", "GOROOT:", runtime.GOROOT())
+	fmt.Printf("%-20s %s\n", "Version:", runtime.Version())
+	fmt.Println()
+
+	// 统计信息
+	fmt.Printf("%-20s %d\n", "Num CPU Logical:", runtime.NumCPU()) // 逻辑CPU核心数
+	fmt.Printf("%-20s %d\n", "Num Goroutine:", runtime.NumGoroutine())
+	fmt.Printf("%-20s %d\n", "Num CgoCall:", runtime.NumCgoCall())
+}
+```
+
+输出结果
+
+```bash
+# Linux输出结果
+[root@ap-hongkang example]# go run .
+GOOS:                linux
+GOARCH:              amd64
+
+GOROOT:              /usr/local/go/root
+Version:             go1.20
+
+Num CPU Logical:     2
+Num Goroutine:       1
+Num CgoCall:         0
+
+# Windows输出结果
+D:\application\GoLand\example> go run .
+GOOS:                windows
+GOARCH:              amd64             
+                                       
+GOROOT:              D:\software\go1.21
+Version:             go1.20.1          
+                                       
+Num CPU Logical:     8                 
+Num Goroutine:       1                 
+Num CgoCall:         32
+```
+
+:::
+
+::: details （2）
+
+:::
+
+<br />
+
 ## 指标数据
 
 ::: details （1）数据可视化
@@ -73,7 +139,7 @@ func main() {
 
 ```bash
 # 启动服务
-D:\application\GoLand\example>go run main.go
+D:\application\GoLand\example>go run .
 * Running on http://127.0.0.1:80
 
 # 浏览器访问
@@ -116,7 +182,7 @@ func main() {
 输出结果
 
 ```bash
-[root@ap-hongkang example]# go run main.go
+[root@ap-hongkang example]# go run .
 Pid: 900645
 Current Goroutine Number: 1
 Current Machine   Number: 5
@@ -190,7 +256,7 @@ func main() {
 输出结果
 
 ```bash
-[root@ap-hongkang example]# go run main.go
+[root@ap-hongkang example]# go run .
                      Pid: 2001
 Current Goroutine Number: 2001
 Current Machine   Number: 1004
@@ -267,7 +333,7 @@ func main() {
 输出结果
 
 ```bash
-D:\application\GoLand\example>go run main.go
+D:\application\GoLand\example>go run .
 堆内存统计信息:
   分配的活动的堆内存字节: 128736
   分配的累计的堆内存字节: 128736

@@ -51,7 +51,7 @@ wget -c https://dl.google.com/go/go${Version}.linux-amd64.tar.gz
 # (3) 解压,默认的目录名是go
 tar zxf go${Version}.linux-amd64.tar.gz
 mv go ${Version}
-ln -sf ${Version} root
+ln -s ${Version} root
 rm -f go${Version}.linux-amd64.tar.gz
 
 # (5) 设置PATH路径
@@ -1150,7 +1150,7 @@ func BitReverse() {
 	}
 
 	// 无符号数字按位取反
-	// 计算公式：^n = 该类型最大值 - (n+1) （n是无符号数字，>=0）
+	// 计算公式：^n = 该类型最大值 - n （n是无符号数字，>=0）
 	for _, v := range []uint8{0, 1, 2} {
 		fmt.Printf("^uint8(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
 	}

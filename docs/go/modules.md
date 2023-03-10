@@ -14,12 +14,11 @@ sidebar: off
 * 系统：Windows 10
 * 版本：Go 1.20.1
 
-**重点模块**
+**核心模块**
 
 * [reflect](https://jinhui.dev/go/modules/reflect.html)：运行时反射
 * [unsafe](https://jinhui.dev/go/modules/unsafe.html)：不安全编程
 * [runtime](https://jinhui.dev/go/modules/runtime.html)：运行时
-* [syscall](https://jinhui.dev/go/modules/syscall.html)：系统调用
 
 **模块列表**
 
@@ -37,6 +36,7 @@ sidebar: off
 * [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
 * [automaxprocs](https://jinhui.dev/go/modules/automaxprocs.html)：识别容器允许使用的核心数并自动调整
 * [x/text](https://jinhui.dev/go/modules/x-text.html)：解决Windows下中文乱码问题
+* [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
