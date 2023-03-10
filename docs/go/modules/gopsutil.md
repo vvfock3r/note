@@ -35,6 +35,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	// 获取CPU使用率
 	cpuPercentList, err := cpu.Percent(time.Second, false)
 	if err != nil {
@@ -47,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	// 获取CPU使用率, true代表分别获取每一个逻辑CPU信息,false代表获取总的CPU信息
+	// 获取CPU时间信息, true代表分别获取每一个逻辑CPU信息,false代表获取总的CPU信息
 	cpuTimeStatList, err := cpu.Times(false)
 	if err != nil {
 		panic(err)
