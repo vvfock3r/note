@@ -49,6 +49,7 @@ sidebar: off
   * [cobra](https://jinhui.dev/go/modules/cobra.html)：参数解析
   * [color](https://jinhui.dev/go/modules/color.html)：终端颜色
   * [simpletable](https://jinhui.dev/go/modules/simpletable.html)：终端表格
+  * tcell：终端仿真器 [Github](https://github.com/gdamore/tcell)
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
   * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
