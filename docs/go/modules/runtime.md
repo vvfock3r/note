@@ -150,9 +150,21 @@ http://127.0.0.1/debug/statsviz/
 
 Github：[https://github.com/google/gops](https://github.com/google/gops)
 
-```bash
+文档：[https://pkg.go.dev/github.com/google/gops](https://pkg.go.dev/github.com/google/gops)
 
+**1、安装二进制命令**
+
+```bash
+# 安装
+go install github.com/google/gops@latest
+
+# 查看gops版本
+# 无
 ```
+
+**2、**
+
+
 
 :::
 
