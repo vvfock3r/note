@@ -81,7 +81,7 @@ Num CgoCall:         32
 
 ## 指标数据
 
-::: details （1）第三方库：数据可视化
+::: details （1）第三方库：数据可视化：statsviz
 
 Github：[https://github.com/arl/statsviz](https://github.com/arl/statsviz)
 
@@ -146,7 +146,7 @@ http://127.0.0.1/debug/statsviz/
 
 :::
 
-::: details （2）第三方库：命令行调试工具
+::: details （2）第三方库：命令行工具：gops
 
 Github：[https://github.com/google/gops](https://github.com/google/gops)
 
@@ -162,9 +162,124 @@ go install github.com/google/gops@latest
 # 无
 ```
 
-**2、**
+**2、简单使用**
 
+```bash
+# 1、不带任何参数,会列出当前系统所有使用Go编译的程序
+# PID   PPID    进程名称                  编译所用的Go版本 程序路径
+[root@ap-hongkang ~]# gops
+974     1       containerd               go1.18.7      /usr/bin/containerd
+1297    1       dockerd                  go1.18.7      /usr/bin/dockerd
+1853    1297    docker-proxy             go1.18.7      /usr/bin/docker-proxy
+1878    1       containerd-shim-runc-v2  go1.18.7      /usr/bin/containerd-shim-runc-v2
+27505   1       frps                     go1.18.9      /usr/local/frp_0.46.0_linux_amd64/frps
+1966607 1297    docker-proxy             go1.18.7      /usr/bin/docker-proxy
+1966595 1297    docker-proxy             go1.18.7      /usr/bin/docker-proxy
+1966622 1       containerd-shim-runc-v2  go1.18.7      /usr/bin/containerd-shim-runc-v2
+1970546 1894353 gops                     go1.20        /usr/local/go/path/bin/gops
+675466  1       YDLive                   go1.14.4      /usr/local/qcloud/YunJing/YDLive/YDLive
+1188091 675466  YDService                go1.14.4      /usr/local/qcloud/YunJing/YDEyes/YDService
 
+# 2、gops <pid> [duration]
+[root@ap-hongkang ~]# gops 1297
+parent PID:     1
+threads:        15
+memory usage:   3.619%
+cpu usage:      0.192%
+username:       root
+cmd+args:       /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+elapsed time:   98-07:18:55
+local/remote:   :::2377 <-> :::0 (LISTEN)
+local/remote:   :::7946 <-> :::0 (LISTEN)
+local/remote:   :::7946 <-> :::0 (NONE)
+local/remote:   /var/run/docker/metrics.sock:0 <-> :0 (NONE)
+local/remote:   /var/run/docker/libnetwork/a975082efaa8.sock:0 <-> :0 (NONE)
+local/remote:   /var/run/docker/swarm/control.sock:0 <-> :0 (NONE)
+local/remote:   /var/run/docker.sock:0 <-> :0 (NONE)
+local/remote:   @00008:0 <-> :0 (NONE)
+local/remote:   :0 <-> :0 (NONE)
+local/remote:   :0 <-> :0 (NONE)
+```
+
+**3、Agent**
+
+文档中所有包含`(<pid>|<addr>)`这种格式的用法，都需要在程序内部启用gops agent
+
+嵌入Agent
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+
+	"github.com/google/gops/agent"
+)
+
+func main() {
+	if err := agent.Listen(agent.Options{}); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(time.Hour)
+}
+```
+
+使用
+
+```bash
+[root@ap-hongkang ~]# gops
+974     1       containerd               go1.18.7 /usr/bin/containerd
+1297    1       dockerd                  go1.18.7 /usr/bin/dockerd
+1853    1297    docker-proxy             go1.18.7 /usr/bin/docker-proxy
+1878    1       containerd-shim-runc-v2  go1.18.7 /usr/bin/containerd-shim-runc-v2
+27505   1       frps                     go1.18.9 /usr/local/frp_0.46.0_linux_amd64/frps
+675466  1       YDLive                   go1.14.4 /usr/local/qcloud/YunJing/YDLive/YDLive
+1970915 1       containerd-shim-runc-v2  go1.18.7 /usr/bin/containerd-shim-runc-v2
+1988455 1988064 gops                     go1.20   /usr/local/go/path/bin/gops
+1988429 1894353 gops-agent-test        * go1.20   /root/example/gops-agent-test
+1970886 1297    docker-proxy             go1.18.7 /usr/bin/docker-proxy
+1970899 1297    docker-proxy             go1.18.7 /usr/bin/docker-proxy
+1188091 675466  YDService                go1.14.4 /usr/local/qcloud/YunJing/YDEyes/YDService
+
+[root@ap-hongkang ~]# gops stats 1988429
+goroutines: 2
+OS threads: 6
+GOMAXPROCS: 2
+num CPU: 2
+
+[root@ap-hongkang ~]# gops memstats 1988429
+alloc: 66.15KB (67736 bytes)
+total-alloc: 134.02KB (137240 bytes)
+sys: 11.19MB (11729936 bytes)
+lookups: 0
+mallocs: 247
+frees: 54
+heap-alloc: 66.15KB (67736 bytes)
+heap-sys: 3.69MB (3866624 bytes)
+heap-idle: 3.29MB (3448832 bytes)
+heap-in-use: 408.00KB (417792 bytes)
+heap-released: 3.12MB (3268608 bytes)
+heap-objects: 193
+stack-in-use: 320.00KB (327680 bytes)
+stack-sys: 320.00KB (327680 bytes)
+stack-mspan-inuse: 22.97KB (23520 bytes)
+stack-mspan-sys: 31.88KB (32640 bytes)
+stack-mcache-inuse: 2.34KB (2400 bytes)
+stack-mcache-sys: 15.23KB (15600 bytes)
+other-sys: 572.40KB (586142 bytes)
+gc-sys: 6.58MB (6897728 bytes)
+next-gc: when heap-alloc >= 4.00MB (4194304 bytes)
+last-gc: 2023-03-10 18:05:43.563380153 +0800 CST
+gc-pause-total: 44.583µs
+gc-pause: 44583
+gc-pause-end: 1678442743563380153
+num-gc: 1
+num-forced-gc: 1
+gc-cpu-fraction: 9.052035116712755e-07
+enable-gc: true
+debug-gc: false
+```
 
 :::
 
