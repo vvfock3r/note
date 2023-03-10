@@ -30,17 +30,17 @@ import (
 )
 
 func main() {
-	// 系统信息（运行时获取）
+    // 系统信息 - 编译期间确定值
 	fmt.Printf("%-20s %s\n", "GOOS:", runtime.GOOS)
 	fmt.Printf("%-20s %s\n", "GOARCH:", runtime.GOARCH)
 	fmt.Println()
 
-	// Go信息（注意这里是编译时的Go信息）
+	// Go信息 - 编译期间确定值
 	fmt.Printf("%-20s %s\n", "GOROOT:", runtime.GOROOT())
 	fmt.Printf("%-20s %s\n", "Version:", runtime.Version())
 	fmt.Println()
 
-	// 统计信息
+	// 统计信息 - 运行时获取到值
 	fmt.Printf("%-20s %d\n", "Num CPU Logical:", runtime.NumCPU()) // 逻辑CPU核心数
 	fmt.Printf("%-20s %d\n", "Num Goroutine:", runtime.NumGoroutine())
 	fmt.Printf("%-20s %d\n", "Num CgoCall:", runtime.NumCgoCall())
@@ -70,8 +70,8 @@ GOARCH:              amd64
 GOROOT:              D:\software\go1.21
 Version:             go1.20.1          
                                        
-Num CPU Logical:     8                 
-Num Goroutine:       1                 
+Num CPU Logical:     8
+Num Goroutine:       1
 Num CgoCall:         32
 ```
 
