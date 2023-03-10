@@ -503,7 +503,73 @@ D:\application\GoLand\example>go run .
 
 :::
 
+<br />
 
+## 线程绑定
 
+::: details （1）LockOSThread示例
 
+```go
+package main
 
+import (
+	"fmt"
+	"runtime"
+	"syscall"
+	"time"
+)
+
+// printThreadID 获取当前线程ID, Windows没有syscall.Gettid函数
+func printThreadID(name string) {
+	tid := syscall.Gettid()
+	fmt.Printf("%-16s is running on OS thread %v\n", name, tid)
+}
+
+func main() {
+	// 开两个Goroutine
+	go printThreadID("Goroutine 1")
+	go printThreadID("Goroutine 2")
+
+	// 1、调用 LockOSThread 函数会把当前 G 绑定在当前的系统线程 M 上
+	// 2、这个 G 总是在这个 M 上执行，并且阻止其它 G 在该 M 执行
+	// 3、只有当前 G 调用了相同次数的 UnlockOSThread 函数之后，G 与 M 才会解绑
+	// 4、如果当前 G 在退出时，没有调用 UnlockOSThread，这个线程会被终止
+	// 5、子协程不会继承父协程的 LockOSThread 特性
+	// 总结：简单来讲，就是一个G会有一个专属的M，子G不会继承这个特性
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	printThreadID("Goroutine Main")
+
+	// 再开两个Goroutine
+	go printThreadID("Goroutine 3")
+	go printThreadID("Goroutine 4")
+
+	time.Sleep(time.Second)
+}
+```
+
+输出结果
+
+```bash
+# 主协程总是有一个专属的系统线程
+[root@ap-hongkang example]# go run main.go
+Goroutine Main   is running on OS thread 2066420
+Goroutine 4      is running on OS thread 2066423
+Goroutine 1      is running on OS thread 2066423
+Goroutine 2      is running on OS thread 2066423
+Goroutine 3      is running on OS thread 2066423
+
+# 3和4线程ID不一样，说明子协程不会继承这个特性
+[root@ap-hongkang example]# go run main.go
+Goroutine Main   is running on OS thread 2066303
+Goroutine 1      is running on OS thread 2066306
+Goroutine 2      is running on OS thread 2066306
+Goroutine 3      is running on OS thread 2066306
+Goroutine 4      is running on OS thread 2066305
+```
+
+:::
+
+<br />
+
+s
