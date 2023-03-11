@@ -77,6 +77,88 @@ Num CgoCall:         32
 
 :::
 
+::: details （2）（在Goroutine内部）主动终止当前Goroutine
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+)
+
+func main() {
+	var wg sync.WaitGroup
+
+	// 下面的Hello World!永远不会输出出来
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runtime.Goexit()
+		fmt.Println("Hello World!")
+	}()
+
+	wg.Wait()
+
+	// runtime.Goexit()
+	// 1、用于退出当前Goroutine
+	// 2、如果在主Goroutine中调用此函数, 会继续执行其他Goroutine,
+	// 如果没有其他Gorooutine则会导致程序崩溃：fatal error: no goroutines (main called runtime.Goexit) - deadlock!
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run .
+
+```
+
+:::
+
+::: details （3）暂停当前的Goroutine
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+
+	go func() {
+		fmt.Println(1)
+		runtime.Gosched()
+		fmt.Println(2)
+	}()
+
+	go func() {
+		fmt.Println(3)
+		runtime.Gosched()
+		fmt.Println(4)
+	}()
+
+	// runtime.Gosched()
+	// 1、暂停当前的Goroutine,使得调度器执行其他Goroutine
+	// 2、等下次调度到本Goroutine,继续执行Gosched()后面的代码
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run .
+3
+1
+4
+2
+```
+
+:::
+
 <br />
 
 ## 指标数据
@@ -572,4 +654,146 @@ Goroutine 4      is running on OS thread 2066305
 
 <br />
 
-s
+## GC 回调
+
+::: details （1）SetFinalizer示例
+
+```go
+package main
+
+import (
+	"log"
+	"runtime"
+	"time"
+)
+
+func main() {
+	// 函数签名
+	//   SetFinalizer(obj any, finalizer any) 设置某个对象被GC时执行预定好的回调函数
+	//   obj:必须是指针类型
+	//   finalizer: 一个函数，其参数类型是obj的类型，没有返回值
+	// 函数特点
+	//   1、只在GC时执行，程序正常结束或异常退出都不会执行
+	//   2、多个对象之间是串行的, 如果一个发生阻塞,那么后面都得不到执行
+	for i := 0; i < 10; i++ {
+		func() {
+			n := i
+			runtime.SetFinalizer(&n, func(n *int) {
+				time.Sleep(time.Second)
+				if *n == 3 {
+					time.Sleep(time.Second * 2)
+				}
+				log.Println(*n)
+			})
+		}()
+	}
+	runtime.GC()
+	time.Sleep(time.Second * 60)
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run .
+2023/03/11 16:25:53 8
+2023/03/11 16:25:54 7
+2023/03/11 16:25:55 6
+2023/03/11 16:25:56 5
+2023/03/11 16:25:57 4
+2023/03/11 16:26:00 3
+2023/03/11 16:26:01 2
+2023/03/11 16:26:02 1
+2023/03/11 16:26:03 0
+```
+
+:::
+
+<br />
+
+## GC 保活
+
+::: details （1）SetFinalizer示例
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+const N = 128
+
+func randBytes() [N]byte {
+	return [N]byte{}
+}
+
+func printAlloc() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("%d MB\n", m.Alloc/1024/1024)
+}
+
+func main() {
+	// 生成Map
+	n := 1_000_000
+	m := make(map[int][N]byte, 0)
+	printAlloc()
+
+	// 注册 Finalizer
+	//runtime.SetFinalizer(&m, func(m *map[int][N]byte) {
+	//	fmt.Println("finalizer")
+	//})
+
+	// 写入数据
+	for i := 0; i < n; i++ {
+		m[i] = randBytes()
+	}
+	printAlloc()
+
+	// 删除Map
+	for i := 0; i < n; i++ {
+		delete(m, i)
+	}
+
+	// 强制垃圾回收
+	runtime.GC()
+    //runtime.GC()
+	printAlloc()
+
+	// 对象保活,使不被垃圾回收, 同时 SetFinalizer 也不会被执行
+	//runtime.KeepAlive(m)
+
+	time.Sleep(time.Second)
+}
+```
+
+输出结果
+
+```bash
+# 注释 //runtime.KeepAlive(m)
+D:\application\GoLand\example>go run .
+0 MB
+461 MB
+0 MB
+
+# 打开 runtime.KeepAlive(m)
+D:\application\GoLand\example>go run .
+0 MB
+461 MB
+293 MB
+
+# 当关闭KeepAlive,而打开SetFinalizer后,最后一次查看内存还是293MB,因为需要第二次执行GC的时候SetFinalizer的对象才会被删除
+# 可以把 //runtime.GC() 注释打开,再看一下效果
+D:\application\GoLand\example>go run .
+0 MB
+461 MB
+finalizer
+293 MB
+```
+
+:::
+
+<br />
