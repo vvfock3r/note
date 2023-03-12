@@ -163,11 +163,7 @@ func main() {
 
 <br />
 
-## 远程同步
-
-<br />
-
-## 设置DLV
+### 设置DLV
 
 最新版的GoLand有时候不能调试最新版Go SDK，原因是GoLand中的调试工具DLV太旧了，如下图
 
@@ -184,7 +180,7 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 
 <br />
 
-## 配置内存
+### 配置内存
 
 `Help ---> Change Memory Settings`
 
@@ -192,7 +188,7 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 
 <br />
 
-## 配置系统
+### 配置系统
 
 有一些API在Windows上没有但在Linux上有，此时就可以修改下面这个配置
 
@@ -204,7 +200,39 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 
 <br />
 
-## 运行目标
+## 远程配置
+
+### 远程主机
+
+![image-20230312135505462](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312135505462.png)
+
+<br />
+
+### 远程同步
+
+**1、添加配置**
+
+![image-20230312135948936](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312135948936.png)
+
+**2、设置映射路径**
+
+![image-20230312141910402](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312141910402.png)
+
+**3、设置默认服务器**
+
+![image-20230312141200705](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312141200705.png)
+
+**4、配置选项**
+
+![image-20230312141559521](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312141559521.png)
+
+**5、手动同步**
+
+![image-20230312142301249](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312142301249.png)
+
+<br />
+
+### 运行目标
 
 ![image-20230312112408854](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312112408854.png)
 
