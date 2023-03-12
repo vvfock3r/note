@@ -93,3 +93,24 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 `Help ---> Change Memory Settings`
 
 ![image-20230307104122350](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230307104122350.png)
+
+<br />
+
+## 配置系统
+
+有一些API在Windows上没有但在Linux上有，此时就可以修改下面这个配置
+
+这并不会修改GOOS变量，所以执行时还是以当前平台作为OS
+
+![image-20230312111921281](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312111921281.png)
+
+![image-20230312112159585](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312112159585.png)
+
+<br />
+
+## 运行目标
+
+![image-20230312112408854](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312112408854.png)
+
+![image-20230312114140631](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312114140631.png)
+
