@@ -775,7 +775,7 @@ See 'docker run --help'.
 
 <br />
 
-#### Dockerfile(1):简介和常用指令
+#### Dockerfile：常用指令
 
 Dockerrfile是一个文本文件，记录了构建镜像的所有步骤
 
@@ -815,39 +815,43 @@ RUN、COPY、ADD会创建新镜像，其他指令会创建临时层，不会增�
 
 <br />
 
-#### Dockerfile(2):CMD和ENTRYPOINT
+#### Dockerfile：容器入口
+
+::: details CMD和ENTRYPOINT相同点和不同点
+
+CMD和ENTRYPOINT用于指定启动容器后执行的命令
+
+<br />
 
 **相同点**
 
-* 都是在容器运行时生效，而不是在构建镜像层时生效
+* 生效时刻：都是在容器运行时生效，而不是在构建镜像层时生效
+* 支持多个：可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
+* 支持格式：都支持Exec和Shell语法格式
+  * Exec格式：CMD [可执行程序, 参数1, 参数2, 参数N...]
+  * Shell格式：CMD 可执行程序 参数1 参数2 参数N...
 
-* 可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
+* 支持覆盖：`docker container run`时可以覆盖镜像中的`CMD`和`ENTRYPOINT`命令
 
-* 都支持Exec和Shell语法格式
-
-  ::: details 以CMD指令举例Exec和Shell格式
-
-  ```bash
-  # Exec格式
-  CMD [可执行程序, 参数1, 参数2, 参数N...]
-  
-  # Shell格式
-  CMD 可执行程序 参数1 参数2 参数N...
-  ```
-
-  :::
-
-* `docker container run`时可以覆盖镜像中的`CMD`和`ENTRYPOINT`命令
+<br />
 
 **不同点**
 
-* `docker container run`时覆盖镜像中的`CMD`或`ENTRYPOINT`命令时的语法不一样
+* 覆盖语法：`docker container run`时覆盖镜像中的`CMD`或`ENTRYPOINT`命令时的语法不一样
 
-* CMD额外支持一种格式，`CMD [参数1, 参数2]`，此时可以为ENTRYPOINT指定提供参数（注意：ENTRYPOINT必须使用Exec格式）
+* 支持格式：CMD额外支持一种格式，`CMD [参数1, 参数2]`，此时可以为ENTRYPOINT指定提供参数（注意：ENTRYPOINT必须使用Exec格式）
 
   一般我们用作容器启动的默认参数，当用户想替换默认参数时就等同于替换CMD中的参数
 
-**测试**
+<br />
+
+**注意事项**
+
+使用 shell 格式之后，程序会以 /bin/sh -c 的子命令启动，并且 shell 格式下不会传递任何信号给程序
+
+这也就导致，在 docker stop 容器的时候，以这种格式运行的程序捕捉不到发送的信号
+
+:::
 
 ::: details 相同点测试1：可以有多个CMD或ENTRYPOINT命令但只有最后一个生效
 
@@ -1056,7 +1060,7 @@ drwxr-xr-x.   1 root root  78 Nov 13  2020 var
 
 <br />
 
-#### Dockerfile(3):多阶段构建优化Go项目
+#### Dockerfile：多阶段构
 
 （1）创建Go项目
 
@@ -1344,6 +1348,10 @@ b4b2c3f81fa9   server:v1   "./server"   16 minutes ago   Up 16 minutes   0.0.0.0
 [root@localhost webserver]# curl http://127.0.0.1:49162
 Hello, world!
 ```
+
+:::
+
+::: details 容器进程优雅停止测试（捕捉信号）
 
 :::
 
@@ -1912,37 +1920,7 @@ DRIVER    VOLUME NAME
 
 <br />
 
-#### 限制Volume大小（未解决）
-
-::: details 点击查看详情
-
-```bash
-# 创建Volume，并指定大小，需要注意：
-# 1) tmpfs是内存文件系统，容器一旦重启数据将丢失
-# 2) 而官网只给了tmpfs、nfs等有限的几种，如果我就是想创建一个普通的volume，然后额外给他加上大小限制，下面这些参数该如何改呢？
-[root@ap-hongkang ~]# docker volume create data --opt type=tmpfs --opt device=tmpfs --opt o=size=10m
-
-# 创建容器，并挂载Volume
-[root@ap-hongkang ~]# docker container run --name demo -itd -v data:/data centos:7
-967e027e4da63831f410a98c49c3df0c6e3c8342bc66658231a429a01a928495
-
-# 写数据
-[root@ap-hongkang ~]# docker container exec -it demo sh
-sh-4.2# cd /data
-sh-4.2# seq 100000000000000000 > 1.txt
-
-# 再开一个终端，查看数据大小
-[root@ap-hongkang ~]# docker exec -it demo ls -lh /data/1.txt
--rw-r--r-- 1 root root 10M Oct 21 10:30 /data/1.txt
-
-# 按道理，写数据到10M以后会报错 设备空间不足，但是却没有报错？啥情况？
-```
-
-:::
-
-<br />
-
-#### 查看容器资源使用率
+#### 查看资源使用率
 
 ::: details 点击查看详情
 
