@@ -547,7 +547,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 ### 2）镜像
 
-#### 镜像加速
+#### 从第三方镜像仓库拉取镜像
 
 使用Docker时需要首先下载一个官方镜像，例如`ubuntu`、`mysql`，默认会从[Docker Hub](https://hub.docker.com/)中去下载
 
@@ -559,7 +559,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 <br />
 
-#### 添加代理
+#### 设置代理服务绕过某些限制
 
 ::: details 点击查看详情
 
@@ -817,6 +817,8 @@ RUN、COPY、ADD会创建新镜像，其他指令会创建临时层，不会增�
 
 #### Dockerfile：容器入口
 
+**1、简单测试**
+
 ::: details CMD和ENTRYPOINT相同点和不同点
 
 CMD和ENTRYPOINT用于指定启动容器后执行的命令
@@ -1058,7 +1060,136 @@ drwxr-xr-x.   1 root root  78 Nov 13  2020 var
 
 :::
 
-<br />
+**2、容器进程优雅停止测试**
+
+::: details （1）准备环境
+
+`main.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func main() {
+	// 输出当前进程id
+	fmt.Println("pid: ", os.Getpid())
+
+	// 创建Channel，用于接收信号
+	interrupt := make(chan os.Signal)
+
+	// (1) Notify 用于将信号传递到Channel
+	// (2) Notify 若没有提供具体的信号(syscall.SIGxx)，则意味着接收所有的信号
+	signal.Notify(interrupt,
+		syscall.SIGINT,  // kill -2 or Ctrl+C
+		syscall.SIGQUIT, // kill -3 or Ctrl+\
+		syscall.SIGTERM, // kill -15
+	)
+
+	// 监听信号
+	for {
+		select {
+		case <-interrupt:
+			log.Println("Received interrupt signal")
+			os.Exit(0)
+		}
+	}
+}
+```
+
+`Dockerfile`
+
+```dockerfile
+# 用于程序编译
+FROM golang:1.18.2-alpine3.15 as builder
+WORKDIR /build
+COPY . .
+RUN go build -o main main.go
+
+# 用于程序运行
+FROM alpine:3.15.4
+MAINTAINER VVFock3r
+WORKDIR /
+COPY --from=builder /build/main .
+EXPOSE 80
+CMD ["./main"]
+```
+
+1、构建镜像：CMD EXEC 启动方式
+
+```bash
+docker image build -t main:cmd-exec .
+```
+
+2、构建镜像：CMD Shell 启动方式
+
+```bash
+# 修改Dockerfile
+CMD ./main
+
+# 构建镜像
+docker image build -t main:cmd-shell .
+```
+
+3、构建镜像：ENTRYPOINT EXEC 启动方式
+
+```bash
+# 修改Dockerfile
+ENTRYPOINT ["./main"]
+
+# 构建镜像
+docker image build -t main:entrypoint-exec .
+```
+
+4、构建镜像：ENTRYPOINT Shell 启动方式
+
+```bash
+# 修改Dockerfile
+ENTRYPOINT ./main
+
+# 构建镜像
+docker image build -t main:entrypoint-shell .
+```
+
+:::
+
+::: details （2）启动容器
+
+```bash
+# 启动容器
+docker container run --name cmd-exec -d main:cmd-exec
+docker container run --name cmd-shell -d main:cmd-shell
+
+docker container run --name entrypoint-exec -d main:entrypoint-exec
+docker container run --name entrypoint-shell -d main:entrypoint-shell
+
+# 查看(显示不下故省略部分字段)
+[root@node-1 example]# docker container ps | grep main
+a2653a667402   main:entrypoint-shell       "/bin/sh -c ./main"    80/tcp    entrypoint-shell
+4b1782c976cd   main:entrypoint-exec        "./main"               80/tcp    entrypoint-exec
+4e9b338ed73d   main:cmd-shell              "/bin/sh -c ./main"    80/tcp    cmd-shell
+49da5f7a5083   main:cmd-exec               "./main"               80/tcp    cmd-exec
+```
+
+:::
+
+::: details （3）优雅停止
+
+```bash
+[root@node-1 example]# docker stop cmd-exec
+cmd-exec
+[root@node-1 example]# docker logs cmd-exec
+pid:  1
+2023/03/12 09:23:27 Received interrupt signal
+```
+
+:::
 
 #### Dockerfile：多阶段构
 
@@ -1347,135 +1478,6 @@ b4b2c3f81fa9   server:v1   "./server"   16 minutes ago   Up 16 minutes   0.0.0.0
 
 [root@localhost webserver]# curl http://127.0.0.1:49162
 Hello, world!
-```
-
-:::
-
-::: details 容器进程优雅停止测试：准备环境
-
-`main.go`
-
-```go
-package main
-
-import (
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-)
-
-func main() {
-	// 输出当前进程id
-	fmt.Println("pid: ", os.Getpid())
-
-	// 创建Channel，用于接收信号
-	interrupt := make(chan os.Signal)
-
-	// (1) Notify 用于将信号传递到Channel
-	// (2) Notify 若没有提供具体的信号(syscall.SIGxx)，则意味着接收所有的信号
-	signal.Notify(interrupt,
-		syscall.SIGINT,  // kill -2 or Ctrl+C
-		syscall.SIGQUIT, // kill -3 or Ctrl+\
-		syscall.SIGTERM, // kill -15
-	)
-
-	// 监听信号
-	for {
-		select {
-		case <-interrupt:
-			log.Println("Received interrupt signal")
-			os.Exit(0)
-		}
-	}
-}
-```
-
-`Dockerfile`
-
-```dockerfile
-# 用于程序编译
-FROM golang:1.18.2-alpine3.15 as builder
-WORKDIR /build
-COPY . .
-RUN go build -o main main.go
-
-# 用于程序运行
-FROM alpine:3.15.4
-MAINTAINER VVFock3r
-WORKDIR /
-COPY --from=builder /build/main .
-EXPOSE 80
-CMD ["./main"]
-```
-
-1、构建镜像：CMD EXEC 启动方式
-
-```bash
-docker image build -t main:cmd-exec .
-```
-
-2、构建镜像：CMD Shell 启动方式
-
-```bash
-# 修改Dockerfile
-CMD ./main
-
-# 构建镜像
-docker image build -t main:cmd-shell .
-```
-
-3、构建镜像：ENTRYPOINT EXEC 启动方式
-
-```bash
-# 修改Dockerfile
-ENTRYPOINT ["./main"]
-
-# 构建镜像
-docker image build -t main:entrypoint-exec .
-```
-
-4、构建镜像：ENTRYPOINT Shell 启动方式
-
-```bash
-# 修改Dockerfile
-ENTRYPOINT ./main
-
-# 构建镜像
-docker image build -t main:entrypoint-shell .
-```
-
-:::
-
-::: details 容器进程优雅停止测试：启动容器
-
-```bash
-# 启动容器
-docker container run --name cmd-exec -d main:cmd-exec
-docker container run --name cmd-shell -d main:cmd-shell
-
-docker container run --name entrypoint-exec -d main:entrypoint-exec
-docker container run --name entrypoint-shell -d main:entrypoint-shell
-
-# 查看(显示不下故省略部分字段)
-[root@node-1 example]# docker container ps | grep main
-a2653a667402   main:entrypoint-shell       "/bin/sh -c ./main"    80/tcp    entrypoint-shell
-4b1782c976cd   main:entrypoint-exec        "./main"               80/tcp    entrypoint-exec
-4e9b338ed73d   main:cmd-shell              "/bin/sh -c ./main"    80/tcp    cmd-shell
-49da5f7a5083   main:cmd-exec               "./main"               80/tcp    cmd-exec
-```
-
-:::
-
-::: details 容器进程优雅停止测试：启动容器
-
-```bash
-[root@node-1 example]# docker stop cmd-exec
-cmd-exec
-[root@node-1 example]# docker logs cmd-exec
-pid:  1
-2023/03/12 09:23:27 Received interrupt signal
 ```
 
 :::
