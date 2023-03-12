@@ -1,8 +1,10 @@
 # GoLand
 
-## 下载地址
+## 官网
 
-官网：[https://www.jetbrains.com/go/](https://www.jetbrains.com/go/)
+下载地址：[https://www.jetbrains.com/go/](https://www.jetbrains.com/go/)
+
+官方文档：[https://www.jetbrains.com/help/go/2022.3/getting-started.html](https://www.jetbrains.com/help/go/2022.3/getting-started.html)（注意选择合适的版本）
 
 <br />
 
@@ -190,9 +192,7 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 
 ### 配置系统
 
-有一些API在Windows上没有但在Linux上有，此时就可以修改下面这个配置
-
-这并不会修改GOOS变量，所以执行时还是以当前平台作为OS
+有一些API在Windows上没有但在Linux上有，此时就可以修改下面这个配置。这并不会修改GOOS变量，所以执行时还是以当前平台作为OS
 
 ![image-20230312111921281](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312111921281.png)
 
@@ -238,3 +238,10 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 
 ![image-20230312114140631](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312114140631.png)
 
+<br />
+
+### 文件管理
+
+`ALT + F1` ---> `Remote host`
+
+![image-20230312155925220](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312155925220.png)
