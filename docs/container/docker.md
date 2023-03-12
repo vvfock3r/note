@@ -2912,25 +2912,6 @@ drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
 
 部署常用服务用于**开发环境**
 
-#### TIP：生成密码
-
-:::tip
-
-可以使用如下命令生成`16`位随机密码，若不想要某个字母在`tr -d`后面添加
-
-```bash
-[root@localhost ~]# cat /dev/urandom | \tr -dc "[[:graph:]]" | tr -d "{}()'\"\`" | fold -w 16 | head -n 5
-5~|7y3=ooxnw.a/j
-3<EL_=tA;<VY>fH&
-%6&vAvw[MjHJM.gs
-w<C|d|35xeB3g13j
-QiNqg[l.%;H>>rO9
-```
-
-:::
-
-<br />
-
 #### Nginx
 
 ::: details 点击查看详情
