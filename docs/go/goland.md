@@ -1,6 +1,6 @@
 # GoLand
 
-## 官网下载
+## 下载地址
 
 官网：[https://www.jetbrains.com/go/](https://www.jetbrains.com/go/)
 
@@ -8,16 +8,120 @@
 
 ## 快捷操作
 
-| 快捷键              | 说明                                            |
-| ------------------- | ----------------------------------------------- |
-| Ctrl + Alt + S      | 设置，注意这与Windows下的QQ屏幕录制快捷键有冲突 |
-| Shift（快速按两次） | 全局搜索                                        |
-| Ctrl + Alt + L      | 代码格式化                                      |
-| Shift + F6          | 文件/变量重命名                                 |
+### 快捷键
+
+**系统设置**
+
+* `Ctrl + Alt + S`：设置，注意这与Windows下的QQ屏幕录制快捷键有冲突
+
+**窗口定位**
+
+* `ALT + F1`：选择面板
+* `ALT + 1`：打开或隐藏工程面板
+* `ESC`：光标返回代码编辑区域
+
+**代码操作**
+
+* `CTRL + D`：复制当前行
+* `CTRL + X`：剪切当前行
+* `Shift`（快速按两次）：全局搜索
+* `F2`：快速定位错误
+* `Ctrl + Alt + L`：代码格式化
+* `Shift + F6`：文件/变量重命名
+* `CTRL + F4`：关闭当前文件
 
 <br />
 
-## 配色方案
+### 代码提示
+
+::: details （1）快速输入for循环
+
+**C风格for循环**
+
+```go
+package main
+
+func main() {
+	// 输入 fori ---> 回车 ---> 回车 --> 代码
+	for i := 0; i < 10; i++ {
+
+	}
+}
+```
+
+**for range循环**
+
+```go
+package main
+
+func main() {
+	// 输入 forr ---> 回车 ---> 遍历对象 ---> key ---> value ---> 代码区域
+	for i, i2 := range collection {
+
+	}
+}
+```
+
+:::
+
+::: details （2）快速生成struct、interface等代码
+
+```go
+// 方式1
+//   在函数外边: 输入 str/stru/struct等快速创建结构体
+//   在函数外边: 输入 int/inter等快速创建interface  
+// 
+// 方式2
+//   输入 type, 然后选择创建结构体或interface,在函数内外都适用  
+
+package main
+
+type name struct {
+}
+
+type name interface {
+}
+
+func main() {
+	type name struct {
+		
+	}
+}
+```
+
+:::
+
+::: details （3）快速生成函数返回值
+
+```go
+package main
+
+func main() {
+	// 输入 .var ---> 回车
+	// net.Listen("tcp", ":8080").var
+
+	// 效果
+	// listen, err := net.Listen("tcp", ":8080")
+
+	// --------------------------------------------------------
+	// 输入 .varc ---> 回车
+	// net.Listen("tcp", ":8080").varc
+
+	// 效果
+	// listen, err := net.Listen("tcp", ":8080")
+	// if err != nil {
+	//	 return
+	// }
+}
+```
+
+:::
+
+<br />
+
+## 基本配置
+
+### 配色方案
 
 ::: details 方式1
 
@@ -33,13 +137,13 @@
 
 <br />
 
-## 终端类型
+### 终端类型
 
 ![image-20220806132738315](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220806132738315.png)
 
 <br />
 
-## 字体设置
+### 字体设置
 
 ::: details 设置菜单字体和字号
 
@@ -55,13 +159,13 @@
 
 <br />
 
-## 文件监控
+### 文件监控
 
 ![image-20220925090503431](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220925090503431.png)
 
 <br />
 
-## 行分隔符
+### 行分隔符
 
 ![image-20230228163013728](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230228163013728.png)
 
