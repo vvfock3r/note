@@ -123,17 +123,13 @@ func main() {
 
 ### 配色方案
 
-::: details 方式1
+**方式1**
 
 ![image-20220806130018188](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220806130018188.png)
 
-:::
-
-::: details 方式2
+**方式2**
 
 ![image-20220806123433863](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220806123433863.png)
-
-:::
 
 <br />
 
@@ -145,17 +141,13 @@ func main() {
 
 ### 字体设置
 
-::: details 设置菜单字体和字号
+1、设置菜单字体和字号
 
 ![image-20230225133713144](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225133713144.png)
 
-:::
-
-::: details 设置代码字体和字号
+2、设置代码字体和字号
 
 ![image-20230225133619062](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225133619062.png)
-
-:::
 
 <br />
 
