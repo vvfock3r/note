@@ -397,7 +397,7 @@ Type 'help' for list of commands.
 # 方式1：直接使用dlv
 [root@node-1 example]# dlv exec main
 Type 'help' for list of commands.
-(dlv) list
+(dlv) list                              # 可以简写为l
 > _rt0_amd64_linux() /usr/local/go/1.20.2/src/runtime/rt0_linux_amd64.s:8 (PC: 0x45ed80)
 Warning: debugging optimized function
      3: // license that can be found in the LICENSE file.
@@ -442,6 +442,29 @@ Starting program: /root/example/main
 warning: skipping .debug_frame info of /root/example/main: Found an FDE when not expecting it.
 
 Breakpoint 1, 0x000000000045ed80 in _rt0_amd64_linux ()
+
+# 0x45ed80就是程序头的地址
+[root@node-1 example]# readelf -h main
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              EXEC (Executable file)
+  Machine:                           Advanced Micro Devices X86-64
+  Version:                           0x1
+  Entry point address:               0x45ed80
+  Start of program headers:          64 (bytes into file)
+  Start of section headers:          456 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               64 (bytes)
+  Size of program headers:           56 (bytes)
+  Number of program headers:         7
+  Size of section headers:           64 (bytes)
+  Number of section headers:         23
+  Section header string table index: 3
 ```
 
 :::
@@ -485,6 +508,120 @@ Local exec file:
 Breakpoint 1 at 0x45f6e0: file D:/software/go1.21/src/runtime/rt0_windows_amd64.s, line 10.
 (gdb) 
 ```
+
+:::
+
+<br />
+
+### 从rt0文件开始
+
+::: details （1）DLV调试
+
+```bash
+# rt0_linux_amd64.s
+(dlv) list
+> _rt0_amd64_linux() /usr/local/go/1.20.2/src/runtime/rt0_linux_amd64.s:8 (PC: 0x45ed80)
+Warning: debugging optimized function
+     3: // license that can be found in the LICENSE file.
+     4:
+     5: #include "textflag.h"
+     6:
+     7: TEXT _rt0_amd64_linux(SB),NOSPLIT,$-8
+=>   8:         JMP     _rt0_amd64(SB)
+     9:
+    10: TEXT _rt0_amd64_linux_lib(SB),NOSPLIT,$0
+    11:         JMP     _rt0_amd64_lib(SB)
+
+# asm_amd64.s
+(dlv) si
+> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:16 (PC: 0x45b360)
+Warning: debugging optimized function
+TEXT _rt0_amd64(SB) /usr/local/go/1.20.2/src/runtime/asm_amd64.s
+=>      asm_amd64.s:16  0x45b360        488b3c24        mov rdi, qword ptr [rsp]
+        asm_amd64.s:17  0x45b364        488d742408      lea rsi, ptr [rsp+0x8]
+        asm_amd64.s:18  0x45b369        e912000000      jmp $runtime.rt0_go
+        
+(dlv) list
+> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:16 (PC: 0x45b360)
+Warning: debugging optimized function
+    11: // _rt0_amd64 is common startup code for most amd64 systems when using
+    12: // internal linking. This is the entry point for the program from the
+    13: // kernel for an ordinary -buildmode=exe program. The stack holds the
+    14: // number of arguments and the C-style argv.
+    15: TEXT _rt0_amd64(SB),NOSPLIT,$-8
+=>  16:         MOVQ    0(SP), DI       // argc
+    17:         LEAQ    8(SP), SI       // argv
+    18:         JMP     runtime·rt0_go(SB)
+    19:
+    20: // main is common startup code for most amd64 systems when using
+    21: // external linking. The C startup code will call the symbol "main"
+
+# 输入两次n
+(dlv) n
+> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:17 (PC: 0x45b364)
+Warning: debugging optimized function
+    12: // internal linking. This is the entry point for the program from the
+    13: // kernel for an ordinary -buildmode=exe program. The stack holds the
+    14: // number of arguments and the C-style argv.
+    15: TEXT _rt0_amd64(SB),NOSPLIT,$-8
+    16:         MOVQ    0(SP), DI       // argc
+=>  17:         LEAQ    8(SP), SI       // argv
+    18:         JMP     runtime·rt0_go(SB)
+    19:
+    20: // main is common startup code for most amd64 systems when using
+    21: // external linking. The C startup code will call the symbol "main"
+    22: // passing argc and argv in the usual C ABI registers DI and SI.
+
+(dlv) n
+> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:18 (PC: 0x45b369)
+Warning: debugging optimized function
+    13: // kernel for an ordinary -buildmode=exe program. The stack holds the
+    14: // number of arguments and the C-style argv.
+    15: TEXT _rt0_amd64(SB),NOSPLIT,$-8
+    16:         MOVQ    0(SP), DI       // argc
+    17:         LEAQ    8(SP), SI       // argv
+=>  18:         JMP     runtime·rt0_go(SB)
+    19:
+    20: // main is common startup code for most amd64 systems when using
+    21: // external linking. The C startup code will call the symbol "main"
+    22: // passing argc and argv in the usual C ABI registers DI and SI.
+    23: TEXT main(SB),NOSPLIT,$-8
+
+# rt0_go 代码块
+(dlv) si
+> runtime.rt0_go() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:161 (PC: 0x45b380)
+Warning: debugging optimized function
+TEXT runtime.rt0_go(SB) /usr/local/go/1.20.2/src/runtime/asm_amd64.s
+=>      asm_amd64.s:161 0x45b380        4889f8          mov rax, rdi
+        asm_amd64.s:162 0x45b383        4889f3          mov rbx, rsi
+        asm_amd64.s:163 0x45b386        4883ec28        sub rsp, 0x28
+        asm_amd64.s:164 0x45b38a        4883e4f0        and rsp, -0x10
+        asm_amd64.s:165 0x45b38e        4889442418      mov qword ptr [rsp+0x18], rax
+        asm_amd64.s:166 0x45b393        48895c2420      mov qword ptr [rsp+0x20], rbx
+
+(dlv) list
+> runtime.rt0_go() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:161 (PC: 0x45b380)
+Warning: debugging optimized function
+   156:
+   157: #endif
+   158:
+   159: TEXT runtime·rt0_go(SB),NOSPLIT|TOPFRAME,$0
+   160:         // copy arguments forward on an even stack
+=> 161:         MOVQ    DI, AX          // argc
+   162:         MOVQ    SI, BX          // argv
+   163:         SUBQ    $(5*8), SP              // 3args 2auto
+   164:         ANDQ    $~15, SP
+   165:         MOVQ    AX, 24(SP)
+   166:         MOVQ    BX, 32(SP)
+```
+
+:::
+
+::: details （2）GoLand查看汇编
+
+![image-20230313210121143](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230313210121143.png)
+
+![image-20230313210438185](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230313210438185.png)
 
 :::
 
