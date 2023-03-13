@@ -1,18 +1,22 @@
 # 深入理解Go
 
+<br />
+
 ## 参考资料
 
 * [奇伢云存储](https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzg3NTU3OTgxOA==&action=getalbum&album_id=1749948750287978500#wechat_redirect)
 
 <br />
 
-## 汇编基础
+## 底层初探
+
+### 汇编基础
 
 https://go.dev/doc/asm
 
 <br />
 
-## 虚拟内存
+### 虚拟内存
 
 * 当我们向系统申请内存时，系统并不会直接返回物理内存的地址，而是返回一个虚拟内存地址
 
@@ -24,7 +28,7 @@ https://go.dev/doc/asm
 
 <br />
 
-## ELF 文件
+### ELF 文件
 
 ::: details （1）ELF文件：格式说明
 
@@ -322,11 +326,9 @@ func main() {
 
 <br />
 
-## 编译原理
+## 调试程序
 
-
-
-## DLV调试
+### DLV调试工具
 
 Github：[https://github.com/go-delve/delve](https://github.com/go-delve/delve)
 
@@ -359,6 +361,7 @@ Type 'help' for list of commands.
 (dlv)
 
 # 方式2：直接调试二进制文件：dlv exec <path/to/binary> [flags]
+#       建议编译时关闭优化 -gcflags="all=-N -l"
 D:\application\GoLand\example>dlv exec main.exe
 Type 'help' for list of commands.
 (dlv)
@@ -371,11 +374,43 @@ Type 'help' for list of commands.
 
 :::
 
-* Go编译入口：rt0.s汇编文件 + 文件名后缀的条件编译
+<br />
+
+### 寻找程序入口
+
+Go编译入口：rt0.s汇编文件 + 文件名后缀的条件编译
+
+::: details 点击查看详情
+
+```bash
+[root@node-1 example]# dlv exec main
+Type 'help' for list of commands.
+(dlv) list
+> _rt0_amd64_linux() /usr/local/go/1.20.2/src/runtime/rt0_linux_amd64.s:8 (PC: 0x45ed80)
+Warning: debugging optimized function
+     3: // license that can be found in the LICENSE file.
+     4:
+     5: #include "textflag.h"
+     6:
+     7: TEXT _rt0_amd64_linux(SB),NOSPLIT,$-8
+=>   8:         JMP     _rt0_amd64(SB)
+     9:
+    10: TEXT _rt0_amd64_linux_lib(SB),NOSPLIT,$0
+    11:         JMP     _rt0_amd64_lib(SB)
+(dlv) 
+
+# rt0_linux_amd64.s 文件
+# 这是我们的Go二进制程序入口,他是一个汇编代码文件，
+# 其中使用了文件名后缀作为条件编译，_linux_amd64, 所以入口文件其实是rt0文件,在不同平台对应不同的文件
+```
+
+:::
 
 <br />
 
-## string
+## 类型系统
+
+### string
 
 ::: details （1）现象
 
