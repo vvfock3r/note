@@ -38,6 +38,7 @@ sidebar: off
 * [automaxprocs](https://jinhui.dev/go/modules/automaxprocs.html)：识别容器允许使用的核心数并自动调整
 * [x/text](https://jinhui.dev/go/modules/x-text.html)：解决Windows下中文乱码问题
 * [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
+* [singleflight](https://jinhui.dev/go/modules/singleflight.html)：并发请求合并
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
