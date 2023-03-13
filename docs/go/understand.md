@@ -12,7 +12,7 @@
 
 ### 汇编基础
 
-https://go.dev/doc/asm
+参考：[https://go.dev/doc/asm](https://go.dev/doc/asm)
 
 <br />
 
@@ -23,8 +23,6 @@ https://go.dev/doc/asm
 * 只有当进程开始使用申请到的虚拟内存时，系统才会将虚拟地址映射到物理地址上，从而让程序使用真实的物理内存
 * 虚拟内存是物理内存和进程之间的中间层，虚拟地址和物理地址的转换由内存管理单元（Memory Mangament Unit）完成
 * 进程持有的内存地址实际上是虚拟内存地址，不同的进程可以有相同的虚拟内存地址，制造出一种每个进程的内存都是独立的假象
-
-
 
 <br />
 
@@ -549,8 +547,8 @@ Warning: debugging optimized function
     13: // kernel for an ordinary -buildmode=exe program. The stack holds the
     14: // number of arguments and the C-style argv.
     15: TEXT _rt0_amd64(SB),NOSPLIT,$-8
-=>  16:         MOVQ    0(SP), DI       // argc
-    17:         LEAQ    8(SP), SI       // argv
+=>  16:         MOVQ    0(SP), DI       // argc  ---> 参数个数计数,等于 用户调用程序输入的参数+1
+    17:         LEAQ    8(SP), SI       // argv  ---> 参数数组, argv[0]是程序名,其余是用户输入参数
     18:         JMP     runtime·rt0_go(SB)
     19:
     20: // main is common startup code for most amd64 systems when using
