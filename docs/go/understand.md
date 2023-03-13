@@ -374,6 +374,19 @@ Type 'help' for list of commands.
 
 :::
 
+::: details （3）常用指令
+
+**运行指令**
+
+* r（restart）：重启程序
+* c（continue）：继续执行到下一个断点，若没有断点会执行到程序结束
+* n（next）：执行本行代码（箭头指向的行）
+* s（step）：执行下一步，这会展开函数
+* si（step-instruction）：执行下一行CPU指令
+* so（stepout）：跳出当前执行函数
+
+:::
+
 <br />
 
 ### 寻找程序入口
