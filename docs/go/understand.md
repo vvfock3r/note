@@ -378,11 +378,10 @@ Type 'help' for list of commands.
 
 ### 寻找程序入口
 
-Go编译入口：rt0.s汇编文件 + 文件名后缀的条件编译
-
-::: details 点击查看详情
+::: details Linux平台
 
 ```bash
+# 1、调试程序
 [root@node-1 example]# dlv exec main
 Type 'help' for list of commands.
 (dlv) list
@@ -397,11 +396,30 @@ Warning: debugging optimized function
      9:
     10: TEXT _rt0_amd64_linux_lib(SB),NOSPLIT,$0
     11:         JMP     _rt0_amd64_lib(SB)
-(dlv) 
 
-# rt0_linux_amd64.s 文件
-# 这是我们的Go二进制程序入口,他是一个汇编代码文件，
-# 其中使用了文件名后缀作为条件编译，_linux_amd64, 所以入口文件其实是rt0文件,在不同平台对应不同的文件
+# 程序入口: rt0_linux_amd64.s
+# rt代表runtime
+
+(dlv) si
+> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:16 (PC: 0x4643e0)
+Warning: debugging optimized function
+TEXT _rt0_amd64(SB) /usr/local/go/1.20.2/src/runtime/asm_amd64.s
+=>      asm_amd64.s:16  0x4643e0        488b3c24        mov rdi, qword ptr [rsp]
+        asm_amd64.s:17  0x4643e4        488d742408      lea rsi, ptr [rsp+0x8]
+        asm_amd64.s:18  0x4643e9        e912000000      jmp $runtime.rt0_go
+
+```
+
+:::
+
+::: details Windows平台：报错
+
+```bash
+D:\application\GoLand\example>dlv exec main.exe
+Type 'help' for list of commands.
+(dlv) list
+Stopped at: 0x7ff8faa20951
+=>   1: no source available
 ```
 
 :::
