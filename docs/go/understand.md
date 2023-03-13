@@ -394,7 +394,7 @@ Type 'help' for list of commands.
 ::: details Linux平台
 
 ```bash
-# 1、调试程序
+# 方式1：直接使用dlv
 [root@node-1 example]# dlv exec main
 Type 'help' for list of commands.
 (dlv) list
@@ -410,29 +410,80 @@ Warning: debugging optimized function
     10: TEXT _rt0_amd64_linux_lib(SB),NOSPLIT,$0
     11:         JMP     _rt0_amd64_lib(SB)
 
-# 程序入口: rt0_linux_amd64.s
+# 找到程序入口: rt0_linux_amd64.s
 # rt代表runtime
 
-(dlv) si
-> _rt0_amd64() /usr/local/go/1.20.2/src/runtime/asm_amd64.s:16 (PC: 0x4643e0)
-Warning: debugging optimized function
-TEXT _rt0_amd64(SB) /usr/local/go/1.20.2/src/runtime/asm_amd64.s
-=>      asm_amd64.s:16  0x4643e0        488b3c24        mov rdi, qword ptr [rsp]
-        asm_amd64.s:17  0x4643e4        488d742408      lea rsi, ptr [rsp+0x8]
-        asm_amd64.s:18  0x4643e9        e912000000      jmp $runtime.rt0_go
+# --------------------------------------------------------------------------------------------
 
+# 方式2：使用gdb
+[root@node-1 example]# gdb main
+...
+(gdb) info files
+Symbols from "/root/example/main".
+Local exec file:
+        `/root/example/main', file type elf64-x86-64.
+        Entry point: 0x45ed80
+        0x0000000000401000 - 0x00000000004810d8 is .text
+        0x0000000000482000 - 0x00000000004b8f25 is .rodata
+        0x00000000004b90c0 - 0x00000000004b95c8 is .typelink
+        0x00000000004b95e0 - 0x00000000004b9638 is .itablink
+        0x00000000004b9638 - 0x00000000004b9638 is .gosymtab
+        0x00000000004b9640 - 0x0000000000513cf0 is .gopclntab
+        0x0000000000514000 - 0x0000000000514130 is .go.buildinfo
+        0x0000000000514140 - 0x0000000000524740 is .noptrdata
+        0x0000000000524740 - 0x000000000052bed0 is .data
+        0x000000000052bee0 - 0x0000000000559e60 is .bss
+        0x0000000000559e60 - 0x000000000055d830 is .noptrbss
+        0x0000000000400f9c - 0x0000000000401000 is .note.go.buildid
+(gdb) b *0x45ed80
+Breakpoint 1 at 0x45ed80
+(gdb) run
+Starting program: /root/example/main 
+warning: skipping .debug_frame info of /root/example/main: Found an FDE when not expecting it.
+
+Breakpoint 1, 0x000000000045ed80 in _rt0_amd64_linux ()
 ```
 
 :::
 
-::: details Windows平台：报错
+::: details Windows平台
 
 ```bash
+# Windows下使用dlv执行list,报错
 D:\application\GoLand\example>dlv exec main.exe
 Type 'help' for list of commands.
 (dlv) list
 Stopped at: 0x7ff8faa20951
 =>   1: no source available
+
+# Linux使用gdb调试Windows二进制
+[root@node-1 example]# gdb main.exe
+GNU gdb (GDB) Red Hat Enterprise Linux 7.6.1-120.el7
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /root/example/main.exe...done.
+warning: Missing auto-load scripts referenced in section .debug_gdb_scripts
+of file /root/example/main.exe
+Use `info auto-load python [REGEXP]' to list them.
+(gdb) info files
+Symbols from "/root/example/main.exe".
+Local exec file:
+        `/root/example/main.exe', file type pei-x86-64.
+        Entry point: 0x45f6e0
+        0x0000000000401000 - 0x0000000000489727 is .text
+        0x000000000048a000 - 0x0000000000524a20 is .rdata
+        0x0000000000525000 - 0x000000000053fa00 is .data
+        0x000000000061c000 - 0x000000000061c490 is .idata
+        0x000000000061d000 - 0x000000000062009e is .reloc
+(gdb) b *0x45f6e0
+Breakpoint 1 at 0x45f6e0: file D:/software/go1.21/src/runtime/rt0_windows_amd64.s, line 10.
+(gdb) 
 ```
 
 :::
