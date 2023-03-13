@@ -8,13 +8,25 @@
 
 <br />
 
-## 底层初探
+## 汇编语言
 
-### 汇编基础
+DOSBox：
 
-参考：[https://go.dev/doc/asm](https://go.dev/doc/asm)
+* 官网地址：[https://www.dosbox.com](https://www.dosbox.com)
+
+* 下载地址：[https://www.dosbox.com/download.php?main=1](https://www.dosbox.com/download.php?main=1)
+
+Go文档：[https://go.dev/doc/asm](https://go.dev/doc/asm)
+
+::: details （1）Windows 10配置汇编环境
+
+
+
+:::
 
 <br />
+
+## 底层初探
 
 ### 虚拟内存
 
