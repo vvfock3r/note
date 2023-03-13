@@ -625,7 +625,7 @@ Warning: debugging optimized function
 
 <br />
 
-### 3、核心代码 TEXT runtime·rt0_go
+### 3、核心代码：TEXT runtime·rt0_go
 
 <br />
 
