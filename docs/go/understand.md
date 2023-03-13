@@ -629,7 +629,7 @@ Warning: debugging optimized function
 
 ::: details （1）复制参数数量和参数数组到栈上
 
-```bash
+```go
 TEXT runtime·rt0_go(SB),NOSPLIT|TOPFRAME,$0
 	// copy arguments forward on an even stack
 	MOVQ	DI, AX		// argc
@@ -644,7 +644,7 @@ TEXT runtime·rt0_go(SB),NOSPLIT|TOPFRAME,$0
 
 ::: details （2）初始化g0栈
 
-```bash
+```go
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
 	MOVQ	$runtime·g0(SB), DI
@@ -832,6 +832,26 @@ func check() {
 	if !checkASM() {
 		throw("assembly checks failed")
 	}
+}
+```
+
+:::
+
+::: details （4）将argc和argv拷贝到Go语言中去
+
+```go
+// 汇编代码
+	MOVL	24(SP), AX		// copy argc
+	MOVL	AX, 0(SP)
+	MOVQ	32(SP), AX		// copy argv
+	MOVQ	AX, 8(SP)
+	CALL	runtime·args(SB)
+
+// Go代码
+func args(c int32, v **byte) {
+	argc = c
+	argv = v
+	sysargs(c, v)
 }
 ```
 
