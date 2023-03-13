@@ -828,6 +828,7 @@ func check() {
 		throw("FixedStack is not power-of-2")
 	}
 
+    // 7、检查assembly
 	if !checkASM() {
 		throw("assembly checks failed")
 	}
