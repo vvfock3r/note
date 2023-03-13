@@ -389,7 +389,7 @@ Type 'help' for list of commands.
 
 <br />
 
-### 寻找程序入口
+### 1、寻找程序入口
 
 ::: details Linux平台
 
@@ -513,9 +513,9 @@ Breakpoint 1 at 0x45f6e0: file D:/software/go1.21/src/runtime/rt0_windows_amd64.
 
 <br />
 
-### 从rt0文件开始
+### 2、开始文件：rt0_GOOS_GOARCH.s
 
-::: details （1）DLV调试
+::: details （1）DLV查看汇编
 
 ```bash
 # rt0_linux_amd64.s
@@ -624,6 +624,10 @@ Warning: debugging optimized function
 ![image-20230313210438185](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230313210438185.png)
 
 :::
+
+<br />
+
+### 3、核心代码 TEXT runtime·rt0_go
 
 <br />
 
