@@ -14,7 +14,8 @@
 
 NASM：
 
-* 文档：[https://www.nasm.us/](https://www.nasm.us/)
+* 官网：[https://www.nasm.us/](https://www.nasm.us/)
+* 文档：[https://www.nasm.us/docs.php](https://www.nasm.us/docs.php)
 
 * Github：[https://github.com/netwide-assembler/nasm](https://github.com/netwide-assembler/nasm)
 
