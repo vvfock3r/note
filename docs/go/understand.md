@@ -62,6 +62,8 @@ Other：
 
 :::
 
+<br />
+
 ::: details （2）【CentOS 7 + base源】 安装 NASM，版本较低
 
 ```bash
@@ -75,7 +77,7 @@ NASM version 2.10.07 compiled on Jun  9 2014
 
 :::
 
-::: details （3）【CentOS7 + NASM官网源】安装 NASM，版本较高，但是依赖较新的glibc
+::: details （3）【CentOS7 + NASM官网源】安装 NASM，版本较高，需升级glibc到较高版本
 
 ```bash
 # 配置yum源
@@ -117,6 +119,8 @@ Error: Package: nasm-2.16.01-0.fc36.x86_64 (nasm)
            Requires: libc.so.6(GLIBC_2.34)(64bit)
  You could try using --skip-broken to work around the problem
  You could try running: rpm -Va --nofiles --nodigest
+
+# 原因是glibc版本太低,这里就不继续深入了
 ```
 
 :::
