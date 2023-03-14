@@ -12,74 +12,114 @@
 
 ### 说明
 
-Go文档：[https://go.dev/doc/asm](https://go.dev/doc/asm)
+NASM：
+
+* 文档：[https://www.nasm.us/](https://www.nasm.us/)
+
+* Github：[https://github.com/netwide-assembler/nasm](https://github.com/netwide-assembler/nasm)
+
+Go：
+
+* 汇编说明：[https://go.dev/doc/asm](https://go.dev/doc/asm)
+
+Other：
+
+* NASM示例：[https://cee.github.io/NASM-Tutorial/](https://cee.github.io/NASM-Tutorial/)
 
 ::: details （1）汇编说明
 
 汇编语言（Assembly Language）和CPU息息相关
 
-根据CPU架构可以分为以下几种：
+<br />
 
-* 8086汇编
-* x86 汇编
-* x64 汇编
-* ...
+汇编语言大致可以分为两类：
 
-根据代码书写格式可以分为以下几种：
+1. 基于x86架构处理器的汇编语言
+   - Intel 汇编
+     - DOS(8086处理器), Windows
+     - Windows 派系 -> VC 编译器
+   - AT&T 汇编
+     - Linux, Unix, Mac OS, iOS(模拟器)
+     - Unix派系 -> GCC编译器
+2. 基于ARM 架构处理器的汇编语言
+   - ARM 汇编
 
-* Intel汇编
-* AT&T汇编
+<br />
 
 常见的汇编编译器：
 
 * MASM：微软出品，只支持x86，用在DOS/Windows平台中
 * GNU ASM：开源产品，主要用在Linux中，基本上支持大部分的CPU架构
 
+<br />
+
+汇编文件扩展名：
+
+* 
+
 :::
 
-::: details （2）Linux 配置汇编环境
+::: details （2）Linux 64bit 配置汇编环境
 
 ```bash
 # 1、安装nasm
 [root@node-1 ~]# yum -y install nasm
 
+[root@node-1 ~]# nasm -v
+NASM version 2.10.07 compiled on Jun  9 2014
+
 # 2、编写汇编代码
-[root@node-1 ~]# vim hello.s
-global _start
+[root@node-1 ~]# mkdir -p nasm && cd nasm   # （非必须操作）创建一个目录集中存放我们的汇编代码
+[root@node-1 nasm]# vim hello.asm
+; ----------------------------------------------------------------------------------------
+; 仅使用系统调用来输出 "Hello, World" 到控制台。 这个程序仅在 64 位的 Linux 下运行。
+; 如何编译执行:
+;
+;     nasm -f elf64 -o hello.o hello.asm
+;     ld -o hello hello.o
+;     ./hello
+; ----------------------------------------------------------------------------------------
 
-section .text
+        global  _start
 
+        section .text
 _start:
-  mov rax, 1        ; write(
-  mov rdi, 1        ;   STDOUT_FILENO,
-  mov rsi, msg      ;   "Hello, world!\n",
-  mov rdx, msglen   ;   sizeof("Hello, world!\n")
-  syscall           ; );
+        ; write(1, message, 13)
+        mov     rax, 1                  ; 1 号系统调用是写操作 
+        mov     rdi, 1                  ; 1 号文件系统调用是标准输出 
+        mov     rsi, message            ; 输出字符串的地址 
+        mov     rdx, 13                 ; 字符串的长度 
+        syscall                         ; 调用系统执行写操作 
 
-  mov rax, 60       ; exit(
-  mov rdi, 0        ;   EXIT_SUCCESS
-  syscall           ; );
-
-section .rodata
-  msg: db "Hello, world!", 10
-  msglen: equ $ - msg
+        ; exit(0)
+        mov     eax, 60                 ; 60 号系统调用是退出 
+        xor     rdi, rdi                ; 0 号系统调用作为退出 
+        syscall                         ; 调用系统执行退出 
+message:
+        db      "Hello, World", 10      ; 注意到最后的换行 
 
 # 3、编译
-[root@node-1 ~]# nasm -f elf64 -o hello.o hello.s
-[root@node-1 ~]# ls -l hello.o
--rw-r--r-- 1 root root 880 Mar 14 15:59 hello.o
+[root@node-1 nasm]# nasm -f elf64 -o hello.o hello.asm
+[root@node-1 nasm]# ls -l hello.o
+-rw-r--r-- 1 root root 752 Mar 14 16:40 hello.o
 
 # 4、链接
-[root@node-1 ~]# ld -o hello hello.o
-[root@node-1 ~]# ls -l hello
--rwxr-xr-x 1 root root 896 Mar 14 15:59 hello
+[root@node-1 nasm]# ld -o hello hello.o
+[root@node-1 nasm]# ls -l hello
+-rwxr-xr-x 1 root root 776 Mar 14 16:41 hello
 
 # 5、执行
-[root@node-1 ~]# ./hello
+[root@node-1 nasm]# ./hello
 Hello, world!
 ```
 
 :::
+
+<br />
+
+### 寄存器
+
+
 
 <br />
 
