@@ -2531,7 +2531,7 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 ## 命令收集
 
-### 生成密码
+### 生成随机密码
 
 ::: details 点击查看详情
 
@@ -2544,6 +2544,77 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 %6&vAvw[MjHJM.gs
 w<C|d|35xeB3g13j
 QiNqg[l.%;H>>rO9
+```
+
+:::
+
+<br />
+
+### 查看glibc版本
+
+::: details 点击查看详情
+
+```bash
+# 方式1：查看文件链接到哪个版本
+[root@node-1 ~]# ls -l /lib/libc.so.6
+lrwxrwxrwx 1 root root 12 Mar 14 16:48 /lib/libc.so.6 -> libc-2.17.so
+
+# --------------------------------------------------------------------------
+
+# 方式2：/lib/libc.so.6作为命令执行一下
+[root@node-1 ~]# /lib/libc.so.6
+GNU C Library (GNU libc) stable release version 2.17, by Roland McGrath et al.
+Copyright (C) 2012 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+Compiled by GNU CC version 4.8.5 20150623 (Red Hat 4.8.5-44).
+Compiled on a Linux 3.10.0 system on 2022-05-18.
+Available extensions:
+        The C stubs add-on version 2.1.2.
+        crypt add-on version 2.1 by Michael Glad and others
+        GNU Libidn by Simon Josefsson
+        Native POSIX Threads Library by Ulrich Drepper et al
+        BIND-8.2.3-T5B
+        RT using linux kernel aio
+libc ABIs: UNIQUE IFUNC
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/libc/bugs.html>.
+
+# --------------------------------------------------------------------------
+
+# 方式3：使用glibc提供的二进制命令查看版本
+
+[root@node-1 ~]# ldd --version
+ldd (GNU libc) 2.17
+Copyright (C) 2012 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Written by Roland McGrath and Ulrich Drepper.
+
+[root@node-1 ~]# ldconfig --version
+ldconfig (GNU libc) 2.17
+Copyright (C) 2012 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Written by Andreas Jaeger.
+
+[root@node-1 ~]# sln --version
+sln (GNU libc) 2.17
+
+...
+
+[root@node-1 ~]# rpm -ql glibc | grep bin
+/sbin/ldconfig
+/sbin/sln
+/usr/sbin/glibc_post_upgrade.x86_64
+/usr/sbin/iconvconfig
+/usr/sbin/iconvconfig.x86_64
+/sbin/ldconfig
+/sbin/sln
+/usr/sbin/glibc_post_upgrade.i686
+/usr/sbin/iconvconfig
+/usr/sbin/iconvconfig.i686
 ```
 
 :::
