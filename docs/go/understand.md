@@ -10,17 +10,74 @@
 
 ## 汇编语言
 
-DOSBox：
-
-* 官网地址：[https://www.dosbox.com](https://www.dosbox.com)
-
-* 下载地址：[https://www.dosbox.com/download.php?main=1](https://www.dosbox.com/download.php?main=1)
+### 说明
 
 Go文档：[https://go.dev/doc/asm](https://go.dev/doc/asm)
 
-::: details （1）Windows 10配置汇编环境
+::: details （1）汇编说明
 
+汇编语言（Assembly Language）和CPU息息相关
 
+根据CPU架构可以分为以下几种：
+
+* 8086汇编
+* x86 汇编
+* x64 汇编
+* ...
+
+根据代码书写格式可以分为以下几种：
+
+* Intel汇编
+* AT&T汇编
+
+常见的汇编编译器：
+
+* MASM：微软出品，只支持x86，用在DOS/Windows平台中
+* GNU ASM：开源产品，主要用在Linux中，基本上支持大部分的CPU架构
+
+:::
+
+::: details （2）Linux 配置汇编环境
+
+```bash
+# 1、安装nasm
+[root@node-1 ~]# yum -y install nasm
+
+# 2、编写汇编代码
+[root@node-1 ~]# vim hello.s
+global _start
+
+section .text
+
+_start:
+  mov rax, 1        ; write(
+  mov rdi, 1        ;   STDOUT_FILENO,
+  mov rsi, msg      ;   "Hello, world!\n",
+  mov rdx, msglen   ;   sizeof("Hello, world!\n")
+  syscall           ; );
+
+  mov rax, 60       ; exit(
+  mov rdi, 0        ;   EXIT_SUCCESS
+  syscall           ; );
+
+section .rodata
+  msg: db "Hello, world!", 10
+  msglen: equ $ - msg
+
+# 3、编译
+[root@node-1 ~]# nasm -f elf64 -o hello.o hello.s
+[root@node-1 ~]# ls -l hello.o
+-rw-r--r-- 1 root root 880 Mar 14 15:59 hello.o
+
+# 4、链接
+[root@node-1 ~]# ld -o hello hello.o
+[root@node-1 ~]# ls -l hello
+-rwxr-xr-x 1 root root 896 Mar 14 15:59 hello
+
+# 5、执行
+[root@node-1 ~]# ./hello
+Hello, world!
+```
 
 :::
 
