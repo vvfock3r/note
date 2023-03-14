@@ -89,7 +89,7 @@ _start:
         mov     rdi, 1                  ; 1 号文件系统调用是标准输出 
         mov     rsi, message            ; 输出字符串的地址 
         mov     rdx, 13                 ; 字符串的长度 
-        syscall                         ; 调用系统执行写操作 
+        syscall                         ; 调用系统执行写操作
 
         ; exit(0)
         mov     eax, 60                 ; 60 号系统调用是退出 
