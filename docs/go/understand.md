@@ -168,6 +168,7 @@ _start:
 section .data                        ; data 区域用于初始化常量
     message  db  "Hello, World", 10  ; 注意到最后的换行
 
+
 # 3、编译
 [root@node-1 nasm]# nasm -f elf64 -o hello.o hello.asm
 [root@node-1 nasm]# ls -l hello.o
