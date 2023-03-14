@@ -10,7 +10,7 @@
 
 ## 汇编语言
 
-### 说明
+### 文档
 
 NASM：
 
@@ -31,6 +31,8 @@ Other：
 * [https://www.tutorialspoint.com/assembly_programming/index.htm](https://www.tutorialspoint.com/assembly_programming/index.htm)
 
 <br />
+
+### 设置环境
 
 ::: details （1）汇编说明
 
@@ -186,7 +188,34 @@ Hello, world!
 
 <br />
 
-### 寄存器
+### 语法格式
+
+**汇编程序组成部分**
+
+* 文本部分：该部分存储实际代码，使用 `section .text` 声明。这部分必须以`global _start`声明开始，它告诉内核程序执行从哪里开始
+* 数据部分：该部分用于声明初始化数据或常量，其值在程序运行期间保持不变，使用 `section.data` 声明
+* bss 部分：该部分代表以符号开始的块，用于声明其值可以在程序运行期间更改的变量，使用 `section.bss` 声明
+
+所以汇编的语法一般是：
+
+```assembly
+section.text
+  global _start
+
+_start:
+```
+
+<br />
+
+**汇编指令语法**
+
+```assembly
+[label] mnemonic [operands] [;comment]
+```
+
+<br />
+
+### 寄存器说明
 
 
 
