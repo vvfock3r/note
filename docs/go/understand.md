@@ -25,7 +25,10 @@ Go：
 
 Other：
 
-* NASM示例：[https://cee.github.io/NASM-Tutorial/](https://cee.github.io/NASM-Tutorial/)
+* [https://cee.github.io/NASM-Tutorial/](https://cee.github.io/NASM-Tutorial/)
+* [https://nasm-tutorial.akash.website/](https://nasm-tutorial.akash.website/)
+* [https://asmtutor.com/](https://asmtutor.com/)
+* [https://www.tutorialspoint.com/assembly_programming/index.htm](https://www.tutorialspoint.com/assembly_programming/index.htm)
 
 <br />
 
@@ -129,47 +132,53 @@ Error: Package: nasm-2.16.01-0.fc36.x86_64 (nasm)
 ::: details （4）编写第一个示例
 
 ```bash
-# 1、编写汇编代码
-[root@node-1 ~]# mkdir -p nasm && cd nasm   # （非必须操作）创建一个目录集中存放我们的汇编代码
+# 1、创建一个目录集中存放我们的汇编代码(非必须)
+[root@node-1 ~]# mkdir -p nasm && cd nasm
+
+# 2、编写汇编代码
 [root@node-1 nasm]# vim hello.asm
 ; ----------------------------------------------------------------------------------------
-; 仅使用系统调用来输出 "Hello, World" 到控制台。 这个程序仅在 64 位的 Linux 下运行。
-; 如何编译执行:
-;
-;     nasm -f elf64 -o hello.o hello.asm
-;     ld -o hello hello.o
-;     ./hello
+; 说明:
+;   使用系统调用来输出 "Hello, World" 到控制台
+;   这个程序仅在 64 位的 Linux 下运行
+; 单步操作:
+;     nasm -f elf64 -o hello.o hello.asm  # 编译
+;     ld -o hello hello.o                 # 链接
+;     ./hello                             # 执行
+; 一条命令:
+;     nasm -f elf64 -o hello.o hello.asm && ld -o hello hello.o && ./hello
 ; ----------------------------------------------------------------------------------------
 
-        global  _start
+section .text                        ; text 区域用于书写代码
+    global  _start                   ; global 定义程序入口
 
-        section .text
 _start:
-        ; write(1, message, 13)
-        mov     rax, 1                  ; 1 号系统调用是写操作 
-        mov     rdi, 1                  ; 1 号文件系统调用是标准输出 
-        mov     rsi, message            ; 输出字符串的地址 
-        mov     rdx, 13                 ; 字符串的长度 
-        syscall                         ; 调用系统执行写操作
+    ; write(1, message, 13)
+    mov     rax, 1                   ; 1 号系统调用是写操作
+    mov     rdi, 1                   ; 1 号文件系统调用是标准输出
+    mov     rsi, message             ; 输出字符串的地址
+    mov     rdx, 13                  ; 字符串的长度
+    syscall                          ; 调用系统执行写操作
 
-        ; exit(0)
-        mov     eax, 60                 ; 60 号系统调用是退出 
-        xor     rdi, rdi                ; 0 号系统调用作为退出 
-        syscall                         ; 调用系统执行退出 
-message:
-        db      "Hello, World", 10      ; 注意到最后的换行 
+    ; exit(0)
+    mov     eax, 60                  ; 60 号系统调用是退出
+    xor     rdi, rdi                 ; 0 号系统调用作为退出
+    syscall                          ; 调用系统执行退出
 
-# 2、编译
+section .data                        ; data 区域用于初始化常量
+    message  db  "Hello, World", 10  ; 注意到最后的换行
+
+# 3、编译
 [root@node-1 nasm]# nasm -f elf64 -o hello.o hello.asm
 [root@node-1 nasm]# ls -l hello.o
 -rw-r--r-- 1 root root 752 Mar 14 16:40 hello.o
 
-# 3、链接
+# 4、链接
 [root@node-1 nasm]# ld -o hello hello.o
 [root@node-1 nasm]# ls -l hello
 -rwxr-xr-x 1 root root 776 Mar 14 16:41 hello
 
-# 4、执行
+# 5、执行
 [root@node-1 nasm]# ./hello
 Hello, world!
 ```
