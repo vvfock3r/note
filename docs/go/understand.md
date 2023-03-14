@@ -26,6 +26,8 @@ Other：
 
 * NASM示例：[https://cee.github.io/NASM-Tutorial/](https://cee.github.io/NASM-Tutorial/)
 
+<br />
+
 ::: details （1）汇编说明
 
 汇编语言（Assembly Language）和CPU息息相关
@@ -53,22 +55,76 @@ Other：
 
 <br />
 
-汇编文件扩展名：
+常见的汇编文件扩展名：
 
-* 
+* .asm
+* .s
 
 :::
 
-::: details （2）Linux 64bit 配置汇编环境
+::: details （2）【CentOS 7 + base源】 安装 NASM，版本较低
 
 ```bash
-# 1、安装nasm
+# 安装nasm
 [root@node-1 ~]# yum -y install nasm
 
+# 查看版本
 [root@node-1 ~]# nasm -v
 NASM version 2.10.07 compiled on Jun  9 2014
+```
 
-# 2、编写汇编代码
+:::
+
+::: details （3）【CentOS7 + NASM官网源】安装 NASM，版本较高，但是依赖较新的glibc
+
+```bash
+# 配置yum源
+# 参考官网首页给出的地址: https://www.nasm.us/nasm.repo
+[root@node-1 ~]# vim /etc/yum.repos.d/nasm.repo
+[nasm]
+name=The Netwide Assembler
+baseurl=http://www.nasm.us/pub/nasm/stable/linux/
+enabled=1
+gpgcheck=0
+
+[nasm-testing]
+name=The Netwide Assembler (release candidate builds)
+baseurl=http://www.nasm.us/pub/nasm/testing/linux/
+enabled=0
+gpgcheck=0
+
+[nasm-snapshot]
+name=The Netwide Assembler (daily snapshot builds)
+baseurl=http://www.nasm.us/pub/nasm/snapshots/latest/linux/
+enabled=0
+gpgcheck=0
+
+# 直接安装会报错
+[root@node-1 ~]# yum -y install nasm
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirrors.nju.edu.cn
+ * epel: mirror.earthlink.iq
+ * extras: mirrors.nju.edu.cn
+ * updates: mirrors.nju.edu.cn
+Resolving Dependencies
+--> Running transaction check
+---> Package nasm.x86_64 0:2.10.07-7.el7 will be updated
+---> Package nasm.x86_64 0:2.16.01-0.fc36 will be an update
+--> Processing Dependency: libc.so.6(GLIBC_2.34)(64bit) for package: nasm-2.16.01-0.fc36.x86_64
+--> Finished Dependency Resolution
+Error: Package: nasm-2.16.01-0.fc36.x86_64 (nasm)
+           Requires: libc.so.6(GLIBC_2.34)(64bit)
+ You could try using --skip-broken to work around the problem
+ You could try running: rpm -Va --nofiles --nodigest
+```
+
+:::
+
+::: details （4）编写第一个示例
+
+```bash
+# 1、编写汇编代码
 [root@node-1 ~]# mkdir -p nasm && cd nasm   # （非必须操作）创建一个目录集中存放我们的汇编代码
 [root@node-1 nasm]# vim hello.asm
 ; ----------------------------------------------------------------------------------------
@@ -98,17 +154,17 @@ _start:
 message:
         db      "Hello, World", 10      ; 注意到最后的换行 
 
-# 3、编译
+# 2、编译
 [root@node-1 nasm]# nasm -f elf64 -o hello.o hello.asm
 [root@node-1 nasm]# ls -l hello.o
 -rw-r--r-- 1 root root 752 Mar 14 16:40 hello.o
 
-# 4、链接
+# 3、链接
 [root@node-1 nasm]# ld -o hello hello.o
 [root@node-1 nasm]# ls -l hello
 -rwxr-xr-x 1 root root 776 Mar 14 16:41 hello
 
-# 5、执行
+# 4、执行
 [root@node-1 nasm]# ./hello
 Hello, world!
 ```
