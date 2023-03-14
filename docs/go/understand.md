@@ -129,7 +129,7 @@ Error: Package: nasm-2.16.01-0.fc36.x86_64 (nasm)
 
 ::: details （4）编写第一个示例
 
-```bash
+```assembly
 # 1、创建一个目录集中存放我们的汇编代码(非必须)
 [root@node-1 ~]# mkdir -p nasm && cd nasm
 
