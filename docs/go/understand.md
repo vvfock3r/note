@@ -66,8 +66,6 @@ Other：
 
 :::
 
-<br />
-
 ::: details （2）【CentOS 7 + base源】 安装 NASM，版本较低
 
 ```bash
