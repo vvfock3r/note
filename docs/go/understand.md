@@ -1220,7 +1220,17 @@ Functions:
 
 :::
 
-::: details （3）
+::: details （3）标识符可以被override
+
+```go
+
+```
+
+:::
+
+::: details （4）关键字和标识符的源码
+
+
 
 :::
 
