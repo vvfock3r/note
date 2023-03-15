@@ -1222,7 +1222,9 @@ Functions:
 
 :::
 
-::: details （3）标识符可以被覆盖
+::: details （3）标识符可以被覆盖，而关键字则不可以
+
+覆盖标识符，代码可以正常运行
 
 ```go
 package main
@@ -1245,6 +1247,7 @@ func main() {
 输出结果
 
 ```bash
+D:\application\GoLand\example>go run .
 # 可以看到是main.int类型
 0
 main.int
@@ -1254,6 +1257,29 @@ int
 3
 int
 int
+```
+
+覆盖关键字，编译出错
+
+```go
+package main
+
+func struct() {
+
+}
+
+func main() {
+	struct()
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run .
+# example
+.\main.go:3:6: syntax error: unexpected struct, expected name or (
+.\main.go:8:8: syntax error: unexpected (, expected {
 ```
 
 :::
