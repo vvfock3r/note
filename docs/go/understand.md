@@ -1220,17 +1220,91 @@ Functions:
 
 :::
 
-::: details （3）标识符可以被override
+::: details （3）标识符可以被覆盖
 
 ```go
+package main
 
+import (
+	"fmt"
+	"runtime"
+)
+
+type bool int
+
+func NumCPU() bool {
+	return bool(runtime.NumCPU())
+}
+
+func main() {
+	fmt.Printf("%T %d\n", NumCPU(), NumCPU())
+	fmt.Printf("%T\n", 1 > 2)
+}
+```
+
+输出结果
+
+```bash
+# 可以看到它的类型是 main.bool
+D:\application\GoLand\example>go run .
+main.bool 8
+bool
 ```
 
 :::
 
 ::: details （4）关键字和标识符的源码
 
+```go
+package main
 
+import "time"
+
+func main() {
+	go func() {
+		time.Sleep(time.Second)
+	}()
+	for i := 0; i < 3; i++ {
+		time.Sleep(time.Second)
+	}
+}
+```
+
+输出结果
+
+```bash
+[root@node-1 example]# go build -gcflags="-S" main.go 2>&1 | grep -E 'main.go:' | grep -E ':9|:13'
+        0x0018 00024 (/root/example/main.go:9)  LEAQ    main.main.func1·f(SB), AX
+        0x001f 00031 (/root/example/main.go:9)  PCDATA  $1, $0
+        0x001f 00031 (/root/example/main.go:9)  NOP
+        0x0020 00032 (/root/example/main.go:9)  CALL    runtime.newproc(SB)
+        0x0025 00037 (/root/example/main.go:13) LEAQ    type:int(SB), AX
+        0x002c 00044 (/root/example/main.go:13) MOVL    $1024, BX
+        0x0031 00049 (/root/example/main.go:13) MOVQ    BX, CX
+        0x0034 00052 (/root/example/main.go:13) CALL    runtime.makeslice(SB)
+        0x0000 00000 (/root/example/main.go:9)  TEXT    main.main.func1(SB), ABIInternal, $16-0
+        0x0000 00000 (/root/example/main.go:9)  CMPQ    SP, 16(R14)
+        0x0004 00004 (/root/example/main.go:9)  PCDATA  $0, $-2
+        0x0004 00004 (/root/example/main.go:9)  JLS     40
+        0x0006 00006 (/root/example/main.go:9)  PCDATA  $0, $-1
+        0x0006 00006 (/root/example/main.go:9)  SUBQ    $16, SP
+        0x000a 00010 (/root/example/main.go:9)  MOVQ    BP, 8(SP)
+        0x000f 00015 (/root/example/main.go:9)  LEAQ    8(SP), BP
+        0x0014 00020 (/root/example/main.go:9)  FUNCDATA        $0, gclocals·g2BeySu+wFnoycgXfElmcg==(SB)
+        0x0014 00020 (/root/example/main.go:9)  FUNCDATA        $1, gclocals·g2BeySu+wFnoycgXfElmcg==(SB)
+        0x0028 00040 (/root/example/main.go:9)  PCDATA  $1, $-1
+        0x0028 00040 (/root/example/main.go:9)  PCDATA  $0, $-2
+        0x0028 00040 (/root/example/main.go:9)  CALL    runtime.morestack_noctxt(SB)
+        0x002d 00045 (/root/example/main.go:9)  PCDATA  $0, $-1
+        0x002d 00045 (/root/example/main.go:9)  JMP     0
+
+# 第9行: go func
+# go关键字源码是Go函数 runtime.newproc
+# func关键字则会转换为汇编的text代码段
+
+# 第13行: make标识符
+# make初始化切片的时候会转为 runtime.makeslice 函数
+```
 
 :::
 
