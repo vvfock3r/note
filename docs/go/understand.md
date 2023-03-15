@@ -1200,6 +1200,8 @@ continue     for          import       return       var
 
 ::: details （2）预先声明的标识符
 
+源码在：GO SDK/src/builtin/builtin.go
+
 ```go
 Types:
 	any bool byte comparable
@@ -1225,30 +1227,33 @@ Functions:
 ```go
 package main
 
-import (
-	"fmt"
-	"runtime"
-)
+import "fmt"
 
-type bool int
-
-func NumCPU() bool {
-	return bool(runtime.NumCPU())
+func len(a any) int {
+	return 0
 }
 
+type int int8
+
 func main() {
-	fmt.Printf("%T %d\n", NumCPU(), NumCPU())
-	fmt.Printf("%T\n", 1 > 2)
+	fmt.Printf("%d\n", len([]int{1, 2, 3}))
+	fmt.Printf("%T\n", int(1))
+	fmt.Printf("%T\n", 2)
 }
 ```
 
 输出结果
 
 ```bash
-# 可以看到它的类型是 main.bool
-D:\application\GoLand\example>go run .
-main.bool 8
-bool
+# 可以看到是main.int类型
+0
+main.int
+int
+
+# 如果使用默认的len和int的话,输出是这样的
+3
+int
+int
 ```
 
 :::
