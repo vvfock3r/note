@@ -149,25 +149,24 @@ Error: Package: nasm-2.16.01-0.fc36.x86_64 (nasm)
 ;     nasm -f elf64 -o hello.o hello.asm && ld -o hello hello.o && ./hello
 ; ----------------------------------------------------------------------------------------
 
+section .data                        ; data 区域用于初始化常量
+    message  db  "Hello, World!", 10 ; 注意到最后的换行
+    
 section .text                        ; text 区域用于书写代码
     global  _start                   ; global 定义程序入口
 
 _start:
-    ; write(1, message, 13)
+    ; write(1, message, 14)
     mov     rax, 1                   ; 1 号系统调用是写操作
     mov     rdi, 1                   ; 1 号文件系统调用是标准输出
     mov     rsi, message             ; 输出字符串的地址
-    mov     rdx, 13                  ; 字符串的长度
+    mov     rdx, 14                  ; 字符串的长度
     syscall                          ; 调用系统执行写操作
 
     ; exit(0)
-    mov     eax, 60                  ; 60 号系统调用是退出
-    xor     rdi, rdi                 ; 0 号系统调用作为退出
+    mov     rax, 60                  ; 60 号系统调用是退出
+    mov     rdi, 0                   ; 0 号系统调用作为退出
     syscall                          ; 调用系统执行退出
-
-section .data                        ; data 区域用于初始化常量
-    message  db  "Hello, World", 10  ; 注意到最后的换行
-
 
 # 3、编译
 [root@node-1 nasm]# nasm -f elf64 -o hello.o hello.asm
@@ -190,7 +189,7 @@ Hello, world!
 
 ### 语法格式
 
-**汇编程序组成部分**
+**1、汇编程序组成部分**
 
 * 文本部分：该部分存储实际代码，使用 `section .text` 声明。这部分必须以`global _start`声明开始，它告诉内核程序执行从哪里开始
 * 数据部分：该部分用于声明初始化数据或常量，其值在程序运行期间保持不变，使用 `section.data` 声明
@@ -207,7 +206,7 @@ _start:
 
 <br />
 
-**汇编指令语法**
+**2、汇编指令语法**
 
 ```assembly
 [label] mnemonic [operands] [;comment]
@@ -262,6 +261,10 @@ Flag register - 许多指令涉及比较和数学计算并更改标志的状态�
 ```
 
 :::
+
+<br />
+
+### 程序示例
 
 ::: details （1）退出程序并指定退出码
 
@@ -370,7 +373,87 @@ _start:
 128
 ```
 
+**3、其他说明**
+
+```assembly
+mov rdi, 0
+xor rdi, rdi
+
+; 说明
+; 两条语句在功能上是等效的，都是将寄存器rdi中的值设置为0
+; 从代码可读性来说, mov rdi, 0  可读性更强
+; 从执行效率上来说，xor rdi, rdi 效率更高一些(我不确定)
+```
+
 :::
+
+::: details （2）输出 Hello World!
+
+**1、64位写法**
+
+```assembly
+section .data
+    msg db 'Hello, world!', 10
+
+section .text
+    global _start
+
+_start:
+    ; write hello world message
+    mov rax, 1          ; System call for write
+    mov rdi, 1          ; File descriptor for stdout
+    mov rsi, msg        ; Message to write
+    mov rdx, 14         ; Length of the message
+    syscall             ; Call kernel
+
+    ; exit program
+    mov rax, 60         ; System call for exit
+    mov rdi, 0          ; Exit status code
+    syscall             ; Call kernel
+
+; section .data 用于定义常量
+;   msg 是变量名，可以根据需要自行定义
+;   db 是定义字节（byte）的指令（directive），用于在数据段中分配一段连续的字节空间
+;   'Hello, world!' 是字符串的内容
+;   10 这个位置代表字符串终止符，10在ASCII表中代表 换行符\n
+
+; 注意字符串的长度设置: mov rdx, 14
+; Hello, World!(13个字符) + '\n'(1个字符) 总共14个字符
+```
+
+**2、32位写法**
+
+```assembly
+section .data
+    msg db 'Hello, world!', 10
+
+section .text
+    global _start
+
+_start:
+    ; write hello world message
+    mov  eax,  4        ; System call for write
+    mov  ebx,  1        ; File descriptor for stdout
+    mov  ecx,  msg      ; Message to write
+    mov  edx,  14       ; Length of the message
+    int  0x80           ; Call kernel
+
+    ; exit program
+    mov eax, 1          ; System call for exit
+    xor ebx, ebx        ; Exit status code
+    int 0x80            ; Call kernel
+```
+
+**输出结果**
+
+```bash
+[root@node-1 nasm]# nasm -f elf64 -o test.o test.asm && ld -o test test.o && ./test
+Hello, world!
+```
+
+:::
+
+
 
 <br />
 
