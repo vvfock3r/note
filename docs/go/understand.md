@@ -229,7 +229,7 @@ _start:
 | RDX  | EDX    | DX     | DL    | 数据寄存器，一般用于保存某些算术运算的溢出 或 输入/输出操作期间存储数据 |
 |      |        |        |       |                                                              |
 | RSI  | ESI    | SI     | SIL   | 来源索引寄存器，一般用于流操作中指向来源的指针               |
-| RDI  | EDI    | DI     | DIL   | 目标索引寄存器，一般用于流操作中指向目标的指针               |
+| RDI  | EDI    | DI     | DIL   | 目标索引寄存器，一般用于流操作中指向目标的指针 、存储函数调用参数 |
 |      |        |        |       |                                                              |
 | RSP  | ESP    | SP     | SPL   | 栈指针寄存器，指向栈顶                                       |
 | RBP  | EBP    | BP     | BPL   | 栈指针寄存器，指向栈底                                       |
@@ -365,7 +365,7 @@ _start:
 [root@node-1 nasm]# nasm -f elf64 -o test.o test.asm && ld -o test test.o && ./test ; echo $?
 127
 
-# 修改退出码为16进制数字(0x80 = 128): mov rbx, 0x80
+# 修改退出码为16进制数字(0x80 = 128): mov rdi, 0x80
 [root@node-1 nasm]# nasm -f elf64 -o test.o test.asm && ld -o test test.o && ./test ; echo $?
 128
 ```
