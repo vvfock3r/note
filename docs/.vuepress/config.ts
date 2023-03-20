@@ -99,7 +99,7 @@ const navbar = [
         ]
     },
 	{
-        text: 'Undefined',
+        text: '杂七杂八',
         children: [
             {text: 'Web安全入门', link: '/undefined/web-security'},
             {text: '通用算法入门', link: '/undefined/algorithm'},
