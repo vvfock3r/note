@@ -69,9 +69,9 @@ const navbar = [
             {
                 text: '工程化',
                 children: [
-                    {text: 'Vue', link: '/frontend/vue'},
-                    {text: 'Node包管理器和Vite脚手架', link: '/frontend/node-package-manager'},
-                    {text: 'TypeScript核心语法', link: '/frontend/typescript'},
+				    {text: 'Tools', link: '/frontend/node-package-manager'},
+                    {text: 'Vue', link: '/frontend/vue'},                    
+                    {text: 'TypeScript', link: '/frontend/typescript'},
                 ]
             },
             {
@@ -88,7 +88,7 @@ const navbar = [
                     {text: 'Go核心语法', link: '/go/document.html'},
 					{text: 'Go实用模块', link: '/go/modules.html'},
                 ]
-            },			
+            },
             {
                 text: 'Python',
                 children: [
