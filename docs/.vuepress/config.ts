@@ -108,7 +108,7 @@ const navbar = [
 			{text: 'MeiliSearch', link: '/undefined/meilisearch'},
         ]
     },
-    {text: 'Github', link: 'https://github.com/VVFock3r/Notes'},
+    {text: 'Github', link: 'https://github.com/VVFock3r'},
 ]
 
 export default defineUserConfig({
