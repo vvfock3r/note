@@ -3107,7 +3107,7 @@ func main() {
 
 :::
 
-::: details （5）derfer并不能保证一定会执行
+::: details （5）derfer并不能保证一定会执行：os.Exit
 
 ```go
 package main
@@ -3123,6 +3123,34 @@ func main() {
 }
 
 // 运行之后，发现什么都没有输出，说明defer没有正常执行
+```
+
+:::
+
+::: details （6）derfer并不能保证一定会执行：死锁等严重错误
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	defer fmt.Println("defer called")
+
+	ch := make(chan struct{})
+
+	//go func() {
+	//	ch <- struct{}{}
+	//
+	//}()
+
+	<-ch
+}
+
+// 运行之后，直接报错 fatal error: all goroutines are asleep - deadlock!
+// 并且defer没有正常执行
 ```
 
 :::
