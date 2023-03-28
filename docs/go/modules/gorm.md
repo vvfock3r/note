@@ -274,13 +274,31 @@ func main() {
 	}
 	fmt.Printf("%-30s%s\n", "Current database:", CurrentDatabase)
 
-	// 获取当前用户
+	// 获取当前用户, 还可以使用 SELECT CURRENT_USER();,没发现有什么区别
 	var CurrentUser string
 	tx = db.Raw("SELECT USER();").Scan(&CurrentUser)
 	if tx.Error != nil {
 		panic(tx.Error)
 	}
 	fmt.Printf("%-30s%s\n", "Current user:", CurrentUser)
+
+	// 获取SSL
+	var SSL []map[string]any
+	tx = db.Raw("SHOW STATUS LIKE 'Ssl_cipher';").Scan(&SSL)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	if len(SSL) > 0 {
+		cipher := SSL[0]["Value"]
+		if cipher == "" {
+			fmt.Printf("%-30s%s\n", "SSL:", "Not in use")
+		} else {
+			fmt.Printf("%-30s%s\n", "SSL:", cipher) // 这里的输出并未和MySQL客户端验证
+		}
+	}
+
+	//
+
 }
 ```
 
