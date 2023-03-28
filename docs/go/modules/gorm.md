@@ -14,38 +14,7 @@ go get -u gorm.io/driver/mysql
 
 <br />
 
-### 数据库版本
-
-```bash
-mysql> status;
---------------
-mysql  Ver 8.0.30 for Linux on x86_64 (MySQL Community Server - GPL)
-
-Connection id:          15
-Current database:       demo
-Current user:           root@192.168.48.133
-SSL:                    Cipher in use is ECDHE-RSA-AES128-GCM-SHA256
-Current pager:          stdout
-Using outfile:          ''
-Using delimiter:        ;
-Server version:         8.0.30 MySQL Community Server - GPL
-Protocol version:       10
-Connection:             192.168.48.133 via TCP/IP
-Server characterset:    utf8mb4
-Db     characterset:    utf8mb4
-Client characterset:    utf8mb4
-Conn.  characterset:    utf8mb4
-TCP port:               3306
-Binary data as:         Hexadecimal
-Uptime:                 1 hour 1 min 41 sec
-
-Threads: 2  Questions: 82  Slow queries: 0  Opens: 205  Flush tables: 3  Open tables: 124  Queries per second avg: 0.022
---------------
-```
-
-<br />
-
-### 连接数据库
+### 连接
 
 DSN格式：[https://github.com/go-sql-driver/mysql#dsn-data-source-name](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
 
@@ -56,39 +25,33 @@ package main
 
 import (
 	"fmt"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func getDB() (*gorm.DB, error) {
+func NewGormDB() (*gorm.DB, error) {
+	host := "192.168.48.151"
+	port := 3306
 	username := "root"
 	password := "QiNqg[l.%;H>>rO9"
-	host := "192.168.48.133"
-	port := 3306
-	dbName := "demo"
-	charSet := "utf8mb4"
+	dbname := "demo"
+	charset := "utf8mb4"
 	conntimeout := "5s"
-	readTimeout := "10s"
-	writeTimeout := "10s"
+	readtimeout := "10s"
+	writetimeout := "10s"
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
-		username,
-		password,
-		host,
-		port,
-		dbName,
-		charSet,
-		conntimeout,
-		readTimeout,
-		writeTimeout,
-	)
+		username, password, host, port, dbname, charset, conntimeout, readtimeout, writetimeout)
 
+    // 这一步会发起数据库连接
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	return db, err
 }
 
 func main() {
-	db, err := getDB()
+    // 连接数据库
+	db, err := NewGormDB()
 	if err != nil {
 		panic(err)
 	}
@@ -102,6 +65,169 @@ func main() {
 ```bash
 *gorm.DB
 &gorm.DB{Config:(*gorm.Config)(0xc0001c4240), Error:error(nil), RowsAffected:0, Statement:(*gorm.Statement)(0xc0001d0380), clone:1}
+```
+
+:::
+
+<br />
+
+### 原生SQL
+
+::: details （1）查看数据库版本
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func NewGormDB() (*gorm.DB, error) {
+	host := "192.168.48.151"
+	port := 3306
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	dbname := "demo"
+	charset := "utf8mb4"
+	conntimeout := "5s"
+	readtimeout := "10s"
+	writetimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username, password, host, port, dbname, charset, conntimeout, readtimeout, writetimeout)
+
+	// 这一步会发起数据库连接
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+func main() {
+	// 连接数据库
+	db, err := NewGormDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 查看版本
+	var version string
+	tx := db.Raw("SELECT VERSION();").Scan(&version)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	fmt.Println(version)
+}
+```
+
+输出结果
+
+```bash
+8.0.30
+```
+
+:::
+
+::: details （2）查看服务器信息
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func NewGormDB() (*gorm.DB, error) {
+	host := "192.168.48.151"
+	port := 3306
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	dbname := "demo"
+	charset := "utf8mb4"
+	conntimeout := "5s"
+	readtimeout := "10s"
+	writetimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username, password, host, port, dbname, charset, conntimeout, readtimeout, writetimeout)
+
+	// 这一步会发起数据库连接
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+type Entry struct {
+	Name  string `gorm:"column:Variable_name"`
+	Value string
+}
+
+func main() {
+	// 连接数据库
+	db, err := NewGormDB()
+	if err != nil {
+		panic(err)
+	}
+
+	// 查看服务器信息
+	var status []Entry
+	tx := db.Raw("SHOW STATUS;").Scan(&status)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	for _, m := range status {
+		fmt.Printf("%#v\n", m)
+	}
+}
+```
+
+输出结果
+
+```bash
+main.Entry{Name:"Aborted_clients", Value:"66"}
+main.Entry{Name:"Aborted_connects", Value:"2"}
+main.Entry{Name:"Acl_cache_items_count", Value:"0"}
+main.Entry{Name:"Binlog_cache_disk_use", Value:"0"}
+main.Entry{Name:"Binlog_cache_use", Value:"3"}
+main.Entry{Name:"Binlog_stmt_cache_disk_use", Value:"0"}
+main.Entry{Name:"Binlog_stmt_cache_use", Value:"0"}
+main.Entry{Name:"Bytes_received", Value:"166"}
+main.Entry{Name:"Bytes_sent", Value:"186"}
+main.Entry{Name:"Caching_sha2_password_rsa_public_key", Value:"-----BEGIN PUBLIC
+ KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvq+EXwmbHAygtVrvXcA4\n8Y9
+1BmdfZNaTKCmh4eHY83c9oDiUVm8jZCSpJdFon3RwU5zJu5yAlNYHMVT/WSA0\nIKp+dkUG946p1zJ2Y
+HOgFP4lH3b1LqML5vADIYAluqnSs6VkSdvr5ZEhNh4BAVvA\nMJ4efcPCc2JaAZJZ1+fiXIhphIHZoAj
+UNT/xCBerwyVKeBVUKl0Bvi4SB1dDF+PX\n8RUcsVRsLpaGvSei/kMvImFgztlxSTnkUikCydM8psaDT
+JC3q/aFPUwr7LAZC6+y\nKYJfyfVomMiIya57UHO3aNHsN2bezeUEncCX3k9JgRRNEUu0VFGcjkkMVCo
+ohQT0\nOQIDAQAB\n-----END PUBLIC KEY-----\n"}
+main.Entry{Name:"Com_admin_commands", Value:"1"}
+main.Entry{Name:"Com_assign_to_keycache", Value:"0"}
+main.Entry{Name:"Com_alter_db", Value:"0"}
+...
+
+# 说明：Scan后面要接一个什么样的对象?
+# 解答：
+# 1、MySQL客户端中执行SHOW STATUS;观察输出的数据类型
+# 2、尝试定义一个 []map[string]any 结构作为Scan的参数，然后我们得到下面的输出
+#   map[string]interface {}{"Value":"92306", "Variable_name":"Uptime"}
+# 3、尝试定义结构体，就得到了我们上面所用的结构体 Entry
+```
+
+:::
+
+::: details （3）模拟MySQL客户端内置命令status
+
+```go
+
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
