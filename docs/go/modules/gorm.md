@@ -218,10 +218,70 @@ main.Entry{Name:"Com_alter_db", Value:"0"}
 
 :::
 
-::: details （3）模拟MySQL客户端内置命令status
+::: details （3）模拟MySQL客户端内置命令status - 未完待续
 
 ```go
+package main
 
+import (
+	"fmt"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func NewGormDB() (*gorm.DB, error) {
+	host := "192.168.48.151"
+	port := 3306
+	username := "root"
+	password := "QiNqg[l.%;H>>rO9"
+	dbname := "demo"
+	charset := "utf8mb4"
+	conntimeout := "5s"
+	readtimeout := "10s"
+	writetimeout := "10s"
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local&charset=%s&timeout=%s&readTimeout=%s&writeTimeout=%s",
+		username, password, host, port, dbname, charset, conntimeout, readtimeout, writetimeout)
+
+	// 这一步会发起数据库连接
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return db, err
+}
+
+func main() {
+	// 连接数据库
+	db, err := NewGormDB()
+	if err != nil {
+		panic(err)
+	}
+
+	var tx *gorm.DB
+
+	// 获取连接ID
+	var ConnectionID int64
+	tx = db.Raw("SELECT CONNECTION_ID();").Scan(&ConnectionID)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	fmt.Printf("%-30s%d\n", "Connection id:", ConnectionID)
+
+	// 获取当前数据库
+	var CurrentDatabase string
+	tx = db.Raw("SELECT DATABASE();").Scan(&CurrentDatabase)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	fmt.Printf("%-30s%s\n", "Current database:", CurrentDatabase)
+
+	// 获取当前用户
+	var CurrentUser string
+	tx = db.Raw("SELECT USER();").Scan(&CurrentUser)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	fmt.Printf("%-30s%s\n", "Current user:", CurrentUser)
+}
 ```
 
 输出结果
