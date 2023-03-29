@@ -259,45 +259,146 @@ func main() {
 	var tx *gorm.DB
 
 	// 获取连接ID
-	var ConnectionID int64
-	tx = db.Raw("SELECT CONNECTION_ID();").Scan(&ConnectionID)
-	if tx.Error != nil {
-		panic(tx.Error)
+	{
+		var ConnectionID int64
+		tx = db.Raw("SELECT CONNECTION_ID();").Scan(&ConnectionID)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%d\n", "Connection id:", ConnectionID)
 	}
-	fmt.Printf("%-30s%d\n", "Connection id:", ConnectionID)
 
 	// 获取当前数据库
-	var CurrentDatabase string
-	tx = db.Raw("SELECT DATABASE();").Scan(&CurrentDatabase)
-	if tx.Error != nil {
-		panic(tx.Error)
+	{
+		var CurrentDatabase string
+		tx = db.Raw("SELECT DATABASE();").Scan(&CurrentDatabase)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Current database:", CurrentDatabase)
 	}
-	fmt.Printf("%-30s%s\n", "Current database:", CurrentDatabase)
 
 	// 获取当前用户, 还可以使用 SELECT CURRENT_USER();,没发现有什么区别
-	var CurrentUser string
-	tx = db.Raw("SELECT USER();").Scan(&CurrentUser)
-	if tx.Error != nil {
-		panic(tx.Error)
+	{
+		var CurrentUser string
+		tx = db.Raw("SELECT USER();").Scan(&CurrentUser)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Current user:", CurrentUser)
 	}
-	fmt.Printf("%-30s%s\n", "Current user:", CurrentUser)
 
 	// 获取SSL
-	var SSL []map[string]any
-	tx = db.Raw("SHOW STATUS LIKE 'Ssl_cipher';").Scan(&SSL)
-	if tx.Error != nil {
-		panic(tx.Error)
-	}
-	if len(SSL) > 0 {
-		cipher := SSL[0]["Value"]
-		if cipher == "" {
-			fmt.Printf("%-30s%s\n", "SSL:", "Not in use")
-		} else {
-			fmt.Printf("%-30s%s\n", "SSL:", cipher) // 这里的输出并未和MySQL客户端验证
+	{
+		var SSL []map[string]any
+		tx = db.Raw("SHOW STATUS LIKE 'Ssl_cipher';").Scan(&SSL)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		if len(SSL) > 0 {
+			cipher := SSL[0]["Value"]
+			if cipher == "" {
+				fmt.Printf("%-30s%s\n", "SSL:", "Not in use")
+			} else {
+				fmt.Printf("%-30s%s\n", "SSL:", cipher) // 这里的输出并未和MySQL客户端验证
+			}
 		}
 	}
 
-	//
+	// 获取MySQL版本
+	{
+		var ServerVersion string
+		sql := "SELECT CONCAT_WS(' ', @@version, @@version_comment) AS server_version;"
+		tx = db.Raw(sql).Scan(&ServerVersion)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Server version:", ServerVersion)
+	}
+
+	// 获取协议版本
+	{
+		var ProtocolVersion string
+		tx = db.Raw("SELECT @@protocol_version;").Scan(&ProtocolVersion)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Protocol version:", ProtocolVersion)
+	}
+
+	// 获取服务端字符集
+	{
+		var ServerCharacterset string
+		tx = db.Raw("SELECT @@character_set_server;").Scan(&ServerCharacterset)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Server characterset:", ServerCharacterset)
+	}
+
+	// 获取数据库字符集
+	{
+		var DatabaseCharacterset string
+		tx = db.Raw("SELECT @@character_set_database;").Scan(&DatabaseCharacterset)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Db     characterset:", DatabaseCharacterset)
+	}
+
+	// 获取客户端字符集
+	{
+		var ClientCharacterset string
+		tx = db.Raw("SELECT @@character_set_client;").Scan(&ClientCharacterset)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Client characterset:", ClientCharacterset)
+	}
+
+	// 获取链接字符集
+	{
+		var ConnectionCharacterset string
+		tx = db.Raw("SELECT @@character_set_connection;").Scan(&ConnectionCharacterset)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Conn.  characterset:", ConnectionCharacterset)
+	}
+
+	// 获取Socket
+	{
+		var Socket string
+		tx = db.Raw("SELECT @@socket;").Scan(&Socket)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "UNIX socket:", Socket)
+	}
+
+	// 获取二进制数据编码方式(我并不确认SQL一定是正确的)
+	{
+		var BinaryDataAs string
+		sql := "SELECT CASE @@SESSION.binlog_format WHEN 'ROW' THEN 'Hexadecimal' WHEN 'MIXED' THEN 'Hexadecimal' ELSE 'Text' END AS `Binary data as`;"
+		tx = db.Raw(sql).Scan(&BinaryDataAs)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		fmt.Printf("%-30s%s\n", "Binary data as:", BinaryDataAs)
+	}
+
+	// 获取Uptime
+	{
+		// 获取秒数
+		var UptimeSecond int64
+		sql := "SELECT VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME='Uptime';"
+		tx = db.Raw(sql).Scan(&UptimeSecond)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+		// 转为人类易读值, 略
+		fmt.Printf("%-30s%d\n", "Uptime:", UptimeSecond)
+	}
 
 }
 ```
