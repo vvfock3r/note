@@ -88,6 +88,12 @@ func main() {
 
 ::: details （1）写入数据
 
+在下面的例子中我们执行了如下操作：
+
+* 如果存在`users`表，则删除
+* 如果不存在`users`表，则新建
+* 向`users`表总共插入7条数据
+
 ```go
 package main
 
@@ -226,7 +232,162 @@ func main() {
 ::: details （2）查询数据
 
 ```go
+package main
 
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// 注意事项：
+	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+
+	// 查询单条数据
+	{
+		user := User{}
+		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+		fmt.Println()
+	}
+
+	// 查询多条数据: 使用 Select
+	{
+		users := []User{}
+		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		if err != nil {
+			panic(err)
+		}
+		for _, user := range users {
+			fmt.Printf("%#v\n", user)
+		}
+		fmt.Println()
+	}
+
+	// 查询多条数据: 使用 Query
+	{
+		rows, err := db.Query("SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		if err != nil {
+			panic(err)
+		}
+		for rows.Next() {
+			user := User{}
+			err := rows.Scan(&user.ID, &user.Name, &user.Password, &user.Email)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", user)
+		}
+		fmt.Println()
+	}
+
+	// 查询多条数据: 使用 Queryx
+	{
+		rows, err := db.Queryx("SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		if err != nil {
+			panic(err)
+		}
+		for rows.Next() {
+			user := User{}
+			err := rows.StructScan(&user)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			fmt.Printf("%#v\n", user)
+		}
+		fmt.Println()
+	}
+
+	// 查询单条数据: 使用 QueryRow
+	{
+		user := User{}
+		row := db.QueryRow("SELECT id,name,password,email FROM users WHERE name = ?", "bob5")
+		err := row.Scan(&user.ID, &user.Name, &user.Password, &user.Email)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+		fmt.Println()
+	}
+
+	// 查询单条数据: 使用 QueryRowx
+	{
+		user := User{}
+		row := db.QueryRowx("SELECT id,name,password,email FROM users WHERE name = ?", "bob5")
+		err := row.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+		fmt.Println()
+	}
+}
+```
+
+输出结果
+
+```bash
+main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+
+main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
+main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
+
+main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
+main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
+
+main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
+main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
+
+main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
+
+main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
 ```
 
 :::
