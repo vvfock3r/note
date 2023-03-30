@@ -38,7 +38,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func main() {
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
 		User:              "root",
@@ -57,8 +58,13 @@ func main() {
 
 	// 连接数据库
 	// sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
-    // 也可以使用 MustConnect, 连接不成功就panic
-	db, err := sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+	// 也可以使用 MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +92,9 @@ func main() {
 
 ## 数据库操作
 
-::: details （1）写入数据
+### 修改数据
+
+::: details （1）新增/修改/删除数据
 
 在下面的例子中我们执行了如下操作：
 
@@ -228,6 +236,8 @@ func main() {
 ```
 
 :::
+
+### 查询数据
 
 ::: details （2）查询数据
 
