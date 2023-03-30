@@ -30,7 +30,6 @@ sidebar: off
 * [math/rand](https://jinhui.dev/go/modules/math-rand.html)：随机数
 * [zap](https://jinhui.dev/go/modules/zap.html)：日志记录
 * [viper](https://jinhui.dev/go/modules/viper.html)：配置读写
-* [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务
 * [template](https://jinhui.dev/go/modules/template.html)：模板
 * [email](https://jinhui.dev/go/modules/email.html)：发送邮件
@@ -55,6 +54,9 @@ sidebar: off
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
   * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
+* 数据库
+  * [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库（已弃坑）
+  * [sqlx](https://jinhui.dev/go/modules/sqlx.html)：数据库
 * Web
   * [net/http](https://jinhui.dev/go/modules/net-http.html)：内置的Web Server
   * [gin](https://jinhui.dev/go/modules/gin.html)：流行的Web Server
