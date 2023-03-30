@@ -98,3 +98,13 @@ func main() {
 
 <br />
 
+## 服务器信息
+
+::: details （1）模拟MySQL客户端内置命令status
+
+```go
+
+```
+
+:::
+
