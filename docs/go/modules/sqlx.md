@@ -38,20 +38,72 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func ConnMySQL(config mysql.Config) (*sqlx.DB, error) {
-	// 连接 MySQL 数据库
-	db, err := sqlx.Open("mysql", config.FormatDSN())
-	if err != nil {
-		return nil, err
+func main() {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
 	}
 
-	// 测试连接是否成功
-	err = db.Ping()
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+    // 也可以使用 MustConnect, 连接不成功就panic
+	db, err := sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
+	defer func() { _ = db.Close() }()
 
-	return db, nil
+	// 查看数据库版本
+	var version string
+	err = db.Get(&version, "SELECT CONCAT_WS(' ', @@version, @@version_comment) AS server_version;")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(version)
+}
+```
+
+输出结果
+
+```bash
+8.0.30 MySQL Community Server - GPL
+```
+
+:::
+
+<br />
+
+## 写入数据
+
+::: details （1）写入单条数据
+
+```go
+package main
+
+import (
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
 }
 
 func main() {
@@ -72,27 +124,61 @@ func main() {
 	}
 
 	// 连接数据库
-	db, err := ConnMySQL(mysqlConfig)
+	// sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	// 也可以使用 MustConnect, 连接不成功就panic
+	db, err := sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	// 查看数据库版本
-	var version string
-	err = db.Get(&version, "SELECT CONCAT_WS(' ', @@version, @@version_comment) AS server_version;")
+	// 创建users表
+	var schema = `
+		CREATE TABLE IF NOT EXISTS users (
+			id int primary key auto_increment,
+			name varchar(50) not null unique,
+			password varchar(128) not null,
+			email varchar(100) not null unique,
+			created_at timestamp not null default now(),
+			updated_at timestamp,
+			deleted_at timestamp
+		);`
+	_, err = db.Exec(schema)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(version)
+
+	// 写入单条数据 - 方式1，使用?占位
+	{
+		user := User{
+			Name:     "Alice",
+			Password: "123456",
+			Email:    "alice@example.com",
+		}
+		_, err = db.Exec("INSERT INTO users (name, password, email) VALUES (?, ?, ?)", user.Name, user.Password, user.Email)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// 写入单条数据 - 方式2，:username等写法需要对应结构体的tag: db
+	{
+		user := User{
+			Name:     "John",
+			Password: "123456",
+			Email:    "john@example.com",
+		}
+		_, err = db.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 ```
 
-输出结果
+:::
 
-```bash
-8.0.30 MySQL Community Server - GPL
-```
+::: details （2）批量写入数据
 
 :::
 
