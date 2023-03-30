@@ -180,7 +180,36 @@ func main() {
 
 ::: details （2）批量写入数据
 
+```go
+	// 批量写入数据
+	user := []User{
+		{
+			Name:     "bob",
+			Password: "123456",
+			Email:    "bob@example.com",
+		},
+		{
+			Name:     "jack",
+			Password: "123456",
+			Email:    "jack@example.com",
+		},
+		{
+			Name:     "tick",
+			Password: "123456",
+			Email:    "tick@example.com",
+		},
+	}
+	_, err = db.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user)
+	if err != nil {
+		panic(err)
+	}
+```
+
 :::
+
+<br />
+
+## 查询数据
 
 <br />
 
