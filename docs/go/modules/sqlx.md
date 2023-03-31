@@ -425,6 +425,8 @@ func main() {
 
 :::
 
+<br />
+
 ### 查询数据
 
 ::: details （1）查询数据：高级接口：Get / Select
@@ -632,6 +634,101 @@ func main() {
 ```bash
 main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
 main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+```
+
+:::
+
+<br />
+
+### 使用事物
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func Rollback(tx *sqlx.Tx) {
+	err := tx.Rollback()
+	if err != nil {
+		fmt.Println("事物回滚失败")
+	} else {
+		fmt.Println("事物回滚成功")
+	}
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 开启事物
+	// Begin开启事物 ：只能执行 Exec 和 Query 方法
+	// Beginx开启事物: 支持Exec, Query, Get, Select 等方法
+	tx, err := db.Beginx()
+	if err != nil {
+		panic(err)
+	}
+
+	// 执行操作
+	user1 := User{Name: "John1", Password: "123456", Email: "john3@example.com"}
+	_, err = tx.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user1)
+	if err != nil {
+		Rollback(tx)
+	}
+
+	user2 := User{Name: "John2", Password: "123456", Email: "john4@example.com"}
+	_, err = tx.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user2)
+	if err != nil {
+		Rollback(tx)
+	}
+
+	// 提交
+	err = tx.Commit()
+	if err != nil {
+		Rollback(tx)
+	}
+}
 ```
 
 :::
