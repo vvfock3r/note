@@ -47,7 +47,7 @@ go get github.com/go-sql-driver/mysql
 
 ## 连接
 
-### 连接
+### 连接示例
 
 ::: details （1）database/sql连接MySQL
 
@@ -191,9 +191,9 @@ func main() {
 
 <br />
 
-### 分析
+### 简单分析
 
-::: details （1）驱动注册逻辑
+::: details （1）MySQL 驱动注册逻辑
 
 ```go
 // github.com/go-sql-driver/mysql init方法用于注册驱动
@@ -287,7 +287,7 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 
 <br />
 
-### 连接池
+### 连接池设置
 
 
 
