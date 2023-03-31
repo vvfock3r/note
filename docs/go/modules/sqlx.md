@@ -94,7 +94,147 @@ func main() {
 
 ### 修改数据
 
-::: details （1）新增/修改/删除数据
+::: details （1）创建、删除表和查看表结构
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	// 也可以使用 MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+// CreateTableUser 若users表不存在则创建
+func CreateTableUser(db *sqlx.DB) error {
+	// 创建users表
+	var schema = `
+		CREATE TABLE IF NOT EXISTS users (
+			id int primary key auto_increment,
+			name varchar(50) not null unique,
+			password varchar(128) not null,
+			email varchar(100) not null unique,
+			created_at timestamp not null default now(),
+			updated_at timestamp,
+			deleted_at timestamp
+		);`
+	_, err := db.Exec(schema)
+	return err
+}
+
+// DropTableUser 若users表存在则删除
+func DropTableUser(db *sqlx.DB) error {
+	// 创建users表
+	var schema = `DROP TABLE IF EXISTS users;`
+	_, err := db.Exec(schema)
+	return err
+}
+
+// DescStruct 表结构
+type DescStruct struct {
+	Field   string         `db:"Field"`
+	Type    string         `db:"Type"`
+	Null    string         `db:"Null"`
+	Key     string         `db:"Key"`
+	Default sql.NullString `db:"Default"`
+	Extra   string         `db:"Extra"`
+}
+
+// DescTableUser 查看users表结构
+func DescTableUser(db *sqlx.DB) ([]DescStruct, error) {
+	var desc []DescStruct
+	err := db.Select(&desc, "DESC users")
+	return desc, err
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 若users表存在则删除
+	err = DropTableUser(db)
+	if err != nil {
+		panic(err)
+	}
+
+	// 若users表不存在则创建
+	err = CreateTableUser(db)
+	if err != nil {
+		panic(err)
+	}
+
+	// 查看users表结构
+	descList, err := DescTableUser(db)
+	if err != nil {
+		panic(err)
+	}
+
+	// 表结构可视化
+	format := "%-20s%-20s%-10s%-10s%-20v%-20s\n"
+	fmt.Printf(format, "Field", "Type", "Null", "Key", "Default", "Extra")
+	fmt.Printf("%s\n", strings.Repeat("_", 100))
+	for _, desc := range descList {
+		// Default字段需要特殊处理
+		defaultString := ""
+		if desc.Default.Valid {
+			defaultString = desc.Default.String
+		} else {
+			defaultString = "NULL"
+		}
+		fmt.Printf(format, desc.Field, desc.Type, desc.Null, desc.Key, defaultString, desc.Extra)
+	}
+}
+```
+
+输出结果
+
+```bash
+Field               Type                Null      Key       Default             Extra
+____________________________________________________________________________________________________
+id                  int                 NO        PRI       NULL                auto_increment      
+name                varchar(50)         NO        UNI       NULL
+password            varchar(128)        NO                  NULL
+email               varchar(100)        NO        UNI       NULL
+created_at          timestamp           NO                  CURRENT_TIMESTAMP   DEFAULT_GENERATED   
+updated_at          timestamp           YES                 NULL
+deleted_at          timestamp           YES                 NULL
+```
+
+:::
+
+::: details （2）新增/修改/删除数据
 
 在下面的例子中我们执行了如下操作：
 
