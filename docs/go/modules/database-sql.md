@@ -47,10 +47,69 @@ go get github.com/go-sql-driver/mysql
 
 ## 连接
 
+### 连接
+
 ::: details （1）database/sql连接MySQL
 
 ```go
+package main
 
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sql.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	db, err := sql.Open("mysql", mysqlConfig.FormatDSN())
+	if err != nil {
+		return nil, err
+	}
+
+	// 验证连接是否有效
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 查看数据库版本
+	var version string
+	err = db.QueryRow("SELECT CONCAT_WS(' ', @@version, @@version_comment)").Scan(&version)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(version)
+}
 ```
 
 :::
@@ -87,8 +146,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 	}
 
 	// 连接数据库
-	// sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
-	// 也可以使用 MustConnect, 连接不成功就panic
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
@@ -100,13 +158,25 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
-	// 查看数据库版本
-	var version string
-	err = db.Get(&version, "SELECT CONCAT_WS(' ', @@version, @@version_comment) AS server_version;")
-	if err != nil {
-		panic(err)
+	// 查看数据库版本 - 兼容database/sql
+	{
+		var version string
+		err = db.QueryRow("SELECT CONCAT_WS(' ', @@version, @@version_comment)").Scan(&version)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(version)
 	}
-	fmt.Println(version)
+
+	// 查看数据库版本 - sqlx特有的查询方式,其内部本质也是 QueryRow + Scan 的方式
+	{
+		var version string
+		err = db.Get(&version, "SELECT CONCAT_WS(' ', @@version, @@version_comment)")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(version)
+	}
 }
 ```
 
@@ -114,9 +184,112 @@ func main() {
 
 ```bash
 8.0.30 MySQL Community Server - GPL
+8.0.30 MySQL Community Server - GPL
 ```
 
 :::
+
+<br />
+
+### 分析
+
+::: details （1）驱动注册逻辑
+
+```go
+// github.com/go-sql-driver/mysql init方法用于注册驱动
+func init() {
+	sql.Register("mysql", &MySQLDriver{})
+}
+
+// database/sql包提供的注册逻辑
+var (
+	driversMu sync.RWMutex
+	drivers   = make(map[string]driver.Driver)
+)
+
+func Register(name string, driver driver.Driver) {
+	driversMu.Lock()
+	defer driversMu.Unlock()
+	if driver == nil {
+		panic("sql: Register driver is nil")
+	}
+	if _, dup := drivers[name]; dup {
+		panic("sql: Register called twice for driver " + name)
+	}
+	drivers[name] = driver
+}
+
+// driver.Driver接口, name就是注册时的name
+type Driver interface {
+	Open(name string) (Conn, error)
+}
+```
+
+:::
+
+::: details （2）sql.Open函数
+
+```go
+func Open(driverName, dataSourceName string) (*DB, error) {
+    // 查找驱动
+	driversMu.RLock()
+	driveri, ok := drivers[driverName]
+	driversMu.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("sql: unknown driver %q (forgotten import?)", driverName)
+	}
+
+    // 调用 OpenConnector，然后将返回值作为OpenDB的参数，最后一个*DB结构体
+	if driverCtx, ok := driveri.(driver.DriverContext); ok {
+		connector, err := driverCtx.OpenConnector(dataSourceName)
+		if err != nil {
+			return nil, err
+		}
+		return OpenDB(connector), nil
+	}
+
+	return OpenDB(dsnConnector{dsn: dataSourceName, driver: driveri}), nil
+}
+```
+
+:::
+
+::: details （3）sqlx.Connect函数
+
+```go
+// Connect内部调用了Open和Ping函数
+// 注意这里的Open并不是sql.Open
+func Connect(driverName, dataSourceName string) (*DB, error) {
+	db, err := Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+
+// Open内部调用了sql.Open,然后对sql.DB做了一个简单的封装
+// Open is the same as sql.Open, but returns an *sqlx.DB instead.
+func Open(driverName, dataSourceName string) (*DB, error) {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{DB: db, driverName: driverName, Mapper: mapper()}, err
+}
+```
+
+:::
+
+<br />
+
+### 连接池
+
+
 
 <br />
 
