@@ -3069,7 +3069,7 @@ mysql -h192.168.48.133 -P${LocalHostPort} -uroot -p"${RootPassword}"            
 
 :::
 
-::: details （5）修改参数，这里以修改字符集为例
+::: details （5）修改字符集
 
 ```bash
 # 修改配置
@@ -3098,7 +3098,61 @@ Conn.  characterset:    utf8mb4
 
 :::
 
-::: details （6）删除MySQL
+::: details （6）修改时区
+
+```bash
+# 检查一下当前的时区, 使用系统时区，而系统时区是UTC
+mysql> show variables like "%time_zone%";
++------------------+--------+
+| Variable_name    | Value  |
++------------------+--------+
+| system_time_zone | UTC    |
+| time_zone        | SYSTEM |
++------------------+--------+
+2 rows in set (0.01 sec)
+
+# 通过获取当前时间验证一下
+mysql> select now();
++---------------------+
+| now()               |
++---------------------+
+| 2023-03-31 12:47:36 |  # 当前实际时间是 2023-03-31 20:47:36
++---------------------+
+1 row in set (0.00 sec)
+
+# --------------------------------------------------------------
+
+# 1、修改时区
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+default-time_zone = '+8:00'
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 3、验证
+mysql> show variables like "%time_zone%";
++------------------+--------+
+| Variable_name    | Value  |
++------------------+--------+
+| system_time_zone | UTC    |
+| time_zone        | +08:00 |
++------------------+--------+
+2 rows in set (0.00 sec)
+
+mysql> select now();
++---------------------+
+| now()               |
++---------------------+
+| 2023-03-31 20:51:09 |
++---------------------+
+1 row in set (0.00 sec)
+```
+
+:::
+
+::: details （7）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
