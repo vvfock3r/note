@@ -1,20 +1,42 @@
-# sqlx
+# database/sql
 
-Github：[https://github.com/jmoiron/sqlx](https://github.com/jmoiron/sqlx)
+## 必读说明
 
-文档：[https://pkg.go.dev/github.com/jmoiron/sqlx](https://pkg.go.dev/github.com/jmoiron/sqlx)
+数据库接口：
+
+* `database/sql` 是 Go 语言标准库中的一个包，提供了一组通用的接口、类型和方法等
+
+* `sqlx` 是一个在 `database/sql` 包的基础上封装的库，提供了一些更高级的功能和便利的接口
+
+数据库驱动：
+
+* `go-sql-driver/mysql` 是一个第三方的`MySQL`驱动程序，实现了 `database/sql` 包所定义的接口
 
 <br />
 
-## 安装和说明
+## 参考资料
 
-`database/sql` 是 Go 语言标准库中的一个包，提供了一组通用的接口和类型
+Go SQL接口说明：[https://github.com/golang/go/wiki/SQLInterface](https://github.com/golang/go/wiki/SQLInterface)
 
-`sqlx` 是一个在 `database/sql` 包的基础上封装的库，提供了一些更高级的功能和便利的接口
+Go SQL驱动列表：[https://github.com/golang/go/wiki/SQLDrivers](https://github.com/golang/go/wiki/SQLDrivers)
 
-`go-sql-driver/mysql` 是一个第三方的 Go MySQL 驱动程序，实现了 `database/sql` 包所定义的接口
+**database/sql**
 
-因此，`database/sql`和`sqlx`属于一类库，仅提供数据库操作接口，``go-sql-driver/mysql` 是一个 Go MySQL 驱动程序，用于实现接口
+* 文档：[https://pkg.go.dev/database/sql](https://pkg.go.dev/database/sql)
+
+**sqlx**
+
+* 文档：[https://pkg.go.dev/github.com/jmoiron/sqlx](https://pkg.go.dev/github.com/jmoiron/sqlx)
+* Github：[https://github.com/jmoiron/sqlx](https://github.com/jmoiron/sqlx)
+
+**go-sql-driver/mysql**
+
+* 文档：[https://pkg.go.dev/github.com/go-sql-driver/mysql](https://pkg.go.dev/github.com/go-sql-driver/mysql)
+* Github：[https://github.com/go-sql-driver/mysql](https://github.com/go-sql-driver/mysql)
+
+<br />
+
+## 安装依赖
 
 ```bash
 go get github.com/jmoiron/sqlx
@@ -23,9 +45,17 @@ go get github.com/go-sql-driver/mysql
 
 <br />
 
-## 数据库连接
+## 连接
 
-::: details （1）连接MySQL
+::: details （1）database/sql连接MySQL
+
+```go
+
+```
+
+:::
+
+::: details （2）sqlx连接MySQL
 
 ```go
 package main
@@ -90,7 +120,7 @@ func main() {
 
 <br />
 
-## 数据库操作
+## 操作
 
 ### 修改数据
 
