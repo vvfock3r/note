@@ -230,17 +230,14 @@ email               varchar(100)        NO        UNI       NULL
 created_at          timestamp           NO                  CURRENT_TIMESTAMP   DEFAULT_GENERATED   
 updated_at          timestamp           YES                 NULL
 deleted_at          timestamp           YES                 NULL
+
+# 分析
+# 这里需要注意Default的类型是sql.NullString，而不是普通的String
 ```
 
 :::
 
-::: details （2）新增/修改/删除数据
-
-在下面的例子中我们执行了如下操作：
-
-* 如果存在`users`表，则删除
-* 如果不存在`users`表，则新建
-* 向`users`表总共插入7条数据
+::: details （2）新增数据
 
 ```go
 package main
@@ -283,48 +280,13 @@ func ConnMySQL() (*sqlx.DB, error) {
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
-func DropTableUser(db *sqlx.DB) error {
-	// 创建users表
-	var schema = `DROP TABLE IF EXISTS users;`
-	_, err := db.Exec(schema)
-	return err
-}
-
-func CreateTableUser(db *sqlx.DB) error {
-	// 创建users表
-	var schema = `
-		CREATE TABLE IF NOT EXISTS users (
-			id int primary key auto_increment,
-			name varchar(50) not null unique,
-			password varchar(128) not null,
-			email varchar(100) not null unique,
-			created_at timestamp not null default now(),
-			updated_at timestamp,
-			deleted_at timestamp
-		);`
-	_, err := db.Exec(schema)
-	return err
-}
-
 func main() {
 	// 连接数据库
 	db, err := ConnMySQL()
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
-
-	// 删除users表
-	err = DropTableUser(db)
-	if err != nil {
-		panic(err)
-	}
-
-	// 创建users表
-	err = CreateTableUser(db)
-	if err != nil {
-		panic(err)
-	}
+	defer func() { _ = db.Close() }()
 
 	// 写入单条数据 - 方式1，使用?占位
 	{
@@ -361,7 +323,7 @@ func main() {
 		// 不是每个数据库或数据库驱动程序都支持这一点
 		fmt.Println(result.RowsAffected())
 
-		// 返回上一次插入操作生成的自增ID
+		// 返回上一次(本次)插入操作生成的自增ID
 		// 不是每个数据库或数据库驱动程序都支持这一点
 		fmt.Println(result.LastInsertId())
 	}
@@ -377,9 +339,22 @@ func main() {
 
 :::
 
+::: details （3）修改和删除数据，与新增数据使用方式一致
+
+```go
+```
+
+输出结果
+
+```bash
+
+```
+
+:::
+
 ### 查询数据
 
-::: details （2）查询数据
+::: details （1）查询数据
 
 ```go
 package main
