@@ -735,6 +735,90 @@ func main() {
 
 <br />
 
+### 预处理
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 定义预处理语句
+	stmp, err := db.Preparex("SELECT id,name,password,email FROM users WHERE id = ?")
+	if err != nil {
+		panic(err)
+	}
+
+	// 使用预处理语句
+	{
+		u := User{}
+		err = stmp.Get(&u, "1")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", u)
+	}
+
+	{
+		u := User{}
+		err = stmp.Get(&u, "2")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", u)
+	}
+}
+```
+
+:::
+
+<br />
+
 ## 服务器信息
 
 ::: details （1）模拟MySQL客户端内置命令status
