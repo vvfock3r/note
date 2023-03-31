@@ -342,24 +342,180 @@ func main() {
 ::: details （3）修改和删除数据，与新增数据使用方式一致
 
 ```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 修改数据: where字段默认不区分大小写，所以这里的更改总会生效
+	result, err := db.Exec("UPDATE users SET name = ?, updated_at=? WHERE name = ?", "alice", time.Now(), "Alice")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result.RowsAffected())
+
+	// 修改数据: 使用单引号包裹, 将Alice修改为'Alice',这样就会区分大小写
+	result, err = db.Exec("UPDATE users SET name = ?, updated_at=? WHERE name = ?", "alice", time.Now(), "'Alice'")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result.RowsAffected())
+
+	// 在修改数据时候，时间最好不要使用数据库的now()函数来获取，这有可能会因为时区导致获取错误的时间
+
+	// 删除数据：硬删除
+	result, err = db.Exec("DELETE FROM users WHERE name = ?", "bob5")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result.RowsAffected())
+
+	// 删除数据：软删除
+	result, err = db.Exec("UPDATE users SET deleted_at = ? WHERE name = ?", time.Now(), "bob4")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result.RowsAffected())
+}
 ```
 
 输出结果
 
 ```bash
-
+1 <nil>
+0 <nil>
+1 <nil>
+1 <nil>
 ```
 
 :::
 
 ### 查询数据
 
-::: details （1）查询数据
+::: details （1）查询数据：高级接口：Get / Select
 
 ```go
 package main
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// 注意事项：
+	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+
+	// 查询单条数据: Get，参数要求是一个结构体指针
+	{
+		user := User{}
+		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+		fmt.Println()
+	}
+
+	// 查询多条数据: Select，参数要求是一个 结构体切片的指针
+	{
+		users := []User{}
+		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		if err != nil {
+			panic(err)
+		}
+		for _, user := range users {
+			fmt.Printf("%#v\n", user)
+		}
+		fmt.Println()
+	}
+}
+```
+
+:::
+
+::: details （2）查询数据：低级接口：Query*
+
+```go
+package main
+
+import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -409,33 +565,9 @@ func main() {
 	// 注意事项：
 	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
 
-	// 查询单条数据
-	{
-		user := User{}
-		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("%#v\n", user)
-		fmt.Println()
-	}
-
-	// 查询多条数据: 使用 Select
-	{
-		users := []User{}
-		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
-		if err != nil {
-			panic(err)
-		}
-		for _, user := range users {
-			fmt.Printf("%#v\n", user)
-		}
-		fmt.Println()
-	}
-
 	// 查询多条数据: 使用 Query
 	{
-		rows, err := db.Query("SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		rows, err := db.Query("SELECT id,name,password,email FROM users WHERE id > ?", "42")
 		if err != nil {
 			panic(err)
 		}
@@ -450,7 +582,7 @@ func main() {
 		fmt.Println()
 	}
 
-	// 查询多条数据: 使用 Queryx
+	// 查询多条数据: 使用 Queryx, 可以使用 StructScan、SliceScan、MapScan映射到不同的对象中
 	{
 		rows, err := db.Queryx("SELECT id,name,password,email FROM users WHERE id > ?", "4")
 		if err != nil {
@@ -472,10 +604,12 @@ func main() {
 		user := User{}
 		row := db.QueryRow("SELECT id,name,password,email FROM users WHERE name = ?", "bob5")
 		err := row.Scan(&user.ID, &user.Name, &user.Password, &user.Email)
-		if err != nil {
-			panic(err)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", user)
 		}
-		fmt.Printf("%#v\n", user)
 		fmt.Println()
 	}
 
@@ -496,23 +630,8 @@ func main() {
 输出结果
 
 ```bash
-main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
-
 main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
 main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
-main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
-
-main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
-main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
-main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
-
-main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
-main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
-main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
-
-main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
-
-main.User{ID:7, Name:"bob5", Password:"123456", Email:"bob5@example.com"}
 ```
 
 :::
