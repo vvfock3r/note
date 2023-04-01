@@ -667,6 +667,7 @@ func main() {
 ```bash
 {"level":"error","ts":1680347876.7655728,"msg":"read tcp 192.168.48.1:59902->192.168.48.151:3306: i/o timeout","driver":"go-sql-driver/mysql"}
 {"level":"error","ts":1680347876.7655728,"msg":"read tcp 192.168.48.1:59901->192.168.48.151:3306: i/o timeout","driver":"go-sql-driver/mysql"}
+{"level":"error","ts":1680347906.7748804,"msg":"read tcp 192.168.48.1:59903->192.168.48.151:3306: i/o timeout","driver":"go-sql-driver/mysql"}
 
 # 需要注意的是，我们给zap添加了一个固定字段，{"driver": "go-sql-driver/mysql"}，这样就能很方便的区分出该日志由MySQL驱动打印
 ```
