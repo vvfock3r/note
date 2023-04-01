@@ -573,6 +573,108 @@ func main() {
 
 <br />
 
+## 日志
+
+### 使用 zap
+
+::: details （1）使用zap.Logger替换go-sql-driver/mysql内部的Logger
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+type mysqlLogger struct {
+	logger *zap.Logger
+}
+
+func (l *mysqlLogger) Print(v ...any) {
+	l.logger.Error(fmt.Sprint(v...))
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 初始化 zap.Logger
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	logger = logger.
+		WithOptions(zap.AddStacktrace(zapcore.FatalLevel)).
+		WithOptions(zap.WithCaller(false)).
+		With(zap.String("driver", "go-sql-driver/mysql"))
+
+	// 使用zap.Logger替换go-sql-driver/mysql内部的Logger
+	err = mysql.SetLogger(&mysqlLogger{logger: logger})
+	if err != nil {
+		panic(err)
+	}
+
+	// 人为制造一个go-sql-driver/mysql内部错误
+	var wg sync.WaitGroup
+	db.SetMaxOpenConns(2)
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _ = db.Exec("SELECT sleep(60)")
+		}()
+	}
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+{"level":"error","ts":1680347876.7655728,"msg":"read tcp 192.168.48.1:59902->192.168.48.151:3306: i/o timeout","driver":"go-sql-driver/mysql"}
+{"level":"error","ts":1680347876.7655728,"msg":"read tcp 192.168.48.1:59901->192.168.48.151:3306: i/o timeout","driver":"go-sql-driver/mysql"}
+
+# 需要注意的是，我们给zap添加了一个固定字段，{"driver": "go-sql-driver/mysql"}，这样就能很方便的区分出该日志由MySQL驱动打印
+```
+
+:::
+
+<br />
+
 ## 操作
 
 ### 修改数据
