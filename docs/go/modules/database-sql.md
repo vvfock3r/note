@@ -377,11 +377,185 @@ func main() {
 # 2、当我们将 SELECT SLEEP(60); 修改为 SELECT SLEEP(30); 甚至更低时，可以及时释放连接，不会报错
 # 3、注意上面我们并没有考虑到MySQL可接收的最大连接数，可以通过 SHOW VARIABLES LIKE 'max_connections'; 查询
 # 4、当达到MySQL最大连接数后会报错 &mysql.MySQLError{Number:0x410, SQLState:[5]uint8{0x0, 0x0, 0x0, 0x0, 0x0}, Message:"Too many connections"}
+
+# 总结：为了提高性能，这个值应该尽量大一点，但并不是越大越好
 ```
 
 :::
 
 ::: details （2）设置最大空闲的连接数：SetMaxIdleConns
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 设置最大空闲的连接数
+	// 如果 n <= 0，则不保留任何空闲连接
+	// 如果 n >0，并且大于 MaxOpenConns，则 MaxIdleConns 减少到和MaxOpenConns一致
+	// 默认值是2
+	db.SetMaxIdleConns(10)
+
+	// 开1000个连接，然后等待查询执行完成后，再查看剩余(空闲)的连接个数
+	var wg sync.WaitGroup
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := db.Exec("SELECT SLEEP(3)")
+			if err != nil {
+				log.Printf("Exec error: %#v\n", err)
+			}
+		}()
+		log.Printf("%#v\n\n", db.Stats())
+	}
+	wg.Wait()
+	log.Printf("%#v\n\n", db.Stats())
+}
+```
+
+输出结果
+
+```bash
+# 重点看最后一行, OpenConnections:10, MaxIdleClosed:990
+...
+2023/04/01 11:29:33 sql.DBStats{MaxOpenConnections:0, OpenConnections:997, InUse:997, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}  
+
+2023/04/01 11:29:33 sql.DBStats{MaxOpenConnections:0, OpenConnections:999, InUse:999, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}  
+
+2023/04/01 11:29:33 sql.DBStats{MaxOpenConnections:0, OpenConnections:999, InUse:999, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}  
+
+2023/04/01 11:29:37 sql.DBStats{MaxOpenConnections:0, OpenConnections:10, InUse:0, Idle:10, WaitCount:0, WaitDuration:0, MaxIdleClosed:990, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}
+
+# 总结：为了提高性能，这个值应该尽量大一点，但并不是越大越好
+```
+
+:::
+
+::: details （3）设置连接最长的空闲时间：SetConnMaxIdleTime
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 设置最大空闲的连接数
+	db.SetMaxIdleConns(20)
+
+	// 设置连接最长的空闲时间
+	// 如果连接空闲达到该时长将会被关闭
+    // 如果 d <= 0，则连接不会因连接空闲时间而关闭，默认为0
+	db.SetConnMaxIdleTime(time.Second * 15)
+
+	// 开100个连接，然后让他一直空闲
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := db.Exec("SELECT SLEEP(1)")
+			if err != nil {
+				log.Printf("Exec error: %#v\n", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// 实时查看连接状态
+	for {
+		time.Sleep(time.Second)
+		log.Printf("%#v\n\n", db.Stats())
+	}
+}
+```
+
+输出结果
+
+```bash
+# 重点看 MaxIdleTimeClosed
+...
+2023/04/01 11:44:44 sql.DBStats{MaxOpenConnections:0, OpenConnections:0, InUse:0, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:80, MaxIdleTimeClosed:20, MaxLifetimeClosed:0}
+```
+
+:::
+
+::: details （4）设置连接的最大生命周期：SetConnMaxLifetime
 
 ```go
 
