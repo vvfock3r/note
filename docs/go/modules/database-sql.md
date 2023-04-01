@@ -678,7 +678,11 @@ func main() {
 
 ## 操作
 
-### 修改数据
+### 库操作
+
+<br />
+
+### 表操作
 
 ::: details （1）创建、删除表和查看表结构
 
@@ -823,7 +827,11 @@ deleted_at          timestamp           YES                 NULL
 
 :::
 
-::: details （2）新增数据
+<br />
+
+### 新增数据
+
+::: details （1）新增数据
 
 ```go
 package main
@@ -925,7 +933,11 @@ func main() {
 
 :::
 
-::: details （3）修改和删除数据，与新增数据使用方式一致
+<br />
+
+### 修改数据
+
+::: details （1）修改和删除数据，与新增数据使用方式一致
 
 ```go
 package main
@@ -1010,6 +1022,10 @@ func main() {
 ```
 
 :::
+
+<br />
+
+### 删除数据
 
 <br />
 
@@ -1405,7 +1421,7 @@ func main() {
 
 <br />
 
-## 服务器信息
+## 统计信息
 
 ::: details （1）模拟MySQL客户端内置命令status
 
