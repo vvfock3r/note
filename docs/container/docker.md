@@ -3152,7 +3152,40 @@ mysql> select now();
 
 :::
 
-::: details （7）删除MySQL
+::: details （7）修改最大支持的连接数
+
+```bash
+# 先检查一下默认值
+mysql> SHOW VARIABLES LIKE 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 151   |
++-----------------+-------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+max_connections = 1000
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 1000  |
++-----------------+-------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+::: details （8）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
