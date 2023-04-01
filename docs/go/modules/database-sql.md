@@ -289,7 +289,105 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 
 ### 连接池设置
 
+::: details （1）设置最大打开的连接数：SetMaxOpenConns
 
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:              "root",
+		Passwd:            "QiNqg[l.%;H>>rO9",
+		Net:               "tcp",
+		Addr:              "192.168.48.151:3306",
+		DBName:            "demo",
+		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:           5 * time.Second,      // 连接超时时间
+		ReadTimeout:       30 * time.Second,     // 读取超时时间
+		WriteTimeout:      30 * time.Second,     // 写入超时时间
+		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 设置最大打开的连接数
+	// 当 n <= 0时表示不限制打开的连接数,默认值为 0
+	db.SetMaxOpenConns(2)
+
+	// 当达到最大连接后，再去打开新连接，会阻塞，直到一段时间后仍旧获取不到连接则报超时错误
+	var wg sync.WaitGroup
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := db.Exec("SELECT SLEEP(60);")
+			if err != nil {
+				log.Printf("Exec error: %#v\n", err)
+			}
+		}()
+		time.Sleep(time.Second)
+		log.Printf("%#v\n\n", db.Stats())
+	}
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+2023/04/01 10:45:23 sql.DBStats{MaxOpenConnections:2, OpenConnections:1, InUse:1, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}
+
+2023/04/01 10:45:24 sql.DBStats{MaxOpenConnections:2, OpenConnections:2, InUse:2, Idle:0, WaitCount:0, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}
+
+2023/04/01 10:45:25 sql.DBStats{MaxOpenConnections:2, OpenConnections:2, InUse:2, Idle:0, WaitCount:1, WaitDuration:0, MaxIdleClosed:0, MaxIdleTimeClosed:0, MaxLifetimeClosed:0}
+
+[mysql] 2023/04/01 10:45:52 packets.go:37: read tcp 192.168.48.1:55526->192.168.48.151:3306: i/o timeout
+2023/04/01 10:45:52 Exec error: &errors.errorString{s:"invalid connection"}
+[mysql] 2023/04/01 10:45:53 packets.go:37: read tcp 192.168.48.1:55527->192.168.48.151:3306: i/o timeout
+2023/04/01 10:45:53 Exec error: &errors.errorString{s:"invalid connection"}
+[mysql] 2023/04/01 10:46:22 packets.go:37: read tcp 192.168.48.1:55528->192.168.48.151:3306: i/o timeout
+2023/04/01 10:46:22 Exec error: &errors.errorString{s:"invalid connection"}
+
+# 分析
+# 1、当达到最大连接后，再去打开新连接，会阻塞，直到一段时间后仍旧获取不到连接则报错 mysql.ErrInvalidConn
+# 2、当我们将 SELECT SLEEP(60); 修改为 SELECT SLEEP(30); 甚至更低时，可以及时释放连接，不会报错
+# 3、注意上面我们并没有考虑到MySQL可接收的最大连接数，可以通过 SHOW VARIABLES LIKE 'max_connections'; 查询
+# 4、当达到MySQL最大连接数后会报错 &mysql.MySQLError{Number:0x410, SQLState:[5]uint8{0x0, 0x0, 0x0, 0x0, 0x0}, Message:"Too many connections"}
+```
+
+:::
+
+::: details （2）设置最大空闲的连接数：SetMaxIdleConns
+
+```go
+
+```
+
+:::
 
 <br />
 
