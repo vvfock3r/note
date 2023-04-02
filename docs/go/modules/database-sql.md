@@ -799,6 +799,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// DescStruct 表结构
+type DescStruct struct {
+	Field   string         `db:"Field"`
+	Type    string         `db:"Type"`
+	Null    string         `db:"Null"`
+	Key     string         `db:"Key"`
+	Default sql.NullString `db:"Default"`
+	Extra   string         `db:"Extra"`
+}
+
 // ConnMySQL 连接数据库
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
@@ -822,48 +832,6 @@ func ConnMySQL() (*sqlx.DB, error) {
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
-// CreateTableUser 若users表不存在则创建
-func CreateTableUser(db *sqlx.DB) error {
-	// 创建users表
-	var schema = `
-		CREATE TABLE IF NOT EXISTS users (
-			id int primary key auto_increment,
-			name varchar(50) not null unique,
-			password varchar(128) not null,
-			email varchar(100) not null unique,
-			created_at timestamp not null default now(),
-			updated_at timestamp,
-			deleted_at timestamp
-		);`
-	_, err := db.Exec(schema)
-	return err
-}
-
-// DropTableUser 若users表存在则删除
-func DropTableUser(db *sqlx.DB) error {
-	// 创建users表
-	var schema = `DROP TABLE IF EXISTS users;`
-	_, err := db.Exec(schema)
-	return err
-}
-
-// DescStruct 表结构
-type DescStruct struct {
-	Field   string         `db:"Field"`
-	Type    string         `db:"Type"`
-	Null    string         `db:"Null"`
-	Key     string         `db:"Key"`
-	Default sql.NullString `db:"Default"`
-	Extra   string         `db:"Extra"`
-}
-
-// DescTableUser 查看users表结构
-func DescTableUser(db *sqlx.DB) ([]DescStruct, error) {
-	var desc []DescStruct
-	err := db.Select(&desc, "DESC users")
-	return desc, err
-}
-
 func main() {
 	// 连接数据库
 	db, err := ConnMySQL()
@@ -873,36 +841,59 @@ func main() {
 	defer func() { _ = db.Close() }()
 
 	// 若users表存在则删除
-	err = DropTableUser(db)
-	if err != nil {
-		panic(err)
+	{
+		var sqlString = `DROP TABLE IF EXISTS users;`
+		_, err := db.Exec(sqlString)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// 若users表不存在则创建
-	err = CreateTableUser(db)
-	if err != nil {
-		panic(err)
+	{
+		var sqlString = `
+		CREATE TABLE IF NOT EXISTS users (
+			·id·         int auto_increment,
+			·username·   varchar(128) not null,
+			·password·   varchar(255) not null,
+			·email·      varchar(128) not null,
+			·created_at· timestamp not null,
+			·updated_at· timestamp not null,
+			·deleted_at· timestamp,
+			PRIMARY KEY (·id·),
+			UNIQUE (·username·),
+  			UNIQUE (·email·)
+		)`
+		sqlString = strings.ReplaceAll(sqlString, "·", "`")
+		_, err := db.Exec(sqlString)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// 查看users表结构
-	descList, err := DescTableUser(db)
-	if err != nil {
-		panic(err)
-	}
-
-	// 表结构可视化
-	format := "%-20s%-20s%-10s%-10s%-20v%-20s\n"
-	fmt.Printf(format, "Field", "Type", "Null", "Key", "Default", "Extra")
-	fmt.Printf("%s\n", strings.Repeat("_", 100))
-	for _, desc := range descList {
-		// Default字段需要特殊处理
-		defaultString := ""
-		if desc.Default.Valid {
-			defaultString = desc.Default.String
-		} else {
-			defaultString = "NULL"
+	{
+		// 执行SQL语句
+		var desc []DescStruct
+		err := db.Select(&desc, "DESC users")
+		if err != nil {
+			panic(err)
 		}
-		fmt.Printf(format, desc.Field, desc.Type, desc.Null, desc.Key, defaultString, desc.Extra)
+
+		// 表结构可视化
+		format := "%-20s%-20s%-10s%-10s%-20v%-20s\n"
+		fmt.Printf(format, "Field", "Type", "Null", "Key", "Default", "Extra")
+		fmt.Printf("%s\n", strings.Repeat("_", 100))
+		for _, row := range desc {
+			// Default字段的值可能为NULL,所以需要特殊处理
+			defaultString := ""
+			if row.Default.Valid {
+				defaultString = row.Default.String
+			} else {
+				defaultString = "NULL"
+			}
+			fmt.Printf(format, row.Field, row.Type, row.Null, row.Key, defaultString, row.Extra)
+		}
 	}
 }
 ```
@@ -913,15 +904,12 @@ func main() {
 Field               Type                Null      Key       Default             Extra
 ____________________________________________________________________________________________________
 id                  int                 NO        PRI       NULL                auto_increment      
-name                varchar(50)         NO        UNI       NULL
-password            varchar(128)        NO                  NULL
-email               varchar(100)        NO        UNI       NULL
-created_at          timestamp           NO                  CURRENT_TIMESTAMP   DEFAULT_GENERATED   
-updated_at          timestamp           YES                 NULL
+username            varchar(128)        NO        UNI       NULL
+password            varchar(255)        NO                  NULL
+email               varchar(128)        NO        UNI       NULL
+created_at          timestamp           NO                  NULL
+updated_at          timestamp           NO                  NULL
 deleted_at          timestamp           YES                 NULL
-
-# 分析
-# 这里需要注意Default的类型是sql.NullString，而不是普通的String
 ```
 
 :::
@@ -945,10 +933,13 @@ import (
 
 // User 定义结构体
 type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+	ID        int       `db:"id"`
+	Username  string    `db:"username"`
+	Password  string    `db:"password"`
+	Email     string    `db:"email"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	DeletedAt time.Time `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -983,8 +974,9 @@ func main() {
 
 	// 写入单条数据 - 方式1，使用?占位
 	{
-		user := User{Name: "Alice", Password: "123456", Email: "alice@example.com"}
-		_, err := db.Exec("INSERT INTO users (name, password, email) VALUES (?, ?, ?)", user.Name, user.Password, user.Email)
+		user := User{Username: "alice", Password: "123456", Email: "alice@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES (?, ?, ?,?,?)`
+		_, err := db.Exec(sqlString, user.Username, user.Password, user.Email, user.CreatedAt, user.UpdatedAt)
 		if err != nil {
 			panic(err)
 		}
@@ -992,8 +984,10 @@ func main() {
 
 	// 写入单条数据 - 方式2，:username等写法需要对应结构体的tag: db
 	{
-		user := User{Name: "John", Password: "123456", Email: "john@example.com"}
-		_, err := db.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user)
+		user := User{Username: "john", Password: "123456", Email: "john@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+		_, err := db.NamedExec(sqlString, user)
 		if err != nil {
 			panic(err)
 		}
@@ -1001,24 +995,36 @@ func main() {
 
 	// 批量写入数据
 	{
-		user := []User{
-			{Name: "bob1", Password: "123456", Email: "bob1@example.com"},
-			{Name: "bob2", Password: "123456", Email: "bob2@example.com", ID: 100},
-			{Name: "bob3", Password: "123456", Email: "bob3@example.com"},
-			{Name: "bob4", Password: "123456", Email: "bob4@example.com"},
-			{Name: "bob5", Password: "123456", Email: "bob5@example.com"},
+		users := []User{
+			{Username: "bob1", Password: "123456", Email: "bob1@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			{Username: "bob2", Password: "123456", Email: "bob2@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			{Username: "bob3", Password: "123456", Email: "bob3@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			{Username: "bob4", Password: "123456", Email: "bob4@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			{Username: "bob5", Password: "123456", Email: "bob5@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()},
 		}
-		result, err := db.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user)
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+
+		result, err := db.NamedExec(sqlString, users)
 		if err != nil {
 			panic(err)
 		}
+
 		// 返回受update, insert, or delete操作影响的行数
 		// 不是每个数据库或数据库驱动程序都支持这一点
-		fmt.Println(result.RowsAffected())
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("RowsAffected: %d\n", n)
 
 		// 返回上一次(本次)插入操作生成的自增ID
 		// 不是每个数据库或数据库驱动程序都支持这一点
-		fmt.Println(result.LastInsertId())
+		m, err := result.LastInsertId()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("LastInsertId: %d\n", m)
 	}
 }
 ```
@@ -1026,8 +1032,38 @@ func main() {
 输出结果
 
 ```bash
-5 <nil>
-3 <nil>
+RowsAffected: 5    # 受影响的行数
+LastInsertId: 27   # 上一次插入ID(这里的ID是自增主键)
+
+# 我们来看一下数据库的信息,下面的信息是多次【执行代码 + delete from users;】后的结果
+# 当插入多行数据时，LastInsertId是多行的第一行的ID
+mysql> select * from users;
++----+----------+----------+-------------------+---------------------+---------------------+------------+
+| id | username | password | email             | created_at          | updated_at          | deleted_at |
++----+----------+----------+-------------------+---------------------+---------------------+------------+
+| 25 | alice    | 123456   | alice@example.com | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 26 | john     | 123456   | john@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 27 | bob1     | 123456   | bob1@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 28 | bob2     | 123456   | bob2@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 29 | bob3     | 123456   | bob3@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 30 | bob4     | 123456   | bob4@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
+| 31 | bob5     | 123456   | bob5@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
++----+----------+----------+-------------------+---------------------+---------------------+------------+
+7 rows in set (0.00 sec)
+```
+
+:::
+
+::: details （2）批量写入大量虚假数据
+
+```go
+
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
