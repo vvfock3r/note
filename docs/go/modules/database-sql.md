@@ -66,18 +66,19 @@ import (
 func ConnMySQL() (*sql.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -131,18 +132,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -307,18 +309,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -401,18 +404,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -488,18 +492,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -573,6 +578,37 @@ func main() {
 
 <br />
 
+### 身份认证插件
+
+::: details （1）身份认证插件介绍
+
+**身份认证插件介绍：**
+
+* mysql_native_password：MySQL 8.0之前的默认身份插件，使用用户名和密码进行验证，不支持SSL/TLS
+* caching_sha2_password：MySQL 8.0之后的默认身份插件，支持SSL/TLS
+
+<br />
+
+**查询当前数据库默认的身份认证插件**
+
+```bash
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| caching_sha2_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+```
+
+:::
+
+::: details （2）AllowNativePasswords测试
+
+:::
+
+<br />
+
 ## 日志
 
 ### 使用 zap
@@ -597,18 +633,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -698,18 +735,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:   "root",
-		Passwd: "QiNqg[l.%;H>>rO9",
-		Net:    "tcp",
-		Addr:   "192.168.48.151:3306",
-		//DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -813,18 +851,19 @@ type DescStruct struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库
@@ -946,18 +985,19 @@ type User struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1089,18 +1129,19 @@ import (
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1191,18 +1232,19 @@ type User struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1275,18 +1317,19 @@ type User struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1404,18 +1447,19 @@ type User struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1499,18 +1543,19 @@ type User struct {
 func ConnMySQL() (*sqlx.DB, error) {
 	// 定义MySQL配置
 	mysqlConfig := mysql.Config{
-		User:              "root",
-		Passwd:            "QiNqg[l.%;H>>rO9",
-		Net:               "tcp",
-		Addr:              "192.168.48.151:3306",
-		DBName:            "demo",
-		Collation:         "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:               time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:         true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:           5 * time.Second,      // 连接超时时间
-		ReadTimeout:       30 * time.Second,     // 读取超时时间
-		WriteTimeout:      30 * time.Second,     // 写入超时时间
-		CheckConnLiveness: true,                 // 在使用连接之前检查其存活性
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
