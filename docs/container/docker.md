@@ -3185,7 +3185,42 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 
 :::
 
-::: details （8）删除MySQL
+::: details （8）修改默认的身份认证插件
+
+```bash
+# 先检查一下默认值
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| caching_sha2_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+default_authentication_plugin = mysql_native_password
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| mysql_native_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+
+# 推荐使用 caching_sha2_password，但是为了兼容旧的MySQL客户端或者库，也可以设置成mysql_native_password
+```
+
+:::
+
+::: details （9）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
