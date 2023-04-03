@@ -1249,7 +1249,124 @@ func main() {
 
 ### 修改数据
 
-::: details （1）修改和删除数据，与新增数据使用方式一致
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则, 不区分大小写
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 总结
+	// 1、在修改数据时候，时间最好不要使用数据库的now()函数 和 程序的now() 混合使用，这有可能会因为时区导致获取错误的时间
+	// 2、SQL语句中的大小写是否敏感 和 排序规则有关
+
+	// 修改数据: 将ID为8的用户名修改为 Alice
+	{
+		result, err := db.Exec("UPDATE users SET username=?, updated_at=? WHERE id = 8", "Alice", time.Now())
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
+	}
+
+	// 修改数据1: utf8mb4_general_ci默认不区分大小写，所以这里的更改总会生效
+	{
+		result, err := db.Exec("UPDATE users SET username = ?, updated_at=? WHERE username = ?", "jack", time.Now(), "alice")
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
+	}
+
+	// 修改数据2: 注释上面的代码，在不修改MySQL排序规则的情况下，添加 binary 关键字,这样就会区分大小写
+	{
+		result, err := db.Exec("UPDATE users SET username = ?, updated_at=? WHERE binary username = ?", "bob", time.Now(), "alice")
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
+	}
+
+	// 修改数据3: 排除逻辑删除数据(deleted_at不是null的情况)
+	{
+		result, err := db.Exec("UPDATE users SET username=?, updated_at=? WHERE deleted_at is null and id = 9", "Alice", time.Now())
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
+	}
+}
+```
+
+输出结果
+
+```bash
+受影响的行数: 1
+受影响的行数: 1
+受影响的行数: 0
+受影响的行数: 1
+```
+
+:::
+
+<br />
+
+### 删除数据
+
+::: details 点击查看详情
 
 ```go
 package main
@@ -1325,20 +1442,7 @@ func main() {
 }
 ```
 
-输出结果
-
-```bash
-1 <nil>
-0 <nil>
-1 <nil>
-1 <nil>
-```
-
 :::
-
-<br />
-
-### 删除数据
 
 <br />
 
