@@ -939,9 +939,9 @@ func main() {
 			·username·   varchar(128) not null,
 			·password·   varchar(255) not null,
 			·email·      varchar(128) not null,
-			·created_at· timestamp not null,
-			·updated_at· timestamp not null,
-			·deleted_at· timestamp null default null,
+			·created_at· datetime(6) not null,
+			·updated_at· datetime(6) not null,
+			·deleted_at· datetime(6) null default null,
 			PRIMARY KEY (·id·),
 			UNIQUE (·username·),
   			UNIQUE (·email·)
@@ -985,13 +985,13 @@ func main() {
 ```bash
 Field               Type                Null      Key       Default             Extra
 ____________________________________________________________________________________________________
-id                  int                 NO        PRI       NULL                auto_increment      
+id                  int                 NO        PRI       NULL                auto_increment
 username            varchar(128)        NO        UNI       NULL
 password            varchar(255)        NO                  NULL
 email               varchar(128)        NO        UNI       NULL
-created_at          timestamp           NO                  NULL
-updated_at          timestamp           NO                  NULL
-deleted_at          timestamp           YES                 NULL
+created_at          datetime(6)         NO                  NULL
+updated_at          datetime(6)         NO                  NULL
+deleted_at          datetime(6)         YES                 NULL
 ```
 
 :::
