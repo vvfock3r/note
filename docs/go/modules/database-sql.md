@@ -1410,36 +1410,39 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
-	// 修改数据: where字段默认不区分大小写，所以这里的更改总会生效
-	result, err := db.Exec("UPDATE users SET name = ?, updated_at=? WHERE name = ?", "alice", time.Now(), "Alice")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(result.RowsAffected())
-
-	// 修改数据: 使用单引号包裹, 将Alice修改为'Alice',这样就会区分大小写
-	result, err = db.Exec("UPDATE users SET name = ?, updated_at=? WHERE name = ?", "alice", time.Now(), "'Alice'")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(result.RowsAffected())
-
-	// 在修改数据时候，时间最好不要使用数据库的now()函数来获取，这有可能会因为时区导致获取错误的时间
-
 	// 删除数据：硬删除
-	result, err = db.Exec("DELETE FROM users WHERE name = ?", "bob5")
-	if err != nil {
-		panic(err)
+	{
+		result, err := db.Exec("DELETE FROM users WHERE id = ?", "8")
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
 	}
-	fmt.Println(result.RowsAffected())
 
 	// 删除数据：软删除
-	result, err = db.Exec("UPDATE users SET deleted_at = ? WHERE name = ?", time.Now(), "bob4")
-	if err != nil {
-		panic(err)
+	{
+		result, err := db.Exec("UPDATE users SET deleted_at = ? WHERE id = ?", time.Now(), "9")
+		if err != nil {
+			panic(err)
+		}
+		n, err := result.RowsAffected()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("受影响的行数: %d\n", n)
 	}
-	fmt.Println(result.RowsAffected())
 }
+```
+
+输出结果
+
+```bash
+受影响的行数: 1
+受影响的行数: 1
 ```
 
 :::
