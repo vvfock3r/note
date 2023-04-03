@@ -754,9 +754,9 @@ func main() {
 
 ## 操作
 
-### 库表操作
+### 对库操作
 
-::: details （1）库操作
+::: details 点击查看详情
 
 ```go
 package main
@@ -861,7 +861,11 @@ Database List:      [demo information_schema mysql performance_schema sys]
 
 :::
 
-::: details （2）表操作
+<br />
+
+### 对表操作
+
+::: details （1）表操作
 
 ```go
 package main
@@ -937,7 +941,7 @@ func main() {
 			·email·      varchar(128) not null,
 			·created_at· timestamp not null,
 			·updated_at· timestamp not null,
-			·deleted_at· timestamp,
+			·deleted_at· timestamp null default null,
 			PRIMARY KEY (·id·),
 			UNIQUE (·username·),
   			UNIQUE (·email·)
@@ -1136,13 +1140,107 @@ mysql> select * from users;
 ::: details （2）批量写入大量虚假数据
 
 ```go
+package main
 
+import (
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"sync"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID        int       `db:"id"`
+	Username  string    `db:"username"`
+	Password  string    `db:"password"`
+	Email     string    `db:"email"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	DeletedAt time.Time `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 统计时间
+	start := time.Now()
+	defer func() {
+		fmt.Printf("Used %.0f seconds", time.Since(start).Seconds())
+	}()
+
+	// 生成数据，200万条
+	ch := make(chan User, 1024)
+	go func() {
+		for i := 0; i < 200*10000; i++ {
+			user := User{
+				Username:  gofakeit.Username(),
+				Password:  gofakeit.Password(true, true, true, false, false, 12),
+				Email:     gofakeit.Email(),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			ch <- user
+		}
+		close(ch)
+	}()
+
+	// 写入数据库,并发100
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				user, ok := <-ch
+				if !ok {
+					break
+				}
+				sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+						(:username, :password, :email, :created_at, :updated_at)`
+				_, _ = db.NamedExec(sqlString, user)
+			}
+		}()
+	}
+	wg.Wait()
+}
 ```
 
 输出结果
 
 ```bash
-
+# 待补充
 ```
 
 :::
