@@ -996,6 +996,41 @@ deleted_at          datetime(6)         YES                 NULL
 
 :::
 
+::: details （2）建表时设置写入或更新数据时自动填充当前时间
+
+```go
+	// 若users表不存在则创建
+	{
+		var sqlString = `
+		CREATE TABLE IF NOT EXISTS users (
+			·id·         int auto_increment,
+			·username·   varchar(128) not null,
+			·password·   varchar(255) not null,
+			·email·      varchar(128) not null,
+			·created_at· datetime(6) not null default current_timestamp(6),
+			·updated_at· datetime(6) not null default current_timestamp(6) on update current_timestamp(6),
+			·deleted_at· datetime(6) null default null,
+			PRIMARY KEY (·id·),
+			UNIQUE (·username·),
+  			UNIQUE (·email·)
+		)`
+		sqlString = strings.ReplaceAll(sqlString, "·", "`")
+		_, err := db.Exec(sqlString)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+// 分析
+// 1、如上建表SQL语句: 在以后写入数据或修改数据时可以不用指定 created_at 和 updated_at
+// 2、这样Go代码写起来会清爽很多，不用显示传递 CreatedAt 和 UpdatedAt
+// 3、但是可能会埋下一些隐患，比如
+//    1) 数据库时区错误导致时间错误，这可以通过修改MySQL时区来解决
+//    2) 将数据库从一个实例迁移到另一个实例，新实例时区设置有问题 且 有业务正在使用不能修改时区的情况下，就比较难办
+```
+
+:::
+
 <br />
 
 ### 写入数据
