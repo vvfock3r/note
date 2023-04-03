@@ -1116,23 +1116,24 @@ func main() {
 
 ```bash
 RowsAffected: 5    # 受影响的行数
-LastInsertId: 27   # 上一次插入ID(这里的ID是自增主键)
+LastInsertId: 3    # 上一次插入ID(这里的ID是自增主键)
 
-# 我们来看一下数据库的信息,下面的信息是多次【执行代码 + delete from users;】后的结果
+# 我们来看一下数据库的信息
 # 当插入多行数据时，LastInsertId是多行的第一行的ID
 mysql> select * from users;
-+----+----------+----------+-------------------+---------------------+---------------------+------------+
-| id | username | password | email             | created_at          | updated_at          | deleted_at |
-+----+----------+----------+-------------------+---------------------+---------------------+------------+
-| 25 | alice    | 123456   | alice@example.com | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 26 | john     | 123456   | john@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 27 | bob1     | 123456   | bob1@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 28 | bob2     | 123456   | bob2@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 29 | bob3     | 123456   | bob3@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 30 | bob4     | 123456   | bob4@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-| 31 | bob5     | 123456   | bob5@example.com  | 2023-04-02 11:06:56 | 2023-04-02 11:06:56 | NULL       |
-+----+----------+----------+-------------------+---------------------+---------------------+------------+
-7 rows in set (0.00 sec)
++----+----------+----------+-------------------+----------------------------+----------------------------+------------+
+| id | username | password | email             | created_at                 | updated_at                 | deleted_at |
++----+----------+----------+-------------------+----------------------------+----------------------------+------------+
+|  1 | alice    | 123456   | alice@example.com | 2023-04-03 18:00:37.703388 | 2023-04-03 18:00:37.703388 | NULL       |
+|  2 | john     | 123456   | john@example.com  | 2023-04-03 18:00:37.710173 | 2023-04-03 18:00:37.710173 | NULL       |
+|  3 | bob1     | 123456   | bob1@example.com  | 2023-04-03 18:00:37.713542 | 2023-04-03 18:00:37.713542 | NULL       |
+|  4 | bob2     | 123456   | bob2@example.com  | 2023-04-03 18:00:37.713542 | 2023-04-03 18:00:37.713542 | NULL       |
+|  5 | bob3     | 123456   | bob3@example.com  | 2023-04-03 18:00:37.713542 | 2023-04-03 18:00:37.713542 | NULL       |
+|  6 | bob4     | 123456   | bob4@example.com  | 2023-04-03 18:00:37.713542 | 2023-04-03 18:00:37.713542 | NULL       |
+|  7 | bob5     | 123456   | bob5@example.com  | 2023-04-03 18:00:37.713542 | 2023-04-03 18:00:37.713542 | NULL       |
+|  8 | faker    | 123456   | faker@example.com | 2023-04-03 18:00:37.716145 | 2023-04-03 18:00:37.716145 | NULL       |
++----+----------+----------+-------------------+----------------------------+----------------------------+------------+
+8 rows in set (0.00 sec)
 ```
 
 :::
@@ -1451,90 +1452,7 @@ func main() {
 
 ### 查询数据
 
-::: details （1）查询数据：高级接口：Get / Select
-
-```go
-package main
-
-import (
-	"fmt"
-	"time"
-
-	"github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-)
-
-// User 定义结构体
-type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
-}
-
-// ConnMySQL 连接数据库
-func ConnMySQL() (*sqlx.DB, error) {
-	// 定义MySQL配置
-	mysqlConfig := mysql.Config{
-		User:                 "root",
-		Passwd:               "QiNqg[l.%;H>>rO9",
-		Net:                  "tcp",
-		Addr:                 "192.168.48.151:3306",
-		DBName:               "demo",
-		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:              5 * time.Second,      // 连接超时时间
-		ReadTimeout:          30 * time.Second,     // 读取超时时间
-		WriteTimeout:         30 * time.Second,     // 写入超时时间
-		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
-		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
-	}
-
-	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
-	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
-}
-
-func main() {
-	// 连接数据库
-	db, err := ConnMySQL()
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	// 注意事项：
-	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
-
-	// 查询单条数据: Get，参数要求是一个结构体指针
-	{
-		user := User{}
-		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("%#v\n", user)
-		fmt.Println()
-	}
-
-	// 查询多条数据: Select，参数要求是一个 结构体切片的指针
-	{
-		users := []User{}
-		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
-		if err != nil {
-			panic(err)
-		}
-		for _, user := range users {
-			fmt.Printf("%#v\n", user)
-		}
-		fmt.Println()
-	}
-}
-```
-
-:::
-
-::: details （2）查询数据：低级接口：Query*
+::: details （1）查询数据：低级接口：Query*
 
 ```go
 package main
@@ -1658,6 +1576,89 @@ func main() {
 ```bash
 main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
 main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+```
+
+:::
+
+::: details （2）查询数据：高级接口：Get / Select
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Password string `db:"password"`
+	Email    string `db:"email"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// 注意事项：
+	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+
+	// 查询单条数据: Get，参数要求是一个结构体指针
+	{
+		user := User{}
+		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+		fmt.Println()
+	}
+
+	// 查询多条数据: Select，参数要求是一个 结构体切片的指针
+	{
+		users := []User{}
+		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		if err != nil {
+			panic(err)
+		}
+		for _, user := range users {
+			fmt.Printf("%#v\n", user)
+		}
+		fmt.Println()
+	}
+}
 ```
 
 :::
