@@ -582,10 +582,20 @@ func main() {
 
 ::: details （1）身份认证插件介绍
 
-**身份认证插件介绍：**
+**身份认证插件介绍**
 
-* mysql_native_password：MySQL 8.0之前的默认身份插件，使用用户名和密码进行验证，不支持SSL/TLS
-* caching_sha2_password：MySQL 8.0之后的默认身份插件，支持SSL/TLS
+* mysql_native_password
+
+  MySQL 8.0之前的默认身份插件，使用用户名和密码进行验证，使用SHA1算法进行密码加密，认证过程中不会缓存密码，不支持SSL/TLS
+
+* caching_sha2_password
+
+  MySQL 8.0之后的默认身份插件，使用用户名和密码进行验证，使用SHA256算法进行密码加密，在认证成功后将哈希值缓存到内存中，支持SSL/TLS
+
+**go-sql-driver/mysql支持的身份认证插件**
+
+* 默认情况下使用caching_sha2_password插件，不支持mysql_native_password插件
+* 将AllowNativePasswords设置为true，可以同时支持caching_sha2_password和mysql_native_password
 
 <br />
 
@@ -601,9 +611,38 @@ mysql> SELECT @@default_authentication_plugin;
 1 row in set, 1 warning (0.00 sec)
 ```
 
+**修改当前数据库默认的身份认证插件**
+
+```bash
+# 1、修改MySQL配置文件
+[mysqld]
+default_authentication_plugin = mysql_native_password
+
+# 2、重启MySQL
+
+# 3、查询验证
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| mysql_native_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+```
+
 :::
 
 ::: details （2）AllowNativePasswords测试
+
+```bash
+# 依据上面的文档和代码做一些简单的调整即可
+#   1、修改MySQL默认的身份认证插件为 mysql_native_password
+#   2、修改代码中的MySQL配置参数 AllowNativePasswords: false,
+
+# 执行代码后会报错，设置AllowNativePasswords: true后就可以正常连接MySQL
+[mysql] 2023/04/03 11:07:09 connector.go:95: could not use requested auth plugin 'mysql_native_password': this user requires mysql native password authentication.
+panic: this user requires mysql native password authentication.
+```
 
 :::
 
