@@ -2344,7 +2344,7 @@ rm -f mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz LICENSE README.md
 #   demo     指定库名
 #   users    指定表名
 #   100_0000 指定插入多少行数据
-mysql_random_data_load demo users 500_0000 --user=root --password="QiNqg[l.%;H>>rO9"
+mysql_random_data_load demo users 500_0000 --user=root --password="QiNqg[l.%;H>>rO9" --max-threads=10
 ```
 
 :::
