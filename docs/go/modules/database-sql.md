@@ -2300,7 +2300,17 @@ Uptime:                       74528
 
 ## 海量数据操作
 
-::: details （1）写入一千万条数据
+### 生成数据
+
+::: details （1）使用 mysql_random_data_load 写入数据
+
+```bash
+
+```
+
+:::
+
+::: details （2）自己写代码写入数据
 
 ```go
 package main
