@@ -2336,7 +2336,7 @@ tar zxf mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz
 mv mysql_random_data_load /usr/local/bin/
 rm -f mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz LICENSE README.md
 
-# 生成100万条假数据，看一下花费多长时间
+# 生成100万条假数据，大约需要花费5分钟(此时间不具备参考性)
 # 参数说明
 #   demo     指定库名
 #   users    指定表名
