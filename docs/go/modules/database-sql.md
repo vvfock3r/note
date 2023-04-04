@@ -2470,7 +2470,16 @@ func main() {
 输出结果
 
 ```bash
+Used 597 seconds
 
+# 去数据库中查一下
+mysql> select count(*) from users;
++----------+
+| count(*) |
++----------+
+| 10000000 |
++----------+
+1 row in set (11.12 sec)
 ```
 
 :::
