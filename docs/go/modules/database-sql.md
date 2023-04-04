@@ -2037,16 +2037,19 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
+	// 注意事项：不要忘记 stmt.Close()
+
 	// 定义预处理语句
-	stmp, err := db.Preparex("SELECT * FROM users WHERE id = ?")
+	stmt, err := db.Preparex("SELECT * FROM users WHERE id = ?")
 	if err != nil {
 		panic(err)
 	}
+	defer func() { _ = stmt.Close() }()
 
 	// 使用预处理语句
 	{
 		u := User{}
-		err = stmp.Get(&u, "1")
+		err = stmt.Get(&u, "1")
 		if err != sql.ErrNoRows {
 			if err != nil {
 				panic(err)
@@ -2057,12 +2060,12 @@ func main() {
 
 	{
 		u := User{}
-		err = stmp.Get(&u, "2")
+		err = stmt.Get(&u, "2")
 		if err != sql.ErrNoRows {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("%#v\n", u)
+			fmt.Printf("%#v\n\n", u)
 		}
 	}
 }
