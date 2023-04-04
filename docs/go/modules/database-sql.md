@@ -2410,9 +2410,13 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
+	// 连接池设置
+	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(100)
+
 	// 生成大量数据
 	var (
-		totalRows = 500 * 10000             // 总共生成多少条记录
+		totalRows = 1000 * 10000            // 总共生成多少条记录
 		chunkSize = 1000                    // 每次写入多少条记录
 		loopCount = totalRows / chunkSize   // 计算循环次数
 		chunkCh   = make(chan []User, 1024) // 用于传递数据的channel
