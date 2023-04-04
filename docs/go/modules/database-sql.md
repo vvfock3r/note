@@ -1505,7 +1505,7 @@ func main() {
 
 ### 查询数据
 
-::: details （1）低级接口查询数据：Query* 单条数据
+::: details （1）低级接口查询数据：QueryRow和QueryRowx查询单条数据
 
 ```go
 package main
@@ -1614,7 +1614,7 @@ pril, 4, 8, 13, 44, 455052000, time.Local), DeletedAt:sql.NullTime{Time:time.Dat
 
 :::
 
-::: details （2）低级接口查询数据：Query* 多条数据
+::: details （2）低级接口查询数据：Query和Queryx查询多条数据
 
 ```go
 package main
@@ -1672,7 +1672,8 @@ func main() {
 	defer func() { _ = db.Close() }()
 
 	// 注意事项：
-	// 因为有了rows.Next()，所以不在不需要判断 if err != sql.ErrNoRows
+    // 1、不要忘记 rows.Close()， 对于单行查询QueryRow则没有Close()方法
+	// 2、因为有了rows.Next()，所以不在不需要判断 if err != sql.ErrNoRows
 
 	// 查询多条数据: 使用 Query，兼容database/sql
 	{
@@ -1680,6 +1681,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		defer func() { _ = rows.Close() }()
 		for rows.Next() {
 			user := User{}
 			err := rows.Scan(
@@ -1706,6 +1708,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		defer func() { _ = rows.Close() }()
 		for rows.Next() {
 			user := User{}
 			err := rows.StructScan(&user)
@@ -1786,15 +1789,21 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
+	// 说明
+	// 1、Get时仍然需要判断未查询到结果的错误: if err != sql.ErrNoRows
+	// 2、Select不需要判断未查询到结果的错误
+
 	// 查询单条数据: Get，参数要求是一个结构体指针
 	{
 		user := User{}
 		err := db.Get(&user, "SELECT * FROM users WHERE id=?", "1")
-		if err != nil {
-			panic(err)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", user)
+			fmt.Println()
 		}
-		fmt.Printf("%#v\n", user)
-		fmt.Println()
 	}
 
 	// 查询多条数据: Select，参数要求是一个 结构体切片的指针
@@ -1965,10 +1974,13 @@ import (
 
 // User 定义结构体
 type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+			ID        int          `db:"id"`
+			Username  string       `db:"username"`
+			Password  string       `db:"password"`
+			Email     string       `db:"email"`
+			CreatedAt time.Time    `db:"created_at"`
+			UpdatedAt time.Time    `db:"updated_at"`
+			DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -2129,7 +2141,7 @@ func main() {
 
 <br />
 
-## 统计信息
+### 统计信息
 
 ::: details （1）模拟MySQL客户端内置命令status
 
@@ -2139,3 +2151,6 @@ func main() {
 
 :::
 
+## 大量数据操作
+
+<br />
