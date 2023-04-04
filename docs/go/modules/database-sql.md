@@ -2095,6 +2095,7 @@ func main() {
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -2102,12 +2103,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -2142,7 +2146,7 @@ func main() {
 	defer func() { _ = db.Close() }()
 
 	// 定义预处理语句
-	stmp, err := db.Preparex("SELECT id,name,password,email FROM users WHERE id = ?")
+	stmp, err := db.Preparex("SELECT * FROM users WHERE id = ?")
 	if err != nil {
 		panic(err)
 	}
@@ -2151,21 +2155,35 @@ func main() {
 	{
 		u := User{}
 		err = stmp.Get(&u, "1")
-		if err != nil {
-			panic(err)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n\n", u)
 		}
-		fmt.Printf("%#v\n", u)
 	}
 
 	{
 		u := User{}
 		err = stmp.Get(&u, "2")
-		if err != nil {
-			panic(err)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", u)
 		}
-		fmt.Printf("%#v\n", u)
 	}
 }
+```
+
+输出结果
+
+```bash
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+main.User{ID:2, Username:"john", Password:"123456", Email:"john@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 455052000, time.Local), UpdatedAt:time.Date(2023, time.A
+pril, 4, 8, 13, 44, 455052000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
 ```
 
 :::
