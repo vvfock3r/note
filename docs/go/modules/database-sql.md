@@ -2195,11 +2195,216 @@ pril, 4, 8, 13, 44, 455052000, time.Local), DeletedAt:sql.NullTime{Time:time.Dat
 ::: details （1）模拟MySQL客户端内置命令status
 
 ```go
+package main
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 获取连接ID
+	{
+		var ConnectionID int64
+		err := db.QueryRow("SELECT CONNECTION_ID()").Scan(&ConnectionID)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%d\n", "Connection id:", ConnectionID)
+	}
+
+	// 获取当前数据库
+	{
+		var CurrentDatabase string
+		err := db.QueryRow("SELECT DATABASE()").Scan(&CurrentDatabase)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Current database:", CurrentDatabase)
+	}
+
+	// 获取当前用户, 还可以使用 SELECT CURRENT_USER(),返回值root@%,并不满足需求
+	{
+		var CurrentUser string
+		err := db.QueryRow("SELECT USER();").Scan(&CurrentUser)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Current user:", CurrentUser)
+	}
+
+	// 获取SSL
+	{
+		var SSL = make(map[string]any)
+		err := db.QueryRowx("SHOW STATUS LIKE 'Ssl_cipher';").MapScan(SSL)
+		if err != nil {
+			panic(err)
+		}
+		v, ok := SSL["Value"]
+		cipher := v.([]byte)
+		if ok {
+			if len(cipher) == 0 {
+				fmt.Printf("%-30s%s\n", "SSL:", "Not in use")
+			} else {
+				fmt.Printf("%-30s%s\n", "SSL:", cipher) // 这里的输出并未和MySQL客户端验证
+			}
+		} else {
+			fmt.Printf("%-30s%s\n", "SSL:", "Unknown")
+		}
+	}
+
+	// 获取MySQL版本
+	{
+		var ServerVersion string
+		sql := "SELECT CONCAT_WS(' ', @@version, @@version_comment) AS server_version;"
+		err := db.QueryRow(sql).Scan(&ServerVersion)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Server version:", ServerVersion)
+	}
+
+	// 获取协议版本
+	{
+		var ProtocolVersion string
+		err := db.QueryRow("SELECT @@protocol_version;").Scan(&ProtocolVersion)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Protocol version:", ProtocolVersion)
+	}
+
+	// 获取服务端字符集
+	{
+		var ServerCharacterset string
+		err := db.QueryRow("SELECT @@character_set_server;").Scan(&ServerCharacterset)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Server characterset:", ServerCharacterset)
+	}
+
+	// 获取数据库字符集
+	{
+		var DatabaseCharacterset string
+		err := db.QueryRow("SELECT @@character_set_database;").Scan(&DatabaseCharacterset)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Db     characterset:", DatabaseCharacterset)
+	}
+
+	// 获取客户端字符集
+	{
+		var ClientCharacterset string
+		err := db.QueryRow("SELECT @@character_set_client;").Scan(&ClientCharacterset)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Client characterset:", ClientCharacterset)
+	}
+
+	// 获取链接字符集
+	{
+		var ConnectionCharacterset string
+		err := db.QueryRow("SELECT @@character_set_connection;").Scan(&ConnectionCharacterset)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Conn.  characterset:", ConnectionCharacterset)
+	}
+
+	// 获取Socket
+	{
+		var Socket string
+		err := db.QueryRow("SELECT @@socket;").Scan(&Socket)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "UNIX socket:", Socket)
+	}
+
+	// 获取二进制数据编码方式(我并不确认SQL一定是正确的)
+	{
+		var BinaryDataAs string
+		sql := "SELECT CASE @@SESSION.binlog_format WHEN 'ROW' THEN 'Hexadecimal' WHEN 'MIXED' THEN 'Hexadecimal' ELSE 'Text' END AS `Binary data as`;"
+		err := db.QueryRow(sql).Scan(&BinaryDataAs)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%-30s%s\n", "Binary data as:", BinaryDataAs)
+	}
+
+	// 获取Uptime
+	{
+		// 获取秒数
+		var UptimeSecond int64
+		sql := "SELECT VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME='Uptime';"
+		err := db.QueryRow(sql).Scan(&UptimeSecond)
+		if err != nil {
+			panic(err)
+		}
+		// 转为人类易读值, 略
+		fmt.Printf("%-30s%d\n", "Uptime:", UptimeSecond)
+	}
+}
+```
+
+输出结果
+
+```bash
+Connection id:                154
+Current database:             demo                               
+Current user:                 root@192.168.48.1                  
+SSL:                          Not in use                         
+Server version:               8.0.30 MySQL Community Server - GPL
+Protocol version:             10                                 
+Server characterset:          utf8mb4                            
+Db     characterset:          utf8mb4                            
+Client characterset:          utf8mb4                            
+Conn.  characterset:          utf8mb4                            
+UNIX socket:                  /var/run/mysqld/mysqld.sock        
+Binary data as:               Hexadecimal                        
+Uptime:                       74528
 ```
 
 :::
 
+<br />
+
 ## 海量数据操作
 
-<br />
