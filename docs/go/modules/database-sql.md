@@ -2355,16 +2355,17 @@ mysql_random_data_load demo users 500_0000 --user=root --password="QiNqg[l.%;H>>
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/brianvoe/gofakeit/v6"
 	"sync"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+// User 定义结构体
 type User struct {
 	ID        int          `db:"id"`
 	Username  string       `db:"username"`
@@ -2394,11 +2395,14 @@ func ConnMySQL() (*sqlx.DB, error) {
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
-	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
 func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
 	// 连接数据库
 	db, err := ConnMySQL()
 	if err != nil {
@@ -2406,47 +2410,63 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
-	// 统计时间
-	start := time.Now()
-	defer func() {
-		fmt.Printf("Used %.0f seconds", time.Since(start).Seconds())
-	}()
-
-	// 生成数据，200万条
-	ch := make(chan User, 1024)
+	// 生成大量数据
+	var (
+		totalRows = 500 * 10000             // 总共生成多少条记录
+		chunkSize = 1000                    // 每次写入多少条记录
+		loopCount = totalRows / chunkSize   // 计算循环次数
+		chunkCh   = make(chan []User, 1024) // 用于传递数据的channel
+	)
 	go func() {
-		for i := 0; i < 200*10000; i++ {
-			user := User{
-				Username:  gofakeit.Username(),
-				Password:  gofakeit.Password(true, true, true, false, false, 12),
-				Email:     gofakeit.Email(),
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+		for i := 0; i < loopCount; i++ {
+			var users []User
+			for j := 0; j < chunkSize; j++ {
+				user := User{
+					Username:  gofakeit.UUID(),
+					Password:  gofakeit.Password(true, true, true, false, false, 12),
+					Email:     gofakeit.UUID(),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}
+				users = append(users, user)
 			}
-			ch <- user
+			chunkCh <- users
 		}
-		close(ch)
+		close(chunkCh)
 	}()
 
-	// 写入数据库,并发100
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	// 并发写入数据库
+	var (
+		wg          = sync.WaitGroup{}
+		concurrency = 10
+	)
+
+	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for {
-				user, ok := <-ch
+				users, ok := <-chunkCh
 				if !ok {
 					break
 				}
 				sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
 						(:username, :password, :email, :created_at, :updated_at)`
-				_, _ = db.NamedExec(sqlString, user)
+				_, err = db.NamedExec(sqlString, users)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}()
 	}
 	wg.Wait()
 }
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
