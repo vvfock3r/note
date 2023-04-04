@@ -2302,10 +2302,46 @@ Uptime:                       74528
 
 ### 生成数据
 
+::: details 创建用户表
+
+```sql
+mysql> create database demo;
+
+mysql> use demo;
+
+mysql> CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `username` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  `deleted_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+```
+
+:::
+
 ::: details （1）使用 mysql_random_data_load 写入数据
 
-```bash
+Github：[https://github.com/Percona-Lab/mysql_random_data_load](https://github.com/Percona-Lab/mysql_random_data_load)
 
+```bash
+# 安装mysql_random_data_load 
+wget -c https://github.com/Percona-Lab/mysql_random_data_load/releases/download/v0.1.12/mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz
+tar zxf mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz
+mv mysql_random_data_load /usr/local/bin/
+rm -f mysql_random_data_load_0.1.12_Linux_x86_64.tar.gz LICENSE README.md
+
+# 生成100万条假数据，看一下花费多长时间
+# 参数说明
+#   demo     指定库名
+#   users    指定表名
+#   100_0000 指定插入多少行数据
+mysql_random_data_load demo users 100_0000 --user=root --password="QiNqg[l.%;H>>rO9"
 ```
 
 :::
