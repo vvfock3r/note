@@ -848,7 +848,6 @@ func main() {
 	}
 	fmt.Printf("%-20s%s\n", "Database List:", databaseList)
 }
-
 ```
 
 输出结果
@@ -1048,15 +1047,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-	ID        int       `db:"id"`
-	Username  string    `db:"username"`
-	Password  string    `db:"password"`
-	Email     string    `db:"email"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt time.Time `db:"deleted_at"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -1144,6 +1143,25 @@ func main() {
 		}
 		fmt.Printf("LastInsertId: %d\n", m)
 	}
+
+	// 写入Map结构的数据
+	{
+		user := []map[string]any{
+			{
+				"username":   "faker",
+				"password":   "123456",
+				"email":      "faker@example.com",
+				"created_at": time.Now(),
+				"updated_at": time.Now(),
+			},
+		}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+		_, err := db.NamedExec(sqlString, user)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 ```
 
@@ -1188,15 +1206,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-	ID        int       `db:"id"`
-	Username  string    `db:"username"`
-	Password  string    `db:"password"`
-	Email     string    `db:"email"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt time.Time `db:"deleted_at"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -1487,7 +1505,7 @@ func main() {
 
 ### 查询数据
 
-::: details （1）查询数据：低级接口：Query*
+::: details （1）低级接口查询数据：Query* 单条数据
 
 ```go
 package main
@@ -1495,19 +1513,21 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"github.com/jmoiron/sqlx"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -1529,7 +1549,8 @@ func ConnMySQL() (*sqlx.DB, error) {
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
 	}
 
-	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
@@ -1539,69 +1560,44 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// 注意事项：
-	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+	// 当查询没有结果时会返回sql.ErrNoRows错误，需要针对判断
 
-	// 查询多条数据: 使用 Query
+	// 查询单条数据: 使用 QueryRow，兼容database/sql
 	{
-		rows, err := db.Query("SELECT id,name,password,email FROM users WHERE id > ?", "42")
-		if err != nil {
-			panic(err)
-		}
-		for rows.Next() {
-			user := User{}
-			err := rows.Scan(&user.ID, &user.Name, &user.Password, &user.Email)
+		user := User{}
+		row := db.QueryRow("SELECT * FROM users WHERE id = ?", "1")
+		err := row.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Password,
+			&user.Email,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&user.DeletedAt,
+		)
+		if err != sql.ErrNoRows {
 			if err != nil {
 				panic(err)
 			}
 			fmt.Printf("%#v\n", user)
+			fmt.Println()
 		}
-		fmt.Println()
 	}
 
-	// 查询多条数据: 使用 Queryx, 可以使用 StructScan、SliceScan、MapScan映射到不同的对象中
-	{
-		rows, err := db.Queryx("SELECT id,name,password,email FROM users WHERE id > ?", "4")
-		if err != nil {
-			panic(err)
-		}
-		for rows.Next() {
-			user := User{}
-			err := rows.StructScan(&user)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Printf("%#v\n", user)
-		}
-		fmt.Println()
-	}
-
-	// 查询单条数据: 使用 QueryRow
+	// 查询单条数据: 使用 QueryRowx, 可以直接解析到其他数据结构，比如StructScan、SliceScan、MapScan等，这是sqlx特有的方法
 	{
 		user := User{}
-		row := db.QueryRow("SELECT id,name,password,email FROM users WHERE name = ?", "bob5")
-		err := row.Scan(&user.ID, &user.Name, &user.Password, &user.Email)
+		row := db.QueryRowx("SELECT * FROM users WHERE id = ?", "2")
+		err := row.StructScan(&user)
 		if err != sql.ErrNoRows {
 			if err != nil {
 				panic(err)
 			}
 			fmt.Printf("%#v\n", user)
 		}
-		fmt.Println()
-	}
-
-	// 查询单条数据: 使用 QueryRowx
-	{
-		user := User{}
-		row := db.QueryRowx("SELECT id,name,password,email FROM users WHERE name = ?", "bob5")
-		err := row.StructScan(&user)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("%#v\n", user)
-		fmt.Println()
 	}
 }
 ```
@@ -1609,18 +1605,138 @@ func main() {
 输出结果
 
 ```bash
-main.User{ID:5, Name:"bob3", Password:"123456", Email:"bob3@example.com"}
-main.User{ID:6, Name:"bob4", Password:"123456", Email:"bob4@example.com"}
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+main.User{ID:2, Username:"john", Password:"123456", Email:"john@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 455052000, time.Local), UpdatedAt:time.Date(2023, time.A
+pril, 4, 8, 13, 44, 455052000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
 ```
 
 :::
 
-::: details （2）查询数据：高级接口：Get / Select
+::: details （2）低级接口查询数据：Query* 多条数据
 
 ```go
 package main
 
 import (
+	"database/sql"
+	"fmt"
+	"github.com/jmoiron/sqlx"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 注意事项：
+	// 因为有了rows.Next()，所以不在不需要判断 if err != sql.ErrNoRows
+
+	// 查询多条数据: 使用 Query，兼容database/sql
+	{
+		rows, err := db.Query("SELECT * FROM users WHERE id < ?", "2")
+		if err != nil {
+			panic(err)
+		}
+		for rows.Next() {
+			user := User{}
+			err := rows.Scan(
+				&user.ID,
+				&user.Username,
+				&user.Password,
+				&user.Email,
+				&user.CreatedAt,
+				&user.UpdatedAt,
+				&user.DeletedAt,
+			)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", user)
+		}
+	}
+
+	fmt.Println()
+
+	// 查询多条数据: 使用 Queryx，sqlx特有的方法
+	{
+		rows, err := db.Queryx("SELECT * FROM users WHERE id < ?", "2")
+		if err != nil {
+			panic(err)
+		}
+		for rows.Next() {
+			user := User{}
+			err := rows.StructScan(&user)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%#v\n", user)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+```
+
+:::
+
+::: details （3）查询数据：高级接口：Get / Select
+
+```go
+package main
+
+import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -1628,12 +1744,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Password string `db:"password"`
-	Email    string `db:"email"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -1665,15 +1784,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
-
-	// 注意事项：
-	// 目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+	defer func() { _ = db.Close() }()
 
 	// 查询单条数据: Get，参数要求是一个结构体指针
 	{
 		user := User{}
-		err := db.Get(&user, "SELECT id,name,password,email FROM users WHERE name=?", "bob4")
+		err := db.Get(&user, "SELECT * FROM users WHERE id=?", "1")
 		if err != nil {
 			panic(err)
 		}
@@ -1684,7 +1800,7 @@ func main() {
 	// 查询多条数据: Select，参数要求是一个 结构体切片的指针
 	{
 		users := []User{}
-		err := db.Select(&users, "SELECT id,name,password,email FROM users WHERE id > ?", "4")
+		err := db.Select(&users, "SELECT * FROM users WHERE id < ?", "2")
 		if err != nil {
 			panic(err)
 		}
@@ -1694,6 +1810,30 @@ func main() {
 		fmt.Println()
 	}
 }
+```
+
+输出结果
+
+```bash
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+```
+
+:::
+
+::: details （3）注意事项：目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+
+```go
+
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
