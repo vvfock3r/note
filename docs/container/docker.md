@@ -3168,7 +3168,7 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 vim ${LocalHostConfPath}/my.cnf
 [mysqld]
 ...
-max_connections = 1000
+max_connections = 5000
 
 # 重启容器，使配置文件生效
 docker container restart ${ContainerName}
@@ -3185,7 +3185,40 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 
 :::
 
-::: details （8）修改默认的身份认证插件
+::: details （8）修改innodb_buffer_pool_size
+
+```bash
+# 先检查一下默认值, 128M
+mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
++-------------------------+------------+
+| Variable_name           | Value      |
++-------------------------+------------+
+| innodb_buffer_pool_size | 134217728  |
++-------------------------+------------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+innodb_buffer_pool_size=2G
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
++-------------------------+------------+
+| Variable_name           | Value      |
++-------------------------+------------+
+| innodb_buffer_pool_size | 2147483648 |
++-------------------------+------------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+::: details （9）修改默认的身份认证插件
 
 ```bash
 # 先检查一下默认值
@@ -3220,7 +3253,7 @@ mysql> SELECT @@default_authentication_plugin;
 
 :::
 
-::: details （9）删除MySQL
+::: details （10）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
