@@ -1965,6 +1965,7 @@ panic: missing destination name password in *main.User
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -1972,15 +1973,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// User 定义结构体
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
 type User struct {
-			ID        int          `db:"id"`
-			Username  string       `db:"username"`
-			Password  string       `db:"password"`
-			Email     string       `db:"email"`
-			CreatedAt time.Time    `db:"created_at"`
-			UpdatedAt time.Time    `db:"updated_at"`
-			DeletedAt sql.NullTime `db:"deleted_at"`
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // ConnMySQL 连接数据库
@@ -2006,15 +2007,6 @@ func ConnMySQL() (*sqlx.DB, error) {
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
 }
 
-func Rollback(tx *sqlx.Tx) {
-	err := tx.Rollback()
-	if err != nil {
-		fmt.Println("事物回滚失败")
-	} else {
-		fmt.Println("事物回滚成功")
-	}
-}
-
 func main() {
 	// 连接数据库
 	db, err := ConnMySQL()
@@ -2022,6 +2014,10 @@ func main() {
 		panic(err)
 	}
 	defer func() { _ = db.Close() }()
+
+	// 注意事项
+	// 1、在事物执行期间的插入等语句需要判断错误，如果发生错误则回滚事物
+	// 2、事物相关的错误需要判断：sql.ErrTxDone
 
 	// 开启事物
 	// Begin开启事物 ：只能执行 Exec 和 Query 方法
@@ -2031,25 +2027,60 @@ func main() {
 		panic(err)
 	}
 
-	// 执行操作
-	user1 := User{Name: "John1", Password: "123456", Email: "john3@example.com"}
-	_, err = tx.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user1)
-	if err != nil {
-		Rollback(tx)
+	// 执行操作1
+	{
+		user := User{Username: "john1", Password: "123456", Email: "john1@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+		_, err := tx.NamedExec(sqlString, user)
+		if err != nil {
+			fmt.Printf("插入数据报错: %v\n", err)
+			err := tx.Rollback()
+			if err != nil && err != sql.ErrTxDone {
+				panic(err)
+			}
+			fmt.Println("事物回滚成功")
+		}
 	}
 
-	user2 := User{Name: "John2", Password: "123456", Email: "john4@example.com"}
-	_, err = tx.NamedExec("INSERT INTO users (name, password, email) VALUES (:name, :password, :email)", user2)
-	if err != nil {
-		Rollback(tx)
+	// 执行操作2
+	{
+		user := User{Username: "john2", Password: "123456", Email: "john2@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+		_, err := tx.NamedExec(sqlString, user)
+		if err != nil {
+			fmt.Printf("插入数据报错: %v\n", err)
+			err := tx.Rollback()
+			if err != nil && err != sql.ErrTxDone {
+				panic(err)
+			}
+			fmt.Println("事物回滚成功")
+		}
 	}
 
-	// 提交
+	// 提交事物
 	err = tx.Commit()
 	if err != nil {
-		Rollback(tx)
+		fmt.Printf("提交事物报错: %v\n", err)
+		err := tx.Rollback()
+		if err != nil && err != sql.ErrTxDone {
+			panic(err)
+		}
+		fmt.Println("事物回滚成功")
 	}
 }
+```
+
+输出结果
+
+```bash
+插入数据报错: Error 1062 (23000): Duplicate entry 'john1' for key 'users.username'
+事物回滚成功
+插入数据报错: sql: transaction has already been committed or rolled back
+事物回滚成功
+提交事物报错: sql: transaction has already been committed or rolled back
+事物回滚成功
 ```
 
 :::
@@ -2151,6 +2182,6 @@ func main() {
 
 :::
 
-## 大量数据操作
+## 海量数据操作
 
 <br />
