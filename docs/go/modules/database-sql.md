@@ -1827,13 +1827,121 @@ main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", 
 ::: details （3）注意事项：目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
 
 ```go
+package main
 
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 明确指定列，代码运行良好
+	{
+		type User struct {
+			ID        int          `db:"id"`
+			Username  string       `db:"username"`
+			Password  string       `db:"password"`
+			Email     string       `db:"email"`
+			CreatedAt time.Time    `db:"created_at"`
+			UpdatedAt time.Time    `db:"updated_at"`
+			DeletedAt sql.NullTime `db:"deleted_at"`
+			Sex       int          `db:"sex"`
+		}
+
+		user := User{}
+		err := db.Get(&user, "SELECT id,username FROM users WHERE id=?", "1")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n\n", user)
+	}
+
+	// 结构体列比数据库列多，查询使用*，代码运行良好
+	{
+		type User struct {
+			ID        int          `db:"id"`
+			Username  string       `db:"username"`
+			Password  string       `db:"password"`
+			Email     string       `db:"email"`
+			CreatedAt time.Time    `db:"created_at"`
+			UpdatedAt time.Time    `db:"updated_at"`
+			DeletedAt sql.NullTime `db:"deleted_at"`
+			Sex       int          `db:"sex"` // 数据库中没有这一列
+		}
+
+		user := User{}
+		err := db.Get(&user, "SELECT * FROM users WHERE id=?", "1")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n\n", user)
+	}
+
+	// 数据库列比结构体列多，查询使用*，代码报错: panic: missing destination name password in *main.User
+	{
+		type User struct {
+			ID       int    `db:"id"`
+			Username string `db:"username"`
+		}
+
+		user := User{}
+		err := db.Get(&user, "SELECT * FROM users WHERE id=?", "1")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+	}
+}
 ```
 
 输出结果
 
 ```bash
+main.User{ID:1, Username:"alice", Password:"", Email:"", CreatedAt:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), UpdatedAt:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Del
+etedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}, Sex:0}
 
+main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", CreatedAt:time.Date(2023, time.April, 4, 8, 13, 44, 445941000, time.Local), UpdatedAt:time.Date(2023, time
+.April, 4, 8, 13, 44, 445941000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}, Sex:0}
+
+panic: missing destination name password in *main.User
+
+# select查询时分析
+# 1、明确指定列名，不会报错，但是这样代码写起来可能很麻烦
+# 2、使用*时，一定要保证结构体字段 >= 数据库列的数量，且字段能对应的上号
 ```
 
 :::
