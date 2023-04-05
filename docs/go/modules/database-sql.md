@@ -2621,7 +2621,139 @@ c600227c7470   demo-mysql-8.0.30   118.89%   2.684GiB / 3.682GiB   72.88%    34.
 
 :::
 
-::: details （2）假设需要查询出一百万数据并写入到文件中：使用 Go
+::: details （2）假设需要查询出一百万数据并写入到文件中：使用 Go Select 一次性加载数据到内存中
+
+```go
+package main
+
+import (
+	"bufio"
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 打开文件
+	file, err := os.OpenFile("go_data.csv", os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = file.Close() }()
+
+	// 设置写缓冲区，大小写为 32KB
+	buf := bufio.NewWriterSize(file, 32*1024)
+	defer func() {
+		err = buf.Flush()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// 查询数据库
+	var users []User
+	err = db.Select(&users, "select * from users where id <= 10000000")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, user := range users {
+		// deleted_at 字段特殊处理
+		var deleted_at string
+		if user.DeletedAt.Valid {
+			deleted_at = user.DeletedAt.Time.Format(time.DateTime)
+		} else {
+			deleted_at = "NULL"
+		}
+
+		// 转为字符串
+		columns := []string{
+			strconv.Itoa(user.ID),
+			user.Username,
+			user.Password,
+			user.Email,
+			user.CreatedAt.Format(time.DateTime),
+			user.UpdatedAt.Format(time.DateTime),
+			deleted_at,
+		}
+		row := strings.Join(columns, ",")
+
+		// 写入buffer
+		_, err = buf.WriteString(row + "\n")
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+[root@localhost ~]# time ./main
+Used 5 seconds
+real    0m4.709s
+user    0m3.958s
+sys     0m2.321s
+
+# 分析
+# Select可以很好地完成工作，但是Select会把数据全部写入切片中，随着数据量增大，很可能会导致OOM
+# 所以此方案不在考虑范围内
+```
+
+:::
+
+::: details （3）假设需要查询出一百万数据并写入到文件中：使用 Go Query 游标遍历
 
 ```go
 package main
@@ -2773,7 +2905,7 @@ c600227c7470   demo-mysql-8.0.30   28.32%    2.459GiB / 3.682GiB   66.79%    34.
 
 :::
 
-::: details （3）假设需要查询出一百万数据并写入到文件中：优化 Go代码
+::: details （4）假设需要查询出一百万数据并写入到文件中：优化 Go代码
 
 优化思路：适当的延长执行时间（假设每处理1W条数据休眠1秒），换取MySQL CPU低使用率
 
