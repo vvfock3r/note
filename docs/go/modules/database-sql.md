@@ -2772,3 +2772,33 @@ c600227c7470   demo-mysql-8.0.30   28.32%    2.459GiB / 3.682GiB   66.79%    34.
 ```
 
 :::
+
+::: details （3）假设需要查询出一百万数据并写入到文件中：优化 Go代码
+
+优化思路：适当的延长执行时间（假设每处理1W条数据休眠1秒），换取MySQL CPU低使用率
+
+```go
+	// 遍历游标
+	var counter = 10000         // 添加此行
+	for rows.Next() {
+        // 添加以下几行代码
+		counter--
+		if counter == 0 {
+			time.Sleep(time.Second)
+			counter = 10000
+		}
+		...
+```
+
+输出结果
+
+```bash
+# 程序执行耗时, 总共100W数据，每处理1W条数据休眠1秒，总共103秒完成
+Used 103 seconds
+
+# MySQL CPU使用率最高4%，平均在2%左右，增加了1%的CPU使用率。优化后效果很可观
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   1.99%     2.459GiB / 3.682GiB   66.79%    38.1MB / 2.09GB   35.6GB / 69.6MB   
+```
+
+:::
