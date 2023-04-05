@@ -38,6 +38,7 @@ sidebar: off
 * [x/text](https://jinhui.dev/go/modules/x-text.html)：解决Windows下中文乱码问题
 * [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
 * [singleflight](https://jinhui.dev/go/modules/singleflight.html)：并发请求合并
+* excelize：Excel操作 [Github](https://github.com/qax-os/excelize)
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
@@ -75,4 +76,4 @@ sidebar: off
   * [x/time/rate](https://jinhui.dev/go/modules/x-time-rate.html)：限速器
   * [otp](https://jinhui.dev/go/modules/otp.html)：双因素认证
 * GUI
-  * wails：基于Go + Vue/React等
+  * wails：使用Go + Vue构建桌面应用 [Github](https://github.com/wailsapp/wails)
