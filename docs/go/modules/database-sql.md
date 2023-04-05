@@ -2590,3 +2590,185 @@ mysql> select count(*) from users;
 
 <br />
 
+### 查询数据
+
+::: details （1）假设需要查询出一百万数据并写入到文件中：使用 mysql命令 + 重定向
+
+```bash
+# 第一个终端执行 docker stats 或 top 监控 MySQL Server CPU使用率
+[root@localhost ~]# docker stats
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   1.22%     2.459GiB / 3.682GiB   66.78%    34.1MB / 1.61GB   35.6GB / 69.6MB   44
+
+# 第二个终端执行select语句
+[root@localhost ~]# time docker container exec -it demo-mysql-8.0.30 mysql -uroot -P3306 -p"QiNqg[l.%;H>>rO9" -e "select * from demo.users where id <= 1000000 " > mysql_data.csv
+
+real    0m12.219s
+user    0m1.096s
+sys     0m4.387s
+
+# 观察第一个终端中MySQL使用率为100+，即占满一个核心
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   118.89%   2.684GiB / 3.682GiB   72.88%    34.1MB / 1.61GB   35.6GB / 69.6MB   45
+
+# 统计一下文件行数，多出来的5行是因为有表格、表头所占
+[root@localhost ~]# wc -l mysql_data.csv 
+1000005 mysql_data.csv
+
+# 总结
+# 使用MySQL客户端命令导出一百万行数据耗时12秒，CPU跑满一个核心
+```
+
+:::
+
+::: details （2）假设需要查询出一百万数据并写入到文件中：使用 Go
+
+```go
+package main
+
+import (
+	"bufio"
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+	}
+
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 打开文件
+	file, err := os.OpenFile("go_data.csv", os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = file.Close() }()
+
+	// 设置写缓冲区，大小写为 32KB
+	buf := bufio.NewWriterSize(file, 32*1024)
+	defer func() {
+		err = buf.Flush()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// 查询数据库
+	rows, err := db.Queryx("select * from users where id <= 1000000")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// 遍历游标
+	for rows.Next() {
+		var user User
+		err = rows.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+
+		// deleted_at 字段特殊处理
+		var deleted_at string
+		if user.DeletedAt.Valid {
+			deleted_at = user.DeletedAt.Time.Format(time.DateTime)
+		} else {
+			deleted_at = "NULL"
+		}
+
+		// 转为字符串
+		columns := []string{
+			strconv.Itoa(user.ID),
+			user.Username,
+			user.Password,
+			user.Email,
+			user.CreatedAt.Format(time.DateTime),
+			user.UpdatedAt.Format(time.DateTime),
+			deleted_at,
+		}
+		row := strings.Join(columns, ",")
+
+		// 写入buffer
+		_, err = buf.WriteString(row + "\n")
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+# 第一个终端执行 docker stats 或 top 监控 MySQL Server CPU使用率
+[root@localhost ~]# docker stats
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   1.22%     2.459GiB / 3.682GiB   66.78%    34.1MB / 1.61GB   35.6GB / 69.6MB   44
+
+# 第二个终端执行Go编译好的二进制文件，或者直接在GoLand中执行
+[root@localhost ~]# time ./main
+Used 3 seconds
+real    0m3.029s
+user    0m2.951s
+sys     0m0.576s
+
+# 观察第一个终端中MySQL使用率最高为单核心的30%
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   28.32%    2.459GiB / 3.682GiB   66.79%    34.5MB / 1.91GB   35.6GB / 69.6MB   44
+
+# 统计一下文件行数
+[root@localhost ~]# wc -l go_data.csv 
+1000000 go_data.csv
+
+# 总结
+# 使用Go MySQL库导出一百万行数据耗时3秒，CPU占用单个核心的30%
+```
+
+:::
