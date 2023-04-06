@@ -79,6 +79,7 @@ func ConnMySQL() (*sql.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -145,6 +146,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -322,6 +324,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -417,6 +420,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -505,6 +509,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -653,9 +658,6 @@ panic: this user requires mysql native password authentication.
 ::: details 点击查看详情
 
 ```go
-MaxAllowedPacket
-    控制客户端向 MySQL 服务器发送的最大数据包大小。默认情况下，MaxAllowedPacket 的值为 4 MB，与 MySQL 服务器的默认值相同
-
 AllowOldPasswords
 	早期版本的MySQL中，密码存储格式为旧版格式，此选项用于支持旧版密码存储格式
 
@@ -707,6 +709,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -809,6 +812,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -928,6 +932,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -1097,6 +1102,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1247,6 +1253,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1364,6 +1371,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1461,6 +1469,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -1570,6 +1579,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -1689,6 +1699,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1778,6 +1789,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -1918,6 +1930,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -2022,6 +2035,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -2152,6 +2166,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -2253,6 +2268,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
@@ -2349,6 +2365,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	// 连接数据库
@@ -2625,6 +2642,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
@@ -2796,6 +2814,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
@@ -2928,6 +2947,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		WriteTimeout:         30 * time.Second,     // 写入超时时间
 		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
 		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
 	}
 
 	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
