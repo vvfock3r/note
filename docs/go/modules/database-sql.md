@@ -648,6 +648,28 @@ panic: this user requires mysql native password authentication.
 
 <br />
 
+### 其他参数简介
+
+::: details 点击查看详情
+
+```go
+MaxAllowedPacket
+    控制客户端向 MySQL 服务器发送的最大数据包大小。默认情况下，MaxAllowedPacket 的值为 4 MB，与 MySQL 服务器的默认值相同
+
+AllowOldPasswords
+	早期版本的MySQL中，密码存储格式为旧版格式，此选项用于支持旧版密码存储格式
+
+ClientFoundRows
+	设置为true 时，在执行 UPDATE 或 DELETE 查询后，MySQL 服务器会返回匹配行的数量，而不是受影响的行数
+
+MultiStatements
+	控制是否允许在单个 SQL 语句中执行多个语句
+```
+
+:::
+
+<br />
+
 ## 日志
 
 ### 使用 zap
