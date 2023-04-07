@@ -1657,7 +1657,7 @@ main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", 
 
 :::
 
-::: details （3）查询数据：高级接口：Get / Select
+::: details （3）高级接口查询数据：Get / Select
 
 ```go
 package main
@@ -1758,7 +1758,7 @@ main.User{ID:1, Username:"alice", Password:"123456", Email:"alice@example.com", 
 
 :::
 
-::: details （3）注意事项：目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
+::: details （4）注意事项：目标位置的类型必须与查询结果的结构相匹配，否则会导致运行时错误
 
 ```go
 package main
