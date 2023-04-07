@@ -1883,114 +1883,6 @@ panic: missing destination name password in *main.User
 
 <br />
 
-### 预防注入
-
-::: details 点击查看详情
-
-SQL注入攻击原因：用户的输入可以被解释成SQL代码，从而引起注入攻击漏洞
-
-SQL注入攻击预防：参数化查询将用户输入视为参数，而不是SQL代码，从而避免SQL注入攻击
-
-```go
-package main
-
-import (
-	"database/sql"
-	"fmt"
-	"time"
-
-	"github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-)
-
-type User struct {
-	ID        int          `db:"id"`
-	Username  string       `db:"username"`
-	Password  string       `db:"password"`
-	Email     string       `db:"email"`
-	CreatedAt time.Time    `db:"created_at"`
-	UpdatedAt time.Time    `db:"updated_at"`
-	DeletedAt sql.NullTime `db:"deleted_at"`
-}
-
-// ConnMySQL 连接数据库
-func ConnMySQL() (*sqlx.DB, error) {
-	// 定义MySQL配置
-	mysqlConfig := mysql.Config{
-		User:                 "root",
-		Passwd:               "QiNqg[l.%;H>>rO9",
-		Net:                  "tcp",
-		Addr:                 "192.168.48.151:3306",
-		DBName:               "demo",
-		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
-		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
-		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
-		Timeout:              5 * time.Second,      // 连接超时时间
-		ReadTimeout:          30 * time.Second,     // 读取超时时间
-		WriteTimeout:         30 * time.Second,     // 写入超时时间
-		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
-		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
-        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
-	}
-
-	// 连接数据库
-	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
-	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
-}
-
-func main() {
-	// 连接数据库
-	db, err := ConnMySQL()
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = db.Close() }()
-
-	// 假设这是由用户传过来的参数
-	// 正常情况下应该是一个数字(字符串类型)
-	// 但是这是攻击者精心构造的代码(其实也不怎么精心..)
-	var id = "9' or id='1"
-
-	// 根据ID查询某个用户: 可以防止注入攻击的代码
-	{
-		user := User{}
-		err = db.Get(&user, "SELECT * FROM users WHERE id = ?", id)
-		if err != sql.ErrNoRows {
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("Query1: %#v\n", user)
-		}
-	}
-
-	// 根据ID查询某个用户: 具有注入攻击隐患的代码
-	{
-		user := User{}
-		err = db.Get(&user, fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", id))
-		if err != sql.ErrNoRows {
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("Query2: %#v\n", user)
-		}
-	}
-}
-```
-
-输出结果
-
-```bash
-Query1: main.User{ID:9, Username:"89fde5d6-609e-4f75-8307-aab7b5d6dce0", Password:"EwOo0IaHi00j", Email:"af32734d-928b-4632-9ad5-84ca679fec30", CreatedAt:time.Date(2023, time.April, 4, 2
-3, 48, 38, 916301000, time.Local), UpdatedAt:time.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time
-.UTC), Valid:false}}
-Query2: main.User{ID:1, Username:"张三", Password:"KQzNiZxh1MMG", Email:"zhangsan@example.com", CreatedAt:time.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), UpdatedAt:tim
-e.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
-```
-
-:::
-
-<br />
-
 ### 使用事物
 
 ::: details 点击查看详情
@@ -2544,6 +2436,288 @@ Conn.  characterset:          utf8mb4
 UNIX socket:                  /var/run/mysqld/mysqld.sock        
 Binary data as:               Hexadecimal                        
 Uptime:                       74528
+```
+
+:::
+
+<br />
+
+## 安全
+
+### 预防注入
+
+::: details 点击查看详情
+
+SQL注入攻击原因：用户的输入可以被解释成SQL代码，从而引起注入攻击漏洞
+
+SQL注入攻击预防：参数化查询将用户输入视为参数，而不是SQL代码，从而避免SQL注入攻击
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+        MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 假设这是由用户传过来的参数
+	// 正常情况下应该是一个数字(字符串类型)
+	// 但是这是攻击者精心构造的代码(其实也不怎么精心..)
+	var id = "9' or id='1"
+
+	// 根据ID查询某个用户: 可以防止注入攻击的代码
+	{
+		user := User{}
+		err = db.Get(&user, "SELECT * FROM users WHERE id = ?", id)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("Query1: %#v\n", user)
+		}
+	}
+
+	// 根据ID查询某个用户: 具有注入攻击隐患的代码
+	{
+		user := User{}
+		err = db.Get(&user, fmt.Sprintf("SELECT * FROM users WHERE id = '%s'", id))
+		if err != sql.ErrNoRows {
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("Query2: %#v\n", user)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+Query1: main.User{ID:9, Username:"89fde5d6-609e-4f75-8307-aab7b5d6dce0", Password:"EwOo0IaHi00j", Email:"af32734d-928b-4632-9ad5-84ca679fec30", CreatedAt:time.Date(2023, time.April, 4, 2
+3, 48, 38, 916301000, time.Local), UpdatedAt:time.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time
+.UTC), Valid:false}}
+Query2: main.User{ID:1, Username:"张三", Password:"KQzNiZxh1MMG", Email:"zhangsan@example.com", CreatedAt:time.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), UpdatedAt:tim
+e.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+```
+
+:::
+
+<br />
+
+### 字段加密
+
+::: details （1）MySQL CLI使用MySQL自带的AES对称加密函数
+
+```bash
+# 加密
+#   AES_ENCRYPT用于加密,返回二进制类型数据(BINARY类型)
+#   HEX用于将二进制转为16进制
+mysql> select HEX(AES_ENCRYPT("Hello World!", "mykey")) AS password;
++----------------------------------+
+| password                         |
++----------------------------------+
+| 87DA3B6CBF28C5F5CCF2BCA4D3EA90D6 |
++----------------------------------+
+1 row in set (0.00 sec)
+
+# 解密 - 方式1
+#   UNHEX 将十六进制转为二进制
+#   AES_DECRYPT解密,返回二进制类型数据(BINARY类型)
+#   CONVERT用于将二进制转为字符串
+mysql> SELECT CONVERT(AES_DECRYPT(UNHEX('87DA3B6CBF28C5F5CCF2BCA4D3EA90D6'), "mykey") USING utf8mb4) AS password;
++--------------+
+| password     |
++--------------+
+| Hello World! |
++--------------+
+1 row in set (0.00 sec)
+
+# 解密 - 方式2
+#   CAST用于将二进制转为字符串
+mysql> SELECT CAST(AES_DECRYPT(UNHEX('87DA3B6CBF28C5F5CCF2BCA4D3EA90D6'), 'mykey') AS CHAR(50)) AS password;
++--------------+
+| password     |
++--------------+
+| Hello World! |
++--------------+
+1 row in set (0.00 sec)
+
+# -----------------------------------------------------------------------------------------
+# 备注
+# MySQL二进制数据经常以十六进制格式表示
+# 下面的返回值实际是二进制，只是用十六进制表示而已
+mysql> select AES_ENCRYPT("12345", "mykey") AS password;
++------------------------------------+
+| password                           |
++------------------------------------+
+| 0x9F9EB20579D028126FF3AC332DA9CAFB |
++------------------------------------+
+1 row in set (0.01 sec)
+
+# -----------------------------------------------------------------------------------------
+# 其他
+# AES加解密最好通过程序来做，但在特殊情况下也可以直接直接使用MySQL的AES加解密
+```
+
+:::
+
+::: details （2）代码中使用MySQL自带的AES对称加密函数
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.151:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 定义密钥,加解密使用同一个密钥
+	secretKey := "mykey"
+
+	// 写入数据
+	{
+		user := User{
+			Username:  "wangwu",
+			Password:  "123456",
+			Email:     "wangwu@example.com",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		sqlString := `INSERT INTO users (username, password, email, created_at, updated_at) 
+						VALUES (?, HEX(AES_ENCRYPT(?, ?)), ?,?,?)`
+		_, err = db.Exec(sqlString, user.Username, user.Password, secretKey, user.Email, user.CreatedAt, user.UpdatedAt)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// 查询数据,不能直接写*，要把所有字段都写上
+	{
+		var user User
+		err := db.Get(&user, `
+					SELECT id, username,
+					    AES_DECRYPT(UNHEX(password), ?) AS password,
+						email, created_at, updated_at, deleted_at
+					FROM users
+					WHERE username = ?`,
+			secretKey, "wangwu")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n", user)
+	}
+}
+```
+
+输出结果
+
+```bash
+main.User{ID:30000013, Username:"wangwu", Password:"123456", Email:"wangwu@example.com", CreatedAt:time.Date(2023, time.April, 7, 14, 51, 36, 10812000, time.Local), UpdatedAt:time.Date(2
+023, time.April, 7, 14, 51, 36, 10812000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+# 在数据库中查询一下
+mysql> select id,username,password,email from users where username = "wangwu";
++----------+----------+----------------------------------+--------------------+
+| id       | username | password                         | email              |
++----------+----------+----------------------------------+--------------------+
+| 30000013 | wangwu   | 7BB9FE4E6292A5D7CCD749755BC6B593 | wangwu@example.com |
++----------+----------+----------------------------------+--------------------+
+1 row in set (0.00 sec)
 ```
 
 :::
