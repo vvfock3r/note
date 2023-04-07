@@ -3490,7 +3490,7 @@ c600227c7470   demo-mysql-8.0.30   186.95%   2.097GiB / 3.682GiB   56.95%    172
 
 :::
 
-::: details （3）假设需要修改一百万数据：使用Go 游标，不支持批量更新，单次更新的话速度又太慢
+::: details （3）假设需要修改一百万数据：使用Go 游标，不支持批量更新
 
 ```go
 package main
@@ -3890,7 +3890,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		User:                 "root",
 		Passwd:               "QiNqg[l.%;H>>rO9",
 		Net:                  "tcp",
-		Addr:                 "192.168.48.129:3306",
+		Addr:                 "192.168.48.151:3306",
 		DBName:               "demo",
 		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
 		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
