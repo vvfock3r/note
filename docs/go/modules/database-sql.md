@@ -3603,10 +3603,104 @@ panic: sql: expected 2 arguments, got 20000
 
 :::
 
-::: details （4）假设需要修改一百万数据：使用Go 游标，单次更新的话速度又太慢
+::: details （4）假设需要修改一百万数据：使用Go 游标，单次更新的话执行效率太差
 
 ```go
+package main
 
+import (
+	"database/sql"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 查询数据库
+	rows, err := db.Queryx("select * from users where id <= 1000000")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// 遍历游标
+	for rows.Next() {
+		// 游标遍历
+		var user User
+		err = rows.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+
+		// 修改数据
+		user.Password = "go3_" + gofakeit.Password(true, true, true, false, false, 5)
+		_, err = db.NamedExec(`UPDATE users SET password = :password WHERE id = :id`, user)
+		if err != nil {
+			panic(err)
+		}
+
+		// 休眠一下，否则将会占满一个CPU核心
+		time.Sleep(time.Millisecond * 200)
+	}
+}
+```
+
+输出结果
+
+```bash
+# CPU用的倒是不多，但是执行效率太差了
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O          BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   8.64%     2.114GiB / 3.682GiB   57.41%    184MB / 3.07GB   3.15GB / 14.2GB   46
 ```
 
 :::
@@ -3616,13 +3710,29 @@ panic: sql: expected 2 arguments, got 20000
 1、SQL语句测试
 
 ```sql
+# 测试的语句
 UPDATE users
 SET password= CASE id
-           WHEN 1 THEN "abc"
-           WHEN 2 THEN "abc"
-           WHEN 3 THEN "abc"
+           WHEN 1 THEN "password1"
+           WHEN 2 THEN "password2"
+           WHEN 3 THEN "password3"
          END
 WHERE id IN (1,2,3);
+
+# 输出结果
+Query OK, 3 rows affected (0.00 sec)
+Rows matched: 3  Changed: 3  Warnings: 0
+
+# 查看数据库
+mysql> select id,username,password,email from users limit 3;
++----+--------------------------------------+-----------+--------------------------------------+
+| id | username                             | password  | email                                |
++----+--------------------------------------+-----------+--------------------------------------+
+|  1 | 张三                                 | password1 | zhangsan@example.com                 |
+|  2 | 3faaff9a-106f-4ded-9aec-b5f93da2396b | password2 | 750ef7ec-963e-4cd4-84a4-53623d49adf7 |
+|  3 | 3ee9f693-a935-4890-9b5a-0461364603cb | password3 | 59f7740c-c818-47f7-8fb9-1eb9cf1f8576 |
++----+--------------------------------------+-----------+--------------------------------------+
+3 rows in set (0.00 sec)
 ```
 
 2、Go语句测试
@@ -3641,9 +3751,9 @@ func main() {
 		UPDATE users
 		SET password = 
 			CASE id
-				WHEN 1 THEN 123456
-				WHEN 2 THEN 123456
-				WHEN 3 THEN 123456
+				WHEN 1 THEN "password4"
+				WHEN 2 THEN "password5"
+				WHEN 3 THEN "password6"
 			END
 		WHERE id IN (1,2,3);`
 	result, err := db.Exec(sqlString)
@@ -3656,6 +3766,20 @@ func main() {
 	}
 	fmt.Printf("受影响的行数: %d\n", n)
 }
+
+// 输出结果
+//   受影响的行数: 3
+//
+// 查看数据库
+//   mysql> select id,username,password,email from users limit 3;
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	| id | username                             | password  | email                                |
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	|  1 | 张三                                 | password4 | zhangsan@example.com                 |
+//	|  2 | 3faaff9a-106f-4ded-9aec-b5f93da2396b | password5 | 750ef7ec-963e-4cd4-84a4-53623d49adf7 |
+//	|  3 | 3ee9f693-a935-4890-9b5a-0461364603cb | password6 | 59f7740c-c818-47f7-8fb9-1eb9cf1f8576 |
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	3 rows in set (0.00 sec)
 ```
 
 3、修改为模板拼接
@@ -3669,29 +3793,31 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
-	// 生成SQL字符串
+	// 生成SQL模板
 	sqlTemplate := `
 		UPDATE users
 		SET password =
 			CASE id
-				{{ range $index, $id := .IDs }}
-					WHEN {{$id}} THEN {{$index}} 
-				{{end}}
+			{{ range $_, $v := . }}
+				WHEN {{ index $v "id" }} THEN "{{ index $v "password" }}"
+			{{end}}
 			END
-		WHERE id IN ({{ range $index, $id := .IDs }}{{ if $index }},{{ end }}{{ $id }}{{ end }});
+		WHERE id IN ({{ range $i, $v := . }}{{ if $i }},{{ end }}{{ index $v "id" }}{{ end }});
 	`
 
-	tpl, err := template.New("sqlUpdate").Parse(sqlTemplate)
+	tpl, err := template.New("sql").Parse(sqlTemplate)
 	if err != nil {
 		panic(err)
 	}
 
-	data := struct {
-		IDs []int
-	}{[]int{11, 21, 13}}
-
+	// 渲染模板
+	users := []map[string]string{
+		{"id": "1", "password": "password7"},
+		{"id": "2", "password": "password8"},
+		{"id": "3", "password": "password9"},
+	}
 	buf := &bytes.Buffer{}
-	err = tpl.Execute(buf, data)
+	err = tpl.Execute(buf, users)
 	if err != nil {
 		panic(err)
 	}
@@ -3711,6 +3837,20 @@ func main() {
 
 	fmt.Printf("受影响的行数: %d\n", n)
 }
+
+// 输出结果
+//   受影响的行数: 3
+//
+// 查看数据库
+//   mysql> select id,username,password,email from users limit 3;
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	| id | username                             | password  | email                                |
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	|  1 | 张三                                 | password7 | zhangsan@example.com                 |
+//	|  2 | 3faaff9a-106f-4ded-9aec-b5f93da2396b | password8 | 750ef7ec-963e-4cd4-84a4-53623d49adf7 |
+//	|  3 | 3ee9f693-a935-4890-9b5a-0461364603cb | password9 | 59f7740c-c818-47f7-8fb9-1eb9cf1f8576 |
+//	+----+--------------------------------------+-----------+--------------------------------------+
+//	3 rows in set (0.00 sec)
 ```
 
 :::
@@ -3725,7 +3865,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
-	"log"
 	"text/template"
 	"time"
 
@@ -3789,63 +3928,82 @@ func main() {
 	defer func() { _ = rows.Close() }()
 
 	// 遍历游标
-	var counter = 5000
-	users := []map[string]any{}
+	var (
+		counter  = 2000               // 每遍历N条数据，提交一次修改操作
+		_counter = counter            // 用于提交之后重置counter
+		users    = []map[string]any{} // 用于渲染SQL模板，也是待提交的数据
+	)
 	for rows.Next() {
-		counter--
-		if counter == 0 {
-			// 生成SQL字符串
-			sqlTemplate := `
-				UPDATE users
-				SET password =
-					CASE id
-						{{ range $_, $v := . }}
-							WHEN {{ index $v "id" }} THEN "{{ index $v "value" }}"
-						{{end}}
-					END
-				WHERE id IN ({{ range $i, $v := . }}{{ if $i }},{{ end }}{{ index $v "id" }}{{ end }});
-			`
-
-			tpl, err := template.New("sqlUpdate").Parse(sqlTemplate)
-			if err != nil {
-				panic(err)
-			}
-
-			buf := &bytes.Buffer{}
-			err = tpl.Execute(buf, users)
-			if err != nil {
-				panic(err)
-			}
-
-			sqlString := buf.String()
-
-			// 执行SQL
-			result, err := db.Exec(sqlString)
-			if err != nil {
-				panic(err)
-			}
-
-			n, err := result.RowsAffected()
-			if err != nil {
-				panic(err)
-			}
-
-			log.Printf("受影响的行数: %d\n", n)
-			users = []map[string]any{}
-			counter = 5000
-			time.Sleep(time.Second)
-		}
-
+		// 获取一行数据
 		var user User
 		err = rows.StructScan(&user)
 		if err != nil {
 			panic(err)
 		}
 
-		newPassword := "go2_" + gofakeit.Password(true, true, true, false, false, 5)
-		users = append(users, map[string]any{"id": user.ID, "value": newPassword})
+		// 生成新密码,并收集对象
+		newPassword := "tpl_" + gofakeit.Password(true, true, true, false, false, 5)
+		users = append(users, map[string]any{"id": user.ID, "password": newPassword})
+
+		// 计数器-1
+		counter--
+
+		// 计数器为零时修改数据、重置状态和休眠
+		if counter == 0 {
+			// 生成SQL模板
+			sqlTemplate := `
+				UPDATE users
+				SET password =
+					CASE id
+					{{ range $_, $v := . }}
+						WHEN {{ index $v "id" }} THEN "{{ index $v "password" }}"
+					{{end}}
+					END
+				WHERE id IN ({{ range $i, $v := . }}{{ if $i }},{{ end }}{{ index $v "id" }}{{ end }});
+			`
+			tpl, err := template.New("sql").Parse(sqlTemplate)
+			if err != nil {
+				panic(err)
+			}
+
+			// 渲染数据
+			buf := &bytes.Buffer{}
+			err = tpl.Execute(buf, users)
+			if err != nil {
+				panic(err)
+			}
+			sqlString := buf.String()
+
+			// 执行SQL
+			_, err = db.Exec(sqlString)
+			if err != nil {
+				panic(err)
+			}
+
+			// 重置状态,并休眠
+			counter = _counter
+			users = []map[string]any{}
+			time.Sleep(time.Millisecond * 500)
+		}
 	}
 }
+```
+
+输出结果
+
+```bash
+# 输出结果
+# 1000000条数据 / 处理2000条数据休眠半秒 / 2换成秒 = 250秒 ~= 5分钟
+Used 291 seconds
+
+# CPU使用率一般低于20%，偶尔超一下
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O          BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   17.25%    2.121GiB / 3.682GiB   57.60%    202MB / 3.13GB   3.17GB / 14.5GB   46
+
+# 分析
+# 1、目前能想到的最优的方法
+# 2、代码也是最复杂的，不能排除代码是否有bug
+# 3、所以若要使用这种方法务必谨慎一些
 ```
 
 :::
