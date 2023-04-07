@@ -1883,6 +1883,146 @@ panic: missing destination name password in *main.User
 
 <br />
 
+### 查询列名
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/jmoiron/sqlx"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 注意事项
+	// 这种查看方式与查看表结构有本质区别
+    
+	// 查询单条数据
+	{
+		row := db.QueryRowx("SELECT * FROM users WHERE id = ?", "1")
+
+		// 查看列名
+		columns, err := row.Columns()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n\n", columns)
+
+		// 查看列类型
+		columnTypes, err := row.ColumnTypes()
+		if err != nil {
+			panic(err)
+		}
+
+		ctype := columnTypes[4]               // 查看第N个字段
+		fmt.Println(ctype.Name())             // 列名称
+		fmt.Println(ctype.DatabaseTypeName()) // 列的类型的名称
+		fmt.Println(ctype.ScanType())         // 返回对应的Go类型
+		fmt.Println(ctype.Nullable())         // 返回列的值是否可为空，如果驱动不支持此特性则ok返回false
+		fmt.Println(ctype.DecimalSize())      // 返回小数类型的小数位数和精度，如果驱动不支持此特性则ok返回false
+		fmt.Println(ctype.Length())           // 返回可变长度列类型的列类型长度，如果列类型不是可变长度的,例如int,或者驱动不支持此特特性则ok返回false
+		fmt.Println()
+
+		// 获取值
+		// 调用row.Scan() 或 row.StructScan()等后会自动关闭row
+		// 调用row.Columns() 或 row.ColumnTypes()等后不会自动资管row
+		// 所以应该先调用 row.Columns()，然后再调用 row.Scan()
+		var user User
+		err = row.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n\n", user)
+	}
+
+	// 自定义列名
+	{
+		row := db.QueryRowx(`
+			SELECT id AS ID,username AS 用户名, password AS 密码,email AS 邮箱 
+			FROM users WHERE id = ?`, "1",
+		)
+
+		// 查看列名
+		columns, err := row.Columns()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%#v\n\n", columns)
+	}
+}
+```
+
+输出结果
+
+```bash
+[]string{"id", "username", "password", "email", "created_at", "updated_at", "deleted_at"}
+
+created_at
+DATETIME
+sql.NullTime
+false true
+6 6 true
+0 false
+
+main.User{ID:1, Username:"张三", Password:"KQzNiZxh1MMG", Email:"zhangsan@example.com", CreatedAt:time.Date(2023, time.April, 4, 23, 48, 38, 916301000, time.Local), UpdatedAt:time.Date(2
+023, time.April, 4, 23, 48, 38, 916301000, time.Local), DeletedAt:sql.NullTime{Time:time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC), Valid:false}}
+
+[]string{"ID", "用户名", "密码", "邮箱"}
+```
+
+:::
+
+<br />
+
 ### 使用事物
 
 ::: details 点击查看详情
