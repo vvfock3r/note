@@ -3477,6 +3477,17 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+# 代码输出结果
+Used 22 seconds
+
+# CPU使用率
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O         BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   186.95%   2.097GiB / 3.682GiB   56.95%    172MB / 2.9GB   3.15GB / 12.6GB   46
+```
+
 :::
 
 ::: details （3）假设需要修改一百万数据：使用Go 游标，不支持批量更新，单次更新的话速度又太慢
@@ -3550,35 +3561,57 @@ func main() {
 	defer func() { _ = rows.Close() }()
 
 	// 遍历游标
-	var counter = 10000
+	var (
+		counter  = 10000
+		_counter = counter
+	)
 	users := []map[string]any{}
 	for rows.Next() {
-		counter--
-		if counter == 0 {
-			_, err := db.NamedExec(`UPDATE users SET password = :password WHERE id = :id`, users)
-			if err != nil {
-				panic(err)
-			}
-			users = []map[string]any{}
-			counter = 10000
-			time.Sleep(time.Second)
-		}
-
+		// 游标遍历
 		var user User
 		err = rows.StructScan(&user)
 		if err != nil {
 			panic(err)
 		}
 
+		// 将待修改的数据收集起来。无论是收集结构体还是只包含要修改列的Map，都不支持批量修改
 		newPassword := "go_" + gofakeit.Password(true, true, true, false, false, 5)
 		users = append(users, map[string]any{"id": user.ID, "password": newPassword})
+
+		// 计数器-1
+		counter--
+
+		// 计数器归零时提交修改,并重置状态和休眠
+		if counter == 0 {
+			_, err := db.NamedExec(`UPDATE users SET password = :password WHERE id = :id`, users)
+			if err != nil {
+				panic(err)
+			}
+			users = []map[string]any{}
+			counter = _counter
+			time.Sleep(time.Second)
+		}
 	}
 }
 ```
 
+输出结果
+
+```bash
+panic: sql: expected 2 arguments, got 20000
+```
+
 :::
 
-::: details （4）假设需要修改一百万数据：使用新思路
+::: details （4）假设需要修改一百万数据：使用Go 游标，单次更新的话速度又太慢
+
+```go
+
+```
+
+:::
+
+::: details （5）假设需要修改一百万数据：使用新思路
 
 1、SQL语句测试
 
@@ -3682,7 +3715,7 @@ func main() {
 
 :::
 
-::: details （5）假设需要修改一百万数据：使用新思路编写的完整代码
+::: details （6）假设需要修改一百万数据：使用新思路编写的完整代码
 
 ```go
 package main
