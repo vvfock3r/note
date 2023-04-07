@@ -3437,7 +3437,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		User:                 "root",
 		Passwd:               "QiNqg[l.%;H>>rO9",
 		Net:                  "tcp",
-		Addr:                 "192.168.48.129:3306",
+		Addr:                 "192.168.48.151:3306",
 		DBName:               "demo",
 		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
 		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
@@ -3523,7 +3523,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		User:                 "root",
 		Passwd:               "QiNqg[l.%;H>>rO9",
 		Net:                  "tcp",
-		Addr:                 "192.168.48.129:3306",
+		Addr:                 "192.168.48.151:3306",
 		DBName:               "demo",
 		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
 		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
@@ -3636,7 +3636,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		User:                 "root",
 		Passwd:               "QiNqg[l.%;H>>rO9",
 		Net:                  "tcp",
-		Addr:                 "192.168.48.129:3306",
+		Addr:                 "192.168.48.151:3306",
 		DBName:               "demo",
 		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
 		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
