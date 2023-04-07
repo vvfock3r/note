@@ -1917,7 +1917,7 @@ func ConnMySQL() (*sqlx.DB, error) {
 		User:                 "root",
 		Passwd:               "QiNqg[l.%;H>>rO9",
 		Net:                  "tcp",
-		Addr:                 "192.168.48.129:3306",
+		Addr:                 "192.168.48.151:3306",
 		DBName:               "demo",
 		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
 		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
@@ -3405,9 +3405,9 @@ c600227c7470   demo-mysql-8.0.30   1.99%     2.459GiB / 3.682GiB   66.79%    38.
 ::: details （1）假设需要修改一百万数据：使用MySQL客户端执行update语句
 
 ```bash
-# 执行SQL
-mysql> UPDATE users SET password = SUBSTRING(MD5(RAND()), FLOOR(RAND() * 6) + 5, FLOOR(RAND() * 6) + 5) WHERE id <= 1000000;
-Query OK, 1000000 rows affected (20.62 sec)
+# 执行SQL, prefix_是我特意加的一个前缀
+mysql> UPDATE users SET password = CONCAT('prefix_', SUBSTRING(MD5(RAND()), FLOOR(RAND() * 6) + 5, FLOOR(RAND() * 6) + 5)) WHERE id <= 1000000;
+Query OK, 1000000 rows affected (23.99 sec)
 Rows matched: 1000000  Changed: 1000000  Warnings: 0
 
 # CPU使用率
@@ -3417,10 +3417,402 @@ c600227c7470   demo-mysql-8.0.30   179.01%   2.017GiB / 3.682GiB   54.77%    48.
 
 :::
 
-::: details （2）假设需要修改一百万数据：使用Go
+::: details （2）假设需要修改一百万数据：使用Go暴力美学，和在MySQL客户端执行没什么两样
 
 ```go
+package main
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 暴力修改
+	_, err = db.Exec(`UPDATE users 
+				SET password = CONCAT('go_', SUBSTRING(MD5(RAND()), FLOOR(RAND() * 6) + 5, FLOOR(RAND() * 6) + 5)) 
+				WHERE id <= 1000000;`)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+:::
+
+::: details （3）假设需要修改一百万数据：使用Go 游标，不支持批量更新，单次更新的话速度又太慢
+
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 查询数据库
+	rows, err := db.Queryx("select * from users where id <= 1000000")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// 遍历游标
+	var counter = 10000
+	users := []map[string]any{}
+	for rows.Next() {
+		counter--
+		if counter == 0 {
+			_, err := db.NamedExec(`UPDATE users SET password = :password WHERE id = :id`, users)
+			if err != nil {
+				panic(err)
+			}
+			users = []map[string]any{}
+			counter = 10000
+			time.Sleep(time.Second)
+		}
+
+		var user User
+		err = rows.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+
+		newPassword := "go_" + gofakeit.Password(true, true, true, false, false, 5)
+		users = append(users, map[string]any{"id": user.ID, "password": newPassword})
+	}
+}
+```
+
+:::
+
+::: details （4）假设需要修改一百万数据：使用新思路
+
+1、SQL语句测试
+
+```sql
+UPDATE users
+SET password= CASE id
+           WHEN 1 THEN "abc"
+           WHEN 2 THEN "abc"
+           WHEN 3 THEN "abc"
+         END
+WHERE id IN (1,2,3);
+```
+
+2、Go语句测试
+
+```go
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 修改数据
+	sqlString := `
+		UPDATE users
+		SET password = 
+			CASE id
+				WHEN 1 THEN 123456
+				WHEN 2 THEN 123456
+				WHEN 3 THEN 123456
+			END
+		WHERE id IN (1,2,3);`
+	result, err := db.Exec(sqlString)
+	if err != nil {
+		panic(err)
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("受影响的行数: %d\n", n)
+}
+```
+
+3、修改为模板拼接
+
+```go
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 生成SQL字符串
+	sqlTemplate := `
+		UPDATE users
+		SET password =
+			CASE id
+				{{ range $index, $id := .IDs }}
+					WHEN {{$id}} THEN {{$index}} 
+				{{end}}
+			END
+		WHERE id IN ({{ range $index, $id := .IDs }}{{ if $index }},{{ end }}{{ $id }}{{ end }});
+	`
+
+	tpl, err := template.New("sqlUpdate").Parse(sqlTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	data := struct {
+		IDs []int
+	}{[]int{11, 21, 13}}
+
+	buf := &bytes.Buffer{}
+	err = tpl.Execute(buf, data)
+	if err != nil {
+		panic(err)
+	}
+
+	sqlString := buf.String()
+
+	// 执行SQL
+	result, err := db.Exec(sqlString)
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("受影响的行数: %d\n", n)
+}
+```
+
+:::
+
+::: details （5）假设需要修改一百万数据：使用新思路编写的完整代码
+
+```go
+package main
+
+import (
+	"bytes"
+	"database/sql"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"log"
+	"text/template"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库
+	// sqlx.Connect = sqlx.Open + db.Ping,也可以使用 sql.MustConnect, 连接不成功就panic
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 查询数据库
+	rows, err := db.Queryx("select * from users where id <= 1000000")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// 遍历游标
+	var counter = 5000
+	users := []map[string]any{}
+	for rows.Next() {
+		counter--
+		if counter == 0 {
+			// 生成SQL字符串
+			sqlTemplate := `
+				UPDATE users
+				SET password =
+					CASE id
+						{{ range $_, $v := . }}
+							WHEN {{ index $v "id" }} THEN "{{ index $v "value" }}"
+						{{end}}
+					END
+				WHERE id IN ({{ range $i, $v := . }}{{ if $i }},{{ end }}{{ index $v "id" }}{{ end }});
+			`
+
+			tpl, err := template.New("sqlUpdate").Parse(sqlTemplate)
+			if err != nil {
+				panic(err)
+			}
+
+			buf := &bytes.Buffer{}
+			err = tpl.Execute(buf, users)
+			if err != nil {
+				panic(err)
+			}
+
+			sqlString := buf.String()
+
+			// 执行SQL
+			result, err := db.Exec(sqlString)
+			if err != nil {
+				panic(err)
+			}
+
+			n, err := result.RowsAffected()
+			if err != nil {
+				panic(err)
+			}
+
+			log.Printf("受影响的行数: %d\n", n)
+			users = []map[string]any{}
+			counter = 5000
+			time.Sleep(time.Second)
+		}
+
+		var user User
+		err = rows.StructScan(&user)
+		if err != nil {
+			panic(err)
+		}
+
+		newPassword := "go2_" + gofakeit.Password(true, true, true, false, false, 5)
+		users = append(users, map[string]any{"id": user.ID, "value": newPassword})
+	}
+}
 ```
 
 :::
