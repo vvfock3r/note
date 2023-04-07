@@ -3397,3 +3397,30 @@ c600227c7470   demo-mysql-8.0.30   1.99%     2.459GiB / 3.682GiB   66.79%    38.
 ```
 
 :::
+
+<br />
+
+### 修改数据
+
+::: details （1）假设需要修改一百万数据：使用MySQL客户端执行update语句
+
+```bash
+# 执行SQL
+mysql> UPDATE users SET password = SUBSTRING(MD5(RAND()), FLOOR(RAND() * 6) + 5, FLOOR(RAND() * 6) + 5) WHERE id <= 1000000;
+Query OK, 1000000 rows affected (20.62 sec)
+Rows matched: 1000000  Changed: 1000000  Warnings: 0
+
+# CPU使用率
+CONTAINER ID   NAME                CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c600227c7470   demo-mysql-8.0.30   179.01%   2.017GiB / 3.682GiB   54.77%    48.4kB / 90.2kB   3.11GB / 3.04GB   44
+```
+
+:::
+
+::: details （2）假设需要修改一百万数据：使用Go
+
+```go
+
+```
+
+:::
