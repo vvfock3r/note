@@ -486,6 +486,72 @@ Heidenreich7502 1544    73      4/8/23 21:38
 
 <br />
 
+### 插入行列
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]any{
+		{"用户名", "密码"},
+		{"zhangsan", "12345"},
+		{"lisi", "12345"},
+		{"wangwu", "12345"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 插入空行或空列
+	// 第一个参数：代表开始位置，比如第几行，第几列等，会影响开始行
+	// 第一个参数：空行或空列的数量
+	err := f.InsertRows("Sheet1", 3, 2) // 3、4行是空白行
+	if err != nil {
+		panic(err)
+	}
+	err = f.InsertCols("Sheet1", "B", 3) // B、C、D是空列
+	if err != nil {
+		panic(err)
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+
+
+:::
+
+<br />
+
 ## 调整样式
 
 ### 设置行高
