@@ -338,6 +338,154 @@ func main() {
 
 <br />
 
+### 读取行列
+
+::: details （1）一次性读取所有行或列
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+	"time"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]any{
+		{"字符串", "字符串(数字)", "数字", "时间"},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 读取所有行,返回一个 二维字符串切片
+	rows, err := f.GetRows("Sheet1")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", rows)
+
+	// 读取所有列,返回一个 二维字符串切片
+	cols, err := f.GetCols("Sheet1")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", cols)
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+[][]string{[]string{"字符串", "字符串(数字)", "数字", "时间"}, []string{"Bednar5314", "42126", "65", "4/8/23 19:07"}, []string{"King5261", "696", "93", "4/8/23 19:07"}, []string{"Dicki46
+85", "5411", "19", "4/8/23 19:07"}}
+[][]string{[]string{"字符串", "Bednar5314", "King5261", "Dicki4685"}, []string{"字符串(数字)", "42126", "696", "5411"}, []string{"数字", "65", "93", "19"}, []string{"时间", "4/8/23 19:07
+", "4/8/23 19:07", "4/8/23 19:07"}}
+```
+
+:::
+
+::: details （2）流式读取所有行或列
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+	"time"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]any{
+		{"字符串", "字符串(数字)", "数字", "时间"},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 流式读取行和列
+	rows, err := f.Rows("Sheet1")
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		row, err := rows.Columns()
+		if err != nil {
+			fmt.Println(err)
+		}
+		for _, colCell := range row {
+			fmt.Print(colCell, "\t")
+		}
+		fmt.Println()
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+字符串  字符串(数字)    数字    时间
+Goldner8552     76044   86      4/8/23 21:38
+Mayert3932      87076   70      4/8/23 21:38
+Heidenreich7502 1544    73      4/8/23 21:38
+```
+
+:::
+
+<br />
+
 ## 调整样式
 
 ### 设置行高
