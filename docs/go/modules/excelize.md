@@ -1,0 +1,689 @@
+# excelize
+
+Github：[https://github.com/qax-os/excelize](https://github.com/qax-os/excelize)
+
+文档：[https://pkg.go.dev/github.com/xuri/excelize/v2](https://pkg.go.dev/github.com/xuri/excelize/v2)
+
+<br />
+
+## 安装
+
+```bash
+go get github.com/xuri/excelize/v2
+```
+
+<br />
+
+## 打开和关闭
+
+### 创建新的文件
+
+::: details （1）新建一个文件
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 写入数据
+	err := f.SetCellValue("Sheet1", "A1", "用户名")
+	if err != nil {
+		panic(err)
+	}
+	err = f.SetCellValue("Sheet1", "B1", "密码")
+	if err != nil {
+		panic(err)
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+![image-20230408085801537](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408085801537.png)
+
+:::
+
+### 读取已有文件
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 打开已经存在的excel
+	f, err := excelize.OpenFile("测试.xlsx")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = f.Close() }()
+}
+```
+
+:::
+
+<br />
+
+### 添加文件密码
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+	"time"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]any{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", time.Now(), "zhangsan@qq.com"},
+		{"lisi", 12345.123456, "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err := f.SaveAs("测试.xlsx", excelize.Options{Password: "123456"})
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+## 读写数据
+
+### 基础示例
+
+::: details （1）数据分离：初级
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 写入数据
+	header := [][]string{
+		{"Sheet1", "A1", "用户名"},
+		{"Sheet1", "B1", "密码"},
+	}
+	for _, item := range header {
+		err := f.SetCellValue(item[0], item[1], item[2])
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err := f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+::: details （2）数据分离：优化，仅支持一行
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义第一行数据
+	header := []string{"用户名", "密码", "邮箱"}
+
+	// 写入第一行数据
+	for index, item := range header {
+		cell := string(rune('A'+index)) + "1"
+		err := f.SetCellValue("Sheet1", cell, item)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err := f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+::: details （3）数据分离：再优化，可以支持多行
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]string{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", "12345", "zhangsan@qq.com"},
+		{"lisi", "12345", "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err := f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+![image-20230408091947031](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408091947031.png)
+
+:::
+
+<br />
+
+## 调整样式
+
+### 设置行高
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]string{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", "12345", "zhangsan@qq.com"},
+		{"lisi", "12345", "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 读取第一行行高, 默认为15.0
+	rowHeight, err := f.GetRowHeight("Sheet1", 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("第一行行高: %.2f\n", rowHeight)
+
+	// 设置第一行行高为20
+	err = f.SetRowHeight("Sheet1", 1, 20)
+	if err != nil {
+		panic(err)
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+<br />
+
+### 设置列宽
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]string{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", "12345", "zhangsan@qq.com"},
+		{"lisi", "12345", "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 读取第一列列宽，默认为8.29
+	colWidth, err := f.GetColWidth("Sheet1", "A")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("第一列列宽: %.2f\n", colWidth)
+
+	// 设置第一列列宽为20
+	err = f.SetColWidth("Sheet1", "A", "A", 20)
+	if err != nil {
+		panic(err)
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+<br />
+
+### 单元格对齐
+
+::: details （1）垂直对齐
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]string{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", "12345", "zhangsan@qq.com"},
+		{"lisi", "12345", "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 垂直对齐
+	// center 垂直居中
+	// top    顶端对齐
+	// bottom 底端对齐
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Vertical: "top",
+		},
+	})
+
+	// 为第一行和第二行设置样式
+	// 1：从第几行开始，包含此行
+	// 2：在第几行结束，包含此行
+	err = f.SetRowStyle("Sheet1", 1, 2, style)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+::: details （2）水平对齐
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]string{
+		{"用户名", "密码", "邮箱"},
+		{"zhangsan", "12345", "zhangsan@qq.com"},
+		{"lisi", "12345", "lisi@qq.com"},
+		{"wangwu", "12345", "wangwu@qq.com"},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 水平对齐
+	// left 	左对齐
+	// right 	右对齐
+	// center   居中对齐
+	// fill     填充,当把单元格列宽调大以后，会使用内容重复填充
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+		},
+	})
+
+	// 为第一行和第二行设置样式
+	// 1：从第几行开始，包含此行
+	// 2：在第几行结束，包含此行
+	err = f.SetRowStyle("Sheet1", 1, 2, style)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+:::
+
+::: details （3）文本是否自动换行
+
+```go
+	// 文本是否自动换行，默认为false
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			WrapText: true,
+		},
+	})
+```
+
+:::
+
+::: details （4）文本旋转角度
+
+```go
+	// 文本旋转角度,可选值为0、90、180、270，默认为0
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			TextRotation: 180,
+		},
+	})
+```
+
+:::
+
+<br />
+
+### 单元格填充
+
+::: details （1）设置背景颜色
+
+```go
+	// 单元格填充
+	//   Type    填充类型，可选值包括 pattern(图案填充)
+	//   Pattern 图案填充类型，内置18种填充类型，比如1代表实心填充样式，仅在Type="pattern"下有效
+	//   Color   填充颜色
+	style, err := f.NewStyle(&excelize.Style{
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Pattern: 1,
+			Color:   []string{"#9BC2E6"},
+		},
+	})
+```
+
+:::
+
+<br />
+
+### 单元格字体
+
+::: details （1）设置字体
+
+```go
+	// 单元格字体
+	//   Bold      是否加粗
+	//   Italic    是否倾斜
+	//   Underline 是否添加下划线
+	//   Strike    是否添加删除线
+	//   Family    字体类型
+	//   Size      字体大小
+	//   Color     字体颜色
+	//   VertAlign 字体对齐方式
+	// 中文的字体颜色要暗一些，如何调整？
+	style, err := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold:  true,
+			Size:  15,
+			Color: "#FF00FF",
+		},
+	})
+```
+
+:::
+
+<br />
+
+### 单元格边框
+
+::: details 点击查看详情
+
+```go
+	// 单元格
+	//   Type  边框类型,可选值 "left"、"right"、"top"、"bottom
+	//   Color 边框颜色
+	//   Style 边框样式
+	//			0：无边框
+	//			1：实线边框
+	//			2：虚线边框
+	//			3：点状边框
+	//			4：双线边框
+	//			5：粗实线边框
+	//			6：细实线边框
+	//			7：粗虚线边框
+	//			8：细虚线边框
+	//			9：粗点状边框
+	//			10：细点状边框
+	//			11：粗双线边框
+	//			12：细双线边框
+	style, err := f.NewStyle(&excelize.Style{
+		Border: []excelize.Border{
+			{Type: "left", Color: "#FF0000", Style: 1},
+			{Type: "right", Color: "#00FF00", Style: 2},
+			{Type: "top", Color: "#0000FF", Style: 3},
+			{Type: "bottom", Color: "#FF0000", Style: 4},
+		},
+	})
+```
+
+:::
+
+<br />
+
+### 单元格格式
+
+::: details 点击查看详情
+
+```go
+	// 单元格格式，支持100+种格式类型
+	//0：常规格式
+	//1：带有一位小数的数字格式
+	//2：带有两位小数的数字格式
+	//3：带有货币符号和两位小数的数字格式
+	//4：带有日期格式的数字格式
+	//5：带有时间格式的数字格式
+	//6：带有百分比格式的数字格式
+	//7：带有科学计数法格式的数字格式
+	//8：文本格式
+	//9：带有特殊格式的文本
+	//14：带有日期格式的数字格式，格式为"mm-dd-yy"
+	//22：带有日期和时间格式的数字格式，格式为"m/d/yy h:mm"
+	//49：带有文本格式的数字格式，如果单元格包含数字，则将其视为文本
+
+	// CustomNumFmt 字段允许用户自定义单元格的数字格式。格式字符串由一个或多个代码组成，每个代码代表一个数字或日期/时间部分。以下是一些示例：
+	//"0.00"：显示小数点后两位的数字
+	//"#,##0"：千分位分隔符格式，不显示小数位
+	//"0.00%;[Red]0.00%"：显示百分比格式，如果值为负数则显示为红色
+	//"yyyy-mm-dd"：日期格式，显示为年-月-日
+	//"h:mm AM/PM"：时间格式，显示为小时:分钟 AM/PM
+
+	style, err := f.NewStyle(&excelize.Style{
+		NumFmt:       14,
+		CustomNumFmt: func() *string { s := "yyyy-mm-dd hh:mm:ss"; return &s }(),
+	})
+```
+
+:::
+
+<br />
+
+### 单元格保护
+
+::: details 点击查看详情
+
+代码测试没通过
+
+```go
+	// 单元格格式,设置Locker为true，有啥用？
+	style, err := f.NewStyle(&excelize.Style{
+		Protection: &excelize.Protection{
+			Locked: true,
+			Hidden: true,
+		},
+	})
+
+	err = f.SetCellStyle("Sheet1", "B1", "B1", style)
+	if err != nil {
+		panic(err)
+	}
+```
+
+:::
