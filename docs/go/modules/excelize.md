@@ -44,6 +44,7 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+    // 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
 		fmt.Println(err)
@@ -92,8 +93,6 @@ package main
 import (
 	"fmt"
 	"github.com/xuri/excelize/v2"
-	"strconv"
-	"time"
 )
 
 func main() {
@@ -101,40 +100,38 @@ func main() {
 	f := excelize.NewFile()
 	defer func() { _ = f.Close() }()
 
-	// 定义多行数据
-	data := [][]any{
-		{"用户名", "密码", "邮箱"},
-		{"zhangsan", time.Now(), "zhangsan@qq.com"},
-		{"lisi", 12345.123456, "lisi@qq.com"},
-		{"wangwu", "12345", "wangwu@qq.com"},
+	// 写入数据
+	err := f.SetCellValue("Sheet1", "A1", "用户名")
+	if err != nil {
+		panic(err)
 	}
-
-	// 写入多行数据
-	for index, row := range data {
-		for offset, item := range row {
-			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
-			err := f.SetCellValue("Sheet1", cell, item)
-			if err != nil {
-				panic(err)
-			}
-		}
+	err = f.SetCellValue("Sheet1", "B1", "密码")
+	if err != nil {
+		panic(err)
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
-	err := f.SaveAs("测试.xlsx", excelize.Options{Password: "123456"})
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx", excelize.Options{Password: "123456"})
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 ```
 
+输出结果
+
+![image-20230408182708547](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408182708547.png)
+
 :::
+
+<br />
 
 ## 读写数据
 
-### 基础示例
+### 写入数据
 
-::: details （1）数据分离：初级
+::: details （1）单独定义数据
 
 ```go
 package main
@@ -149,11 +146,13 @@ func main() {
 	f := excelize.NewFile()
 	defer func() { _ = f.Close() }()
 
-	// 写入数据
+	// 定义数据
 	header := [][]string{
 		{"Sheet1", "A1", "用户名"},
 		{"Sheet1", "B1", "密码"},
 	}
+    
+    // 写入数据
 	for _, item := range header {
 		err := f.SetCellValue(item[0], item[1], item[2])
 		if err != nil {
@@ -162,6 +161,7 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+    // 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
 		fmt.Println(err)
@@ -169,9 +169,11 @@ func main() {
 }
 ```
 
+![image-20230408183643142](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408183643142.png)
+
 :::
 
-::: details （2）数据分离：优化，仅支持一行
+::: details （2）数据中去掉工作表属性（Sheet）
 
 ```go
 package main
@@ -187,7 +189,7 @@ func main() {
 	defer func() { _ = f.Close() }()
 
 	// 定义第一行数据
-	header := []string{"用户名", "密码", "邮箱"}
+	header := []any{"用户名", "密码"}
 
 	// 写入第一行数据
 	for index, item := range header {
@@ -199,6 +201,7 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
 		fmt.Println(err)
@@ -206,9 +209,11 @@ func main() {
 }
 ```
 
+![image-20230408183605933](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408183605933.png)
+
 :::
 
-::: details （3）数据分离：再优化，可以支持多行
+::: details （3）支持多行循环写入
 
 ```go
 package main
@@ -225,11 +230,11 @@ func main() {
 	defer func() { _ = f.Close() }()
 
 	// 定义多行数据
-	data := [][]string{
-		{"用户名", "密码", "邮箱"},
-		{"zhangsan", "12345", "zhangsan@qq.com"},
-		{"lisi", "12345", "lisi@qq.com"},
-		{"wangwu", "12345", "wangwu@qq.com"},
+	data := [][]any{
+		{"用户名", "密码"},
+		{"zhangsan", "12345"},
+		{"lisi", "12345"},
+		{"wangwu", "12345"},
 	}
 
 	// 写入多行数据
@@ -244,6 +249,7 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
 		fmt.Println(err)
@@ -251,7 +257,82 @@ func main() {
 }
 ```
 
-![image-20230408091947031](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408091947031.png)
+![image-20230408183528821](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408183528821.png)
+
+:::
+
+<br />
+
+### 读取数据
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/xuri/excelize/v2"
+	"strconv"
+	"time"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 定义多行数据
+	data := [][]any{
+		{"字符串", "字符串(数字)", "数字", "时间"},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+		{gofakeit.Username(), gofakeit.StreetNumber(), gofakeit.Number(1, 100), time.Now()},
+	}
+
+	// 写入多行数据
+	for index, row := range data {
+		for offset, item := range row {
+			cell := string(rune('A'+offset)) + strconv.Itoa(index+1)
+			err := f.SetCellValue("Sheet1", cell, item)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// 读取时间数据,注意读取出来的数据格式与Excel中看到的并不一致
+	t, err := f.GetCellValue("Sheet1", "D2")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("读取时间: %s\n", t)
+
+	// 解析为Go对象
+	t2, err := time.ParseInLocation("1/2/06 15:04", t, time.Local)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("解析时间: %s\n", t2)
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+读取时间: 4/8/23 19:02
+解析时间: 2023-04-08 19:02:00 +0800 CST
+```
+
+![image-20230408190354996](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230408190354996.png)
 
 :::
 
