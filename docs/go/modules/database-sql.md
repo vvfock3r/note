@@ -1350,6 +1350,7 @@ mysql> select * from users where username="zhangsan" or username="wangwu";
 # 1、重复数据：指的是主键或唯一索引重复的数据 
 # 2、对于单条数据写入，insert ignore into会忽略写入，并且代码不会报错
 # 3、对于多条数据写入，其中有一条或多条数据重复，insert ignore into只会忽略重复的数据，非重复的数据会正常写入，不会报错
+# 4、注意并发写入时有可能会导致死锁：Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
 ```
 
 :::
@@ -3187,7 +3188,150 @@ mysql> select count(*) from users;
 ::: details （3）使用Go：优化后的生产者-消费者模型，忽略重复数据的插入，并确保最终插入正确的条数
 
 ```go
+package main
 
+import (
+	"database/sql"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+// InsertUsers 添加用户
+func InsertUser(wg *sync.WaitGroup, db *sqlx.DB, total, chunk int) {
+	defer wg.Done()
+
+	if total <= 0 {
+		return
+	}
+
+	// 动态调整chunk
+	if chunk > total {
+		chunk = total
+	}
+
+	// 生成用户
+	var users []User
+	for i := 0; i < chunk; i++ {
+		user := User{
+			//Username:  gofakeit.UUID(),
+			Username: gofakeit.Username(),
+			Password: gofakeit.Password(true, true, true, false, false, 12),
+			//Email:     gofakeit.UUID(),
+			Email:     gofakeit.Email(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		users = append(users, user)
+	}
+
+	// 写入数据库
+	sqlString := `INSERT IGNORE INTO users (username, password, email, created_at, updated_at) VALUES
+						(:username, :password, :email, :created_at, :updated_at)`
+	result, err := db.NamedExec(sqlString, users)
+
+	// 若是死锁错误则重新执行，其他错误直接panic
+	if err != nil {
+		mysqlError, ok := err.(*mysql.MySQLError)
+		//fmt.Printf("%#v\n", mysqlError)
+		if ok && mysqlError.Number == 0x4bd {
+			wg.Add(1)
+			go InsertUser(wg, db, total, chunk)
+			return
+		}
+		panic(err)
+	}
+
+	// 获取写入成功的个数
+	success, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	// 循环执行
+	free := total - int(success)
+	wg.Add(1)
+	go InsertUser(wg, db, free, chunk)
+}
+
+func main() {
+	// 统计时间
+	start := time.Now()
+	defer func() { fmt.Printf("Used %.0f seconds", time.Since(start).Seconds()) }()
+
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 连接池设置
+	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(100)
+
+	// 并发写入数据库
+	wg := new(sync.WaitGroup)
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go InsertUser(wg, db, 500_0000, 500)
+	}
+	wg.Wait()
+}
+```
+
+输出结果
+
+```bash
+# 上面的代码可以避免产生重复数据，以符合唯一索引的要求
+#
+# 其原理是
+#   1、使用insert ignore into忽略重复数据，但这在并发时如果遇到重复数据会产生死锁错误
+#   2、判断error，如果是死锁错误则重新执行函数
+#   3、死锁报错：Deadlock found when trying to get lock; try restarting transaction
+#
+# 但是需要注意
+#   1、随着数据量越大，死锁错误也会随之增多，代码执行效率将大大降低
+#   2、所以需要避免死锁错误，那就需要 原始数据尽量不要重复
+#   3、gofakeit提供的函数重复太多，所以尽量自己编写唯一索引字段的值
 ```
 
 :::
