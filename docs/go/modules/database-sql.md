@@ -3001,7 +3001,7 @@ mysql> select id,username,password,email from users where username = "wangwu";
 
 ## 海量数据操作
 
-### 生成数据
+### 写入数据
 
 ::: details 创建用户表
 
@@ -3047,7 +3047,7 @@ mysql_random_data_load demo users 500_0000 --user=root --password="QiNqg[l.%;H>>
 
 :::
 
-::: details （2）自己写代码写入数据
+::: details （2）使用Go：简单的生产者-消费者模型（要求不能插入重复的数据）
 
 ```go
 package main
@@ -3180,6 +3180,14 @@ mysql> select count(*) from users;
 | 10000000 |
 +----------+
 1 row in set (0.27 sec)
+```
+
+:::
+
+::: details （3）使用Go：优化后的生产者-消费者模型，忽略重复数据的插入
+
+```go
+
 ```
 
 :::
