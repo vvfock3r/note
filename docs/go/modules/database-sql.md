@@ -1219,6 +1219,141 @@ mysql> select * from users;
 
 :::
 
+::: details （2）避免重复数据：方式1：insert ignore into
+
+```go
+package main
+
+import (
+	"database/sql"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+)
+
+// User 定义结构体，DeletedAt在查询时有可能为Null值，所以定义为 sql.NullTime，也可以定义为 *time.Time
+type User struct {
+	ID        int          `db:"id"`
+	Username  string       `db:"username"`
+	Password  string       `db:"password"`
+	Email     string       `db:"email"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+
+// ConnMySQL 连接数据库
+func ConnMySQL() (*sqlx.DB, error) {
+	// 定义MySQL配置
+	mysqlConfig := mysql.Config{
+		User:                 "root",
+		Passwd:               "QiNqg[l.%;H>>rO9",
+		Net:                  "tcp",
+		Addr:                 "192.168.48.129:3306",
+		DBName:               "demo",
+		Collation:            "utf8mb4_general_ci", // 设置字符集和排序规则
+		Loc:                  time.Local,           // 设置连接时使用的时区,默认为UTC时区
+		ParseTime:            true,                 // 是否将数据库中的TIME或DATETIME字段解析为Go的时间类型（即time.Time)
+		Timeout:              5 * time.Second,      // 连接超时时间
+		ReadTimeout:          30 * time.Second,     // 读取超时时间
+		WriteTimeout:         30 * time.Second,     // 写入超时时间
+		CheckConnLiveness:    true,                 // 在使用连接之前检查其存活性
+		AllowNativePasswords: true,                 // 允许MySQL身份认证插件mysql_native_password
+		MaxAllowedPacket:     16 << 20,             // 控制客户端向MySQL服务器发送的最大数据包大小, 16 MiB
+	}
+
+	// 连接数据库: sqlx.Connect = sqlx.Open(不会真正连接数据库) + db.Ping(会真正连接数据库)
+	return sqlx.Connect("mysql", mysqlConfig.FormatDSN())
+}
+
+func main() {
+	// 连接数据库
+	db, err := ConnMySQL()
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// 写入单条数据,若数据存在（主键、唯一索引）则不会插入
+	user := User{Username: "lisi", Password: "123456", Email: "lisi@example.com", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	sqlString := `INSERT IGNORE INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+	_, err = db.NamedExec(sqlString, user)
+	if err != nil {
+		panic(err)
+	}
+
+	// 写入多行数据，这是本次测试的重点
+	// 确保：
+	//   第一条数据是不存在的
+	//   第二条数据是存在的
+	//   第三条数据是不存在的
+	// 第二条数据重复，我们需要测试第一条和第三条数据是否能插入到数据库中
+	{
+		users := []map[string]any{
+			{
+				"username":   "zhangsan",
+				"password":   "654321",
+				"email":      "zhangsan@example.com",
+				"created_at": time.Now(),
+				"updated_at": time.Now(),
+			},
+			{
+				"username":   "lisi",
+				"password":   "123456",
+				"email":      "lisi@example.com",
+				"created_at": time.Now(),
+				"updated_at": time.Now(),
+			},
+			{
+				"username":   "wangwu",
+				"password":   "123456",
+				"email":      "wangwu@example.com",
+				"created_at": time.Now(),
+				"updated_at": time.Now(),
+			},
+		}
+		sqlString := `INSERT IGNORE INTO users (username, password, email, created_at, updated_at) VALUES
+			(:username, :password, :email, :created_at, :updated_at)`
+		_, err = db.NamedExec(sqlString, users)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+```
+
+输出结果
+
+```bash
+# 1、不管记录是否存在，先执行一遍删除操作
+mysql> delete from users where username="zhangsan" or username="lisi" or username="wangwu";
+Query OK, 3 rows affected (0.00 sec)
+
+mysql> delete from users where email="zhangsan@example.com" or email="lisi@example.com" or email="wangwu@example.com";
+Query OK, 0 rows affected (0.00 sec)
+
+# 2、执行代码，写入数据
+
+# 3、然后检查zhangsan和wangwu的数据是否写入到数据库中了
+mysql> select * from users where username="zhangsan" or username="wangwu";
++----------+----------+----------+----------------------+----------------------------+----------------------------+------------+
+| id       | username | password | email                | created_at                 | updated_at                 | deleted_at |
++----------+----------+----------+----------------------+----------------------------+----------------------------+------------+
+| 30000065 | wangwu   | 123456   | wangwu@example.com   | 2023-04-09 14:58:30.829894 | 2023-04-09 14:58:30.829894 | NULL       |
+| 30000064 | zhangsan | 654321   | zhangsan@example.com | 2023-04-09 14:58:30.829894 | 2023-04-09 14:58:30.829894 | NULL       |
++----------+----------+----------+----------------------+----------------------------+----------------------------+------------+
+2 rows in set (0.00 sec)
+
+# 总结
+# 1、重复数据：指的是主键或唯一索引重复的数据 
+# 2、对于单条数据写入，insert ignore into会忽略写入，并且代码不会报错
+# 3、对于多条数据写入，其中有一条或多条数据重复，insert ignore into只会忽略重复的数据，非重复的数据会正常写入，不会报错
+```
+
+:::
+
 <br />
 
 ### 修改数据
