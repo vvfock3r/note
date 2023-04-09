@@ -2,7 +2,11 @@
 
 Github：[https://github.com/qax-os/excelize](https://github.com/qax-os/excelize)
 
-文档：[https://pkg.go.dev/github.com/xuri/excelize/v2](https://pkg.go.dev/github.com/xuri/excelize/v2)
+文档：
+
+* [https://pkg.go.dev/github.com/xuri/excelize/v2](https://pkg.go.dev/github.com/xuri/excelize/v2)
+* [https://xuri.me/excelize/zh-hans/](https://xuri.me/excelize/zh-hans/)
+* [https://www.bookstack.cn/read/excelize-2.7.0-zh/70082f38e765b09d.md](https://www.bookstack.cn/read/excelize-2.7.0-zh/70082f38e765b09d.md)
 
 <br />
 
@@ -47,7 +51,7 @@ func main() {
     // 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -114,7 +118,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx", excelize.Options{Password: "123456"})
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -164,7 +168,7 @@ func main() {
     // 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -204,7 +208,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -252,7 +256,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err := f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -320,7 +324,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -395,7 +399,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -468,7 +472,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -539,7 +543,7 @@ func main() {
 	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -552,9 +556,51 @@ func main() {
 
 <br />
 
-## 工作表格
+## 工作表
 
+### 新建工作表
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 创建一个新的工作表
+	// 默认情况下会有一个工作表，名称是Sheet1
+	// 返回索引，索引从0开始，所以这里应该返回1
+	index, err := f.NewSheet("Sheet2")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Sheet index: ", index)
+
+	// 设置当前工作表格为激活状态
+	f.SetActiveSheet(index)
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+![image-20230409201054141](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230409201054141.png)
+
+:::
 
 <br />
 
@@ -613,7 +659,7 @@ func main() {
 	// 保存到文件中，这一步才会真正创建文件
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -675,7 +721,7 @@ func main() {
 	// 保存到文件中，这一步才会真正创建文件
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -743,7 +789,7 @@ func main() {
 	// 保存到文件中，这一步才会真正创建文件
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
@@ -808,7 +854,7 @@ func main() {
 	// 保存到文件中，这一步才会真正创建文件
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 }
 ```
