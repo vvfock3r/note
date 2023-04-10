@@ -556,59 +556,11 @@ func main() {
 
 <br />
 
-## 工作表
-
-### 新建工作表
-
-::: details 点击查看详情
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/xuri/excelize/v2"
-)
-
-func main() {
-	// 通过默认模板创建File对象,注意这并不会真正创建文件
-	f := excelize.NewFile()
-	defer func() { _ = f.Close() }()
-
-	// 创建一个新的工作表
-	// 默认情况下会有一个工作表，名称是Sheet1
-	// 返回索引，索引从0开始，所以这里应该返回1
-	index, err := f.NewSheet("Sheet2")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Sheet index: ", index)
-
-	// 设置当前工作表格为激活状态
-	f.SetActiveSheet(index)
-
-	// 保存到文件中，这一步才会真正创建文件
-	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
-	err = f.SaveAs("测试.xlsx")
-	if err != nil {
-		panic(err)
-	}
-}
-```
-
-输出结果
-
-![image-20230409201054141](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230409201054141.png)
-
-:::
-
-<br />
-
 ## 调整样式
 
-### 设置行高
+### 行高和列宽
 
-::: details 点击查看详情
+::: details （1）设置行高
 
 ```go
 package main
@@ -625,11 +577,11 @@ func main() {
 	defer func() { _ = f.Close() }()
 
 	// 定义多行数据
-	data := [][]string{
-		{"用户名", "密码", "邮箱"},
-		{"zhangsan", "12345", "zhangsan@qq.com"},
-		{"lisi", "12345", "lisi@qq.com"},
-		{"wangwu", "12345", "wangwu@qq.com"},
+	data := [][]any{
+		{"用户名", "密码"},
+		{"zhangsan", "12345"},
+		{"lisi", "12345"},
+		{"wangwu", "12345"},
 	}
 
 	// 写入多行数据
@@ -657,6 +609,7 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
 		panic(err)
@@ -664,13 +617,13 @@ func main() {
 }
 ```
 
+输出结果
+
+![image-20230410121042534](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230410121042534.png)
+
 :::
 
-<br />
-
-### 设置列宽
-
-::: details 点击查看详情
+::: details （2）设置列宽
 
 ```go
 package main
@@ -687,11 +640,11 @@ func main() {
 	defer func() { _ = f.Close() }()
 
 	// 定义多行数据
-	data := [][]string{
-		{"用户名", "密码", "邮箱"},
-		{"zhangsan", "12345", "zhangsan@qq.com"},
-		{"lisi", "12345", "lisi@qq.com"},
-		{"wangwu", "12345", "wangwu@qq.com"},
+	data := [][]any{
+		{"用户名", "密码"},
+		{"zhangsan", "12345"},
+		{"lisi", "12345"},
+		{"wangwu", "12345"},
 	}
 
 	// 写入多行数据
@@ -705,7 +658,7 @@ func main() {
 		}
 	}
 
-	// 读取第一列列宽，默认为8.29
+	// 读取第一列列宽，默认为 9.14
 	colWidth, err := f.GetColWidth("Sheet1", "A")
 	if err != nil {
 		panic(err)
@@ -719,12 +672,17 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
 		panic(err)
 	}
 }
 ```
+
+输出结果
+
+![image-20230410121250346](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230410121250346.png)
 
 :::
 
@@ -749,11 +707,11 @@ func main() {
 	defer func() { _ = f.Close() }()
 
 	// 定义多行数据
-	data := [][]string{
-		{"用户名", "密码", "邮箱"},
-		{"zhangsan", "12345", "zhangsan@qq.com"},
-		{"lisi", "12345", "lisi@qq.com"},
-		{"wangwu", "12345", "wangwu@qq.com"},
+	data := [][]any{
+		{"用户名", "密码"},
+		{"zhangsan", "12345"},
+		{"lisi", "12345"},
+		{"wangwu", "12345"},
 	}
 
 	// 写入多行数据
@@ -766,6 +724,11 @@ func main() {
 			}
 		}
 	}
+	// 设置第一行行高为20
+	err := f.SetRowHeight("Sheet1", 1, 20)
+	if err != nil {
+		panic(err)
+	}
 
 	// 垂直对齐
 	// center 垂直居中
@@ -773,7 +736,7 @@ func main() {
 	// bottom 底端对齐
 	style, err := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{
-			Vertical: "top",
+			Vertical: "center",
 		},
 	})
 
@@ -787,12 +750,17 @@ func main() {
 	}
 
 	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
 	err = f.SaveAs("测试.xlsx")
 	if err != nil {
 		panic(err)
 	}
 }
 ```
+
+输出结果
+
+
 
 :::
 
@@ -1032,5 +1000,53 @@ func main() {
 		panic(err)
 	}
 ```
+
+:::
+
+<br />
+
+## 工作表
+
+### 新建工作表
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 创建一个新的工作表
+	// 默认情况下会有一个工作表，名称是Sheet1
+	// 返回索引，索引从0开始，所以这里应该返回1
+	index, err := f.NewSheet("Sheet2")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Sheet index: ", index)
+
+	// 设置当前工作表格为激活状态
+	f.SetActiveSheet(index)
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+![image-20230409201054141](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230409201054141.png)
 
 :::
