@@ -3252,11 +3252,11 @@ func InsertUser(wg *sync.WaitGroup, db *sqlx.DB, total, chunk int) {
 	var users []User
 	for i := 0; i < chunk; i++ {
 		user := User{
-			//Username:  gofakeit.UUID(),
-			Username: gofakeit.Username(),
+			Username: gofakeit.UUID(),
+			//Username: gofakeit.Username(),
 			Password: gofakeit.Password(true, true, true, false, false, 12),
-			//Email:     gofakeit.UUID(),
-			Email:     gofakeit.Email(),
+			Email:    gofakeit.UUID(),
+			//Email:     gofakeit.Email(),
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -3271,7 +3271,7 @@ func InsertUser(wg *sync.WaitGroup, db *sqlx.DB, total, chunk int) {
 	// 若是死锁错误则重新执行，其他错误直接panic
 	if err != nil {
 		mysqlError, ok := err.(*mysql.MySQLError)
-		//fmt.Printf("%#v\n", mysqlError)
+		fmt.Printf("%#v\n", mysqlError)
 		if ok && mysqlError.Number == 0x4bd {
 			wg.Add(1)
 			go InsertUser(wg, db, total, chunk)
@@ -3312,7 +3312,7 @@ func main() {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go InsertUser(wg, db, 500_0000, 500)
+		go InsertUser(wg, db, 100_0000, 10000)
 	}
 	wg.Wait()
 }
@@ -3321,6 +3321,9 @@ func main() {
 输出结果
 
 ```bash
+# 统计耗时
+Used 542 seconds
+
 # 上面的代码可以避免产生重复数据，以符合唯一索引的要求
 #
 # 其原理是
@@ -3332,6 +3335,8 @@ func main() {
 #   1、随着数据量越大，死锁错误也会随之增多，代码执行效率将大大降低
 #   2、所以需要避免死锁错误，那就需要 原始数据尽量不要重复
 #   3、gofakeit提供的函数重复太多，所以尽量自己编写唯一索引字段的值
+#   4、所以上面的代码中依旧使用UUID()来避免重复
+#   5、我希望有一个尽量避免重复、尽量有意义的用户名信息，但没有找到这样的库，貌似只能自己写
 ```
 
 :::
