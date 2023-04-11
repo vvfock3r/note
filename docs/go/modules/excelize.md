@@ -271,6 +271,12 @@ func main() {
 
 参考文档：[https://xuri.me/excelize/zh-hans/stream.html](https://xuri.me/excelize/zh-hans/stream.html)
 
+注意：
+
+* 当每个工作表文件的文件大小超过 16MB 时，将生成临时文件。
+* 总内存使用量将超过它，但与将所有工作表数据加载到内存中相比，这将使用更少的内存
+* 在大量写入测试中，大概稳定占用内存在55M左右，Excel文件大小？
+
 ::: details 点击查看详情
 
 ```go
