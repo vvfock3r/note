@@ -267,6 +267,72 @@ func main() {
 
 <br />
 
+### 流式写入
+
+参考文档：[https://xuri.me/excelize/zh-hans/stream.html](https://xuri.me/excelize/zh-hans/stream.html)
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+
+	"github.com/xuri/excelize/v2"
+)
+
+func main() {
+	// 通过默认模板创建File对象,注意这并不会真正创建文件
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	// 获取一个流式写入器
+	streamWriter, err := f.NewStreamWriter("Sheet1")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer func() {
+		err = streamWriter.Flush()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	// 写入单行数据
+	err = streamWriter.SetRow("A1", []interface{}{
+		excelize.Cell{Value: "Data"},
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// 写入多行数据
+	for rowID := 2; rowID <= 102400; rowID++ {
+		row := make([]interface{}, 50)
+		for colID := 0; colID < 50; colID++ {
+			row[colID] = rand.Intn(640000)
+		}
+		cell, _ := excelize.CoordinatesToCellName(1, rowID)
+		if err = streamWriter.SetRow(cell, row); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// 保存到文件中，这一步才会真正创建文件
+	// 如果文件已经存在则会覆盖,如果文件已经被其他进程打开则会报错
+	err = f.SaveAs("测试.xlsx")
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+:::
+
+<br />
+
 ### 读取数据
 
 ::: details 点击查看详情
