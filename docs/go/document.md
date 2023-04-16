@@ -9970,7 +9970,7 @@ func main() {
 
 <br />
 
-### 跨平台编译
+### 交叉编译
 
 ::: details （1）查看所支持的平台和架构
 
@@ -10171,13 +10171,12 @@ Hello Linux!
 
 <br />
 
-### 链接器标志
+### 编译选项
 
-* `ld`代表链接器，`ldflags` 代表链接器标志
+* `gc`代表编译器，`gcflags`代表编译器选项（注意这里的gc和我们平常说的垃圾回收GC不是一回事）
+* `ld`代表链接器，`ldflags` 代表链接器选项
 
-::: details （1）自动添加版本信息
-
-> 提醒：这种方法对于`go install`很不友好
+::: details （1）自动注入版本信息
 
 `main.go`：这只是一段普通的、简单的Go代码
 
@@ -10214,75 +10213,45 @@ func main() {
 }
 ```
 
-`build.sh`：在Windows上执行脚本会找不到`awk`和`date`命令，此时可以安装 [cygwin](https://www.cygwin.com/) 来解决
+输出结果
 
 ```bash
-#!/bin/bash
-set -euo pipefail
-
-# =====================================
-# 描述: 编译Go项目为linux/amd64二进制命令
-# =====================================
-
-# 定义变量，用于编译时注入到Go程序中
-Version=$(go version | awk '{print $3}')
+# 定义变量
+AppVersion=v1.0.0
+GoVersion=$(go version | awk '{print $3}')
 GitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BuildTime=$(date +"%Y-%m-%d %H:%M:%S %Z %z")
-OS=linux
-Arch=amd64
-
-# 交叉编译，若不需要直接注释下面3行即可
-# (1) 这里必须使用环境变量，否则设置不生效
-# (2) 或者将以下的变量写到go build那一行前面去，即 CGO_ENABLED=0 ... go build ...
-export CGO_ENABLED=0
-export GOOS=${OS}
-export GOARCH=${Arch}
+OS=$(go env GOOS)
+Arch=$(go env GOARCH)
 
 # 生成flags
-flags="-X main.Version=1.0.0 \
-       -X main.GoVersion=${Version} \
+flags="-X main.Version=${AppVersion} \
+       -X main.GoVersion=${GoVersion} \
        -X main.GitCommit=${GitCommit} \
        -X 'main.BuildTime=${BuildTime}' \
        -X main.OS=${OS} \
        -X main.Arch=${Arch}"
 
-# go build的其他参数
-Options="$*"
+# 编译
+go build -ldflags "${flags}" .
 
-# 编译,通过ldflags注入变量信息
-go build -ldflags "${flags}" ${Options} main.go
-```
-
-输出结果
-
-```bash
-# 在Linux上执行
-[root@localhost ~]# bash build.sh
-[root@localhost ~]# ./main -v
-Version:             1.0.0
-Go version:          go1.18.1
+# 输出结果
+[root@localhost example]# ./example -v
+Version:             v1.0.0
+Go version:          go1.18.9
 Git commit:          unknown
-Build time:          2022-09-04 21:34:06 CST +0800
+Build time:          2023-04-16 13:46:43 CST +0800
 OS/Arch:             linux/amd64
 
-# 在Windows上执行
-Administrator@DESKTOP-22K80U8 /cygdrive/c/Users/Administrator/GolandProjects/demo
-$ sh build.sh -o demo
-# 传到Linux上去
-[root@localhost ~]# chmod 755 demo 
-[root@localhost ~]# ./demo -v
-Version:             1.0.0
-Go version:          go1.19
-Git commit:          unknown
-Build time:          2022-09-04 22:51:19 CST +0800
-OS/Arch:             linux/amd64
+# 分析
+# 这种方法对于 go install 很不友好
 ```
 
 :::
 
 <br />
 
-### 汇编和反编译
+### 汇编相关
 
 ::: details （1）查看汇编代码：使用Go原生方法
 
