@@ -10411,7 +10411,7 @@ lensm -text-size=20 --font C:\Windows\Fonts\simkai.ttf --filter main main.exe
 
 ![image-20230225124648047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230225124648047.png)
 
-**3、设置别名**
+**3、windows上设置别名**
 
 ```bash
 # 临时设置别名
