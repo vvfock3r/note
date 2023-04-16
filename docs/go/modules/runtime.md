@@ -713,7 +713,7 @@ D:\application\GoLand\example>go run .
 
 ## GC 保活
 
-::: details （1）SetFinalizer示例
+::: details （1）KeepAlive示例
 
 ```go
 package main
@@ -795,5 +795,3 @@ finalizer
 ```
 
 :::
-
-<br />
