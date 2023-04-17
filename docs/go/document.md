@@ -1367,6 +1367,120 @@ func main() {
 
 :::
 
+::: details （5）& 按位与运算
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 与运算
+	// 对于每一位，只有两个操作数的对应位都为1时，结果才为1，否则为0
+	x := 15
+	y := 35
+	fmt.Printf("%10b\n", x)
+	fmt.Printf("%10b\n", y)
+	fmt.Printf("%10b\n", x&y)
+	fmt.Printf("%10d\n", x&y)
+}
+```
+
+输出结果
+
+```bash
+      1111
+    100011
+        11
+         3
+```
+
+:::
+
+::: details （6）| 按位或运算
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 或运算
+	// 1和1 或 = 1
+	// 1和0 或 = 0
+	// 0和0 或 = 0
+	// 0和任何数或都得该数本身
+	x := 9
+	y := 5
+	fmt.Printf("%10b\n", x)
+	fmt.Printf("%10b\n", y)
+	fmt.Printf("%10b\n", x|y)
+	fmt.Printf("%10d\n", x|y)
+}
+```
+
+输出结果
+
+```bash
+      1001
+       101
+      1101
+        13
+```
+
+:::
+
+::: details （7）| 按位或运算示例：os.OpenFile
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+)
+
+func main() {
+	// 一段普通的代码
+	f, err := os.OpenFile("test.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		log.Fatalf("Open file error: %s\n", err)
+	}
+	defer f.Close()
+
+	// 分析
+	// 1、os.O_RDWR|os.O_CREATE|os.O_TRUNC 就是一个典型的或运算
+	// 2、O_RDWR    = 0x2    = 2  (转为10进制)
+	// 3、O_CREATE	= 0x40  = 64  (转为10进制)
+	// 4、O_TRUNC   = 0x200 = 512 (转为10进制)
+	// 5、经过或运算之后，由3个数字得到一个数字 578
+	fmt.Printf("%10b %[1]d\n", os.O_RDWR)
+	fmt.Printf("%10b %[1]d\n", os.O_CREATE)
+	fmt.Printf("%10b %[1]d\n", os.O_TRUNC)
+	fmt.Printf("%10b %[1]d\n", os.O_RDWR|os.O_CREATE|os.O_TRUNC)
+
+	// 6、在os.OpenFile函数内部如何判断是否传递了某个参数呢？比如os.O_RDWR
+	//    只需要将【或运算的结果】和某个选项进行【与运算】，如果结果不等于0则代表传递了该参数
+	flag := os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	if flag&os.O_RDWR != 0 {
+		fmt.Println("File is opened in read-write mode")
+	}
+}
+```
+
+输出结果
+
+```bash
+        10 2
+   1000000 64
+1000000000 512
+1001000010 578
+File is opened in read-write mode
+```
+
+:::
+
 <br />
 
 ### 常用语句
