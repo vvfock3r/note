@@ -1178,7 +1178,7 @@ func main() {
 
 :::
 
-::: details （2）<<左移位 和 >>右移位
+::: details （2）&lt;&lt;左移位 和 >>右移位
 
 ```go
 package main
