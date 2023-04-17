@@ -1134,6 +1134,50 @@ func main() {
 
 :::
 
+::: details （1）^ 按位取反
+
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+func main() {
+	// 备注: 这里我们将^作为一元运算符使用，它还可以作为二元运算符使用
+
+	// 有符号数字按位取反
+	// 计算公式：^n = (n + 1) * -1 (n是有符号数字，可能是正数也可能是负数)
+	for _, v := range []int32{-200, -100, 0, 100, 200} {
+		fmt.Printf("^int32(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
+	}
+	fmt.Println()
+
+	// 无符号数字按位取反
+	// 计算公式：^n = 该类型最大值 - n （n是无符号数字，>=0）
+	for _, v := range []uint8{0, 1, 2} {
+		fmt.Printf("^uint8(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
+	}
+}
+```
+
+输出结果
+
+```bash
+^int32(-200) = 199
+^int32(-100) = 99
+^int32(0)    = -1
+^int32(100)  = -101
+^int32(200)  = -201
+
+^uint8(0)    = 255
+^uint8(1)    = 254
+^uint8(2)    = 253
+```
+
+:::
+
 
 
 <br />
