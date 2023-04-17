@@ -55,6 +55,7 @@ sidebar: off
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
   * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
+  * net/netip：IP
 * 数据库
   * [database/sql](https://jinhui.dev/go/modules/database-sql.html)：Go内置接口和常用驱动
   * [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库（已弃坑）
