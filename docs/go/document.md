@@ -1118,9 +1118,11 @@ func main() {
 
 :::
 
-::: details （2）位运算符：基础示例
+<br />
 
-**原码反码补码**
+### 位运算符
+
+::: details （1）原码、反码和补码
 
 * 原码：最高位表示符号位，0表示正，1表示负，所以 -> 0000 0001
 * 反码
@@ -1130,7 +1132,9 @@ func main() {
   * 正数的补码等于原码
   * 负数的补码等于反码+1
 
-**示例代码**
+:::
+
+::: details （1）^ 按位取反
 
 ```go
 package main
@@ -1140,81 +1144,89 @@ import (
 	"strconv"
 )
 
-func BitReverse() {
-	fmt.Printf("^按位取反:\n")
+func main() {
+	// 备注: 这里我们将^作为一元运算符使用，它还可以作为二元运算符使用
 
 	// 有符号数字按位取反
 	// 计算公式：^n = (n + 1) * -1 (n是有符号数字，可能是正数也可能是负数)
 	for _, v := range []int32{-200, -100, 0, 100, 200} {
 		fmt.Printf("^int32(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
 	}
+	fmt.Println()
 
 	// 无符号数字按位取反
 	// 计算公式：^n = 该类型最大值 - n （n是无符号数字，>=0）
 	for _, v := range []uint8{0, 1, 2} {
 		fmt.Printf("^uint8(%-5s = %d\n", strconv.Itoa(int(v))+")", ^v)
 	}
-    // 备注: 这里我们将^作为一元运算符使用，它还可以作为二元运算符使用。
-}
-
-func LeftShift() {
-	fmt.Printf("\n<<左移位:\n")
-
-	// 计算公式：n<<m = n*(2的m次方) （n为10进制数）
-	for i := 0; i <= 3; i++ {
-		fmt.Printf("%d<<1=%d     %d<<2=%d     %d<<3=%d\n", i, i<<1, i, i<<2, i, i<<3)
-	}
-}
-
-func RightShift() {
-	fmt.Printf("\n>>右移位:\n")
-
-	// 计算公式：n>>m = int(n/(2的m次方)) （n为10进制数）
-	for i := 10; i <= 30; i += 10 {
-		fmt.Printf("%d>>1=%d     %d>>2=%d     %d>>3=%d\n", i, i>>1, i, i>>2, i, i>>3)
-	}
-}
-
-func main() {
-	// 按位取反
-	BitReverse()
-
-	// 左移位
-	LeftShift()
-
-	// 右移位
-	RightShift()
 }
 ```
 
 输出结果
 
 ```bash
-^按位取反:
-^int32(-200) = 199              
-^int32(-100) = 99               
-^int32(0)    = -1               
-^int32(100)  = -101             
-^int32(200)  = -201             
-^uint8(0)    = 255              
-^uint8(1)    = 254              
-^uint8(2)    = 253              
-                                
-<<左移位:                       
-0<<1=0     0<<2=0     0<<3=0    
-1<<1=2     1<<2=4     1<<3=8    
-2<<1=4     2<<2=8     2<<3=16   
-3<<1=6     3<<2=12     3<<3=24  
-                                
->>右移位:                       
-10>>1=5     10>>2=2     10>>3=1 
-20>>1=10     20>>2=5     20>>3=2
-30>>1=15     30>>2=7     30>>3=3
+^int32(-200) = 199
+^int32(-100) = 99
+^int32(0)    = -1
+^int32(100)  = -101
+^int32(200)  = -201
+
+^uint8(0)    = 255
+^uint8(1)    = 254
+^uint8(2)    = 253
 ```
 
 :::
 
-::: details （3）位运算符：KB/MB/GB转换
+::: details （2）<<左移位 和 >>右移位
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	// 左移位
+	// 计算公式：n<<m = n*(2的m次方) （n为10进制数）
+	for i := 0; i <= 3; i++ {
+		for j := 0; j <= 3; j++ {
+			fmt.Printf("%-15s", fmt.Sprintf("%d<<%d=%d", i, j, i<<j))
+		}
+		fmt.Println()
+	}
+	fmt.Println()
+
+	// 右移位
+	// 计算公式：n>>m = int(n/(2的m次方)) （n为10进制数）
+	for i := 10; i <= 30; i += 10 {
+		for j := 0; j <= 3; j++ {
+			fmt.Printf("%-15s", fmt.Sprintf("%d>>%d=%d", i, j, i>>j))
+		}
+		fmt.Println()
+	}
+}
+```
+
+输出结果
+
+```bash
+0<<0=0         0<<1=0         0<<2=0         0<<3=0         
+1<<0=1         1<<1=2         1<<2=4         1<<3=8         
+2<<0=2         2<<1=4         2<<2=8         2<<3=16        
+3<<0=3         3<<1=6         3<<2=12        3<<3=24        
+
+10>>0=10       10>>1=5        10>>2=2        10>>3=1        
+20>>0=20       20>>1=10       20>>2=5        20>>3=2        
+30>>0=30       30>>1=15       30>>2=7        30>>3=3
+```
+
+:::
+
+::: details （3）<<左移位示例：KB/MB/GB转换
+
+**1、不使用位运算**
 
 ```go
 package main
@@ -1222,17 +1234,135 @@ package main
 import "fmt"
 
 const (
-	b = 1 << (10 * iota)
-	kb
-	mb
-	gb
-	tb
-	pb
+	B  = 1
+	KB = 1024 * B
+	MB = 1024 * KB
+	GB = 1024 * MB
+	TB = 1024 * GB
+	PB = 1024 * TB
+
+	B1000  = 1
+	KB1000 = 1000 * B1000
+	MB1000 = 1000 * KB1000
+	GB1000 = 1000 * MB1000
+	TB1000 = 1000 * GB1000
+	PB1000 = 1000 * TB1000
 )
 
 func main() {
-	fmt.Println(b, kb, mb, gb, tb, pb)
+	fmt.Println(B)
+	fmt.Println(KB)
+	fmt.Println(MB)
+	fmt.Println(GB)
+	fmt.Println(TB)
+	fmt.Println(PB)
+
+	fmt.Println()
+
+	fmt.Println(B1000)
+	fmt.Println(KB1000)
+	fmt.Println(MB1000)
+	fmt.Println(GB1000)
+	fmt.Println(TB1000)
+	fmt.Println(PB1000)
 }
+```
+
+**2、使用位运算**
+
+```go
+package main
+
+import "fmt"
+
+const (
+	B = 1 << (10 * iota)
+	KB
+	MB
+	GB
+	TB
+	PB
+
+	// 对于以1000为单位,并没有想到特别好的办法，哪怕是利用iota只写第一行代码，后面再想一想
+	B1000  = 1
+	KB1000 = 1000 * B1000
+	MB1000 = 1000 * KB1000
+	GB1000 = 1000 * MB1000
+	TB1000 = 1000 * GB1000
+	PB1000 = 1000 * TB1000
+)
+
+func main() {
+	fmt.Println(B)
+	fmt.Println(KB)
+	fmt.Println(MB)
+	fmt.Println(GB)
+	fmt.Println(TB)
+	fmt.Println(PB)
+
+	fmt.Println()
+
+	fmt.Println(B1000)
+	fmt.Println(KB1000)
+	fmt.Println(MB1000)
+	fmt.Println(GB1000)
+	fmt.Println(TB1000)
+	fmt.Println(PB1000)
+}
+```
+
+输出结果
+
+```bash
+1
+1024
+1048576
+1073741824
+1099511627776
+1125899906842624
+
+1
+1000
+1000000
+1000000000
+1000000000000
+1000000000000000
+```
+
+:::
+
+::: details （4）<<左移位示例：构造KB/MB/GB
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 写法1
+	fmt.Println(3<<10, 3*1024)           // 3KB
+	fmt.Println(3<<20, 3*1024*1024)      // 3MB
+	fmt.Println(3<<30, 3*1024*1024*1024) // 3GB
+
+	fmt.Println()
+
+	// 写法2
+	fmt.Println(3<<10, 3*1024)                   // 3KB
+	fmt.Println(3<<10<<10, 3*1024*1024)          // 3MB
+	fmt.Println(3<<10<<10<<10, 3*1024*1024*1024) // 3GB
+}
+```
+
+输出结果
+
+```bash
+3072 3072
+3145728 3145728
+3221225472 3221225472
+
+3072 3072
+3145728 3145728
+3221225472 3221225472
 ```
 
 :::
