@@ -33,7 +33,6 @@ sidebar: off
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务
 * [template](https://jinhui.dev/go/modules/template.html)：模板
 * [email](https://jinhui.dev/go/modules/email.html)：发送邮件
-* [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
 * [automaxprocs](https://jinhui.dev/go/modules/automaxprocs.html)：识别容器允许使用的核心数并自动调整
 * [x/text](https://jinhui.dev/go/modules/x-text.html)：解决Windows下中文乱码问题
 * [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
@@ -51,7 +50,11 @@ sidebar: off
   * [cobra](https://jinhui.dev/go/modules/cobra.html)：参数解析
   * [color](https://jinhui.dev/go/modules/color.html)：终端颜色
   * [simpletable](https://jinhui.dev/go/modules/simpletable.html)：终端表格
+  * [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
+  * pty：Unix伪终端 [Github](https://github.com/creack/pty)
+  * x/term：处理终端交互
   * tcell：终端仿真器 [Github](https://github.com/gdamore/tcell)
+  * 
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
   * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
@@ -66,9 +69,9 @@ sidebar: off
   * [go-socks5](https://jinhui.dev/go/modules/go-socks5.html)：Socks5 Proxy
   * [goproxy](https://jinhui.dev/go/modules/goproxy.html)：HTTP Proxy
 * 加密相关
+  * [x/crypto/bcrypt](https://jinhui.dev/go/modules/bcrypt.html)：bcrypt算法
   * crypto/tls：TLS 1.2和TLS 1.3实现
   * crypto/x509：X.509证书解析
-  * [x/crypto/bcrypt](https://jinhui.dev/go/modules/bcrypt.html)：bcrypt算法，常用于密码加密
 * 安全保护
 
   * [jwt](https://jinhui.dev/go/modules/jwt.html)：JSON Web Token
