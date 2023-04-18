@@ -796,3 +796,182 @@ func main() {
 ## 乱码问题
 
 参考：[https://jinhui.dev/go/modules/x-text.html](https://jinhui.dev/go/modules/x-text.html)
+
+<br />
+
+## 交互执行
+
+::: details （1）交互式执行
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+)
+
+func main() {
+	cmd := exec.Command("python3")
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+Python 3.6.8 (default, Nov 16 2020, 16:55:22) 
+[GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import sys           # 手动输入交互式命令
+>>> sys.version_info     # 手动输入交互式命令
+sys.version_info(major=3, minor=6, micro=8, releaselevel='final', serial=0)
+>>>
+
+# 说明
+# 核心代码主要是下面两行
+# cmd.Stdin = os.Stdin
+# cmd.Stderr = os.Stderr
+```
+
+:::
+
+::: details （2）将交互式转为非交互式执行
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+func InteractiveCommand(command string, args ...string) (stdout, stderr string, err error) {
+	// 构建Command对象
+	cmd := exec.Command(command)
+
+	// 创建一个管道, 在w中写入数据,从r可以读出数据
+	r, w, err := os.Pipe()
+	if err != nil {
+		return
+	}
+	cmd.Stdin = r // w中写入，可以直接写入到cmd.stdin
+
+	// 捕获命令输出结果
+	var stdoutBuf bytes.Buffer
+	var stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	// 异步执行
+	err = cmd.Start()
+	if err != nil {
+		return
+	}
+
+	// 输入参数
+	for _, arg := range args {
+		_, err = w.WriteString(arg)
+		if err != nil {
+			return
+		}
+	}
+
+	// 关闭输入
+	err = w.Close()
+	if err != nil {
+		return
+	}
+
+	// 如果在执行过程中有错误，这里会报错
+	err = cmd.Wait()
+
+	return stdoutBuf.String(), stderrBuf.String(), err
+}
+
+func main() {
+	stdout, stderr, err := InteractiveCommand(
+		"python3",
+		"import sys\n",
+		"print(sys.version_info)",
+	)
+
+	fmt.Printf("error:\n%#v\n\n", err)
+	fmt.Printf("stdout:\n%s\n\n", stdout)
+	fmt.Printf("stderr:\n%s\n", stderr)
+}
+```
+
+输出结果
+
+```bash
+# 正常情况下输出结果
+error:
+<nil>
+
+stdout:
+sys.version_info(major=3, minor=6, micro=8, releaselevel='final', serial=0)
+
+
+stderr:
+
+# 当有错误时输出结果，比如我故意写成 print(sys.version_info2)
+error:
+&exec.ExitError{ProcessState:(*os.ProcessState)(0xc0000aa0a8), Stderr:[]uint8(nil)}
+
+stdout:
+
+
+stderr:
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+AttributeError: module 'sys' has no attribute 'version_info2'
+```
+
+:::
+
+::: details （3）在交互式中执行命令后，并保持在交互式状态（未解决）
+
+以下代码是最原始的，需要修改
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+)
+
+func main() {
+	cmd := exec.Command("sh")
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 我要达到的效果如下描述
+
+sh-4.2# hostname         # 这是通过程序执行的命令
+localhost.localdomain    # 这是输出
+sh-4.2#                  # 保持在原本命令的交互状态中
+```
+
+:::
