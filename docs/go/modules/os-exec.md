@@ -836,8 +836,9 @@ sys.version_info(major=3, minor=6, micro=8, releaselevel='final', serial=0)
 >>>
 
 # 说明
-# 核心代码主要是下面两行
+# 核心代码主要是下面三行
 # cmd.Stdin = os.Stdin
+# cmd.Stdout = os.Stdout
 # cmd.Stderr = os.Stderr
 ```
 
