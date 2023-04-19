@@ -1,18 +1,24 @@
 # MyDocker
 
+<br />
+
 ## 环境配置
 
-**环境参数**
+**开发环境参数**
 
 * Windows 10（开发环境）
 * GoLand（开发环境）
 * Go 1.20.1（开发环境）
-* CentOS 7（运行环境，不需要安装Go）
 
 **GoLand配置**
 
 * 配置系统参数为Linux，这样我们就可以在调用Go中的Linux API
 * 配置运行目标为Linux，这样我们就可以在GoLand中启动程序时直接运行在Linux上
+
+**运行环境列表**
+
+* CentOS 7
+* Arch Linux
 
 <br />
 
@@ -65,15 +71,25 @@ import (
 )
 
 func main() {
-	cmd := exec.Command("sh")
+	cmd := exec.Command("bash")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个UTS命名空间
 		Cloneflags: syscall.CLONE_NEWUTS,
 	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+
+	// 设置主机名
+	if err := syscall.Sethostname([]byte("mydocker")); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.Wait(); err != nil {
 		panic(err)
 	}
 }
@@ -82,7 +98,25 @@ func main() {
 输出结果
 
 ```bash
-// syscall.Sethostname() 设置主机名，可以试一试
+# 请注意
+# 1、最开始我的系统主机名为archlinux
+# 2、Go代码中设置主机名为mydocker
+
+# 输出结果
+[root@archlinux ~]# hostnamectl hostname
+mydocker
+
+# 分析结果
+# 1、首先获取到的主机名是对的
+# 2、其次，PS1的主机名是错误的，是之前的主机名
+# 3、造成这一原因是因为执行顺序导致的问题：启动bash在前，设置主机名在后，在后面我们将会解决这个问题
+# 4、使用下面的代码能更直观的重现问题:
+#    cmd := exec.Command("hostname")
+#	// 设置主机名
+#	time.Sleep(time.Second)     // 休眠一下
+#	if err := syscall.Sethostname([]byte("newhostname")); err != nil {
+#		panic(err)
+#	}
 ```
 
 :::
@@ -555,6 +589,15 @@ a.txt
 :::
 
 ::: details （4）Mount命名空间有哪些影响
+
+```go
+```
+
+输出结果
+
+```bash
+
+```
 
 :::
 
