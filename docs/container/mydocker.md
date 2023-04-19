@@ -274,6 +274,8 @@ rm: cannot remove ‘/user.txt’: Permission denied
 
 ### Mount
 
+前方高能：Mount操作非常非常容易报错，而且错误信息不直观
+
 ::: details （1）Linux mount命令：关于块设备
 
 ```bash
@@ -472,13 +474,83 @@ panic: block device required  # 需要一个块设备，其实就是 /testdata �
 source string	挂载源，可以是设备名、目录名、网络地址等
 target string	挂载目标，即将文件系统挂载到哪个目录下。该目录必须已经存在，且为空目录
 fstype string	文件系统类型，比如ext4、xfs、ntfs 等
-flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项
+flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
 data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
 ```
 
+**5、卸载**
+
+使用 `syscall.Unmount` 函数
+
 :::
 
-::: details （3）Go Mount示例：各种选项
+::: details （3）Go Mount选项：挂载一个目录到另一个目录中
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	cmd := exec.Command("bash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个Mount命名空间
+		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
+		Cloneflags: syscall.CLONE_NEWNS,
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+
+	// 执行挂载操作，部分挂载选项如下：
+	// syscall.MS_RDONLY      	只读挂载，即无法在挂载点中进行写入操作
+	// syscall.MS_NOEXEC      	用于禁止在挂载点中执行可执行文件
+	// syscall.MS_REMOUNT     	重新挂载,要求提前已经挂载，不改变挂载参数
+	// syscall.MS_BIND			挂载一个目录到另一个目录中
+	err := syscall.Mount(
+		"/a",
+		"/b",
+		"",
+		syscall.MS_UNBINDABLE,
+		"",
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 执行代码前
+[root@localhost ~]# mkdir /a /b
+[root@localhost ~]# touch /a/a.txt /b/b.txt
+
+# 执行代码后操作
+[root@localhost sources-WQj4ullLRa]# mount |grep -E '/a\b'
+[root@localhost sources-OW35KOsgTp]# mount |grep -E '/b\b'
+/dev/sda5 on /b type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+
+# 查看数据
+[root@localhost sources-Ub7tg5eJDh]# ls /a
+a.txt
+[root@localhost sources-Ub7tg5eJDh]# ls /b
+a.txt
+```
 
 :::
 
