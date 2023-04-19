@@ -24,12 +24,46 @@
 
 ## NameSpace
 
+### 种类
+
+::: details 点击查看详情
+
+```bash
+# CentOS 7: 6种
+[root@localhost ~]# ls -lh /proc/sys/user/max_*_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_ipc_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_mnt_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_net_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:52 /proc/sys/user/max_pid_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:47 /proc/sys/user/max_user_namespaces
+-rw-r--r--. 1 root root 0 Apr 18 20:53 /proc/sys/user/max_uts_namespaces
+
+# Arch Linux: 8种
+[root@archlinux ~]# ls -lh /proc/sys/user/max_*_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_cgroup_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_ipc_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_mnt_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_net_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_pid_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_time_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_user_namespaces
+-rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_uts_namespaces
+
+# 分析
+# 1、多出来的两种是cgroup_namespaces和time_namespaces
+# 2、这两种命名空间是由高版本的Linux kernel提供的
+```
+
+:::
+
+<br />
+
 ### 限制
 
 ::: details 点击查看详情
 
 ```bash
-# 创建新的命名空间的数量是有限制
+# 看一下列表
 [root@localhost ~]# ls -lh /proc/sys/user/max_*_namespaces
 -rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_ipc_namespaces
 -rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_mnt_namespaces
@@ -50,6 +84,8 @@
 # 说明
 # 0  代表不允许创建新的命名空间，在上面 用户命名空间为0，需要我们调整一下，否则后面的代码会报错
 # -1 代表不限制命名空间数量
+
+# 临时修改,系统重启后丢失
 echo 14998 > /proc/sys/user/max_user_namespaces
 ```
 
@@ -103,12 +139,12 @@ func main() {
 # 2、Go代码中设置主机名为mydocker
 
 # 输出结果
-[root@archlinux ~]# hostnamectl hostname
+[root@archlinux ~]# hostname
 mydocker
 
 # 分析结果
 # 1、首先获取到的主机名是对的
-# 2、其次，PS1的主机名是错误的，是之前的主机名
+# 2、其次，PS1种的主机名是错误的，是之前的主机名
 # 3、造成这一原因是因为执行顺序导致的问题：启动bash在前，设置主机名在后，在后面我们将会解决这个问题
 # 4、使用下面的代码能更直观的重现问题:
 #    cmd := exec.Command("hostname")
@@ -602,5 +638,9 @@ a.txt
 :::
 
 <br />
+
+### 设置顺序问题
+
+
 
 ## Cgroup
