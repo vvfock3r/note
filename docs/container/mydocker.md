@@ -30,28 +30,33 @@
 
 ```bash
 # CentOS 7: 6种
-[root@localhost ~]# ls -lh /proc/sys/user/max_*_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_ipc_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_mnt_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:54 /proc/sys/user/max_net_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:52 /proc/sys/user/max_pid_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:47 /proc/sys/user/max_user_namespaces
--rw-r--r--. 1 root root 0 Apr 18 20:53 /proc/sys/user/max_uts_namespaces
+[root@localhost ~]# ls -lh /proc/self/ns/
+total 0
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 ipc -> ipc:[4026531839]
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 mnt -> mnt:[4026531840]
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 net -> net:[4026531956]
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 pid -> pid:[4026531836]
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 user -> user:[4026531837]
+lrwxrwxrwx. 1 root root 0 Apr 21 00:20 uts -> uts:[4026531838]
 
-# Arch Linux: 8种
-[root@archlinux ~]# ls -lh /proc/sys/user/max_*_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_cgroup_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_ipc_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_mnt_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_net_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_pid_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_time_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_user_namespaces
--rw-r--r-- 1 root root 0 Apr 20 04:03 /proc/sys/user/max_uts_namespaces
+# Arch Linux: 8种（没有将xx_for_children计算在内）
+[root@archlinux ~]# ls -lh /proc/self/ns/
+total 0
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 cgroup -> 'cgroup:[4026531835]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 ipc -> 'ipc:[4026531839]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 mnt -> 'mnt:[4026531841]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 net -> 'net:[4026531840]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 pid -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 pid_for_children -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 time -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 time_for_children -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 user -> 'user:[4026531837]'
+lrwxrwxrwx 1 root root 0 Apr 21 00:10 uts -> 'uts:[4026531838]'
 
 # 分析
-# 1、多出来的两种是cgroup_namespaces和time_namespaces
-# 2、这两种命名空间是由高版本的Linux kernel提供的
+# 1、ls -lh /proc/self/ns/ 列出当前进程的所有命名空间
+# 2、多出来的两种是cgroup_namespaces和time_namespaces,这两种命名空间是由高版本的Linux kernel提供的
+# 3、4026531839 这种数字代表一个系统级别的唯一标识符，可以用于在不同进程之间共享相同的命名空间
 ```
 
 :::
