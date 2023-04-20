@@ -85,8 +85,13 @@
 # 0  代表不允许创建新的命名空间，在上面 用户命名空间为0，需要我们调整一下，否则后面的代码会报错
 # -1 代表不限制命名空间数量
 
-# 临时修改,系统重启后丢失
-echo 14998 > /proc/sys/user/max_user_namespaces
+# 临时修改
+[root@localhost ~]# echo 14998 > /proc/sys/user/max_user_namespaces
+
+# 永久修改
+[root@localhost ~]# vim /etc/sysctl.conf
+user.max_uts_namespaces=14998
+[root@localhost ~]# sysctl -p
 ```
 
 :::
