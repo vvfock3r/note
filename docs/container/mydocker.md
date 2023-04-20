@@ -95,7 +95,7 @@ echo 14998 > /proc/sys/user/max_user_namespaces
 
 ### UTS
 
-::: details 点击查看详情
+::: details （1）第一个测试
 
 ```go
 package main
@@ -116,17 +116,8 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Start(); err != nil {
-		panic(err)
-	}
-
-	// 设置主机名
-	if err := syscall.Sethostname([]byte("mydocker")); err != nil {
-		panic(err)
-	}
-
-	if err := cmd.Wait(); err != nil {
-		panic(err)
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
 	}
 }
 ```
@@ -134,26 +125,320 @@ func main() {
 输出结果
 
 ```bash
-# 请注意
-# 1、最开始我的系统主机名为archlinux
-# 2、Go代码中设置主机名为mydocker
+# 查看进程内的主机名，和宿主机一样
+[root@archlinux sources-1QQzEBetzM]# hostname
+archlinux
 
-# 输出结果
+# 修改进程内的主机名
+[root@archlinux sources-1QQzEBetzM]# hostname mydocker
+
+# 查看宿主机的主机名,发现没有被修改，至此，第一个小测试完成
+[root@archlinux ~]# hostname
+archlinux
+```
+
+:::
+
+::: details （2）探索如何在代码中修改主机名：遇到问题
+
+分析一下：
+
+* 修改主机名使用 `syscall.Sethostname` 函数
+* 修改主机名必须要在【UTS命名空间创建之后】，并且在【进程启动之前】
+* Go并没有单独提供创建命名空间的函数，启动进程和创建命名空间是绑定在一起的
+* cmd.Run() 可以拆分为 cmd.Start() 和 cmd.Wait()，能不能在这俩函数之间搞点事情？
+
+编写代码：
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	cmd := exec.Command("bash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个UTS命名空间
+		Cloneflags: syscall.CLONE_NEWUTS,
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 修改主机名
+	err := syscall.Sethostname([]byte("mydocker"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 查看进程内的主机名
+[root@archlinux sources-PGLbPa2NSZ]# hostname
+archlinux
+
+# 查看宿主机的主机名
 [root@archlinux ~]# hostname
 mydocker
 
-# 分析结果
-# 1、首先获取到的主机名是对的
-# 2、其次，PS1种的主机名是错误的，是之前的主机名
-# 3、造成这一原因是因为执行顺序导致的问题：启动bash在前，设置主机名在后，在后面我们将会解决这个问题
-# 4、使用下面的代码能更直观的重现问题:
-#    cmd := exec.Command("hostname")
-#	// 设置主机名
-#	time.Sleep(time.Second)     // 休眠一下
-#	if err := syscall.Sethostname([]byte("newhostname")); err != nil {
-#		panic(err)
-#	}
+# 分析
+# 1、现象：进程内的主机名没改，居然把宿主机的给改了???
+# 2、前面我们说过，修改主机名要【进程启动之前】，不然进程都启动了，都读到宿主机主机名了，再去改进程内的主机名还有啥意思
+# 3、先执行syscall.Sethostname，再执行cmd.Start(),肯定是不行的，因为此时UTS命名空间还没创建，改的同样是宿主机的主机名
+# 4、陷入僵局...
 ```
+
+:::
+
+::: details （3）探索如何在代码中修改主机名：使用原生方法解决问题，先看一种简单的方案
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func run() {
+	args := append([]string{"ns"}, os.Args[2:]...)
+	cmd := exec.Command("/proc/self/exe", args...)
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWUTS,
+	}
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+func ns() {
+	// 设置主机名
+	if err := syscall.Sethostname([]byte("mydocker")); err != nil {
+		log.Fatalln(err)
+	}
+
+	// 执行真正的命令
+	cmd := exec.Command(os.Args[2], os.Args[3:]...)
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s run <command>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "run":
+		run()
+	case "ns":
+		ns()
+	default:
+		panic("pass me an argument please")
+	}
+}
+```
+
+输出结果
+
+```bash
+# 执行程序，发现进程内的主机名已经被修改
+[root@archlinux ~]# go run main.go run bash
+[root@mydocker ~]# hostname
+mydocker
+
+# 退出进程，查看宿主机的主机名，没有变化，测试成功
+[root@mydocker ~]# exit
+[root@archlinux ~]# hostname
+archlinux
+
+# 分析
+# 核心的原理是：
+# 1、/proc/self/exe 代表程序本身
+# 2、程序调用自身，并传递不同的参数，也就执行不同的代码
+# 3、父进程创建出命名空间，子进程修改主机名，并执行真正的命令
+# 4、不过该程序有一个bug，如果执行时直接使用 go run main.go ns bash，那么就会修改宿主机主机名，就会出问题
+```
+
+:::
+
+::: details （4）探索如何在代码中修改主机名：使用原生方法解决问题，比较完美的方案
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+
+	"golang.org/x/sys/unix"
+)
+
+// Run函数会在新的命名空间中运行
+func Run() {
+	// 设置主机名
+	hostname := "mydocker-" + time.Now().Format(time.DateTime)
+	err := syscall.Sethostname([]byte(hostname))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 执行命令
+	cmd := exec.Command("bash")
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	// 将真正要运行的函数保存到一个Map中
+	// key是什么无所谓，只要能和下面代码对应起来即可
+	store := make(map[string]func())
+	store["flag"] = Run
+
+	// 看一下 os.Args[0],这是核心原理
+	//fmt.Printf("os.Args[0]: %s\n", os.Args[0])
+
+	// 从Map中找到真正的函数并运行，然后退出
+	function, exists := store[os.Args[0]]
+	if exists {
+		function()
+		os.Exit(0)
+	}
+
+	// 构造Cmd对象
+	// 1、/proc/self/exe代表程序自身,即程序会调用自己
+	// 2、调用自己时指定了Args，其中Args[0] = flag
+	cmd := &exec.Cmd{
+		Path: "/proc/self/exe",
+		Args: []string{"flag"},
+		SysProcAttr: &syscall.SysProcAttr{
+			Pdeathsig: unix.SIGTERM,
+		},
+	}
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWUTS,
+	}
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+[root@mydocker-2023-04-20 23:26:59 sources-p3kxMe2fvR]# hostname
+mydocker-2023-04-20 23:26:59
+
+[root@archlinux ~]# hostname
+archlinux
+```
+
+:::
+
+::: details （5）探索如何在代码中修改主机名：使用第三方包
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+
+	"github.com/docker/docker/pkg/reexec"
+)
+
+func init() {
+	// reexec注册命令
+	reexec.Register("flag", child)
+
+	// 判断是否已调用初始化函数
+	if reexec.Init() {
+		os.Exit(0)
+	}
+}
+
+func child() {
+	err := syscall.Sethostname([]byte("inside-container"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	cmd := exec.Command("bash")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	cmd := reexec.Command("flag")
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWUTS,
+	}
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+备注：上面的方案就是从此包中演化而来
 
 :::
 
@@ -642,10 +927,6 @@ a.txt
 ```
 
 :::
-
-<br />
-
-### 设置顺序问题
 
 <br />
 
