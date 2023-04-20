@@ -210,7 +210,80 @@ mydocker
 
 ### 命名空间中执行代码
 
-::: details （1）探索如何在代码中修改主机名：使用原生方法解决问题，先看一种简单的方案
+::: details （1）探索如何在代码中修改主机名：使用第三方包，先解决问题
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+
+	"github.com/docker/docker/pkg/reexec"
+)
+
+func init() {
+	// reexec注册命令
+	reexec.Register("flag", child)
+
+	// 判断是否已调用初始化函数
+	if reexec.Init() {
+		os.Exit(0)
+	}
+}
+
+func child() {
+	err := syscall.Sethostname([]byte("inside-container"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	cmd := exec.Command("bash")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	cmd := reexec.Command("flag")
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWUTS,
+	}
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 执行程序，发现进程内的主机名已经被修改
+[root@inside-container sources-juGNstLrqK]# hostname
+inside-container
+
+# 退出进程，查看宿主机的主机名，没有变化，测试成功
+[root@archlinux ~]# hostname
+archlinux
+
+# 分析
+# 根据这个包的原理，后面我们会自己实现一份相关代码
+```
+
+:::
+
+::: details （2）探索如何在代码中修改主机名：使用原生方法，先看一种简单的方案
 
 ```go
 package main
@@ -297,7 +370,7 @@ archlinux
 
 :::
 
-::: details （2）探索如何在代码中修改主机名：使用原生方法解决问题，比较完美的方案
+::: details （3）探索如何在代码中修改主机名：使用原生方法，完美的方案
 
 ```go
 package main
@@ -380,72 +453,14 @@ func main() {
 输出结果
 
 ```bash
+# 执行程序，发现进程内的主机名已经被修改
 [root@mydocker-2023-04-20 23:26:59 sources-p3kxMe2fvR]# hostname
 mydocker-2023-04-20 23:26:59
 
+# 退出进程，查看宿主机的主机名，没有变化，测试成功
 [root@archlinux ~]# hostname
 archlinux
 ```
-
-:::
-
-::: details （3）探索如何在代码中修改主机名：使用第三方包
-
-```go
-package main
-
-import (
-	"log"
-	"os"
-	"os/exec"
-	"syscall"
-
-	"github.com/docker/docker/pkg/reexec"
-)
-
-func init() {
-	// reexec注册命令
-	reexec.Register("flag", child)
-
-	// 判断是否已调用初始化函数
-	if reexec.Init() {
-		os.Exit(0)
-	}
-}
-
-func child() {
-	err := syscall.Sethostname([]byte("inside-container"))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	cmd := exec.Command("bash")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
-	}
-}
-
-func main() {
-	cmd := reexec.Command("flag")
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS,
-	}
-
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
-	}
-}
-```
-
-备注：上面的方案就是从此包中分析而来
 
 :::
 
