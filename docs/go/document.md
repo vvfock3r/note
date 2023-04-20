@@ -6048,6 +6048,15 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+2023/04/20 11:04:08 原始Reader可读取数据大小: 510
+2023/04/20 11:04:08 Read 100 bytes
+2023/04/20 11:04:08 缓冲区大小: 1024 bytes
+2023/04/20 11:04:08 当前缓冲区剩余的可读字节数: 410 bytes
+```
+
 :::
 
 ::: details （4）Writer使用示例
@@ -6062,7 +6071,7 @@ import (
 )
 
 func main() {
-	// 带缓冲的Writer
+	// 带缓冲的Writer,默认缓冲区4096字节，下面的代码手动设置缓冲区大小15个字节
 	//writer := bufio.NewWriter(os.Stdout)
 	writer := bufio.NewWriterSize(os.Stdout, 15)
 
@@ -6071,18 +6080,38 @@ func main() {
 	// 若缓冲区小于13则不写缓冲区直接写到原始的io.Writer中去
 	n, err := writer.Write([]byte("hello world!\n"))
 	if err != nil {
-		log.Fatalf("Write error: %s\n", err)
+		log.Fatalf("写入失败: %s\n", err)
 	}
-	log.Printf("Write ok: %d bytes\n", n)
+	log.Printf("写入成功: %d bytes\n", n)
 
 	// 缓冲区信息
-	log.Printf("缓冲区大小: %d\n", writer.Size())
-	//_ = writer.Flush()   // 将缓冲区数据写入到io.Writer中
-	//writer.Reset(writer) // 清空缓冲区, 未写入的则丢弃
-	log.Printf("当前缓冲区已写入的字节数: %d\n", writer.Buffered())
-	log.Printf("当前缓冲区未使用的字节数: %d\n", writer.Available())
-	//b := writer.AvailableBuffer() // 返回未使用字节组成的切片, 等同于b := make([]byte, writer.Available())
+	log.Printf("缓冲区大小: %d bytes\n", writer.Size())
+	log.Printf("当前缓冲区已写入的字节数: %d bytes\n", writer.Buffered())
+	log.Printf("当前缓冲区未使用的字节数: %d bytes\n", writer.Available())
+
+	// 将缓冲区数据写入到io.Writer中
+	// 必须要判断error，否则可能会导致写入不完整
+	//err := writer.Flush()
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// 清空缓冲区, 未写入的则丢弃
+	//writer.Reset(writer)
+
+	// 返回未使用字节组成的切片
+	//b := writer.AvailableBuffer()
+	//等同于b := make([]byte, writer.Available())
 }
+```
+
+输出结果
+
+```bash
+2023/04/20 11:10:48 写入成功: 13 bytes
+2023/04/20 11:10:48 缓冲区大小: 15 bytes
+2023/04/20 11:10:48 当前缓冲区已写入的字节数: 13 bytes
+2023/04/20 11:10:48 当前缓冲区未使用的字节数: 2 bytes
 ```
 
 :::
@@ -6097,118 +6126,103 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
-func WriteBufTest(srcFileName, dstFileName string, buffer bool) {
-	// 定义变量
-	var (
-		total int64
-		err   error
-	)
-	start := time.Now().Unix()
+func MustWrite(src, dst string, bufSize int) {
+	// 记录写入的字节数
+	var writeBytes int64
+
+	// 统计时间
+	now := time.Now()
+	defer func() {
+		log.Printf("It takes %.2f seconds to copy %d bytes for %s\n", time.Since(now).Seconds(), writeBytes, dst)
+	}()
 
 	// 打开src文件
-	reader, err := os.Open(srcFileName)
+	r, err := os.Open(src)
 	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+		log.Fatalln(err)
 	}
-	defer reader.Close()
+	defer r.Close()
 
 	// 打开dst文件
-	writer, err := os.OpenFile(dstFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	w, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", dstFileName, err)
+		log.Fatalln(err)
 	}
-	defer writer.Close()
+	defer w.Close()
 
-	// 是否使用buffer
-	if buffer {
-		// 生成buffer并写入
-		w := bufio.NewWriterSize(writer, 1024*32)
-
-		// 使用io.Copy写入
-		//total, err = io.Copy(w, reader)
-
-		// 手动读取写入
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-
-			_, err = w.Write(buf[:n])
-			if err != nil {
-				log.Fatalf("write error: %s\n", err)
-			}
-			total += int64(n)
-		}
-
+	// 构建 reader 和 writer
+	var (
+		reader io.Reader
+		writer io.Writer
+	)
+	reader = r
+	if bufSize <= 0 {
+		writer = w
 	} else {
-		// 使用io.Copy写入
-		//total, err = io.Copy(writer, reader)
+		bufWriter := bufio.NewWriterSize(w, bufSize)
+		defer func() {
+			err := bufWriter.Flush()
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}()
+		writer = bufWriter
+	}
 
-		// 手动读取写入
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
+	// 方式1：使用io.Copy 或 io.CopyBuffer 读取和写入
+	//writeBytes, err = io.Copy(writer, reader)
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+
+	// 方式2：自己读取和写入
+	buf := make([]byte, 1024)
+	for {
+		// 读取数据
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
 			}
-			_, err = writer.Write(buf[:n])
-			if err != nil {
-				log.Fatalf("write error: %s\n", err)
-			}
-			total += int64(n)
+			log.Fatalf("read error: %s\n", err)
 		}
+		// 写入数据
+		m, err := writer.Write(buf[:n])
+		if err != nil {
+			log.Fatalf("write error: %s\n", err)
+		}
+		// 统计写入的字节数
+		writeBytes += int64(m)
 	}
-
-	if err != nil {
-		log.Fatalf("拷贝文件失败: %s\n", err)
-	}
-	delta := time.Now().Unix() - start
-	log.Printf("It takes %d seconds to copy %d bytes for %s\n", delta, total, dstFileName)
 }
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_without_buffer.iso", false)
-		wg.Done()
-	}()
-	go func() {
-		WriteBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", "D:\\iso\\write_with_buffer.iso", true)
-		wg.Done()
-	}()
-	wg.Wait()
+	// 写缓冲测试
+	src := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
+	dst := "D:\\iso\\copy.iso"
+	bufSize := 4 << 20 // 4MiB
+	MustWrite(src, dst, bufSize)
 }
 ```
 
 输出结果
 
 ```bash
-2022/04/27 12:56:39 It takes 23 seconds to copy 4521459712 bytes for D:\iso\write_with_buffer.iso
-2022/04/27 12:56:50 It takes 34 seconds to copy 4521459712 bytes for D:\iso\write_without_buffer.iso
-```
+# 调整代码中缓冲区大小，分别执行两次
 
-> 💡 说明：
->
-> 代码中给出了2种读写方式，`Read`/`Write`读写方式 和 `io.Copy`读写方式
->
-> 从输出结果来看
->
-> （1）使用`Read`/`Write`读写方式性能有明显提升（1.5倍左右），写缓存起到了很大的作用
->
-> （2）但如果使用`io.Copy`方式读写文件，会使用`dst.ReadFrom(src)`方式读写，对我们这次测试来说并不准，用不用`bufio`，两者花费的时间几乎一致
+# 无缓冲区
+2023/04/20 12:59:17 It takes 35.35 seconds to copy 4521459712 bytes for D:\iso\copy.iso
+
+# 4MB缓冲区
+2023/04/20 13:07:17 It takes 29.68 seconds to copy 4521459712 bytes for D:/iso/copy.iso
+
+# 说明
+# 1、使用Read/Write读写方式性能有一定的提升
+# 2、但如果使用io.Copy方式读写文件，会使用dst.ReadFrom(src)方式读写，对我们这次测试来说并不准，用不用bufio，两者花费的时间几乎一致
+```
 
 :::
 
@@ -6222,85 +6236,73 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
-func ReadBufTest(srcFileName string, buffer bool) {
-	// 定义变量
-	var (
-		total int64
-		err   error
-	)
-	start := time.Now().UnixMilli()
+func MustRead(src string, bufSize int) {
+	// 记录读取的字节数
+	var readBytes int64
+
+	// 统计时间
+	now := time.Now()
+	defer func() {
+		log.Printf("Read %d bytes in %.2f second: %s\n", readBytes, time.Since(now).Seconds(), src)
+	}()
 
 	// 打开src文件
-	reader, err := os.Open(srcFileName)
+	r, err := os.Open(src)
 	if err != nil {
-		log.Fatalf("打开文件失败: %s: %s\n", srcFileName, err)
+		log.Fatalln(err)
 	}
-	defer reader.Close()
+	defer r.Close()
 
-	// 是否使用buffer
-	if buffer {
-		// 生成buffer并写入
-		reader := bufio.NewReaderSize(reader, 1024*32)
-
-		// 手动读取
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-			total += int64(n)
-		}
-
+	// 构建 reader
+	var reader io.Reader
+	if bufSize <= 0 {
+		reader = r
 	} else {
-		// 手动读取
-		buf := make([]byte, 1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				log.Fatalf("read error: %s\n", err)
-			}
-			total += int64(n)
-		}
+		reader = bufio.NewReaderSize(r, bufSize)
 	}
 
-	delta := float64((time.Now().UnixMilli() - start)) / 1000
-	log.Printf("Read %d bytes in %.2f second: %s\n", total, delta, srcFileName)
+	// 手动读取
+	buf := make([]byte, 1024)
+	for {
+		// 读取数据
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("read error: %s\n", err)
+		}
+
+		// 统计读取的字节数
+		readBytes += int64(n)
+	}
 }
 
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", false)
-		wg.Done()
-	}()
-	go func() {
-		ReadBufTest("D:\\iso\\CentOS-7-x86_64-DVD-1708.iso", true)
-		wg.Done()
-	}()
-	wg.Wait()
+	// 读缓冲测试
+	src := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
+	bufSize := 4 << 20 // 4MiB
+	MustRead(src, bufSize)
 }
 ```
 
 输出结果
 
 ```bash
-2022/04/27 13:20:28 Read 4521459712 bytes in 1.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
-2022/04/27 13:20:34 Read 4521459712 bytes in 7.15 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
-```
+# 调整代码中缓冲区大小，分别执行两次
 
-> 可以看到，读的性能提升是巨大的，6倍左右，如果舍得用内存，性能还可以继续提升
+# 无缓冲区
+2023/04/20 13:26:42 Read 4521459712 bytes in 13.40 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+
+# 4MB缓冲区
+2023/04/20 13:26:00 Read 4521459712 bytes in 9.66 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+
+# 说明
+# 使用读缓冲区有一定的性能提升
+```
 
 :::
 
