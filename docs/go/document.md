@@ -6212,16 +6212,20 @@ func main() {
 
 ```bash
 # 调整代码中缓冲区大小，分别执行两次
+# 以下是测试了两块硬盘的结果
 
-# 无缓冲区
-2023/04/20 12:59:17 It takes 35.35 seconds to copy 4521459712 bytes for D:\iso\copy.iso
+# 磁盘1
+2023/04/20 12:59:17 It takes 35.35 seconds to copy 4521459712 bytes for D:\iso\copy.iso  # 无缓冲区
+2023/04/20 13:07:17 It takes 29.68 seconds to copy 4521459712 bytes for D:/iso/copy.iso  # 4MB缓冲区
 
-# 4MB缓冲区
-2023/04/20 13:07:17 It takes 29.68 seconds to copy 4521459712 bytes for D:/iso/copy.iso
+# 磁盘2
+2023/04/20 13:47:17 It takes 94.07 seconds to copy 4521459712 bytes for F:/.HOMES/admin/系统镜像/copy.iso  # 无缓冲区
+2023/04/20 13:45:17 It takes 47.44 seconds to copy 4521459712 bytes for F:/.HOMES/admin/系统镜像/copy.iso  # 4MB缓冲区
 
 # 说明
 # 1、使用Read/Write读写方式性能有一定的提升
 # 2、但如果使用io.Copy方式读写文件，会使用dst.ReadFrom(src)方式读写，对我们这次测试来说并不准，用不用bufio，两者花费的时间几乎一致
+# 3、缓冲区并不是唯一的影响因素，如果不使用缓冲区都能榨干硬件性能，那么使用缓冲区提升也不会大
 ```
 
 :::
@@ -6283,7 +6287,7 @@ func MustRead(src string, bufSize int) {
 
 func main() {
 	// 读缓冲测试
-	src := "D:\\iso\\CentOS-7-x86_64-DVD-1708.iso"
+	src := "F:/.HOMES/admin/系统镜像/CentOS-7-x86_64-DVD-1708.iso"
 	bufSize := 4 << 20 // 4MiB
 	MustRead(src, bufSize)
 }
@@ -6293,15 +6297,19 @@ func main() {
 
 ```bash
 # 调整代码中缓冲区大小，分别执行两次
+# 以下是测试了两块硬盘的结果
 
-# 无缓冲区
-2023/04/20 13:26:42 Read 4521459712 bytes in 13.40 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+# 磁盘1
+2023/04/20 12:59:17 Read 4521459712 bytes in 35.35 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso # 无缓冲区
+2023/04/20 13:07:17 Read 4521459712 bytes in 29.68 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso # 4MB缓冲
 
-# 4MB缓冲区
-2023/04/20 13:26:00 Read 4521459712 bytes in 9.66 second: D:\iso\CentOS-7-x86_64-DVD-1708.iso
+# 磁盘2
+2023/04/20 13:40:50 Read 4521459712 bytes in 14.48 second: F:\.HOMES\admin\系统镜像\CentOS-7-x86_64-DVD-1708.iso # 无缓冲区
+2023/04/20 13:43:03 Read 4521459712 bytes in 1.06 second: F:\.HOMES\admin\系统镜像\CentOS-7-x86_64-DVD-1708.iso  # 4MB缓冲区
 
 # 说明
-# 使用读缓冲区有一定的性能提升
+# 1、使用读缓冲区有明显的性能提升
+# 2、缓冲区并不是唯一的影响因素，如果不使用缓冲区都能榨干硬件性能，那么使用缓冲区提升也不会大
 ```
 
 :::
