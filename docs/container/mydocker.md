@@ -105,6 +105,8 @@ user.max_uts_namespaces=14998
 
 ### Docker如何处理用户命名空间
 
+参考资料：[https://docs.docker.com/engine/security/userns-remap/](https://docs.docker.com/engine/security/userns-remap/)
+
 ::: details （1）为什么Docker不受上面【用户命名空间】的限制？
 
 ```bash
