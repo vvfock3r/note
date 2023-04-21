@@ -345,7 +345,7 @@ mydocker
 
 <br />
 
-### 命名空间中执行代码
+### 命名空间中执行代码通用方法
 
 ::: details （1）探索如何在代码中修改主机名：使用第三方包，先解决问题
 
@@ -633,6 +633,35 @@ func main() {
 
 输出结果
 
+```bash
+# 在宿主机上查看 IPC Message Queues
+[root@archlinux ~]# ipcs -q
+
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages
+
+# 在宿主机上创建一个 IPC Message Queue
+[root@archlinux ~]# ipcmk -Q
+Message queue id: 0
+
+# 再次查看
+[root@archlinux ~]# ipcs -q
+
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages    
+0x361dec46 0          root       644        0            0
+
+# --------------------------------------------------------------------
+
+# 执行代码，然后查看IPC，看不到说明隔离成功
+sh-5.1# ipcs -q
+
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages    
+
+sh-5.1# 
+```
+
 :::
 
 <br />
@@ -666,6 +695,40 @@ func main() {
 ```
 
 输出结果
+
+```bash
+# 查看当前进程PID，PID隔离成功
+sh-5.1# echo $$
+1
+
+# 但是我们用ps、top等命令依旧能看到宿主机上的进程ID
+sh-5.1# ps aux|wc -l
+152
+
+sh-5.1# top
+	...
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND  
+      1 root      20   0   21108  13088   9328 S   0.0   0.3   0:03.71 systemd  
+    291 systemd+  20   0   20108  12416  10240 S   0.0   0.3   0:00.16 systemd+ 
+    218 root      20   0   32340  11152  10256 S   0.0   0.3   0:00.19 systemd+ 
+    326 root      20   0   18736  10880   9088 S   0.0   0.3   0:00.18 systemd  
+    235 root      20   0   33720  10364   7292 S   0.0   0.3   0:00.40 systemd+ 
+    589 root      20   0   14140  10132   8192 S   0.0   0.3   0:00.43 sshd     
+    323 root      20   0   13916  10116   8448 S   0.0   0.3   0:00.55 sshd     
+    242 systemd+  20   0   17400   8832   7808 S   0.0   0.2   0:00.07 systemd+ 
+    304 root      20   0   24560   7808   6912 S   0.0   0.2   0:00.09 systemd+ 
+    292 systemd+  20   0   89888   7424   6656 S   0.0   0.2   0:00.11 systemd+ 
+    714 root      20   0  710280   7180   1024 S   0.0   0.2   0:00.01 ___go_b+ 
+    303 root      20   0   10208   7040   6016 S   0.0   0.2   0:00.03 sshd     
+    327 root      20   0   23356   4824   1792 S   0.0   0.1   0:00.00 (sd-pam) 
+    302 dbus      20   0    8664   4480   3968 S   0.0   0.1   0:00.07 dbus-da+ 
+    339 root      20   0    7744   4224   3584 S   0.0   0.1   0:00.10 bash     
+    333 root      20   0    7744   4096   3456 S   0.0   0.1   0:00.01 bash     
+    719 root      20   0    4628   3584   3072 S   0.0   0.1   0:00.01 sh
+
+# 这是因为 虽然PID已经被隔离了，但是ps、top等他们会从/proc读取数据，而/proc我们是没有隔离的
+# 在后面我们会解决/proc隔离的问题
+```
 
 :::
 
