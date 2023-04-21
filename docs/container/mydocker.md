@@ -975,34 +975,36 @@ removed '/tmp/1.txt'
 
 ```bash
 # 创建一个空目录,用作挂载点
-[root@localhost ~]# mkdir /testmount
+[root@archlinux ~]# mkdir /testmount
 
 # 创建一个文件,用作挂在设备
-[root@localhost ~]# dd if=/dev/zero of=/testdata bs=1M count=1024
+[root@archlinux ~]# dd if=/dev/zero of=/testdata bs=1M count=1024
 1024+0 records in
 1024+0 records out
-1073741824 bytes (1.1 GB) copied, 6.72104 s, 160 MB/s
+1073741824 bytes (1.1 GB, 1.0 GiB) copied, 5.70406 s, 188 MB/s
 
 # 设备格式化为xfs文件系统
-[root@localhost ~]# mkfs -t xfs /testdata
+[root@archlinux ~]# mkfs -t xfs /testdata
 meta-data=/testdata              isize=512    agcount=4, agsize=65536 blks
          =                       sectsz=512   attr=2, projid32bit=1
-         =                       crc=1        finobt=0, sparse=0
+         =                       crc=1        finobt=1, sparse=1, rmapbt=0
+         =                       reflink=1    bigtime=1 inobtcount=1 nrext64=0
 data     =                       bsize=4096   blocks=262144, imaxpct=25
          =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
-log      =internal log           bsize=4096   blocks=2560, version=2
+naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+log      =internal log           bsize=4096   blocks=16384, version=2
          =                       sectsz=512   sunit=0 blks, lazy-count=1
 realtime =none                   extsz=4096   blocks=0, rtextents=0
 
-# 执行挂载
-[root@localhost ~]# mount -t xfs /testdata /testmount
+# 挂载测试
+[root@archlinux ~]# mount -t xfs /testdata /testmount
 
 # 查看挂载点
-[root@localhost ~]# mount -l | grep test
-/testdata on /testmount type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+[root@archlinux ~]# mount -l | grep test
+/testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
-[root@localhost ~]# df -hT
+# 使用df查看
+[root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
 /dev/loop0     xfs      1014M   33M  982M   4% /testmount # 注意看，这里并不是/testdata，而是/dev/loop0
@@ -1016,46 +1018,47 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 # losetup命令就是负责 文件和块设备之间的转换关系的
 
 # 1、检查系统中是否有可用的loop设备，返回值就是当前可用的块设备
-    [root@localhost ~]# losetup -f
+    [root@archlinux ~]# losetup -f
     /dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
     
 # 2、将文件与 loop设备关联起来
-	[root@localhost ~]# dd if=/dev/zero of=testdemo bs=1M count=512   # 随便创建一个文件,不要太小
+	[root@archlinux ~]# dd if=/dev/zero of=testdemo bs=1M count=512   # 随便创建一个文件,不要太小
     512+0 records in
     512+0 records out
-    536870912 bytes (537 MB) copied, 2.60456 s, 206 MB/s
-    [root@localhost ~]# losetup /dev/loop1 testdemo                   # 将文件和loop设备关联
+    536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
+    [root@archlinux ~]# losetup /dev/loop1 testdemo                   # 将文件和loop设备关联
     
 # 3、查看loop设备和文件的关联
-    [root@localhost ~]# losetup -a
-    /dev/loop0: [2053]:3222128550 (/testdata)
-    /dev/loop1: [2053]:3222353313 (/root/testdemo)
+    [root@archlinux ~]# losetup -a
+    /dev/loop1: [2050]:537831655 (/root/testdemo)
+    /dev/loop0: [2050]:1776699 (/testdata)
     
 # 4、将文件格式化一下，然后随便找个目录挂载上去
-    [root@localhost ~]# mkfs -t xfs testdemo
+    [root@archlinux ~]# mkfs -t xfs testdemo
     meta-data=testdemo               isize=512    agcount=4, agsize=32768 blks
              =                       sectsz=512   attr=2, projid32bit=1
-             =                       crc=1        finobt=0, sparse=0
+             =                       crc=1        finobt=1, sparse=1, rmapbt=0
+             =                       reflink=1    bigtime=1 inobtcount=1 nrext64=0
     data     =                       bsize=4096   blocks=131072, imaxpct=25
              =                       sunit=0      swidth=0 blks
-    naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
-    log      =internal log           bsize=4096   blocks=855, version=2
+    naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+    log      =internal log           bsize=4096   blocks=16384, version=2
              =                       sectsz=512   sunit=0 blks, lazy-count=1
     realtime =none                   extsz=4096   blocks=0, rtextents=0
     
-    [root@localhost ~]# mkdir testmount
-	[root@localhost ~]# mount -t xfs /dev/loop1 testmount      # 挂载文件或块设备都可以
+    [root@archlinux ~]# mkdir testmount
+    [root@archlinux ~]# mount -t xfs /dev/loop1 testmount      # 挂载文件或块设备都可以
 	
 # 5、查看挂载
-    [root@localhost ~]# mount -l | grep test
-    /testdata on /testmount type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
-    /dev/loop1 on /root/testmount type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+    [root@archlinux ~]# mount -l | grep test
+    /testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+    /dev/loop1 on /root/testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
     
-    [root@localhost ~]# df -hT
+    [root@archlinux ~]# df -hT
     Filesystem     Type      Size  Used Avail Use% Mounted on
     ...
-    /dev/loop0     xfs      1014M   33M  982M   4% /testmount
-    /dev/loop1     xfs       509M   26M  483M   6% /root/testmount
+    /dev/loop0     xfs       960M   39M  922M   5% /testmount
+    /dev/loop1     xfs       448M   29M  420M   7% /root/testmount
 
 # 6、释放块设备
    # 语法：losetup -d /dev/loopN
@@ -1063,19 +1066,19 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 #-------------------------------------------------------------------------------------------------
 
 # 清理测试环境
-[root@localhost ~]# umount /root/testmount
-[root@localhost ~]# rm -rf testdemo testmount
+[root@archlinux ~]# umount /root/testmount
+[root@archlinux ~]# rm -rf testdemo testmount
 
-[root@localhost ~]# losetup -a
-/dev/loop0: [2053]:3222128550 (/testdata)
-/dev/loop1: [2053]:3222353313 (/root/testdemo (deleted))    # 这里还在显示，但是标记了deleted
+[root@archlinux ~]# losetup -a
+/dev/loop1: [2050]:537831655 (/root/testdemo (deleted))
+/dev/loop0: [2050]:1776699 (/testdata)
 
-[root@localhost ~]# losetup -f              #  查看可用的块设备，并不是/dev/loop1
+[root@archlinux ~]# losetup -f              #  查看可用的块设备，并不是/dev/loop1
 /dev/loop2
 
-[root@localhost ~]# losetup -d /dev/loop1   # 释放块设备
+[root@archlinux ~]# losetup -d /dev/loop1   # 释放块设备
 
-[root@localhost ~]# losetup -f              #  再次查看可用的块设备
+[root@archlinux ~]# losetup -f              #  再次查看可用的块设备
 /dev/loop1
 ```
 
@@ -1086,17 +1089,17 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 **1、先把之前的卸载**
 
 ```bash
-[root@localhost ~]# umount /testdata
-[root@localhost ~]# losetup -a
-[root@localhost ~]# 
+[root@archlinux ~]# umount /testdata
+[root@archlinux ~]# losetup -a       # 输出为空
 ```
 
-**2、使用Go挂载：执行报错**
+**2、使用Go挂载和卸载：执行报错**
 
 ```go
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -1117,18 +1120,41 @@ func main() {
 		panic(err)
 	}
 
-	// 执行挂载操作
-	err := syscall.Mount(
-		"/testdata",
-		"/testmount",
-		"xfs",
-		uintptr(0),
-		"",
-	)
+	// 定义变量
+	source := "/testdata"
+	mountpoint := "/testmount"
 
+	// 执行挂载操作
+	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
+
+	// 卸载
+	defer func() {
+		// 选项说明
+		// 	syscall.MNT_DETACH
+		//		在卸载文件系统后,不会立即释放该文件系统的资源
+		//		它将使该文件系统处于未使用状态，直到它不再被任何进程使用为止
+		//  syscall.MNT_FORCE
+		//		强制卸载文件系统，即使该文件系统正在被使用
+		//		使用此选项时应格外小心，因为它可能会导致数据丢失或文件系统损坏
+		//	syscall.MNT_EXPIRE
+		//		将文件系统从 VFS 中删除，但不会将其从系统中卸载
+		//		文件系统会在系统空闲时被卸载
+		
+		// 卸载文件系统并保留挂载点
+		err := syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// 在稍后卸载文件系统
+		err = syscall.Unmount(mountpoint, syscall.MNT_EXPIRE)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
 	if err := cmd.Wait(); err != nil {
 		panic(err)
@@ -1142,25 +1168,26 @@ func main() {
 panic: block device required  # 需要一个块设备，其实就是 /testdata 的参数写的有问题
 ```
 
-**3、使用Go挂载：修复报错**
+**3、使用Go挂载和卸载：修复报错**
 
 ```bash
 # 检查一下可用的块设备
-[root@localhost ~]# losetup -f
+[root@archlinux ~]# losetup -f
 /dev/loop0
 
 # 将可用的块设备与文件关联起来
-[root@localhost ~]# losetup /dev/loop0 /testdata
+[root@archlinux ~]# losetup /dev/loop0 /testdata
 
 # 查看关联
-[root@localhost ~]# losetup -a
-/dev/loop0: [2053]:3222128550 (/testdata)
+[root@archlinux ~]# losetup -a
+/dev/loop0: [2050]:1776699 (/testdata)
 
 # 修改Go代码，将 /testdata 修改为 /dev/loop0，然后再次执行代码
 # 输出结果
-[root@localhost sources-cqkirdRljR]# df -hT
+[root@archlinux sources-aDE4u1wEOF]# df -hT
+Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
-/dev/loop0     xfs      1014M   33M  982M   4% /testmount
+/dev/loop0     xfs       960M   39M  922M   5% /testmount
 ```
 
 **4、syscall.Mount各项参数的含义**
@@ -1172,10 +1199,6 @@ fstype string	文件系统类型，比如ext4、xfs、ntfs 等
 flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
 data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
 ```
-
-**5、卸载**
-
-使用 `syscall.Unmount` 函数
 
 :::
 
