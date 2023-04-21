@@ -969,7 +969,13 @@ removed '/tmp/1.txt'
 
 ### Mount
 
-前方高能：Mount操作非常非常容易报错，而且错误信息不直观
+注意事项：
+
+* Mount操作非常非常容易报错，而且错误信息不直观
+
+* 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，
+
+  因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
 
 ::: details （1）Linux mount命令：关于块设备
 
@@ -1121,7 +1127,7 @@ func main() {
 	}
 
 	// 定义变量
-	source := "/testdata"
+	source := "/dev/loop0"
 	mountpoint := "/testmount"
 
 	// 执行挂载操作
@@ -1142,22 +1148,14 @@ func main() {
 		//	syscall.MNT_EXPIRE
 		//		将文件系统从 VFS 中删除，但不会将其从系统中卸载
 		//		文件系统会在系统空闲时被卸载
-		
-		// 卸载文件系统并保留挂载点
-		err := syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+		err := syscall.Unmount(mountpoint, 0)
 		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// 在稍后卸载文件系统
-		err = syscall.Unmount(mountpoint, syscall.MNT_EXPIRE)
-		if err != nil {
-			log.Fatalln(err)
+			log.Fatalln("umount error: ", err.Error())
 		}
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 ```
@@ -1208,6 +1206,7 @@ data string		特定的挂载选项，通常是指定一些特殊选项的参数�
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -1228,25 +1227,40 @@ func main() {
 		panic(err)
 	}
 
+	// 定义变量
+	source := "/a"
+	mountpoint := "/b"
+
 	// 执行挂载操作，部分挂载选项如下：
 	// syscall.MS_RDONLY      	只读挂载，即无法在挂载点中进行写入操作
 	// syscall.MS_NOEXEC      	用于禁止在挂载点中执行可执行文件
 	// syscall.MS_REMOUNT     	重新挂载,要求提前已经挂载，不改变挂载参数
 	// syscall.MS_BIND			挂载一个目录到另一个目录中
-	err := syscall.Mount(
-		"/a",
-		"/b",
-		"",
-		syscall.MS_BIND,
-		"",
-	)
-
+	err := syscall.Mount(source, mountpoint, "", syscall.MS_BIND, "")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
+	// 卸载
+	defer func() {
+		// 选项说明
+		// 	syscall.MNT_DETACH
+		//		在卸载文件系统后,不会立即释放该文件系统的资源
+		//		它将使该文件系统处于未使用状态，直到它不再被任何进程使用为止
+		//  syscall.MNT_FORCE
+		//		强制卸载文件系统，即使该文件系统正在被使用
+		//		使用此选项时应格外小心，因为它可能会导致数据丢失或文件系统损坏
+		//	syscall.MNT_EXPIRE
+		//		将文件系统从 VFS 中删除，但不会将其从系统中卸载
+		//		文件系统会在系统空闲时被卸载
+		err := syscall.Unmount(mountpoint, 0)
+		if err != nil {
+			log.Fatalln("umount error: ", err.Error())
+		}
+	}()
+
 	if err := cmd.Wait(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 ```
@@ -1255,24 +1269,24 @@ func main() {
 
 ```bash
 # 执行代码前
-[root@localhost ~]# mkdir /a /b
-[root@localhost ~]# touch /a/a.txt /b/b.txt
+[root@archlinux ~]# mkdir /a /b
+[root@archlinux ~]# touch /a/a.txt /b/b.txt
 
 # 执行代码后操作
-[root@localhost sources-WQj4ullLRa]# mount |grep -E '/a\b'
-[root@localhost sources-OW35KOsgTp]# mount |grep -E '/b\b'
-/dev/sda5 on /b type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+[root@archlinux sources-YaY9CmsQj6]# mount |grep -E '/a\b'
+[root@archlinux sources-YaY9CmsQj6]# mount |grep -E '/b\b'
+/dev/sda2 on /b type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
 # 查看数据
-[root@localhost sources-Ub7tg5eJDh]# ls /a
+[root@archlinux sources-YaY9CmsQj6]# ls /a
 a.txt
-[root@localhost sources-Ub7tg5eJDh]# ls /b
+[root@archlinux sources-YaY9CmsQj6]# ls /b
 a.txt
 ```
 
 :::
 
-::: details （4）Mount命名空间有哪些影响
+::: details （4）Mount命名空间的隔离性
 
 ```go
 ```
