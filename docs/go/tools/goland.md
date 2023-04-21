@@ -246,3 +246,16 @@ dlv.path=D:\application\GoPath\bin\dlv.exe         # 写法3: 错误写法
 `ALT + F1` ---> `Remote host`
 
 ![image-20230312155925220](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230312155925220.png)
+
+<br />
+
+## 注意事项
+
+### 停止按钮
+
+![image-20230421220834842](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230421220834842.png)
+
+这里的停止按钮会强制杀进程，在某些情况下会导致一些问题：
+
+* 延迟调用`defer`函数不能执行
+* 退出信号`handler`也不能执行
