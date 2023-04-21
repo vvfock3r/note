@@ -743,7 +743,7 @@ sh-5.1# top
 
 ### NET
 
-::: details （1）NET隔离后，无法上网
+::: details （1）NET隔离后无法访问互联网
 
 ```go
 package main
@@ -785,7 +785,7 @@ Proto Recv-Q Send-Q Local Address           Foreign Address         State       
 sh-5.1# ping www.baidu.com
 ping: connect: Network is unreachable
 
-# 分离
+# 分析
 # 隔离NET后无法联网
 ```
 
@@ -844,6 +844,14 @@ sh-5.1# route add default gw 172.17.0.1
 [root@archlinux ~]# echo 1 > /proc/sys/net/ipv4/ip_forward
 [root@archlinux ~]# iptables -t nat -A POSTROUTING -o ens33 -j MASQUERADE          # 方式1
 [root@archlinux ~]# iptables -t nat -A POSTROUTING -s 172.17.0.0/16 -j MASQUERADE  # 方式2
+
+# 6、测试
+sh-5.1# ping www.baidu.com
+PING www.a.shifen.com (39.156.66.18) 56(84) bytes of data.
+64 bytes from 39.156.66.18: icmp_seq=1 ttl=128 time=106 ms
+64 bytes from 39.156.66.18: icmp_seq=2 ttl=128 time=283 ms
+64 bytes from 39.156.66.18: icmp_seq=3 ttl=128 time=201 ms
+64 bytes from 39.156.66.18: icmp_seq=4 ttl=128 time=108 ms
 ```
 
 :::
