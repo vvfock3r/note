@@ -611,6 +611,7 @@ archlinux
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -626,7 +627,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 ```
@@ -674,6 +675,7 @@ sh-5.1#
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -689,7 +691,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 ```
@@ -736,19 +738,20 @@ sh-5.1# top
 
 ### NET
 
-::: details 点击查看详情
+::: details （1）NET隔离后，无法上网
 
 ```go
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
 )
 
 func main() {
-	cmd := exec.Command("bash")
+	cmd := exec.Command("sh")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWNET,
 	}
@@ -758,12 +761,36 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 ```
 
 输出结果
+
+```bash
+sh-5.1# ip a
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+
+sh-5.1# netstat -atlnpu
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+
+sh-5.1# ping www.baidu.com
+ping: connect: Network is unreachable
+
+# 分离
+# 隔离NET后没有网络了
+```
+
+:::
+
+::: details （2）手动配置网络
+
+```bash
+
+```
 
 :::
 
