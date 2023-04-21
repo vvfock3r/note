@@ -17,7 +17,7 @@
 
 **运行环境参数**
 
-* CentOS 7：用户人群众多，属于必测的发行版之一，但是其内核版本比较低（3.10）
+* CentOS 7：用户人群众多，属于必测的发行版之一，但是其内核版本比较低（3.x）
 * Arch Linux：滚动发行版Linux，几乎所有软件包都是最新版，自然也包含最新版的内核（6.x）
 
 <br />
@@ -107,7 +107,7 @@ user.max_uts_namespaces=14998
 
 参考资料：[https://docs.docker.com/engine/security/userns-remap/](https://docs.docker.com/engine/security/userns-remap/)
 
-::: details （1）为什么Docker不受上面【用户命名空间】的限制？
+::: details （1）为什么Docker如何处理【用户命名空间】？
 
 ```bash
 # 先让我们做一些测试和检查
