@@ -919,25 +919,48 @@ func main() {
 输出结果
 
 ```bash
-# 100和200在我们的宿主机上都是不存在的ID
-[root@localhost ~]# id 100
+# 确保 /proc/sys/user/max_user_namespaces 不为0
+[root@localhost ~]# echo 14998 > /proc/sys/user/max_user_namespaces
+
+# 100和200在我们的宿主机上都是不存在的ID，存在也没关系
+[root@archlinux ~]# id 100
 id: 100: no such user
-[root@localhost ~]# id 200
+[root@archlinux ~]# id 200
 id: 200: no such user
 
 # 输出结果
 sh-4.2$ id
 uid=100 gid=100(users) groups=100(users),65534 context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
 
-# 宿主机上创建一个文件，然后在容器中看看能不能删除
-[root@localhost ~]# touch /user.txt
-sh-4.2$ rm -vf /user.txt
-rm: cannot remove ‘/user.txt’: Permission denied
+# ----------------------------------------------------------------------------------------------------------
+# 测试1：修改宿主机文件内容
 
-# 修改文件的属主和属组，再次尝试删除
-chown -R 200：200 /user.txt
-sh-4.2$ rm -vf /user.txt
-rm: cannot remove ‘/user.txt’: Permission denied
+# 宿主机上创建一个文件
+[root@archlinux ~]# seq 10 > /tmp/1.txt
+
+# 进程内进行修改，报错，因为没有权限
+sh-5.1$ seq 3 > /tmp/1.txt
+sh: /tmp/1.txt: Permission denied
+
+# 修改文件权限，正好能和进程在宿主机的实际权限对应起来
+[root@archlinux ~]# chown -R 200:200 /tmp/1.txt
+
+# 进程内再次修改，成功
+sh-5.1$ seq 3 > /tmp/1.txt
+
+# ----------------------------------------------------------------------------------------------------------
+# 测试2：删除宿主机文件
+
+# 先检查一下
+sh-5.1$ id
+uid=100 gid=100 groups=100,65534(nobody)
+
+sh-5.1$ ls -l /tmp/1.txt
+-rw-r--r-- 1 100 100 6 Apr 21 20:48 /tmp/1.txt
+
+# 删除成功
+sh-5.1$ rm -vf /tmp/1.txt
+removed '/tmp/1.txt'
 ```
 
 :::
@@ -1241,7 +1264,7 @@ a.txt
 
 <br />
 
-### proc隔离问题
+### 如何隔离/proc
 
 <br />
 
