@@ -794,13 +794,56 @@ ping: connect: Network is unreachable
 ::: details （2）手动配置网络
 
 ```bash
-pid=982
+# 1、创建一对虚拟网络设备接口：veth0 和 veth1
+[root@archlinux ~]# ip link add name veth0 type veth peer name veth1
 
-ip link add name veth0 type veth peer name veth1
-ip link set veth1 netns ${pid}
-ip netns exec ${pid} ip addr add 192.168.48.132/24 dev veth1
-ip netns exec ${pid} ip link set veth1 up
-ip netns exec ${pid} route add default gw 192.168.48.2
+# 查看网络设备接口,其中 3 和 4 是我们刚创建的
+[root@archlinux ~]# ip link show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 00:0c:29:03:d2:be brd ff:ff:ff:ff:ff:ff
+    altname enp2s1
+3: veth1@veth0: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 8e:55:7b:43:e7:a5 brd ff:ff:ff:ff:ff:ff
+4: veth0@veth1: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 9a:ff:15:ed:5a:c6 brd ff:ff:ff:ff:ff:ff
+
+# 2、将虚拟网络设备接口 veth1 移动到指定的进程的网络命名空间中, 381是进程PID，根据实际情况修改
+[root@archlinux ~]# ip link set veth1 netns 381
+[root@archlinux ~]# ip link show  # 看一下，少了一个接口：veth1
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 00:0c:29:03:d2:be brd ff:ff:ff:ff:ff:ff
+    altname enp2s1
+4: veth0@if3: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 9a:ff:15:ed:5a:c6 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+sh-5.1# ip a  # 进程中看一下，多了一个接口设备:veth1
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+3: veth1@if4: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 8e:55:7b:43:e7:a5 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+
+# 3、给veth0配置地址并启用
+[root@archlinux ~]# ip addr add 172.17.0.1/16 dev veth0
+[root@archlinux ~]# ip link set veth0 up
+
+# 4、给veth1配置IP地址、默认网关，并启用网卡
+sh-5.1# ip addr add 172.17.0.2/16 dev veth1
+sh-5.1# ip link set veth1 up
+sh-5.1# route add default gw 172.17.0.1
+
+# 5、配置IP转发功能 和 NAT网络地址转换
+# 1.宿主机充当网关的角色，进程通过该网关访问 Internet
+# 2.此时需要将进程发往Internet的数据包源地址替换为网关的IP地址，否则Internet无法回应这些数据包
+# 3.-o ens33         表示匹配输出接口为 ens33 的数据包
+# 4.-s 172.17.0.0/16 表示匹配源地址范围
+# 5.-j MASQUERADE    表示将源IP地址替换为出口接口的IP地址
+# 6.下面的iptables命令就是将 进程发送Internet的包的源地址替换为宿主机的IP
+[root@archlinux ~]# echo 1 > /proc/sys/net/ipv4/ip_forward
+[root@archlinux ~]# iptables -t nat -A POSTROUTING -o ens33 -j MASQUERADE          # 方式1
+[root@archlinux ~]# iptables -t nat -A POSTROUTING -s 172.17.0.0/16 -j MASQUERADE  # 方式2
 ```
 
 :::
