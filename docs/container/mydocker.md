@@ -6,19 +6,19 @@
 
 **开发环境参数**
 
-* Windows 10（开发环境）
-* GoLand（开发环境）
-* Go 1.20.1（开发环境）
+* Windows 10
+* GoLand
+* Go 1.20.1
 
 **GoLand配置**
 
 * 配置系统参数为Linux，这样我们就可以在调用Go中的Linux API
 * 配置运行目标为Linux，这样我们就可以在GoLand中启动程序时直接运行在Linux上
 
-**运行环境列表**
+**运行环境参数**
 
-* CentOS 7
-* Arch Linux
+* CentOS 7：用户人群众多，属于必测的发行版之一，但是其内核版本比较低（3.10）
+* Arch Linux：滚动发行版Linux，几乎所有软件包都是最新版，自然也包含最新版的内核（6.x）
 
 <br />
 
