@@ -103,6 +103,131 @@ user.max_uts_namespaces=14998
 
 <br />
 
+### Docker如何处理用户命名空间
+
+::: details （1）为什么Docker不受上面【用户命名空间】的限制？
+
+```bash
+# 先让我们做一些测试和检查
+
+# 准备环境：随便启动一个容器
+[root@localhost ~]# docker run --name test -it --rm  busybox:latest sh
+
+# --------------------------------------------------------------------------------------------
+# 第一次验证
+
+# 宿主机执行
+[root@localhost ~]# ls -lh /proc/self/ns/
+total 0
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 ipc -> ipc:[4026531839]
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 mnt -> mnt:[4026531840]
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 net -> net:[4026531956]
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 pid -> pid:[4026531836]
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 user -> user:[4026531837]
+lrwxrwxrwx. 1 root root 0 Apr 21 09:28 uts -> uts:[4026531838]
+
+# 容器内执行
+[root@localhost ~]# docker run --name test -it --rm  busybox:latest sh
+/ # ls -lh /proc/self/ns/
+total 0      
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 ipc -> ipc:[4026532507]
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 mnt -> mnt:[4026532505]
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 net -> net:[4026532510]
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 pid -> pid:[4026532508]
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 user -> user:[4026531837] # 只有它和宿主机一致
+lrwxrwxrwx    1 root     root           0 Apr 21 01:23 uts -> uts:[4026532506]
+
+# --------------------------------------------------------------------------------------------
+# 第二次验证
+[root@localhost ~]# docker container inspect test | grep -i pid
+            "Pid": 2910,
+            "PidMode": "",
+            "PidsLimit": null,
+
+[root@localhost ~]# lsns
+        NS TYPE  NPROCS   PID USER    COMMAND
+...
+4026532505 mnt        1  2910 root    sh
+4026532506 uts        1  2910 root    sh
+4026532507 ipc        1  2910 root    sh
+4026532508 pid        1  2910 root    sh
+4026532510 net        1  2910 root    sh
+
+# --------------------------------------------------------------------------------------------
+# 总结：Docker没有隔离用户命名空间，自然就不受/proc/sys/user/max_user_namespaces的限制
+```
+
+:::
+
+::: details （2）Docker如何启用User命名空间？
+
+```bash
+# 先检查一下
+[root@localhost ~]# docker info | grep 'Docker Root Dir'
+ Docker Root Dir: /var/lib/docker
+ 
+# 修改配置文件
+[root@localhost ~]# vim /usr/lib/systemd/system/docker.service
+...
+[Service]
+Type=notify
+# the default is not to use systemd for cgroups because the delegate issues still
+# exists and systemd currently does not support the cgroup feature set required
+# for containers run by docker
+
+# 添加 --userns-remap=default
+#ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock --userns-remap=default
+
+# 重启Docker
+[root@localhost ~]# systemctl daemon-reload
+[root@localhost ~]# systemctl restart docker
+
+# 再次检查
+[root@localhost ~]# docker info | grep 'Docker Root Dir'
+ Docker Root Dir: /var/lib/docker/100000.100000
+```
+
+:::
+
+::: details （3）Docker启用User命名空间后有何不同？
+
+分析：
+
+* User命名空间隔离的是UID和GID
+* 隔离User命名空间后容器内的UID和GID虽然和宿主机的ID保持一致（比如root），但是实际并没有一一对应
+
+```bash
+# 宿主机创建测试目录
+[root@localhost ~]# mkdir /test
+
+# -----------------------------------------------------------------------------
+# 默认情况下，共享User命名空间
+[root@localhost ~]# docker run -it --rm  -v /test:/test busybox:latest sh
+/ # id
+uid=0(root) gid=0(root) groups=0(root),10(wheel)
+/ # touch /test/1.txt
+/ # ls -lh /test/1.txt
+-rw-r--r--    1 root     root           0 Apr 21 05:34 /test/1.txt
+
+# -----------------------------------------------------------------------------
+# 手动修改Docker配置，隔离User命名空间
+[root@localhost ~]# docker run -it --rm  -v /test:/test busybox:latest sh
+/ # id
+uid=0(root) gid=0(root) groups=0(root),10(wheel)
+/ # touch /test/1.txt
+touch: /test/1.txt: Permission denied
+
+# -----------------------------------------------------------------------------
+# 在Docker全局隔离User命名空间下，针对某个容器设置与宿主机共享命名空间
+[root@localhost ~]# docker run -it --rm  -v /test:/test --userns=host busybox:latest sh
+/ # touch /test/1.txt
+```
+
+:::
+
+<br />
+
 ### UTS
 
 ::: details （1）第一个测试
