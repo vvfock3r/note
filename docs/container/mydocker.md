@@ -224,6 +224,11 @@ touch: /test/1.txt: Permission denied
 # 在Docker全局隔离User命名空间下，针对某个容器设置与宿主机共享命名空间
 [root@localhost ~]# docker run -it --rm  -v /test:/test --userns=host busybox:latest sh
 / # touch /test/1.txt
+
+# -----------------------------------------------------------------------------
+# 注意事项：若Docker启用User命名空间，需要确保 /proc/sys/user/max_user_namespaces 不能为0，否则会报错
+[root@localhost ~]# docker run -it --rm  -v /test:/test busybox:latest sh
+docker: Error response from daemon: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: can't get final child's PID from pipe: EOF: unknown.
 ```
 
 :::
@@ -781,7 +786,7 @@ sh-5.1# ping www.baidu.com
 ping: connect: Network is unreachable
 
 # 分离
-# 隔离NET后没有网络了
+# 隔离NET后无法联网
 ```
 
 :::
@@ -789,7 +794,13 @@ ping: connect: Network is unreachable
 ::: details （2）手动配置网络
 
 ```bash
+pid=982
 
+ip link add name veth0 type veth peer name veth1
+ip link set veth1 netns ${pid}
+ip netns exec ${pid} ip addr add 192.168.48.132/24 dev veth1
+ip netns exec ${pid} ip link set veth1 up
+ip netns exec ${pid} route add default gw 192.168.48.2
 ```
 
 :::
