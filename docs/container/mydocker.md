@@ -1578,8 +1578,12 @@ func main() {
 输出结果
 
 ```bash
-# 编译
-[root@archlinux ~]# go build -o main main.go
+# 查看 umount -l 选项说明
+[root@archlinux ~]# umount -h | grep --color=auto '\--lazy'
+ -l, --lazy              detach the filesystem now, clean up things later
+
+# 编译代码
+[root@archlinux ~]# go build -o main main.go代码
 
 # --------------------------------------------------------------------------------------
 # 测试1：正常卸载成功
