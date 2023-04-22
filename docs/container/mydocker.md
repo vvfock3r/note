@@ -967,7 +967,7 @@ removed '/tmp/1.txt'
 
 <br />
 
-### Mount
+### Mount（上）：挂载卸载
 
 注意事项：
 
@@ -1090,16 +1090,7 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 
 :::
 
-::: details （2）Go Mount示例：先让代码跑起来不报错
-
-**1、先把之前的卸载**
-
-```bash
-[root@archlinux ~]# umount /testdata
-[root@archlinux ~]# losetup -a       # 输出为空
-```
-
-**2、使用Go挂载和卸载：执行报错**
+::: details （2）Go Mount示例：执行挂载报错：block device required
 
 ```go
 package main
@@ -1127,30 +1118,26 @@ func main() {
 	}
 
 	// 定义变量
-	source := "/dev/loop0"
+	source := "/testdata"
 	mountpoint := "/testmount"
 
-	// 执行挂载操作
+	// 挂载
+	// 参数说明
+	// 	source string	挂载源，可以是设备名、目录名、网络地址等
+	// 	target string	挂载目标，即将文件系统挂载到哪个目录下。该目录必须已经存在，且为空目录
+	// 	fstype string	文件系统类型，比如ext4、xfs、ntfs 等
+	// 	flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
+	// 	data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
 	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("mount error: %s\n", err.Error())
 	}
 
 	// 卸载
 	defer func() {
-		// 选项说明
-		// 	syscall.MNT_DETACH
-		//		在卸载文件系统后,不会立即释放该文件系统的资源
-		//		它将使该文件系统处于未使用状态，直到它不再被任何进程使用为止
-		//  syscall.MNT_FORCE
-		//		强制卸载文件系统，即使该文件系统正在被使用
-		//		使用此选项时应格外小心，因为它可能会导致数据丢失或文件系统损坏
-		//	syscall.MNT_EXPIRE
-		//		将文件系统从 VFS 中删除，但不会将其从系统中卸载
-		//		文件系统会在系统空闲时被卸载
 		err := syscall.Unmount(mountpoint, 0)
 		if err != nil {
-			log.Fatalln("umount error: ", err.Error())
+			log.Fatalf("unmount error: %s\n", err.Error())
 		}
 	}()
 
@@ -1163,10 +1150,17 @@ func main() {
 输出结果
 
 ```bash
-panic: block device required  # 需要一个块设备，其实就是 /testdata 的参数写的有问题
+# 1、先把之前的卸载
+[root@archlinux ~]# umount /testdata
+[root@archlinux ~]# losetup -a       # 输出为空
+
+# 2、执行代码,报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
+2023/04/22 10:42:48 mount error: block device required
 ```
 
-**3、使用Go挂载和卸载：修复报错**
+:::
+
+::: details （3）Go Mount示例：修复挂载报错
 
 ```bash
 # 检查一下可用的块设备
@@ -1186,21 +1180,21 @@ panic: block device required  # 需要一个块设备，其实就是 /testdata �
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
 /dev/loop0     xfs       960M   39M  922M   5% /testmount
-```
 
-**4、syscall.Mount各项参数的含义**
-
-```bash
-source string	挂载源，可以是设备名、目录名、网络地址等
-target string	挂载目标，即将文件系统挂载到哪个目录下。该目录必须已经存在，且为空目录
-fstype string	文件系统类型，比如ext4、xfs、ntfs 等
-flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
-data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
+# 退出Shell，可使用Ctrl+D 或者 exit，不要直接在GoLand点Stop按钮，这会导致卸载操作不能执行
+# 检查是否正常卸载，输出为空代表正常
+[root@archlinux sources-aDE4u1wEOF] # 按下Ctrl+D
+exit
+[root@archlinux ~]# mount | grep  /testmount
 ```
 
 :::
 
-::: details （3）Go Mount选项：挂载一个目录到另一个目录中
+<br />
+
+### Mount（中）：各项参数
+
+::: details （1）Mount选项：syscall.MS_BIND：挂载一个目录到另一个目录中
 
 ```go
 package main
@@ -1224,7 +1218,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	// 定义变量
@@ -1238,21 +1232,11 @@ func main() {
 	// syscall.MS_BIND			挂载一个目录到另一个目录中
 	err := syscall.Mount(source, mountpoint, "", syscall.MS_BIND, "")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("mount error: %s\n", err.Error())
 	}
 
 	// 卸载
 	defer func() {
-		// 选项说明
-		// 	syscall.MNT_DETACH
-		//		在卸载文件系统后,不会立即释放该文件系统的资源
-		//		它将使该文件系统处于未使用状态，直到它不再被任何进程使用为止
-		//  syscall.MNT_FORCE
-		//		强制卸载文件系统，即使该文件系统正在被使用
-		//		使用此选项时应格外小心，因为它可能会导致数据丢失或文件系统损坏
-		//	syscall.MNT_EXPIRE
-		//		将文件系统从 VFS 中删除，但不会将其从系统中卸载
-		//		文件系统会在系统空闲时被卸载
 		err := syscall.Unmount(mountpoint, 0)
 		if err != nil {
 			log.Fatalln("umount error: ", err.Error())
@@ -1286,9 +1270,10 @@ a.txt
 
 :::
 
-::: details （4）Mount命名空间的隔离性
+::: details （2）Unmount选项：
 
 ```go
+
 ```
 
 输出结果
@@ -1301,7 +1286,7 @@ a.txt
 
 <br />
 
-### 如何隔离/proc
+### Mount（下）：隔离/proc
 
 <br />
 
