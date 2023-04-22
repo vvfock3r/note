@@ -1199,7 +1199,7 @@ exit
 
 <br />
 
-### Mount（中）：各项参数
+### Mount（中）：挂载参数
 
 ::: details （1）Mount选项：syscall.MS_BIND：挂载一个目录到另一个目录中
 
@@ -1277,7 +1277,27 @@ a.txt
 
 :::
 
-<br />
+### Mount（中）：卸载参数
+
+::: details unmount和fuser命令
+
+```bash
+# 测试1：当有进程占用时无法卸载
+
+# 1、终端1：挂载
+[root@archlinux ~]# mount -t xfs /testdata /testmount/
+
+# 2、终端2：再开一个终端，占用挂载点
+[root@archlinux ~]# cd /testmount/
+
+# 3、终端1：执行卸载报错
+[root@archlinux ~]# umount /testmount/
+umount: /testmount/: target is busy.
+
+# --------------------------------------------------------
+```
+
+:::
 
 ::: details （1）Unmount选项：syscall.MNT_FORCE：强制卸载
 
