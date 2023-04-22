@@ -981,6 +981,8 @@ removed '/tmp/1.txt'
 * 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，
 
   因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
+  
+* 使用`man 2 mount` 和 `man umount2` 查看文档
 
 ::: details （1）Linux mount命令：关于块设备
 
@@ -1275,7 +1277,7 @@ a.txt
 
 :::
 
-::: details （2）Unmount选项：syscall.MNT_EXPIRE
+::: details （2）Unmount选项：syscall.MNT_EXPIRE：标记挂载点过期，系统空闲时删除
 
 ```go
 
