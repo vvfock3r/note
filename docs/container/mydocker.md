@@ -20,6 +20,11 @@
 * CentOS 7：用户人群众多，属于必测的发行版之一，但是其内核版本比较低（3.x）
 * Arch Linux：滚动发行版Linux，几乎所有软件包都是最新版，自然也包含最新版的内核（6.x）
 
+**安装man文档**
+
+* CentOS：`yum -y install man-pages`
+* Arch Linux：`pacman -Sy man-pages`
+
 <br />
 
 ## NameSpace
@@ -1270,7 +1275,7 @@ a.txt
 
 :::
 
-::: details （2）Unmount选项：
+::: details （2）Unmount选项：syscall.MNT_EXPIRE
 
 ```go
 
