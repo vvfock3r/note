@@ -1383,7 +1383,7 @@ exit
 
 :::
 
-::: details （2）Unmount选项：syscall.MNT_DETACH：正常卸载
+::: details （2）Unmount选项：syscall.MNT_DETACH：延迟卸载
 
 ```go
 package main
@@ -1529,6 +1529,89 @@ func main() {
 exit
 2023/04/22 18:16:41 unmount error: /testmount: resource temporarily unavailable
 2023/04/22 18:16:42 unmount success: /testmount
+```
+
+:::
+
+::: details （4）实现一个非常简易的 umount 命令和 umount -l 选项
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"syscall"
+)
+
+func main() {
+	// 判断参数个数
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s [flags] <mountpoint>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	// 定义并解析命令行参数
+	var lazy bool
+	flag.BoolVar(&lazy, "l", false, "detach the filesystem now, clean up things later")
+	flag.Parse()
+
+	// 挂载点
+	mountpoint := flag.Arg(0)
+
+	// 先正常卸载
+	err := syscall.Unmount(mountpoint, 0)
+	if err != nil {
+		if !lazy {
+			fmt.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+		}
+	}
+
+	// -l/--lazy选项
+	if lazy {
+		_ = syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 编译
+[root@archlinux ~]# go build -o main main.go
+
+# --------------------------------------------------------------------------------------
+# 测试1：正常卸载成功
+[root@archlinux ~]# mount -t xfs /testdata /testmount	# 挂载
+[root@archlinux ~]# mount | grep /testmount				# 检查
+/dev/loop0 on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+[root@archlinux ~]# ./main /testmount					# 卸载
+[root@archlinux ~]# mount | grep /testmount				# 检查，输出为空
+
+# --------------------------------------------------------------------------------------
+# 测试2：进程占用时延迟卸载成功
+[root@archlinux ~]# mount -t xfs /testdata /testmount	# 挂载
+[root@archlinux ~]# mount | grep /testmount				# 检查
+/dev/loop0 on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+[root@archlinux ~]# cd /testmount						# 新开一个终端，占用挂载点
+
+[root@archlinux ~]# ./main /testmount					# 正常卸载失败
+unmount error: /testmount: device or resource busy
+
+[root@archlinux ~]# ./main -l /testmount				# 延迟卸载
+[root@archlinux ~]# mount | grep /testmount				# 检查，输出为空
+
+[root@archlinux testmount]# seq 10 > `date +%Y-%m-%d-%H%M%S`.txt	# 另一个终端还能正常写入
+[root@archlinux testmount]# ll							
+total 4
+-rw-r--r-- 1 root root 21 Apr 22 20:57 2023-04-22-205708.txt
+
+[root@archlinux testmount]# cd							# 另一个终端退出挂载点，然后再查看，目录为空
+[root@archlinux ~]# ls -l /testmount/                   # 原因是现在才真正的卸载了，所谓延迟卸载
+total 0
 ```
 
 :::
