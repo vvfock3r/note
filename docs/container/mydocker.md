@@ -982,7 +982,7 @@ removed '/tmp/1.txt'
 
   因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
   
-* 使用`man 2 mount` 和 `man umount2` 查看文档
+* 使用`man 2 mount` 和 `man umount2` 查看相关文档
 
 ::: details （1）Linux mount命令：关于块设备
 
@@ -1277,7 +1277,9 @@ a.txt
 
 :::
 
-::: details （2）Unmount选项：syscall.MNT_EXPIRE：标记挂载点过期，系统空闲时删除
+<br />
+
+::: details （1）Unmount选项：syscall.MNT_FORCE：强制卸载
 
 ```go
 package main
@@ -1310,12 +1312,162 @@ func main() {
 	mountpoint := "/testmount"
 
 	// 挂载
-	// 参数说明
-	// 	source string	挂载源，可以是设备名、目录名、网络地址等
-	// 	target string	挂载目标，即将文件系统挂载到哪个目录下。该目录必须已经存在，且为空目录
-	// 	fstype string	文件系统类型，比如ext4、xfs、ntfs 等
-	// 	flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
-	// 	data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
+	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	if err != nil {
+		log.Fatalf("mount error: %s\n", err.Error())
+	}
+
+	// 卸载
+	defer func() {
+		for {
+			// syscall.MNT_FORCE
+			// 	1、根据字面意思是强制卸载
+			//	2、即使是强制卸载，也有可能卸载失败，比如 有进程在占用时会报错 device or resource busy
+			//  3、强制卸载有损害数据的风险，慎用
+			err := syscall.Unmount(mountpoint, syscall.MNT_FORCE)
+			if err != nil {
+				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+			} else {
+				log.Printf("unmount success: %s\n", mountpoint)
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
+[root@archlinux ~]# cd /testmount/
+[root@archlinux testmount]# 
+
+# 执行程序输出
+[root@archlinux sources-EfwA46P2j0]# 
+exit
+2023/04/22 18:25:59 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:00 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:01 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:02 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:03 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:04 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:05 unmount error: /testmount: device or resource busy
+2023/04/22 18:26:06 unmount error: /testmount: device or resource busy
+```
+
+:::
+
+::: details （2）Unmount选项：syscall.MNT_DETACH：正常卸载
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+)
+
+func main() {
+	cmd := exec.Command("bash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个Mount命名空间
+		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
+		Cloneflags: syscall.CLONE_NEWNS,
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+
+	// 定义变量
+	source := "/dev/loop0"
+	mountpoint := "/testmount"
+
+	// 挂载
+	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	if err != nil {
+		log.Fatalf("mount error: %s\n", err.Error())
+	}
+
+	// 卸载
+	defer func() {
+		for {
+			// syscall.MNT_FORCE
+			// 	1、根据字面意思是强制卸载
+			//	2、即使是强制卸载，也有可能卸载失败，比如 有进程在占用时会报错 device or resource busy
+			//  3、强制卸载有损害数据的风险，慎用
+			err := syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+			if err != nil {
+				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+			} else {
+				log.Printf("unmount success: %s\n", mountpoint)
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+[root@archlinux sources-EmYxsBubUu]# 
+exit
+2023/04/22 18:34:47 unmount success: /testmount
+```
+
+:::
+
+::: details （3）Unmount选项：syscall.MNT_EXPIRE：标记挂载点过期，系统空闲时删除
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+)
+
+func main() {
+	cmd := exec.Command("bash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个Mount命名空间
+		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
+		Cloneflags: syscall.CLONE_NEWNS,
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+
+	// 定义变量
+	source := "/dev/loop0"
+	mountpoint := "/testmount"
+
+	// 挂载
 	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
@@ -1325,9 +1477,14 @@ func main() {
 	defer func() {
 		for {
 			// syscall.MNT_EXPIRE
-			// 1、将挂载点标记为"过期"，表示该挂载点已经不再使用
-			// 2、当操作系统检测到一个挂载点被标记为"过期"时，它将尝试卸载该挂载点
-			// 3、所以说syscall.MNT_EXPIRE并不会立即卸载挂载点
+			// 	1、将挂载点标记为"过期"，表示该挂载点已经不再使用
+			// 	2、当操作系统检测到一个挂载点被标记为"过期"时，它将尝试卸载该挂载点
+			// 	3、所以说syscall.MNT_EXPIRE并不会立即卸载挂载点
+			//  4、注意：它不能和 syscall.MNT_FORCE 或 syscall.MNT_DETACH 共同使用
+            //  5、注意：并非所有的文件系统都支持此选项,其他文件系统还需要测试
+			// 测试结果
+			// 	1、第一次调用时总会报错 resource temporarily unavailable
+			//  2、然后休眠1秒再次调用就会成功
 			err := syscall.Unmount(mountpoint, syscall.MNT_EXPIRE)
 			if err != nil {
 				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
