@@ -1280,13 +1280,78 @@ a.txt
 ::: details （2）Unmount选项：syscall.MNT_EXPIRE：标记挂载点过期，系统空闲时删除
 
 ```go
+package main
 
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+)
+
+func main() {
+	cmd := exec.Command("bash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// 创建一个Mount命名空间
+		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
+		Cloneflags: syscall.CLONE_NEWNS,
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+
+	// 定义变量
+	source := "/dev/loop0"
+	mountpoint := "/testmount"
+
+	// 挂载
+	// 参数说明
+	// 	source string	挂载源，可以是设备名、目录名、网络地址等
+	// 	target string	挂载目标，即将文件系统挂载到哪个目录下。该目录必须已经存在，且为空目录
+	// 	fstype string	文件系统类型，比如ext4、xfs、ntfs 等
+	// 	flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
+	// 	data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
+	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	if err != nil {
+		log.Fatalf("mount error: %s\n", err.Error())
+	}
+
+	// 卸载
+	defer func() {
+		for {
+			// syscall.MNT_EXPIRE
+			// 1、将挂载点标记为"过期"，表示该挂载点已经不再使用
+			// 2、当操作系统检测到一个挂载点被标记为"过期"时，它将尝试卸载该挂载点
+			// 3、所以说syscall.MNT_EXPIRE并不会立即卸载挂载点
+			err := syscall.Unmount(mountpoint, syscall.MNT_EXPIRE)
+			if err != nil {
+				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+			} else {
+				log.Printf("unmount success: %s\n", mountpoint)
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+}
 ```
 
 输出结果
 
 ```bash
-
+[root@archlinux sources-ICr1FiqkTj]# 
+exit
+2023/04/22 18:16:41 unmount error: /testmount: resource temporarily unavailable
+2023/04/22 18:16:42 unmount success: /testmount
 ```
 
 :::
