@@ -4,8 +4,6 @@
 
 存档：[https://archive.archlinux.org](https://archive.archlinux.org)
 
-Wiki：[https://wiki.archlinux.org](https://wiki.archlinux.org)
-
 <br />
 
 ## 安装
