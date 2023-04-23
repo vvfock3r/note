@@ -517,7 +517,7 @@ archlinux
 
 :::
 
-::: details （3）探索如何在代码中修改主机名：使用原生方法，完美的方案
+::: details （3）探索如何在代码中修改主机名：使用原生方法实现reexec
 
 ```go
 package main
@@ -607,6 +607,67 @@ mydocker-2023-04-20 23:26:59
 # 退出进程，查看宿主机的主机名，没有变化，测试成功
 [root@archlinux ~]# hostname
 archlinux
+```
+
+:::
+
+::: details （4）探索如何在代码中修改主机名：优化代码，目前比较完美
+
+```go
+package main
+
+import (
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+
+	"golang.org/x/sys/unix"
+)
+
+func main() {
+	// 第一次启动,设置Namespace,然后程序调用自身
+	if os.Args[0] != "/proc/self/exe" {
+		cmd := &exec.Cmd{
+			Path: "/proc/self/exe",
+			Args: append([]string{"/proc/self/exe"}, os.Args[1:]...),
+			SysProcAttr: &syscall.SysProcAttr{
+				Pdeathsig:  unix.SIGTERM,
+				Cloneflags: syscall.CLONE_NEWUTS,
+			},
+		}
+
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			log.Fatalln(err)
+		}
+		os.Exit(0)
+	}
+
+	// 下面的代码运行在新的Namespace中
+
+	// 设置主机名
+	hostname := "mydocker-" + time.Now().Format(time.DateTime)
+	err := syscall.Sethostname([]byte(hostname))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// 执行命令
+	cmd := exec.Command("bash")
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalln(err)
+	}
+}
 ```
 
 :::
