@@ -8,7 +8,7 @@
 
 ## 安装
 
-文档：https://wiki.archlinux.org/title/archinstall
+文档：[https://wiki.archlinux.org/title/archinstall](https://wiki.archlinux.org/title/archinstall)
 
 ```bash
 # 更新 archinstall,这一步可选
