@@ -54,6 +54,7 @@ pacman -Syu 更新最新软件列表，并升级所有已安装的软件包(推�
 # 在~/.bashrc下配置不生效不知道为啥
 [root@archlinux ~]# vim /etc/profile
 alias ll='ls -l --color'
+alias grep='grep --color=auto'
 
 # 配置vim
 [root@archlinux ~]# vim ~/.vimrc
