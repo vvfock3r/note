@@ -1284,17 +1284,18 @@ a.txt
 ```bash
 # 测试1：当有进程占用时无法卸载
 
-# 1、终端1：挂载
+# 终端1：挂载
 [root@archlinux ~]# mount -t xfs /testdata /testmount/
 
-# 2、终端2：再开一个终端，占用挂载点
+# 终端2：再开一个终端，占用挂载点
 [root@archlinux ~]# cd /testmount/
 
-# 3、终端1：执行卸载报错
+# 终端1：执行卸载报错
 [root@archlinux ~]# umount /testmount/
 umount: /testmount/: target is busy.
 
 # --------------------------------------------------------
+
 ```
 
 :::
