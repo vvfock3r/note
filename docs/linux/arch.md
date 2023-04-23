@@ -125,5 +125,16 @@ go version go1.18.5 linux/amd64
 #     IgnorePkg = thunderbird
 [root@archlinux ~]# vim /etc/pacman.conf
 IgnorePkg   = go
+
+# 更新测试
+[root@archlinux ~]# pacman -Syu
+:: Synchronizing package databases...
+ core is up to date
+ extra is up to date
+ community is up to date
+:: Starting full system upgrade...
+warning: go: ignoring package upgrade (2:1.18.5-1 => 2:1.20.3-1)
+ there is nothing to do
+[root@archlinux ~]# 
 ```
 
