@@ -1285,17 +1285,59 @@ a.txt
 # 测试1：当有进程占用时无法卸载
 
 # 终端1：挂载
-[root@archlinux ~]# mount -t xfs /testdata /testmount/
+[root@archlinux ~]# mount -t xfs /testdata /testmount
 
 # 终端2：再开一个终端，占用挂载点
-[root@archlinux ~]# cd /testmount/
+[root@archlinux ~]# cd /testmount
 
 # 终端1：执行卸载报错
-[root@archlinux ~]# umount /testmount/
+[root@archlinux ~]# umount /testmount
 umount: /testmount/: target is busy.
 
 # --------------------------------------------------------
 
+# 测试2：使用fuser找出占用的进程
+
+# 查看哪些进程正在占用, 342是进程的PID,c 表示进程正在访问该文件并拥有它（current access，当前访问）
+[root@archlinux ~]# fuser -m /testmount
+/testmount:            342c
+
+# 添加-v可以查看详细信息
+[root@archlinux ~]# fuser -mv /testmount
+                     USER        PID ACCESS COMMAND
+/testmount:          root     kernel mount /testmount
+                     root        342 ..c.. bash
+                     
+# 杀掉进程并卸载
+[root@archlinux ~]# fuser -k /testmount
+/testmount:            342c
+
+[root@archlinux ~]# umount /testmount
+
+# --------------------------------------------------------
+
+# 测试3：使用mount -l延迟卸载
+
+# 正常卸载失败
+[root@archlinux ~]# umount /testmount
+umount: /testmount: target is busy.
+
+# 使用延迟卸载
+[root@archlinux ~]# umount -l /testmount
+
+# 检查
+[root@archlinux ~]# mount | grep /testmount # 输出为空
+
+# 另一个终端还能正常写入
+[root@archlinux testmount]# seq 10 > 1.txt
+[root@archlinux testmount]# ll
+total 4
+-rw-r--r-- 1 root root 21 Apr 23 20:03 1.txt
+
+# 一旦进程不再占用挂载点将马上卸载
+[root@archlinux testmount]# cd
+[root@archlinux ~]# ls -l /testmount/
+total 0
 ```
 
 :::
