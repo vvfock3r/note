@@ -92,17 +92,24 @@ PermitRootLogin yes # 添加这行，否则输入密码也登陆不上去
 ```bash
 # 比如我要安装Go 1.18 版本
 
-# 查看当前Go版本
+# 1、查看当前Go版本
 [root@archlinux ~]# go version
 go version go1.20.3 linux/amd64
 
-# 找到1.18版本的地址并安装
+# 2、找到1.18版本的地址并安装
 # -U 安装指定软件包文件到系统中，并覆盖已安装的同名软件包，或安装新的软件包
 [root@archlinux ~]# pacman -U https://archive.archlinux.org/packages/g/go/go-2%3A1.18.5-1-x86_64.pkg.tar.zst
 
-# 再次查看当前Go版本
+# 3、再次查看当前Go版本
 [root@archlinux ~]# go version
 go version go1.18.5 linux/amd64
+
+# 其他
+# 1、对于曾经安装/下载过的包会缓存在系统内，也可以直接安装
+[root@archlinux ~]# du -sh /var/cache/pacman/pkg
+921M    /var/cache/pacman/pkg
+
+# 2、如果使用pacman -U下载特别慢的话，也可以在 手动下载，然后上传到Linux中进行安装
 
 # ------------------------------------------------------------------------------------------------------------
 
