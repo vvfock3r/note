@@ -650,14 +650,12 @@ func main() {
 
 	// 下面的代码运行在新的Namespace中
 
-	// 设置主机名
 	hostname := "mydocker-" + time.Now().Format(time.DateTime)
 	err := syscall.Sethostname([]byte(hostname))
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	// 执行命令
+	
 	cmd := exec.Command("bash")
 
 	cmd.Stdin = os.Stdin
