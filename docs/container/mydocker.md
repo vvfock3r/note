@@ -29,13 +29,24 @@
 
 ## NameSpace
 
-### 命名空间的不同类别
+### 查看指定进程的命名空间
 
 ::: details 点击查看详情
 
 ```bash
+# 以下方法都可以查看指定进程的命名空间
+# 	ls -lh /proc/<pid>/ns
+# 	lsns -p <pid>
+
+# 如果要查看当前进程的命名空间
+# 	ls -lh /proc/<pid>/ns
+# 	lsns -p <pid>
+
+# 其中有一个特殊的目录 /proc/self, 指的是当前进程本身
+# /proc/self 中的递增数字是由于每次访问 /proc/self 时都会重新解析符号链接，导致得到的目录名不同，实际上是不同的进程目录
+
 # CentOS 7: 6种
-[root@localhost ~]# ls -lh /proc/self/ns/
+[root@localhost ~]# ls -lh /proc/self/ns
 total 0
 lrwxrwxrwx. 1 root root 0 Apr 21 00:20 ipc -> ipc:[4026531839]
 lrwxrwxrwx. 1 root root 0 Apr 21 00:20 mnt -> mnt:[4026531840]
@@ -45,7 +56,7 @@ lrwxrwxrwx. 1 root root 0 Apr 21 00:20 user -> user:[4026531837]
 lrwxrwxrwx. 1 root root 0 Apr 21 00:20 uts -> uts:[4026531838]
 
 # Arch Linux: 8种（没有将xx_for_children计算在内）
-[root@archlinux ~]# ls -lh /proc/self/ns/
+[root@archlinux ~]# ls -lh /proc/self/ns
 total 0
 lrwxrwxrwx 1 root root 0 Apr 21 00:10 cgroup -> 'cgroup:[4026531835]'
 lrwxrwxrwx 1 root root 0 Apr 21 00:10 ipc -> 'ipc:[4026531839]'
@@ -68,7 +79,7 @@ lrwxrwxrwx 1 root root 0 Apr 21 00:10 uts -> 'uts:[4026531838]'
 
 <br />
 
-### 命名空间的数量限制
+### 查看命名空间的数量限制
 
 ::: details 点击查看详情
 
@@ -108,13 +119,15 @@ user.max_uts_namespaces=14998
 
 <br />
 
-### Docker如何处理用户命名空间
+### Docker和用户命名空间
 
 参考资料：[https://docs.docker.com/engine/security/userns-remap/](https://docs.docker.com/engine/security/userns-remap/)
 
 ::: details （1）为什么Docker如何处理【用户命名空间】？
 
 ```bash
+# 上面我们已经看到，有的系统默认命名空间最大数量限制为0，即不可以创建用户命名空间
+# 那么我还可以正常启动Docker容器吗？
 # 先让我们做一些测试和检查
 
 # 准备环境：随便启动一个容器
