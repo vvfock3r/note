@@ -39,11 +39,14 @@
 # 	lsns -p <pid>
 
 # 如果要查看当前进程的命名空间
-# 	ls -lh /proc/<pid>/ns
-# 	lsns -p <pid>
+# $$在Shell中会被解释成当前Shell的PID,在Shell外使用无效
+# 	ls -lh /proc/$$/ns
+# 	lsns -p $$
 
-# 其中有一个特殊的目录 /proc/self, 指的是当前进程本身
-# /proc/self 中的递增数字是由于每次访问 /proc/self 时都会重新解析符号链接，导致得到的目录名不同，实际上是不同的进程目录
+# 一个特殊的目录
+# 	/proc/self 它是一个符号链接，指向的当前进程的进程号目录
+# 	/proc/self 链接到一个数字目录, 每次查看他都会递增(重新解析符号链接)，但实际上并不影响我们操作
+#   ls -lh /proc/self/ns 便可以查看当前进程的命名空间，这样做的优点是可以不用知道PID
 
 # CentOS 7: 6种
 [root@localhost ~]# ls -lh /proc/self/ns
