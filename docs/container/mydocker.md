@@ -73,9 +73,8 @@ lrwxrwxrwx 1 root root 0 Apr 21 00:10 user -> 'user:[4026531837]'
 lrwxrwxrwx 1 root root 0 Apr 21 00:10 uts -> 'uts:[4026531838]'
 
 # 分析
-# 1、ls -lh /proc/self/ns/ 列出当前进程的所有命名空间
-# 2、多出来的两种是cgroup_namespaces和time_namespaces,这两种命名空间是由高版本的Linux kernel提供的
-# 3、4026531839 这种数字代表一个系统级别的唯一标识符，可以用于在不同进程之间共享相同的命名空间
+# 1、多出来的两种是cgroup_namespaces和time_namespaces,这两种命名空间是由高版本的Linux kernel提供的
+# 2、4026531839 这种数字代表一个系统级别的唯一标识符，可以用于在不同进程之间共享相同的命名空间
 ```
 
 :::
