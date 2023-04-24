@@ -1724,7 +1724,132 @@ total 0
 
 <br />
 
-### Mount（下）：隔离/proc
+### Mount（下）：隔离系统
+
+::: details （1）使用 Shell
+
+:::
+
+::: details （2）使用 Go 
+
+```go
+package main
+
+import (
+	"golang.org/x/sys/unix"
+	"log"
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	// 第一次启动,设置Namespace,然后程序调用自身
+	if os.Args[0] != "/proc/self/exe" {
+		cmd := &exec.Cmd{
+			Path: "/proc/self/exe",
+			Args: append([]string{"/proc/self/exe"}, os.Args[1:]...),
+			SysProcAttr: &syscall.SysProcAttr{
+				Pdeathsig:  unix.SIGTERM,
+				Cloneflags: syscall.CLONE_NEWNS,
+			},
+		}
+
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			log.Fatalln(err)
+		}
+		os.Exit(0)
+	}
+
+	// 下面的代码运行在新的Namespace中
+
+	// 设置根为 private,否则会报错：invalid argument
+	err := syscall.Mount("/", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用的准备工作: 定义变量
+	newroot := "/root/rootfs"
+	putold := "/root/rootfs/.old/"
+
+	// pivot_root调用的准备工作: newroot 先挂载一次
+	err = syscall.Mount(newroot, newroot, "", syscall.MS_BIND|syscall.MS_REC, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用
+	err = syscall.PivotRoot(newroot, putold)
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用清理工作：卸载老的根
+	err = syscall.Unmount("/.old", syscall.MNT_DETACH)
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用清理工作：删除临时文件夹
+
+	// 切换根
+	err = syscall.Chdir("/")
+	if err != nil {
+		panic(err)
+	}
+
+	// 挂载 /proc
+	err = syscall.Mount("proc", "/proc", "proc", syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// 挂载 /tmpfs
+	err = syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+	if err != nil {
+		panic(err)
+	}
+
+	cmd := exec.Command("/bin/sh")
+	cmd.Dir = "/root"
+	cmd.Env = []string{"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"}
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 准备工作
+[root@archlinux ~]# wget http://dl-cdn.alpinelinux.org/alpine/v3.9/releases/x86_64/alpine-minirootfs-3.9.3-x86_64.tar.gz
+[root@archlinux ~]# mkdir rootfs
+[root@archlinux ~]# tar zxf alpine-minirootfs-3.9.3-x86_64.tar.gz  -C rootfs/
+[root@archlinux ~]# mkdir -p rootfs/.old
+
+# 然后再执行代码
+~ # mount
+/dev/sda2 on / type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev type tmpfs (rw,nosuid,mode=755,inode64)
+```
+
+:::
 
 <br />
 
