@@ -258,7 +258,55 @@ docker: Error response from daemon: failed to create shim task: OCI runtime crea
 
 ### UTS
 
-::: details （1）第一个测试
+::: details （1）使用Shell隔离UTS命名空间
+
+```bash
+# 查看当前Shell的Namespace
+[root@archlinux ~]# ls -l --color /proc/self/ns
+total 0
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 cgroup -> 'cgroup:[4026531835]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 ipc -> 'ipc:[4026531839]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 mnt -> 'mnt:[4026531841]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 net -> 'net:[4026531840]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 pid -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 pid_for_children -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 time -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 time_for_children -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 user -> 'user:[4026531837]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:12 uts -> 'uts:[4026531838]'
+
+# unshare可以在一个隔离的Namespace中启动进程
+[root@archlinux ~]# unshare --uts bash
+
+# 查看当前Shell的Namespace
+[root@archlinux ~]# ls -l --color /proc/self/ns
+total 0
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 cgroup -> 'cgroup:[4026531835]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 ipc -> 'ipc:[4026531839]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 mnt -> 'mnt:[4026531841]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 net -> 'net:[4026531840]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 pid -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 pid_for_children -> 'pid:[4026531836]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 time -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 time_for_children -> 'time:[4026531834]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 user -> 'user:[4026531837]'
+lrwxrwxrwx 1 root root 0 Apr 24 19:13 uts -> 'uts:[4026532627]'         # 这里发生变化
+
+# 在隔离UTS的Shell中修改主机名
+[root@archlinux ~]# hostname test
+[root@archlinux ~]# hostname
+test
+
+# 退出隔离UTS的Shell，再次查看主机名
+[root@archlinux ~]# exit
+exit
+[root@archlinux ~]# hostname
+archlinux
+```
+
+:::
+
+::: details （2）使用Go隔离UTS命名空间：基础示例
 
 ```go
 package main
@@ -302,12 +350,12 @@ archlinux
 
 :::
 
-::: details （2）探索如何在代码中修改主机名：遇到问题
+::: details （3）使用Go隔离UTS命名空间：如何修改主机名：遇到问题
 
 分析一下：
 
 * 修改主机名使用 `syscall.Sethostname` 函数
-* 修改主机名必须要在【UTS命名空间创建之后】，并且在【进程启动之前】
+* 修改主机名必须要在【UTS命名空间创建之后】，并且在【进程启动之前】，否则进程会获取到错误的主机名
 * Go并没有单独提供创建命名空间的函数，启动进程和创建命名空间是绑定在一起的
 * cmd.Run() 可以拆分为 cmd.Start() 和 cmd.Wait()，能不能在这俩函数之间搞点事情？
 
