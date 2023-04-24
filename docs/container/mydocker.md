@@ -125,18 +125,18 @@ user.max_uts_namespaces=14998
 
 参考资料：[https://docs.docker.com/engine/security/userns-remap/](https://docs.docker.com/engine/security/userns-remap/)
 
-::: details （1）为什么Docker如何处理【用户命名空间】？
+::: details （1）max_user_namespaces为0时，使用Docker可以正常启动容器吗？
 
 ```bash
 # 上面我们已经看到，有的系统默认命名空间最大数量限制为0，即不可以创建用户命名空间
 # 那么我还可以正常启动Docker容器吗？
 # 先让我们做一些测试和检查
 
-# 准备环境：随便启动一个容器
+# 准备环境：随便启动一个容器，启动成功
 [root@localhost ~]# docker run --name test -it --rm  busybox:latest sh
 
 # --------------------------------------------------------------------------------------------
-# 第一次验证
+# 第一次验证：看看Docker都隔离了哪些命名空间
 
 # 宿主机执行
 [root@localhost ~]# ls -lh /proc/self/ns/
@@ -160,15 +160,15 @@ lrwxrwxrwx    1 root     root           0 Apr 21 01:23 user -> user:[4026531837]
 lrwxrwxrwx    1 root     root           0 Apr 21 01:23 uts -> uts:[4026532506]
 
 # --------------------------------------------------------------------------------------------
-# 第二次验证
+# 第二次验证：看看Docker都隔离了哪些命名空间
+
 [root@localhost ~]# docker container inspect test | grep -i pid
             "Pid": 2910,
             "PidMode": "",
             "PidsLimit": null,
 
-[root@localhost ~]# lsns
+[root@localhost ~]# lsns -p 2910
         NS TYPE  NPROCS   PID USER    COMMAND
-...
 4026532505 mnt        1  2910 root    sh
 4026532506 uts        1  2910 root    sh
 4026532507 ipc        1  2910 root    sh
@@ -176,6 +176,7 @@ lrwxrwxrwx    1 root     root           0 Apr 21 01:23 uts -> uts:[4026532506]
 4026532510 net        1  2910 root    sh
 
 # --------------------------------------------------------------------------------------------
+
 # 总结：Docker没有隔离用户命名空间，自然就不受/proc/sys/user/max_user_namespaces的限制
 ```
 
@@ -626,7 +627,7 @@ archlinux
 
 :::
 
-::: details （4）探索如何在代码中修改主机名：优化代码，目前比较完美
+::: details （4）探索如何在代码中修改主机名：优化代码
 
 ```go
 package main
