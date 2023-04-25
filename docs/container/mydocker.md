@@ -1336,7 +1336,7 @@ exit
 
 说明：使用 `man 2 mount` 可以查看参数说明
 
-::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（挂载一个目录到另一个目录中）
+::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（可以将文件/目录/挂载点作为挂载源）
 
 ```go
 package main
