@@ -129,12 +129,16 @@ export default defineUserConfig({
         sidebar: 'auto',
         // 侧边栏显示所有标题的深度，默认为2，即只显示1级标题和2级标题
         sidebarDepth: 3,
+		// 设置Logo
+		logo: '/logo.png',
     }),
-
+	title: "",
     lang: 'zh-CN',
-    title: 'My Online Notes',
     description: '打怪升级之旅~',
-    head: [['link', {rel: 'icon', href: 'favicon.png'}]],
+    head: [
+		['link', {rel: 'icon', href: 'favicon.png'}],
+		['html', { lang: 'zh-CN' }],
+	],
 
     // 插件配置
     plugins: [
