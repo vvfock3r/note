@@ -1111,10 +1111,7 @@ removed '/tmp/1.txt'
 注意事项：
 
 * Mount操作非常非常容易报错，而且错误信息不直观
-
-* 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，
-
-  因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
+* 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
 
 * 使用`man 2 mount` 和 `man umount2` 查看相关文档
 
@@ -1247,6 +1244,7 @@ func main() {
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+    cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1319,15 +1317,14 @@ func main() {
 /dev/loop0: [2050]:1776699 (/testdata)
 
 # 修改Go代码，将 /testdata 修改为 /dev/loop0，然后再次执行代码
-# 输出结果
-[root@archlinux sources-aDE4u1wEOF]# df -hT
+[root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
 /dev/loop0     xfs       960M   39M  922M   5% /testmount
 
 # 退出Shell，可使用Ctrl+D 或者 exit，不要直接在GoLand点Stop按钮，这会导致卸载操作不能执行
 # 检查是否正常卸载，输出为空代表正常
-[root@archlinux sources-aDE4u1wEOF] # 按下Ctrl+D
+[root@archlinux ~]# 按下Ctrl+D
 exit
 [root@archlinux ~]# mount | grep  /testmount
 ```
@@ -1352,11 +1349,13 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个Mount命名空间
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1367,28 +1366,28 @@ func main() {
 
 	// 定义变量
 	source := "/a"
-	mountpoint := "/b"
+	target := "/b"
 
 	// 执行挂载操作，部分挂载选项如下：
 	// syscall.MS_RDONLY      	只读挂载，即无法在挂载点中进行写入操作
 	// syscall.MS_NOEXEC      	用于禁止在挂载点中执行可执行文件
 	// syscall.MS_REMOUNT     	重新挂载,要求提前已经挂载，不改变挂载参数
 	// syscall.MS_BIND			挂载一个目录到另一个目录中
-	err := syscall.Mount(source, mountpoint, "", syscall.MS_BIND, "")
+	err := syscall.Mount(source, target, "", syscall.MS_BIND, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
 
 	// 卸载
 	defer func() {
-		err := syscall.Unmount(mountpoint, 0)
+		err := syscall.Unmount(target, 0)
 		if err != nil {
 			log.Fatalln("umount error: ", err.Error())
 		}
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1401,18 +1400,20 @@ func main() {
 [root@archlinux ~]# touch /a/a.txt /b/b.txt
 
 # 执行代码后操作
-[root@archlinux sources-YaY9CmsQj6]# mount |grep -E '/a\b'
-[root@archlinux sources-YaY9CmsQj6]# mount |grep -E '/b\b'
+[root@archlinux ~]# mount |grep -E '/a\b'
+[root@archlinux ~]# mount |grep -E '/b\b'
 /dev/sda2 on /b type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
 # 查看数据
-[root@archlinux sources-YaY9CmsQj6]# ls /a
+[root@archlinux ~]# ls /a
 a.txt
-[root@archlinux sources-YaY9CmsQj6]# ls /b
+[root@archlinux ~]# ls /b
 a.txt
 ```
 
 :::
+
+<br />
 
 ### Mount（中）：卸载参数
 
@@ -1427,7 +1428,7 @@ a.txt
 # 终端2：再开一个终端，占用挂载点
 [root@archlinux ~]# cd /testmount
 
-# 终端1：执行卸载报错
+# 终端1：卸载报错
 [root@archlinux ~]# umount /testmount
 umount: /testmount/: target is busy.
 
@@ -1494,11 +1495,13 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个Mount命名空间
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1509,10 +1512,10 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	mountpoint := "/testmount"
+	target := "/testmount"
 
 	// 挂载
-	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	err := syscall.Mount(source, target, "xfs", 0, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
@@ -1522,13 +1525,14 @@ func main() {
 		for {
 			// syscall.MNT_FORCE
 			// 	1、根据字面意思是强制卸载
-			//	2、即使是强制卸载，也有可能卸载失败，比如 有进程在占用时会报错 device or resource busy
+			//	2、即使是强制卸载，也有可能卸载失败
+			//	  比如有进程在占用时会报错 device or resource busy
 			//  3、强制卸载有损害数据的风险，慎用
-			err := syscall.Unmount(mountpoint, syscall.MNT_FORCE)
+			err := syscall.Unmount(target, syscall.MNT_FORCE)
 			if err != nil {
-				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+				log.Printf("unmount error: %s: %s\n", target, err.Error())
 			} else {
-				log.Printf("unmount success: %s\n", mountpoint)
+				log.Printf("unmount success: %s\n", target)
 				break
 			}
 			time.Sleep(time.Second)
@@ -1536,7 +1540,7 @@ func main() {
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1544,21 +1548,24 @@ func main() {
 输出结果
 
 ```bash
-# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
-[root@archlinux ~]# cd /testmount/
-[root@archlinux testmount]# 
+# 执行代码
+[root@archlinux ~]#
 
-# 执行程序输出
-[root@archlinux sources-EfwA46P2j0]# 
-exit
-2023/04/22 18:25:59 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:00 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:01 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:02 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:03 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:04 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:05 unmount error: /testmount: device or resource busy
-2023/04/22 18:26:06 unmount error: /testmount: device or resource busy
+# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
+[root@archlinux ~]# cd /testmount
+
+# Ctrl+D退出进程
+2023/04/25 15:10:03 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:04 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:05 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:06 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:07 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:08 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:09 unmount error: /testmount: device or resource busy
+
+# 此时另一个终端切换到其他目录中，观察是否可以卸载成功
+2023/04/25 15:10:42 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:43 unmount success: /testmount
 ```
 
 :::
@@ -1578,11 +1585,13 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个Mount命名空间
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1593,10 +1602,10 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	mountpoint := "/testmount"
+	target := "/testmount"
 
 	// 挂载
-	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	err := syscall.Mount(source, target, "xfs", 0, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
@@ -1605,11 +1614,11 @@ func main() {
 	defer func() {
 		for {
 			// syscall.MNT_DETACH
-			err := syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+			err := syscall.Unmount(target, syscall.MNT_DETACH)
 			if err != nil {
-				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+				log.Printf("unmount error: %s: %s\n", target, err.Error())
 			} else {
-				log.Printf("unmount success: %s\n", mountpoint)
+				log.Printf("unmount success: %s\n", target)
 				break
 			}
 			time.Sleep(time.Second)
@@ -1617,7 +1626,7 @@ func main() {
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1625,9 +1634,27 @@ func main() {
 输出结果
 
 ```bash
-[root@archlinux sources-EmYxsBubUu]# 
+# 执行代码
+[root@archlinux ~]#
+
+# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
+[root@archlinux ~]# cd /testmount
+
+# Ctrl+D退出进程，直接就能卸载成功
+[root@archlinux ~]# 
 exit
-2023/04/22 18:34:47 unmount success: /testmount
+2023/04/25 15:13:18 unmount success: /testmount
+
+# mount查看也表示卸载成功
+[root@archlinux testmount]# mount | grep test
+
+# 但实际上之前占用的进程还能正常写入数据
+[root@archlinux testmount]# seq 10 > 1.txt
+
+# 切换到其他目录，此时系统才会真正卸载，查看一下目录为空
+[root@archlinux testmount]# cd
+[root@archlinux ~]# ls -l /testmount
+total 0
 ```
 
 :::
@@ -1647,11 +1674,13 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个Mount命名空间
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1662,10 +1691,10 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	mountpoint := "/testmount"
+	target := "/testmount"
 
 	// 挂载
-	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	err := syscall.Mount(source, target, "xfs", 0, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
@@ -1678,15 +1707,15 @@ func main() {
 			// 	2、当操作系统检测到一个挂载点被标记为"过期"时，它将尝试卸载该挂载点
 			// 	3、所以说syscall.MNT_EXPIRE并不会立即卸载挂载点
 			//  4、注意：它不能和 syscall.MNT_FORCE 或 syscall.MNT_DETACH 共同使用
-            //  5、注意：并非所有的文件系统都支持此选项,其他文件系统还需要测试
+			//  5、注意：并非所有的文件系统都支持此选项,其他文件系统还需要测试
 			// 测试结果
 			// 	1、第一次调用时总会报错 resource temporarily unavailable
 			//  2、然后休眠1秒再次调用就会成功
-			err := syscall.Unmount(mountpoint, syscall.MNT_EXPIRE)
+			err := syscall.Unmount(target, syscall.MNT_EXPIRE)
 			if err != nil {
-				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
+				log.Printf("unmount error: %s: %s\n", target, err.Error())
 			} else {
-				log.Printf("unmount success: %s\n", mountpoint)
+				log.Printf("unmount success: %s\n", target)
 				break
 			}
 			time.Sleep(time.Second)
@@ -1694,7 +1723,7 @@ func main() {
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1702,10 +1731,10 @@ func main() {
 输出结果
 
 ```bash
-[root@archlinux sources-ICr1FiqkTj]# 
+[root@archlinux ~]# 
 exit
-2023/04/22 18:16:41 unmount error: /testmount: resource temporarily unavailable
-2023/04/22 18:16:42 unmount success: /testmount
+2023/04/25 15:18:08 unmount error: /testmount: resource temporarily unavailable
+2023/04/25 15:18:09 unmount success: /testmount
 ```
 
 :::
