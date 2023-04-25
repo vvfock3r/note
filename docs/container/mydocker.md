@@ -1172,58 +1172,62 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 /dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
     
 # 2、将文件与 loop设备关联起来
-[root@archlinux ~]# dd if=/dev/zero of=testdemo bs=1M count=512   # 随便创建一个文件,不要太小
+[root@archlinux ~]# dd if=/dev/zero of=/testdemo bs=1M count=512   # 随便创建一个文件,不要太小
 512+0 records in
 512+0 records out
 536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
-[root@archlinux ~]# losetup /dev/loop1 testdemo                   # 将文件和loop设备关联
+[root@archlinux ~]# losetup /dev/loop1 /testdemo                   # 将文件和loop设备关联
     
 # 3、查看loop设备和文件的关联
 [root@archlinux ~]# losetup -a
-/dev/loop1: [2050]:537831655 (/root/testdemo)
+/dev/loop1: [2050]:977000 (/testdemo)
 /dev/loop0: [2050]:1776699 (/testdata)
     
 # 4、将文件格式化一下，然后随便找个目录挂载上去
-[root@archlinux ~]# mkfs -t xfs testdemo
-[root@archlinux ~]# mkdir testmount
-[root@archlinux ~]# mount -t xfs /dev/loop1 testmount      # 挂载文件或块设备都可以
+[root@archlinux ~]# mkfs -t xfs /testdemo
+[root@archlinux ~]# mkdir /testmount2
+[root@archlinux ~]# mount -t xfs /dev/loop1 /testmount2      # 挂载文件或块设备都可以
 	
 # 5、查看挂载
 [root@archlinux ~]# mount -l | grep test
 /testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-/dev/loop1 on /root/testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+/dev/loop1 on /testmount2 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
     
 [root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
 /dev/loop0     xfs       960M   39M  922M   5% /testmount
-/dev/loop1     xfs       448M   29M  420M   7% /root/testmount
+/dev/loop1     xfs       448M   29M  420M   7% /testmount2
 
 # 6、释放块设备
 # 语法：losetup -d /dev/loopN
-	
-#-------------------------------------------------------------------------------------------------
-
-# 清理测试环境
-[root@archlinux ~]# umount /root/testmount
-[root@archlinux ~]# rm -rf testdemo testmount
-
-[root@archlinux ~]# losetup -a
-/dev/loop1: [2050]:537831655 (/root/testdemo (deleted))
-/dev/loop0: [2050]:1776699 (/testdata)
-
-[root@archlinux ~]# losetup -f              #  查看可用的块设备，并不是/dev/loop1
-/dev/loop2
-
-[root@archlinux ~]# losetup -d /dev/loop1   # 释放块设备
-
-[root@archlinux ~]# losetup -f              #  再次查看可用的块设备
-/dev/loop1
 ```
 
 :::
 
-::: details （2）Go Mount示例：执行挂载报错：block device required
+::: details （3）Linux mount命令：清理测试环境
+
+```bash
+# 卸载
+[root@archlinux ~]# umount /testmount /testmount2
+
+# 删除挂载点目录
+[root@archlinux ~]# rm -rf /testmount /testmount2
+
+# 删除文件系统
+[root@archlinux ~]# rm -rf /testdata /testdemo
+
+# 释放块设备
+[root@archlinux ~]# losetup -d /dev/loop1
+
+#  查看可用的块设备，返回/dev/loop0 代表正常
+[root@archlinux ~]# losetup -f
+/dev/loop0
+```
+
+:::
+
+::: details （4）Go Mount示例：执行挂载报错：block device required
 
 ```go
 package main
@@ -1283,11 +1287,7 @@ func main() {
 输出结果
 
 ```bash
-# 1、先把之前的卸载
-[root@archlinux ~]# umount /testdata
-[root@archlinux ~]# losetup -a       # 输出为空
-
-# 2、执行代码,报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
+# 执行代码,报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
 2023/04/22 10:42:48 mount error: block device required
 ```
 
