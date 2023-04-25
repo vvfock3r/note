@@ -1122,16 +1122,16 @@ removed '/tmp/1.txt'
 
 ```bash
 # 创建一个空目录,用作挂载点
-[root@archlinux ~]# mkdir /testmount
+[root@archlinux ~]# mkdir /testmount1
 
 # 创建一个文件,用作挂在设备
-[root@archlinux ~]# dd if=/dev/zero of=/testdata bs=1M count=1024
+[root@archlinux ~]# dd if=/dev/zero of=/testdata1 bs=1M count=1024
 1024+0 records in
 1024+0 records out
 1073741824 bytes (1.1 GB, 1.0 GiB) copied, 5.70406 s, 188 MB/s
 
 # 设备格式化为xfs文件系统
-[root@archlinux ~]# mkfs -t xfs /testdata
+[root@archlinux ~]# mkfs -t xfs /testdata1
 meta-data=/testdata              isize=512    agcount=4, agsize=65536 blks
          =                       sectsz=512   attr=2, projid32bit=1
          =                       crc=1        finobt=1, sparse=1, rmapbt=0
@@ -1144,20 +1144,20 @@ log      =internal log           bsize=4096   blocks=16384, version=2
 realtime =none                   extsz=4096   blocks=0, rtextents=0
 
 # 挂载测试
-[root@archlinux ~]# mount -t xfs /testdata /testmount
+[root@archlinux ~]# mount -t xfs /testdata1 /testmount1
 
 # 查看挂载点
 [root@archlinux ~]# mount -l | grep test
-/testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+/testdata1 on /testmount1 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
 # 使用df查看
 [root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
-/dev/loop0     xfs      1014M   33M  982M   4% /testmount # 注意看，这里并不是/testdata，而是/dev/loop0
+/dev/loop0     xfs      1014M   33M  982M   4% /testmount1 # 注意看，这里并不是/testdata1，而是/dev/loop0
 
 # 所以这里引出了第一个知识点
-# /testdata是一个文件，/dev/loop0是一个块设备，那么文件和块设备的关系是怎么样的？
+# /testdata1是一个文件，/dev/loop0是一个块设备，那么文件和块设备的关系是怎么样的？
 ```
 
 :::
@@ -1172,31 +1172,31 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 /dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
     
 # 2、将文件与 loop设备关联起来
-[root@archlinux ~]# dd if=/dev/zero of=/testdemo bs=1M count=512   # 随便创建一个文件,不要太小
+[root@archlinux ~]# dd if=/dev/zero of=/testdata2 bs=1M count=512   # 随便创建一个文件,不要太小
 512+0 records in
 512+0 records out
 536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
-[root@archlinux ~]# losetup /dev/loop1 /testdemo                   # 将文件和loop设备关联
+[root@archlinux ~]# losetup /dev/loop1 /testdata2                   # 将文件和loop设备关联
     
 # 3、查看loop设备和文件的关联
 [root@archlinux ~]# losetup -a
-/dev/loop1: [2050]:977000 (/testdemo)
-/dev/loop0: [2050]:1776699 (/testdata)
+/dev/loop1: [2050]:977000 (/testdata2)
+/dev/loop0: [2050]:1776699 (/testdata1)
     
 # 4、将文件格式化一下，然后随便找个目录挂载上去
-[root@archlinux ~]# mkfs -t xfs /testdemo
+[root@archlinux ~]# mkfs -t xfs /testdata2
 [root@archlinux ~]# mkdir /testmount2
 [root@archlinux ~]# mount -t xfs /dev/loop1 /testmount2      # 挂载文件或块设备都可以
 	
 # 5、查看挂载
 [root@archlinux ~]# mount -l | grep test
-/testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+/dev/loop0 on /testmount1 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 /dev/loop1 on /testmount2 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
     
 [root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
-/dev/loop0     xfs       960M   39M  922M   5% /testmount
+/dev/loop0     xfs       960M   39M  922M   5% /testmount1
 /dev/loop1     xfs       448M   29M  420M   7% /testmount2
 
 # 6、释放块设备
@@ -1209,13 +1209,13 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 
 ```bash
 # 卸载
-[root@archlinux ~]# umount /testmount /testmount2
+[root@archlinux ~]# umount /testmount1 /testmount2
 
 # 删除挂载点目录
-[root@archlinux ~]# rm -rf /testmount /testmount2
+[root@archlinux ~]# rm -rf /testmount1 /testmount2
 
 # 删除文件系统
-[root@archlinux ~]# rm -rf /testdata /testdemo
+[root@archlinux ~]# rm -rf /testdata1 /testdata2
 
 # 释放块设备
 [root@archlinux ~]# losetup -d /dev/loop1
@@ -1241,6 +1241,7 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个Mount命名空间
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
@@ -1265,7 +1266,7 @@ func main() {
 	// 	fstype string	文件系统类型，比如ext4、xfs、ntfs 等
 	// 	flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
 	// 	data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
-	err := syscall.Mount(source, mountpoint, "xfs", uintptr(0), "")
+	err := syscall.Mount(source, mountpoint, "xfs", 0, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
@@ -1279,7 +1280,7 @@ func main() {
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1287,7 +1288,17 @@ func main() {
 输出结果
 
 ```bash
-# 执行代码,报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
+# 创建一个空目录,用作挂载点
+[root@archlinux ~]# mkdir /testmount
+
+# 创建一个文件,用作挂在设备
+[root@archlinux ~]# dd if=/dev/zero of=/testdata bs=1M count=1024
+
+# 设备格式化为xfs文件系统
+[root@archlinux ~]# mkfs -t xfs /testdata
+
+# 执行代码
+# 报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
 2023/04/22 10:42:48 mount error: block device required
 ```
 
