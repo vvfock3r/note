@@ -1257,7 +1257,7 @@ func main() {
 
 	// 定义变量
 	source := "/testdata"
-	mountpoint := "/testmount"
+	target := "/testmount"
 
 	// 挂载
 	// 参数说明
@@ -1266,14 +1266,14 @@ func main() {
 	// 	fstype string	文件系统类型，比如ext4、xfs、ntfs 等
 	// 	flags uintptr	挂载选项，可以使用 syscall.MS_* 常量指定选项，uintptr(0)代表不添加任何选项
 	// 	data string		特定的挂载选项，通常是指定一些特殊选项的参数，例如 NFSv3 中的 proto=tcp,port=2049
-	err := syscall.Mount(source, mountpoint, "xfs", 0, "")
+	err := syscall.Mount(source, target, "xfs", 0, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
 
 	// 卸载
 	defer func() {
-		err := syscall.Unmount(mountpoint, 0)
+		err := syscall.Unmount(target, 0)
 		if err != nil {
 			log.Fatalf("unmount error: %s\n", err.Error())
 		}
@@ -1304,7 +1304,7 @@ func main() {
 
 :::
 
-::: details （3）Go Mount示例：修复挂载报错
+::: details （5）Go Mount示例：修复挂载报错
 
 ```bash
 # 检查一下可用的块设备
@@ -1416,7 +1416,7 @@ a.txt
 
 ### Mount（中）：卸载参数
 
-::: details unmount和fuser命令
+::: details umount和fuser命令
 
 ```bash
 # 测试1：当有进程占用时无法卸载
@@ -1604,10 +1604,7 @@ func main() {
 	// 卸载
 	defer func() {
 		for {
-			// syscall.MNT_FORCE
-			// 	1、根据字面意思是强制卸载
-			//	2、即使是强制卸载，也有可能卸载失败，比如 有进程在占用时会报错 device or resource busy
-			//  3、强制卸载有损害数据的风险，慎用
+			// syscall.MNT_DETACH
 			err := syscall.Unmount(mountpoint, syscall.MNT_DETACH)
 			if err != nil {
 				log.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
