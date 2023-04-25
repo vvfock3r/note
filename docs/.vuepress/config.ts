@@ -135,10 +135,7 @@ export default defineUserConfig({
 	title: "",
     lang: 'zh-CN',
     description: '打怪升级之旅~',
-    head: [
-		['link', {rel: 'icon', href: 'favicon.png'}],
-		['html', { lang: 'zh-CN' }],
-	],
+    head: [['link', {rel: 'icon', href: 'favicon.png'}]],
 
     // 插件配置
     plugins: [
