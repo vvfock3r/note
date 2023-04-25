@@ -1336,7 +1336,7 @@ exit
 
 说明：使用 `man 2 mount` 可以查看参数说明
 
-::: details （1）Mount选项：syscall.MS_BIND：挂载一个目录到另一个目录中
+::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（挂载一个目录到另一个目录中）
 
 ```go
 package main
@@ -1429,23 +1429,23 @@ d41d8cd98f00b204e9800998ecf8427e  /target/source.txt
 
 :::
 
-::: details （2）Mount选项：syscall.MS_SHARED：共享传播类型
+::: details （2）Mount选项：syscall.MS_SHARED：共享传播类型（双向传播）
 
 :::
 
-::: details （3）Mount选项：syscall.MS_PRIVATE：私有传播类型
+::: details （4）Mount选项：syscall.MS_SLAVE：共享传播类型（单向传播，Master修改Slave也会修改，反过来就不行了）
 
 :::
 
-::: details （4）Mount选项：syscall.MS_SLAVE：
+::: details （3）Mount选项：syscall.MS_PRIVATE：私有传播类型（可以作为bind mount的源）
 
 :::
 
-::: details （5）Mount选项：syscall.MS_UNBINDABLE：
+::: details （5）Mount选项：syscall.MS_UNBINDABLE：私有传播类型（不能作为bind mount的源）
 
 :::
 
-::: details （6）Mount选项：syscall.MS_REC：常与目录挂载或传播模式结合，用于递归设置
+::: details （6）Mount选项：syscall.MS_REC：常与 绑定挂载 或 传播类型 相结合，用于递归设置
 
 :::
 
