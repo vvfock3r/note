@@ -1345,6 +1345,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 )
 
@@ -1366,15 +1367,32 @@ func main() {
 	}
 
 	// 定义变量
-	source := "/a"
-	target := "/b"
+	source := "/source"
+	target := "/target"
 
-	// 执行挂载操作，部分挂载选项如下：
-	// syscall.MS_RDONLY      	只读挂载，即无法在挂载点中进行写入操作
-	// syscall.MS_NOEXEC      	用于禁止在挂载点中执行可执行文件
-	// syscall.MS_REMOUNT     	重新挂载,要求提前已经挂载，不改变挂载参数
-	// syscall.MS_BIND			挂载一个目录到另一个目录中
-	err := syscall.Mount(source, target, "", syscall.MS_BIND, "")
+	// 初始化目录
+	err := os.MkdirAll(source, 0700)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.MkdirAll(target, 0700)
+	if err != nil {
+		panic(err)
+	}
+
+	// 目录中写点内容
+	err = os.WriteFile(filepath.Join(source, "source.txt"), []byte{}, 0700)
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filepath.Join(target, "target.txt"), []byte{}, 0700)
+	if err != nil {
+		panic(err)
+	}
+
+	// 执行挂载操作: 绑定挂载,将一个目录挂载到另一个目录中
+	err = syscall.Mount(source, target, "", syscall.MS_BIND, "")
 	if err != nil {
 		log.Fatalf("mount error: %s\n", err.Error())
 	}
@@ -1396,21 +1414,38 @@ func main() {
 输出结果
 
 ```bash
-# 执行代码前
-[root@archlinux ~]# mkdir /a /b
-[root@archlinux ~]# touch /a/a.txt /b/b.txt
+# 进程内查看挂载
+[root@archlinux ~]# mount |grep -E '/target\b'                 
+/dev/sda2 on /target type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
-# 执行代码后操作
-[root@archlinux ~]# mount |grep -E '/a\b'
-[root@archlinux ~]# mount |grep -E '/b\b'
-/dev/sda2 on /b type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+# 宿主机上查看挂载,输出为空,因为隔离了Mount命名空间
+[root@archlinux ~]# mount |grep -E '/source\b'
 
 # 查看数据
-[root@archlinux ~]# ls /a
-a.txt
-[root@archlinux ~]# ls /b
-a.txt
+[root@archlinux ~]# md5sum /{source,target}/*
+d41d8cd98f00b204e9800998ecf8427e  /source/source.txt
+d41d8cd98f00b204e9800998ecf8427e  /target/source.txt
 ```
+
+:::
+
+::: details （2）Mount选项：syscall.MS_SHARED：共享传播类型
+
+:::
+
+::: details （3）Mount选项：syscall.MS_PRIVATE：私有传播类型
+
+:::
+
+::: details （4）Mount选项：syscall.MS_SLAVE：
+
+:::
+
+::: details （5）Mount选项：syscall.MS_UNBINDABLE：
+
+:::
+
+::: details （6）Mount选项：syscall.MS_REC：常与目录挂载或传播模式结合，用于递归设置
 
 :::
 
@@ -1908,11 +1943,11 @@ proc on /proc type proc (rw,relatime)
 package main
 
 import (
-	"golang.org/x/sys/unix"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 func main() {
@@ -1925,14 +1960,14 @@ func main() {
 				Pdeathsig:  unix.SIGTERM,
 				Cloneflags: syscall.CLONE_NEWNS,
 			},
+			Dir:    "/root",
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
 		}
 
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
 		if err := cmd.Run(); err != nil {
-			log.Fatalln(err)
+			panic(err)
 		}
 		os.Exit(0)
 	}
@@ -1940,67 +1975,74 @@ func main() {
 	// 下面的代码运行在新的Namespace中
 
 	// 设置根为 private,否则会报错：invalid argument
+	// syscall.MS_PRIVATE	?
+	// syscall.MS_REC		?
 	err := syscall.Mount("/", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
 	if err != nil {
 		panic(err)
 	}
 
-	// pivot_root调用的准备工作: 定义变量
-	newroot := "/root/rootfs"
-	putold := "/root/rootfs/.old/"
+	// pivot_root调用: 准备工作: 定义变量
+	newroot := "rootfs"
+	putold := "rootfs/.putold"
 
-	// pivot_root调用的准备工作: newroot 先挂载一次
-	err = syscall.Mount(newroot, newroot, "", syscall.MS_BIND|syscall.MS_REC, "")
+	// pivot_root调用: 准备工作: 创建putold目录
+	err = os.MkdirAll(putold, 0700)
 	if err != nil {
 		panic(err)
 	}
 
-	// pivot_root调用
+	// pivot_root调用: 准备工作: 先挂载一次 newroot
+	// |syscall.MS_REC?
+	err = syscall.Mount(newroot, newroot, "", syscall.MS_BIND, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用: 执行调用
 	err = syscall.PivotRoot(newroot, putold)
 	if err != nil {
 		panic(err)
 	}
 
-	// pivot_root调用清理工作：卸载老的根
-	err = syscall.Unmount("/.old", syscall.MNT_DETACH)
+	// pivot_root调用: 初始化: 切换根
+	err = syscall.Chdir("/")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用: 初始化: 挂载 /proc
+	// syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV
+	err = syscall.Mount("proc", "/proc", "proc", 0, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用: 初始化: 挂载 /devtmpfs
+	// syscall.MS_NOSUID|syscall.MS_STRICTATIME
+	// mode=755
+	err = syscall.Mount("devtmpfs", "/dev", "devtmpfs", 0, "")
+	if err != nil {
+		panic(err)
+	}
+
+	// pivot_root调用: 清理工作：卸载老的根
+	err = syscall.Unmount("/.putold", syscall.MNT_DETACH)
 	if err != nil {
 		panic(err)
 	}
 
 	// pivot_root调用清理工作：删除临时文件夹
 
-	// 切换根
-	err = syscall.Chdir("/")
-	if err != nil {
-		panic(err)
-	}
-
-	// 挂载 /proc
-	err = syscall.Mount("proc", "/proc", "proc", syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV, "")
-	if err != nil {
-		panic(err)
-	}
-
-	// 挂载 /tmpfs
-	err = syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
-	if err != nil {
-		panic(err)
-	}
-
+	// 执行真正的进程
 	cmd := exec.Command("/bin/sh")
-	cmd.Dir = "/root"
 	cmd.Env = []string{"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"}
-
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Start(); err != nil {
-		log.Fatalln(err)
-	}
-
-	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+	if err := cmd.Run(); err != nil {
+		panic(err)
 	}
 }
 ```
@@ -2008,17 +2050,20 @@ func main() {
 输出结果
 
 ```bash
-# 准备工作
-[root@archlinux ~]# wget http://dl-cdn.alpinelinux.org/alpine/v3.9/releases/x86_64/alpine-minirootfs-3.9.3-x86_64.tar.gz
+# 1、下载alpine官方提供的rootfs
 [root@archlinux ~]# mkdir rootfs
-[root@archlinux ~]# tar zxf alpine-minirootfs-3.9.3-x86_64.tar.gz  -C rootfs/
-[root@archlinux ~]# mkdir -p rootfs/.old
+[root@archlinux ~]# wget https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.3-x86_64.tar.gz
+[root@archlinux ~]# tar zxf alpine-minirootfs-3.17.3-x86_64.tar.gz -C rootfs
 
-# 然后再执行代码
-~ # mount
+# 2、执行代码
+/ # mount
 /dev/sda2 on / type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
-tmpfs on /dev type tmpfs (rw,nosuid,mode=755,inode64)
+proc on /proc type proc (rw,relatime)
+devtmpfs on /dev type devtmpfs (rw,relatime,size=4096k,nr_inodes=494882,mode=755,inode64)
+
+# 3、检查宿主机有没有受到影响
+[root@archlinux ~]# mount | wc
+     25     150    2177
 ```
 
 :::
