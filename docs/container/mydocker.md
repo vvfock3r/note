@@ -1115,7 +1115,7 @@ removed '/tmp/1.txt'
 * 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，
 
   因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
-  
+
 * 使用`man 2 mount` 和 `man umount2` 查看相关文档
 
 ::: details （1）Linux mount命令：挂载文件系统
