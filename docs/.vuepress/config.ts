@@ -17,7 +17,7 @@ const navbar = [
                 ]
 		    },
             {
-			    text: 'Command-Line Interface',
+			    text: 'Document',
                 children: [
                     {text: 'Shell', link: '/linux/shell'},
                 ]
