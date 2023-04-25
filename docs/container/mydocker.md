@@ -312,6 +312,7 @@ archlinux
 package main
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -319,16 +320,18 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+    
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个UTS命名空间
 		Cloneflags: syscall.CLONE_NEWUTS,
 	}
+	//cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -346,6 +349,15 @@ archlinux
 # 查看宿主机的主机名,发现没有被修改，至此，第一个小测试完成
 [root@archlinux ~]# hostname
 archlinux
+
+# ------------------------------------------------------
+
+# 默认打开的Shell并不在家目录下，这是由于GoLand上传代码所导致的
+[root@archlinux sources-1QQzEBetzM]# pwd
+/root/example/sources-1QQzEBetzM
+
+# 可以将代码中 //cmd.Dir = "/root" 注释打开，看起来就比较清爽了
+[root@archlinux ~]# 
 ```
 
 :::
@@ -373,26 +385,28 @@ import (
 
 func main() {
 	cmd := exec.Command("bash")
+    
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// 创建一个UTS命名空间
 		Cloneflags: syscall.CLONE_NEWUTS,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// 修改主机名
 	err := syscall.Sethostname([]byte("mydocker"))
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -401,7 +415,7 @@ func main() {
 
 ```bash
 # 查看进程内的主机名
-[root@archlinux sources-PGLbPa2NSZ]# hostname
+[root@archlinux ~]# hostname
 archlinux
 
 # 查看宿主机的主机名
@@ -419,7 +433,7 @@ mydocker
 
 <br />
 
-### 命名空间中执行代码通用方法
+### 命名空间执行代码通用方法
 
 ::: details （1）探索如何在代码中修改主机名：使用第三方包，先解决问题
 
@@ -427,7 +441,6 @@ mydocker
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -446,9 +459,9 @@ func init() {
 }
 
 func child() {
-	err := syscall.Sethostname([]byte("inside-container"))
+	err := syscall.Sethostname([]byte("mydocker"))
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 	cmd := exec.Command("bash")
 	cmd.Stdin = os.Stdin
@@ -456,7 +469,7 @@ func child() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 
@@ -466,13 +479,13 @@ func main() {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS,
 	}
-
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -481,10 +494,10 @@ func main() {
 
 ```bash
 # 执行程序，发现进程内的主机名已经被修改
-[root@inside-container sources-juGNstLrqK]# hostname
-inside-container
+[root@mydocker ~]# hostname
+mydocker
 
-# 退出进程，查看宿主机的主机名，没有变化，测试成功
+# 查看宿主机的主机名，没有变化，测试成功
 [root@archlinux ~]# hostname
 archlinux
 
@@ -526,7 +539,7 @@ func run() {
 func ns() {
 	// 设置主机名
 	if err := syscall.Sethostname([]byte("mydocker")); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// 执行真正的命令
@@ -537,7 +550,7 @@ func ns() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 
@@ -566,7 +579,7 @@ func main() {
 [root@mydocker ~]# hostname
 mydocker
 
-# 退出进程，查看宿主机的主机名，没有变化，测试成功
+# 查看宿主机的主机名，没有变化，测试成功
 [root@mydocker ~]# exit
 [root@archlinux ~]# hostname
 archlinux
@@ -587,11 +600,9 @@ archlinux
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
-	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -599,10 +610,9 @@ import (
 // Run函数会在新的命名空间中运行
 func Run() {
 	// 设置主机名
-	hostname := "mydocker-" + time.Now().Format(time.DateTime)
-	err := syscall.Sethostname([]byte(hostname))
+	err := syscall.Sethostname([]byte("mydocker"))
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// 执行命令
@@ -613,7 +623,7 @@ func Run() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 
@@ -623,7 +633,7 @@ func main() {
 	store := make(map[string]func())
 	store["flag"] = Run
 
-	// 看一下 os.Args[0],这是核心原理
+	// 看一下 os.Args[0],这是核心原理之一
 	//fmt.Printf("os.Args[0]: %s\n", os.Args[0])
 
 	// 从Map中找到真正的函数并运行，然后退出
@@ -636,27 +646,24 @@ func main() {
 	// 构造Cmd对象
 	// 1、/proc/self/exe代表程序自身,即程序会调用自己
 	// 2、调用自己时指定了Args，其中Args[0] = flag
-    // 3、Pdeathsig 表示子进程的父进程结束时发送的信号
-    //    如果这个子进程在创建之后，父进程先退出了，那么这个新进程就会成为一个孤儿进程，并被 init 进程收养
-    //    这样就会破坏容器的隔离性，因此需要设置 Pdeathsig 字段来避免这种情况的发生，以保证容器的隔离性
+	// 3、Pdeathsig 表示子进程的父进程结束时发送的信号
+	//    如果这个子进程在创建之后，父进程先退出了，那么这个新进程就会成为一个孤儿进程，并被 init 进程收养
+	//    这样就会破坏容器的隔离性，因此需要设置 Pdeathsig 字段来避免这种情况的发生，以保证容器的隔离性
 	cmd := &exec.Cmd{
 		Path: "/proc/self/exe",
 		Args: []string{"flag"},
 		SysProcAttr: &syscall.SysProcAttr{
-			Pdeathsig: unix.SIGTERM,
+			Cloneflags: syscall.CLONE_NEWUTS,
+			Pdeathsig:  unix.SIGTERM,
 		},
+		Dir:    "/root",
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS,
-	}
-
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -665,29 +672,26 @@ func main() {
 
 ```bash
 # 执行程序，发现进程内的主机名已经被修改
-[root@mydocker-2023-04-20 23:26:59 sources-p3kxMe2fvR]# hostname
-mydocker-2023-04-20 23:26:59
+[root@mydocker ~]# hostname
+mydocker
 
-# 退出进程，查看宿主机的主机名，没有变化，测试成功
+# 查看宿主机的主机名，没有变化，测试成功
 [root@archlinux ~]# hostname
 archlinux
 ```
 
 :::
 
-::: details （4）探索如何在代码中修改主机名：优化代码
+::: details （4）探索如何在代码中修改主机名：优化一下代码
 
 ```go
 package main
 
 import (
-	"log"
+	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"syscall"
-	"time"
-
-	"golang.org/x/sys/unix"
 )
 
 func main() {
@@ -700,26 +704,25 @@ func main() {
 				Pdeathsig:  unix.SIGTERM,
 				Cloneflags: syscall.CLONE_NEWUTS,
 			},
+            Dir:    "/root",
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,			
 		}
 
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
 		if err := cmd.Run(); err != nil {
-			log.Fatalln(err)
+			panic(err)
 		}
 		os.Exit(0)
 	}
 
 	// 下面的代码运行在新的Namespace中
 
-	hostname := "mydocker-" + time.Now().Format(time.DateTime)
-	err := syscall.Sethostname([]byte(hostname))
+	err := syscall.Sethostname([]byte("mydocker"))
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
-	
+
 	cmd := exec.Command("bash")
 
 	cmd.Stdin = os.Stdin
@@ -727,9 +730,21 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
+```
+
+输出结果
+
+```bash
+# 执行程序，发现进程内的主机名已经被修改
+[root@mydocker ~]# hostname
+mydocker
+
+# 查看宿主机的主机名，没有变化，测试成功
+[root@archlinux ~]# hostname
+archlinux
 ```
 
 :::
@@ -744,23 +759,24 @@ func main() {
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
 )
 
 func main() {
-	cmd := exec.Command("sh")
+	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWIPC,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -778,7 +794,7 @@ key        msqid      owner      perms      used-bytes   messages
 [root@archlinux ~]# ipcmk -Q
 Message queue id: 0
 
-# 再次查看
+# 在宿主机上再次查看
 [root@archlinux ~]# ipcs -q
 
 ------ Message Queues --------
@@ -787,13 +803,11 @@ key        msqid      owner      perms      used-bytes   messages
 
 # --------------------------------------------------------------------
 
-# 执行代码，然后查看IPC，看不到说明隔离成功
-sh-5.1# ipcs -q
+# 执行代码，在进程中上查看IPC，看不到说明隔离成功
+[root@archlinux ~]# ipcs -q
 
 ------ Message Queues --------
-key        msqid      owner      perms      used-bytes   messages    
-
-sh-5.1# 
+key        msqid      owner      perms      used-bytes   messages
 ```
 
 :::
@@ -808,23 +822,24 @@ sh-5.1#
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
 )
 
 func main() {
-	cmd := exec.Command("sh")
+	cmd := exec.Command("bash")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWPID,
 	}
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -833,14 +848,14 @@ func main() {
 
 ```bash
 # 查看当前进程PID，PID隔离成功
-sh-5.1# echo $$
+[root@archlinux ~]# echo $$
 1
 
 # 但是我们用ps、top等命令依旧能看到宿主机上的进程ID
-sh-5.1# ps aux|wc -l
-152
+[root@archlinux ~]# ps aux|wc -l
+157
 
-sh-5.1# top
+[root@archlinux ~]# top
 	...
     PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND  
       1 root      20   0   21108  13088   9328 S   0.0   0.3   0:03.71 systemd  
@@ -861,8 +876,7 @@ sh-5.1# top
     333 root      20   0    7744   4096   3456 S   0.0   0.1   0:00.01 bash     
     719 root      20   0    4628   3584   3072 S   0.0   0.1   0:00.01 sh
 
-# 这是因为 虽然PID已经被隔离了，但是ps、top等他们会从/proc读取数据，而/proc我们是没有隔离的
-# 在后面我们会解决/proc隔离的问题
+# 这是因为 虽然PID已经被隔离了，但是ps、top等他们会从/proc读取数据，而/proc我们是没有隔离的,在后面我们会解决/proc隔离的问题
 ```
 
 :::
@@ -877,7 +891,6 @@ sh-5.1# top
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -885,16 +898,17 @@ import (
 
 func main() {
 	cmd := exec.Command("sh")
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWNET,
 	}
-
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 ```
@@ -1057,8 +1071,8 @@ id: 100: no such user
 id: 200: no such user
 
 # 输出结果
-sh-4.2$ id
-uid=100 gid=100(users) groups=100(users),65534 context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+sh-5.1$ id
+uid=100 gid=100 groups=100,65534(nobody)
 
 # ----------------------------------------------------------------------------------------------------------
 # 测试1：修改宿主机文件内容
@@ -1080,9 +1094,6 @@ sh-5.1$ seq 3 > /tmp/1.txt
 # 测试2：删除宿主机文件
 
 # 先检查一下
-sh-5.1$ id
-uid=100 gid=100 groups=100,65534(nobody)
-
 sh-5.1$ ls -l /tmp/1.txt
 -rw-r--r-- 1 100 100 6 Apr 21 20:48 /tmp/1.txt
 
