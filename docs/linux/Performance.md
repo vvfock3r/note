@@ -84,9 +84,11 @@ Virtualization type: full
 
 :::
 
+<br />
+
 ### 使用率
 
-#### （1）计算公式和显示不一致问题
+#### 1、计算公式和显示不一致问题
 
 $$
 (从系统启动到现在的)平均cpu使用率 = 1 - \frac {空闲时间} {总cpu时间}
@@ -158,7 +160,7 @@ echo -e "\n[top] output:" ; \
 
 <br />
 
-#### （2）模拟用户态(us)和内核态(sy)
+#### 2、模拟用户态(us)和内核态(sy)
 
 - `us => user time `：表示CPU使用率中用户态所占百分比。通常这个值越高越好。
 - `sy => system time` ：表示CPU使用率中内核态所占百分比。通常这个值越低越好。
@@ -231,7 +233,7 @@ done
 
 <br />
 
-#### （3）模拟IO等待(wa or iowait)
+#### 3、模拟IO等待(wa or iowait)
 
 ::: tip
 
@@ -247,11 +249,15 @@ done
 
 :::
 
+::: details 使用stress模拟IO等待
+
 ![image-20220810070848855](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220810070848855.png)
+
+:::
 
 <br />
 
-#### （4）模拟软中断(si)和硬中断(hi)
+#### 4、模拟软中断(si)和硬中断(hi)
 
 :::tip
 
