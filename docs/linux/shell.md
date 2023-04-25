@@ -2676,12 +2676,6 @@ No manual entry for ascii
 
 <br />
 
-## 系统管理
-
-### systemd
-
-<br />
-
 ## 自动化工具
 
 ### expect
@@ -2862,10 +2856,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 * Shell命令退出码获取起来比较困难
 
 :::
-
-<br />
-
-### ansible
 
 <br />
 
@@ -3622,17 +3612,9 @@ D:\application\GoLand\demo\pki> go run client/main.go
 
 <br />
 
-### veracrypt
-
-文档：[https://veracrypt.fr/](https://veracrypt.fr/)
-
-
-
-<br />
-
 ## 对象存储
 
-### 腾讯云 - coscli
+### 腾讯云
 
 工具概览：[https://cloud.tencent.com/document/product/436/6242](https://cloud.tencent.com/document/product/436/6242)
 

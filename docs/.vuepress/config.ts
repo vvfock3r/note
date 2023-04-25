@@ -11,9 +11,21 @@ const navbar = [
         text: 'Linux',
         children: [
             {
-			    text: '命令行',
+			    text: 'Distribution ',
                 children: [
-                    {text: '轻量级工具和服务', link: '/linux/shell'},
+                    {text: 'Arch ', link: '/linux/arch'},
+                ]
+		    },
+            {
+			    text: 'Command-Line Interface',
+                children: [
+                    {text: 'Shell', link: '/linux/shell'},
+                ]
+		    },
+            {
+			    text: 'Performance',
+                children: [
+                    {text: 'Linux性能优化', link: '/linux/performance'},
                 ]
 		    },
         ]
@@ -23,11 +35,9 @@ const navbar = [
         children: [
             {
                 text: '容器引擎',
-                children: [
-                    {text: '简介', link: '/container/container'},
+                children: [                    
                     {text: 'Docker', link: '/container/docker'},
 					{text: 'Containerd', link: '/container/containerd'},
-					{text: 'Docker Compose', link: '/container/docker-compose'},
                 ]
             },
             {
@@ -48,10 +58,9 @@ const navbar = [
             },
             {
                 text: '容器监控',
-                children: [
-                    {text: 'Prometheus', link: '/container/prometheus'},
-                    {text: 'Grafana', link: '/container/grafana'},
-                    {text: 'Kube Prometheus Stack', link: '/container/kube-prometheus-stack'},
+                children: [                    
+                    {text: 'Grafana', link: '/container/grafana'},                    
+					{text: 'Prometheus', link: '/container/prometheus'},
                 ]
             },
         ]
@@ -100,7 +109,7 @@ const navbar = [
         ]
     },
 	{
-        text: '杂七杂八',
+        text: '散文',
         children: [
             {text: 'Web安全入门', link: '/undefined/web-security'},
             {text: '通用算法入门', link: '/undefined/algorithm'},
