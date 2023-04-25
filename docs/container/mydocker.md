@@ -1113,7 +1113,6 @@ removed '/tmp/1.txt'
 * Mount操作非常非常容易报错，而且错误信息不直观
 * 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
 
-* 使用`man 2 mount` 和 `man umount2` 查看相关文档
 
 ::: details （1）Linux mount命令：挂载文件系统
 
@@ -1335,6 +1334,8 @@ exit
 
 ### Mount（中）：挂载参数
 
+说明：使用 `man 2 mount` 可以查看参数说明
+
 ::: details （1）Mount选项：syscall.MS_BIND：挂载一个目录到另一个目录中
 
 ```go
@@ -1416,6 +1417,8 @@ a.txt
 <br />
 
 ### Mount（中）：卸载参数
+
+说明：使用 `man umount2` 可以查看参数说明
 
 ::: details umount和fuser命令
 
