@@ -1336,6 +1336,20 @@ exit
 
 说明：使用 `man 2 mount` 可以查看参数说明
 
+::: details 挂载简介
+
+**1、父子关系**
+
+
+
+**2、传播类型**
+
+
+
+**3、传播范围**
+
+:::
+
 ::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（可以将文件/目录/挂载点作为挂载源）
 
 ```go
@@ -1414,6 +1428,11 @@ func main() {
 输出结果
 
 ```bash
+# 对应的Shell命令
+# mount --bind /source /target
+
+# ------------------------------------------------------------------------------------------
+
 # 进程内查看挂载
 [root@archlinux ~]# mount |grep -E '/target\b'                 
 /dev/sda2 on /target type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
