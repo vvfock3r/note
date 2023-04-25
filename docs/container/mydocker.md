@@ -1842,6 +1842,40 @@ total 0
 ::: details （1）使用 Shell
 
 ```bash
+# 下载alpine官方提供的rootfs
+[root@archlinux ~]# mkdir rootfs
+[root@archlinux ~]# wget https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.3-x86_64.tar.gz
+[root@archlinux ~]# tar zxf alpine-minirootfs-3.17.3-x86_64.tar.gz -C rootfs
+
+# 在rootfs中创建一个目录，用于临时存放旧根
+[root@archlinux ~]# mkdir -p rootfs/.putold
+
+# 创建一个新的Mount命名空间，并移动当前到新的命名空间中去
+[root@archlinux ~]# unshare --mount
+
+# 使用pivot_root命令切换：报错
+[root@archlinux ~]# pivot_root rootfs rootfs/.putold
+pivot_root: failed to change root from `rootfs' to `rootfs/.putold': Device or resource busy
+
+# 修复报错
+[root@archlinux ~]# mount --bind rootfs rootfs
+[root@archlinux ~]# mount | grep rootfs
+/dev/sda2 on /root/rootfs type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+
+# 使用pivot_root命令切换：成功
+[root@archlinux ~]# pivot_root rootfs rootfs/.putold
+
+# 切换到新的根的家目录中去
+[root@archlinux ~]# cd
+
+[root@archlinux ~]# /bin/ln -s /bin/* /usr/bin/
+
+[root@archlinux ~]# /bin/ls # 输出为空
+
+# 挂载/proc
+[root@archlinux ~]# /bin/mount -t proc proc /proc
+
+# 卸载旧根
 
 ```
 
