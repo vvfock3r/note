@@ -1842,41 +1842,62 @@ total 0
 ::: details （1）使用 Shell
 
 ```bash
-# 下载alpine官方提供的rootfs
+# 1、下载alpine官方提供的rootfs
 [root@archlinux ~]# mkdir rootfs
 [root@archlinux ~]# wget https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/x86_64/alpine-minirootfs-3.17.3-x86_64.tar.gz
 [root@archlinux ~]# tar zxf alpine-minirootfs-3.17.3-x86_64.tar.gz -C rootfs
 
-# 在rootfs中创建一个目录，用于临时存放旧根
+# 2、在rootfs中创建一个目录，用于临时存放【旧根】
 [root@archlinux ~]# mkdir -p rootfs/.putold
 
-# 创建一个新的Mount命名空间，并移动当前到新的命名空间中去
+# 3、创建一个新的Mount命名空间，并移动当前进程到新的命名空间中去
 [root@archlinux ~]# unshare --mount
 
-# 使用pivot_root命令切换：报错
+# 4、pivot_root命令: 执行报错
 [root@archlinux ~]# pivot_root rootfs rootfs/.putold
 pivot_root: failed to change root from `rootfs' to `rootfs/.putold': Device or resource busy
 
-# 修复报错
+# 5、pivot_root命令: 修复报错
 [root@archlinux ~]# mount --bind rootfs rootfs
 [root@archlinux ~]# mount | grep rootfs
 /dev/sda2 on /root/rootfs type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-
-# 使用pivot_root命令切换：成功
 [root@archlinux ~]# pivot_root rootfs rootfs/.putold
 
-# 切换到新的根的家目录中去
-[root@archlinux ~]# cd
+# 6、调整一下PATH变量
+[root@archlinux ~]# ls                          # 执行ls报错
+-bash: ls: command not found
+[root@archlinux ~]# export PATH=/bin:${PATH}    # 调整PATH变量
+[root@archlinux ~]# ls                          # 再次执行成功
+alpine-minirootfs-3.17.3-x86_64.tar.gz  rootfs
 
-[root@archlinux ~]# /bin/ln -s /bin/* /usr/bin/
+# 7、切换到【新根】的家目录中去
+[root@archlinux ~]# ls                          # 在【旧根】的家目录下能看到文件
+alpine-minirootfs-3.17.3-x86_64.tar.gz  rootfs
+[root@archlinux ~]# cd                          # 切换到【新根】的家目录下
+[root@archlinux ~]# ls                          # 输出为空，已经无法看到文件了
 
-[root@archlinux ~]# /bin/ls # 输出为空
+# 8、挂载/proc
+[root@archlinux ~]# mount | wc -l
+mount: no /proc/mounts
+0
+[root@archlinux ~]# mount -t proc proc /proc
+[root@archlinux ~]# mount | wc -l
+28
 
-# 挂载/proc
-[root@archlinux ~]# /bin/mount -t proc proc /proc
+# 9、挂载/devtmpfs
+[root@archlinux ~]# mount -t devtmpfs devtmpfs /dev
 
-# 卸载旧根
+# 10、挂载...(根据实际情况调整)
 
+# 11、卸载旧根(延迟卸载)
+[root@archlinux ~]# umount -l /.putold
+[root@archlinux ~]# mount
+/dev/sda2 on / type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+devtmpfs on /dev type devtmpfs (rw,relatime,size=4096k,nr_inodes=494882,mode=755,inode64)
+proc on /proc type proc (rw,relatime)
+
+# 12、删除旧根的挂载目录
+[root@archlinux ~]# rmdir /.putold
 ```
 
 :::
