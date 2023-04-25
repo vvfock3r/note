@@ -1118,7 +1118,7 @@ removed '/tmp/1.txt'
   
 * 使用`man 2 mount` 和 `man umount2` 查看相关文档
 
-::: details （1）Linux mount命令：关于块设备
+::: details （1）Linux mount命令：挂载文件系统
 
 ```bash
 # 创建一个空目录,用作挂载点
@@ -1156,59 +1156,51 @@ Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
 /dev/loop0     xfs      1014M   33M  982M   4% /testmount # 注意看，这里并不是/testdata，而是/dev/loop0
 
-#-------------------------------------------------------------------------------------------------
-
 # 所以这里引出了第一个知识点
 # /testdata是一个文件，/dev/loop0是一个块设备，那么文件和块设备的关系是怎么样的？
-# 下面就来测试一下，测试完成后会清理下面的环境
+```
 
-# losetup命令就是负责 文件和块设备之间的转换关系的
+:::
+
+::: details （2）Linux mount命令：关于块设备
+
+```bash
+# losetup命令就是负责 loop块设备和文件之间的转换关系的
 
 # 1、检查系统中是否有可用的loop设备，返回值就是当前可用的块设备
-    [root@archlinux ~]# losetup -f
-    /dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
+[root@archlinux ~]# losetup -f
+/dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
     
 # 2、将文件与 loop设备关联起来
-	[root@archlinux ~]# dd if=/dev/zero of=testdemo bs=1M count=512   # 随便创建一个文件,不要太小
-    512+0 records in
-    512+0 records out
-    536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
-    [root@archlinux ~]# losetup /dev/loop1 testdemo                   # 将文件和loop设备关联
+[root@archlinux ~]# dd if=/dev/zero of=testdemo bs=1M count=512   # 随便创建一个文件,不要太小
+512+0 records in
+512+0 records out
+536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
+[root@archlinux ~]# losetup /dev/loop1 testdemo                   # 将文件和loop设备关联
     
 # 3、查看loop设备和文件的关联
-    [root@archlinux ~]# losetup -a
-    /dev/loop1: [2050]:537831655 (/root/testdemo)
-    /dev/loop0: [2050]:1776699 (/testdata)
+[root@archlinux ~]# losetup -a
+/dev/loop1: [2050]:537831655 (/root/testdemo)
+/dev/loop0: [2050]:1776699 (/testdata)
     
 # 4、将文件格式化一下，然后随便找个目录挂载上去
-    [root@archlinux ~]# mkfs -t xfs testdemo
-    meta-data=testdemo               isize=512    agcount=4, agsize=32768 blks
-             =                       sectsz=512   attr=2, projid32bit=1
-             =                       crc=1        finobt=1, sparse=1, rmapbt=0
-             =                       reflink=1    bigtime=1 inobtcount=1 nrext64=0
-    data     =                       bsize=4096   blocks=131072, imaxpct=25
-             =                       sunit=0      swidth=0 blks
-    naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
-    log      =internal log           bsize=4096   blocks=16384, version=2
-             =                       sectsz=512   sunit=0 blks, lazy-count=1
-    realtime =none                   extsz=4096   blocks=0, rtextents=0
-    
-    [root@archlinux ~]# mkdir testmount
-    [root@archlinux ~]# mount -t xfs /dev/loop1 testmount      # 挂载文件或块设备都可以
+[root@archlinux ~]# mkfs -t xfs testdemo
+[root@archlinux ~]# mkdir testmount
+[root@archlinux ~]# mount -t xfs /dev/loop1 testmount      # 挂载文件或块设备都可以
 	
 # 5、查看挂载
-    [root@archlinux ~]# mount -l | grep test
-    /testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-    /dev/loop1 on /root/testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+[root@archlinux ~]# mount -l | grep test
+/testdata on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+/dev/loop1 on /root/testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
     
-    [root@archlinux ~]# df -hT
-    Filesystem     Type      Size  Used Avail Use% Mounted on
-    ...
-    /dev/loop0     xfs       960M   39M  922M   5% /testmount
-    /dev/loop1     xfs       448M   29M  420M   7% /root/testmount
+[root@archlinux ~]# df -hT
+Filesystem     Type      Size  Used Avail Use% Mounted on
+...
+/dev/loop0     xfs       960M   39M  922M   5% /testmount
+/dev/loop1     xfs       448M   29M  420M   7% /root/testmount
 
 # 6、释放块设备
-   # 语法：losetup -d /dev/loopN
+# 语法：losetup -d /dev/loopN
 	
 #-------------------------------------------------------------------------------------------------
 
