@@ -1841,6 +1841,10 @@ total 0
 
 ::: details （1）使用 Shell
 
+```bash
+
+```
+
 :::
 
 ::: details （2）使用 Go 
@@ -1966,8 +1970,4 @@ tmpfs on /dev type tmpfs (rw,nosuid,mode=755,inode64)
 
 <br />
 
-### 进入命名空间
-
-<br />
-
-### 命名空间总结
+### 进入指定进程的命名空间
