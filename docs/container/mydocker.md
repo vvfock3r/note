@@ -1754,7 +1754,7 @@ import (
 func main() {
 	// 判断参数个数
 	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s [flags] <mountpoint>\n", os.Args[0])
+		fmt.Printf("Usage: %s [-l] <target>\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -1764,19 +1764,25 @@ func main() {
 	flag.Parse()
 
 	// 挂载点
-	mountpoint := flag.Arg(0)
+	target := flag.Arg(0)
 
 	// 先正常卸载
-	err := syscall.Unmount(mountpoint, 0)
-	if err != nil {
-		if !lazy {
-			fmt.Printf("unmount error: %s: %s\n", mountpoint, err.Error())
-		}
+	err := syscall.Unmount(target, 0)
+
+	// 卸载成功则退出
+	if err == nil {
+		os.Exit(0)
 	}
 
-	// -l/--lazy选项
+	// 卸载失败则报错（没有使用延迟卸载的情况）
+	if !lazy {
+		fmt.Printf("unmount error: %s: %s\n", target, err.Error())
+		os.Exit(1)
+	}
+
+	// 延迟卸载-l/--lazy选项
 	if lazy {
-		_ = syscall.Unmount(mountpoint, syscall.MNT_DETACH)
+		_ = syscall.Unmount(target, syscall.MNT_DETACH)
 	}
 }
 ```
@@ -1789,7 +1795,7 @@ func main() {
  -l, --lazy              detach the filesystem now, clean up things later
 
 # 编译代码
-[root@archlinux ~]# go build -o main main.go代码
+[root@archlinux ~]# go build -o main main.go
 
 # --------------------------------------------------------------------------------------
 # 测试1：正常卸载成功
@@ -1814,13 +1820,13 @@ unmount error: /testmount: device or resource busy
 [root@archlinux ~]# ./main -l /testmount				# 延迟卸载
 [root@archlinux ~]# mount | grep /testmount				# 检查，输出为空
 
-[root@archlinux testmount]# seq 10 > `date +%Y-%m-%d-%H%M%S`.txt	# 另一个终端还能正常写入
+[root@archlinux testmount]# seq 10 > 1.txt	            # 另一个终端还能正常写入
 [root@archlinux testmount]# ll							
 total 4
--rw-r--r-- 1 root root 21 Apr 22 20:57 2023-04-22-205708.txt
+-rw-r--r-- 1 root root 21 Apr 22 20:57 1.txt
 
 [root@archlinux testmount]# cd							# 另一个终端退出挂载点，然后再查看，目录为空
-[root@archlinux ~]# ls -l /testmount/                   # 原因是现在才真正的卸载了，所谓延迟卸载
+[root@archlinux ~]# ls -l /testmount                    # 原因是现在才真正的卸载了，所谓延迟卸载
 total 0
 ```
 
