@@ -1839,7 +1839,7 @@ total 0
 
 ### Mount（下）：隔离系统
 
-::: details （1）使用 Shell
+::: details （1）使用 Shell 隔离根文件系统
 
 ```bash
 # 1、下载alpine官方提供的rootfs
@@ -1902,7 +1902,7 @@ proc on /proc type proc (rw,relatime)
 
 :::
 
-::: details （2）使用 Go 
+::: details （2）使用 Go 隔离根文件系统
 
 ```go
 package main
