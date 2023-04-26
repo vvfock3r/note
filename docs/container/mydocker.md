@@ -1223,11 +1223,14 @@ exit
 
 <br />
 
-### Mount（中）：挂载参数
+### Mount（中）：参数设置
 
-说明：使用 `man 2 mount` 可以查看参数说明
+说明：
 
-::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（可以将文件/目录/挂载点作为挂载源）
+* 使用 `man 2 mount` 可以查看挂载参数说明
+* 使用 `man umount2` 可以查看卸载参数说明
+
+::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（可以将目录/挂载点作为挂载源）
 
 ```go
 package main
@@ -1254,7 +1257,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	// 定义变量
@@ -1325,92 +1328,15 @@ d41d8cd98f00b204e9800998ecf8427e  /target/source.txt
 
 :::
 
-::: details （2）Mount选项：syscall.MS_SHARED：共享传播类型（双向传播）
+::: details （2）Mount选项：其他挂载选项
 
-:::
-
-::: details （4）Mount选项：syscall.MS_SLAVE：共享传播类型（单向传播，Master修改Slave也会修改，反过来就不行了）
-
-:::
-
-::: details （3）Mount选项：syscall.MS_PRIVATE：私有传播类型（可以作为bind mount的源）
-
-:::
-
-::: details （5）Mount选项：syscall.MS_UNBINDABLE：私有传播类型（不能作为bind mount的源）
-
-:::
-
-::: details （6）Mount选项：syscall.MS_REC：常与 绑定挂载 或 传播类型 相结合，用于递归设置
-
-:::
-
-<br />
-
-### Mount（中）：卸载参数
-
-说明：使用 `man umount2` 可以查看参数说明
-
-::: details umount和fuser命令
-
-```bash
-# 测试1：当有进程占用时无法卸载
-
-# 终端1：挂载
-[root@archlinux ~]# mount -t xfs /testdata /testmount
-
-# 终端2：再开一个终端，占用挂载点
-[root@archlinux ~]# cd /testmount
-
-# 终端1：卸载报错
-[root@archlinux ~]# umount /testmount
-umount: /testmount/: target is busy.
-
-# --------------------------------------------------------
-
-# 测试2：使用fuser找出占用的进程
-
-# 查看哪些进程正在占用, 342是进程的PID,c 表示进程正在访问该文件并拥有它（current access，当前访问）
-[root@archlinux ~]# fuser -m /testmount
-/testmount:            342c
-
-# 添加-v可以查看详细信息
-[root@archlinux ~]# fuser -mv /testmount
-                     USER        PID ACCESS COMMAND
-/testmount:          root     kernel mount /testmount
-                     root        342 ..c.. bash
-                     
-# 杀掉进程并卸载
-[root@archlinux ~]# fuser -k /testmount
-/testmount:            342c
-
-[root@archlinux ~]# umount /testmount
-
-# --------------------------------------------------------
-
-# 测试3：使用mount -l延迟卸载
-
-# 正常卸载失败
-[root@archlinux ~]# umount /testmount
-umount: /testmount: target is busy.
-
-# 使用延迟卸载
-[root@archlinux ~]# umount -l /testmount
-
-# 检查
-[root@archlinux ~]# mount | grep /testmount # 输出为空
-
-# 另一个终端还能正常写入
-[root@archlinux testmount]# seq 10 > 1.txt
-[root@archlinux testmount]# ll
-total 4
--rw-r--r-- 1 root root 21 Apr 23 20:03 1.txt
-
-# 一旦进程不再占用挂载点将马上卸载
-[root@archlinux testmount]# cd
-[root@archlinux ~]# ls -l /testmount/
-total 0
-```
+| 挂载选项              | 说明                                       |
+| --------------------- | ------------------------------------------ |
+| syscall.MS_SHARED     | 共享传播类型（双向传播）                   |
+| syscall.MS_SLAVE      | 主从传播类型（单向传播）                   |
+| syscall.MS_PRIVATE    | 私有传播类型（可以作为bind mount的源）     |
+| syscall.MS_UNBINDABLE | 私有传播类型（不能作为bind mount的源）     |
+| syscall.MS_REC        | 设置递归，常与 绑定挂载 或 传播类型 相结合 |
 
 :::
 
@@ -1446,7 +1372,7 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	target := "/testmount"
+	target := "/target"
 
 	// 挂载
 	err := syscall.Mount(source, target, "xfs", 0, "")
@@ -1482,24 +1408,32 @@ func main() {
 输出结果
 
 ```bash
+# 准备工作
+[root@archlinux ~]# dd if=/dev/zero of=/source bs=1M count=1024   # 创建一个文件用作挂载设备
+[root@archlinux ~]# mkfs -t xfs /source                           # 格式化为xfs文件系统
+[root@archlinux ~]# mkdir /target                                 # 创建一个空目录,用作挂载点
+[root@archlinux ~]# losetup -f                                    # 查看可用的块设备
+/dev/loop0
+[root@archlinux ~]# losetup /dev/loop0 /source                    # 文件和块设备关联
+
 # 执行代码
 [root@archlinux ~]#
 
-# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
-[root@archlinux ~]# cd /testmount
+# 新开一个终端，进入挂载目录中，以达到进程占用的目的
+[root@archlinux ~]# cd /target
 
 # Ctrl+D退出进程
-2023/04/25 15:10:03 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:04 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:05 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:06 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:07 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:08 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:09 unmount error: /testmount: device or resource busy
+2023/04/25 15:10:03 unmount error: /target: device or resource busy
+2023/04/25 15:10:04 unmount error: /target: device or resource busy
+2023/04/25 15:10:05 unmount error: /target: device or resource busy
+2023/04/25 15:10:06 unmount error: /target: device or resource busy
+2023/04/25 15:10:07 unmount error: /target: device or resource busy
+2023/04/25 15:10:08 unmount error: /target: device or resource busy
+2023/04/25 15:10:09 unmount error: /target: device or resource busy
 
 # 此时另一个终端切换到其他目录中，观察是否可以卸载成功
-2023/04/25 15:10:42 unmount error: /testmount: device or resource busy
-2023/04/25 15:10:43 unmount success: /testmount
+2023/04/25 15:10:42 unmount error: /target: device or resource busy
+2023/04/25 15:10:43 unmount success: /target
 ```
 
 :::
@@ -1536,7 +1470,7 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	target := "/testmount"
+	target := "/target"
 
 	// 挂载
 	err := syscall.Mount(source, target, "xfs", 0, "")
@@ -1548,6 +1482,7 @@ func main() {
 	defer func() {
 		for {
 			// syscall.MNT_DETACH
+            // 等同于umount -l
 			err := syscall.Unmount(target, syscall.MNT_DETACH)
 			if err != nil {
 				log.Printf("unmount error: %s: %s\n", target, err.Error())
@@ -1568,26 +1503,34 @@ func main() {
 输出结果
 
 ```bash
+# 准备工作
+[root@archlinux ~]# dd if=/dev/zero of=/source bs=1M count=1024   # 创建一个文件用作挂载设备
+[root@archlinux ~]# mkfs -t xfs /source                           # 格式化为xfs文件系统
+[root@archlinux ~]# mkdir /target                                 # 创建一个空目录,用作挂载点
+[root@archlinux ~]# losetup -f                                    # 查看可用的块设备
+/dev/loop0
+[root@archlinux ~]# losetup /dev/loop0 /source                    # 文件和块设备关联
+
 # 执行代码
 [root@archlinux ~]#
 
-# 提前开一个终端，进入挂载目录中，以达到进程占用的目的
-[root@archlinux ~]# cd /testmount
+# 新开一个终端，进入挂载目录中，以达到进程占用的目的
+[root@archlinux ~]# cd /target
 
 # Ctrl+D退出进程，直接就能卸载成功
 [root@archlinux ~]# 
 exit
-2023/04/25 15:13:18 unmount success: /testmount
+2023/04/25 15:13:18 unmount success: /target
 
 # mount查看也表示卸载成功
-[root@archlinux testmount]# mount | grep test
+[root@archlinux target]# mount | grep target
 
 # 但实际上之前占用的进程还能正常写入数据
-[root@archlinux testmount]# seq 10 > 1.txt
+[root@archlinux target]# seq 10 > 1.txt
 
 # 切换到其他目录，此时系统才会真正卸载，查看一下目录为空
-[root@archlinux testmount]# cd
-[root@archlinux ~]# ls -l /testmount
+[root@archlinux target]# cd
+[root@archlinux ~]# ls -l /target
 total 0
 ```
 
@@ -1625,7 +1568,7 @@ func main() {
 
 	// 定义变量
 	source := "/dev/loop0"
-	target := "/testmount"
+	target := "/target"
 
 	// 挂载
 	err := syscall.Mount(source, target, "xfs", 0, "")
@@ -1665,10 +1608,19 @@ func main() {
 输出结果
 
 ```bash
+# 准备工作
+[root@archlinux ~]# dd if=/dev/zero of=/source bs=1M count=1024   # 创建一个文件用作挂载设备
+[root@archlinux ~]# mkfs -t xfs /source                           # 格式化为xfs文件系统
+[root@archlinux ~]# mkdir /target                                 # 创建一个空目录,用作挂载点
+[root@archlinux ~]# losetup -f                                    # 查看可用的块设备
+/dev/loop0
+[root@archlinux ~]# losetup /dev/loop0 /source                    # 文件和块设备关联
+
+# 执行代码
 [root@archlinux ~]# 
 exit
-2023/04/25 15:18:08 unmount error: /testmount: resource temporarily unavailable
-2023/04/25 15:18:09 unmount success: /testmount
+2023/04/25 15:18:08 unmount error: /target: resource temporarily unavailable
+2023/04/25 15:18:09 unmount success: /target
 ```
 
 :::
@@ -1733,34 +1685,34 @@ func main() {
 
 # --------------------------------------------------------------------------------------
 # 测试1：正常卸载成功
-[root@archlinux ~]# mount -t xfs /testdata /testmount	# 挂载
-[root@archlinux ~]# mount | grep /testmount				# 检查
-/dev/loop0 on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+[root@archlinux ~]# mount -t xfs /source /target	    # 挂载
+[root@archlinux ~]# mount | grep target				    # 检查
+/dev/loop0 on /target type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
-[root@archlinux ~]# ./main /testmount					# 卸载
-[root@archlinux ~]# mount | grep /testmount				# 检查，输出为空
+[root@archlinux ~]# ./main /target					    # 卸载
+[root@archlinux ~]# mount | grep target  				# 检查，输出为空
 
 # --------------------------------------------------------------------------------------
 # 测试2：进程占用时延迟卸载成功
-[root@archlinux ~]# mount -t xfs /testdata /testmount	# 挂载
-[root@archlinux ~]# mount | grep /testmount				# 检查
-/dev/loop0 on /testmount type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
+[root@archlinux ~]# mount -t xfs /source /target	    # 挂载
+[root@archlinux ~]# mount | grep target				    # 检查
+/dev/loop0 on /target type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 
-[root@archlinux ~]# cd /testmount						# 新开一个终端，占用挂载点
+[root@archlinux ~]# cd /target						    # 新开一个终端，占用挂载点
 
-[root@archlinux ~]# ./main /testmount					# 正常卸载失败
-unmount error: /testmount: device or resource busy
+[root@archlinux ~]# ./main /target					    # 正常卸载失败
+unmount error: /target: device or resource busy
 
-[root@archlinux ~]# ./main -l /testmount				# 延迟卸载
-[root@archlinux ~]# mount | grep /testmount				# 检查，输出为空
+[root@archlinux ~]# ./main -l /target			    	# 延迟卸载
+[root@archlinux ~]# mount | grep target				    # 检查，输出为空
 
-[root@archlinux testmount]# seq 10 > 1.txt	            # 另一个终端还能正常写入
-[root@archlinux testmount]# ll							
+[root@archlinux target]# seq 10 > 1.txt	                # 另一个终端还能正常写入
+[root@archlinux target]# ll							
 total 4
 -rw-r--r-- 1 root root 21 Apr 22 20:57 1.txt
 
-[root@archlinux testmount]# cd							# 另一个终端退出挂载点，然后再查看，目录为空
-[root@archlinux ~]# ls -l /testmount                    # 原因是现在才真正的卸载了，所谓延迟卸载
+[root@archlinux target]# cd							    # 另一个终端退出挂载点，然后再查看，目录为空
+[root@archlinux ~]# ls -l /target                       # 原因是现在才真正的卸载了，所谓延迟卸载
 total 0
 ```
 
