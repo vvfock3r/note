@@ -379,6 +379,8 @@ tmpfs on /tmp type tmpfs (rw,nosuid,nodev,size=1988532k,nr_inodes=1048576,inode6
 #   检查是否包含/tmp挂载点
 [root@archlinux ~]# unshare --mount bash
 [root@archlinux ~]# mount | grep /tmp       # 输出为空
+
+# 4、那么父进程中的私有传播模式会不会拷贝到新的Mount命名空间呢？以后有时间再测试
 ```
 
 :::
