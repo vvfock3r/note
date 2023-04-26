@@ -1785,7 +1785,7 @@ proc on /proc type proc (rw,relatime)
 
 :::
 
-::: details （2）使用 Go 隔离根文件系统
+::: details （2）使用 Go 隔离根文件系统：测试成功啦
 
 ```go
 package main
@@ -1920,6 +1920,50 @@ PID   USER     TIME  COMMAND
     1 root      0:00 /proc/self/exe
     6 root      0:00 /bin/sh
     7 root      0:00 ps aux
+
+# 但是又发现一个问题：/proc/self/exe不需要显示，/bin/sh应该为PID为1
+```
+
+:::
+
+::: details （3）使用 Go 隔离根文件系统：优化PID显示问题
+
+```go
+	// 执行真正的进程: 有问题的代码
+	//cmd := exec.Command("/bin/sh")
+	//cmd.Stdin = os.Stdin
+	//cmd.Stdout = os.Stdout
+	//cmd.Stderr = os.Stderr
+	//cmd.Dir = "/root"
+	//cmd.Env = []string{"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"}
+	//if err := cmd.Run(); err != nil {
+	//	panic(err)
+	//}
+
+	// 切换到指定的工作目录
+	if err := syscall.Chdir("/root"); err != nil {
+		panic(err)
+	}
+
+	// 执行真正的进程: syscall.Exec可以直接让指定的进程代替/proc/self/exe
+	// argv0：要执行的二进制文件的路径
+	// argv：包含要传递给新进程的命令行参数
+	// envv：包含要传递给新进程的环境变量,每个字符串都是形如 "key=value" 的形式
+	argv0 := "/bin/sh"
+	argv := append([]string{"/bin/sh"}, os.Args[1:]...)
+	envv := append(os.Environ(), "PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin")
+	if err := syscall.Exec(argv0, argv, envv); err != nil {
+		panic(err)
+	}
+```
+
+输出结果
+
+```bash
+~ # ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/sh
+    6 root      0:00 ps aux
 ```
 
 :::
