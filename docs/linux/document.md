@@ -106,7 +106,7 @@ realtime =none                   extsz=4096   blocks=0, rtextents=0
 
 :::
 
-::: details （2）文件和块设备：挂载文件
+::: details （2）文件和块设备之：挂载文件
 
 ```bash
 # 1、生成一个大文件
@@ -331,10 +331,7 @@ umount: /super: target is busy.
 [root@archlinux ~]# mount | wc -l
 25
 
-# 原因：
-# 	每个挂载点都有一个propagation type属性，指的是挂载点的传播类型
-# 	一般情况宿主机默认的挂载点传播类型是shared,即在其他Mount命名空间也可以见
-# 	所以我们新建的Mount命名空间可以看到和宿主机一样的挂载点
+# 每个挂载点都有一个propagation type属性，指的是挂载点的传播类型
 
 # 查看宿主机挂载点的传播类型
 # 这里的shared代表共享传播类型
@@ -345,7 +342,7 @@ umount: /super: target is busy.
 
 # 查看新创建的Mount命名空间传播类型，它并没有shared字样
 # 默认新创建的Mount命名空间传播类型为private，即只在当前命名空间可见
-# 只是他在创建时会把 【父进程的挂在表】复制一份而已
+# 只是他在创建时会把 【父进程的挂载表】复制一份而已
 [root@archlinux ~]# cat /proc/self/mountinfo 
 56 55 8:2 / / rw,relatime - xfs /dev/sda2 rw,attr2,inode64,logbufs=8,logbsize=32k,noquota
 ...
@@ -380,7 +377,10 @@ tmpfs on /tmp type tmpfs (rw,nosuid,nodev,size=1988532k,nr_inodes=1048576,inode6
 [root@archlinux ~]# unshare --mount bash
 [root@archlinux ~]# mount | grep /tmp       # 输出为空
 
-# 4、那么父进程中的私有传播模式会不会拷贝到新的Mount命名空间呢？以后有时间再测试
+# 4、那么父进程中的私有传播模式会不会拷贝到新的Mount命名空间呢？
+#    答案是: 会的
+#    可以使用  mount --make-private -t tmpfs tmpfs /tmp 做一次私有挂载，
+#    然后再测试新建的Mount命名空间检查是否有/tmp挂载点即可
 ```
 
 :::
