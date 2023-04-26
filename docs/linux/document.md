@@ -4,6 +4,23 @@
 
 ## Mount
 
+### 查看文档
+
+::: details man帮助文档
+
+```bash
+# 安装man手册
+[root@archlinux ~]# pacman -Sy man-pages
+
+# 查看系统调用相关文档
+[root@archlinux ~]# man 2 mount    # mount
+[root@archlinux ~]# man umount2    # umount
+```
+
+:::
+
+<br />
+
 ### 普通挂载
 
 ::: details （1）挂载硬盘（块设备）的常规流程
