@@ -20,6 +20,7 @@ const navbar = [
 			    text: 'Document',
                 children: [
                     {text: 'Shell', link: '/linux/shell'},
+                    {text: 'Document', link: '/linux/document'},
                 ]
 		    },
             {
