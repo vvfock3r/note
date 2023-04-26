@@ -407,9 +407,9 @@ mount --make-rslave xxx	                    # 递归主从传播模式
 # 私有传播
 # 1、不会传递到其他命名空间
 # 2、使用--rbind时也会同时设置传播模式
-unshare --mount --propagation=private bash	# 新建一个Mount命名空间，并设置为主从传播模式						
-mount --make-private  xxx					# 挂载时设置挂载点为主从传播模式
-mount --make-rprivate xxx	                # 递归主从传播模式
+unshare --mount --propagation=private bash	# 新建一个Mount命名空间，并设置为私有传播模式						
+mount --make-private  xxx					# 挂载时设置挂载点为私有传播模式
+mount --make-rprivate xxx	                # 递归私有传播模式
 ```
 
 :::
