@@ -1806,7 +1806,7 @@ func main() {
 			Args: append([]string{"/proc/self/exe"}, os.Args[1:]...),
 			SysProcAttr: &syscall.SysProcAttr{
 				Pdeathsig:  unix.SIGTERM,
-				Cloneflags: syscall.CLONE_NEWNS,
+				Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWPID,
 			},
 			Dir:    "/root",
 			Stdin:  os.Stdin,
@@ -1822,9 +1822,7 @@ func main() {
 
 	// 下面的代码运行在新的Namespace中
 
-	// 设置根为 private,否则会报错：invalid argument
-	// syscall.MS_PRIVATE	?
-	// syscall.MS_REC		?
+	// 设置根为 私有传播模式+递归设置,否则会报错：invalid argument
 	err := syscall.Mount("/", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
 	if err != nil {
 		panic(err)
@@ -1833,6 +1831,7 @@ func main() {
 	// pivot_root调用: 准备工作: 定义变量
 	newroot := "rootfs"
 	putold := "rootfs/.putold"
+	oldroot := "/.putold"
 
 	// pivot_root调用: 准备工作: 创建putold目录
 	err = os.MkdirAll(putold, 0700)
@@ -1841,8 +1840,7 @@ func main() {
 	}
 
 	// pivot_root调用: 准备工作: 先挂载一次 newroot
-	// |syscall.MS_REC?
-	err = syscall.Mount(newroot, newroot, "", syscall.MS_BIND, "")
+	err = syscall.Mount(newroot, newroot, "", syscall.MS_BIND|syscall.MS_REC, "")
 	if err != nil {
 		panic(err)
 	}
@@ -1860,34 +1858,37 @@ func main() {
 	}
 
 	// pivot_root调用: 初始化: 挂载 /proc
-	// syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV
 	err = syscall.Mount("proc", "/proc", "proc", 0, "")
 	if err != nil {
 		panic(err)
 	}
 
 	// pivot_root调用: 初始化: 挂载 /devtmpfs
-	// syscall.MS_NOSUID|syscall.MS_STRICTATIME
-	// mode=755
 	err = syscall.Mount("devtmpfs", "/dev", "devtmpfs", 0, "")
 	if err != nil {
 		panic(err)
 	}
 
-	// pivot_root调用: 清理工作：卸载老的根
-	err = syscall.Unmount("/.putold", syscall.MNT_DETACH)
+	// pivot_root调用: 清理工作：延迟卸载老根
+	err = syscall.Unmount(oldroot, syscall.MNT_DETACH)
 	if err != nil {
 		panic(err)
 	}
 
 	// pivot_root调用清理工作：删除临时文件夹
+	err = os.Remove(oldroot)
+	if err != nil {
+		panic(err)
+	}
 
 	// 执行真正的进程
 	cmd := exec.Command("/bin/sh")
-	cmd.Env = []string{"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = "/root"
+	cmd.Env = []string{"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"}
 
 	if err := cmd.Run(); err != nil {
 		panic(err)
@@ -1904,14 +1905,21 @@ func main() {
 [root@archlinux ~]# tar zxf alpine-minirootfs-3.17.3-x86_64.tar.gz -C rootfs
 
 # 2、执行代码
-/ # mount
+~ # mount
 /dev/sda2 on / type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
 proc on /proc type proc (rw,relatime)
-devtmpfs on /dev type devtmpfs (rw,relatime,size=4096k,nr_inodes=494882,mode=755,inode64)
+devtmpfs on /dev type devtmpfs (rw,relatime,size=4096k,nr_inodes=494877,mode=755,inode64)
 
 # 3、检查宿主机有没有受到影响
-[root@archlinux ~]# mount | wc
-     25     150    2177
+[root@archlinux ~]# mount | wc -l
+25
+
+# 4、除了隔离Mount，我们还隔离了PID，为的就是解决之前遗留的问题
+~ # ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /proc/self/exe
+    6 root      0:00 /bin/sh
+    7 root      0:00 ps aux
 ```
 
 :::
