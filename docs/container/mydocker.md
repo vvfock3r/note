@@ -1108,122 +1108,14 @@ removed '/tmp/1.txt'
 
 ### Mount（上）：挂载卸载
 
+Mount必会的基础知识：[https://jinhui.dev/linux/document.html#mount](https://jinhui.dev/linux/document.html#mount)
+
 注意事项：
 
 * Mount操作非常非常容易报错，而且错误信息不直观
-* 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，因为这会导致defer不被执行，可以使用Ctrl+D退出sh进程来退出进程
+* 如果要停止进程，最好不要直接在GoLand中点击Stop按钮，因为这会导致defer不被执行，进而导致卸载操作不执行，解决办法是使用Ctrl+D退出Shell进程
 
-
-::: details （1）Linux mount命令：挂载文件系统
-
-```bash
-# 创建一个空目录,用作挂载点
-[root@archlinux ~]# mkdir /testmount1
-
-# 创建一个文件,用作挂在设备
-[root@archlinux ~]# dd if=/dev/zero of=/testdata1 bs=1M count=1024
-1024+0 records in
-1024+0 records out
-1073741824 bytes (1.1 GB, 1.0 GiB) copied, 5.70406 s, 188 MB/s
-
-# 设备格式化为xfs文件系统
-[root@archlinux ~]# mkfs -t xfs /testdata1
-meta-data=/testdata              isize=512    agcount=4, agsize=65536 blks
-         =                       sectsz=512   attr=2, projid32bit=1
-         =                       crc=1        finobt=1, sparse=1, rmapbt=0
-         =                       reflink=1    bigtime=1 inobtcount=1 nrext64=0
-data     =                       bsize=4096   blocks=262144, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
-log      =internal log           bsize=4096   blocks=16384, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-
-# 挂载测试
-[root@archlinux ~]# mount -t xfs /testdata1 /testmount1
-
-# 查看挂载点
-[root@archlinux ~]# mount -l | grep test
-/testdata1 on /testmount1 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-
-# 使用df查看
-[root@archlinux ~]# df -hT
-Filesystem     Type      Size  Used Avail Use% Mounted on
-...
-/dev/loop0     xfs      1014M   33M  982M   4% /testmount1 # 注意看，这里并不是/testdata1，而是/dev/loop0
-
-# 所以这里引出了第一个知识点
-# /testdata1是一个文件，/dev/loop0是一个块设备，那么文件和块设备的关系是怎么样的？
-```
-
-:::
-
-::: details （2）Linux mount命令：关于块设备
-
-```bash
-# losetup命令就是负责 loop块设备和文件之间的转换关系的
-
-# 1、检查系统中是否有可用的loop设备，返回值就是当前可用的块设备
-[root@archlinux ~]# losetup -f
-/dev/loop1        # 因为loop0在上面已经被我们占用了，所以这里会返回loop1
-    
-# 2、将文件与 loop设备关联起来
-[root@archlinux ~]# dd if=/dev/zero of=/testdata2 bs=1M count=512   # 随便创建一个文件,不要太小
-512+0 records in
-512+0 records out
-536870912 bytes (537 MB, 512 MiB) copied, 2.80436 s, 191 MB/s
-[root@archlinux ~]# losetup /dev/loop1 /testdata2                   # 将文件和loop设备关联
-    
-# 3、查看loop设备和文件的关联
-[root@archlinux ~]# losetup -a
-/dev/loop1: [2050]:977000 (/testdata2)
-/dev/loop0: [2050]:1776699 (/testdata1)
-    
-# 4、将文件格式化一下，然后随便找个目录挂载上去
-[root@archlinux ~]# mkfs -t xfs /testdata2
-[root@archlinux ~]# mkdir /testmount2
-[root@archlinux ~]# mount -t xfs /dev/loop1 /testmount2      # 挂载文件或块设备都可以
-	
-# 5、查看挂载
-[root@archlinux ~]# mount -l | grep test
-/dev/loop0 on /testmount1 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-/dev/loop1 on /testmount2 type xfs (rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,noquota)
-    
-[root@archlinux ~]# df -hT
-Filesystem     Type      Size  Used Avail Use% Mounted on
-...
-/dev/loop0     xfs       960M   39M  922M   5% /testmount1
-/dev/loop1     xfs       448M   29M  420M   7% /testmount2
-
-# 6、释放块设备
-# 语法：losetup -d /dev/loopN
-```
-
-:::
-
-::: details （3）Linux mount命令：清理测试环境
-
-```bash
-# 卸载
-[root@archlinux ~]# umount /testmount1 /testmount2
-
-# 删除挂载点目录
-[root@archlinux ~]# rm -rf /testmount1 /testmount2
-
-# 删除文件系统
-[root@archlinux ~]# rm -rf /testdata1 /testdata2
-
-# 释放块设备
-[root@archlinux ~]# losetup -d /dev/loop1
-
-#  查看可用的块设备，返回/dev/loop0 代表正常
-[root@archlinux ~]# losetup -f
-/dev/loop0
-```
-
-:::
-
-::: details （4）Go Mount示例：执行挂载报错：block device required
+::: details （1）Go Mount示例：执行挂载报错：block device required
 
 ```go
 package main
@@ -1243,7 +1135,7 @@ func main() {
 		// 注意并没有 syscall.CLONE_NEWMOUNT，而是使用 syscall.CLONE_NEWNS
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
-    cmd.Dir = "/root"
+	cmd.Dir = "/root"
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1253,8 +1145,8 @@ func main() {
 	}
 
 	// 定义变量
-	source := "/testdata"
-	target := "/testmount"
+	source := "/source"
+	target := "/target"
 
 	// 挂载
 	// 参数说明
@@ -1285,23 +1177,22 @@ func main() {
 输出结果
 
 ```bash
-# 创建一个空目录,用作挂载点
-[root@archlinux ~]# mkdir /testmount
-
-# 创建一个文件,用作挂在设备
-[root@archlinux ~]# dd if=/dev/zero of=/testdata bs=1M count=1024
+# 创建一个文件,用作挂载设备
+[root@archlinux ~]# dd if=/dev/zero of=/source bs=1M count=1024
 
 # 设备格式化为xfs文件系统
-[root@archlinux ~]# mkfs -t xfs /testdata
+[root@archlinux ~]# mkfs -t xfs /source
 
-# 执行代码
-# 报错：需要一个块设备，其实就是 /testdata 的参数写的有问题
+# 创建一个空目录,用作挂载点
+[root@archlinux ~]# mkdir /target
+
+# 执行代码报错：需要一个块设备，其实就是 /source 的参数写的有问题
 2023/04/22 10:42:48 mount error: block device required
 ```
 
 :::
 
-::: details （5）Go Mount示例：修复挂载报错
+::: details （2）Go Mount示例：使用losetup命令修复挂载报错
 
 ```bash
 # 检查一下可用的块设备
@@ -1309,23 +1200,23 @@ func main() {
 /dev/loop0
 
 # 将可用的块设备与文件关联起来
-[root@archlinux ~]# losetup /dev/loop0 /testdata
+[root@archlinux ~]# losetup /dev/loop0 /target
 
 # 查看关联
 [root@archlinux ~]# losetup -a
-/dev/loop0: [2050]:1776699 (/testdata)
+/dev/loop0: [2050]:1776699 (/target)
 
-# 修改Go代码，将 /testdata 修改为 /dev/loop0，然后再次执行代码
+# 修改Go代码，将 /source 修改为 /dev/loop0，然后再次执行代码
 [root@archlinux ~]# df -hT
 Filesystem     Type      Size  Used Avail Use% Mounted on
 ...
-/dev/loop0     xfs       960M   39M  922M   5% /testmount
+/dev/loop0     xfs       960M   39M  922M   5% /target
 
 # 退出Shell，可使用Ctrl+D 或者 exit，不要直接在GoLand点Stop按钮，这会导致卸载操作不能执行
 # 检查是否正常卸载，输出为空代表正常
 [root@archlinux ~]# 按下Ctrl+D
 exit
-[root@archlinux ~]# mount | grep  /testmount
+[root@archlinux ~]# mount | grep  /target
 ```
 
 :::
@@ -1335,20 +1226,6 @@ exit
 ### Mount（中）：挂载参数
 
 说明：使用 `man 2 mount` 可以查看参数说明
-
-::: details 挂载简介
-
-**1、父子关系**
-
-
-
-**2、传播类型**
-
-
-
-**3、传播范围**
-
-:::
 
 ::: details （1）Mount选项：syscall.MS_BIND：绑定挂载（可以将文件/目录/挂载点作为挂载源）
 
