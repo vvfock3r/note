@@ -17,7 +17,7 @@ const navbar = [
                 ]
 		    },
             {
-			    text: 'Document',
+			    text: 'Tutorial',
                 children: [
                     {text: 'Shell', link: '/linux/shell'},
                     {text: 'Document', link: '/linux/document'},
