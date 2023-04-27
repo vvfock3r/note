@@ -1982,6 +1982,85 @@ PID   USER     TIME  COMMAND
 
 <br />
 
+### clone和unshare调用
+
+**Linux系统调用**
+
+* `clone` 创建一个新的子进程，然后让子进程加入新的 namespace，而当前进程namespace保持不变
+* `unshare` 使当前进程加入新的 namespace
+* 查看文档 `man 2 clone` 、 `man 2 unshare` 
+
+**Go代码参数**
+
+* syscall.SysProcAttr 包含 Cloneflags 和 Unshareflags 参数，都是uintptr类型的值
+* syscall.Unshare(flags int) 方法
+
+<br />
+
+::: details （1）syscall.SysProcAttr：Cloneflags 和 Unshareflags的不同
+
+```go
+
+```
+
+:::
+
+::: details （2）syscall.Unshare示例
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	// 创建一个新的UTS命名空间，并使当前进程加入新的命名空间
+	err := syscall.Unshare(syscall.CLONE_NEWUTS)
+	if err != nil {
+		panic(err)
+	}
+
+	// 下面的代码运行在新的Namespace中
+
+	err = syscall.Sethostname([]byte("mydocker"))
+	if err != nil {
+		panic(err)
+	}
+
+	cmd := exec.Command("bash")
+
+	cmd.Dir = "/root"
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+# 执行程序，发现进程内的主机名已经被修改
+[root@mydocker ~]# hostname
+mydocker
+
+# 查看宿主机的主机名，没有变化，测试成功
+[root@archlinux ~]# hostname
+archlinux
+
+# 疑问：是不是可以直接代替/proc/self/exe呢？
+```
+
+:::
+
+<br />
+
 ### 进入指定进程的命名空间
 
 Github：[https://github.com/opencontainers/runc/tree/main/libcontainer/nsenter](https://github.com/opencontainers/runc/tree/main/libcontainer/nsenter)
@@ -2010,3 +2089,5 @@ mydocker
 ```
 
 :::
+
+<br />
