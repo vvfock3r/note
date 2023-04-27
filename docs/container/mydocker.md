@@ -1722,6 +1722,10 @@ total 0
 
 ### Mount（下）：隔离系统
 
+说明：
+
+* 使用 `man 2 pivot_root` 查看系统调用说明
+
 ::: details （1）使用 Shell 隔离根文件系统
 
 ```bash
@@ -1967,6 +1971,14 @@ PID   USER     TIME  COMMAND
 ```
 
 :::
+
+<br />
+
+### TIME
+
+<br />
+
+### CGROUP
 
 <br />
 
