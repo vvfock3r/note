@@ -1983,3 +1983,30 @@ PID   USER     TIME  COMMAND
 <br />
 
 ### 进入指定进程的命名空间
+
+Github：[https://github.com/opencontainers/runc/tree/main/libcontainer/nsenter](https://github.com/opencontainers/runc/tree/main/libcontainer/nsenter)
+
+::: details （1）使用Shell命令 nsenter 进入指定命名空间
+
+```bash
+# 终端1：创建一个UTS命名空间，并打开bash
+[root@archlinux ~]# unshare --uts bash
+[root@archlinux ~]# hostname mydocker
+[root@archlinux ~]# echo $$
+654
+
+# 终端2：使用nsenter进入 指定进程的某个命名空间
+[root@archlinux ~]# nsenter -t 654 --uts
+[root@mydocker ~]# hostname
+mydocker
+```
+
+:::
+
+::: details （2）使用Go进入指定命名空间
+
+```go
+
+```
+
+:::
