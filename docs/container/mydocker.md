@@ -1988,12 +1988,12 @@ PID   USER     TIME  COMMAND
 
 * `clone` 创建一个新的子进程，然后让子进程加入新的 namespace，而当前进程namespace保持不变
 * `unshare` 使当前进程加入新的 namespace
-* 查看文档 `man 2 clone` 、 `man 2 unshare` 
+* 查看文档 `man 2 clone` 和 `man 2 unshare` 
 
 **Go代码参数**
 
-* syscall.SysProcAttr 包含 Cloneflags 和 Unshareflags 参数，都是uintptr类型的值
-* syscall.Unshare(flags int) 方法
+* syscall.SysProcAttr 包含 `Cloneflags `和 `Unshareflags` 参数，都是uintptr类型的值
+* `syscall.Unshare(flags int) ` 方法，对应Linux unshare系统调用
 
 <br />
 
