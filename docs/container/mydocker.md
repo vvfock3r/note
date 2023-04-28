@@ -2244,7 +2244,62 @@ mydocker
 ::: details （2）使用Go进入指定命名空间
 
 ```go
+package main
 
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+/*
+#cgo LDFLAGS: -lutil
+#include <sched.h>
+#include <unistd.h>
+
+void enter_namespace(int fd) {
+    setns(fd, 0);
+}
+*/
+import "C"
+
+// EnterNamespace enters the namespace of the specified PID and executes the specified program
+func EnterNamespace(pid int, programPath string) error {
+	// Open the process's namespace file
+	nsPath := fmt.Sprintf("/proc/%d/ns", pid)
+	nsFile, err := os.Open(nsPath)
+	if err != nil {
+		return fmt.Errorf("failed to open namespace file: %w", err)
+	}
+	defer nsFile.Close()
+
+	// Get the file descriptor of the namespace file
+	nsFd := nsFile.Fd()
+
+	// Use C function to enter the namespace
+	C.enter_namespace(C.int(nsFd))
+
+	// Execute the specified program in the new namespace
+	cmd := exec.Command(programPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to execute program: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	// Example usage: enter the namespace of PID 12345 and execute the 'ls' command
+	pid := 1517
+	program := "/bin/bash"
+	if err := EnterNamespace(pid, program); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
 ```
 
 :::
