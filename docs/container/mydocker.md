@@ -2083,7 +2083,7 @@ func main() {
 		panic(errno.Error())
 	}
 
-    // 区分父进程和子进程
+	// 区分父进程和子进程
 	if pid == 0 {
 		// 子进程中执行
 		argv0 := "/bin/bash"
@@ -2099,7 +2099,37 @@ func main() {
 			panic(err)
 		}
 	}
+}
 ```
+
+输出结果
+
+```bash
+[root@archlinux ~]# pstree -pl
+systemd(1)─┬─agetty(304)
+		   ...
+           ├─sshd(298)─┬─sshd(478)─┬─bash(488)───pstree(1236)
+           │           │           └─bash(545)
+           │           └─sshd(501)───___1go_build_ex(1229)─┬─bash(1234)
+           │                                               ├─{___1go_build_ex}(1230)
+           │                                               ├─{___1go_build_ex}(1231)
+           │                                               ├─{___1go_build_ex}(1232)
+           │                                               └─{___1go_build_ex}(1233)
+
+# 宿主机UTS
+[root@archlinux ~]# ls -l /proc/self/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:29 /proc/self/ns/uts -> 'uts:[4026531838]'
+
+# 父进程UTS
+[root@archlinux ~]# ls -l /proc/1229/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:27 /proc/1229/ns/uts -> 'uts:[4026531838]'
+
+# 子进程UTS
+[root@archlinux ~]# ls -l /proc/1234/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:27 /proc/1234/ns/uts -> 'uts:[4026532576]'
+```
+
+<br />
 
 **unshare系统调用**
 
@@ -2138,6 +2168,35 @@ func main() {
 	}
 }
 ```
+
+输出结果
+
+```bash
+[root@archlinux ~]# pstree -pl
+systemd(1)─┬─agetty(304)
+		   ...
+           ├─sshd(298)─┬─sshd(478)─┬─bash(488)───pstree(1253)
+           │           │           └─bash(545)
+           │           └─sshd(501)───___1go_build_ex(1247)─┬─bash(1252)
+           │                                               ├─{___1go_build_ex}(1248)
+           │                                               ├─{___1go_build_ex}(1249)
+           │                                               ├─{___1go_build_ex}(1250)
+           │                                               └─{___1go_build_ex}(1251)
+           
+# 宿主机UTS
+[root@archlinux ~]# ls -l /proc/self/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:29 /proc/self/ns/uts -> 'uts:[4026531838]'
+
+# 父进程UTS
+[root@archlinux ~]# ls -l /proc/1247/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:30 /proc/1247/ns/uts -> 'uts:[4026532576]'
+
+# 子进程UTS
+[root@archlinux ~]# ls -l /proc/1252/ns/uts
+lrwxrwxrwx 1 root root 0 Apr 28 17:30 /proc/1252/ns/uts -> 'uts:[4026532576]'
+```
+
+
 
 :::
 
