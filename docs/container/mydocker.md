@@ -1986,8 +1986,8 @@ PID   USER     TIME  COMMAND
 
 **Linux系统调用**
 
-* `clone` 创建一个新的子进程，然后让子进程加入新的 namespace，而当前进程namespace保持不变
-* `unshare` 使当前进程加入新的 namespace
+* `clone` 创建一个子进程，使子进程加入新的 namespace，父进程namespace保持不变
+* `unshare` 不会创建子进程，直接使当前进程加入新的 namespace
 * 查看文档 `man 2 clone` 和 `man 2 unshare` 
 
 **Go代码参数**
@@ -1997,15 +1997,7 @@ PID   USER     TIME  COMMAND
 
 <br />
 
-::: details （1）syscall.SysProcAttr：Cloneflags 和 Unshareflags的不同
-
-```go
-
-```
-
-:::
-
-::: details （2）syscall.Unshare示例
+::: details （1）unshare系统调用：Go syscall.Unshare
 
 ```go
 package main
@@ -2054,7 +2046,105 @@ mydocker
 [root@archlinux ~]# hostname
 archlinux
 
-# 疑问：是不是可以直接代替/proc/self/exe呢？
+# 分析
+# 1、疑问：是不是可以直接代替/proc/self/exe呢？
+# 2、使用更底层的写法
+	// 创建一个新的UTS命名空间，并使当前进程加入新的命名空间
+	//err := syscall.Unshare(syscall.CLONE_NEWUTS)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// 上面的代码也可以这样写
+	_, _, errno := syscall.Syscall(syscall.SYS_UNSHARE, syscall.CLONE_NEWUTS, 0, 0)
+	if errno != 0 {
+		panic(errno.Error())
+	}
+```
+
+:::
+
+::: details （2）clone系统调用和unshare系统调用的区别
+
+**clone系统调用**
+
+```go
+package main
+
+import (
+	"os"
+	"syscall"
+)
+
+func main() {
+	// Linux clone 系统调用
+	pid, _, errno := syscall.Syscall(syscall.SYS_CLONE, syscall.CLONE_NEWUTS, 0, 0)
+	if errno != 0 {
+		panic(errno.Error())
+	}
+
+    // 区分父进程和子进程
+	if pid == 0 {
+		// 子进程中执行
+		argv0 := "/bin/bash"
+		argv := append([]string{"/bin/sh"}, os.Args[1:]...)
+		envv := append(os.Environ(), "PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/bin")
+		if err := syscall.Exec(argv0, argv, envv); err != nil {
+			panic(err)
+		}
+	} else {
+		// 父进程中执行
+		_, err := syscall.Wait4(int(pid), nil, 0, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+```
+
+**unshare系统调用**
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	// Linux unshare 系统调用
+	_, _, errno := syscall.Syscall(syscall.SYS_UNSHARE, syscall.CLONE_NEWUTS, 0, 0)
+	if errno != 0 {
+		panic(errno.Error())
+	}
+
+	//下面的代码运行在新的Namespace中
+
+	err := syscall.Sethostname([]byte("mydocker"))
+	if err != nil {
+		panic(err)
+	}
+
+	cmd := exec.Command("bash")
+
+	cmd.Dir = "/root"
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+}
+```
+
+:::
+
+::: details （3）syscall.SysProcAttr：Cloneflags 和 Unshareflags的不同
+
+```go
+
 ```
 
 :::
