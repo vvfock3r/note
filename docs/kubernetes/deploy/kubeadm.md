@@ -23,7 +23,7 @@
 set paste
 
 # (3) 安装Ansible,推荐安装较新的版本
-[root@localhost ~]# yum install ansible             # 方式1
+[root@localhost ~]# yum install ansible -y          # 方式1
 [root@localhost ~]# pip install ansible             # 方式2
 [root@localhost ~]# ansible --version
 ansible 2.9.27

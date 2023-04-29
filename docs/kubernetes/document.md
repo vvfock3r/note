@@ -30,7 +30,7 @@ Kube-APIServer 是 Kubernetes 最重要的核心组件之一，主要提供以�
 
 **2、Etcd**
 
-etcd 是 CoreOS 基于Raft协议开发的高度一致的分布式key-value 存储，可用于配置存储、服务发现以及一致性保障（如数据库选主、分布式锁等）
+etcd 是 CoreOS 基于Raft协议的高可用的分布式key-value 存储，可用于配置存储、服务发现以及一致性保障（如数据库选主、分布式锁等）
 
 etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etcd`写入/查询数据
 
