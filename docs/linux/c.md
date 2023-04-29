@@ -460,6 +460,9 @@ int main() {
 // ...
 // [成员n数据类型] [成员n名称];
 // };
+// 
+// 也可以声明变量时赋值
+// struct Person persion = {"Tom", 25, "123 Main Street, New York, NY 10001"};
 ```
 
 输出结果
@@ -468,6 +471,103 @@ int main() {
 Name: bob                             
 Age : 18                              
 Addr : Main Street, New York, NY 10001
+```
+
+:::
+
+<br />
+
+### 数组
+
+::: details （1）定义和访问数组
+
+```c
+#include <stdio.h>
+
+int main() {
+    // 定义一个由4个元素的数组
+    int count[4];
+
+    // 修改值
+    count[0] = 100;
+    count[1] = 200;
+    count[2] = 300;
+    count[3] = 400;
+
+    // 输出值
+    for (int i = 0; i < 4; ++i) {
+        printf("%d\n", count[i]);
+    }
+
+    return 0;
+}
+
+// 注意:
+//  数组的所有元素类型必须相同
+//  也可以定义时赋值 int count[4] = {1,2,3,4};
+```
+
+输出结果
+
+```bash
+100
+200
+300
+400
+```
+
+:::
+
+::: details （2）字符数组表示字符串
+
+```c
+#include <stdio.h>
+
+int main() {
+    // 定义一个长度为 100的字符数组
+    char str[100] = "Hello, World!";
+
+    // 输出值
+    printf("%s\n", str);
+
+    return 0;
+}
+
+// 注意
+// 所能容纳的字符个数最大是100个
+```
+
+输出结果
+
+```bash
+Hello, World!
+```
+
+:::
+
+::: details （3）字符指针表示字符串
+
+```c
+#include <stdio.h>
+
+int main() {
+    // 定义一个字符指针
+    char *str = "Hello, World!";
+
+    // 输出值
+    printf("%s\n", str);
+
+    return 0;
+}
+
+// 注意
+// 所能容纳的字符个数不限制
+```
+
+输出结果
+
+```bash
+Hello, World!
 ```
 
 :::
