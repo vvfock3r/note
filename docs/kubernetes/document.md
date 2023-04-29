@@ -34,14 +34,7 @@ etcd 是 CoreOS 基于Raft协议开发的高度一致的分布式key-value 存�
 
 etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etcd`写入/查询数据
 
-**（3）Controller Manager**
-
-* Controller Manager 是集群的大脑，是确保整个集群动起来的关键；
-* Controller Manager 是多个控制器的组合，每个 Controller 事实上都是一个control loop，负责侦听其管控的对象，当对象发生变更时完成配置
-* Controller 配置失败通常会触发自动重试，整个集群会在控制器不断重试的机制下确保最终一致性（ **Eventual Consistency**）
-* Controller Manager 作用是确保 Kubernetes 遵循声明式系统规范，确保系统的真实状态（ActualState）与用户定义的期望状态（Desired State）一致
-
-**（4）Scheduler**
+**（3）Scheduler**
 
 * 特殊的 Controller，工作原理与其他控制器无差别
 
@@ -52,6 +45,13 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 * Predict（预选）：过滤不能满足业务需求的节点，如资源不足、端口冲突等。
 * Priority（优选）：按既定要素将满足调度需求的节点评分，选择最佳节点。
 * Bind（绑定）：将计算节点与 Pod 绑定，完成调度
+
+**（4）Controller Manager**
+
+* Controller Manager 是集群的大脑，是确保整个集群动起来的关键；
+* Controller Manager 是多个控制器的组合，每个 Controller 事实上都是一个control loop，负责侦听其管控的对象，当对象发生变更时完成配置
+* Controller 配置失败通常会触发自动重试，整个集群会在控制器不断重试的机制下确保最终一致性（ **Eventual Consistency**）
+* Controller Manager 作用是确保 Kubernetes 遵循声明式系统规范，确保系统的真实状态（ActualState）与用户定义的期望状态（Desired State）一致
 
 :::
 
