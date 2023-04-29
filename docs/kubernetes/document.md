@@ -4,7 +4,7 @@
 
 官方文档：[https://kubernetes.io/zh-cn/docs/home/](https://kubernetes.io/zh-cn/docs/home/)
 
-API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/)
+API文档：[https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/)
 
 Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernetes/kubernetes)
 
@@ -24,13 +24,8 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 Kube-APIServer 是 Kubernetes 最重要的核心组件之一，主要提供以下功能：
 
-* 提供管理集群的 `REST API` 接口，包括:
-  * 认证 Authentication
-  * 授权 Authorization
-  * 准入 Admission（Mutating & Valiating）
-
-* 提供其他模块之间的数据交互和通信的枢纽（其他模块通过 APIServer 查询或修改数据，只有 APIServer 才直接操作 etcd）
-
+* 提供REST API接口，包括：认证 Authentication、授权 Authorization、准入 Admission（Mutating & Valiating）
+* 充当网关的角色，其他模块通过 APIServer 查询或修改数据，只有 APIServer 才直接操作 etcd
 * APIServer 提供 etcd 数据缓存以减少集群对 etcd 的访问
 
 **（2）Etcd**
@@ -54,13 +49,13 @@ Scheduler 的特殊职责在于监控当前集群所有未调度的 Pod，并且
 
 调度阶段分为：
 
-* Predict：过滤不能满足业务需求的节点，如资源不足、端口冲突等。
-* Priority：按既定要素将满足调度需求的节点评分，选择最佳节点。
-* Bind：将计算节点与 Pod 绑定，完成调度
+* Predict（预选）：过滤不能满足业务需求的节点，如资源不足、端口冲突等。
+* Priority（优选）：按既定要素将满足调度需求的节点评分，选择最佳节点。
+* Bind（绑定）：将计算节点与 Pod 绑定，完成调度
 
 :::
 
-::: details （2）Node节点组件
+::: details （2）数据平面组件（Node）
 
 **（1）kubelet**
 
@@ -8673,4 +8668,3 @@ spec:
 
 :::
 
-### 1
