@@ -239,9 +239,9 @@ int main() {
 
 <br />
 
-### 分支语句
+### 逻辑语句
 
-::: details （1）if语句
+::: details （1）if 语句
 
 ```c
 #include <stdio.h>
@@ -261,6 +261,65 @@ int main() {
 
 ```bash
 1 < 2
+```
+
+:::
+
+::: details （2）switch 语句
+
+```c
+#include <stdio.h>
+#include <time.h>
+
+int main() {
+    // 获取今天周几
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+
+    timeinfo = localtime(&rawtime);
+    int weekday = timeinfo->tm_wday;
+
+    switch (weekday) {
+        case 1:
+            printf("周一\n");
+            break;
+        case 2:
+            printf("周二\n");
+            break;
+        case 3:
+            printf("周仨\n");
+            break;
+        case 4:
+            printf("周四\n");
+            break;
+        case 5:
+            printf("周五\n");
+            break;
+        case 6:
+            printf("周六\n");
+            break;
+        default:
+            printf("Unknown\n");
+    }
+    return 0;
+}
+
+// 语法:
+// switch(控制表达式) {
+//  case 常量表达式:
+//      语句序列
+//  case 常量表达式:
+//      语句序列
+//  default:
+//      语句序列
+// }
+```
+
+输出结果
+
+```bash
+周六
 ```
 
 :::
