@@ -90,6 +90,8 @@ PermitRootLogin yes # 添加这行，否则输入密码也登陆不上去
 
 下载地址：[https://archive.archlinux.org/packages](https://archive.archlinux.org/packages)
 
+::: details 点击查看详情
+
 ```bash
 # 比如我要安装Go 1.18 版本
 
@@ -137,5 +139,12 @@ IgnorePkg   = go
 warning: go: ignoring package upgrade (2:1.18.5-1 => 2:1.20.3-1)
  there is nothing to do
 [root@archlinux ~]# 
+
+# ------------------------------------------------------------------------------------------------------------
+
+# 注意事项
+# 它不会自动处理依赖关系，依赖包也需要手动安装
+# 比如要安装低版本的gdb,会提示安装失败，需要先安装对应低版本的gdb-common,然后再安装gdb即可
 ```
 
+:::
