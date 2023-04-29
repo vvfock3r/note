@@ -856,17 +856,14 @@ CONTAINER  IMAGE   CREATED  STATE  NAME  ATTEMPT  POD ID   POD
 
 ```bash
 # 查看都需要哪些镜像
-[root@node-1 ~]# kubeadm config images list --kubernetes-version=1.25.4
-registry.k8s.io/kube-apiserver:v1.25.4
-registry.k8s.io/kube-controller-manager:v1.25.4
-registry.k8s.io/kube-scheduler:v1.25.4
-registry.k8s.io/kube-proxy:v1.25.4
-registry.k8s.io/pause:3.8
-registry.k8s.io/etcd:3.5.5-0
-registry.k8s.io/coredns/coredns:v1.9.3
-
-# 在实际测试中，kubelet所使用的pause镜像并不和kubeadm输出的强一致,所以建议在上面再添加一个版本
-registry.k8s.io/pause:3.6
+[root@localhost ansible]# kubeadm config images list --kubernetes-version=1.27.1
+registry.k8s.io/kube-apiserver:v1.27.1
+registry.k8s.io/kube-controller-manager:v1.27.1
+registry.k8s.io/kube-scheduler:v1.27.1
+registry.k8s.io/kube-proxy:v1.27.1
+registry.k8s.io/pause:3.9
+registry.k8s.io/etcd:3.5.7-0
+registry.k8s.io/coredns/coredns:v1.10.1
 
 # --------------------------------------------------------------------------------
 # 下载和打包镜像
@@ -877,9 +874,9 @@ do
     docker image pull ${line}
     docker image save ${line} -o ${name}.tar
 done
-[root@ap-hongkang ~]# tar zcf kubernetes-images-v1.25.4.tar.gz ./*.tar
-[root@ap-hongkang ~]# ls -lh kubernetes-images-v1.25.4.tar.gz
--rw-r--r-- 1 root root 206M Nov 14 09:08 kubernetes-images-v1.25.4.tar.gz
+[root@ap-hongkang ~]# tar zcf kubernetes-images-v1.27.1.tar.gz ./*.tar
+[root@ap-hongkang ~]# ls -lh kubernetes-images-v1.27.1.tar.gz
+-rw-r--r-- 1 root root 206M Nov 14 09:08 kubernetes-images-v1.27.1.tar.gz
 
 # Ansible主控节点拉取镜像，镜像放到下面这个目录中
 [root@node-1 ~]# mkdir -p /usr/local/kubernetes/kubeadm
@@ -900,14 +897,13 @@ done
 # 所有节点导入镜像
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker image load -i /usr/local/kubernetes/kubeadm/kube-apiserver-v1.25.4.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.25.4.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-scheduler-v1.25.4.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.25.4.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.5-0.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/coredns-v1.9.3.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/pause-3.6.tar && \
-               docker image load -i /usr/local/kubernetes/kubeadm/pause-3.8.tar'"
+    -e "shell='docker image load -i /usr/local/kubernetes/kubeadm/kube-apiserver-v1.27.1.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-controller-manager-v1.27.1.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-scheduler-v1.27.1.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/kube-proxy-v1.27.1.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/etcd-3.5.7-0.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/coredns-v1.10.1.tar && \
+               docker image load -i /usr/local/kubernetes/kubeadm/pause-3.9.tar'"
 ```
 
 <br />
