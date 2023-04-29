@@ -2243,6 +2243,49 @@ mydocker
 
 ::: details （2）使用Go进入指定命名空间
 
+C调用setns
+
+```c
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <errno.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <pid>\n", argv[0]);
+        return 1;
+    }
+
+    int pid = atoi(argv[1]);
+    char path[256];
+    sprintf(path, "/proc/%d/ns/uts", pid);
+
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+    int ret = setns(fd, CLONE_NEWUTS);
+    if (ret == -1) {
+        perror("setns");
+        return 1;
+    }
+
+    printf("Successfully entered UTS namespace.\n");
+
+    close(fd);
+    return 0;
+}
+```
+
+C调用setns并打开bash(代码略有问题但是能运行)
+
 ```c
 #define _GNU_SOURCE
 #include <sys/wait.h>
