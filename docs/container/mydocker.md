@@ -2243,62 +2243,58 @@ mydocker
 
 ::: details （2）使用Go进入指定命名空间
 
-```go
-package main
-
-import (
-	"fmt"
-	"os"
-	"os/exec"
-)
-
-/*
-#cgo LDFLAGS: -lutil
-#include <sched.h>
+```c
+#define _GNU_SOURCE
+#include <sys/wait.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 
-void enter_namespace(int fd) {
-    setns(fd, 0);
-}
-*/
-import "C"
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <pid>\n", argv[0]);
+        return 1;
+    }
 
-// EnterNamespace enters the namespace of the specified PID and executes the specified program
-func EnterNamespace(pid int, programPath string) error {
-	// Open the process's namespace file
-	nsPath := fmt.Sprintf("/proc/%d/ns", pid)
-	nsFile, err := os.Open(nsPath)
-	if err != nil {
-		return fmt.Errorf("failed to open namespace file: %w", err)
-	}
-	defer nsFile.Close()
+    int pid = atoi(argv[1]);
+    char path[256];
+    sprintf(path, "/proc/%d/ns/uts", pid);
 
-	// Get the file descriptor of the namespace file
-	nsFd := nsFile.Fd()
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        return 1;
+    }
 
-	// Use C function to enter the namespace
-	C.enter_namespace(C.int(nsFd))
+    int ret = setns(fd, CLONE_NEWUTS);
+    if (ret == -1) {
+        perror("setns");
+        return 1;
+    }
 
-	// Execute the specified program in the new namespace
-	cmd := exec.Command(programPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute program: %w", err)
-	}
+    printf("Successfully entered UTS namespace.\n");
 
-	return nil
-}
+    close(fd);
 
-func main() {
-	// Example usage: enter the namespace of PID 12345 and execute the 'ls' command
-	pid := 1517
-	program := "/bin/bash"
-	if err := EnterNamespace(pid, program); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+    pid_t pid_bash = fork();
+
+    if (pid_bash == -1) {
+        perror("fork");
+        return 1;
+    } else if (pid_bash == 0) {
+        setsid();
+        char *args[] = {"/bin/bash", NULL};
+        execvp(args[0], args);
+        perror("execvp");
+        exit(1);
+    }
+
+    wait(NULL);
+    return 0;
 }
 ```
 
