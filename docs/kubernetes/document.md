@@ -36,9 +36,8 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 
 **（3）Scheduler**
 
-* 特殊的 Controller，工作原理与其他控制器无差别
-
 * Scheduler 会监控当前集群所有未调度的 Pod，为待调度 Pod 选择最佳计算节点，完成调度
+* Scheduler 是一种特殊的 Controller，工作原理与其他控制器无差别
 
 调度阶段分为：
 
@@ -59,7 +58,7 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 
 **（1）kubelet**
 
-Agent，在集群中每个节点（Noede)上运行
+在集群中每个节点（Node)上运行，充当Agent的角色
 
 * 监视Node资源状况，定期向APIServer上报
 * 管理本地容器的生命周期，比如创建容器、挂载数据卷、销毁容器等
