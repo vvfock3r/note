@@ -43,9 +43,9 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 
 **（4）Scheduler**
 
-特殊的 Controller，工作原理与其他控制器无差别。
+* 特殊的 Controller，工作原理与其他控制器无差别
 
-Scheduler 的特殊职责在于监控当前集群所有未调度的 Pod，并且获取当前集群所有节点的健康状况和资源使用情况，为待调度 Pod 选择最佳计算节点，完成调度。
+* Scheduler 会监控当前集群所有未调度的 Pod，为待调度 Pod 选择最佳计算节点，完成调度
 
 调度阶段分为：
 
