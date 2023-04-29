@@ -744,22 +744,13 @@ gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors
 EOF
 
 # (2) Ansible主控节点执行：查看软件包版本
-[root@node-1 ~]# yum list --showduplicates kubeadm kubelet kubectl | grep '1.25'
-kubeadm.x86_64                       1.25.0-0                         kubernetes
-kubeadm.x86_64                       1.25.1-0                         kubernetes
-kubeadm.x86_64                       1.25.2-0                         kubernetes
-kubeadm.x86_64                       1.25.3-0                         kubernetes
-kubeadm.x86_64                       1.25.4-0                         kubernetes
-kubectl.x86_64                       1.25.0-0                         kubernetes
-kubectl.x86_64                       1.25.1-0                         kubernetes
-kubectl.x86_64                       1.25.2-0                         kubernetes
-kubectl.x86_64                       1.25.3-0                         kubernetes
-kubectl.x86_64                       1.25.4-0                         kubernetes
-kubelet.x86_64                       1.25.0-0                         kubernetes
-kubelet.x86_64                       1.25.1-0                         kubernetes
-kubelet.x86_64                       1.25.2-0                         kubernetes
-kubelet.x86_64                       1.25.3-0                         kubernetes
-kubelet.x86_64                       1.25.4-0                         kubernetes
+[root@localhost ansible]# yum list --showduplicates kubeadm kubelet kubectl | grep '1.27'
+kubeadm.x86_64                       1.27.0-0                         kubernetes
+kubeadm.x86_64                       1.27.1-0                         kubernetes
+kubectl.x86_64                       1.27.0-0                         kubernetes
+kubectl.x86_64                       1.27.1-0                         kubernetes
+kubelet.x86_64                       1.27.0-0                         kubernetes
+kubelet.x86_64                       1.27.1-0                         kubernetes
 
 # (3) 确认没问题后，将源推送到所有节点
 [root@localhost ansible]# ansible-playbook play_rsync.yaml \
@@ -770,7 +761,7 @@ kubelet.x86_64                       1.25.4-0                         kubernetes
 
 # (4) 安装软件包: kubeadm、kubelet、kubectl
 #     注意这还会安装两个依赖包: cri-tools、kubernetes-cni
-[root@localhost ansible]# Version=1.25.4
+[root@localhost ansible]# Version=1.27.1
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
     -e "shell='yum install -y kubeadm-${Version} \
