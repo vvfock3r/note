@@ -2243,9 +2243,11 @@ mydocker
 
 ::: details （2）使用Go进入指定命名空间
 
-C调用setns
-
 ```c
+package main
+
+/*
+#cgo CFLAGS: -Wall
 #define _GNU_SOURCE
 #include <unistd.h>
 #include <errno.h>
@@ -2255,90 +2257,69 @@ C调用setns
 #include <string.h>
 #include <fcntl.h>
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Usage: %s <pid>\n", argv[0]);
-        return 1;
-    }
-
-    int pid = atoi(argv[1]);
+int nsenter(int pid) {
     char path[256];
     sprintf(path, "/proc/%d/ns/uts", pid);
 
     int fd = open(path, O_RDONLY);
     if (fd == -1) {
-        perror("open");
-        return 1;
+        return -1;
     }
 
     int ret = setns(fd, CLONE_NEWUTS);
     if (ret == -1) {
-        perror("setns");
-        return 1;
+        return -1;
     }
-
-    printf("Successfully entered UTS namespace.\n");
 
     close(fd);
     return 0;
+}
+*/
+import "C"
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+func main() {
+	// Linux系统调用 setns
+	pid := 2259
+	ret := C.nsenter(C.int(pid))
+	if ret == -1 {
+		fmt.Println("Failed to enter UTS namespace")
+		os.Exit(1)
+	}
+	fmt.Println("Successfully entered UTS namespace.")
+
+	// 执行进程
+	cmd := exec.Command("bash")
+	cmd.Dir = "/root"
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
 }
 ```
 
-C调用setns并打开bash(代码略有问题但是能运行)
+输出结果
 
-```c
-#define _GNU_SOURCE
-#include <sys/wait.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sched.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
+```bash
+# 终端1
+[root@archlinux ~]# unshare --uts
+[root@archlinux ~]# echo $$
+2259
+[root@archlinux ~]# hostname abc
+[root@archlinux ~]# 
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Usage: %s <pid>\n", argv[0]);
-        return 1;
-    }
-
-    int pid = atoi(argv[1]);
-    char path[256];
-    sprintf(path, "/proc/%d/ns/uts", pid);
-
-    int fd = open(path, O_RDONLY);
-    if (fd == -1) {
-        perror("open");
-        return 1;
-    }
-
-    int ret = setns(fd, CLONE_NEWUTS);
-    if (ret == -1) {
-        perror("setns");
-        return 1;
-    }
-
-    printf("Successfully entered UTS namespace.\n");
-
-    close(fd);
-
-    pid_t pid_bash = fork();
-
-    if (pid_bash == -1) {
-        perror("fork");
-        return 1;
-    } else if (pid_bash == 0) {
-        setsid();
-        char *args[] = {"/bin/bash", NULL};
-        execvp(args[0], args);
-        perror("execvp");
-        exit(1);
-    }
-
-    wait(NULL);
-    return 0;
-}
+# 终端2
+[root@archlinux ~]# go run main.go
+Successfully entered UTS namespace.
+[root@abc ~]# 
 ```
 
 :::
