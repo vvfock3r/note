@@ -10,6 +10,18 @@
 * Arch Linux
 * gcc (GCC) 12.2.1 20230201
 
+::: details CLion 配置
+
+1、添加SSH主机
+
+2、运行目标设置为Linux
+
+3、工具链设置为Linux（这一步是为了能在Windows上使用Linux API，如下图所示）
+
+![image-20230429221412005](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230429221412005.png)
+
+:::
+
 <br />
 
 ### 基础语法
