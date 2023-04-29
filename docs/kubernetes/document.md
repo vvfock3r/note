@@ -24,13 +24,13 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 Kube-APIServer 是 Kubernetes 最重要的核心组件之一，主要提供以下功能：
 
-* 提供REST API接口，包括：认证 Authentication、授权 Authorization、准入 Admission（Mutating & Valiating）
 * 充当网关的角色，其他模块通过 APIServer 查询或修改数据，只有 APIServer 才直接操作 etcd
+* 提供REST API接口，包括：认证 Authentication、授权 Authorization、准入 Admission（Mutating & Valiating）
 * APIServer 提供 etcd 数据缓存以减少集群对 etcd 的访问
 
 **（2）Etcd**
 
-etcd 是 CoreOS 基于Raft协议开发的高度一致的分布式key-value 存储，可用于服务发现、共享配置以及一致性保障（如数据库选主、分布式锁等）
+etcd 是 CoreOS 基于Raft协议开发的高度一致的分布式key-value 存储，可用于配置存储、服务发现以及一致性保障（如数据库选主、分布式锁等）
 
 etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etcd`写入/查询数据
 
