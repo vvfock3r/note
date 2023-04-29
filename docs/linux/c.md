@@ -4,7 +4,7 @@
 
 ## 基础语法
 
-### 环境
+### 开发环境
 
 * CLion 2023.1.1
 * Arch Linux
@@ -12,7 +12,7 @@
 
 <br />
 
-### 基础
+### 基础语法
 
 ::: details （1）第一个程序
 
@@ -137,7 +137,7 @@ int main() {
 
 <br />
 
-### 函数
+### 函数定义
 
 ::: details （1）自定义函数
 
@@ -148,9 +148,16 @@ int add(int x, int y) {
     return x + y;
 }
 
+void print(char *str) {
+    printf("%s\n", str);
+}
+
 int main() {
     int z = add(1, 2);
     printf("%d\n", z);
+
+    print("hello world!");
+
     return 0;
 }
 
@@ -159,15 +166,82 @@ int main() {
 // {
 //     语句列表
 // }
+//
+// 注意事项
+// 1、不需要返回值的话使用void类型
 ```
 
 输出结果
 
 ```bash
 3
+hello world!
 ```
 
 :::
+
+::: details （2）可变参数：方式1
+
+```c
+#include <stdio.h>
+
+void print_ints(int num, int *args) {
+    for (int i = 0; i < num; i++) {
+        printf("%d ", args[i]);
+    }
+}
+
+int main() {
+    int nums[] = {1, 2, 3, 4, 5};
+    print_ints(5, nums);
+    return 0;
+}
+
+// 使用 int指针 代表可变参数
+```
+
+输出结果
+
+```bash
+1 2 3 4 5
+```
+
+:::
+
+::: details （3）可变参数：方式2
+
+```c
+#include <stdio.h>
+#include <stdarg.h>
+
+void print_ints(int num, ...) {
+    va_list args;
+    va_start(args, num);
+
+    for (int i = 0; i < num; i++) {
+        int val = va_arg(args, int);
+        printf("%d ", val);
+    }
+
+    va_end(args);
+}
+
+int main() {
+    print_ints(5, 1, 2, 3, 4, 5);
+    return 0;
+}
+
+// 使用 宏
+// ... 代表可变参数
+```
+
+:::
+
+<br />
+
+### 分支语句
+
+
 
 <br />
 
