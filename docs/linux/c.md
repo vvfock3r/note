@@ -324,6 +324,154 @@ int main() {
 
 :::
 
+::: details （3）while 语句
+
+```c
+#include <stdio.h>
+
+int main() {
+    int n = 1;
+    while (n < 10) {
+        printf("%d\n", n);
+        n++;
+    }
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+:::
+
+::: details （4）do/while 语句
+
+```c
+#include <stdio.h>
+
+int main() {
+    int n = 1;
+    do {
+        printf("%d\n", n);
+        n++;
+    } while (n < 10);
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+:::
+
+::: details （5）for 语句
+
+```c
+#include <stdio.h>
+
+int main() {
+    for (int i = 0; i < 10; ++i) {
+        printf("%d\n",i);
+    }
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+:::
+
+<br />
+
+### 结构体
+
+::: details （1）定义和访问结构体
+
+```c
+#include <stdio.h>
+#include "string.h"
+
+// 定义结构体
+struct Person {
+    char name[50];
+    int age;
+    char address[100];
+};
+
+int main() {
+    // 定义结构体变量
+    // struct 结构体类型名 结构体变量名;
+    struct Person persion;
+
+    // 赋值: 方法1, 字符串赋值
+    // 要确保目标字符串(即第一个参数)有足够的空间来存储源字符串(即第二个参数)的内容，以避免缓冲区溢出问题
+    strcpy(persion.name, "bob");
+    strcpy(persion.address, "Main Street, New York, NY 10001");
+
+    // 赋值: 方法2
+    persion.age = 18;
+
+    // 访问
+    printf("Name: %s\n", persion.name);
+    printf("Age : %d\n", persion.age);
+    printf("Addr : %s\n", persion.address);
+
+    return 0;
+}
+
+// 结构体语法:
+// struct [结构体名称] {
+// [成员1数据类型] [成员1名称];
+// [成员2数据类型] [成员2名称];
+// ...
+// [成员n数据类型] [成员n名称];
+// };
+```
+
+输出结果
+
+```bash
+Name: bob                             
+Age : 18                              
+Addr : Main Street, New York, NY 10001
+```
+
+:::
+
 <br />
 
 ## 系统调用
