@@ -1287,6 +1287,8 @@ b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
 
 ### 部署网络插件Calico
 
+文档：[https://docs.tigera.io/calico/latest/getting-started/kubernetes/quickstart#install-calico](https://docs.tigera.io/calico/latest/getting-started/kubernetes/quickstart#install-calico)
+
 **镜像需要在所有节点安装，部署仅需要在任意节点即可**
 
 ```bash
@@ -1296,25 +1298,25 @@ b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
     -e "shell='mkdir -p /usr/local/kubernetes/cni'"
 
 # (2) 下载YAML文件
-[root@node-1 ansible]# wget -c https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+[root@node-1 ansible]# wget -c https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/calico.yaml
 
 # (3) 查看一下所需的镜像
 [root@node-1 ansible]# cat calico.yaml | grep -i 'image:' | sort -u
-          image: docker.io/calico/cni:v3.24.5
-          image: docker.io/calico/kube-controllers:v3.24.5
-          image: docker.io/calico/node:v3.24.5
+          image: docker.io/calico/cni:v3.25.1
+          image: docker.io/calico/kube-controllers:v3.25.1
+          image: docker.io/calico/node:v3.25.1
 
 # ----------------------------------------------------------------------------------------
 
 # (4) 这一部分镜像不需要科学上网，可以提前下载，也可以在部署过程中自动下载
 # 本地下载太慢了，这里依旧使用科学上网方式进行处理
-[root@ap-hongkang ~]# docker image pull calico/cni:v3.24.5
-[root@ap-hongkang ~]# docker image pull calico/kube-controllers:v3.24.5
-[root@ap-hongkang ~]# docker image pull calico/node:v3.24.5
+[root@ap-hongkang ~]# docker image pull calico/cni:v3.25.1
+[root@ap-hongkang ~]# docker image pull calico/kube-controllers:v3.25.1
+[root@ap-hongkang ~]# docker image pull calico/node:v3.25.1
 
-[root@ap-hongkang ~]# docker image save calico/cni:v3.24.5 -o calico-cni-v3.24.5.tar
-[root@ap-hongkang ~]# docker image save calico/kube-controllers:v3.24.5 -o calico-kube-controllers-v3.24.5.tar
-[root@ap-hongkang ~]# docker image save calico/node:v3.24.5 -o calico-node-v3.24.5.tar
+[root@ap-hongkang ~]# docker image save calico/cni:v3.25.1 -o calico-cni-v3.25.1.tar
+[root@ap-hongkang ~]# docker image save calico/kube-controllers:v3.25.1 -o calico-kube-controllers-v3.25.1.tar
+[root@ap-hongkang ~]# docker image save calico/node:v3.25.1 -o calico-node-v3.25.1.tar
 
 [root@ap-hongkang ~]# tar zcf calico.tar.gz ./calico-*.tar
 
@@ -1331,9 +1333,9 @@ b59bf7397b0a8f7dee02601c09ab72ff5772ebd109fffcc8f59df35f9baa98d0
     
 [root@localhost ansible]# ansible-playbook play_shell.yaml \
     -e "host='all'" \
-    -e "shell='docker image load -i /usr/local/kubernetes/cni/calico-cni-v3.24.5.tar && \
-               docker image load -i /usr/local/kubernetes/cni/calico-kube-controllers-v3.24.5.tar && \
-               docker image load -i /usr/local/kubernetes/cni/calico-node-v3.24.5.tar'"
+    -e "shell='docker image load -i /usr/local/kubernetes/cni/calico-cni-v3.25.1.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico-kube-controllers-v3.25.1.tar && \
+               docker image load -i /usr/local/kubernetes/cni/calico-node-v3.25.1.tar'"
 
 # (7) 部署
 [root@localhost ansible]# kubectl apply -f calico.yaml
@@ -1347,7 +1349,7 @@ kube-system   calico-node-jsml2                          1/1     Running   0    
 # (9) 查看Node状态
 [root@node-1 ansible]# kubectl get node
 NAME     STATUS   ROLES           AGE   VERSION
-node-1   Ready    control-plane   28m   v1.25.4
+node-1   Ready    control-plane   28m   v1.27.1
 ```
 
 ### 初始化其他Master节点
@@ -1374,9 +1376,9 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # (4) 测试kubectl
 [root@node-2 ~]# kubectl get node
 NAME     STATUS   ROLES           AGE    VERSION
-node-1   Ready    control-plane   31m    v1.25.4
-node-2   Ready    control-plane   105s   v1.25.4
-node-3   Ready    control-plane   56s    v1.25.4
+node-1   Ready    control-plane   31m    v1.27.1
+node-2   Ready    control-plane   105s   v1.27.1
+node-3   Ready    control-plane   56s    v1.27.1
 ```
 
 ### 初始化所有Node节点
@@ -1416,10 +1418,10 @@ Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 # (3) 在任意一个Master上执行
 [root@node-1 ansible]# kubectl get nodes
 NAME     STATUS   ROLES           AGE     VERSION
-node-1   Ready    control-plane   7m23s   v1.25.4
-node-2   Ready    control-plane   4m26s   v1.25.4
-node-3   Ready    control-plane   3m58s   v1.25.4
-node-4   Ready    <none>          97s     v1.25.4
+node-1   Ready    control-plane   7m23s   v1.27.1
+node-2   Ready    control-plane   4m26s   v1.27.1
+node-3   Ready    control-plane   3m58s   v1.27.1
+node-4   Ready    <none>          97s     v1.27.1
 ```
 
 ### 优化Kube-Proxy为ipvs模式
@@ -1601,10 +1603,10 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 ```bash
 # 查看一下版本
 [root@node-1 ansible]# kubectl -n kube-system get deploy calico-kube-controllers -o yaml | grep image:
-        image: docker.io/calico/kube-controllers:v3.24.5
+        image: docker.io/calico/kube-controllers:v3.25.1
 
 # 下载客户端
-[root@node-1 ansible]# wget -c https://github.com/projectcalico/calico/releases/download/v3.24.5/calicoctl-linux-amd64
+[root@node-1 ansible]# wget -c https://github.com/projectcalico/calico/releases/download/v3.25.1/calicoctl-linux-amd64
 [root@node-1 ansible]# mv calicoctl-linux-amd64 /usr/local/bin/calicoctl
 [root@node-1 ansible]# chmod 755 /usr/local/bin/calicoctl
 
@@ -1613,7 +1615,7 @@ export ETCDCTL_KEY=/etc/kubernetes/pki/apiserver-etcd-client.key
 NAME     
 node-1   
 node-2   
-node-3   
+node-3
 node-4 
 
 # 分发到所有Master节点
