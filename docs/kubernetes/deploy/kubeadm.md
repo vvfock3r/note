@@ -1035,23 +1035,24 @@ networking:
 ```bash
 [root@node-1 ansible]# kubeadm init --config kubeadm_config/kubeadm_init.yaml --upload-certs
 
-[init] Using Kubernetes version: v1.25.4
+[init] Using Kubernetes version: v1.27.1
 [preflight] Running pre-flight checks
 [preflight] Pulling images required for setting up a Kubernetes cluster
 [preflight] This might take a minute or two, depending on the speed of your internet connection
 [preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
+W0429 16:02:44.664128   29519 images.go:80] could not find officially supported version of etcd for Kubernetes v1.27.1, falling back to the nearest etcd version (3.5.7-0)
 [certs] Using certificateDir folder "/etc/kubernetes/pki"
 [certs] Generating "ca" certificate and key
 [certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.151]
+[certs] apiserver serving cert is signed for DNS names [api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.132]
 [certs] Generating "apiserver-kubelet-client" certificate and key
 [certs] Generating "front-proxy-ca" certificate and key
 [certs] Generating "front-proxy-client" certificate and key
 [certs] Generating "etcd/ca" certificate and key
 [certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.151 127.0.0.1 ::1]
+[certs] etcd/server serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
 [certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.151 127.0.0.1 ::1]
+[certs] etcd/peer serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
 [certs] Generating "etcd/healthcheck-client" certificate and key
 [certs] Generating "apiserver-etcd-client" certificate and key
 [certs] Generating "sa" key and public key
@@ -1068,16 +1069,113 @@ networking:
 [control-plane] Creating static Pod manifest for "kube-controller-manager"
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
+W0429 16:02:47.961071   29519 images.go:80] could not find officially supported version of etcd for Kubernetes v1.27.1, falling back to the nearest etcd version (3.5.7-0)
 [wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
-[apiclient] All control plane components are healthy after 9.006465 seconds
+[kubelet-check] Initial timeout of 40s passed.
+
+Unfortunately, an error has occurred:
+        timed out waiting for the condition
+
+This error is likely caused by:
+        - The kubelet is not running
+        - The kubelet is unhealthy due to a misconfiguration of the node in some way (required cgroups disabled)
+
+If you are on a systemd-powered system, you can try to troubleshoot the error with the following commands:
+        - 'systemctl status kubelet'
+[root@node-1 ansible]# kubeadm init \
+>     --control-plane-endpoint=api.k8s.local:6443 \
+>     --kubernetes-version=v1.27.1 \
+>     --pod-network-cidr=10.100.0.0/16 \
+>     --service-cidr=10.200.0.0/16 \
+>     --cri-socket unix:///var/run/cri-dockerd.sock \
+>     --upload-certs \
+>     --token-ttl=24h
+[init] Using Kubernetes version: v1.27.1
+[preflight] Running pre-flight checks
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your internet connection
+[preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
+W0429 16:09:37.007407    1677 images.go:80] could not find officially supported version of etcd for Kubernetes v1.27.1, falling back to the nearest etcd version (3.5.7-0)
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.132]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Starting the kubelet
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+[root@node-1 ansible]# kubeadm init \
+>     --control-plane-endpoint=api.k8s.local:6443 \
+>     --kubernetes-version=v1.27.1 \
+>     --pod-network-cidr=10.100.0.0/16 \
+>     --service-cidr=10.200.0.0/16 \
+>     --cri-socket unix:///var/run/cri-dockerd.sock \
+>     --upload-certs \
+>     --token-ttl=24h
+[init] Using Kubernetes version: v1.27.1
+[preflight] Running pre-flight checks
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your internet connection
+[preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
+W0429 16:16:30.937957    3614 images.go:80] could not find officially supported version of etcd for Kubernetes v1.27.1, falling back to the nearest etcd version (3.5.7-0)
+[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [api.k8s.local kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local node-1] and IPs [10.200.0.1 192.168.48.132]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [localhost node-1] and IPs [192.168.48.132 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Starting the kubelet
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
+W0429 16:16:34.257554    3614 images.go:80] could not find officially supported version of etcd for Kubernetes v1.27.1, falling back to the nearest etcd version (3.5.7-0)
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[apiclient] All control plane components are healthy after 6.003309 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Storing the certificates in Secret "kubeadm-certs" in the "kube-system" Namespace
 [upload-certs] Using certificate key:
-9b5125ce11141499ea536f236d90995e2cdf76eec5c2e1da559872a938192623
+bf2e929c298fbaa626abbfed7c9405707a80d5f44b7e216b8a81526eaef4106f
 [mark-control-plane] Marking the node node-1 as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
 [mark-control-plane] Marking the node node-1 as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: zg2cxd.ouzbd77knv3ukpcb
+[bootstrap-token] Using token: jdgp3p.35xik4miakq16sxh
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -1106,9 +1204,9 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 You can now join any number of the control-plane node running the following command on each as root:
 
-  kubeadm join api.k8s.local:6443 --token zg2cxd.ouzbd77knv3ukpcb \
-        --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4 \
-        --control-plane --certificate-key 9b5125ce11141499ea536f236d90995e2cdf76eec5c2e1da559872a938192623
+  kubeadm join api.k8s.local:6443 --token jdgp3p.35xik4miakq16sxh \
+        --discovery-token-ca-cert-hash sha256:53f045f1e3df91df97f52a30f4d7556c411f6ff18912c9d32356d198cd031ecc \
+        --control-plane --certificate-key bf2e929c298fbaa626abbfed7c9405707a80d5f44b7e216b8a81526eaef4106f
 
 Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
@@ -1116,8 +1214,8 @@ As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you c
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join api.k8s.local:6443 --token zg2cxd.ouzbd77knv3ukpcb \
-        --discovery-token-ca-cert-hash sha256:2b0ad51333ecbff01e498adf634e8e0a9b602eedea879099c169a3aa41bde7d4
+kubeadm join api.k8s.local:6443 --token jdgp3p.35xik4miakq16sxh \
+        --discovery-token-ca-cert-hash sha256:53f045f1e3df91df97f52a30f4d7556c411f6ff18912c9d32356d198cd031ecc
 ```
 
 :::
@@ -1137,7 +1235,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # (3) 测试kubectl
 [root@node-1 ansible]# kubectl get node
 NAME     STATUS     ROLES           AGE   VERSION
-node-1   NotReady   control-plane   37s   v1.25.4
+node-1   NotReady   control-plane   81s   v1.27.1
 ```
 
 <br />
