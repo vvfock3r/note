@@ -950,7 +950,7 @@ done
 # 初始化第一个Master,输出结果参考最下方
 [root@node-1 ansible]# kubeadm init \
     --control-plane-endpoint=api.k8s.local:6443 \
-    --kubernetes-version=v1.25.4 \
+    --kubernetes-version=v1.27.1 \
     --pod-network-cidr=10.100.0.0/16 \
     --service-cidr=10.200.0.0/16 \
     --cri-socket unix:///var/run/cri-dockerd.sock \
@@ -1001,7 +1001,7 @@ etcd:
     dataDir: /var/lib/etcd
 imageRepository: registry.k8s.io
 kind: ClusterConfiguration
-kubernetesVersion: 1.25.4                                   # (5) 修改版本
+kubernetesVersion: 1.27.1                                   # (5) 修改版本
 controlPlaneEndpoint: api.k8s.local                         # (6) 新增一行,指定全局的endpoint
 networking:
   dnsDomain: cluster.local
@@ -1019,7 +1019,7 @@ certificateKey: null
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
-kubernetesVersion: 1.25.4
+kubernetesVersion: 1.27.1
 controlPlaneEndpoint: api.k8s.local
 networking:
   dnsDomain: cluster.local
