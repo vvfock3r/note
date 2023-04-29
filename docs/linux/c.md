@@ -139,7 +139,35 @@ int main() {
 
 ### 函数
 
+::: details （1）自定义函数
 
+```c
+#include <stdio.h>
+
+int add(int x, int y) {
+    return x + y;
+}
+
+int main() {
+    int z = add(1, 2);
+    printf("%d\n", z);
+    return 0;
+}
+
+// 语法
+// 返回值类型 函数名(参数列表)
+// {
+//     语句列表
+// }
+```
+
+输出结果
+
+```bash
+3
+```
+
+:::
 
 <br />
 
