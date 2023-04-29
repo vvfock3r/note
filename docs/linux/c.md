@@ -241,7 +241,29 @@ int main() {
 
 ### 分支语句
 
+::: details （1）if语句
 
+```c
+#include <stdio.h>
+
+int main() {
+    int x = 1, y = 2;
+    if (x > y) {
+        printf("%d > %d\n", x, y);
+    } else {
+        printf("%d < %d\n", x, y);
+    }
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1 < 2
+```
+
+:::
 
 <br />
 
