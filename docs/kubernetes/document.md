@@ -16,7 +16,7 @@ Github：[https://github.com/kubernetes/kubernetes](https://github.com/kubernete
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/overview/components/](https://kubernetes.io/zh-cn/docs/concepts/overview/components/)
 
-::: details （1）控制平面组件（Control Plane）
+::: details （1）Master组件
 
 控制平面（Control Plane Components）包含以下组件
 
@@ -54,7 +54,7 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 
 :::
 
-::: details （2）数据平面组件（Node）
+::: details （2）Node组件
 
 **1、kubelet**
 
@@ -73,6 +73,16 @@ etcd用于长久保存 Kubernetes API对象，只有``kube-apiserver``会向`etc
 
 * 负责集群内部或外部的网络会话与 Pod 进行网络通信
 * 负责对正在服务的Pods进行负载均衡
+
+:::
+
+::: details （3）其他组件
+
+DNS插件：CoreDNS是一个可插拔的DNS服务器，支持Kubernetes中的服务发现和负载均衡。它是Kubernetes 1.13及更高版本中默认的DNS插件
+
+网络插件：负责为 Kubernetes 集群中的 Pod 提供网络连接，以便它们之间可以相互通信。常用的网络插件包括 Calico、Flannel、Cilium 等
+
+存储插件：负责为 Kubernetes 集群中的 Pod 提供持久化存储功能，以便它们可以在节点之间迁移，常用的存储插件包括 NFS、Ceph 等
 
 :::
 
