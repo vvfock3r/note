@@ -6765,7 +6765,14 @@ If you don't see a command prompt, try pressing enter.
 # ----------------------------------------------------------
 # 这发生了什么变化?
 
-# 搜一下这俩容器
+# 看一下Pod没有发生变化
+[root@node-1 ~]# kubectl get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-5957c6c495-56z65   1/1     Running   0          19m
+nginx-5957c6c495-58dn2   1/1     Running   0          19m
+nginx-5957c6c495-6qtkk   1/1     Running   0          19m
+
+# 搜一下容器，发现有两个
 [root@node-1 ~]# crictl ps -a | grep 5957c6c495-56z65
 d3ea2bb65248d       eeb6ee3f44bd0                                                                     5 minutes ago       Running             debugger-wrtx5            0                   cb3ae1515934b       nginx-5957c6c495-56z65
 7e9f75526fe9c       nginx@sha256:63b44e8ddb83d5dd8020327c1f40436e37a6fffd3ef2498a6204df23be6e7e94     6 minutes ago       Running             web                       0                   cb3ae1515934b       nginx-5957c6c495-56z65
@@ -6819,6 +6826,12 @@ ETag: "64230162-267"
 Accept-Ranges: bytes
 
 # 网络共享能做的事举例: 网络连通性测试、抓包等待
+
+# ----------------------------------------------------------
+# 退出debugger容器后，并不会自动销毁，而是显示退出状态
+[root@node-1 ~]# crictl ps -a | grep 5957c6c495-56z65
+d3ea2bb65248d       eeb6ee3f44bd0                                                                     17 minutes ago      Exited              debugger-wrtx5            0                   cb3ae1515934b       nginx-5957c6c495-56z65
+7e9f75526fe9c       nginx@sha256:63b44e8ddb83d5dd8020327c1f40436e37a6fffd3ef2498a6204df23be6e7e94     19 minutes ago      Running             web                       0                   cb3ae1515934b       nginx-5957c6c495-56z65
 ```
 
 :::
