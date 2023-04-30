@@ -6720,22 +6720,110 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 ## Debug
 
-::: details （1）kubectl debug 基本用法
+::: details 准备环境
 
 ```bash
-# 启动一个Nginx容器
-[root@node-1 ~]# kubectl run nginx --image=nginx:latest
+# 生成yaml文件      
+[root@node-1 ~]# cat > deployment.yaml <<- EOF
+apiVersion: apps/v1     # API版本
+kind: Deployment        # 类型为 Deployment
+metadata:               # Deployment元数据
+  name: nginx           #   名称
+  namespace: default    #   所属命名空间
+spec:                   # Deployment定义
+  replicas: 3           #   定义预期的Pod副本数量
+  selector:             #   定义标签选择器
+    matchLabels:        #     用于与指定标签的Pod关联
+      app: web          #
+  template:             # Pod模板
+    metadata:           #   Pod元数据
+      labels:           #     定义Pod标签
+        app: web        #
+    spec:               #   Pod定义
+      containers:
+      - name: web
+        image: nginx:latest
+        command: ['nginx', '-g', 'daemon off;']
+EOF
 
+# 创建Deployment
+[root@node-1 ~]# kubectl apply -f deployment.yaml
+deployment.apps/nginx created
+```
+
+:::
+
+::: details （1）kubectl debug 基本用法：共享网络和IPC命名空间
+
+```bash
 # 基本用法
-[root@node-1 ~]# kubectl debug -it nginx --image=centos:7
-Defaulting debug container name to debugger-l6xzx.
+[root@node-1 ~]# kubectl debug -it nginx-5957c6c495-56z65 --image=centos:7
+Defaulting debug container name to debugger-wrtx5.
 If you don't see a command prompt, try pressing enter.
-[root@nginx /]# 
+[root@nginx-5957c6c495-56z65 /]# 
 
 # ----------------------------------------------------------
 # 这发生了什么变化?
 
+# 搜一下这俩容器
+[root@node-1 ~]# crictl ps -a | grep 5957c6c495-56z65
+d3ea2bb65248d       eeb6ee3f44bd0                                                                     5 minutes ago       Running             debugger-wrtx5            0                   cb3ae1515934b       nginx-5957c6c495-56z65
+7e9f75526fe9c       nginx@sha256:63b44e8ddb83d5dd8020327c1f40436e37a6fffd3ef2498a6204df23be6e7e94     6 minutes ago       Running             web                       0                   cb3ae1515934b       nginx-5957c6c495-56z65
+
+# 找到他们真实的PID
+[root@node-1 ~]# crictl inspect 7e9f75526fe9c | grep -i pid		# nginx容器
+    "pid": 88680
+[root@node-1 ~]# crictl inspect d3ea2bb65248d | grep -i pid		# debugger容器
+    "pid": 91776
+    
+# 检查他们的namespace
+[root@node-1 ~]# ls -l /proc/88680/ns
+total 0
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 ipc -> ipc:[4026532786]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 mnt -> mnt:[4026533003]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 net -> net:[4026532789]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 pid -> pid:[4026533005]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 user -> user:[4026531837]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 uts -> uts:[4026533004]
+
+[root@node-1 ~]# ls -l /proc/91776/ns
+total 0
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 ipc -> ipc:[4026532786]         	# 一样
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 mnt -> mnt:[4026533012]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 net -> net:[4026532789]			# 一样
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 pid -> pid:[4026533014]
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 user -> user:[4026531837]			# 一样,不用管，因为默认没开启USER隔离
+lrwxrwxrwx 1 root root 0 Apr 30 21:44 uts -> uts:[4026533013]
+
+# 总结: debugger容器和业务容器共享ipc和net命名空间
+
+# ----------------------------------------------------------
+# 所以
+
+# PID没共享所以看不到进程
+[root@nginx-5957c6c495-56z65 /]# ps aux
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root          1  0.0  0.0  11828  1892 pts/0    Ss   13:36   0:00 /bin/bash
+root         16  0.0  0.0  51732  1704 pts/0    R+   13:47   0:00 ps aux
+
+# 但是网络是共享的，所以可以直接访问
+[root@nginx-5957c6c495-56z65 /]# curl -I 127.0.0.1
+HTTP/1.1 200 OK
+Server: nginx/1.23.4
+Date: Sun, 30 Apr 2023 13:46:58 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 28 Mar 2023 15:01:54 GMT
+Connection: keep-alive
+ETag: "64230162-267"
+Accept-Ranges: bytes
+
+# 网络共享能做的事举例: 网络连通性测试、抓包等待
 ```
+
+:::
+
+::: details （2）kubectl debug 
 
 :::
 
