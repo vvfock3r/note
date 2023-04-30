@@ -1158,6 +1158,8 @@ node/node-1 untainted
 node/node-1 tainted
 ```
 
+:::
+
 ::: details （2）污点演示：NoExecute
 
 ```bash
