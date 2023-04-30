@@ -586,7 +586,124 @@ Hello, World!
 
 <br />
 
-### 案例：栈和队列
+### 指针
+
+::: details （1）指针定义
+
+```c
+#include <stdio.h>
+
+int main() {
+    // 定义一个int类型普通变量 x
+    int x = 100;
+    // 定义一个int类型指针变量 y
+    int *y = &x;
+    printf("%d %d\n", x, *y);
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+100 100
+```
+
+:::
+
+::: details （2）野指针
+
+```c
+#include <stdio.h>
+#include <stddef.h>
+
+int main() {
+    // 像下面这种指向不确定地址的指针称为"野指针"(Unbound Pointer)
+    int *x;
+
+    // 为避免出现野指针,在定义指针变量时就应该给它明确的初值,或者把它初始化为NULL
+    // NULL这是一个特殊的指针值，表示指针不指向任何有效的内存地址
+    // NULL在C标准库的头文件stddef.h中定义
+    int *y = NULL;
+
+    printf("%d\n", *x);
+    printf("%d\n", *y);
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+-923205632
+```
+
+:::
+
+::: details （3）指针与函数
+
+```c
+#include <stdio.h>
+
+int *swap(int *px, int *py) {
+    int temp;
+    temp = *px;
+    *px = *py;
+    *py = temp;
+    return px;
+}
+
+int main(void) {
+    int x = 10, y = 20;
+    int *z = swap(&x, &y);
+    printf("x=%d y=%d *z=%d\n", x, y, *z);
+    return 0;
+}
+
+// 注意
+// 1、在函数声明或定义中，如果函数返回值是指针类型，则需要在函数名前面加上*来表示该函数返回一个指针类型的值
+// 2、函数形参也是一样
+```
+
+输出结果
+
+```bash
+x=20 y=10 *z=20
+```
+
+:::
+
+::: details （4）指针与数组
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int a[9] = {100, 208, 300};
+
+    // 取值并++
+    int va = a[0];
+    va++;
+    printf("%d %d\n", a[0], va);
+
+    // 取指针并++,这会取到下一个元素的值
+    int *pa = &a[0];
+    pa++;
+    printf("%d %d\n", a[0], *pa);
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+100 101
+100 208
+```
+
+:::
 
 <br />
 
