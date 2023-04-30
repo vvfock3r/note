@@ -6718,6 +6718,29 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 <br />
 
+## Debug
+
+::: details （1）kubectl debug 基本用法
+
+```bash
+# 启动一个Nginx容器
+[root@node-1 ~]# kubectl run nginx --image=nginx:latest
+
+# 基本用法
+[root@node-1 ~]# kubectl debug -it nginx --image=centos:7
+Defaulting debug container name to debugger-l6xzx.
+If you don't see a command prompt, try pressing enter.
+[root@nginx /]# 
+
+# ----------------------------------------------------------
+# 这发生了什么变化?
+
+```
+
+:::
+
+<br />
+
 ## Helm
 
 文档：[https://helm.sh/zh/docs/](https://helm.sh/zh/docs/)
