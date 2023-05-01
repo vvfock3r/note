@@ -399,7 +399,7 @@ The Host is 0.0.0.0:55555
 
 ::: details （10）变量安全性
 
-**`set -u`变量不存在则报错退出脚本**
+**1、`set -o nounset (简写set -u)`变量不存在则报错退出脚本**
 
 Bash遇到不存在的变量，默认会忽略，然后继续向下执行，这有时候会给我们带来灾难性事故，
 
@@ -408,7 +408,8 @@ Bash遇到不存在的变量，默认会忽略，然后继续向下执行，这�
 ```bash
 [root@localhost ~]# cat demo.sh 
 #!/bin/bash
-set -u
+set -o nounset
+
 echo ${Dir}
 echo "End"
 
@@ -419,9 +420,9 @@ demo.sh: line 4: Dir: unbound variable
 # 可以看到，脚本报错并退出了，后面的代码也不会执行
 ```
 
+<br />
 
-
-**`set -e`脚本一旦报错便退出**
+**2、`set -o errexit (简写set -e)` 脚本一旦报错便退出**
 
 Bash如果遇到报错，默认会忽略，还会继续往下执行，这也不符合我们的预期
 
@@ -429,7 +430,8 @@ Bash如果遇到报错，默认会忽略，还会继续往下执行，这也不�
 # 演示错误情景
 [root@localhost ~]# cat demo.sh 
 #!/bin/bash
-set -u
+set -o nounset
+
 a
 echo "End"
 
@@ -440,8 +442,9 @@ End
 # 演示正确情景
 [root@localhost ~]# cat demo.sh
 #!/bin/bash
-set -u
-set -e  # 添加set -e
+set -o nounset
+set -o errexit
+
 a
 echo "End"
 
@@ -449,17 +452,18 @@ echo "End"
 demo.sh: line 4: a: command not found  # 报错了，不会继续向下执行
 ```
 
+<br />
 
-
-**`set -o pipefail`对`set -e`的补充**
+**3、`set -o pipefail`对`set -e`的补充**
 
 `set -e`有一个例外情况，就是不适用于管道命令
 
 ```bash
 [root@localhost ~]# cat demo.sh
 #!/bin/bash
-set -u
-set -e
+set -o nounset
+set -o errexit
+
 a | echo 1
 echo "End"
 
@@ -474,9 +478,10 @@ End
 ```bash
 [root@localhost ~]# cat demo.sh
 #!/bin/bash
-set -u
-set -e
+set -o nounset
+set -o errexit
 set -o pipefail
+
 a | echo 1
 echo "End"
 
@@ -491,10 +496,12 @@ demo.sh: line 5: a: command not found
 
 ```bash
 #!/bin/bash
-set -euo pipefail
-```
+set -o nounset
+set -o errexit
+set -o pipefail
 
-> 还有一种方法也能达到同样的效果，`bash -euxo pipefail demo.sh`，但是你不能保证调用时永远会记得添加`-euxo pipefail`选项，所以并不推荐
+# 备注：还有一种方法也能达到同样的效果：bash -euxo pipefail demo.sh
+```
 
 :::
 
@@ -1029,7 +1036,7 @@ find: warning: you have specified the -maxdepth option after a non-option argume
 
 :::
 
-::: details （3）限定文件名称
+::: details （4）限定文件名称
 
 ```bash
 # 搜索文件类型，且文件名必须以.log结尾
@@ -1050,7 +1057,7 @@ find: warning: you have specified the -maxdepth option after a non-option argume
 
 :::
 
-::: details （4）限定文件大小
+::: details （5）限定文件大小
 
 ```bash
 # 搜索所有大于100M的文件
@@ -1078,7 +1085,7 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 
 :::
 
-::: details （5）排除一个或多个目录
+::: details （6）排除一个或多个目录
 
 ```bash
 # 注意事项：如果同时使用-depth或-maxdepth，那么-prune选项会被忽略,结果将于预期不符
@@ -1124,7 +1131,7 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 
 :::
 
-::: details （6）配合xargs使用，搜索大文件并按照文件大小排序
+::: details （7）配合xargs使用，搜索大文件并按照文件大小排序
 
 ```bash
 # 搜索大于100M的文件，并按照文件大小从大到小排序
@@ -1144,7 +1151,7 @@ find: ‘/proc/13517/fdinfo/5’: No such file or directory
 
 :::
 
-::: details （7）限定修改时间
+::: details （8）限定修改时间
 
 ```bash
 # 搜索/下(排除/proc和/sys目录)5分钟内修改过的文件
@@ -2529,154 +2536,7 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 <br />
 
-## 命令收集
-
-### 生成随机密码
-
-::: details 点击查看详情
-
-可以使用如下命令生成`16`位随机密码，若不想要某个字母在`tr -d`后面添加
-
-```bash
-[root@localhost ~]# cat /dev/urandom | \tr -dc "[[:graph:]]" | tr -d "{}()'\"\`" | fold -w 16 | head -n 5
-5~|7y3=ooxnw.a/j
-3<EL_=tA;<VY>fH&
-%6&vAvw[MjHJM.gs
-w<C|d|35xeB3g13j
-QiNqg[l.%;H>>rO9
-```
-
-:::
-
-<br />
-
-### 查看glibc版本
-
-::: details 点击查看详情
-
-```bash
-# 方式1：查看文件链接到哪个版本
-[root@node-1 ~]# ls -l /lib/libc.so.6
-lrwxrwxrwx 1 root root 12 Mar 14 16:48 /lib/libc.so.6 -> libc-2.17.so
-
-# --------------------------------------------------------------------------
-
-# 方式2：/lib/libc.so.6作为命令执行一下
-[root@node-1 ~]# /lib/libc.so.6
-GNU C Library (GNU libc) stable release version 2.17, by Roland McGrath et al.
-Copyright (C) 2012 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.
-There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
-Compiled by GNU CC version 4.8.5 20150623 (Red Hat 4.8.5-44).
-Compiled on a Linux 3.10.0 system on 2022-05-18.
-Available extensions:
-        The C stubs add-on version 2.1.2.
-        crypt add-on version 2.1 by Michael Glad and others
-        GNU Libidn by Simon Josefsson
-        Native POSIX Threads Library by Ulrich Drepper et al
-        BIND-8.2.3-T5B
-        RT using linux kernel aio
-libc ABIs: UNIQUE IFUNC
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/libc/bugs.html>.
-
-# --------------------------------------------------------------------------
-
-# 方式3：使用glibc提供的二进制命令查看版本
-
-[root@node-1 ~]# ldd --version
-ldd (GNU libc) 2.17
-Copyright (C) 2012 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-Written by Roland McGrath and Ulrich Drepper.
-
-[root@node-1 ~]# ldconfig --version
-ldconfig (GNU libc) 2.17
-Copyright (C) 2012 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-Written by Andreas Jaeger.
-
-[root@node-1 ~]# sln --version
-sln (GNU libc) 2.17
-
-...
-
-[root@node-1 ~]# rpm -ql glibc | grep bin
-/sbin/ldconfig
-/sbin/sln
-/usr/sbin/glibc_post_upgrade.x86_64
-/usr/sbin/iconvconfig
-/usr/sbin/iconvconfig.x86_64
-/sbin/ldconfig
-/sbin/sln
-/usr/sbin/glibc_post_upgrade.i686
-/usr/sbin/iconvconfig
-/usr/sbin/iconvconfig.i686
-```
-
-:::
-
-<br />
-
-### 安装man文档
-
-::: details 点击查看详情
-
-```bash
-# 查看文档为空
-[root@node-1 ~]# man ascii                                                                                                       
-No manual entry for ascii
-
-# 安装man-pages
-[root@node-1 ~]# yum -y install man-pages
-
-# 再次查看
-[root@node-1 ~]# man ascii
-...
-       Oct   Dec   Hex   Char                        Oct   Dec   Hex   Char
-       ────────────────────────────────────────────────────────────────────────
-       000   0     00    NUL '\0'                    100   64    40    @
-       001   1     01    SOH (start of heading)      101   65    41    A
-       002   2     02    STX (start of text)         102   66    42    B
-       003   3     03    ETX (end of text)           103   67    43    C
-       004   4     04    EOT (end of transmission)   104   68    44    D
-       005   5     05    ENQ (enquiry)               105   69    45    E
-       006   6     06    ACK (acknowledge)           106   70    46    F
-       007   7     07    BEL '\a' (bell)             107   71    47    G
-       010   8     08    BS  '\b' (backspace)        110   72    48    H
-       011   9     09    HT  '\t' (horizontal tab)   111   73    49    I
-       012   10    0A    LF  '\n' (new line)         112   74    4A    J
-       013   11    0B    VT  '\v' (vertical tab)     113   75    4B    K
-       014   12    0C    FF  '\f' (form feed)        114   76    4C    L
-       015   13    0D    CR  '\r' (carriage ret)     115   77    4D    M
-       016   14    0E    SO  (shift out)             116   78    4E    N
-       017   15    0F    SI  (shift in)              117   79    4F    O
-       020   16    10    DLE (data link escape)      120   80    50    P
-       021   17    11    DC1 (device control 1)      121   81    51    Q
-       022   18    12    DC2 (device control 2)      122   82    52    R
-       023   19    13    DC3 (device control 3)      123   83    53    S
-       024   20    14    DC4 (device control 4)      124   84    54    T
-       025   21    15    NAK (negative ack.)         125   85    55    U
-       026   22    16    SYN (synchronous idle)      126   86    56    V
-       027   23    17    ETB (end of trans. blk)     127   87    57    W
-       030   24    18    CAN (cancel)                130   88    58    X
-       031   25    19    EM  (end of medium)         131   89    59    Y
-       032   26    1A    SUB (substitute)            132   90    5A    Z
-       033   27    1B    ESC (escape)                133   91    5B    [
-       034   28    1C    FS  (file separator)        134   92    5C    \  '\\'
-       035   29    1D    GS  (group separator)       135   93    5D    ]
-       036   30    1E    RS  (record separator)      136   94    5E    ^
-...
-```
-
-:::
-
-<br />
-
-## 自动化工具
+## 工具整理
 
 ### expect
 
@@ -2858,8 +2718,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 :::
 
 <br />
-
-## 网络工具
 
 ### frp
 
@@ -3127,8 +2985,6 @@ Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artif
 :::
 
 <br />
-
-## 安全工具
 
 ### cfssl
 
@@ -3612,9 +3468,7 @@ D:\application\GoLand\demo\pki> go run client/main.go
 
 <br />
 
-## 对象存储
-
-### 腾讯云
+### tencent coscli
 
 工具概览：[https://cloud.tencent.com/document/product/436/6242](https://cloud.tencent.com/document/product/436/6242)
 
