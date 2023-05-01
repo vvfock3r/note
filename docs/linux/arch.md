@@ -25,9 +25,9 @@ archinstall
 ### 更新系统
 
 ```bash
-pacman -Sy	更新最新软件列表
-pacman -Su	升级所有已安装的软件包
-pacman -Syu 更新最新软件列表，并升级所有已安装的软件包(推荐)
+pacman -Sy	# 更新最新软件列表
+pacman -Su	# 升级所有已安装的软件包
+pacman -Syu # 更新最新软件列表，并升级所有已安装的软件包(推荐)
 ```
 
 <br />
@@ -36,7 +36,7 @@ pacman -Syu 更新最新软件列表，并升级所有已安装的软件包(推�
 
 ```bash
 [root@archlinux ~]# pacman -Sy \
-	vim wget net-tools inetutils lsof \
+	vim wget curl net-tools inetutils lsof \
 	systemd man-pages \
 	python3 go nodejs \
 	docker
