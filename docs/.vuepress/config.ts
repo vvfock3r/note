@@ -39,6 +39,7 @@ const navbar = [
                 children: [                    
                     {text: 'Docker', link: '/container/docker'},
 					{text: 'Containerd', link: '/container/containerd'},
+					{text: 'MyContainer', link: '/container/mycontainer'},
                 ]
             },
             {
