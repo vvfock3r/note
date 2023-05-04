@@ -139,7 +139,8 @@ function add() {
 <script setup>
 import {ref} from "vue";
 
-// 使用ref封装计数器，原理：
+// 使用 ref 封装基本类型为响应式对象
+// 原理
 // (1) 通过Proxy对数据进行封装，当数据发生改变时，触发模板等内容更新
 // (2) 0 会变成 Proxy({value: 0})
 // (3) 所以后面当我们改这个对象时，需要通过 对象.value 来改，
@@ -355,6 +356,157 @@ setInterval(() => {
 
 <br />
 
+### 侦听一个或多个响应式对象
+
+文档：
+
+* [https://cn.vuejs.org/api/reactivity-core.html#watch](https://cn.vuejs.org/api/reactivity-core.html#watch)
+* [https://cn.vuejs.org/api/reactivity-core.html#watcheffect](https://cn.vuejs.org/api/reactivity-core.html#watcheffect)
+
+::: details （1）watch 一个 ref 对象
+
+`App.vue`
+
+```vue
+<script setup>
+import {ref, watch} from "vue";
+
+// 使用 ref 封装基本类型为响应式对象
+const name = ref("dell");
+
+// 监听一个 ref 对象, {immediate: true} 用于表示 立即执行监听器
+watch(name, (currentValue, prevValue) => {
+  console.log('当前值: ', currentValue)
+  console.log('上次值: ', prevValue)
+}, {immediate: true})
+
+// 修改 name 的值
+setTimeout(() => {
+  name.value = "bob"
+}, 2000)
+
+</script>
+
+<template>
+  <div></div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+::: details （2）watch 一个 reactive 对象
+
+```vue
+<script setup>
+import {reactive, watch} from "vue";
+
+// 使用 reactive 封装引用类型为响应式对象
+const name = reactive({firstName: "san", lastName: "zhang"});
+
+// 监听一个 reactive 对象, {immediate: true} 用于表示 立即执行监听器
+watch([() => name.firstName, () => name.lastName],
+    ([currentFirstName, currentLastName], [prevFirstName, prevLastName]) => {
+      console.log("当前值: ", currentFirstName)
+      console.log("上次值: ", prevFirstName)
+      console.log("当前值: ", currentLastName)
+      console.log("上次值: ", prevLastName)
+    }, {immediate: true})
+
+// 修改 name 的值
+setTimeout(() => {
+  name.firstName = "si"
+  name.lastName = "li"
+}, 2000)
+
+</script>
+
+<template>
+  <div></div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+::: details （3）watchEffect 监听器的使用
+
+```vue
+<script setup>
+import {reactive, watchEffect} from "vue";
+
+// 使用 reactive 封装引用类型为响应式对象
+const name = reactive({firstName: "san", lastName: "zhang"});
+
+// 使用 watchEffect 监听对象
+// 1、watchEffect是非惰性的，一开始就执行
+// 2、watchEffect只能获取到数据当前值，不能获取之前的值
+// 3、watchEffect内部调用了外部变量时，当外部变量改变时才会执行这个函数，如果没有依赖，就不会执行
+//   也就是说 能自动感知内部函数的依赖
+watchEffect(() => {
+  console.log(name.firstName)
+  console.log(name.lastName)
+})
+
+// 修改 names 的值
+setTimeout(() => {
+  name.firstName = "si"
+  name.lastName = "li"
+}, 2000)
+
+</script>
+
+<template>
+  <div></div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
+### 生命周期函数
+
+::: details 点击查看详情
+
+`App.vue`
+
+```vue
+<script setup>
+import {onBeforeMount, onMounted} from "vue";
+
+onBeforeMount(() => {
+  console.log('onBeforeMount')
+})
+onMounted(() => {
+  console.log('onMounted')
+})
+
+</script>
+
+<template>
+  <div></div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
 ### Context参数
 
 ::: details （1）点击查看详情
@@ -530,302 +682,6 @@ export default {
 
 
 
-
-
-### watch侦听器
-
-`App`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-</template>
-
-<script>
-
-import {ref, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const name = ref("dell");
-
-        // lazy，首页页面加载的时候不会执行这个函数
-        // 参数可以拿到当前值和原始值
-        // 如果要监听一个对象中某个kv，watch第一个参数写成箭头函数，返回要监听的 对象.key
-        watch(name, (currentValue, prevValue) => {
-            console.log(currentValue);
-            console.log(prevValue);
-        })
-
-        return {name};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-让watch监听器立即执行
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-</template>
-
-<script>
-
-import {ref, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const name = ref("dell");
-
-        // 让watch立即执行，在第三个参数中添加 immediate: true
-        watch(name, (currentValue, prevValue) => {
-            console.log(currentValue);
-            console.log(prevValue);
-        }, {immediate: true})
-
-        return {name};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-
-
-同时监听多个对象
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="nameObj.name" type="text">
-    </div>
-    <div>
-        Name is {{ nameObj.name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="nameObj.englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ nameObj.englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 可以同时监听多个对象
-        watch([() => nameObj.name, () => nameObj.englishName],
-            ([currentName, currentEng], [prevName, prevEng]) => {
-                console.log(currentName);
-                console.log(prevName);
-                console.log(currentEng);
-                console.log(prevEng);
-            })
-
-        return {nameObj};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-
-
-### watchEffect侦听器
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch, toRefs, watchEffect} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 可以同时监听多个对象
-        watch([() => nameObj.name, () => nameObj.englishName],
-            ([currentName, currentEng], [prevName, prevEng]) => {
-                console.log('watch ', currentName, prevName, '---', currentEng, prevEng);
-            })
-
-        // watchEffect和watch类似，不同在于
-        //  ①watchEffect是非惰性的，一开始就执行
-        //  ②watchEffect内部调用了外部变量时，当外部变量改变时才会执行这个函数，如果没有依赖，就不会执行；也就是说
-        //      自动感知内部函数的依赖
-        //  ③watchEffect只能获取到数据当前值，不能获取之前的值
-        watchEffect(() => {
-            console.log("watchEffect: abc");
-            console.log("watchEffect: ", nameObj.name);
-        })
-
-        //
-        const {name, englishName} = toRefs(nameObj);
-        return {name, englishName}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 让监听器失效
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch, toRefs} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 侦听name属性
-        const stop = watch(() => {
-            return nameObj.name;
-        }, (curValue, preValue) => {
-            console.log(curValue, '---', preValue)
-        });
-
-        // 5秒后让侦听器失效
-        setTimeout(() => {
-            stop();
-        }, 5000)
-
-        const {name, englishName} = toRefs(nameObj);
-        return {name, englishName}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 生命周期函数
-
-函数名就是多了一个on
-
-`App.vue`
-
-```vue
-<template>
-    <p>1</p>
-</template>
-
-<script>
-
-import {onBeforeMount} from 'vue';
-
-
-export default {
-    name: "App",
-
-    setup() {
-        onBeforeMount(() => {
-            console.log("onBeforeMount")
-        })
-        return {};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
 ### provide和inject
 
 `App.vue`
@@ -931,7 +787,7 @@ export default {
 </style>
 ```
 
-<br />
+## 
 
 ## 选项式API（Options API，不推荐）
 
