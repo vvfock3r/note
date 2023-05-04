@@ -475,7 +475,7 @@ setTimeout(() => {
 
 <br />
 
-### 生命周期函数
+### 生命周期函数简单举例
 
 ::: details 点击查看详情
 
@@ -496,6 +496,41 @@ onMounted(() => {
 
 <template>
   <div></div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
+### 获取原始的DOM节点
+
+文档：[https://cn.vuejs.org/api/built-in-special-attributes.html#ref](https://cn.vuejs.org/api/built-in-special-attributes.html#ref)
+
+::: details 点击查看详情
+
+`App.vue`
+
+```vue
+<script setup>
+import {ref, onMounted} from "vue";
+
+// 定义一个变量，变量名要和下面模板中ref的值一样
+const input = ref();
+
+onMounted(() => {
+  input.value.focus()
+  console.log(input.value)
+})
+
+</script>
+
+<template>
+  <input ref="input" placeholder="请输入您的姓名"/>
 </template>
 
 <style lang="scss" scoped>
@@ -742,43 +777,6 @@ export default {
         }
 
         return {name, handleClick};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 获取DOM节点ref
-
-`App.vue`
-
-```vue
-<template>
-    <p ref="hello">Hello World</p>
-</template>
-
-<script>
-
-
-import {ref, onMounted} from 'vue';
-
-
-export default {
-    name: "App",
-    setup() {
-        // 定义一个变量，变量名要和上面模板中ref的值一样，ref(null)是固定写法
-        const hello = ref(null);
-        
-        onMounted(() => {
-            console.log(hello.value);
-        })
-
-        // 这里一定要return hello
-        return {hello};
     }
 }
 </script>
