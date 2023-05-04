@@ -203,165 +203,109 @@ setTimeout(() => {
 
 <br />
 
-### 让响应式对象变为只读readonly
+### 让响应式对象变为只读 readonly
+
+::: details 点击查看详情
 
 `App.vue`
 
 ```vue
-<template>
-    <p>{{person.name}}</p>
-</template>
+<script setup>
+import {reactive, readonly} from "vue";
 
-<script>
+// readonly让对象只读；打开控制台可以看到会报警，而且数据也不会改
+const person = readonly(reactive({name: "jack"}))
 
-import {reactive, readonly} from 'vue';
+// 设置一次性定时器
+setTimeout(() => {
+  person.name = "bob";
+}, 2000)
 
-export default {
-    name: "App",
-    setup() {
-        // readonly让对象只读；打开控制台可以看到会报警，而且数据也不会改
-        let person = readonly(reactive({name: 'jack'}));
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            person.name = "bob";
-        }, 2000)
-
-        return {person}
-    }
-}
 </script>
 
-<style scoped>
+<template>
+  <div>{{ person.name }}</div>
+</template>
+
+<style lang="scss" scoped>
+
 </style>
 ```
 
+:::
 
+<br />
 
-### 花样玩法-响应式对象变形toRefs
+### 解构响应式对象方式汇总
+
+::: details （1）解构时使用 toRefs 封装，新对象的修改会同步源响应式对象
 
 `App.vue`
 
 ```vue
-<template>
-    <p>{{name}}</p>
-</template>
+<script setup>
+import {reactive, toRefs} from "vue";
 
-<script>
+// 使用 reactive 封装引用类型为响应式对象
+const person = reactive({name: "jack"})
 
-import {reactive,toRefs} from 'vue';
+// 如果直接将person解构,响应式对象又变成非响应式了
+// 解决办法是利用toRefs
+// 原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
+var {name} = toRefs(person)
 
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            person.name = "bob";
-        }, 2000)
+// 设置一次性定时器
+setTimeout(() => {
+  name.value = "bob";
+}, 2000)
 
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
-
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        const {name} = toRefs(person)
-
-        return {name}
-    }
-}
 </script>
 
-<style scoped>
+<template>
+  <div>{{ name }}</div>
+</template>
+
+<style lang="scss" scoped>
+
 </style>
 ```
 
-或者这样写
+:::
+
+::: details （2）创建新的 ref，新对象的修改会同步源响应式对象
 
 `App.vue`
 
 ```vue
-<template>
-    <p>{{name}}</p>
-</template>
+<script setup>
+import {reactive, toRef} from "vue";
 
-<script>
+// 使用 reactive 封装引用类型为响应式对象
+const person = reactive({name: "jack"})
 
-import {reactive,toRefs} from 'vue';
+// 基于响应式对象上的一个属性，创建一个对应的 ref
+// 这样创建的 ref 与其源属性保持同步
+let firstName = toRef(person, 'name')
 
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
+// 设置一次性定时器
+setTimeout(() => {
+  firstName.value = "bob";
+}, 2000)
 
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        const {name} = toRefs(person)
-
-        setTimeout(() => {
-            name.value = "bob";
-        }, 2000)
-
-        return {name}
-    }
-}
 </script>
 
-<style scoped>
+<template>
+  <div>{{ person.name }}</div>
+</template>
+
+<style lang="scss" scoped>
+
 </style>
 ```
 
+:::
 
-
-### 花式玩法-解构不存在的对象给默认值`toRef`
-
-不建议给默认值这么用
-
-这个好像不具备响应式，未测试
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{age}}</p>
-</template>
-
-<script>
-
-import {reactive, toRef} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
-
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        // const {name} = toRefs(person)
-
-        // 如果解构出来的对象不存在，会给一个undefined值，如果要设置默认值，怎么设置呢？
-        let {age} = toRef(person, 'age');
-
-        setTimeout(() => {
-            age.value = "bob";
-        }, 2000)
-
-        return {age}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
+<br />
 
 ### Context参数
 
