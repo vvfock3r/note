@@ -5669,6 +5669,8 @@ pod/demo created
 
 **普通用户**
 
+>  TODO：使用 CertificateSigningRequest 来创建用户 [链接](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/certificate-signing-requests/)
+
 ::: details  （1）kubectl所使用的用户
 
 ```bash
