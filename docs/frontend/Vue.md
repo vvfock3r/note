@@ -107,7 +107,7 @@ createApp(App).mount('#app')
 <script setup>
 
 // 计数器
-var count = 0
+let count = 0
 
 // 增加1
 function add() {
@@ -307,7 +307,57 @@ setTimeout(() => {
 
 <br />
 
+### 高性能的计算属性
+
+文档：[https://cn.vuejs.org/api/reactivity-core.html#computed](https://cn.vuejs.org/api/reactivity-core.html#computed)
+
+::: details （1）计算属性拥有缓存特性，性能会高一些
+
+`App.vue`
+
+```vue
+<script setup>
+import {computed, ref} from "vue";
+
+// 定义一个普通方法
+function getNow() {
+  return Date.now()
+}
+
+// 定义一个计算属性
+const now = computed(() => {
+  return Date.now()
+})
+
+// 定义一个普通值,通过周期性计数器不断修改值
+const n = ref(0)
+setInterval(() => {
+  n.value++
+}, 1000)
+
+</script>
+
+<template>
+  <div>计数变量: {{ n }}</div>
+  <!-- 计算属性会缓存，只有当依赖的数据发生改变才会改变 -->
+  <!-- 方法取到的值是其他数据变了，方法也会重新渲染 -->
+  <!-- 如果以上两种方式都能满足需求的话，推荐使用计算属性,因为有缓存，性能会高一些 -->
+  <div>方法取值: {{ getNow() }}</div>
+  <div>计算属性: {{ now }}</div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
 ### Context参数
+
+::: details （1）点击查看详情
 
 `App.vue`
 
@@ -374,9 +424,9 @@ export default {
 </style>
 ```
 
+:::
 
-
-
+<br />
 
 ### 例子 - ToDoItem
 
@@ -479,117 +529,6 @@ export default {
 ```
 
 
-
-### 计算属性
-
-先写一个计数器
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }}</span>
-</template>
-
-<script>
-
-import {ref} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        return {count, handleClick}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-增加另一个变量计算属性
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
-</template>
-
-<script>
-
-import {ref, computed} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        const countAddFive = computed(()=>{
-            return count.value + 5;
-        })
-
-        return {count, handleClick, countAddFive}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-计算属性复杂操作
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
-</template>
-
-<script>
-
-import {ref, computed} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        let countAddFive = computed({
-            // 获取计算属性值时执行这个方法
-            get: () => {
-                return count.value + 5;
-            },
-            // 设置计算属性值时执行这个方法
-            set: (param) => {
-                count.value = param - 5;
-            }
-        })
-
-        setTimeout(() => {
-            countAddFive.value = 12;
-        }, 3000)
-
-        return {count, handleClick, countAddFive}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
 
 
 
