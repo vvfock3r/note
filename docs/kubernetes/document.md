@@ -6718,9 +6718,41 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 <br />
 
-## Debug
+## kubectl调试
 
-::: details 准备环境
+::: detail （1）kubectl 输出着色
+
+Github：[https://github.com/hidetatz/kubecolor](https://github.com/hidetatz/kubecolor)
+
+![image-20230504212135368](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230504212135368.png)
+
+:::
+
+::: detail （2）kubectl输出详细日志
+
+```bash
+[root@node-1 ~]# kubectl get pods -v=9
+I0504 21:14:43.234739   13913 loader.go:373] Config loaded from file:  /root/.kube/config
+I0504 21:14:43.245270   13913 round_trippers.go:466] curl -v -XGET  -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" -H "User-Agent: kubectl/v1.27.1 (linux/amd64) kubernetes/4c94112" 'https://api.k8s.local:6443/api/v1/namespaces/default/pods?limit=500'
+I0504 21:14:43.246021   13913 round_trippers.go:495] HTTP Trace: DNS Lookup for api.k8s.local resolved to [{192.168.48.132 }]
+I0504 21:14:43.246786   13913 round_trippers.go:510] HTTP Trace: Dial to tcp:192.168.48.132:6443 succeed
+I0504 21:14:43.259195   13913 round_trippers.go:553] GET https://api.k8s.local:6443/api/v1/namespaces/default/pods?limit=500 200 OK in 13 milliseconds
+I0504 21:14:43.259229   13913 round_trippers.go:570] HTTP Statistics: DNSLookup 0 ms Dial 0 ms TLSHandshake 6 ms ServerProcessing 5 ms Duration 13 ms
+I0504 21:14:43.259239   13913 round_trippers.go:577] Response Headers:
+I0504 21:14:43.259248   13913 round_trippers.go:580]     Cache-Control: no-cache, private
+I0504 21:14:43.259256   13913 round_trippers.go:580]     Content-Type: application/json
+I0504 21:14:43.259263   13913 round_trippers.go:580]     X-Kubernetes-Pf-Flowschema-Uid: 09a82a7a-6793-49e1-a9a7-6eba5dddbbec
+I0504 21:14:43.259272   13913 round_trippers.go:580]     X-Kubernetes-Pf-Prioritylevel-Uid: 210f573a-e852-4c5d-95d8-e9a1201ad8fb
+I0504 21:14:43.259279   13913 round_trippers.go:580]     Content-Length: 2957
+I0504 21:14:43.259287   13913 round_trippers.go:580]     Date: Thu, 04 May 2023 13:14:43 GMT
+I0504 21:14:43.259294   13913 round_trippers.go:580]     Audit-Id: f7a52a5c-a8f2-4f24-8430-5d95f836db97
+I0504 21:14:43.259352   13913 request.go:1188] Response Body: {"kind":"Table","apiVersion":"meta.k8s.io/v1","metadata":{"resourceVersion":"55123"},"columnDefinitions":[{"name":"Name","type":"string","format":"name","description":"Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names","priority":0},{"name":"Ready","type":"string","format":"","description":"The aggregate readiness state of this pod for accepting traffic.","priority":0},{"name":"Status","type":"string","format":"","description":"The aggregate status of the containers in this pod.","priority":0},{"name":"Restarts","type":"string","format":"","description":"The number of times the containers in this pod have been restarted and when the last container in this pod has restarted.","priority":0},{"name":"Age","type":"string","format":"","description":"CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata","priority":0},{"name":"IP","type":"string","format":"","description":"IP address allocated to the pod. Routable at least within the cluster. Empty if not yet allocated.","priority":1},{"name":"Node","type":"string","format":"","description":"NodeName is a request to schedule this pod onto a specific node. If it is non-empty, the scheduler simply schedules this pod onto that node, assuming that it fits resource requirements.","priority":1},{"name":"Nominated Node","type":"string","format":"","description":"nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.","priority":1},{"name":"Readiness Gates","type":"string","format":"","description":"If specified, all readiness gates will be evaluated for pod readiness. A pod is ready when all its containers are ready AND all conditions specified in the readiness gates have status equal to \"True\" More info: https://git.k8s.io/enhancements/keps/sig-network/580-pod-readiness-gates","priority":1}],"rows":[]}
+No resources found in default namespace.
+```
+
+:::
+
+::: details （3）kubectl debug 基本用法：共享网络和IPC命名空间
 
 ```bash
 # 生成yaml文件      
@@ -6749,13 +6781,9 @@ EOF
 # 创建Deployment
 [root@node-1 ~]# kubectl apply -f deployment.yaml
 deployment.apps/nginx created
-```
 
-:::
+# ----------------------------------------------------------
 
-::: details （1）kubectl debug 基本用法：共享网络和IPC命名空间
-
-```bash
 # 基本用法
 [root@node-1 ~]# kubectl debug -it nginx-5957c6c495-56z65 --image=centos:7
 Defaulting debug container name to debugger-wrtx5.
@@ -6833,10 +6861,6 @@ Accept-Ranges: bytes
 d3ea2bb65248d       eeb6ee3f44bd0                                                                     17 minutes ago      Exited              debugger-wrtx5            0                   cb3ae1515934b       nginx-5957c6c495-56z65
 7e9f75526fe9c       nginx@sha256:63b44e8ddb83d5dd8020327c1f40436e37a6fffd3ef2498a6204df23be6e7e94     19 minutes ago      Running             web                       0                   cb3ae1515934b       nginx-5957c6c495-56z65
 ```
-
-:::
-
-::: details （2）kubectl debug 
 
 :::
 

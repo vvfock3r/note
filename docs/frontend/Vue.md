@@ -542,6 +542,12 @@ onMounted(() => {
 
 <br />
 
+### 常用指令
+
+
+
+<br />
+
 ### Context参数
 
 ::: details （1）点击查看详情
@@ -787,7 +793,7 @@ export default {
 
 ## 
 
-## 选项式API（Options API，不推荐）
+## 选项式API（Options API，不推荐，旧版本文档）
 
 ### 编写一个计时器
 
