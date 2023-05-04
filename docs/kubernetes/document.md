@@ -6720,7 +6720,7 @@ Error from server (Forbidden): pods is forbidden: User "kubernetes-zhangsan" can
 
 ## kubectl调试
 
-::: detail （1）kubectl 输出着色
+::: details （1）kubectl 输出着色
 
 Github：[https://github.com/hidetatz/kubecolor](https://github.com/hidetatz/kubecolor)
 
@@ -6728,9 +6728,10 @@ Github：[https://github.com/hidetatz/kubecolor](https://github.com/hidetatz/kub
 
 :::
 
-::: detail （2）kubectl输出详细日志
+::: details （2）kubectl输出详细日志
 
 ```bash
+# 数字越大日志越详细
 [root@node-1 ~]# kubectl get pods -v=9
 I0504 21:14:43.234739   13913 loader.go:373] Config loaded from file:  /root/.kube/config
 I0504 21:14:43.245270   13913 round_trippers.go:466] curl -v -XGET  -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" -H "User-Agent: kubectl/v1.27.1 (linux/amd64) kubernetes/4c94112" 'https://api.k8s.local:6443/api/v1/namespaces/default/pods?limit=500'
