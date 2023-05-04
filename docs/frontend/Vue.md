@@ -1,117 +1,97 @@
----
-sidebar: auto
----
+# Vue3
 
+<br />
 
-
-## 概览
-
-`Vue`学习笔记，版本为`3.x`，主要包括`Options API`和`CompositionAPI`
-
-
+## 初始化项目
 
 安装文档：[https://v3.cn.vuejs.org/guide/installation.html](https://v3.cn.vuejs.org/guide/installation.html)
 
-`Vue`安装方式有很多种，最简单的就是直接在HTML中使用script引入`CDN`中的`vue.js`文件，但是这并不利于构建大型应用，
+::: details 点击查看详情
 
-笔记中使用脚手架工具`vue-cli`来进行安装，生产环境可用，另外使用`vite`安装也是推荐的一种方式
+```bash
+C:\Users\Administrator\Desktop>npm init vue@latest
+Need to install the following packages:
+  create-vue@3.6.1
+Ok to proceed? (y) y
 
+Vue.js - The Progressive JavaScript Framework
 
+√ Project name: ... demo
+√ Add TypeScript? ... No / Yes
+√ Add JSX Support? ... No / Yes
+√ Add Vue Router for Single Page Application development? ... No / Yes
+√ Add Pinia for state management? ... No / Yes
+√ Add Vitest for Unit Testing? ... No / Yes
+√ Add an End-to-End Testing Solution? » No
+√ Add ESLint for code quality? ... No / Yes
+√ Add Prettier for code formatting? ... No / Yes
 
-## 搭建`vue`工程环境
+Scaffolding project in C:\Users\Administrator\Desktop\demo...
 
-### vue-cli
+Done. Now run:
 
-:::tip 
+  cd demo
+  npm install
+  npm run format
+  npm run dev
 
-先安装`nodejs`，推荐最新稳定版，官网：https://nodejs.org/en/
+npm notice
+npm notice New major version of npm available! 8.15.1 -> 9.6.6
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v9.6.6
+npm notice Run npm install -g npm@9.6.6 to update!
+npm notice
+```
 
 :::
 
-```bash
-# 配置npm源
-npm install -g nrm
-nrm ls
-nrm use taobao
+<br />
 
-# 卸载老版本的vue(如果有)
-npm uninstall vue-cli -g
+## 选项式API（Options API）
 
-# 安装vue-cli
-安装最新版：npm install @vue/cli
-安装指定版：npm install @vue/cli@4.5.9
+### Hello Vue
 
-# 查看vue-cli版本
-vue --version
-@vue/cli 4.5.13
+::: details 点击查看详情
 
-# 创建项目
-vue create demo
-
-
-# 启动项目
-cd demo
-npm run serve
-```
-
-> 环境搭建完成以后，打开浏览器即可访问到页面
->
-> 在开发之前，可以选择一款合适的`IDE`，比较流行的有`VSCode`和`WebStorm`，这里使用的是`WebStorm`
->
-> ①使用`IDE`打开项目
->
-> ![image-20210829221158729](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221158729.png)
->
-> ②配置IDE
->
-> ![image-20210829221330506](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221330506.png)
->
-> ③启动项目
->
-> ![image-20210829221527567](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20210829221527567.png)
-
-
-
-## `Options API`
-
-
-
-### Hello World
-
-将`src`目录下的文件全部删除(`main.js`保留)，然后新建文件
-
-`App.vue`
+将 `src `目录下的文件全部删除 (保留`main.js`)，然后新建文件`App.vue`
 
 ```vue
-<template>
-    <!-- 下面这行div标签是我们新增的内容，其他内容均由ide工具生成 -->
-    <div>Hello World!</div>
-</template>
+<script setup>
 
-<script>
-export default {
-    name: "App"
-}
 </script>
 
-<style scoped>
+<template>
+  <!-- 下面这行div标签是我们新增的内容，其他内容均由WebStorm工具生成 -->
+  <div>Hello Vue!</div>
+</template>
+
+<style lang="scss" scoped>
+
 </style>
 ```
 
 修改`main.js`，然后重启项目
 
 ```JavaScript
-import {createApp} from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 
-createApp(App).mount("#app");
+// 注释此行,因为此文件已经被我们删除
+// import './assets/main.css'
+
+createApp(App).mount('#app')
 ```
 
-> ①`public/index.html`是项目入口，他会引用`src/main.js`
->
-> ②`App.vue`在这里实际上是一个单文件组
+说明
 
+1、`index.html`是项目入口，他会引用`src/main.js`
 
+2、`main.js`会创建`Vue App`，并挂载到HTML中`id="app"`的div上
+
+3、`App.vue`在这里已经是一个单文件组件
+
+:::
+
+<br />
 
 ### 编写一个计时器
 
@@ -2992,7 +2972,7 @@ export default {
 
 
 
-## CompositionAPI（推荐）
+## 组合式API（CompositionAPI）
 
 
 
