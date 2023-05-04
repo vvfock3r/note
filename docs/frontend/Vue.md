@@ -1,10 +1,14 @@
 # Vue3
 
+## 文档
+
+官网：[https://cn.vuejs.org](https://cn.vuejs.org)
+
 <br />
 
 ## 初始化项目
 
-安装文档：[https://v3.cn.vuejs.org/guide/installation.html](https://v3.cn.vuejs.org/guide/installation.html)
+安装文档：[https://cn.vuejs.org/guide/quick-start.html](https://cn.vuejs.org/guide/quick-start.html)
 
 ::: details 点击查看详情
 
@@ -46,7 +50,7 @@ npm notice
 
 <br />
 
-## 选项式API（Options API）
+## 组合式API（CompositionAPI）
 
 ### Hello Vue
 
@@ -93,7 +97,964 @@ createApp(App).mount('#app')
 
 <br />
 
+### 基本类型响应式封装 ref
+
+::: details （1）编写一个计数器：默认情况下对象并不是响应式
+
+`App.vue`
+
+```vue
+<script setup>
+
+// 计数器
+var count = 0
+
+// 增加1
+function add() {
+  count++
+}
+
+</script>
+
+<template>
+  <!-- 通过使用{{ }}来引用变量  -->
+  <div>Count is {{ count }}</div>
+
+  <!-- 按钮绑定函数 -->
+  <button @click="add">计数器加1</button>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+::: details （2）编写一个计数器：使用 ref 封装基本数据类型为响应式
+
+`App.vue`
+
+```vue
+<script setup>
+import {ref} from "vue";
+
+// 使用ref封装计数器，原理：
+// (1) 通过Proxy对数据进行封装，当数据发生改变时，触发模板等内容更新
+// (2) 0 会变成 Proxy({value: 0})
+// (3) 所以后面当我们改这个对象时，需要通过 对象.value 来改，
+//     但是在模板中可以直接使用对象，vue会自动帮我们获取value值
+const count = ref(0)
+
+// 增加1
+function add() {
+  count.value++
+}
+
+</script>
+
+<template>
+  <!-- 通过使用{{ }}来引用变量  -->
+  <div>Count is {{ count }}</div>
+
+  <!-- 按钮绑定函数 -->
+  <button @click="add">计数器加1</button>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
+### 引用类型响应式封装 reactive
+
+::: details 点击查看详情
+
+`App.vue`
+
+```vue
+<script setup>
+import {reactive} from "vue";
+
+// 使用 reactive 封装引用类型为响应式对象
+const person = reactive({name: "jack"})
+
+// 设置一次性定时器
+setTimeout(() => {
+  person.name = "bob";
+}, 2000)
+
+</script>
+
+<template>
+  <div>{{ person.name }}</div>
+</template>
+
+<style lang="scss" scoped>
+
+</style>
+```
+
+:::
+
+<br />
+
+### 让响应式对象变为只读readonly
+
+`App.vue`
+
+```vue
+<template>
+    <p>{{person.name}}</p>
+</template>
+
+<script>
+
+import {reactive, readonly} from 'vue';
+
+export default {
+    name: "App",
+    setup() {
+        // readonly让对象只读；打开控制台可以看到会报警，而且数据也不会改
+        let person = readonly(reactive({name: 'jack'}));
+        // 定义一个延迟器，修改name值
+        setTimeout(() => {
+            person.name = "bob";
+        }, 2000)
+
+        return {person}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 花样玩法-响应式对象变形toRefs
+
+`App.vue`
+
+```vue
+<template>
+    <p>{{name}}</p>
+</template>
+
+<script>
+
+import {reactive,toRefs} from 'vue';
+
+export default {
+    name: "App",
+    setup() {
+        // {name: 'jack'} => proxy({name: 'jack'})
+        let person = reactive({name: 'jack'});
+        // 定义一个延迟器，修改name值
+        setTimeout(() => {
+            person.name = "bob";
+        }, 2000)
+
+        // 将person解构,响应式对象又变成非响应式了
+        // const {name} = person;
+
+        // 这个时候怎么解决呢？
+        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
+        const {name} = toRefs(person)
+
+        return {name}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+或者这样写
+
+`App.vue`
+
+```vue
+<template>
+    <p>{{name}}</p>
+</template>
+
+<script>
+
+import {reactive,toRefs} from 'vue';
+
+export default {
+    name: "App",
+    setup() {
+        // {name: 'jack'} => proxy({name: 'jack'})
+        let person = reactive({name: 'jack'});
+        // 将person解构,响应式对象又变成非响应式了
+        // const {name} = person;
+
+        // 这个时候怎么解决呢？
+        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
+        const {name} = toRefs(person)
+
+        setTimeout(() => {
+            name.value = "bob";
+        }, 2000)
+
+        return {name}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 花式玩法-解构不存在的对象给默认值`toRef`
+
+不建议给默认值这么用
+
+这个好像不具备响应式，未测试
+
+`App.vue`
+
+```vue
+<template>
+    <p>{{age}}</p>
+</template>
+
+<script>
+
+import {reactive, toRef} from 'vue';
+
+export default {
+    name: "App",
+    setup() {
+        // {name: 'jack'} => proxy({name: 'jack'})
+        let person = reactive({name: 'jack'});
+        // 将person解构,响应式对象又变成非响应式了
+        // const {name} = person;
+
+        // 这个时候怎么解决呢？
+        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
+        // const {name} = toRefs(person)
+
+        // 如果解构出来的对象不存在，会给一个undefined值，如果要设置默认值，怎么设置呢？
+        let {age} = toRef(person, 'age');
+
+        setTimeout(() => {
+            age.value = "bob";
+        }, 2000)
+
+        return {age}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### Context参数
+
+`App.vue`
+
+```vue
+<template>
+    <Child :title="title">
+        <p>hello</p>
+    </Child>
+</template>
+
+<script>
+
+import Child from './Child'
+
+export default {
+    name: "App",
+    components: {Child},
+    setup() {
+        return {
+            title: "bob",
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+`Child.vue`
+
+```vue
+<template>
+    <p :title="title">123</p>
+    <p @click="handleClick">122</p>
+</template>
+
+<script>
+export default {
+    name: "Child",
+    // 表示多个根标签都不要继承No-props
+    inheritAttrs: false,
+
+    setup(props, context) {
+        const {attrs, slots, emit} = context;
+
+        console.log(slots.default()); // 这是一个虚拟DOM，可以通过h函数来搞，这里不演示了
+
+        // 不能使用箭头函数
+        function handleClick() {
+            alert("abc");
+        }
+
+        return {
+            // 对外暴露出属性
+            title: attrs.title,
+            handleClick,
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+
+
+### 例子 - ToDoItem
+
+最原始的todoitem
+
+有一个bug：提交后input框焦点就没了
+
+```vue
+<template>
+    <div>
+        <input :value="inputValue" @input="inputHandle" type="text" autofocus>
+        <button @click="submitHandle">提交</button>
+    </div>
+    <ul>
+        <li v-for="(item, index) of list" :key="index">{{item}}</li>
+    </ul>
+</template>
+
+<script>
+import {ref, reactive} from 'vue';
+
+export default {
+    name: "App",
+    setup() {
+        const list = reactive([]);
+        const inputValue = ref('');
+        const inputHandle = (e) => {
+            inputValue.value = e.target.value;
+        }
+        const submitHandle = () => {
+            list.push(inputValue.value);
+            inputValue.value = '';
+        }
+        return {
+            list,
+            inputValue,
+            inputHandle,
+            submitHandle
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+### 将list和input分开
+
+`App.vue`
+
+```vue
+<template>
+    <div>
+        <input :value="inputValue" @input="inputHandle" type="text" autofocus>
+        <button @click="()=>{submitHandle(inputValue); inputValue='';}">提交</button>
+    </div>
+    <ul>
+        <li v-for="(item, index) of list" :key="index">{{item}}</li>
+    </ul>
+</template>
+
+<script>
+import {ref, reactive} from 'vue';
+
+// list相关操作
+function listRelativeEffect() {
+    const list = reactive([]);
+    const submitHandle = (item) => {
+        list.push(item);
+    }
+    return {list, submitHandle}
+}
+
+// input相关操作
+function inputRelativeEffect() {
+    const inputValue = ref('');
+    const inputHandle = (e) => {
+        inputValue.value = e.target.value;
+    }
+    return {inputValue, inputHandle}
+}
+
+export default {
+    name: "App",
+    setup() {
+        const {list, submitHandle} = listRelativeEffect();
+        const {inputValue, inputHandle} = inputRelativeEffect();
+
+        return {
+            list, submitHandle,
+            inputValue, inputHandle,
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 计算属性
+
+先写一个计数器
+
+`App.vue`
+
+```vue
+<template>
+    <span @click="handleClick"> {{ count }}</span>
+</template>
+
+<script>
+
+import {ref} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const count = ref(0);
+        const handleClick = () => {
+            count.value += 1;
+        }
+        return {count, handleClick}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+增加另一个变量计算属性
+
+`App.vue`
+
+```vue
+<template>
+    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
+</template>
+
+<script>
+
+import {ref, computed} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const count = ref(0);
+        const handleClick = () => {
+            count.value += 1;
+        }
+        const countAddFive = computed(()=>{
+            return count.value + 5;
+        })
+
+        return {count, handleClick, countAddFive}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+计算属性复杂操作
+
+`App.vue`
+
+```vue
+<template>
+    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
+</template>
+
+<script>
+
+import {ref, computed} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const count = ref(0);
+        const handleClick = () => {
+            count.value += 1;
+        }
+        let countAddFive = computed({
+            // 获取计算属性值时执行这个方法
+            get: () => {
+                return count.value + 5;
+            },
+            // 设置计算属性值时执行这个方法
+            set: (param) => {
+                count.value = param - 5;
+            }
+        })
+
+        setTimeout(() => {
+            countAddFive.value = 12;
+        }, 3000)
+
+        return {count, handleClick, countAddFive}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### watch侦听器
+
+`App`
+
+```vue
+<template>
+    <div>
+        Name: <input v-model="name" type="text">
+    </div>
+    <div>
+        Name is {{ name }}
+    </div>
+
+</template>
+
+<script>
+
+import {ref, watch} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const name = ref("dell");
+
+        // lazy，首页页面加载的时候不会执行这个函数
+        // 参数可以拿到当前值和原始值
+        // 如果要监听一个对象中某个kv，watch第一个参数写成箭头函数，返回要监听的 对象.key
+        watch(name, (currentValue, prevValue) => {
+            console.log(currentValue);
+            console.log(prevValue);
+        })
+
+        return {name};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+让watch监听器立即执行
+
+`App.vue`
+
+```vue
+<template>
+    <div>
+        Name: <input v-model="name" type="text">
+    </div>
+    <div>
+        Name is {{ name }}
+    </div>
+
+</template>
+
+<script>
+
+import {ref, watch} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const name = ref("dell");
+
+        // 让watch立即执行，在第三个参数中添加 immediate: true
+        watch(name, (currentValue, prevValue) => {
+            console.log(currentValue);
+            console.log(prevValue);
+        }, {immediate: true})
+
+        return {name};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+
+
+同时监听多个对象
+
+`App.vue`
+
+```vue
+<template>
+    <div>
+        Name: <input v-model="nameObj.name" type="text">
+    </div>
+    <div>
+        Name is {{ nameObj.name }}
+    </div>
+
+
+    <div>
+        englishName: <input v-model="nameObj.englishName" type="text">
+    </div>
+    <div>
+        englishName is {{ nameObj.englishName }}
+    </div>
+
+</template>
+
+<script>
+
+import {reactive, watch} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const nameObj = reactive({name: "dell", englishName: "lee"});
+
+        // 可以同时监听多个对象
+        watch([() => nameObj.name, () => nameObj.englishName],
+            ([currentName, currentEng], [prevName, prevEng]) => {
+                console.log(currentName);
+                console.log(prevName);
+                console.log(currentEng);
+                console.log(prevEng);
+            })
+
+        return {nameObj};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+
+
+### watchEffect侦听器
+
+`App.vue`
+
+```vue
+<template>
+    <div>
+        Name: <input v-model="name" type="text">
+    </div>
+    <div>
+        Name is {{ name }}
+    </div>
+
+
+    <div>
+        englishName: <input v-model="englishName" type="text">
+    </div>
+    <div>
+        englishName is {{ englishName }}
+    </div>
+
+</template>
+
+<script>
+
+import {reactive, watch, toRefs, watchEffect} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const nameObj = reactive({name: "dell", englishName: "lee"});
+
+        // 可以同时监听多个对象
+        watch([() => nameObj.name, () => nameObj.englishName],
+            ([currentName, currentEng], [prevName, prevEng]) => {
+                console.log('watch ', currentName, prevName, '---', currentEng, prevEng);
+            })
+
+        // watchEffect和watch类似，不同在于
+        //  ①watchEffect是非惰性的，一开始就执行
+        //  ②watchEffect内部调用了外部变量时，当外部变量改变时才会执行这个函数，如果没有依赖，就不会执行；也就是说
+        //      自动感知内部函数的依赖
+        //  ③watchEffect只能获取到数据当前值，不能获取之前的值
+        watchEffect(() => {
+            console.log("watchEffect: abc");
+            console.log("watchEffect: ", nameObj.name);
+        })
+
+        //
+        const {name, englishName} = toRefs(nameObj);
+        return {name, englishName}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 让监听器失效
+
+`App.vue`
+
+```vue
+<template>
+    <div>
+        Name: <input v-model="name" type="text">
+    </div>
+    <div>
+        Name is {{ name }}
+    </div>
+
+
+    <div>
+        englishName: <input v-model="englishName" type="text">
+    </div>
+    <div>
+        englishName is {{ englishName }}
+    </div>
+
+</template>
+
+<script>
+
+import {reactive, watch, toRefs} from 'vue';
+
+export default {
+    name: "App",
+
+    setup() {
+        const nameObj = reactive({name: "dell", englishName: "lee"});
+
+        // 侦听name属性
+        const stop = watch(() => {
+            return nameObj.name;
+        }, (curValue, preValue) => {
+            console.log(curValue, '---', preValue)
+        });
+
+        // 5秒后让侦听器失效
+        setTimeout(() => {
+            stop();
+        }, 5000)
+
+        const {name, englishName} = toRefs(nameObj);
+        return {name, englishName}
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 生命周期函数
+
+函数名就是多了一个on
+
+`App.vue`
+
+```vue
+<template>
+    <p>1</p>
+</template>
+
+<script>
+
+import {onBeforeMount} from 'vue';
+
+
+export default {
+    name: "App",
+
+    setup() {
+        onBeforeMount(() => {
+            console.log("onBeforeMount")
+        })
+        return {};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### provide和inject
+
+`App.vue`
+
+```vue
+<template>
+    <Child></Child>
+</template>
+
+<script>
+
+import Child from './Child'
+import {provide, ref, readonly} from 'vue';
+
+
+export default {
+    name: "App",
+    components: {Child},
+    setup() {
+        const name = ref('dell');
+        const setName = (newName) => {
+            name.value = newName;
+        }
+
+        // 提供数据和改数据的方法, readonly保证子组件无法修改
+        provide('name', readonly(name));
+        provide('setName', setName);
+
+        return {};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+`Child.vue`
+
+```vue
+<template>
+    <div @click="handleClick">{{name}}</div>
+</template>
+
+<script>
+
+import {inject} from 'vue';
+
+export default {
+    name: "Child",
+    setup() {
+        // 第二个参数代表默认值
+        const name = inject('name', 'defaultName');
+        const setName = inject('setName');
+
+        const handleClick = () => {
+            setName("lee");
+        }
+
+        return {name, handleClick};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+
+
+### 获取DOM节点ref
+
+`App.vue`
+
+```vue
+<template>
+    <p ref="hello">Hello World</p>
+</template>
+
+<script>
+
+
+import {ref, onMounted} from 'vue';
+
+
+export default {
+    name: "App",
+    setup() {
+        // 定义一个变量，变量名要和上面模板中ref的值一样，ref(null)是固定写法
+        const hello = ref(null);
+        
+        onMounted(() => {
+            console.log(hello.value);
+        })
+
+        // 这里一定要return hello
+        return {hello};
+    }
+}
+</script>
+
+<style scoped>
+</style>
+```
+
+<br />
+
+## 选项式API（Options API，不推荐）
+
 ### 编写一个计时器
+
+::: details 点击查看详情
 
 `App.vue`
 
@@ -125,7 +1086,9 @@ export default {
 </style>
 ```
 
+:::
 
+<br />
 
 ### 模板变量
 
@@ -2963,1000 +3926,6 @@ console.log(vm);
 export default {
     name: "App",
     inject: ['age'],
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-## 组合式API（CompositionAPI）
-
-
-
-### 第一个`CompositionAPI`
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{name}}</p>
-</template>
-
-<script>
-export default {
-    name: "App",
-    // 要使用CompositionAPI,必须定义setup函数
-    // 接收两个参数
-    //  props   父组件传给子组件的参数
-    //  context
-    // 实例在完全初始化之前，也就是created之前，所以在setup中也没有this，this指向windo
-
-
-    setup(props, context) {
-        console.log(props);     // 这个是代理对象，注释也不能写，不知道为啥会报错
-        console.log(context); // {expose: ƒ}
-        console.log(this);  // undefined
-        return {
-            name: "Vue",
-        }
-    }
-}
-</script>
-
-<style scoped>
-
-</style>
-```
-
-
-
-### 默认为非响应式变量
-
-默认情况下，`CompositionAPI`的对象并不是响应式，即对象修改并不会重新渲染
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{name}}</p>
-</template>
-
-<script>
-
-export default {
-    name: "App",
-    setup() {
-        let name = "jack"
-        // 定义一个延迟器，修改name值
-        setTimeout(()=>{
-            name = "bob";
-        }, 2000)
-
-        return {name}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 基本数据类型响应式封装ref
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{name}}</p>
-</template>
-
-<script>
-
-import {ref} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // 原理：
-        // (1) 通过Proxy对数据进行封装，当数据发生改变时，触发模板等内容更新
-        // (2) jack 会变成 Proxy({value: 'jack'})
-        // 所以后面当我们改这个对象时，需要通过 对象.value 来改，但是在模板中可以直接使用对象，vue会自动帮我们获取value值
-        let name = ref("jack");
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            name.value = "bob";
-        }, 2000)
-
-        return {name}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 引用数据类型响应式封装reactive
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{person.name}}</p>
-</template>
-
-<script>
-
-import {reactive} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // 原理：
-        // (1) 通过Proxy对数据进行封装，当数据发生改变时，触发模板等内容更新
-        // (2) {name: 'jack'} 会变成 Proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            person.name = "bob";
-        }, 2000)
-
-        return {person}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 让响应式对象变为只读readonly
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{person.name}}</p>
-</template>
-
-<script>
-
-import {reactive, readonly} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // readonly让对象只读；打开控制台可以看到会报警，而且数据也不会改
-        let person = readonly(reactive({name: 'jack'}));
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            person.name = "bob";
-        }, 2000)
-
-        return {person}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 花样玩法-响应式对象变形toRefs
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{name}}</p>
-</template>
-
-<script>
-
-import {reactive,toRefs} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 定义一个延迟器，修改name值
-        setTimeout(() => {
-            person.name = "bob";
-        }, 2000)
-
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
-
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        const {name} = toRefs(person)
-
-        return {name}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-或者这样写
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{name}}</p>
-</template>
-
-<script>
-
-import {reactive,toRefs} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
-
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        const {name} = toRefs(person)
-
-        setTimeout(() => {
-            name.value = "bob";
-        }, 2000)
-
-        return {name}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 花式玩法-解构不存在的对象给默认值`toRef`
-
-不建议给默认值这么用
-
-这个好像不具备响应式，未测试
-
-`App.vue`
-
-```vue
-<template>
-    <p>{{age}}</p>
-</template>
-
-<script>
-
-import {reactive, toRef} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        // {name: 'jack'} => proxy({name: 'jack'})
-        let person = reactive({name: 'jack'});
-        // 将person解构,响应式对象又变成非响应式了
-        // const {name} = person;
-
-        // 这个时候怎么解决呢？
-        // toRefs的原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-        // const {name} = toRefs(person)
-
-        // 如果解构出来的对象不存在，会给一个undefined值，如果要设置默认值，怎么设置呢？
-        let {age} = toRef(person, 'age');
-
-        setTimeout(() => {
-            age.value = "bob";
-        }, 2000)
-
-        return {age}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### Context参数
-
-`App.vue`
-
-```vue
-<template>
-    <Child :title="title">
-        <p>hello</p>
-    </Child>
-</template>
-
-<script>
-
-import Child from './Child'
-
-export default {
-    name: "App",
-    components: {Child},
-    setup() {
-        return {
-            title: "bob",
-        }
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-`Child.vue`
-
-```vue
-<template>
-    <p :title="title">123</p>
-    <p @click="handleClick">122</p>
-</template>
-
-<script>
-export default {
-    name: "Child",
-    // 表示多个根标签都不要继承No-props
-    inheritAttrs: false,
-
-    setup(props, context) {
-        const {attrs, slots, emit} = context;
-
-        console.log(slots.default()); // 这是一个虚拟DOM，可以通过h函数来搞，这里不演示了
-
-        // 不能使用箭头函数
-        function handleClick() {
-            alert("abc");
-        }
-
-        return {
-            // 对外暴露出属性
-            title: attrs.title,
-            handleClick,
-        }
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-
-
-### 例子 - ToDoItem
-
-最原始的todoitem
-
-有一个bug：提交后input框焦点就没了
-
-```vue
-<template>
-    <div>
-        <input :value="inputValue" @input="inputHandle" type="text" autofocus>
-        <button @click="submitHandle">提交</button>
-    </div>
-    <ul>
-        <li v-for="(item, index) of list" :key="index">{{item}}</li>
-    </ul>
-</template>
-
-<script>
-import {ref, reactive} from 'vue';
-
-export default {
-    name: "App",
-    setup() {
-        const list = reactive([]);
-        const inputValue = ref('');
-        const inputHandle = (e) => {
-            inputValue.value = e.target.value;
-        }
-        const submitHandle = () => {
-            list.push(inputValue.value);
-            inputValue.value = '';
-        }
-        return {
-            list,
-            inputValue,
-            inputHandle,
-            submitHandle
-        }
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-### 将list和input分开
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        <input :value="inputValue" @input="inputHandle" type="text" autofocus>
-        <button @click="()=>{submitHandle(inputValue); inputValue='';}">提交</button>
-    </div>
-    <ul>
-        <li v-for="(item, index) of list" :key="index">{{item}}</li>
-    </ul>
-</template>
-
-<script>
-import {ref, reactive} from 'vue';
-
-// list相关操作
-function listRelativeEffect() {
-    const list = reactive([]);
-    const submitHandle = (item) => {
-        list.push(item);
-    }
-    return {list, submitHandle}
-}
-
-// input相关操作
-function inputRelativeEffect() {
-    const inputValue = ref('');
-    const inputHandle = (e) => {
-        inputValue.value = e.target.value;
-    }
-    return {inputValue, inputHandle}
-}
-
-export default {
-    name: "App",
-    setup() {
-        const {list, submitHandle} = listRelativeEffect();
-        const {inputValue, inputHandle} = inputRelativeEffect();
-
-        return {
-            list, submitHandle,
-            inputValue, inputHandle,
-        }
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 计算属性
-
-先写一个计数器
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }}</span>
-</template>
-
-<script>
-
-import {ref} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        return {count, handleClick}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-增加另一个变量计算属性
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
-</template>
-
-<script>
-
-import {ref, computed} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        const countAddFive = computed(()=>{
-            return count.value + 5;
-        })
-
-        return {count, handleClick, countAddFive}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-计算属性复杂操作
-
-`App.vue`
-
-```vue
-<template>
-    <span @click="handleClick"> {{ count }} -- {{ countAddFive }}</span>
-</template>
-
-<script>
-
-import {ref, computed} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const count = ref(0);
-        const handleClick = () => {
-            count.value += 1;
-        }
-        let countAddFive = computed({
-            // 获取计算属性值时执行这个方法
-            get: () => {
-                return count.value + 5;
-            },
-            // 设置计算属性值时执行这个方法
-            set: (param) => {
-                count.value = param - 5;
-            }
-        })
-
-        setTimeout(() => {
-            countAddFive.value = 12;
-        }, 3000)
-
-        return {count, handleClick, countAddFive}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### watch侦听器
-
-`App`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-</template>
-
-<script>
-
-import {ref, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const name = ref("dell");
-
-        // lazy，首页页面加载的时候不会执行这个函数
-        // 参数可以拿到当前值和原始值
-        // 如果要监听一个对象中某个kv，watch第一个参数写成箭头函数，返回要监听的 对象.key
-        watch(name, (currentValue, prevValue) => {
-            console.log(currentValue);
-            console.log(prevValue);
-        })
-
-        return {name};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-让watch监听器立即执行
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-</template>
-
-<script>
-
-import {ref, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const name = ref("dell");
-
-        // 让watch立即执行，在第三个参数中添加 immediate: true
-        watch(name, (currentValue, prevValue) => {
-            console.log(currentValue);
-            console.log(prevValue);
-        }, {immediate: true})
-
-        return {name};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-
-
-同时监听多个对象
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="nameObj.name" type="text">
-    </div>
-    <div>
-        Name is {{ nameObj.name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="nameObj.englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ nameObj.englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 可以同时监听多个对象
-        watch([() => nameObj.name, () => nameObj.englishName],
-            ([currentName, currentEng], [prevName, prevEng]) => {
-                console.log(currentName);
-                console.log(prevName);
-                console.log(currentEng);
-                console.log(prevEng);
-            })
-
-        return {nameObj};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-
-
-### watchEffect侦听器
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch, toRefs, watchEffect} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 可以同时监听多个对象
-        watch([() => nameObj.name, () => nameObj.englishName],
-            ([currentName, currentEng], [prevName, prevEng]) => {
-                console.log('watch ', currentName, prevName, '---', currentEng, prevEng);
-            })
-
-        // watchEffect和watch类似，不同在于
-        //  ①watchEffect是非惰性的，一开始就执行
-        //  ②watchEffect内部调用了外部变量时，当外部变量改变时才会执行这个函数，如果没有依赖，就不会执行；也就是说
-        //      自动感知内部函数的依赖
-        //  ③watchEffect只能获取到数据当前值，不能获取之前的值
-        watchEffect(() => {
-            console.log("watchEffect: abc");
-            console.log("watchEffect: ", nameObj.name);
-        })
-
-        //
-        const {name, englishName} = toRefs(nameObj);
-        return {name, englishName}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 让监听器失效
-
-`App.vue`
-
-```vue
-<template>
-    <div>
-        Name: <input v-model="name" type="text">
-    </div>
-    <div>
-        Name is {{ name }}
-    </div>
-
-
-    <div>
-        englishName: <input v-model="englishName" type="text">
-    </div>
-    <div>
-        englishName is {{ englishName }}
-    </div>
-
-</template>
-
-<script>
-
-import {reactive, watch, toRefs} from 'vue';
-
-export default {
-    name: "App",
-
-    setup() {
-        const nameObj = reactive({name: "dell", englishName: "lee"});
-
-        // 侦听name属性
-        const stop = watch(() => {
-            return nameObj.name;
-        }, (curValue, preValue) => {
-            console.log(curValue, '---', preValue)
-        });
-
-        // 5秒后让侦听器失效
-        setTimeout(() => {
-            stop();
-        }, 5000)
-
-        const {name, englishName} = toRefs(nameObj);
-        return {name, englishName}
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 生命周期函数
-
-函数名就是多了一个on
-
-`App.vue`
-
-```vue
-<template>
-    <p>1</p>
-</template>
-
-<script>
-
-import {onBeforeMount} from 'vue';
-
-
-export default {
-    name: "App",
-
-    setup() {
-        onBeforeMount(() => {
-            console.log("onBeforeMount")
-        })
-        return {};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### provide和inject
-
-`App.vue`
-
-```vue
-<template>
-    <Child></Child>
-</template>
-
-<script>
-
-import Child from './Child'
-import {provide, ref, readonly} from 'vue';
-
-
-export default {
-    name: "App",
-    components: {Child},
-    setup() {
-        const name = ref('dell');
-        const setName = (newName) => {
-            name.value = newName;
-        }
-
-        // 提供数据和改数据的方法, readonly保证子组件无法修改
-        provide('name', readonly(name));
-        provide('setName', setName);
-
-        return {};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-`Child.vue`
-
-```vue
-<template>
-    <div @click="handleClick">{{name}}</div>
-</template>
-
-<script>
-
-import {inject} from 'vue';
-
-export default {
-    name: "Child",
-    setup() {
-        // 第二个参数代表默认值
-        const name = inject('name', 'defaultName');
-        const setName = inject('setName');
-
-        const handleClick = () => {
-            setName("lee");
-        }
-
-        return {name, handleClick};
-    }
-}
-</script>
-
-<style scoped>
-</style>
-```
-
-
-
-### 获取DOM节点ref
-
-`App.vue`
-
-```vue
-<template>
-    <p ref="hello">Hello World</p>
-</template>
-
-<script>
-
-
-import {ref, onMounted} from 'vue';
-
-
-export default {
-    name: "App",
-    setup() {
-        // 定义一个变量，变量名要和上面模板中ref的值一样，ref(null)是固定写法
-        const hello = ref(null);
-        
-        onMounted(() => {
-            console.log(hello.value);
-        })
-
-        // 这里一定要return hello
-        return {hello};
-    }
 }
 </script>
 
