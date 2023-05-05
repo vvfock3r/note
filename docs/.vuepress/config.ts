@@ -6,7 +6,7 @@ const {registerComponentsPlugin} = require('@vuepress/plugin-register-components
 
 import {viteBundler} from '@vuepress/bundler-vite'
 
-const navbar = [
+const navbar = [	
     {
         text: 'Linux',
         children: [
@@ -31,6 +31,52 @@ const navbar = [
 		    },
         ]
     },
+	
+    {
+        text: '开发',
+        children: [
+            {
+                text: '前端基础',
+                children: [
+                    {text: 'CSS', link: '/frontend/css'},
+                    {text: 'JavaScript', link: '/frontend/javascript'},
+                ]
+            },
+            {
+                text: '工程化',
+                children: [
+				    {text: 'Tools', link: '/frontend/node-package-manager'},
+                    {text: 'Vue', link: '/frontend/vue'},                 
+                    {text: 'TypeScript', link: '/frontend/typescript'},
+                ]
+            },
+            {
+                text: '可视化',
+                children: [
+                    {text: '浏览器原生绘图', link: '/frontend/Browser-Native-Drawing.html'},
+                    {text: 'Apache Echarts', link: '/frontend/echarts'},
+                ]
+            },
+            {
+                text: 'Python',
+                children: [
+                    {text: 'Python核心语法', link: '/python/document.html'},
+                    {text: 'Python实用模块', link: '/python/modules.html'},
+                ]
+            },
+            {
+                text: 'Go',
+                children: [
+				    {text: 'Go开发工具', link: '/go/tools/goland.html'},
+                    {text: 'Go核心语法', link: '/go/document.html'},
+					{text: 'Go实用模块', link: '/go/modules.html'},
+					{text: 'GO系统调用', link: '/go/cgo.html'},
+					{text: 'Go源码分析', link: '/go/sourcecode.html'},
+                ]
+            },
+        ]
+    },
+	
     {
         text: '容器',
         children: [
@@ -67,50 +113,7 @@ const navbar = [
             },
         ]
     },
-    {
-        text: '开发',
-        children: [
-            {
-                text: '前端基础',
-                children: [
-                    {text: 'CSS', link: '/frontend/css'},
-                    {text: 'JavaScript', link: '/frontend/javascript'},
-                ]
-            },
-            {
-                text: '工程化',
-                children: [
-				    {text: 'Tools', link: '/frontend/node-package-manager'},
-                    {text: 'Vue', link: '/frontend/vue'},                 
-                    {text: 'TypeScript', link: '/frontend/typescript'},
-                ]
-            },
-            {
-                text: '可视化',
-                children: [
-                    {text: '浏览器原生绘图', link: '/frontend/Browser-Native-Drawing.html'},
-                    {text: 'Apache Echarts', link: '/frontend/echarts'},
-                ]
-            },
-            {
-                text: 'Go',
-                children: [
-				    {text: 'Go开发工具', link: '/go/tools/goland.html'},
-                    {text: 'Go核心语法', link: '/go/document.html'},
-					{text: 'Go实用模块', link: '/go/modules.html'},
-					{text: 'GO系统调用', link: '/go/cgo.html'},
-					{text: 'Go源码分析', link: '/go/sourcecode.html'},					
-                ]
-            },
-            {
-                text: 'Python',
-                children: [
-                    {text: 'Python核心语法', link: '/python/document.html'},
-                    {text: 'Python实用模块', link: '/python/modules.html'},
-                ]
-            },
-        ]
-    },
+	
 	{
         text: '散文',
         children: [
