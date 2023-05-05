@@ -18,11 +18,11 @@ Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheu
 
 ### Prometheus Server
 
-**部署方式1：二进制部署**
+::: details 二进制部署
+
+**1、下载二进制包**
 
 下载地址：[https://prometheus.io/download/#prometheus](https://prometheus.io/download/#prometheus)
-
-::: details （1）下载二进制包
 
 ```bash
 # 下载二进制包
@@ -61,9 +61,7 @@ Checking /etc/prometheus/prometheus.yml
  SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
 ```
 
-:::
-
-::: details （2）编写Systemd启动脚本
+**2、编写Systemd启动脚本**
 
 ```bash
 # 编写启动脚本
@@ -90,9 +88,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-:::
-
-::: details （3）启动服务并验证
+**3、启动服务并验证**
 
 ```bash
 # 启动服务
@@ -111,15 +107,11 @@ tcp6       0      0 ::1:9090                ::1:35726               ESTABLISHED 
 
 :::
 
-<br />
-
-**部署方式2：Dcoker部署**
+::: details Dcoker部署
 
 文档：[https://prometheus.io/docs/prometheus/2.38/installation/](https://prometheus.io/docs/prometheus/2.38/installation/)
 
 Docker Hub：[https://hub.docker.com/r/prom/prometheus](https://hub.docker.com/r/prom/prometheus)
-
-::: details 点击查看详情
 
 ```bash
 # (1)创建配置文件目录和数据目录
@@ -150,11 +142,11 @@ docker container run --name "prometheus" \
 
 ### Node Exporter
 
-**部署方式1：二进制部署**
+::: details （1）二进制部署
+
+**1、下载二进制包**
 
 下载地址：[https://prometheus.io/download/#node_exporter](https://prometheus.io/download/#node_exporter)
-
-::: details （1）下载二进制包
 
 ```bash
 # 下载二进制包
@@ -171,9 +163,7 @@ node_exporter, version 1.3.1 (branch: HEAD, revision: a2321e7b940ddcff26873612bc
   platform:         linux/amd64
 ```
 
-:::
-
-::: details （2）编写Systemd启动脚本
+**2、编写Systemd启动脚本**
 
 ```bash
 # 编写启动脚本
@@ -192,9 +182,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-:::
-
-::: details （3）启动服务并验证
+**3、启动服务并验证**
 
 ```bash
 # 启动服务
@@ -214,15 +202,11 @@ tcp6       0      0 :::9100                 :::*                    LISTEN      
 
 :::
 
-<br />
-
-**部署方式2：Docker部署**
+::: details Docker部署
 
 文档：[https://github.com/prometheus/node_exporter#docker](https://github.com/prometheus/node_exporter#docker)
 
 Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.com/r/prom/node-exporter)
-
-::: details 点击查看详情
 
 ```bash
 # 启动容器
@@ -244,11 +228,11 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 
 ### AlertManager
 
-**部署方式1：二进制部署**
+::: details （1）二进制部署
 
 下载地址：[https://prometheus.io/download/#alertmanager](https://prometheus.io/download/#alertmanager)
 
-::: details （1）下载二进制包
+**1、下载二进制包**
 
 ```bash
 # 下载二进制包
@@ -279,9 +263,7 @@ amtool, version 0.24.0 (branch: HEAD, revision: f484b17fa3c583ed1b2c8bbcec20ba1d
   platform:         linux/amd64
 ```
 
-:::
-
-::: details （2）编写Systemd启动脚本
+**2、编写Systemd启动脚本**
 
 ```bash
 # 编写启动脚本
@@ -309,9 +291,7 @@ EOF
 
 * `--web.external-url`：在发送邮箱告警等里面可能会有`AlertManager`的地址，这里设置的就是AlertManager外部访问的地址
 
-:::
-
-::: details （3）启动服务并验证
+**3、启动服务并验证**
 
 ```bash
 # 启动服务
@@ -328,9 +308,7 @@ tcp6       0      0 :::9093                 :::*                    LISTEN      
 
 :::
 
-<br />
-
-**部署方式2：Docker部署**
+::: details Docker部署
 
 Docker Hub：[https://hub.docker.com/r/prom/alertmanager](https://hub.docker.com/r/prom/alertmanager)
 
@@ -360,6 +338,8 @@ docker container rm -f get-alertmanager-config
 # 浏览器访问：http://192.168.48.133:9093
 ```
 
+:::
+
 <br />
 
 ### Thanos
@@ -378,9 +358,9 @@ Github：[https://github.com/prometheus/prometheus](https://github.com/prometheu
 
 <br />
 
-**部署方式1：二进制部署**
+::: details 准备工作
 
-::: details 准备工作1：下载二进制包
+**1、下载二进制包**
 
 ```bash
 # 下载二进制包
@@ -401,9 +381,7 @@ thanos, version 0.28.0 (branch: HEAD, revision: 7f58065e691ab68c15ed01c4a27c236a
   platform:         linux/amd64
 ```
 
-:::
-
-::: details 准备工作2：修改Prometheus启动参数
+**2、修改Prometheus启动参数**
 
 ```bash
 # Prometheus启动命令添加如下参数
@@ -566,7 +544,9 @@ EOF
 
 <br />
 
-### 辅助脚本
+### Helper Script
+
+::: details 点击查看详情
 
 `watcher.sh`：在学习阶段会频繁修改配置文件，此脚本用于监听`Prometheus`配置文件，一旦发现被修改后就重启服务，避免重复操作
 
@@ -590,6 +570,8 @@ done
 效果图
 
 ![image-20220914184114103](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914184114103.png)
+
+:::
 
 <br />
 
