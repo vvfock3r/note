@@ -142,7 +142,7 @@ docker container run --name "prometheus" \
 
 ### Node Exporter
 
-::: details （1）二进制部署
+::: details 二进制部署
 
 **1、下载二进制包**
 
@@ -228,7 +228,7 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 
 ### AlertManager
 
-::: details （1）二进制部署
+::: details 二进制部署
 
 下载地址：[https://prometheus.io/download/#alertmanager](https://prometheus.io/download/#alertmanager)
 
@@ -1183,13 +1183,19 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 (node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
 ```
 
+<br />
+
 ### 运算符：向量匹配`on`和`ignoring`
 
 待补充
 
+<br />
+
 ### 运算符：组修饰符`group_left`和`group_right`
 
 待补充
+
+<br />
 
 ### 运算符：聚合运算符
 
@@ -1210,7 +1216,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 `by（label, ...）`则正好相反，结果向量中只保留列出的标签，其余标签则移除
 
-
+<br />
 
 ### 运算符：函数
 
@@ -1218,7 +1224,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 须知：
 
-* 使用函数要知道操作的是哪种向量，即时向量（instant-vector）还是范围向量（）
+* 使用函数要知道操作的是哪种向量，即时向量（instant-vector）还是范围向量（range vector）
 * 有些函数是有默认参数的，比如`year(v=vector(time()) instant-vector)`
 
 <br />
