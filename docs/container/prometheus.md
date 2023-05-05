@@ -1035,13 +1035,11 @@ Checking /etc/prometheus/prometheus.yml
 
 ## PromSQL
 
-### Metrics
+### Metrics概念
 
 文档：[https://prometheus.io/docs/practices/naming/#metric-and-label-naming](https://prometheus.io/docs/practices/naming/#metric-and-label-naming)
 
-<br />
-
-**Metrics格式**
+**1、Metrics格式**
 
 ```bash
 <metric name>{<label name>=<label value>, <label name>=<label value>, ...}
@@ -1049,7 +1047,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-**Metric Name**
+**2、Metric Name**
 
 * 对于特定的应用程序的指标，前缀通常是应用程序本身，比如`node_xxx`、`prometheus_xxx`，
 
@@ -1068,21 +1066,24 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-**Metrics Type**
+**3、Metrics Type**
 
 文档：[https://prometheus.io/docs/tutorials/understanding_metric_types/](https://prometheus.io/docs/tutorials/understanding_metric_types/)
 
-Counter：一个只能增加或重置的度量值
+* Counter（计数器）：一个只能增加或重置的度量值
 
-Gauge：一个可增可减的度量值
+* Gauge（测量其）：一个可增可减的度量值
 
-Histogram：累计直方图类，用于统计在某个区间内出现次数的度量值，示例：
+* Histogram（累计直方图类）：用于统计在某个区间内出现次数的度量值，示例：
 
-* `prometheus_http_request_duration_seconds_bucket`（*不同区间分类* 通常使用`bucket`作为后缀）
-* `prometheus_http_request_duration_seconds_count`（*所有区间采样次数总和* 通常使用`count`作为后缀）
-* `prometheus_http_request_duration_seconds_sum`（*所有区间采样值总和* 通常使用`sum`作为后缀）
+  * `prometheus_http_request_duration_seconds_bucket`（*不同区间分类* 通常使用`bucket`作为后缀）
 
-Summary：百分位统计
+  * `prometheus_http_request_duration_seconds_count`（*所有区间采样次数总和* 通常使用`count`作为后缀）
+
+  * `prometheus_http_request_duration_seconds_sum`（*所有区间采样值总和* 通常使用`sum`作为后缀）
+
+
+* Summary（百分位统计）：用于统计分位数分布情况
 
 <br />
 
