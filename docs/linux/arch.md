@@ -37,12 +37,15 @@ pacman -Syu # 更新最新软件列表，并升级所有已安装的软件包(�
 ```bash
 [root@archlinux ~]# pacman -Sy \
 	vim wget curl net-tools inetutils lsof \
-	systemd man-pages \
+	systemd man-pages procps-ng \
+	conntrack-tools \
 	python3 go nodejs \
 	docker
 
 # 说明
-# inetutils  包含hostname等命令
+# inetutils         包含hostname等命令
+# procps-ng         包含sysctl等命令
+# conntrack-tools   包含conntrack等命令
 ```
 
 <br />

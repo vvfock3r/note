@@ -1387,9 +1387,32 @@ busybox   1/1     Running   0          9s    10.100.247.5   node-2   <none>     
 
 文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
 
-`requiredDuringSchedulingIgnoredDuringExecution`：调度器只有在规则被满足的时候才能执行调度
+::: details 字段说明
 
-`preferredDuringSchedulingIgnoredDuringExecution`：调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod
+顶级字段为affinity，下级字段包含：
+
+* `nodeAffinity`（节点亲和性）
+* `podAffinity`（Pod亲和性）
+* `podAntiAffinity`（Pod反亲和性）
+
+亲和性规则：
+
+* `requiredDuringSchedulingIgnoredDuringExecution`：调度器只有在规则被满足的时候才能执行调度
+
+* `preferredDuringSchedulingIgnoredDuringExecution`：调度器会尝试寻找满足对应规则的节点。如果找不到匹配的节点，调度器仍然会调度该 Pod
+
+topologyKey定义拓扑域：
+
+* 拓扑域是指 Kubernetes 集群中的一种层级结构，可以表示节点所属的不同级别的拓扑信息，例如节点名称、区域、机架等
+* 通过选择适当的 `topologyKey` 值，可以精确地控制亲和性或反亲和性规则的作用范围，从而影响 Pod 的调度决策
+* 举例：
+  * 将 `topologyKey` 设置为 `"kubernetes.io/hostname"`，表示在亲和性或反亲和性规则中使用节点的主机名作为拓扑键（topology key）进行匹配
+  * Pod亲和性场景下：调度器将将这些 Pod 调度到相同的主机
+  * Pod反亲和性场景：将具有相同标签选择器的 Pod 调度到不同的主机上
+
+:::
+
+<br />
 
 ::: details （一）requiredDuringSchedulingIgnoredDuringExecution 基础示例
 
