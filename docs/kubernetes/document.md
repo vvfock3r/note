@@ -2474,6 +2474,8 @@ demo         ClusterIP   10.200.144.88   <none>        80/TCP    83s   app=web
 kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP   42h   <none>
 
 # 查看Service绑定的后端的Pods地址
+# 备注: K8S 1.19版本以后请使用 endpointslice
+# kubectl get endpointslice
 [root@node-1 ~]# kubectl get ep
 NAME         ENDPOINTS                                                     AGE
 demo         10.100.217.111:80                                             97s
@@ -2563,6 +2565,8 @@ demo         NodePort    10.200.32.173   <none>        80:31000/TCP   23s   app=
 kubernetes   ClusterIP   10.200.0.1      <none>        443/TCP        42h   <none>
 
 # 查看Service绑定的后端的Pods地址
+# 备注: K8S 1.19版本以后请使用 endpointslice
+# kubectl get endpointslice
 [root@node-1 ~]# kubectl get ep
 NAME         ENDPOINTS                                                     AGE
 demo         10.100.217.112:80                                             32s
