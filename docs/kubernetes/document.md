@@ -5543,7 +5543,7 @@ verticalpodautoscaler.autoscaling.k8s.io/demo created
 在Kubernetes中，用户分为两类：
 
 * 服务账号（ServiceAccount）：Kubernetes内部所使用的用户，比如：Pod调用Kubernetes API
-* 普通用户（Normal Users）：Kubernetes外部所使用的用户，比如kubectl访问ApiServer
+* 普通用户（UserAccount）：Kubernetes外部所使用的用户，比如kubectl访问ApiServer
 
 下面来对比一下两种用户
 
