@@ -107,10 +107,9 @@ node-4   Ready    <none>          13m   v1.25.4
 
 ## 系统信息
 
-::: details 点击查看详情
+::: details （1）查看都有哪些version
 
 ```bash
-# 查看都有哪些version
 [root@node-1 ~]# kubectl api-versions
 admissionregistration.k8s.io/v1
 apiextensions.k8s.io/v1
@@ -139,7 +138,16 @@ storage.k8s.io/v1
 storage.k8s.io/v1beta1
 v1
 
-# 查看都有哪些资源
+
+
+
+```
+
+:::
+
+::: details （2）查看都有哪些资源
+
+```bash
 [root@node-1 ~]# kubectl api-resources
 NAME                              SHORTNAMES   APIVERSION                             NAMESPACED   KIND
 bindings                                       v1                                     true         Binding
@@ -160,7 +168,13 @@ secrets                                        v1                               
 serviceaccounts                   sa           v1                                     true         ServiceAccount
 services                          svc          v1                                     true         Service
 ...
+```
 
+:::
+
+::: details （3）查看集群详细信息
+
+```bash
 # 输出控制平面和群集服务的地址
 [root@node-1 ~]# kubectl cluster-info
 Kubernetes control plane is running at https://api.k8s.local:6443
@@ -200,6 +214,14 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 ```
 
 :::
+
+<br />
+
+## 了解记录
+
+这里记录一下可能会遇到的，但是文档中并没有详细解释的知识
+
+
 
 <br />
 
@@ -5697,8 +5719,6 @@ pod/demo created
 <br />
 
 **普通用户**
-
->  TODO：使用 CertificateSigningRequest 来创建用户 [链接](https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/certificate-signing-requests/)
 
 ::: details  （1）kubectl所使用的用户
 
