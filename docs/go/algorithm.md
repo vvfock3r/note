@@ -163,3 +163,102 @@ False: 4999611
 ```
 
 :::
+
+<br />
+
+## 查找类算法
+
+### 二分查找
+
+要求：
+
+* 编写一个函数实现二分查找
+* 第一个参数是数列，第二个参数是要寻找的元素
+* 若找到则返回元素的索引，未找到则返回-1
+* 要求同时支持升序和降序数列
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+// binarySearch 二分查找,返回找到的第一个元素的索引,未找到则返回-1
+// 要求source必须是已排好序的切片,可以是升序也可以是降序
+func binarySearch(source []int, target int) int {
+	// 若是空切片直接返回-1
+	if len(source) == 0 {
+		return -1
+	}
+
+	// 取第一个元素的索引和最后一个元素的索引
+	left, right := 0, len(source)-1
+
+	// 检查序列是否是升序, true为升序, false为降序
+	asc := source[left] < source[right]
+
+	// 核心算法
+	for left <= right {
+		// 取中间值, /会省略小数, eg: 99 / 10 = 9
+		mid := (left + right) / 2
+		if source[mid] == target {
+			return mid
+		}
+
+		// 升序情况下
+		if asc {
+			if source[mid] < target {
+				left = mid + 1
+			} else {
+				right = mid - 1
+			}
+			continue
+		}
+
+		// 降序情况下
+		if source[mid] < target {
+			right = mid - 1
+		} else {
+			left = mid + 1
+		}
+	}
+	return -1
+}
+
+func main() {
+	// 定义数据
+	sourceSlice := [][]int{
+		{},
+		{7},
+		{1, 3, 5, 7, 9},
+		{9, 7, 5, 3, 1},
+	}
+	target := 7
+
+	// 输出表头
+	format := "%-30s %-10s %-10s\n"
+	fmt.Printf(format, "Source", "Target", "Find Index")
+
+	// 二分查找
+	for _, source := range sourceSlice {
+		index := binarySearch(source, target)
+		fmt.Printf(format, fmt.Sprintf("%#v", source), strconv.Itoa(target), strconv.Itoa(index))
+	}
+}
+```
+
+输出结果
+
+```bash
+Source                         Target     Find Index
+[]int{}                        7          -1        
+[]int{7}                       7          0         
+[]int{1, 3, 5, 7, 9}           7          3         
+[]int{9, 7, 5, 3, 1}           7          1
+```
+
+:::
