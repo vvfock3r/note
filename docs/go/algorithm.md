@@ -136,9 +136,9 @@ func ProbabilityTrue(percent float64) bool {
 
 func main() {
 	// 简单测试
-	//for i := 0; i < 10; i++ {
-	//	fmt.Println(ProbabilityTrue(30))
-	//}
+	for i := 0; i < 10; i++ {
+		fmt.Println(ProbabilityTrue(30))
+	}
 
 	// 做一个大循环,然后统计ture和false出现的次数
 	var trueCount, falseCount int
@@ -158,6 +158,15 @@ func main() {
 输出结果
 
 ```bash
+false
+false
+true
+false
+false
+true
+false
+false
+true
 True : 5000389
 False: 4999611
 ```
