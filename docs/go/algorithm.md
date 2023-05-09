@@ -120,6 +120,7 @@ import (
 	"math/rand"
 )
 
+// ProbabilityTrue 指定为True的概率是多少并返回实际的布尔值
 func ProbabilityTrue(percent float64) bool {
 	if percent >= 100 {
 		return true
