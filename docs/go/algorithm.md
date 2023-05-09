@@ -2,7 +2,11 @@
 
 <br />
 
-## 生成随机密码
+## 随机性算法
+
+以下代码需要保证使用Go 1.20+，否则我们需要自己手动初始化随机数种子
+
+### 生成随机密码
 
 要求：
 
@@ -93,6 +97,68 @@ t4S%
 Ft5&
 _E6a
 aJ5@
+```
+
+:::
+
+<br />
+
+### 生成随机概率
+
+要求：
+
+* 编写一个函数，返回布尔值
+* 第一个参数代表 返回为真的概率有多少
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+func ProbabilityTrue(percent float64) bool {
+	if percent >= 100 {
+		return true
+	}
+	if percent <= 0 {
+		return false
+	}
+	// 生成一个1-100的随机数
+	// 若小于等于指定的概率则返回true,否则返回false
+	// 乘 1000 是为了避免浮点数精度问题可能带来的误差
+	return (rand.Intn(100)+1)*1000 <= int(percent*1000)
+}
+
+func main() {
+	// 简单测试
+	//for i := 0; i < 10; i++ {
+	//	fmt.Println(ProbabilityTrue(30))
+	//}
+
+	// 做一个大循环,然后统计ture和false出现的次数
+	var trueCount, falseCount int
+	for i := 0; i < 1000*10000; i++ {
+		ret := ProbabilityTrue(50.9)
+		if ret {
+			trueCount++
+		} else {
+			falseCount++
+		}
+	}
+	fmt.Printf("True : %d\n", trueCount)
+	fmt.Printf("False: %d\n", falseCount)
+}
+```
+
+输出结果
+
+```bash
+True : 5000389
+False: 4999611
 ```
 
 :::
