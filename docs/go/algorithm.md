@@ -271,3 +271,86 @@ Source                         Target     Find Index
 ```
 
 :::
+
+<br />
+
+## 重复类算法
+
+### 数据去重
+
+::: details （1）使用Set去重：简单但是功能有些弱
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+type Set map[any]struct{}
+
+// Add 添加元素到 Set
+func (s Set) Add(item any) {
+	s[item] = struct{}{}
+}
+
+// Remove 从 Set 中移除元素
+func (s Set) Remove(item any) {
+	delete(s, item)
+}
+
+// Contains 检查元素是否存在于 Set 中
+func (s Set) Contains(item any) bool {
+	_, exists := s[item]
+	return exists
+}
+
+// GetAll 获取 Set 中的所有元素
+func (s Set) GetAll() []any {
+	result := make([]any, 0, len(s))
+	for item := range s {
+		result = append(result, item)
+	}
+	return result
+}
+
+// Size 获取 Set 的大小(元素数量)
+func (s Set) Size() int {
+	return len(s)
+}
+
+type Point struct {
+	X int
+	y int
+}
+
+func main() {
+	// 创建一个Set
+	set := make(Set)
+
+	// 随机生成10个对象
+	for i := 0; i < 10; i++ {
+		set.Add(&Point{
+			X: rand.Intn(3),
+			y: rand.Intn(2),
+		})
+	}
+
+	// 查看去重效果
+	fmt.Println(set.Size())
+	fmt.Println(set.GetAll())
+
+	// 分析
+	// 优点
+	//   可以对任何类型数据去重
+	//
+	// 缺点
+	//   对于一些复杂的需求可能完成不了, 比如
+	//   1、无法对指针类型数据中的值去重
+	//   2、不做额外操作情况下，对于某个结构体我只想按照某个字段去重
+}
+```
+
+:::
+
