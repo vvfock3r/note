@@ -278,7 +278,7 @@ Source                         Target     Find Index
 
 ### 数据去重
 
-::: details （1）使用Set去重：简单但是功能有些弱
+::: details （1）使用Set去重：胜在简单
 
 ```go
 package main
@@ -331,7 +331,7 @@ func main() {
 
 	// 随机生成10个对象
 	for i := 0; i < 10; i++ {
-		set.Add(&Point{
+		set.Add(Point{
 			X: rand.Intn(3),
 			y: rand.Intn(2),
 		})
@@ -347,9 +347,87 @@ func main() {
 	//
 	// 缺点
 	//   对于一些复杂的需求可能完成不了, 比如
-	//   1、无法对指针类型数据中的值去重
-	//   2、不做额外操作情况下，对于某个结构体我只想按照某个字段去重
+	//   1、对指针类型数据无法去重,比如 &Point{X:1, Y:2}
+	//   2、不支持对于某个字段来计算去重
 }
+```
+
+输出结果
+
+```bash
+6
+[{1 1} {2 0} {0 1} {0 0} {1 0} {2 1}]
+```
+
+:::
+
+::: details （2）使用双指针法去重：更加灵活
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sort"
+)
+
+type Point struct {
+	X int
+	y int
+}
+
+func main() {
+	// 随机生成10个对象
+	var pointSlice []*Point
+	for i := 0; i < 10; i++ {
+		pointSlice = append(pointSlice, &Point{
+			X: rand.Intn(3),
+			y: rand.Intn(2),
+		})
+	}
+
+	// 根据X值先排序
+	sort.SliceStable(pointSlice, func(i, j int) bool {
+		return pointSlice[i].X > pointSlice[j].X
+	})
+
+	// 使用双指针法去重
+	// j 代表最后一次正确插入数据的索引,下次插入时需要使用j+1
+	// 第一次插入时实际是从索引为1开始的
+	var j int
+	for _, p := range pointSlice {
+		if p.X != pointSlice[j].X {
+			j += 1
+			pointSlice[j] = p
+		}
+	}
+	pointSlice = pointSlice[:j+1]
+
+	// 查看去重效果
+	for _, point := range pointSlice {
+		fmt.Println(point)
+	}
+
+	// 分析
+	// 优点
+	//   可以对任何类型数据去重
+	//   对于一些复杂的需求也可以完成
+	//
+	// 缺点
+	//   针对个别字段来去重的话,需要提前排序
+	//   会遍历所有元素,看时间复杂度是否能接受
+	//   没有特别固定的写法,需要根据实际情况编写代码
+	//   代码写起来略微复杂,注意特别小心
+}
+```
+
+输出结果
+
+```bash
+&{2 1}
+&{1 0}
+&{0 0}
 ```
 
 :::
