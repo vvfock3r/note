@@ -577,11 +577,11 @@ total 0
 
 <br />
 
-## 杂项待整理
+## C链接库
 
-### 查看glibc版本
+### glibc
 
-::: details 点击查看详情
+::: details （1）查看glibc版本
 
 ```bash
 # 方式1：查看文件链接到哪个版本
