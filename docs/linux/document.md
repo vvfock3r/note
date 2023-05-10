@@ -2,7 +2,7 @@
 
 <br />
 
-## Man手册
+## Man文档
 
 ::: details （1）安装man文档
 
@@ -91,6 +91,42 @@ No manual entry for ascii
 
 <br />
 
+## 包管理器
+
+<br />
+
+## 网络管理
+
+<br />
+
+## 进程管理
+
+<br />
+
+## 设备管理
+
+### 设备分类
+
+
+
+<br />
+
+### 磁盘分区
+
+<br />
+
+### 逻辑卷管理
+
+<br />
+
+## 文件系统
+
+<br />
+
+### xfs
+
+<br />
+
 ## Mount
 
 ### 查看文档
@@ -98,9 +134,6 @@ No manual entry for ascii
 ::: details man帮助文档
 
 ```bash
-# 安装man手册
-[root@archlinux ~]# pacman -Sy man-pages
-
 # 查看系统调用相关文档
 [root@archlinux ~]# man 2 mount    # mount
 [root@archlinux ~]# man umount2    # umount
@@ -541,30 +574,6 @@ total 0
 ```
 
 :::
-
-<br />
-
-## 设备管理
-
-### 设备分类
-
-
-
-<br />
-
-### 磁盘分区
-
-<br />
-
-### 逻辑卷管理
-
-<br />
-
-## 文件系统
-
-<br />
-
-### xfs
 
 <br />
 
