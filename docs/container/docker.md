@@ -3034,8 +3034,6 @@ LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目
 
 ::: details （3）启动MySQL
 
-**MySQL**
-
 ```bash
 # Percona需要先创建目录并授权，否则会报Permission denied
 mkdir -p ${LocalHostDataPath} && chmod -R 777 ${LocalHostDataPath} && ls -ld ${LocalHostDataPath}
@@ -3062,15 +3060,11 @@ vim ${LocalHostConfPath}/my.cnf
 
 :::
 
-:::tip
+::: details （4）连接MySQL
 
 最好使用与服务器相同版本的MySQL客户端，否则可能会出现奇怪的问题，比如使用**MySQL 5.7的客户端**连接**MySQL Server 8.x**，报错如下
 
 `ERROR 2059 (HY000): Authentication plugin 'caching_sha2_password' cannot be loaded: /usr/lib64/mysql/plugin/caching_sha2_password.so: cannot open shared object file: No such file or directory`
-
-:::
-
-::: details （4）连接MySQL
 
 ```bash
 docker container exec -it ${ContainerName} mysql -uroot -P${ContainerPort} -p"${RootPassword}"  # 在容器内部连接MySQL
@@ -3263,7 +3257,61 @@ mysql> SELECT @@default_authentication_plugin;
 
 :::
 
-::: details （10）删除MySQL
+::: details （10）开启或关闭binlog日志
+
+```bash
+# 先检查一下默认值
+mysql> show variables like 'log_%';
++----------------------------------------+----------------------------------------+
+| Variable_name                          | Value                                  |
++----------------------------------------+----------------------------------------+
+| log_bin                                | OFF                                    | # 这里是开关
+| log_bin_basename                       |                                        |
+| log_bin_index                          |                                        |
+| log_bin_trust_function_creators        | OFF                                    |
+| log_bin_use_v1_row_events              | OFF                                    |
+| log_error                              | stderr                                 |
+| log_error_services                     | log_filter_internal; log_sink_internal |
+| log_error_suppression_list             |                                        |
+| log_error_verbosity                    | 2                                      |
+| log_output                             | FILE                                   |
+| log_queries_not_using_indexes          | OFF                                    |
+| log_raw                                | OFF                                    |
+| log_replica_updates                    | OFF                                    |
+| log_slave_updates                      | OFF                                    |
+| log_slow_admin_statements              | OFF                                    |
+| log_slow_extra                         | OFF                                    |
+| log_slow_replica_statements            | OFF                                    |
+| log_slow_slave_statements              | OFF                                    |
+| log_statements_unsafe_for_binlog       | ON                                     |
+| log_throttle_queries_not_using_indexes | 0                                      |
+| log_timestamps                         | UTC                                    |
++----------------------------------------+----------------------------------------+
+21 rows in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+log-bin = mysql-bin # 启用binlog
+disable-log-bin     # 关闭binlog, 使用 skip-log-bin 或 disable-log-bin 都可以
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> show variables like 'log_bin';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| log_bin       | ON    |
++---------------+-------+
+1 row in set (0.00 sec)
+```
+
+:::
+
+::: details （11）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
