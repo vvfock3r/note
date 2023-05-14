@@ -74,9 +74,73 @@ i18n.locale: "zh-CN"                                 # 添加这行
 
 ::: details （3）部署 FileBeat
 
-```bash
+指定版本文档：[https://www.elastic.co/guide/en/beats/filebeat/6.8/running-on-docker.html](https://www.elastic.co/guide/en/beats/filebeat/6.8/running-on-docker.html)
 
+最新版本文档：[https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html](https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html)
+
+**1、拉取镜像，并执行setup子命令进行初始化**
+
+```bash
+# 拉取镜像
+docker pull docker.elastic.co/beats/filebeat:6.8.6
+
+# 执行 setup 子命令
+docker container run --rm docker.elastic.co/beats/filebeat:6.8.6 setup \
+    -E setup.kibana.host=http://192.168.48.129:5601 \
+    -E output.elasticsearch.hosts=["http://192.168.48.129:9200"]
+
+Loaded index template
+Loading dashboards (Kibana must be running and reachable)
+Loaded dashboards
+Loaded machine learning job configurations
+
+# 解释:
+# 1、加载索引模板: Filebeat 将加载与其版本相对应的索引模板, 索引模板定义了将日志数据索引到 Elasticsearch 时的字段映射和设置
+# 2、加载仪表板:   Filebeat 将尝试加载与其版本相对应的 Kibana 仪表板, 仪表板提供了可视化和交互式的界面，用于显示和分析采集到的日志数据
+# 3、加载机器学习作业配置: 如果启用了机器学习相关功能，Filebeat 还将加载与其版本相对应的机器学习作业配置
 ```
+
+**2、下载配置文件并启动服务**
+
+```bash
+# 下载配置文件: 自动发现Docker容器并发送日志到ElasticSearch
+[root@localhost ~]# wget -c https://raw.githubusercontent.com/elastic/beats/6.8/deploy/docker/filebeat.docker.yml -O /etc/filebeat.yaml
+[root@localhost ~]# cat /etc/filebeat.yaml
+filebeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    reload.enabled: false
+
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+processors:
+- add_cloud_metadata: ~
+
+output.elasticsearch:
+  hosts: '${ELASTICSEARCH_HOSTS:elasticsearch:9200}'
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+
+# 启动 filebeat
+docker container run --name=filebeat  \
+    --user=root \
+    --volume="/etc/filebeat.yaml:/usr/share/filebeat/filebeat.yml:ro" \
+    --volume="/var/lib/docker/containers:/var/lib/docker/containers:ro" \
+    --volume="/var/run/docker.sock:/var/run/docker.sock:ro" \
+    --restart=always \
+    -d \
+  docker.elastic.co/beats/filebeat:6.8.6 filebeat \
+     -e \
+     -strict.perms=false \
+     -E output.elasticsearch.hosts=["http://192.168.48.129:9200"]
+```
+
+**3、在kibana上查看filebeat容器的日志**
+
+![image-20230514163848865](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230514163848865.png)
 
 :::
 
@@ -251,3 +315,7 @@ GET /account/person/_search
 ```
 
 :::
+
+<br />
+
+### 1
