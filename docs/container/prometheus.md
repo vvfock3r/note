@@ -134,6 +134,8 @@ docker container run --name "prometheus" \
                      --restart=always \
                      -d \
                  prom/prometheus:v2.38.0
+
+# (5) 浏览器访问：http://192.168.48.133:9090
 ```
 
 :::
@@ -581,6 +583,8 @@ done
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
 
+::: details 点击查看详情
+
 Prometheus默认会抓取自身暴露出来的指标，默认的配置如下
 
 ```bash
@@ -628,11 +632,15 @@ scrape_configs:
         - "localhost:9100"
 ```
 
+:::
+
 <br />
 
 ### 服务发现：基于文件
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
+
+::: details 点击查看详情
 
 ```bash
 # 修改Prometheus配置
@@ -681,18 +689,20 @@ Checking /etc/prometheus/prometheus.yml
 
 ![image-20220923205543236](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220923205543236.png)
 
+:::
+
 <br />
 
 ### 服务发现：基于DNS
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config)
 
+::: details 点击查看详情
+
 说明：
 
 * 支持A、AAAA、MX 和 SRV记录查询
 * 查询时会使用`/etc/resolv.conf`中的DNS服务器，不支持`/etc/hosts`解析域名
-
-::: details 点击查看详情
 
 ```bash
 # 修改Prometheus配置（以下地址是不对外的，你需要配置成一个其他的域名）
@@ -755,11 +765,22 @@ Checking /etc/prometheus/prometheus.yml
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config)
 
+::: details 发现Pod
+
+```bash
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+
+```
+
+:::
+
 <br />
 
 ### 添加标签
 
 文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
+
+::: details 点击查看详情
 
 ```bash
 # 比如node下有两台主机，分别拥有不同的标签
@@ -780,11 +801,15 @@ Checking /etc/prometheus/prometheus.yml
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
+::: details 点击查看详情
+
+<br />
+
 ### 目标重新标记：relabel_config
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config)
 
-`relabel_config`会**在目标被抓取之前动态重写目标的标签集**
+`relabel_config` 会 在目标被抓取之前动态重写目标的标签集
 
 ::: details （1）直接替换目标标签值：动态值
 
@@ -799,17 +824,17 @@ Checking /etc/prometheus/prometheus.yml
         - "localhost:9100"
     relabel_configs:
       - action: "replace"                # action为replace，这也是默认值
-        source_labels: ["__address__"]   # 指定源标签
         target_label: "job"              # 指定目标标签
+        source_labels: ["__address__"]   # 指定源标签
 
-# 上面配置的意思是：用源标签的值替换目标标签的值
+# 上面配置的意思是：用源标签的值替换目标标签的值, 或者说 target_label是标签名, source_labels是标签值
 # 需要注意的点：
-#  (1) 若源标签不存在或值匹配不上则本配置无效
-#  (2) 若目标标签不存在则会新增一个标签
-
+#  1、若源标签不存在或值匹配不上则本配置无效
+#  2、 若目标标签不存在则会新增一个标签
 
 # relabel_configs还有一些默认值，如果我们都写出来的话，将会是这样的
 # 上下两段配置效果是一样的，我们在后面会有关于正则的一些例子
+# 注意各个字段的执行顺序: 先执行 执行 separator拼接, 再执行 regex 匹配出合适的值, 最后执行 replacement 替换
   - job_name: "node"
     scheme: "http"
     metrics_path: "/metrics"
@@ -818,11 +843,11 @@ Checking /etc/prometheus/prometheus.yml
         - "localhost:9100"
     relabel_configs:
       - action: "replace"
-        source_labels: ["__address__"]
+        target_label: "job"            # 标签名              
+        source_labels: ["__address__"] # 标签值
         separator: ";"                 # 指定分隔符,会使用此分隔符连接source_labels的多个值,组成一个新值
-        regex: "(.*)"                  # 匹配多个标签组成的新值
-        target_label: "job"
-        replacement: "$1"              # 新标签的值，这里是引用上面regex的值
+        regex: "(.*)"                  # 匹配多个标签组成的新值        
+		replacement: "$1"              # 新标签的值，这里是引用上面regex的值
 ```
 
 ![image-20220914123015546](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914123015546.png)
@@ -862,19 +887,19 @@ Checking /etc/prometheus/prometheus.yml
       - targets:
         - "localhost:9100"
     relabel_configs:
-      # port
+    
       - action: "replace"
-        source_labels: ["__address__"]
+        target_label: "port"           # 新标签名
+        source_labels: ["__address__"] #
         separator: ";"                 # 默认值，用于连接source_labels中的多个标签组成一个新值
         regex: "(.*)(:)(.*)"           # 使用正则匹配源标签的值，然后正则分组,默认为(.*)
-        target_label: "port"           # 新标签名
         replacement: "$3"              # 新标签值
-        # endpoint
+
       - action: "replace"
+        target_label: "endpoint"        
         source_labels: ["__scheme__", "__address__", "__metrics_path__"]
         separator: ";"
         regex: "(.*)(;)(.*)(;)(.*)"
-        target_label: "endpoint"
         replacement: "$1://$3$5"
 ```
 
@@ -902,8 +927,8 @@ Checking /etc/prometheus/prometheus.yml
 
 # 以上的意思是：将regex匹配到的标签全部删掉
 # 需要注意
-# (1) 正则是完全锚定的，即 "(job)|(a)" == "(^job$)|(^a$)"
-# (2) 如果删除掉__address__标签，那么Web界面上就不会显示抓取目标了，就相当于根本没写抓取目标一样
+# 1、正则是完全锚定的，即 "(job)|(a)" == "(^job$)|(^a$)"
+# 2、 如果删除掉__address__标签，那么Web界面上就不会显示抓取目标了，就相当于根本没写抓取目标一样
 
 # ===================================================================================
 # 还有一个类似的labelkeep，用于保留regex匹配到的标签，删除其他的标签，但是测试之后发现有问题
@@ -949,7 +974,7 @@ Checking /etc/prometheus/prometheus.yml
         source_labels: ["a"]   # 带有a标签的
         regex: "([0-9]+)"      # 且a标签值全部为数字
 
-# 以上配置也等同于
+    # 以上配置也近似于
     relabel_configs:
       - action: "keep"       # 保留匹配的目标
         source_labels: ["a"] # 带有a标签的
@@ -967,6 +992,8 @@ Checking /etc/prometheus/prometheus.yml
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs)
 
 `metric_relabel_configs`是 Prometheus 在保存数据前的最后一步标签重新编辑
+
+::: details 点击查看详情
 
 特点：
 
@@ -993,6 +1020,8 @@ Checking /etc/prometheus/prometheus.yml
 ```
 
 ![image-20220914185957941](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914185957941.png)
+
+:::
 
 <br />
 
