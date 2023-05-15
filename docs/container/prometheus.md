@@ -801,7 +801,7 @@ Checking /etc/prometheus/prometheus.yml
 
 ![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
 
-::: details 点击查看详情
+:::
 
 <br />
 
@@ -982,6 +982,29 @@ Checking /etc/prometheus/prometheus.yml
 ```
 
 ![image-20220914134235025](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914134235025.png)
+
+:::
+
+::: details （5）标签映射
+
+比如最开始没有使用labelmap
+
+![image-20230515234444568](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230515234444568.png)
+
+然后添加 labelmap
+
+```yaml
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+    relabel_configs:
+      - action: labelmap                         # 添加这行
+        regex: __meta_kubernetes_pod_label_(.+)  # 添加这行
+```
+
+看一下效果
+
+![image-20230515234746434](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230515234746434.png)
 
 :::
 
