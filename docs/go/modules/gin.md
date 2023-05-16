@@ -1,4 +1,4 @@
-## Gin
+# Gin
 
 官网：[https://gin-gonic.com/](https://gin-gonic.com/)
 
@@ -11,23 +11,26 @@ Github：[https://github.com/gin-gonic/gin](https://github.com/gin-gonic/gin)
 
 
 
-### 基础示例
-
-#### 安装Gin
+## 安装Gin
 
 ```bash
 go get -u github.com/gin-gonic/gin
 ```
 
-#### 基础示例
+<br />
+
+## 基础示例
+
+::: details （1）基础示例
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -47,7 +50,9 @@ func main() {
 }
 ```
 
-#### r.Run(addr)
+:::
+
+::: details （2）r.Run(addr)
 
 ```go
 func (engine *Engine) Run(addr ...string) (err error) {	// addr是可以不用传的
@@ -91,7 +96,9 @@ func resolveAddress(addr []string) string {
 log.Fatalln(http.ListenAndServe(addr, r))
 ```
 
-#### gin.Default()
+:::
+
+::: details （3）gin.Default()
 
 ```go
 func Default() *Engine {
@@ -162,7 +169,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
         
         
 // ---------------------------------------------------------------------------------
-// for循环讨巧技巧
+// for循环小技巧
         
 package main
 
@@ -281,9 +288,15 @@ func main() {
 
 ```
 
-### 路由
+:::
 
-#### 路由原理(1)：基数树
+<br />
+
+## 路由
+
+### 路由原理
+
+::: details 路由原理(1)：基数树
 
 gin框架使用的是定制版本的[httprouter](https://github.com/julienschmidt/httprouter)，使用基数树（Radix Tree）来存储和查找路由
 
@@ -329,11 +342,9 @@ Priority   Path             Handle
 * 基数树允许我们使用像`:post`参数这种动态部分
 * 每个节点都有优先级属性，作用是可以优先匹配被大多数路由路径包含的节点
 
+:::
 
-
-#### 路由原理(2)：相关结构体
-
-::: details 点击查看完整代码
+::: details 路由原理(2)：相关结构体
 
 ```go
 // Engine结构体
@@ -404,11 +415,7 @@ func (trees methodTrees) get(method string) *node {	// 从切片中获取方法�
 
 :::
 
-#### 路由原理(3)：路由注册逻辑
-
-我们查看一下`r.GET`源码
-
-::: details 点击查看完整代码
+::: details 路由原理(3)：路由注册逻辑：r.GET源码
 
 ```go
 // GET is a shortcut for router.Handle("GET", path, handle).
@@ -455,9 +462,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 :::
 
-注册逻辑
-
-::: details 点击查看完整代码
+::: details 路由原理(4)：路由注册逻辑：注册逻辑
 
 ```go
 // addRoute 将具有给定句柄的节点添加到路径中。
@@ -735,9 +740,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 
 :::
 
-#### 路由原理(4)：路由匹配逻辑
-
-::: details 点击查看完整代码
+::: details 路由原理(5)：路由匹配逻辑
 
 ```go
 Engine -> ServeHTTP方法 -> engine.handleHTTPRequest(c) -> 
@@ -911,7 +914,9 @@ walk: // Outer loop for walking the tree
 
 :::
 
-#### 普通路由
+<br />
+
+### 普通路由
 
 ::: details 点击查看完整代码
 
@@ -920,9 +925,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -950,28 +956,30 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/index
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/index
 Index
 
-C:\Users\Administrator\Desktop>curl -XPOST http://127.0.0.1/login
+C:\Users\Administrator\Desktop> curl -XPOST http://127.0.0.1/login
 Login
 
-C:\Users\Administrator\Desktop>curl  http://127.0.0.1/
+C:\Users\Administrator\Desktop> curl http://127.0.0.1
 你的请求方法是: GET
 
-C:\Users\Administrator\Desktop>curl -XPUT http://127.0.0.1/
+C:\Users\Administrator\Desktop> curl -XPUT http://127.0.0.1
 你的请求方法是: PUT
 
-C:\Users\Administrator\Desktop>curl -XPOST http://127.0.0.1/
+C:\Users\Administrator\Desktop> curl -XPOST http://127.0.0.1
 你的请求方法是: POST
 ```
 
-#### 分组路由
+:::
+
+<br />
+
+### 分组路由
 
 ::: details 点击查看完整代码
 
@@ -979,9 +987,10 @@ C:\Users\Administrator\Desktop>curl -XPOST http://127.0.0.1/
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -1005,29 +1014,31 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop>curl   http://127.0.0.1/api/v1/
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/api/v1/
 Hello Gin!
-C:\Users\Administrator\Desktop>curl   http://127.0.0.1/api/v1/login
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/api/v1/login
+Login
 ```
 
+:::
 
+<br />
 
-#### 尾斜杠和重定向
+### 尾斜杠和重定向
 
-::: details RedirectTrailingSlash和RedirectFixedPath
+::: details （1）RedirectTrailingSlash 和 RedirectFixedPath
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -1037,15 +1048,16 @@ func main() {
 	// 实例化Gin路由引擎
 	r := gin.Default()
 
-	// 默认为ture,设置为False可以关闭自动重定向（全局设置）
+	// 默认为ture,设置为False可以全局关闭自动重定向, 建议不要修改
 	//r.RedirectTrailingSlash = false
 
-	// 默认为false, 设置为true如果匹配不到将会尝试修复path，比如/FOO和/..//Foo将会被重定向到/foo(/foo存在的情况下)
+	// 默认为false, 设置为true如果匹配不到将会尝试修复path
+	// 比如/FOO和/..//Foo将会被重定向到/foo(/foo存在的情况下)
 	//r.RedirectFixedPath = true
 
 	// 注册路由
 	r.GET("/index", func(c *gin.Context) {
-		c.String(http.StatusOK, "Index\n")		
+		c.String(http.StatusOK, "Index\n")
 	})
 	r.GET("/login/", func(c *gin.Context) {
 		c.String(http.StatusOK, "Login\n")
@@ -1056,27 +1068,30 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
 # 注册什么就访问什么，没有问题
-C:\Users\Administrator>curl http://127.0.0.1/index
+C:\Users\Administrator> curl http://127.0.0.1/index
 Index
-C:\Users\Administrator>curl http://127.0.0.1/login/
+C:\Users\Administrator> curl http://127.0.0.1/login/
 Login
 
-# 无论注册时带不带尾斜杠，访问时都可以自动重定向
-C:\Users\Administrator>curl http://127.0.0.1/index/
+# 无论注册时带不带尾斜杠，使用curl -L参数自动重定向
+C:\Users\Administrator> curl http://127.0.0.1/index/
 <a href="/index">Moved Permanently</a>.
-C:\Users\Administrator>curl http://127.0.0.1/index/ -L
+
+C:\Users\Administrator> curl http://127.0.0.1/index/ -L
 Index
-C:\Users\Administrator>curl http://127.0.0.1/login -L
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/login   
+<a href="/login/">Moved Permanently</a>.
+
+C:\Users\Administrator> curl http://127.0.0.1/login -L
 Login
 
-# 查看响应头
-C:\Users\Administrator>curl http://127.0.0.1/login -i # windows下使用-i
+# 查看响应头, Windows下使用 -i, Linux下使用 -I
+C:\Users\Administrator> curl http://127.0.0.1/login -i # 
 HTTP/1.1 301 Moved Permanently
 Content-Type: text/html; charset=utf-8
 Location: /login/
@@ -1086,19 +1101,22 @@ Content-Length: 42
 <a href="/login/">Moved Permanently</a>.
 
 # 并不会像net/http那样，会进行前缀匹配
-C:\Users\Administrator>curl http://127.0.0.1/login/a/b/c
+C:\Users\Administrator> curl http://127.0.0.1/login/a/b/c
 404 page not found
 ```
 
-::: details HTTP重定向
+:::
+
+::: details （2）HTTP重定向
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -1124,15 +1142,16 @@ func main() {
 
 :::
 
-::: details 路由内重定向
+::: details （3）路由内重定向
 
 ```go
 package main
 
-import (
-	"github.com/gin-gonic/gin"
+import (	
 	"log"
 	"net/http"
+    
+    "github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -1157,11 +1176,13 @@ func main() {
 }
 ```
 
-:::
+输出结果
 
 ![image-20220508183700833](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220508183700833.png)
 
+:::
 
+<br />
 
 ### 参数解析
 
