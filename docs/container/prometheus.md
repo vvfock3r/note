@@ -669,6 +669,8 @@ scrape_configs:
 
 文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
 
+::: details 点击查看详情
+
 每个目标自动生成的标签：
 
 - `job`：目标所属的已配置作业名称。
@@ -681,6 +683,8 @@ scrape_configs:
 * `scrape_samples_scraped{}`：目标暴露的样本数，等同于`curl -s http://127.0.0.1:9090/metrics | grep -Ev '^#' | wc`
 * `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数？
 * `scrape_series_added{}`：本次抓取中新系列的大致数量？
+
+:::
 
 <br />
 
