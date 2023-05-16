@@ -1182,6 +1182,86 @@ func main() {
 
 :::
 
+::: details （4）同时支持尾斜杠和非尾斜杠的情况
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 方式1: 注册路由
+	r.GET("/index", func(c *gin.Context) {
+		c.Request.URL.Path = "/index/"
+		r.HandleContext(c)
+	})
+	r.GET("/index/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Index\n")
+	})
+
+	// 方式2: 注册路由
+	loginHandler := func(c *gin.Context) {
+		c.String(http.StatusOK, "Login\n")
+	}
+	r.GET("/login", loginHandler)
+	r.GET("/login/", loginHandler)
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop\note> curl http://127.0.0.1/index -i
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 16 May 2023 15:16:50 GMT    
+Content-Length: 6
+
+Index
+
+C:\Users\Administrator\Desktop\note> curl http://127.0.0.1/index/ -i 
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 16 May 2023 15:16:56 GMT    
+Content-Length: 6
+
+Index
+
+# -------------------------------------------------------------------
+
+C:\Users\Administrator\Desktop\note> curl http://127.0.0.1/login -i 
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 16 May 2023 15:19:49 GMT    
+Content-Length: 6
+
+Login
+
+C:\Users\Administrator\Desktop\note> curl http://127.0.0.1/login/ -i 
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 16 May 2023 15:19:51 GMT    
+Content-Length: 6
+
+Login
+```
+
+:::
+
 <br />
 
 ## 参数解析
