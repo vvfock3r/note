@@ -16,7 +16,7 @@ Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheu
 
 <br />
 
-### Prometheus Server
+### Prometheus
 
 ::: details 二进制部署
 
@@ -129,7 +129,7 @@ chmod -R 777 /var/lib/prometheus
 # (4) 启动容器
 docker container run --name "prometheus" \
                      -p 9090:9090 \
-                     -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+                     -v /etc/prometheus:/etc/prometheus \
                      -v /var/lib/prometheus:/prometheus \
                      --restart=always \
                      -d \
@@ -636,6 +636,54 @@ scrape_configs:
 
 <br />
 
+### 添加标签
+
+文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
+
+::: details 点击查看详情
+
+```bash
+# 比如node下有两台主机，分别拥有不同的标签
+[root@localhost ~]# vim /etc/prometheus/prometheus.yml
+  - job_name: "node"
+    scheme: "http"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+        - "localhost:9100"
+        labels:
+          a: 1
+      - targets:
+        - "127.0.0.1:9100"
+        labels:
+          b: 2
+```
+
+![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
+
+:::
+
+<br />
+
+### 自动生成的时间序列
+
+文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
+
+每个目标自动生成的标签：
+
+- `job`：目标所属的已配置作业名称。
+- `instance`:`<host>:<port>`被抓取的目标 URL 的一部分
+
+每个目标自动生成的监控指标：
+
+* `up{}`：目标抓取成功返回1，抓取失败返回0，通常应用于实例可用性监控
+* `scrape_duration_seconds{}`：持续的抓取时间？
+* `scrape_samples_scraped{}`：目标暴露的样本数，等同于`curl -s http://127.0.0.1:9090/metrics | grep -Ev '^#' | wc`
+* `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数？
+* `scrape_series_added{}`：本次抓取中新系列的大致数量？
+
+<br />
+
 ### 服务发现：基于文件
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
@@ -776,36 +824,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 添加标签
-
-文档：[https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#static_config)
-
-::: details 点击查看详情
-
-```bash
-# 比如node下有两台主机，分别拥有不同的标签
-[root@localhost ~]# vim /etc/prometheus/prometheus.yml
-  - job_name: "node"
-    scheme: "http"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets:
-        - "localhost:9100"
-        labels:
-          a: 1
-      - targets:
-        - "127.0.0.1:9100"
-        labels:
-          b: 2
-```
-
-![image-20220913164703075](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220913164703075.png)
-
-:::
-
-<br />
-
-### 目标重新标记：relabel_config
+### 目标重新标记：relabel
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#relabel_config)
 
@@ -1010,7 +1029,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 指标重新标记：metric_relabel_configs
+### 指标重新标记：metric_relabel
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#metric_relabel_configs)
 
@@ -1045,25 +1064,6 @@ Checking /etc/prometheus/prometheus.yml
 ![image-20220914185957941](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220914185957941.png)
 
 :::
-
-<br />
-
-### 自动生成的时间序列
-
-文档：[https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series](https://prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series)
-
-每个目标自动生成的标签：
-
-- `job`：目标所属的已配置作业名称。
-- `instance`:`<host>:<port>`被抓取的目标 URL 的一部分
-
-每个目标自动生成的监控指标：
-
-* `up{}`：目标抓取成功返回1，抓取失败返回0，通常应用于实例可用性监控
-* `scrape_duration_seconds{}`：持续的抓取时间？
-* `scrape_samples_scraped{}`：目标暴露的样本数，等同于`curl -s http://127.0.0.1:9090/metrics | grep -Ev '^#' | wc`
-* `scrape_samples_post_metric_relabeling{}`：重新标记后剩余的样本数？
-* `scrape_series_added{}`：本次抓取中新系列的大致数量？
 
 <br />
 
