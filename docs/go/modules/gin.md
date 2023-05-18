@@ -1763,12 +1763,160 @@ Content-Length: 0
 ::: details （1）4xx响应
 
 ```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 设置HTML模板
+	r.LoadHTMLGlob("templates/*.html")
+
+	// 自定义处理 401 的情况
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		if c.Writer.Status() == http.StatusUnauthorized {
+			c.HTML(http.StatusUnauthorized, "401.html", gin.H{})
+			c.Abort()
+		}
+	})
+
+	// 自定义处理 403 的情况
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		if c.Writer.Status() == http.StatusForbidden {
+			c.HTML(http.StatusForbidden, "403.html", gin.H{})
+			c.Abort()
+		}
+	})
+
+	// 自定义处理 404 的情况
+	r.NoRoute(func(c *gin.Context) {
+		c.HTML(http.StatusNotFound, "404.html", gin.H{})
+	})
+
+	// 模拟 401 Unauthorized
+	r.GET("/401", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusUnauthorized)
+	})
+
+	// 模拟 403 Forbidden
+	r.GET("/403", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusForbidden)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+
+```
+
+创建模板文件
+
+```bash
+# templates/401.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>401 Unauthorized</title>
+</head>
+<body>
+<h1>401 Unauthorized</h1>
+<p>Sorry, you are not authorized to access this page.</p>
+</body>
+</html>
+
+# templates/403.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>403 Forbidden</title>
+</head>
+<body>
+<h1>403 Forbidden</h1>
+<p>Sorry, you don't have permission to access this page.</p>
+</body>
+</html>
+
+# templates/404.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>404 Not Found</title>
+</head>
+<body>
+<h1>404 Not Found</h1>
+<p>Sorry, the page you are looking for could not be found.</p>
+</body>
+</html>
 ```
 
 输出结果
 
 ```bash
+# 401
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/401
+HTTP/1.1 401 Unauthorized
+Date: Thu, 18 May 2023 15:11:30 GMT
+Content-Length: 187
+Content-Type: text/html; charset=utf-8
 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>401 Unauthorized</title>
+</head>
+<body>
+<h1>401 Unauthorized</h1>
+<p>Sorry, you are not authorized to access this page.</p>
+</body>
+</html>
+
+# 403
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/403
+HTTP/1.1 403 Forbidden
+Date: Thu, 18 May 2023 15:11:43 GMT
+Content-Length: 184
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>403 Forbidden</title>
+</head>
+<body>
+<h1>403 Forbidden</h1>
+<p>Sorry, you don't have permission to access this page.</p>
+</body>
+</html>
+
+# 404
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/404
+HTTP/1.1 404 Not Found
+Content-Type: text/html; charset=utf-8
+Date: Thu, 18 May 2023 15:12:03 GMT   
+Content-Length: 186
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>404 Not Found</title>
+</head>
+<body>
+<h1>404 Not Found</h1>
+<p>Sorry, the page you are looking for could not be found.</p>
+</body>
+</html>
 ```
 
 :::
@@ -1776,7 +1924,18 @@ Content-Length: 0
 ::: details （2）5xx响应
 
 ```go
-
+	// 自定义处理 500 的情况
+	//r.Use(func(c *gin.Context) {
+	//	defer func() {
+	//		if r := recover(); r != nil {
+	//			c.HTML(http.StatusInternalServerError, "500.html", gin.H{
+	//				"title": "Internal Server Error",
+	//			})
+	//			c.Abort()
+	//		}
+	//	}()
+	//	c.Next()
+	//})
 ```
 
 输出结果
