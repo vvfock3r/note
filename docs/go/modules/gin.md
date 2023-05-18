@@ -1399,6 +1399,8 @@ Accept          => [*/*]
 
 ::: details （1）Content-Type介绍
 
+参考自：[https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
+
 `Content-Type`写入在HTTP请求头或响应头中，用于告知接收方资源类型
 
 * 接收方可以是服务端（客户端发送HTTP请求设置`Content-Type`），也可以是客户端（服务端返回HTTP响应设置`Content-Type`）
@@ -1411,11 +1413,15 @@ Accept          => [*/*]
 Content-Type: type/subtype [; charset] [; boundary]
 ```
 
-* type/subtype：由类型与子类型两个字符串中间用`'/'`分隔而组成。不允许空格存在。
+* type/subtype：由类型与子类型两个字符串中间用`'/'`分隔而组成。不允许空格存在
+
 * charset：字符编码标准
-* 对于多部分实体，boundary 是必需的，其包括来自一组字符的1到70个字符，已知通过电子邮件网关是非常健壮的，而不是以空白结尾。它用于封装消息的多个部分的边界
 
+* 对于多部分实体，boundary 是必需的，其包括来自一组字符的1到70个字符，
 
+  已知通过电子邮件网关是非常健壮的，而不是以空白结尾
+
+  它用于封装消息的多个部分的边界
 
 **Content-Type类型举例**
 
@@ -1428,7 +1434,325 @@ Content-Type: type/subtype [; charset] [; boundary]
 | `application`<br />（二进制类型） | 表明是某种二进制数据                                         | `  applicationx-www-form-urlencoded`<br />`application/json`<br />`application/octet-stream`<br />`application/pdf` |
 | `Multipart`<br />（文件类型）     | 表示细分领域的文件类型的种类，经常对应不同的 MIME 类型。<br />这是复合文件的一种表现方式 | `multipart/form-data`<br />`multipart/byteranges`            |
 
-参考自：[https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
+:::
+
+::: details （2）默认的Content-Type: text/plain; charset=utf-8 和 手动设置Content-Type
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 注册路由
+	r.GET("/", func(c *gin.Context) {
+		//c.Header("Content-Type", "application/json; charset=utf-8")
+		c.String(http.StatusOK, "Hello World!")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+
+```
+
+输出结果
+
+```bash
+# 默认的Content-Type
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+Hello World!
+C:\Users\Administrator\Desktop\note>curl http://127.0.0.1/ -i
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 18 May 2023 14:21:16 GMT    
+Content-Length: 12
+
+Hello World!
+
+# 手动设置Content-Type
+C:\Users\Administrator\Desktop\note>curl http://127.0.0.1/ -i
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Thu, 18 May 2023 14:22:49 GMT
+Content-Length: 12
+
+Hello World!
+```
+
+:::
+
+<br />
+
+### 返回响应
+
+::: details （1）常见和不常见的格式
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+    
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// String 返回纯文本响应信息
+	r.GET("/string", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello World!")
+	})
+
+	// JSON 返回JSON信息
+	r.GET("/json", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "Hello World!",
+		})
+	})
+
+	// XML 返回XML信息
+	r.GET("/xml", func(c *gin.Context) {
+		c.XML(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "Hello World!",
+		})
+	})
+
+	// Data 返回二进制数据
+	r.GET("/data", func(c *gin.Context) {
+		c.Data(http.StatusOK, "application/octet-stream", []byte("binary data"))
+	})
+
+	// File 返回文件, c.Query用于获取查询字符串
+	r.GET("/file", func(c *gin.Context) {
+		c.File(c.Query("name"))
+	})
+
+	// HTML 返回HTML信息, html模板文件必须要存在否则会报500错误
+	r.LoadHTMLGlob("templates/*.html")
+	r.GET("/html", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"Title":   "My Website",
+			"Heading": "Welcome",
+		})
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+# 新建一个templates目录,并创建文件index.html
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{.Title}}</title>
+</head>
+<body>
+<h1>{{.Heading}}</h1>
+<p>Welcome to my website!</p>
+</body>
+</html>
+
+# String
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/string           
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 18 May 2023 14:47:02 GMT    
+Content-Length: 12
+
+Hello World!
+
+# JSON
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/json  
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Thu, 18 May 2023 14:47:25 GMT
+Content-Length: 36
+
+{"code":"200","data":"Hello World!"}
+
+# XML
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/xml
+HTTP/1.1 200 OK
+Content-Type: application/xml; charset=utf-8        
+Date: Thu, 18 May 2023 14:47:55 GMT
+Content-Length: 52
+
+<map><code>200</code><data>Hello World!</data></map>
+
+# Data
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/data
+HTTP/1.1 200 OK
+Content-Type: application/octet-stream
+Date: Thu, 18 May 2023 14:48:19 GMT   
+Content-Length: 11
+
+binary data
+
+# File
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/file?name=templates/index.html
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 139
+Content-Type: text/html; charset=utf-8      
+Last-Modified: Thu, 18 May 2023 14:35:49 GMT
+Date: Thu, 18 May 2023 14:49:03 GMT
+
+<!DOCTYPE html>
+<html>
+<head>
+        <title>{{.Title}}</title>
+</head>
+<body>
+<h1>{{.Heading}}</h1>
+<p>Welcome to my website!</p>
+</body>
+</html>
+
+# HTML
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/html                          
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Date: Thu, 18 May 2023 14:49:23 GMT   
+Content-Length: 134
+
+<!DOCTYPE html>
+<html>
+<head>
+        <title>My Website</title>     
+</head>
+<body>
+<h1>Welcome</h1>
+<p>Welcome to my website!</p>
+</body>
+</html>
+```
+
+:::
+
+::: details （2）返回重定向
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+    
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// Redirect 重定向
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/login")
+	})
+
+	r.GET("/login", func(c *gin.Context) {
+		c.String(http.StatusOK, "Login")
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/    
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8 
+Location: /login
+Date: Thu, 18 May 2023 14:51:27 GMT    
+Content-Length: 41
+
+<a href="/login">Moved Permanently</a>.
+
+
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/ -L
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8 
+Location: /login
+Date: Thu, 18 May 2023 14:51:32 GMT    
+Content-Length: 41
+
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 18 May 2023 14:51:32 GMT    
+Content-Length: 5
+
+Login
+```
+
+:::
+
+::: details （3）返回特定的 HTTP 状态码
+
+```go
+package main
+
+import (	
+	"log"
+	"net/http"
+    
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 监听地址
+	addr := "127.0.0.1:80"
+
+	// 实例化Gin路由引擎
+	r := gin.Default()
+
+	// 返回特定状态码
+	r.GET("/", func(c *gin.Context) {
+		//c.AbortWithStatus(http.StatusNotFound)
+		c.AbortWithStatus(http.StatusInternalServerError)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/
+HTTP/1.1 500 Internal Server Error 
+Date: Thu, 18 May 2023 14:53:50 GMT
+Content-Length: 0
+```
 
 :::
 
