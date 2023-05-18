@@ -1027,6 +1027,84 @@ Login
 
 <br />
 
+### 路由模式
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	addr := "127.0.0.1:80"
+
+	r := gin.Default()
+
+	// 注册路由: :id 是一个必选的命名参数
+	r.GET("/user/:id", func(c *gin.Context) {
+		c.String(200, "id: %s", c.Param("id"))
+	})
+
+	// 注册路由: *action 是一个可选的通配符参数
+	r.GET("/role/*action", func(c *gin.Context) {
+		c.String(200, "action: %s", c.Param("action"))
+	})
+
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+# :变量名 是一个必选的参数
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/user
+404 page not found
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/
+404 page not found
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/1
+id: 1
+
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/1/
+<a href="/user/1">Moved Permanently</a>.
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/abc
+id: abc
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/1/2
+404 page not found
+
+# *变量名 是可选的路径
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role     
+<a href="/role/">Moved Permanently</a>.
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/    
+action: /
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit 
+action: /edit
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/
+action: /edit/
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/1
+action: /edit/1
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/1/2/3  
+action: /edit/1/2/3
+```
+
+:::
+
+<br />
+
 ### 尾斜杠和重定向
 
 ::: details （1）RedirectTrailingSlash 和 RedirectFixedPath
@@ -1264,11 +1342,62 @@ Login
 
 <br />
 
-## 参数解析
+## 请求和响应
 
-#### Content-Type
+### 请求信息
 
-**说明**
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	addr := "127.0.0.1:80"
+
+	r := gin.Default()
+
+	r.GET("/", func(c *gin.Context) {
+		// 查看请求行
+		fmt.Printf("%s %s %s\n", c.Request.Method, c.Request.URL.Path, c.Request.Proto)
+
+		// 查看请求头
+		for key, value := range c.Request.Header {
+			fmt.Printf("%-15s => %s\n", key, value)
+		}
+
+		// 查看请求体
+	})
+
+	log.Fatalln(r.Run(addr))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop> curl http://127.0.0.1
+
+[GIN-debug] Listening and serving HTTP on 127.0.0.1:80
+GET / HTTP/1.1
+User-Agent      => [curl/8.0.1]
+Accept          => [*/*]
+[GIN] 2023/05/18 - 13:11:39 | 200 |            0s |       127.0.0.1 | GET      "/"
+```
+
+:::
+
+<br />
+
+### 媒体类型
+
+::: details （1）Content-Type介绍
 
 `Content-Type`写入在HTTP请求头或响应头中，用于告知接收方资源类型
 
@@ -1301,74 +1430,11 @@ Content-Type: type/subtype [; charset] [; boundary]
 
 参考自：[https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
 
-
-
-#### 路径参数
-
-::: details 点击查看完整代码
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"log"
-	"net/http"
-)
-
-func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由 - 路径参数
-	r.GET("/user/:id", func(c *gin.Context) {
-		url := c.Request.URL
-		id := c.Param("id")
-		c.String(http.StatusOK, fmt.Sprintf("URL: %s, userId: %s\n", url, id))
-	})
-
-	r.GET("/article/*id", func(c *gin.Context) {
-		url := c.Request.URL
-		id := c.Param("id")
-		c.String(http.StatusOK, fmt.Sprintf("URL: %s, articleId: %s\n", url, id))
-	})
-
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
-}
-```
-
 :::
 
-输出结果
+<br />
 
-```bash
-# :测试
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/user		# 必须传递参数
-404 page not found
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/		# 必须传递参数
-404 page not found
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/1		# 数据类型可以是多种类型
-URL: /user/1, userId: 1
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/abc	# 数据类型可以是多种类型
-URL: /user/abc, userId: abc
-C:\Users\Administrator>curl http://127.0.0.1/user/1/2			# 不支持多级
-404 page not found
-
-# *测试
-C:\Users\Administrator>curl http://127.0.0.1/article			# 重定向
-<a href="/article/">Moved Permanently</a>.
-C:\Users\Administrator>curl http://127.0.0.1/article/			# 可以不传参数
-URL: /article/, articleId: /
-C:\Users\Administrator>curl http://127.0.0.1/article/1			# 传一个参数
-URL: /article/1, articleId: /1
-C:\Users\Administrator>curl http://127.0.0.1/article/abc/def	# 多级参数
-URL: /article/abc/def, articleId: /abc/def
-```
+## 参数解析
 
 #### 查询字符串
 
@@ -1414,14 +1480,16 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
 C:\Users\Administrator>curl "http://127.0.0.1/?map\[id\]=abc&map\[name\]=bob"
 map[string]string{"id":"abc", "name":"bob"}
 ```
+
+:::
+
+<br />
 
 #### 表单解析
 
