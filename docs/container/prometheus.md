@@ -822,6 +822,21 @@ Checking /etc/prometheus/prometheus.yml
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
 
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+      kubeconfig_file: /etc/.kube.config
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+
+      - action: replace
+        target_label: namespace
+        source_labels: [__meta_kubernetes_namespace]
+
+      - action: replace
+        target_label: pod
+        source_labels: [__meta_kubernetes_pod_name]
 ```
 
 :::
@@ -1077,6 +1092,8 @@ Checking /etc/prometheus/prometheus.yml
 
 文档：[https://prometheus.io/docs/practices/naming/#metric-and-label-naming](https://prometheus.io/docs/practices/naming/#metric-and-label-naming)
 
+::: details 点击查看详情
+
 **1、Metrics格式**
 
 ```bash
@@ -1123,6 +1140,8 @@ Checking /etc/prometheus/prometheus.yml
 
 * Summary（百分位统计）：用于统计分位数分布情况
 
+:::
+
 <br />
 
 ### 表达式数据类型
@@ -1156,6 +1175,8 @@ Checking /etc/prometheus/prometheus.yml
 
 ### 选择器：范围向量
 
+::: details 点击查看详情
+
 ```bash
 # 这样查是查询当前的值
 prometheus_http_requests_total{handler="/metrics"}
@@ -1171,7 +1192,13 @@ prometheus_http_requests_total{handler="/metrics"}[5m:1m]
 
 ![image-20220912112033373](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220912112033373.png)
 
+:::
+
+<br />
+
 ### 选择器：时间偏移
+
+::: details 点击查看详情
 
 ```bash
 # 查看1天前这个时间点的数据
@@ -1181,9 +1208,13 @@ prometheus_http_requests_total{handler="/metrics"} offset 1d
 prometheus_http_requests_total{handler="/metrics"}[5m:1m] offset 1d
 ```
 
+:::
 
+<br />
 
 ### 选择器：@修饰符
+
+::: details 点击查看详情
 
 ```bash
 # @修饰符允许我们查看某一个具体时间点的数据
@@ -1207,11 +1238,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662948720
 prometheus_http_requests_total{handler="/metrics"} @1662953760
 ```
 
+:::
+
 <br />
 
 ### 运算符：二元运算符
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
+
+::: details 点击查看详情
 
 按优先级由高到低排序：
 
@@ -1224,9 +1259,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 相同优先级的运算符是左结合的。例如， `2 * 3 % 2`等价于`(2 * 3) % 2`。然而`^`是右结合的，所以`2 ^ 3 ^ 2`等价于`2 ^ (3 ^ 2)`
 
-
-
-（1）计算Node内存使用率
+**（1）计算Node内存使用率**
 
 ```bash
 # 方式1
@@ -1239,6 +1272,8 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 (node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
 ```
 
+:::
+
 <br />
 
 ### 运算符：向量匹配`on`和`ignoring`
@@ -1247,7 +1282,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-### 运算符：组修饰符`group_left`和`group_right`
+### 运算符：组修饰符group_xx
 
 待补充
 
@@ -1255,10 +1290,48 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 ### 运算符：聚合运算符
 
-- `sum`（计算维度总和）
-- `min`（选择最小尺寸）
-- `max`（选择最大尺寸）
-- `avg`（计算尺寸的平均值）
+::: details （1）sum / max / min  / avg
+
+**查询语法记录**
+
+```bash
+node_cpu_seconds_total{mode="idle"} @1684547438
+sum(node_cpu_seconds_total{mode="idle"} @1684547438)
+max(node_cpu_seconds_total{mode="idle"} @1684547438)
+min(node_cpu_seconds_total{mode="idle"} @1684547438)
+avg(node_cpu_seconds_total{mode="idle"} @1684547438)
+```
+
+**不带任何聚合运算符的输出结果，为了在多个浏览器窗口中能获取到相同时间点的值这里使用了@指定时间戳**
+
+![image-20230520095614852](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520095614852.png)
+
+**sum 求和**
+
+![image-20230520095721784](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520095721784.png)
+
+
+
+**max 求最大值**
+
+![image-20230520095858026](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520095858026.png)
+
+**min  求最小值**
+
+![image-20230520095950928](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520095950928.png)
+
+**avg 求平均值值**
+
+![image-20230520100036401](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520100036401.png)
+
+:::
+
+::: details （2）
+
+:::
+
+::: details 点击查看详情
+
 - `group`（结果向量中的所有值都是 1）
 - `stddev`（计算维度上的总体标准偏差）
 - `stdvar`（计算维度上的总体标准方差）
@@ -1268,9 +1341,11 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 - `topk`（按样本值计算的最大 k 个元素）
 - `quantile`（在维度上计算 φ-quantile (0 ≤ φ ≤ 1)）
 
-`without（label，...）`用于从计算结果中移除列举的标签，而保留其它标签
+`without (label，...)`用于从计算结果中移除列举的标签，而保留其它标签
 
-`by（label, ...）`则正好相反，结果向量中只保留列出的标签，其余标签则移除
+`by (label, ...)`则正好相反，结果向量中只保留列出的标签，其余标签则移除
+
+:::
 
 <br />
 
