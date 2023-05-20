@@ -1290,7 +1290,7 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 ### 运算符：聚合运算符
 
-::: details （1）sum / max / min  / avg
+::: details （1）sum、max、min、avg：多个指标聚合
 
 **查询语法记录**
 
@@ -1326,7 +1326,71 @@ avg(node_cpu_seconds_total{mode="idle"} @1684547438)
 
 :::
 
-::: details （2）
+::: details （2）sum_over_time、max_over_time、min_over_time、avg_over_time：同一个指标不同时间下的多个数据聚合
+
+```bash
+node_cpu_seconds_total{mode="idle"}[1m]
+sum_over_time(node_cpu_seconds_total{mode="idle"}[1m])
+max_over_time(node_cpu_seconds_total{mode="idle"}[1m])
+min_over_time(node_cpu_seconds_total{mode="idle"}[1m])
+avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
+
+# 备注: xxx_over_time这种聚合运算符后面要接 范维向量指标
+```
+
+**不带任何聚合运算符的输出结果**
+
+![image-20230520104351732](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520104351732.png)
+
+**sum_over_time 同一个指标不同时间下的值求和**
+
+![image-20230520104426874](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520104426874.png)
+
+**max_over_time 同一个指标不同时间下的值求最大值**
+
+![image-20230520104449819](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520104449819.png)
+
+**min_over_time 同一个指标不同时间下的值求最小值**
+
+![image-20230520104519882](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520104519882.png)
+
+**avg_over_time 同一个指标不同时间下的值求平均值**
+
+![image-20230520104536771](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520104536771.png)
+
+:::
+
+::: details （3）count 、 count_over_time、count_values
+
+**1、count 用于统计指标个数**
+
+![image-20230520105835508](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520105835508.png)
+
+![image-20230520105859131](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520105859131.png)
+
+**2、count_over_time 用于统计同一个指标下在某个时间段产生了多少条数据**
+
+![image-20230520110018692](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520110018692.png)
+
+![image-20230520110047427](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520110047427.png)
+
+**3、count_values 对相同指标值的个数统计**
+
+（1）一台主机的swap为1G，另一台主机的swap为0
+
+![image-20230520111958285](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520111958285.png)
+
+（2）根据指标值的个数进行统计
+
+![image-20230520112023949](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520112023949.png)
+
+（3）两台主机swap都设置为0
+
+![image-20230520112054412](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520112054412.png)
+
+（4）再次统计，swap为0的值为2
+
+![image-20230520112121365](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520112121365.png)
 
 :::
 
