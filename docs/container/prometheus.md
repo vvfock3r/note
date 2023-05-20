@@ -1288,9 +1288,9 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 <br />
 
-### 运算符：聚合运算符
+### 运算符：聚合运算
 
-::: details （1）sum、max、min、avg：多个指标聚合
+::: details （1）sum、max、min、avg：特点：聚合多个指标
 
 **查询语法记录**
 
@@ -1326,7 +1326,7 @@ avg(node_cpu_seconds_total{mode="idle"} @1684547438)
 
 :::
 
-::: details （2）sum_over_time、max_over_time、min_over_time、avg_over_time：同一个指标不同时间下的多个数据聚合
+::: details （2）[ sum/max/min/avg]_over_time：特点：同一个指标不同时间下的多个数据聚合
 
 ```bash
 node_cpu_seconds_total{mode="idle"}[1m]
@@ -1360,7 +1360,7 @@ avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
 
 :::
 
-::: details （3）count 、 count_over_time、count_values
+::: details （3）count 、 count_over_time、count_values：特点：不同维度的个数统计
 
 **1、count 用于统计指标个数**
 
@@ -1394,13 +1394,29 @@ avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
 
 :::
 
+::: details （4）by：对查询结果分组
+
+比如说我想统计一下每台主机的CPU逻辑核心数
+
+**第一步：选择一个合适的指标**
+
+![image-20230520134522990](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520134522990.png)
+
+**第二步：统计数量使用count系列聚合，但明显不符合要求**
+
+![image-20230520134624061](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520134624061.png)
+
+**第三步：使用by分组**
+
+![image-20230520134942225](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520134942225.png)
+
+:::
+
 ::: details 点击查看详情
 
 - `group`（结果向量中的所有值都是 1）
 - `stddev`（计算维度上的总体标准偏差）
 - `stdvar`（计算维度上的总体标准方差）
-- `count`（计算向量中的元素个数）
-- `count_values`（计算具有相同值的元素个数）
 - `bottomk`（样本值的最小 k 个元素）
 - `topk`（按样本值计算的最大 k 个元素）
 - `quantile`（在维度上计算 φ-quantile (0 ≤ φ ≤ 1)）
@@ -1413,7 +1429,7 @@ avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
 
 <br />
 
-### 运算符：函数
+### 运算符：内置函数
 
 文档：[https://prometheus.io/docs/prometheus/latest/querying/functions/](https://prometheus.io/docs/prometheus/latest/querying/functions/)
 
