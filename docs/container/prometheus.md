@@ -1096,8 +1096,9 @@ Checking /etc/prometheus/prometheus.yml
     static_configs:
       - targets:
         - "localhost:9100"
+        
     relabel_configs:
-    
+
       - action: "replace"
         target_label: "port"           # 新标签名
         source_labels: ["__address__"] #
@@ -1631,7 +1632,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 :::
 
-::: details （2）时间函数
+::: details （2）时间戳函数
+
+**1、time()**
+
+![image-20230520214133708](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520214133708.png)
+
+**2、timestamp(v instant-vector)**
+
+![image-20230520221456139](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520221456139.png)
 
 :::
 
