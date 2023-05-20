@@ -723,7 +723,7 @@ Location: http://www.baidu.com/
 
 ![image-20230520193034810](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193034810.png)
 
-**3、解决办法: 修改为 https://www.baidu.com **
+**3、解决办法: 修改为 https://www.baidu.com**
 
 ```bash
 # 先验证一下,最终会被解析到HTTPS协议上去
@@ -1641,6 +1641,12 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 **2、timestamp(v instant-vector)**
 
 ![image-20230520221456139](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520221456139.png)
+
+:::
+
+::: details （3）计算范围向量中时间序列的增加：increase
+
+
 
 :::
 
