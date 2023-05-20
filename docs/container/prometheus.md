@@ -604,6 +604,31 @@ docker container rm -f get-blackbox-exporter-config
                                          --config.file=/etc/blackbox_exporter/config.yml
 # (4) 测试metrics接口
 [root@localhost ~]# curl http://192.168.48.133:9115/metrics
+
+# (5) 测试模块接口
+[root@localhost ~]# curl http://192.168.48.133:9115/probe?module=http_2xx\&target=jinhui.dev
+```
+
+:::
+
+::: details （1）配置Prometheus采集blackbox_exporter
+
+```bash
+  - job_name: "blackbox"
+    metrics_path: "/probe"                #
+    static_configs:                       #
+      - targets:                          # 
+        - "https://jinhui.dev"            # 这里写需要监控的域名
+	relabel_configs:                      #
+      - target_label: __param_target      # 添加一个标签 __param_target
+        source_labels: [__address__]      # 
+      - target_label: instance            # 添加一个标签 instance
+        source_labels: [__param_target]   #
+      - target_label: __address__         # 添加一个标签 __address__
+        replacement: 192.168.48.132:9115  # blackbox_exporter地址
+      - target_label: module              # 添加一个标签 module
+        source_labels: [__param_target]   #
+        replacement: http_2xx             # 使用 http_2xx 模块监控HTTP/HTTPS连接
 ```
 
 :::
