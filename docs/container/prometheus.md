@@ -1290,6 +1290,8 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 ### 运算符：聚合运算
 
+文档：[https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators](https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators)
+
 ::: details （1）sum、max、min、avg：特点：聚合多个指标
 
 **查询语法记录**
@@ -1394,7 +1396,7 @@ avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
 
 :::
 
-::: details （4）by：对查询结果分组
+::: details （4）by：对查询结果按【指定的标签】分组
 
 比如说我想统计一下每台主机的CPU逻辑核心数
 
@@ -1412,18 +1414,39 @@ avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
 
 :::
 
-::: details 点击查看详情
+::: details （5）without：对查询结果按【排除的标签】分组
 
-- `group`（结果向量中的所有值都是 1）
+比如说我想统计一下每台主机的CPU逻辑核心数
+
+![image-20230520140722883](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520140722883.png)
+
+如果是by来写则是
+
+![](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520140722883.png)
+
+:::
+
+::: details （6）topk 和 bottomk：取指标值排序后的前N个或后N个
+
+**Prometheus请求统计信息如下**
+
+![image-20230520143059856](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520143059856.png)
+
+**我要取访问次数最多的前5个接口**
+
+![image-20230520143215016](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520143215016.png)
+
+**我要取访问次数最少的前5个接口**
+
+![image-20230520143348872](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520143348872.png)
+
+:::
+
+::: details （7）其他聚合
+
 - `stddev`（计算维度上的总体标准偏差）
 - `stdvar`（计算维度上的总体标准方差）
-- `bottomk`（样本值的最小 k 个元素）
-- `topk`（按样本值计算的最大 k 个元素）
 - `quantile`（在维度上计算 φ-quantile (0 ≤ φ ≤ 1)）
-
-`without (label，...)`用于从计算结果中移除列举的标签，而保留其它标签
-
-`by (label, ...)`则正好相反，结果向量中只保留列出的标签，其余标签则移除
 
 :::
 
