@@ -1294,16 +1294,6 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 ::: details （1）sum、max、min、avg：特点：聚合多个指标
 
-**查询语法记录**
-
-```bash
-node_cpu_seconds_total{mode="idle"} @1684547438
-sum(node_cpu_seconds_total{mode="idle"} @1684547438)
-max(node_cpu_seconds_total{mode="idle"} @1684547438)
-min(node_cpu_seconds_total{mode="idle"} @1684547438)
-avg(node_cpu_seconds_total{mode="idle"} @1684547438)
-```
-
 **不带任何聚合运算符的输出结果，为了在多个浏览器窗口中能获取到相同时间点的值这里使用了@指定时间戳**
 
 ![image-20230520095614852](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520095614852.png)
@@ -1330,15 +1320,7 @@ avg(node_cpu_seconds_total{mode="idle"} @1684547438)
 
 ::: details （2）[ sum/max/min/avg]_over_time：特点：同一个指标不同时间下的多个数据聚合
 
-```bash
-node_cpu_seconds_total{mode="idle"}[1m]
-sum_over_time(node_cpu_seconds_total{mode="idle"}[1m])
-max_over_time(node_cpu_seconds_total{mode="idle"}[1m])
-min_over_time(node_cpu_seconds_total{mode="idle"}[1m])
-avg_over_time(node_cpu_seconds_total{mode="idle"}[1m])
-
-# 备注: xxx_over_time这种聚合运算符后面要接 范维向量指标
-```
+注意：`xxx_over_time ` 这种聚合运算符后面要接 范维向量指标
 
 **不带任何聚合运算符的输出结果**
 
