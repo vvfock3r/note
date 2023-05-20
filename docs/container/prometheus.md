@@ -1440,8 +1440,28 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 须知：
 
-* 使用函数要知道操作的是哪种向量，即时向量（instant-vector）还是范围向量（range vector）
+* 使用函数要知道操作的是哪种向量，即时向量（`instant-vector`）还是范围向量（`range vector`）
 * 有些函数是有默认参数的，比如`year(v=vector(time()) instant-vector)`
+
+::: details （1）排序函数
+
+**默认是非排序**
+
+![image-20230520145026838](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520145026838.png)
+
+**正序排序**
+
+![image-20230520145059554](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520145059554.png)
+
+**倒序排序**
+
+![image-20230520145147482](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520145147482.png)
+
+:::
+
+::: details （2）时间函数
+
+:::
 
 <br />
 
