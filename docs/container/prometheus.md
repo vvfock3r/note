@@ -4,11 +4,10 @@
 
 Github：[https://github.com/prometheus/prometheus/](https://github.com/prometheus/prometheus/)
 
-Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
-
-AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
-
-Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
+* AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
+* Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
+* Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
+* 多目标导出器模式：https://prometheus.io/docs/guides/multi-target-exporter
 
 <br />
 
@@ -606,7 +605,29 @@ docker container rm -f get-blackbox-exporter-config
 [root@localhost ~]# curl http://192.168.48.133:9115/metrics
 
 # (5) 测试模块接口
-[root@localhost ~]# curl http://192.168.48.133:9115/probe?module=http_2xx\&target=jinhui.dev
+[root@node-1 ~]# curl -s http://192.168.48.133:9115/probe?module=http_2xx\&target=jinhui.dev | grep -Ev '^#'
+probe_dns_lookup_time_seconds 0.005926243
+probe_duration_seconds 0.452055808
+probe_failed_due_to_regex 0
+probe_http_content_length 23389
+probe_http_duration_seconds{phase="connect"} 0.12256418899999999
+probe_http_duration_seconds{phase="processing"} 0.12341058599999999
+probe_http_duration_seconds{phase="resolve"} 0.012360312
+probe_http_duration_seconds{phase="tls"} 0.130147485
+probe_http_duration_seconds{phase="transfer"} 0.062120979
+probe_http_last_modified_timestamp_seconds 1.684570015e+09
+probe_http_redirects 1
+probe_http_ssl 1
+probe_http_status_code 200
+probe_http_uncompressed_body_length 23389
+probe_http_version 2
+probe_ip_addr_hash 4.027875985e+09
+probe_ip_protocol 4
+probe_ssl_earliest_cert_expiry 1.717113599e+09
+probe_ssl_last_chain_expiry_timestamp_seconds 1.717113599e+09
+probe_ssl_last_chain_info{fingerprint_sha256="b70c28b0cd1e5a4ab911a529be943428aecd24c409d3fbecebfc200e5b14b395",issuer="CN=TrustAsia RSA DV TLS CA G2,O=TrustAsia Technologies\\, Inc.,C=CN",subject="CN=jinhui.dev",subjectalternative="jinhui.dev,www.jinhui.dev"} 1
+probe_success 1
+probe_tls_version_info{version="TLS 1.2"} 1
 ```
 
 :::
@@ -614,22 +635,115 @@ docker container rm -f get-blackbox-exporter-config
 ::: details （1）配置Prometheus采集blackbox_exporter
 
 ```bash
+# 下面是一个基础功能完备的最小化的写法
   - job_name: "blackbox"
-    metrics_path: "/probe"                #
+    metrics_path: "/probe"                # 这里需要修改一下
     static_configs:                       #
-      - targets:                          # 
-        - "https://jinhui.dev"            # 这里写需要监控的域名
-	relabel_configs:                      #
+      - targets:                          # 下面写需要监控的域名或地址
+        - "prometheus.io"                 # 
+        - "jinhui.dev"                    # 
+        - "qq.com"                        # 
+        - "ip.sb"                         # 
+        - "baidu.com"                     # 
+
+    relabel_configs:                      #
       - target_label: __param_target      # 添加一个标签 __param_target
-        source_labels: [__address__]      # 
+        source_labels: [__address__]      # 说明: 这里是给Endpoint添加target标签,必须要有,显示在Endpoint表格内
       - target_label: instance            # 添加一个标签 instance
-        source_labels: [__param_target]   #
+        source_labels: [__param_target]   # 说明: 这里是给Endpoint添加instance标签(实际是覆盖instance标签),显示在Labels表格内
       - target_label: __address__         # 添加一个标签 __address__
         replacement: 192.168.48.132:9115  # blackbox_exporter地址
       - target_label: module              # 添加一个标签 module
-        source_labels: [__param_target]   #
         replacement: http_2xx             # 使用 http_2xx 模块监控HTTP/HTTPS连接
 ```
+
+![image-20230520185056318](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520185056318.png)
+
+:::
+
+::: details （2）关于被监控域名因为书写引发的问题
+
+**先说现象**
+
+别的指标都为1，就 `baidu.com` 为 0
+
+![image-20230520190756076](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520190756076.png)
+
+其他指标就单单没有 `baidu.com` 的信息
+
+![image-20230520190903574](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520190903574.png)
+
+**1、先来分析一下 probe_http_ssl**
+
+```bash
+# 意思说 最终重定向到的域名是否使用了SSL
+[root@node-1 ~]# curl -s http://192.168.48.133:9115/probe?module=http_2xx\&target=jinhui.dev | grep --color=auto probe_http_ssl
+# HELP probe_http_ssl Indicates if SSL was used for the final redirect
+# TYPE probe_http_ssl gauge
+probe_http_ssl 1
+
+# 测试一下, 根本就没有使用HTTP状态码来做重定向
+[root@node-1 ~]# curl baidu.com 
+<html>
+<meta http-equiv="refresh" content="0;url=http://www.baidu.com/">
+</html>
+
+# 看一下响应头,直接返回了
+[root@node-1 ~]# curl baidu.com -I
+HTTP/1.1 200 OK
+Date: Sat, 20 May 2023 11:14:16 GMT
+Server: Apache
+Last-Modified: Tue, 12 Jan 2010 13:48:00 GMT
+ETag: "51-47cf7e6ee8400"
+Accept-Ranges: bytes
+Content-Length: 81
+Cache-Control: max-age=86400
+Expires: Sun, 21 May 2023 11:14:16 GMT
+Connection: Keep-Alive
+Content-Type: text/html
+
+# 解决思路
+# 只需要让他最终可以跳转到HTTPS协议即可
+```
+
+**2、我直接修改为 https://baidu.com 可以吗？**
+
+```bash
+# 先测试一下, TMD, 它居然又跳到HTTP了?! 这是什么鬼操作?
+# 所以推测的结论是不能直接修改为https://baidu.com
+[root@node-1 ~]# curl https://baidu.com -I
+HTTP/1.1 302 Moved Temporarily
+Server: bfe/1.0.8.18
+Date: Sat, 20 May 2023 11:27:34 GMT
+Content-Type: text/html
+Content-Length: 161
+Connection: keep-alive
+Location: http://www.baidu.com/
+```
+
+![image-20230520193034810](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193034810.png)
+
+**3、解决办法: 修改为 https://www.baidu.com **
+
+```bash
+# 先验证一下,最终会被解析到HTTPS协议上去
+[root@node-1 ~]# curl https://www.baidu.com -I
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: private, no-cache, no-store, proxy-revalidate, no-transform
+Connection: keep-alive
+Content-Length: 277
+Content-Type: text/html
+Date: Sat, 20 May 2023 11:31:08 GMT
+Etag: "575e1f59-115"
+Last-Modified: Mon, 13 Jun 2016 02:50:01 GMT
+Pragma: no-cache
+Server: bfe/1.0.8.18
+```
+
+![image-20230520193408896](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193408896.png)
+
+![image-20230520193524607](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193524607.png)
 
 :::
 
