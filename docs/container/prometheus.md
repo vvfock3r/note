@@ -574,6 +574,37 @@ Docker Hub：[https://hub.docker.com/r/prom/node-exporter](https://hub.docker.co
 
 :::
 
+::: details （1）收集器(Collector)：textfile
+
+参考脚本：[https://github.com/prometheus-community/node-exporter-textfile-collector-scripts](https://github.com/prometheus-community/node-exporter-textfile-collector-scripts)
+
+```bash
+# textfile收集器默认是开启的，但是若要正常使用需要指定收集*.prom文件数据的目录
+[root@localhost ~]# vim /usr/lib/systemd/system/node_exporter.service
+...
+[Service]
+ExecStart=/usr/local/bin/node_exporter \
+    --collector.textfile.directory="/var/lib/node_exporter/collector/textfile"
+
+# 创建目录
+[root@localhost ~]# mkdir -p /var/lib/node_exporter/collector/textfile
+
+# 重启node_exporter
+
+# 写入测试数据，文件名要以.prom结尾
+[root@localhost ~]# vim /var/lib/node_exporter/collector/textfile/role.prom
+role{role="application_server"} 1
+
+# 查看数据
+[root@localhost ~]# curl http://127.0.0.1:9100/metrics
+...
+# HELP role Metric read from /var/lib/node_exporter/collector/textfile/role.prom
+# TYPE role untyped
+role{role="application_server"} 2
+```
+
+:::
+
 <br />
 
 ### blackbox_exporter
@@ -1866,7 +1897,7 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 ![image-20230521173509473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521173509473.png)
 
-
+![image-20230521173738381](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521173738381.png)
 
 :::
 
@@ -1892,7 +1923,7 @@ Prometheus本地存储并不适合长期存储数据，建议通过**远程读�
 
 支持的远程存储列表：[https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage)
 
-推荐使用[Thanos](https://github.com/thanos-io/thanos)
+推荐使用 [Thanos](https://github.com/thanos-io/thanos)
 
 <br />
 
@@ -2283,41 +2314,6 @@ route:
 
 <br />
 
-## NodeExporter
-
-Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
-
-### 收集器(Collector)：textfile
-
-参考脚本：[https://github.com/prometheus-community/node-exporter-textfile-collector-scripts](https://github.com/prometheus-community/node-exporter-textfile-collector-scripts)
-
-```bash
-# textfile收集器默认是开启的，但是若要正常使用需要指定收集*.prom文件数据的目录
-[root@localhost ~]# vim /usr/lib/systemd/system/node_exporter.service
-...
-[Service]
-ExecStart=/usr/local/bin/node_exporter \
-    --collector.textfile.directory="/var/lib/node_exporter/collector/textfile"
-
-# 创建目录
-[root@localhost ~]# mkdir -p /var/lib/node_exporter/collector/textfile
-
-# 重启node_exporter
-
-# 写入测试数据，文件名要以.prom结尾
-[root@localhost ~]# vim /var/lib/node_exporter/collector/textfile/role.prom
-role{role="application_server"} 1
-
-# 查看数据
-[root@localhost ~]# curl http://127.0.0.1:9100/metrics
-...
-# HELP role Metric read from /var/lib/node_exporter/collector/textfile/role.prom
-# TYPE role untyped
-role{role="application_server"} 2
-```
-
-<br />
-
 ## Exporter开发（Go）
 
 支持的语言：[https://prometheus.io/docs/instrumenting/clientlibs/](https://prometheus.io/docs/instrumenting/clientlibs/)
@@ -2641,9 +2637,7 @@ business_exporter_random_number_float64 0.4377141871869802
 
 ### 数据采样
 
-**（1）采样数据更新方法**
-
-::: details 点击查看完整代码
+::: details （1）采样数据更新方法
 
 ```go
 type Gauge interface {
@@ -2710,16 +2704,18 @@ type Summary interface {
 
 :::
 
-**（2）采样数据更新方式**
+::: details （2）采样数据更新方式
 
 * 启动一个`Goroutine`定期更新指标值
   * 劣势：当采样时间间隔比较长时会导致数据不准，比如每隔30秒更新一次指标值，第20秒去抓取`/metrics`时数据就会不准
 * 请求`/metrics`时更新采样数据
   * 劣势：当采样时间耗时比较长时会影响`/metrics`响应时间
 
+:::
+
 <br />
 
-### 自定义注册指标
+### 注册指标
 
 ::: details 点击查看完整代码
 
@@ -2812,11 +2808,4 @@ Collect is running
 ```
 
 :::
-
-### 检查Metrics接口
-
-```bash
-# 前提：需要确保以下地址是可以访问的
-[root@localhost ~]# curl -s http://localhost:8080/metrics | promtool check metrics
-```
 
