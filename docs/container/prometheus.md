@@ -1644,7 +1644,101 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 :::
 
-::: details （3）计算范围向量中时间序列的每秒增长率：rate 和 irate
+::: details （3）数值处理
+
+因为查询出来的数据我们不能任意控制，所以这里写了一个简单的Exporter
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+func main() {
+	// 浮点数 & 整数
+	test_float_int := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "test_float_int",
+	})
+	test_float_int.Set(6.0)
+
+	// 小于 x.5
+	test_float_lt := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "test_float_lt",
+	})
+	test_float_lt.Set(6.3)
+
+	// 等于 x.5
+	test_float_e := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "test_float_e",
+	})
+	test_float_e.Set(6.5)
+
+	// 大于 x.5
+	test_float_gt := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "test_float_gt",
+	})
+	test_float_gt.Set(6.8)
+
+	// 注册指标
+	prometheus.MustRegister(test_float_int)
+	prometheus.MustRegister(test_float_lt)
+	prometheus.MustRegister(test_float_e)
+	prometheus.MustRegister(test_float_gt)
+
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+Prometheus添加目标
+
+```bash
+  - job_name: "test"
+    static_configs:
+      - targets:
+        - "192.168.123.88:8080"
+```
+
+测试一下数据是否正常，到这里准备工作就完成了
+
+![image-20230521170541396](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170541396.png)
+
+**1、ceil（instant-vector）向上取整**
+
+![image-20230521170607323](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170607323.png)
+
+**2、floor（instant-vector） 向下取整**
+
+![image-20230521170636284](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170636284.png)
+
+**3、abs（instant-vector）取绝对值**
+
+![image-20230521170923586](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170923586.png)
+
+**4、round（v instant-vector, to_nearest=1 scalar）功能1: 四舍五入**
+
+![image-20230521170721962](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170721962.png)
+
+![image-20230521170757500](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170757500.png)
+
+![image-20230521170828522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521170828522.png)
+
+**5、round（v instant-vector, to_nearest=1 scalar）功能2：指定to_nearest，四舍五入到指定的倍数**
+
+![image-20230521171331212](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521171331212.png)
+
+![image-20230521172129789](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521172129789.png)
+
+![image-20230521172237931](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521172237931.png)
+
+:::
+
+::: details （4）计算范围向量中时间序列的每秒增长率：rate 和 irate
 
 **rate(v range-vector)**
 
@@ -1718,7 +1812,7 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 :::
 
-::: details （4）计算范围向量中时间序列的增量：increase
+::: details （5）计算范围向量中时间序列的增量：increase
 
 ![image-20230521160735065](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521160735065.png)
 
@@ -1757,6 +1851,10 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 # 所以这也就是指标都是整数，而通过increase计算后会得出浮点数的原因
 ```
+
+参考：[https://lotabout.me/2019/QQA-Why-Prometheus-increase-return-float](https://lotabout.me/2019/QQA-Why-Prometheus-increase-return-float)
+
+![image-20230521162006032](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521162006032.png)
 
 :::
 
