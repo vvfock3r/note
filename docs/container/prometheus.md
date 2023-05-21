@@ -616,7 +616,7 @@ Github：[https://github.com/prometheus/blackbox_exporter](https://github.com/pr
 Docker Hub：[https://hub.docker.com/r/prom/blackbox-exporter](https://hub.docker.com/r/prom/blackbox-exporter)
 
 ```bash
-# (1)创建配置文件目录
+# (1) 创建配置文件目录
 mkdir /etc/blackbox_exporter
 
 # (2) 需要提前准备配置文件prometheus.yml
@@ -663,7 +663,7 @@ probe_tls_version_info{version="TLS 1.2"} 1
 
 :::
 
-::: details （1）配置Prometheus采集blackbox_exporter
+::: details （1）配置Prometheus采集 blackbox_exporter
 
 ```bash
 # 下面是一个基础功能完备的最小化的写法
@@ -775,6 +775,127 @@ Server: bfe/1.0.8.18
 ![image-20230520193408896](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193408896.png)
 
 ![image-20230520193524607](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230520193524607.png)
+
+:::
+
+<br />
+
+### mysqld_exporter
+
+::: details Docker部署
+
+Github：[https://github.com/prometheus/mysqld_exporter](https://github.com/prometheus/mysqld_exporter)
+
+Docker Hub：[https://registry.hub.docker.com/r/prom/mysqld-exporter](https://registry.hub.docker.com/r/prom/mysqld-exporter)
+
+```bash
+# (1) 创建配置文件目录
+mkdir /etc/mysqld_exporter
+
+# (2) 创建配置文件
+# client 是一个特殊的配置,可以认为是一个默认的配置,如果不写的话服务启动会报错
+# 只有一个MySQL的话就写到[client]下面, 如果再新增第二个MySQL就可以任意命名了
+# 这个感觉有点反人类
+vim /etc/mysqld_exporter/my.cnf
+[client]
+host=192.168.48.132
+port=3306
+user=root
+password=QiNqg[l.%;H>>rO9
+
+# (3) 启动容器
+[root@localhost ~]# docker container run --name mysqld_exporter \
+                                         -p 9104:9104 \
+                                         -v /etc/mysqld_exporter:/etc/mysqld_exporter \
+                                         --restart=always \
+                                         -d \
+                                     prom/mysqld-exporter:v0.14.0 \
+                                         --config.my-cnf=/etc/mysqld_exporter/my.cnf
+
+# (4) 测试, mysql_up = 1 说明连接成功
+[root@node-1 ~]# curl -s http://127.0.0.1:9104/metrics | grep mysql_up
+# HELP mysql_up Whether the MySQL server is up.
+# TYPE mysql_up gauge
+mysql_up 1
+```
+
+:::
+
+::: details （1）配置Prometheus采集 mysqld_exporter
+
+```yaml
+  - job_name: mysql
+    params:
+      auth_module: [client]
+    static_configs:
+      - targets:
+        - 192.168.48.132:3306
+    relabel_configs:
+      - target_label: __param_target
+        source_labels: [__address__]
+      - target_label: instance
+        source_labels: [__param_target]
+      - target_label: __address__
+        replacement: 192.168.48.132:9104
+
+
+  - job_name: mysql
+    metrics_path: /probe
+    static_configs:
+      - targets:
+        - 192.168.48.132:3306
+        labels:
+          auth_module: client2
+    relabel_configs:
+      - target_label: __param_target
+        source_labels: [__address__]
+      - target_label: instance
+        source_labels: [__param_target]
+      - target_label: __address__
+        replacement: 192.168.48.132:9104
+      - target_label: __param_auth_module
+        source_labels: [auth_module]
+
+
+
+
+  - job_name: mysql
+    static_configs:
+      - targets:
+        - 192.168.48.132:3306
+    relabel_configs:
+      - target_label: __param_target
+        source_labels: [__address__]
+      - target_label: instance
+        source_labels: [__param_target]
+      - target_label: __address__
+        replacement: 192.168.48.132:9104
+
+  - job_name: 'mysql'    
+  static_configs:      
+  - targets:         
+  	- 192.168.168.11:6666         
+  	- 192.168.168.12:6666        
+  	labels:           
+  	auth_module: client
+  	- targets:         
+  	- 192.168.168.11:23750         
+  	- 192.168.168.14:23750        
+  	labels:           
+  		auth_module: client-exporter2    
+  		metrics_path: /probe    
+  	relabel_configs:      
+  		- source_labels: [__address__]        
+  			target_label: __param_target      
+  		- source_labels: [__param_target]        
+  			target_label: instance      
+  		- target_label: __address__        
+  			replacement: 192.168.168.11:42002      
+  		- source_labels: [auth_module]        
+  			target_label: __param_auth_module
+  		- action: labeldrop        
+  		regex: auth_module
+```
 
 :::
 
