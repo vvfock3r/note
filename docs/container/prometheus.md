@@ -1644,9 +1644,83 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 :::
 
-::: details （3）计算范围向量中时间序列的增加：increase
+::: details （3）计算范围向量中时间序列的每秒增长率：rate 和 irate
 
+**rate(v range-vector)**
 
+![image-20230521105537735](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521105537735.png)
+
+```bash
+# 看一下是如何计算出来的
+
+# 1、新开一个浏览器窗口, 快速执行下面的命令来获取值
+prometheus_http_requests_total{}[1m]
+
+# 2、然后找到上面有数据的指标
+prometheus_http_requests_total{code="200", handler="/metrics", instance="localhost:9090", job="prometheus"}
+188 @1684637655.526
+189 @1684637670.526
+190 @1684637685.526
+191 @1684637700.526
+
+# 3、计算时间戳最大的值 和 时间戳最小的值 的差
+191 - 188 = 3
+
+# 4、计算时间戳最大 和 时间戳最小 的差
+[root@node-1 ~]# date -d @1684637700.526 +"%Y-%m-%d %H:%M:%S"
+2023-05-21 10:55:00
+[root@node-1 ~]# date -d @1684637655.526 +"%Y-%m-%d %H:%M:%S"
+2023-05-21 10:54:15
+相差了45秒
+
+# 5、计算平均每秒增长率
+3 / 45 =~ 0.066666666667 
+```
+
+<br />
+
+**irate(v range-vector)**
+
+irate和rate的对比
+
+* irate只计算时间戳最近的两个数据，而rate计算的最小和最大的时间戳指标
+* 他们俩的计算方式都是一样的：值差 / 时间戳差
+* rate关心的是一段范围内的每秒平均增长率，而irate关心的是一段范围内的每秒瞬时增长率（最近两个点的每秒增长率）
+
+![image-20230521111217565](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521111217565.png)
+
+```bash
+# 看一下是如何计算出 0.9333333333333333
+
+# 1、新开一个浏览器窗口, 快速执行下面的命令来获取值
+prometheus_http_requests_total{}[1m]
+
+# 2、然后找到上面有数据的指标
+prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="localhost:9090", job="prometheus"}
+204 @1684638630.526
+204 @1684638645.526
+206 @1684638660.526
+220 @1684638675.526
+
+# 3、计算最近的两个指标的值的差
+220 - 206 = 14
+
+# 4、计算最近的两个指标的时间戳的差
+[root@node-1 ~]# date -d @1684638675.526 +"%Y-%m-%d %H:%M:%S"
+2023-05-21 11:11:15
+[root@node-1 ~]# date -d @1684638660.526 +"%Y-%m-%d %H:%M:%S"
+2023-05-21 11:11:00
+差了15秒
+
+# 5、计算瞬时每秒增长率
+14 / 15 =~ 0.933333333333
+```
+
+:::
+
+::: details （4）计算范围向量中时间序列的增加：increase
+
+prometheus_http_requests_total{}[1m]
 
 :::
 
