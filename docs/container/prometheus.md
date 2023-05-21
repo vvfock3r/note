@@ -1858,6 +1858,18 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 :::
 
+::: details （6）检查指标是否没有数据：absent 和 absent_over_time
+
+如果有数据则返回空向量，如果没有数据则返回1
+
+这对于在给定指标名称和标签组合不存在时间序列时发出警报很有用
+
+![image-20230521173509473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521173509473.png)
+
+
+
+:::
+
 <br />
 
 ## 存储配置
