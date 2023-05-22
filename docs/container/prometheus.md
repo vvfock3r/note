@@ -801,7 +801,13 @@ vim /etc/mysqld_exporter/my.cnf
 host=192.168.48.132
 port=3306
 user=root
-password=fo9!sfF?KU5vnLWUyE
+password=t6G1LJdzOlG^u5yb
+
+[project_a]
+host=192.168.48.132
+port=3307
+user=root
+password=t6G1LJdzOlG^u5yb
 
 # (3) 启动容器
 [root@localhost ~]# docker container run --name mysqld_exporter \
@@ -828,27 +834,16 @@ mysql_up 1
 
 ```yaml
   - job_name: mysql
-    params:
-      auth_module: [client]
-    static_configs:
-      - targets:
-        - 192.168.48.132:3306
-    relabel_configs:
-      - target_label: __param_target
-        source_labels: [__address__]
-      - target_label: instance
-        source_labels: [__param_target]
-      - target_label: __address__
-        replacement: 192.168.48.132:9104
-
-
-  - job_name: mysql
-    metrics_path: /probe
+    metrics_path: /probe                # 这里写/metrics貌似也可以
     static_configs:
       - targets:
         - 192.168.48.132:3306
         labels:
-          auth_module: client2
+          auth_module: client           # 和mysqld_exporter中保持一致
+      - targets:
+        - 192.168.48.133:3306
+        labels:
+          auth_module: project_a        # 和mysqld_exporter中保持一致
     relabel_configs:
       - target_label: __param_target
         source_labels: [__address__]
@@ -858,47 +853,11 @@ mysql_up 1
         replacement: 192.168.48.132:9104
       - target_label: __param_auth_module
         source_labels: [auth_module]
-
-
-
-
-  - job_name: mysql
-    static_configs:
-      - targets:
-        - 192.168.48.132:3306
-    relabel_configs:
-      - target_label: __param_target
-        source_labels: [__address__]
-      - target_label: instance
-        source_labels: [__param_target]
-      - target_label: __address__
-        replacement: 192.168.48.132:9104
-
-  - job_name: 'mysql'    
-  static_configs:      
-  - targets:         
-  	- 192.168.168.11:6666         
-  	- 192.168.168.12:6666        
-  	labels:           
-  	auth_module: client
-  	- targets:         
-  	- 192.168.168.11:23750         
-  	- 192.168.168.14:23750        
-  	labels:           
-  		auth_module: client-exporter2    
-  		metrics_path: /probe    
-  	relabel_configs:      
-  		- source_labels: [__address__]        
-  			target_label: __param_target      
-  		- source_labels: [__param_target]        
-  			target_label: instance      
-  		- target_label: __address__        
-  			replacement: 192.168.168.11:42002      
-  		- source_labels: [auth_module]        
-  			target_label: __param_auth_module
-  		- action: labeldrop        
-  		regex: auth_module
 ```
+
+![image-20230522232821648](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230522232821648.png)
+
+![image-20230522233144522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230522233144522.png)
 
 :::
 
