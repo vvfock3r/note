@@ -2979,7 +2979,7 @@ Type="mysql"                                                # 类型    （不�
 Version="8.0.30"                                            # 版本    （根据实际情况修改）
 AppName="demo"                                              # 应用名称 （根据实际情况修改）
 ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
-RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+RootPassword="fo9!sfF?KU5vnLWUyE"                           # Root密码（根据实际情况修改）
 
 ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
 LocalHostPort=3306                                          # 宿主机监听端口（根据实际情况修改）
@@ -2998,7 +2998,7 @@ Type="percona"                                              # 类型    （不�
 Version="8.0.29-21"                                         # 版本    （根据实际情况修改）
 AppName="demo"                                              # 应用名称 （根据实际情况修改）
 ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
-RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+RootPassword="fo9!sfF?KU5vnLWUyE"                           # Root密码（根据实际情况修改）
 
 ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
 LocalHostPort=3307                                          # 宿主机监听端口（根据实际情况修改）
@@ -3017,7 +3017,7 @@ Type="mariadb"                                              # 类型    （不�
 Version="10.9.2"                                            # 版本    （根据实际情况修改）
 AppName="demo"                                              # 应用名称 （根据实际情况修改）
 ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
-RootPassword="QiNqg[l.%;H>>rO9"                             # Root密码（根据实际情况修改）
+RootPassword="fo9!sfF?KU5vnLWUyE"                           # Root密码（根据实际情况修改）
 
 ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
 LocalHostPort=3308                                          # 宿主机监听端口（根据实际情况修改）

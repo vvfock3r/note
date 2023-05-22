@@ -801,7 +801,7 @@ vim /etc/mysqld_exporter/my.cnf
 host=192.168.48.132
 port=3306
 user=root
-password=QiNqg[l.%;H>>rO9
+password=fo9!sfF?KU5vnLWUyE
 
 # (3) 启动容器
 [root@localhost ~]# docker container run --name mysqld_exporter \
@@ -809,7 +809,7 @@ password=QiNqg[l.%;H>>rO9
                                          -v /etc/mysqld_exporter:/etc/mysqld_exporter \
                                          --restart=always \
                                          -d \
-                                     prom/mysqld-exporter:v0.14.0 \
+                                     prom/mysqld-exporter:v0.15.0-rc.0 \
                                          --config.my-cnf=/etc/mysqld_exporter/my.cnf
 
 # (4) 测试, mysql_up = 1 说明连接成功
@@ -817,6 +817,9 @@ password=QiNqg[l.%;H>>rO9
 # HELP mysql_up Whether the MySQL server is up.
 # TYPE mysql_up gauge
 mysql_up 1
+
+# (5) 注意注意
+# MySQL的密码不要设置类似 QiNqg[l.%;H>>rO9 这种密码, 即使给密码加上双引号, mysqld_exporter也识别不了
 ```
 
 :::
