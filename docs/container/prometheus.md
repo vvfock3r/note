@@ -492,9 +492,11 @@ done
 
 ### node_exporter
 
-::: details 二进制部署
+::: details 二进制部署（推荐）
 
 **1、下载二进制包**
+
+Github：[https://github.com/prometheus/node_exporter](https://github.com/prometheus/node_exporter)
 
 下载地址：[https://prometheus.io/download/#node_exporter](https://prometheus.io/download/#node_exporter)
 
@@ -601,6 +603,20 @@ role{role="application_server"} 1
 # HELP role Metric read from /var/lib/node_exporter/collector/textfile/role.prom
 # TYPE role untyped
 role{role="application_server"} 2
+```
+
+:::
+
+::: details （2）收集器(Collector)：systemd
+
+```bash
+[root@localhost ~]# vim /usr/lib/systemd/system/node_exporter.service
+...
+[Service]
+ExecStart=/usr/local/bin/node_exporter \
+    --collector.systemd
+
+# 重启node_exporter
 ```
 
 :::
@@ -860,6 +876,18 @@ mysql_up 1
 ![image-20230522233144522](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230522233144522.png)
 
 :::
+
+<br />
+
+### redis_exporter
+
+Github：[https://github.com/oliver006/redis_exporter](https://github.com/oliver006/redis_exporter)
+
+<br />
+
+### elasticsearch_exporter
+
+Github：[https://github.com/prometheus-community/elasticsearch_exporter](https://github.com/prometheus-community/elasticsearch_exporter)
 
 <br />
 
