@@ -883,7 +883,7 @@ mysql_up 1
 
 ### redis_exporter
 
-::: details Docker部署（多目标导出器模式）
+::: details Docker部署
 
 Github：[https://github.com/oliver006/redis_exporter](https://github.com/oliver006/redis_exporter)
 
@@ -896,9 +896,15 @@ Docker Hub：[https://hub.docker.com/r/oliver006/redis_exporter](https://hub.doc
                                          -p 9121:9121 \
                                          --restart=always \
                                          -d \
-                                     oliver006/redis_exporter:v1.50.0-alpine
+                                     oliver006/redis_exporter:v1.50.0-alpine \
+                                       -redis.addr="192.168.48.132" \
+                                       -redis.user="zhangsan" \
+                                       -redis.password="123456"
 
 # 测试, 检查 redis_up 是否等于 1
+[root@node-1 ~]# curl -s http://192.168.48.132:9121/metrics
+
+# 在多目标导出模式下测试不成功
 [root@node-1 ~]# curl -s http://192.168.48.132:9121/scrape?target=redis://zhangsan:123456@192.168.48.133:6379
 ```
 
@@ -907,7 +913,17 @@ Docker Hub：[https://hub.docker.com/r/oliver006/redis_exporter](https://hub.doc
 ::: details 配置Prometheus采集 redis_exporter
 
 ```bash
-
+  - job_name: 'redis_exporter'
+    static_configs:
+      - targets:
+        - "redis://192.168.48.133:6379"     # redis地址
+    relabel_configs:
+      - target_label: __param_target
+        source_labels: [__address__]
+      - target_label: instance
+        source_labels: [__param_target]
+      - target_label: __address__
+        replacement: "192.168.48.132:9121"  # redis_exporter地址
 ```
 
 :::
