@@ -3505,6 +3505,35 @@ OK
 
 :::
 
+::: details （4）修改监听地址【重要】
+
+```bash
+[root@node-1 ~]# vim /etc/redis/redis.conf
+#bind 127.0.0.1 -::1
+bind 0.0.0.0 -::1
+
+[root@node-1 ~]# docker container restart redis
+redis
+```
+
+:::
+
+::: details （5）关闭保护模式【重要】
+
+```bash
+# 说明
+# 当Redis处于保护模式下时，远程客户端无法直接连接到Redis服务器
+
+[root@node-1 ~]# vim /etc/redis/redis.conf
+#protected-mode yes
+protected-mode no
+
+[root@node-1 ~]# docker container restart redis
+redis
+```
+
+:::
+
 <br />
 
 ## 08）杂项汇总
