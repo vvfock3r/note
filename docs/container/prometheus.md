@@ -7,7 +7,7 @@ Github：[https://github.com/prometheus/prometheus/](https://github.com/promethe
 * AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
 * Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
 * Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
-* 多目标导出器模式：https://prometheus.io/docs/guides/multi-target-exporter
+* 多目标导出器模式：[https://prometheus.io/docs/guides/multi-target-exporter](https://prometheus.io/docs/guides/multi-target-exporter)
 
 <br />
 
@@ -881,7 +881,34 @@ mysql_up 1
 
 ### redis_exporter
 
+::: details Docker部署（多目标导出器模式）
+
 Github：[https://github.com/oliver006/redis_exporter](https://github.com/oliver006/redis_exporter)
+
+Docker Hub：[https://hub.docker.com/r/oliver006/redis_exporter](https://hub.docker.com/r/oliver006/redis_exporter)
+
+```bash
+# 启动容器
+# alpine版本的镜像包含sh命令,详见Github说明
+[root@localhost ~]# docker container run --name redis_exporter \
+                                         -p 9121:9121 \
+                                         --restart=always \
+                                         -d \
+                                     oliver006/redis_exporter:v1.50.0-alpine
+
+# 测试, 检查 redis_up 是否等于 1
+[root@node-1 ~]# curl -s http://192.168.48.132:9121/scrape?target=redis://zhangsan:123456@192.168.48.133:6379
+```
+
+:::
+
+::: details 配置Prometheus采集 redis_exporter
+
+```bash
+
+```
+
+:::
 
 <br />
 
