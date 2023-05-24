@@ -1,5 +1,7 @@
 # Prometheus
 
+## 文档
+
 官网：[https://prometheus.io/](https://prometheus.io/)
 
 Github：[https://github.com/prometheus/prometheus/](https://github.com/prometheus/prometheus/)
@@ -625,7 +627,7 @@ ExecStart=/usr/local/bin/node_exporter \
 
 ### blackbox_exporter
 
-::: details Docker部署
+::: details Docker部署（多目标导出器模式）
 
 Github：[https://github.com/prometheus/blackbox_exporter](https://github.com/prometheus/blackbox_exporter)
 
@@ -798,7 +800,7 @@ Server: bfe/1.0.8.18
 
 ### mysqld_exporter
 
-::: details Docker部署
+::: details Docker部署（多目标导出器模式）
 
 Github：[https://github.com/prometheus/mysqld_exporter](https://github.com/prometheus/mysqld_exporter)
 
