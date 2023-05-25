@@ -34,25 +34,22 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello Gin!\n")
+	router := gin.Default()
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"Methos": ctx.Request.Method,
+		})
 	})
+	log.Fatalln(router.Run(":80"))
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	// 也可以写做
+	//log.Fatalln(http.ListenAndServe(":80", router))
 }
 ```
 
 :::
 
-::: details （2）r.Run(addr)
+::: details （2）router.Run(addr)
 
 ```go
 func (engine *Engine) Run(addr ...string) (err error) {	// addr是可以不用传的
@@ -311,16 +308,16 @@ gin框架使用的是定制版本的[httprouter](https://github.com/julienschmid
 假设有以下路由注册信息
 
 ```go
-r := gin.Default()
+router := gin.Default()
 
-r.GET("/", func1)
-r.GET("/search/", func2)
-r.GET("/support/", func3)
-r.GET("/blog/", func4)
-r.GET("/blog/:post/", func5)
-r.GET("/about-us/", func6)
-r.GET("/about-us/team/", func7)
-r.GET("/contact/", func8)
+router.GET("/", func1)
+router.GET("/search/", func2)
+router.GET("/support/", func3)
+router.GET("/blog/", func4)
+router.GET("/blog/:post/", func5)
+router.GET("/about-us/", func6)
+router.GET("/about-us/team/", func7)
+router.GET("/contact/", func8)
 ```
 
 `Gin`为每种请求方法管理一棵单独的树，所以我们会得到一个`GET`方法对应的路由树：
@@ -932,27 +929,22 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.GET("/index", func(c *gin.Context) {
-		c.String(http.StatusOK, "Index\n")
-	})
-	r.POST("/login", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login\n")
+	router.GET("/index", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Index\n")
 	})
 
-	// Any可以支持多种方法，具体包含：GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-	r.Any("/", func(c *gin.Context) {
-		c.String(http.StatusOK, fmt.Sprintf("你的请求方法是: %s\n", c.Request.Method))
+	router.POST("/login", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Login\n")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	// Any可以支持多种方法，具体包含：GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
+	router.Any("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, fmt.Sprintf("你请求的方法是: %s\n", ctx.Request.Method))
+	})
+
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -994,23 +986,17 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	apiV1 := r.Group("/api/v1")
-	apiV1.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello Gin!")
+	apiV1 := router.Group("/api/v1")
+	apiV1.GET("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello Gin!")
 	})
-	apiV1.GET("/login", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login")
+	apiV1.GET("/login", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Login")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -1036,26 +1022,25 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	r := gin.Default()
-
-	// 注册路由: :id 是一个必选的命名参数
-	r.GET("/user/:id", func(c *gin.Context) {
-		c.String(200, "id: %s", c.Param("id"))
+	// :id 是一个必选的命名参数, 字符串类型
+	router.GET("/user/:id", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"id": ctx.Param("id")})
 	})
 
-	// 注册路由: *action 是一个可选的通配符参数
-	r.GET("/role/*action", func(c *gin.Context) {
-		c.String(200, "action: %s", c.Param("action"))
+	// :action 是一个可选的通配符, 字符串类型
+	router.GET("/role/*action", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"action": ctx.Param("action")})
 	})
 
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -1070,35 +1055,35 @@ C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/
 404 page not found
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/1
-id: 1
+{"id":"1"}
 
 C:\Users\Administrator\Desktop>curl http://127.0.0.1/user/1/
 <a href="/user/1">Moved Permanently</a>.
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/abc
-id: abc
+{"id":"abc"}
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/user/1/2
 404 page not found
 
 # *变量名 是可选的路径
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/role     
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role
 <a href="/role/">Moved Permanently</a>.
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/    
-action: /
+{"action":"/"}
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit 
-action: /edit
+{"action":"/edit"}
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/
-action: /edit/
+{"action":"/edit/"}
 
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/1
-action: /edit/1
+{"action":"/edit/1"}
 
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/1/2/3  
-action: /edit/1/2/3
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/role/edit/1/2/3
+{"action":"/edit/1/2/3"}
 ```
 
 :::
@@ -1120,33 +1105,27 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	// 开启自动重定向(返回301状态码), 默认为ture, 建议不要修改
+	//router.RedirectTrailingSlash = false
 
-	// 默认为ture,设置为False可以全局关闭自动重定向, 建议不要修改
-	//r.RedirectTrailingSlash = false
+	// 开启自动修复路径(返回301状态码), 默认为false
+	// 设置为true时, 比如/FOO和/..//Foo将会被重定向到/foo(前提是/foo存在)
+	//router.RedirectFixedPath = true
 
-	// 默认为false, 设置为true如果匹配不到将会尝试修复path
-	// 比如/FOO和/..//Foo将会被重定向到/foo(/foo存在的情况下)
-	//r.RedirectFixedPath = true
-
-	// 注册路由
-	r.GET("/index", func(c *gin.Context) {
-		c.String(http.StatusOK, "Index\n")
+	router.GET("/index", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Index\n")
 	})
-	r.GET("/login/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login\n")
+	router.GET("/login/", func(c *gin.Context) {
+		ctx.String(http.StatusOK, "Login\n")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
-输出结果
+输出结果 
 
 ```bash
 # 注册什么就访问什么，没有问题
@@ -1169,7 +1148,7 @@ C:\Users\Administrator> curl http://127.0.0.1/login -L
 Login
 
 # 查看响应头, Windows下使用 -i, Linux下使用 -I
-C:\Users\Administrator> curl http://127.0.0.1/login -i # 
+C:\Users\Administrator> curl http://127.0.0.1/login -i
 HTTP/1.1 301 Moved Permanently
 Content-Type: text/html; charset=utf-8
 Location: /login/
@@ -1198,24 +1177,39 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.GET("/index", func(c *gin.Context) {
-		// HTTP重定向（如果在Chrome等浏览器下访问地址栏会变为/login/）
-		c.Redirect(http.StatusMovedPermanently, "/login/")
+    // HTTP重定向(在Chrome等浏览器下访问地址栏会变为/login/)
+	router.GET("/index", func(ctx *gin.Context) {
+		ctx.Redirect(http.StatusMovedPermanently, "/login/")
 	})
-	r.GET("/login/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login\n")
+	router.GET("/login/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Login\n")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+![image-20230525233431563](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230525233431563.png)
+
+```bash
+C:\Users\Administrator> curl http://127.0.0.1/index
+<a href="/login/">Moved Permanently</a>.
+
+C:\Users\Administrator> curl http://127.0.0.1/index -i
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8
+Location: /login/
+Date: Thu, 25 May 2023 15:30:30 GMT
+Content-Length: 42
+
+<a href="/login/">Moved Permanently</a>.
+
+C:\Users\Administrator> curl http://127.0.0.1/index -L
+Login
 ```
 
 :::
@@ -1225,38 +1219,37 @@ func main() {
 ```go
 package main
 
-import (	
+import (
 	"log"
 	"net/http"
-    
-    "github.com/gin-gonic/gin"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.GET("/index", func(c *gin.Context) {
-		// 路由内重定向（如果在Chrome等浏览器下访问地址栏不会发生变化）
-		c.Request.URL.Path = "/login/"
-		r.HandleContext(c)
+	// 路由内重定向(如果在Chrome等浏览器下访问地址栏不会发生变化)
+	router.GET("/index", func(ctx *gin.Context) {
+		ctx.Request.URL.Path = "/login/"
+		router.HandleContext(ctx)
 	})
-	r.GET("/login/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login\n")
+	router.GET("/login/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Login\n")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ![image-20220508183700833](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220508183700833.png)
+
+```bash
+C:\Users\Administrator>curl http://127.0.0.1/index
+Login
+```
 
 :::
 
@@ -1273,30 +1266,25 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 方式1: 注册路由
-	r.GET("/index", func(c *gin.Context) {
-		c.Request.URL.Path = "/index/"
-		r.HandleContext(c)
+	// 方式一: 使用路由内重定向
+	router.GET("/index", func(ctx *gin.Context) {
+		ctx.Request.URL.Path = "/index/"
+		router.HandleContext(ctx)
 	})
-	r.GET("/index/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Index\n")
+	router.GET("/index/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Index\n")
 	})
 
-	// 方式2: 注册路由
-	loginHandler := func(c *gin.Context) {
-		c.String(http.StatusOK, "Login\n")
+	// 方式二: 注册多个路由
+	loginHandler := func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Login\n")
 	}
-	r.GET("/login", loginHandler)
-	r.GET("/login/", loginHandler)
+	router.GET("/login", loginHandler)
+	router.GET("/login/", loginHandler)
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -1354,42 +1342,75 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	r := gin.Default()
+	router.Any("/", func(ctx *gin.Context) {
+		// 说明: 一个HTTP请求由 请求行、请求头、请求体 三部分组成, 由换行符分隔
 
-	r.GET("/", func(c *gin.Context) {
-		// 查看请求行
-		fmt.Printf("%s %s %s\n", c.Request.Method, c.Request.URL.Path, c.Request.Proto)
-
-		// 查看请求头
-		for key, value := range c.Request.Header {
-			fmt.Printf("%-15s => %s\n", key, value)
+		// 1.请求行包含: 请求方法 请求路径 请求协议
+		//   比如 GET / HTTP/1.1
+		_, err := ctx.Writer.WriteString(fmt.Sprintf("%s %s %s\n",
+			ctx.Request.Method,
+			ctx.Request.URL.Path, // 也可以使用 ctx.Request.RequestURI
+			ctx.Request.Proto,
+		))
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusInternalServerError)
 		}
 
-		// 查看请求体
+		// 2.请求头, map[string][]string
+
+		// 可以直接遍历请求头然后写入响应体,但是因为Map是无序的会导致每次返回顺序都不一样
+		//for key, slice := range ctx.Request.Header {
+		//	_, err = ctx.Writer.WriteString(fmt.Sprintf("%-30s %s\n", key, slice))
+		//	if err != nil {
+		//		ctx.AbortWithStatus(http.StatusInternalServerError)
+		//	}
+		//}
+
+		// 先提取到一个切片中
+		var header []string
+		for key, slice := range ctx.Request.Header {
+			header = append(header, fmt.Sprintf("%-30s %s\n", key, slice))
+		}
+
+		// 对切片排序
+		sort.Slice(header, func(i, j int) bool {
+			return header[i] < header[j]
+		})
+
+		// 写入响应
+		for _, line := range header {
+			_, err = ctx.Writer.WriteString(line)
+			if err != nil {
+				ctx.AbortWithStatus(http.StatusInternalServerError)
+			}
+		}
+
+		// 3.请求体, 在后面会讲到
 	})
 
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop> curl http://127.0.0.1
-
-[GIN-debug] Listening and serving HTTP on 127.0.0.1:80
+C:\Users\Administrator> curl http://127.0.0.1
 GET / HTTP/1.1
-User-Agent      => [curl/8.0.1]
-Accept          => [*/*]
-[GIN] 2023/05/18 - 13:11:39 | 200 |            0s |       127.0.0.1 | GET      "/"
+Accept                         [*/*]
+User-Agent                     [curl/8.0.1]
 ```
+
+![image-20230526002147472](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230526002147472.png)
 
 :::
 
