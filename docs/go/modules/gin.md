@@ -1457,58 +1457,59 @@ Content-Type: type/subtype [; charset] [; boundary]
 
 :::
 
-::: details （2）默认的Content-Type: text/plain; charset=utf-8 和 手动设置Content-Type
+::: details （2）Gin响应默认的Content-Type: text/plain; charset=utf-8 和 手动设置Content-Type: application/json; charset=utf-8
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router.GET("/", func(ctx *gin.Context) {
+		// 获取请求的Content-Type, 有可能为空
+		contentType := ctx.GetHeader("Content-Type")
 
-	// 注册路由
-	r.GET("/", func(c *gin.Context) {
-		//c.Header("Content-Type", "application/json; charset=utf-8")
-		c.String(http.StatusOK, "Hello World!")
+		// 设置响应的Content-Type, 等于 c.Writer.Header().Set(key, value)
+		//ctx.Header("Content-Type", "application/json; charset=utf-8")
+
+		// 返回
+		ctx.String(http.StatusOK, contentType)
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
-
 ```
 
 输出结果
 
 ```bash
-# 默认的Content-Type
+# Gin String响应默认的Content-Type
 C:\Users\Administrator\Desktop> curl http://127.0.0.1/
 Hello World!
-C:\Users\Administrator\Desktop\note>curl http://127.0.0.1/ -i
+
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -i
 HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
-Date: Thu, 18 May 2023 14:21:16 GMT    
-Content-Length: 12
+Date: Fri, 26 May 2023 14:52:52 GMT
+Content-Length: 0
 
-Hello World!
+# 手动设置请求的Content-Type
+C:\Users\Administrator\Desktop>curl -H "Content-type: application/json" http://127.0.0.1
+application/json
 
-# 手动设置Content-Type
-C:\Users\Administrator\Desktop\note>curl http://127.0.0.1/ -i
+# 手动设置响应的Content-Type
+C:\Users\Administrator\Desktop>curl http://127.0.0.1 -i
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
-Date: Thu, 18 May 2023 14:22:49 GMT
-Content-Length: 12
-
-Hello World!
+Date: Fri, 26 May 2023 14:55:03 GMT
+Content-Length: 0
 ```
 
 :::
