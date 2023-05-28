@@ -1013,7 +1013,7 @@ Login
 
 <br />
 
-### 路由模式
+### 动态路由
 
 ::: details 点击查看完整代码
 
@@ -1438,7 +1438,7 @@ Content-Type: type/subtype [; charset] [; boundary]
 
 * charset：字符编码标准
 
-* 对于多部分实体，boundary 是必需的，其包括来自一组字符的1到70个字符，
+* 对于多部分实体，boundary 是必需的，其包括来自一组字符的1到70个字符， 
 
   已知通过电子邮件网关是非常健壮的，而不是以空白结尾
 
@@ -1516,9 +1516,9 @@ Content-Length: 0
 
 <br />
 
-### 返回响应
+### 内置响应
 
-::: details （1）常见和不常见的格式
+::: details （1）String响应
 
 ```go
 package main
@@ -1526,59 +1526,102 @@ package main
 import (
 	"log"
 	"net/http"
-    
-    "github.com/gin-gonic/gin"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router := gin.Default()
 
 	// String 返回纯文本响应信息
-	r.GET("/string", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello World!")
+	router.GET("/string", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello World!")
 	})
 
-	// JSON 返回JSON信息
-	r.GET("/json", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/string -i
+HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Date: Sun, 28 May 2023 09:50:11 GMT
+Content-Length: 12
+
+Hello World!
+```
+
+:::
+
+::: details （2）JSON响应
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	// 返回Json响应格式
+	router.GET("/json", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
 			"code": "200",
 			"data": "Hello World!",
 		})
 	})
 
-	// XML 返回XML信息
-	r.GET("/xml", func(c *gin.Context) {
-		c.XML(http.StatusOK, gin.H{
-			"code": "200",
-			"data": "Hello World!",
-		})
-	})
+	log.Fatalln(router.Run(":80"))
+}
+```
 
-	// Data 返回二进制数据
-	r.GET("/data", func(c *gin.Context) {
-		c.Data(http.StatusOK, "application/octet-stream", []byte("binary data"))
-	})
+输出结果
 
-	// File 返回文件, c.Query用于获取查询字符串
-	r.GET("/file", func(c *gin.Context) {
-		c.File(c.Query("name"))
-	})
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/json -i
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 28 May 2023 09:36:20 GMT
+Content-Length: 36
+
+{"code":"200","data":"Hello World!"}
+```
+
+:::
+
+::: details （3）HTML响应
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
 
 	// HTML 返回HTML信息, html模板文件必须要存在否则会报500错误
-	r.LoadHTMLGlob("templates/*.html")
-	r.GET("/html", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"Title":   "My Website",
-			"Heading": "Welcome",
+	router.LoadHTMLGlob("templates/*.html")
+	router.GET("/html", func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "index.html", gin.H{
+			"Title": "My Website",
+			"H1":    "Gin",
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -1592,89 +1635,35 @@ func main() {
 	<title>{{.Title}}</title>
 </head>
 <body>
-<h1>{{.Heading}}</h1>
+<h1>{{.H1}}</h1>
 <p>Welcome to my website!</p>
 </body>
 </html>
 
-# String
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/string           
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Date: Thu, 18 May 2023 14:47:02 GMT    
-Content-Length: 12
-
-Hello World!
-
-# JSON
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/json  
-HTTP/1.1 200 OK
-Content-Type: application/json; charset=utf-8
-Date: Thu, 18 May 2023 14:47:25 GMT
-Content-Length: 36
-
-{"code":"200","data":"Hello World!"}
-
-# XML
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/xml
-HTTP/1.1 200 OK
-Content-Type: application/xml; charset=utf-8        
-Date: Thu, 18 May 2023 14:47:55 GMT
-Content-Length: 52
-
-<map><code>200</code><data>Hello World!</data></map>
-
-# Data
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/data
-HTTP/1.1 200 OK
-Content-Type: application/octet-stream
-Date: Thu, 18 May 2023 14:48:19 GMT   
-Content-Length: 11
-
-binary data
-
-# File
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/file?name=templates/index.html
-HTTP/1.1 200 OK
-Accept-Ranges: bytes
-Content-Length: 139
-Content-Type: text/html; charset=utf-8      
-Last-Modified: Thu, 18 May 2023 14:35:49 GMT
-Date: Thu, 18 May 2023 14:49:03 GMT
-
-<!DOCTYPE html>
-<html>
-<head>
-        <title>{{.Title}}</title>
-</head>
-<body>
-<h1>{{.Heading}}</h1>
-<p>Welcome to my website!</p>
-</body>
-</html>
-
-# HTML
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/html                          
+# 使用curl测试
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/html -i
 HTTP/1.1 200 OK
 Content-Type: text/html; charset=utf-8
-Date: Thu, 18 May 2023 14:49:23 GMT   
-Content-Length: 134
+Date: Sun, 28 May 2023 09:39:33 GMT
+Content-Length: 130
 
 <!DOCTYPE html>
 <html>
 <head>
-        <title>My Website</title>     
+        <title>My Website</title>
 </head>
 <body>
-<h1>Welcome</h1>
+<h1>Gin</h1>
 <p>Welcome to my website!</p>
 </body>
 </html>
 ```
 
+![image-20230528174037503](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230528174037503.png)
+
 :::
 
-::: details （2）返回重定向
+::: details （4）XML响应
 
 ```go
 package main
@@ -1682,101 +1671,264 @@ package main
 import (
 	"log"
 	"net/http"
-    
-    "github.com/gin-gonic/gin"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// Redirect 重定向
-	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/login")
+	// XML 返回XML信息
+	router.GET("/xml", func(ctx *gin.Context) {
+		ctx.XML(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "Hello World!",
+		})
 	})
 
-	r.GET("/login", func(c *gin.Context) {
-		c.String(http.StatusOK, "Login")
-	})
-
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/    
-HTTP/1.1 301 Moved Permanently
-Content-Type: text/html; charset=utf-8 
-Location: /login
-Date: Thu, 18 May 2023 14:51:27 GMT    
-Content-Length: 41
-
-<a href="/login">Moved Permanently</a>.
-
-
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/ -L
-HTTP/1.1 301 Moved Permanently
-Content-Type: text/html; charset=utf-8 
-Location: /login
-Date: Thu, 18 May 2023 14:51:32 GMT    
-Content-Length: 41
-
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/xml -i
 HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Date: Thu, 18 May 2023 14:51:32 GMT    
-Content-Length: 5
+Content-Type: application/xml; charset=utf-8
+Date: Sun, 28 May 2023 09:48:48 GMT
+Content-Length: 52
 
-Login
+<map><code>200</code><data>Hello World!</data></map>
 ```
 
 :::
 
-::: details （3）返回特定的 HTTP 状态码
+::: details （5）File响应，ContentType：text/plain
 
 ```go
 package main
 
-import (	
+import (
 	"log"
-	"net/http"
-    
-    "github.com/gin-gonic/gin"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 返回特定状态码
-	r.GET("/", func(c *gin.Context) {
-		//c.AbortWithStatus(http.StatusNotFound)
-		c.AbortWithStatus(http.StatusInternalServerError)
+	// File 返回文件, c.Query用于获取查询字符串
+	router.GET("/file", func(ctx *gin.Context) {
+		ctx.File(c.Query("name"))
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/
-HTTP/1.1 500 Internal Server Error 
-Date: Thu, 18 May 2023 14:53:50 GMT
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/file?name=main.go -i
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 269
+Content-Type: text/plain; charset=utf-8              # 注意这里
+Last-Modified: Sun, 28 May 2023 09:41:38 GMT
+Date: Sun, 28 May 2023 09:42:01 GMT
+
+package main
+
+import (
+        "log"
+
+        "github.com/gin-gonic/gin"
+)
+
+func main() {
+        router := gin.Default()
+
+        // File 返回文件, c.Query用于获取查询字符串
+        router.GET("/file", func(c *gin.Context) {
+                c.File(c.Query("name"))
+        })
+
+        log.Fatalln(router.Run(":80"))
+}
+```
+
+![image-20230528174352321](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230528174352321.png)
+
+:::
+
+::: details （6）Data响应，返回二进制数据，通过手动指定ContentType可解析为任意类型的数据：模拟 JSON
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	// Data 返回二进制数据
+	router.GET("/json", func(ctx *gin.Context) {
+		data := gin.H{
+			"status":  200,
+			"message": "Hello, World!",
+		}
+
+		jsonData, err := json.MarshalIndent(data, "", " ")
+		if err != nil {
+			ctx.Abort()
+		}
+
+		ctx.Data(http.StatusOK, "application/json", jsonData)
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/json -i
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Sun, 28 May 2023 10:00:20 GMT
+Content-Length: 47
+
+{
+ "message": "Hello, World!",
+ "status": 200
+}
+```
+
+:::
+
+<br />
+
+### 中断响应
+
+::: details （1）直接中断响应，返回响应码是200，并且没有ContentType
+
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+	
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.Abort()
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -i
+HTTP/1.1 200 OK
+Date: Sun, 28 May 2023 10:03:03 GMT
 Content-Length: 0
 ```
 
 :::
+
+::: details （2）使用指定响应码中断响应，并且没有ContentType
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -i
+HTTP/1.1 500 Internal Server Error
+Date: Sun, 28 May 2023 10:04:41 GMT
+Content-Length: 0
+```
+
+:::
+
+::: details （3）使用【指定响应码】和【JSON格式】中断响应
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"code":    11000,
+			"message": "InternalServerError",
+		})
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -i
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json; charset=utf-8
+Date: Sun, 28 May 2023 10:06:41 GMT
+Content-Length: 46
+
+{"code":11000,"message":"InternalServerError"}
+```
+
+:::
+
+<br />
+
+### 流式响应
 
 <br />
 
