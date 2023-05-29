@@ -71,14 +71,14 @@ Launch method															# 启动方式
 	Launch agent via SSH												# 2.使用Jenkins通过SSH连接代理的方式
 	
 Availability															# 可用性, 控制 Jenkins 何时启动和停止此代理
-	Keep this agent online as much as possible							# 1.
-	Bring this agent online according to a schedule						# 2.
-	Bring this agent online when in demand, and take offline when idle	# 3.
+	Keep this agent online as much as possible							# 1.尽可能让这个代理在线
+	Bring this agent online according to a schedule						# 2.根据时间表使此代理在线
+	Bring this agent online when in demand, and take offline when idle	# 3.需要时让此代理上线，空闲时下线
 	
 Node Properties															# Node属性
-	Disable deferred wipeout on this node								# 1.
+	Disable deferred wipeout on this node								# 1.在此节点上禁用延迟擦除
 	Environment variables												# 2.可添加环境变量
-	Tool Locations														# 3.
+	Tool Locations														# 3.工具位置
 ```
 
 
