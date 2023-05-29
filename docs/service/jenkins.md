@@ -28,10 +28,15 @@ Docker Hub：[https://hub.docker.com/r/jenkins/jenkins](https://hub.docker.com/r
     --restart=always \
   jenkins/jenkins:2.387.3-lts
 
-# 查看初始密码
+# 查看初始密码: 方法1
 [root@localhost ~]# docker container logs jenkins
 
+# 查看初始密码: 方法2
+[root@localhost ~]# cat /var/lib/jenkins_home/secrets/initialAdminPassword 
+b1766bfdbc5848ae8e9b00a8258207a9
+
 # 浏览器访问: http://192.168.8.130:8080
+# 建议不要安装中文插件
 ```
 
 :::
