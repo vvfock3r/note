@@ -2137,6 +2137,36 @@ sys     0m11.046s
 
 <br />
 
+### printf
+
+::: details （1）/etc/passwd 格式化输出
+
+```bash
+#!/bin/bash
+
+printf "%-15s %-10s %-10s %-10s %-30s %-23s %s\n" "用户名" "密码占位符" "UID" "GID" "描述信息" "家目录" "登录Shell"
+
+cat /etc/passwd | while read line
+do
+  field1=`echo "${line}" | awk -F: '{print $1}'`
+  field2=`echo "${line}" | awk -F: '{print $2}'`
+  field3=`echo "${line}" | awk -F: '{print $3}'`
+  field4=`echo "${line}" | awk -F: '{print $4}'`
+  field5=`echo "${line}" | awk -F: '{print $5}'`
+  field6=`echo "${line}" | awk -F: '{print $6}'`
+  field7=`echo "${line}" | awk -F: '{print $7}'`
+  printf "%-15s %-8s %-10s %-9s %-26s %-20s %s\n" "${field1}" "${field2}" "${field3}" "${field4}" "${field5}" "${field6}" "${field7}"
+done
+```
+
+输出结果
+
+![image-20230529235458595](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230529235458595.png)
+
+:::
+
+<br />
+
 ### yq
 
 **jq**
