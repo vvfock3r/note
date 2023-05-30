@@ -153,3 +153,11 @@ docker container run --name jenkins_node_centos7 \
 ```
 
 :::
+
+::: details （3）使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
+
+```bash
+
+```
+
+:::
