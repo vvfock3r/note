@@ -100,29 +100,42 @@ wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm
 curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
 echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
 
+# 编写启动脚本 entrypoint.sh
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+
+java -jar agent.jar \
+     -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-centos7/jenkins-agent.jnlp \
+     -secret @secret.txt \
+     -workDir /data/jenkins
+
 # ------------------------------------------------------------------------
 # 编写Dockerfile, 根据实际情况调整
 FROM centos:7
 
+# 系统更新
+RUN yum -y install epel-release && yum -y update
+
 # 设置环境
 WORKDIR /data
-ENV JNLP_URL="http://jenkins-host:port"
+ENV JNLP_URL=http://jenkins-host:port
 
-# 系统更新和安装软件包
-RUN yum -y install epel-release && \
-    yum -y update && \
-    yum -y install curl wget telnet python3 go && \
+# 复制文件
+COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
+
+# 安装软件包
+RUN yum -y install curl wget telnet python3 go && \
     yum -y install jdk-17_linux-x64_bin.rpm && \
+    chmod 755 entrypoint.sh && \
     yum clean all
 
 # 设置JAVA_HOME
-ENV JAVA_HOME="/path/to/jdk"
+ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
+ENV PATH=$PATH:$JAVA_HOME/bin
 
-# 复制文件
-COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm ./
-
-ENTRYPOINT ["java"]
-CMD ["-jar", "agent.jar", "-jnlpUrl", "$JNLP_URL/manage/computer/docker-build-centos7/jenkins-agent.jnlp", "-secret", "@secret.txt", "-workDir", "/data/jenkins"]
+ENTRYPOINT ["/data/entrypoint.sh"]
 
 # ------------------------------------------------------------------------
 
