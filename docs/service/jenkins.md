@@ -4,6 +4,8 @@
 
 Github：[https://github.com/jenkinsci/jenkins](https://github.com/jenkinsci/jenkins)
 
+Java版本要求：[https://www.jenkins.io/doc/administration/requirements/java](https://www.jenkins.io/doc/administration/requirements/java)
+
 <br />
 
 ## 安装
@@ -45,7 +47,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 ## 节点管理
 
-::: details 添加节点
+::: details （1）添加节点
 
 ![image-20230530071842289](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230530071842289.png)
 
@@ -81,6 +83,60 @@ Node Properties															# Node属性
 	Tool Locations														# 3.工具位置
 ```
 
+![image-20230530224505687](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230530224505687.png)
 
+:::
+
+::: details （2）使用自定义镜像部署Jenkins Node节点：CentOS 7版
+
+```bash
+# 创建一个目录, 用于存放所有文件
+mkdir jenkins-node-centos7 && cd jenkins-node-centos7
+
+# 下载JDK 17
+wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm
+
+# 根据Jenkins Node页面的信息下载Jenkins jar 和 生成密钥文件
+curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
+echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
+
+# ------------------------------------------------------------------------
+# 编写Dockerfile, 根据实际情况调整
+FROM centos:7
+
+# 设置环境
+WORKDIR /data
+ENV JNLP_URL="http://jenkins-host:port"
+
+# 系统更新和安装软件包
+RUN yum -y install epel-release && \
+    yum -y update && \
+    yum -y install curl wget telnet python3 go && \
+    yum -y install jdk-17_linux-x64_bin.rpm && \
+    yum clean all
+
+# 设置JAVA_HOME
+ENV JAVA_HOME="/path/to/jdk"
+
+# 复制文件
+COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm ./
+
+ENTRYPOINT ["java"]
+CMD ["-jar", "agent.jar", "-jnlpUrl", "$JNLP_URL/manage/computer/docker-build-centos7/jenkins-agent.jnlp", "-secret", "@secret.txt", "-workDir", "/data/jenkins"]
+
+# ------------------------------------------------------------------------
+
+# 构建镜像
+docker image build -t jenkins-node-centos7:v1 .
+
+# 运行容器
+docker container run --name jenkins_node_centos7 \
+    -e JNLP_URL="http://192.168.48.132:8080" \
+    --cpus=2 \
+    --memory=4g \
+    --restart=always \
+    -d \
+  jenkins-node-centos7:v1
+```
 
 :::
