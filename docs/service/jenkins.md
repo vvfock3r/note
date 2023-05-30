@@ -126,7 +126,8 @@ ENV JNLP_URL=http://jenkins-host:port
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
 
 # 安装软件包
-RUN yum -y install curl wget telnet python3 go && \
+RUN yum -y install curl wget telnet && \
+    yum -y install nodejs python3 go && \
     yum -y install jdk-17_linux-x64_bin.rpm && \
     chmod 755 entrypoint.sh && \
     yum clean all
@@ -140,7 +141,7 @@ ENTRYPOINT ["/data/entrypoint.sh"]
 # ------------------------------------------------------------------------
 
 # 构建镜像
-docker image build -t jenkins-node-centos7:v1 .
+docker image build -t jenkins-node-centos7:v1.0.0 .
 
 # 运行容器
 docker container run --name jenkins_node_centos7 \
@@ -149,7 +150,7 @@ docker container run --name jenkins_node_centos7 \
     --memory=4g \
     --restart=always \
     -d \
-  jenkins-node-centos7:v1
+  jenkins-node-centos7:v1.0.0
 ```
 
 :::
