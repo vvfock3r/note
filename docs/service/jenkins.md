@@ -193,8 +193,9 @@ RUN apt update && apt -y upgrade
 
 # 设置环境
 WORKDIR /data
-ENV JNLP_URL=http://jenkins-host:port
+ENV TZ=Asia/Shanghai
 ENV LC_ALL=en_US.UTF-8
+ENV JNLP_URL=http://jenkins-host:port
 
 # 复制文件
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
@@ -203,8 +204,9 @@ COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
 RUN apt install -y curl wget telnet vim && \
     apt install -y nodejs python3 golang && \
     apt install -y locales && locale-gen en_US.UTF-8 && \
-    apt install -y tzdata && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb && \    
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo $TZ > /etc/timezone && \
+    apt install -y tzdata && \
+    apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb && \
     chmod 755 entrypoint.sh && \
     ln -sf /usr/bin/bash /usr/bin/sh && \
     apt clean
