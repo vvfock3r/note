@@ -6,6 +6,8 @@ Github：[https://github.com/jenkinsci/jenkins](https://github.com/jenkinsci/jen
 
 Java版本要求：[https://www.jenkins.io/doc/administration/requirements/java](https://www.jenkins.io/doc/administration/requirements/java)
 
+JDK下载地址：[https://www.oracle.com/java/technologies/downloads/](https://www.oracle.com/java/technologies/downloads/)
+
 <br />
 
 ## 安装
@@ -46,6 +48,8 @@ b1766bfdbc5848ae8e9b00a8258207a9
 <br />
 
 ## 节点管理
+
+### 添加节点
 
 ::: details （1）添加节点
 
@@ -91,16 +95,16 @@ Node Properties															# Node属性
 
 ```bash
 # 创建一个目录, 用于存放所有文件
-mkdir jenkins-node-centos7 && cd jenkins-node-centos7
+mkdir jenkins_node_centos7 && cd jenkins_node_centos7
 
 # 下载JDK 17
 wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm
 
-# 根据Jenkins Node页面的信息下载Jenkins jar 和 生成密钥文件
+# 【根据实际情况调整】下载Jenkins Agent Jar 和 生成密钥文件
 curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
 echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
 
-# 编写启动脚本 entrypoint.sh
+# 【根据实际情况调整】编写启动脚本 entrypoint.sh
 #!/usr/bin/env bash
 set -o nounset
 set -o errexit
@@ -110,9 +114,10 @@ java -jar agent.jar \
      -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-centos7/jenkins-agent.jnlp \
      -secret @secret.txt \
      -workDir /data/jenkins
+```
 
-# ------------------------------------------------------------------------
-# 编写Dockerfile, 根据实际情况调整
+```bash
+# 【根据实际情况调整】编写 Dockerfile
 FROM centos:7
 
 # 系统更新
@@ -126,9 +131,9 @@ ENV JNLP_URL=http://jenkins-host:port
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
 
 # 安装软件包
-RUN yum -y install curl wget telnet && \
-    yum -y install nodejs python3 go && \
-    yum -y install jdk-17_linux-x64_bin.rpm && \
+RUN yum install -y curl wget telnet vim && \
+    yum install -y nodejs python3 go && \
+    yum install -y jdk-17_linux-x64_bin.rpm && \
     chmod 755 entrypoint.sh && \
     yum clean all
 
@@ -137,9 +142,9 @@ ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
 ENV PATH=$PATH:$JAVA_HOME/bin
 
 ENTRYPOINT ["/data/entrypoint.sh"]
+```
 
-# ------------------------------------------------------------------------
-
+```bash
 # 构建镜像
 docker image build -t jenkins-node-centos7:v1.0.0 .
 
@@ -158,7 +163,71 @@ docker container run --name jenkins_node_centos7 \
 ::: details （3）使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
 
 ```bash
+# 创建一个目录, 用于存放所有文件
+mkdir jenkins_node_ubuntu2204 && cd jenkins_node_ubuntu2204
 
+# 下载JDK 17
+wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.deb
+
+# 【根据实际情况调整】下载Jenkins Agent Jar 和 生成密钥文件
+curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
+echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
+
+# 【根据实际情况调整】编写启动脚本 entrypoint.sh
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+
+java -jar agent.jar \
+     -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-ubuntu2204/jenkins-agent.jnlp \
+     -secret @secret.txt \
+     -workDir /data/jenkins
+     
+# ------------------------------------------------------------------------
+# 【根据实际情况调整】编写 Dockerfile
+FROM ubuntu:22.04
+
+# 系统更新
+RUN apt update && apt -y upgrade
+
+# 设置环境
+WORKDIR /data
+ENV JNLP_URL=http://jenkins-host:port
+ENV LC_ALL=en_US.UTF-8
+
+# 复制文件
+COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
+
+# 安装软件包
+RUN apt install -y curl wget telnet vim && \
+    apt install -y nodejs python3 golang && \
+    apt install -y locales && locale-gen en_US.UTF-8 && \
+    apt install -y tzdata && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb && \    
+    chmod 755 entrypoint.sh && \
+    ln -sf /usr/bin/bash /usr/bin/sh && \
+    apt clean
+
+# 设置JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/jdk-17
+ENV PATH=$PATH:$JAVA_HOME/bin
+
+ENTRYPOINT ["/data/entrypoint.sh"]
+
+# ------------------------------------------------------------------------
+
+# 构建镜像
+docker image build -t jenkins-node-ubuntu2204:v1.0.0 .
+
+# 运行容器
+docker container run --name jenkins_node_centos7 \
+    -e JNLP_URL="http://192.168.48.132:8080" \
+    --cpus=2 \
+    --memory=4g \
+    --restart=always \
+    -d \
+  jenkins-node-centos7:v1.0.0
 ```
 
 :::
