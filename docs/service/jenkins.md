@@ -51,7 +51,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 ### 添加节点
 
-::: details （1）添加节点
+::: details （1）在 Jenkins 上添加节点
 
 ![image-20230530071842289](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230530071842289.png)
 
@@ -130,12 +130,14 @@ ENV JNLP_URL=http://jenkins-host:port
 # 复制文件
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
 
+# 安装JDK
+RUN yum install -y jdk-17_linux-x64_bin.rpm
+
 # 安装软件包
 RUN yum install -y curl wget telnet vim && \
-    yum install -y nodejs python3 go && \
-    yum install -y jdk-17_linux-x64_bin.rpm && \
-    chmod 755 entrypoint.sh && \
-    yum clean all
+    yum install -y nodejs python3 go && \    
+    yum clean all && \
+    chmod 755 entrypoint.sh
 
 # 设置JAVA_HOME
 ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
@@ -164,7 +166,7 @@ docker container run --name jenkins_node_centos7 \
 
 ```bash
 # 创建一个目录, 用于存放所有文件
-mkdir jenkins_node_ubuntu2204 && cd jenkins_node_ubuntu2204
+mkdir jenkins_node_ubuntu22 && cd jenkins_node_ubuntu22
 
 # 下载JDK 17
 wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.deb
@@ -180,56 +182,70 @@ set -o errexit
 set -o pipefail
 
 java -jar agent.jar \
-     -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-ubuntu2204/jenkins-agent.jnlp \
+     -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-ubuntu22/jenkins-agent.jnlp \
      -secret @secret.txt \
      -workDir /data/jenkins
-     
-# ------------------------------------------------------------------------
+```
+
+```bash
 # 【根据实际情况调整】编写 Dockerfile
 FROM ubuntu:22.04
 
 # 系统更新
 RUN apt update && apt -y upgrade
 
-# 设置环境
+# 工作目录
 WORKDIR /data
-ENV TZ=Asia/Shanghai
-ENV LC_ALL=en_US.UTF-8
-ENV JNLP_URL=http://jenkins-host:port
+
+# 设置语言和小时制, 部分可选值:
+#   en_GB.UTF-8 语言为英文, 时间是24小时制
+#   en_US.UTF-8 语言为英文, 时间是12小时制
+#   zh_CN.UTF-8 语言为中文, 时间是24小时制
+# 两方面进行测试
+#   date 命令查看结果是小时制是否正确
+#   toush 中文.txt 是否可以正常创建
+ENV LC_ALL=en_GB.UTF-8
+
+# 设置Jenkins地址
+ENV JNLP_URL=http://jenkins-host:port 
 
 # 复制文件
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
 
+# 安装JDK
+RUN apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb
+
+# 设置语言和时区及24小时制时间
+RUN apt install -y locales && locale-gen $LC_ALL && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone && \
+    apt install -y tzdata
+
 # 安装软件包
 RUN apt install -y curl wget telnet vim && \
     apt install -y nodejs python3 golang && \
-    apt install -y locales && locale-gen en_US.UTF-8 && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo $TZ > /etc/timezone && \
-    apt install -y tzdata && \
-    apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb && \
-    chmod 755 entrypoint.sh && \
+    apt clean && \
     ln -sf /usr/bin/bash /usr/bin/sh && \
-    apt clean
+    chmod 755 entrypoint.sh
 
 # 设置JAVA_HOME
 ENV JAVA_HOME=/usr/lib/jvm/jdk-17
 ENV PATH=$PATH:$JAVA_HOME/bin
 
 ENTRYPOINT ["/data/entrypoint.sh"]
+```
 
-# ------------------------------------------------------------------------
-
+```bash
 # 构建镜像
-docker image build -t jenkins-node-ubuntu2204:v1.0.0 .
+docker image build -t jenkins-node-ubuntu22:v1.0.0 .
 
 # 运行容器
-docker container run --name jenkins_node_centos7 \
+docker container run --name jenkins_node_ubuntu22 \
     -e JNLP_URL="http://192.168.48.132:8080" \
     --cpus=2 \
     --memory=4g \
     --restart=always \
     -d \
-  jenkins-node-centos7:v1.0.0
+  jenkins-node-ubuntu22:v1.0.0
 ```
 
 :::
