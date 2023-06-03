@@ -54,6 +54,12 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 <br />
 
+**系统插件**
+
+* **[locale](https://plugins.jenkins.io/locale)**：语言设置，可在 **系统配置** 中手动配置默认语言，推荐 `en`，
+
+  ​                可以解决即使不安装中文插件，还是有极小部分是中文字体的问题
+
 **节点插件**
 
 * **[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**：提供通过 SSH 启动代理的方法
@@ -61,8 +67,9 @@ b1766bfdbc5848ae8e9b00a8258207a9
 **构建插件**
 
 * **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
-* **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
+* **[Pipeline: Stage View](https://plugins.jenkins.io/pipeline-stage-view)**：Pipeline 可视化界面
 * **[Blue Ocean](https://plugins.jenkins.io/blueocean)**：Pipeline 可视化界面
+* **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
 
 <br />
 
