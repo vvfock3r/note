@@ -342,10 +342,11 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 
 ```bash
 Do not allow concurrent builds										# 不允许并发构建
-	Abort previous builds											# 触发新构建前终止当前正在执行的构建
+	Abort previous builds											# 勾选则代表触发新构建前终止当前正在执行的构建, 默认会进行等待
 																	# 分析: 
-																	# 默认情况下允许并发构建, 最大的并发由节点的参数进行控制
-																	# 当达到最大并发数后, 构建将会等待
+																	# 1.默认情况下允许并发构建, 最大的并发由节点的参数进行控制
+																	#   当达到最大并发数后, 构建将会等待
+																	# 2.此选项则不允许进行并发构建
 																	
 Do not allow the pipeline to resume if the controller restarts		# Jenkins重启后不允许继续执行构建
                                                                     # 分析: 
@@ -354,6 +355,10 @@ Do not allow the pipeline to resume if the controller restarts		# Jenkins重启�
                                                                     # 2.此选项则不允许继续执行,而是直接终止Pipeline
                                                                     #   不会重新触发构建, 就是简单的终止
 
+Pipeline speed/durability override									# 运行Pipeline时的默认持久性模式, 这里不研究
+Preserve stashes from completed builds								# 新Pipeline可以使用旧Pipeline的数据? 这里不研究
+This project is parameterized										# 参数化构建, UI比较丑
+Throttle builds														# 这里不研究
 ```
 
 编写Pipeline script
@@ -395,22 +400,13 @@ pipeline {
 
 :::
 
-::: details （3）Pipeline 插件：Multi-configuration project（构建一个多配置项目）
-
-:::
-
-::: details （4）Pipeline 插件：Organization Folder
-
-:::
-
-::: details （5）Pipeline 插件：Multibranch Pipeline（多分支流水线）
-
-:::
-
-::: details （6）Pipeline 插件：Folder（文件夹）
+::: details （3）Pipeline 插件：Folder（文件夹）
 
 创建一个或多个文件夹，对Pipeline进行分类管理
 
 :::
 
 <br />
+
+## Pipeline
+
