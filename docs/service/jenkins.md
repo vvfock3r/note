@@ -67,7 +67,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 * **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
 * **[Pipeline: Stage View](https://plugins.jenkins.io/pipeline-stage-view)**：Pipeline 可视化界面
 * **[Blue Ocean](https://plugins.jenkins.io/blueocean)**：Pipeline 可视化界面
-* **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
+* **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式，对于Shell脚本需要手动勾选添加时间戳选项
 
 <br />
 
@@ -286,14 +286,6 @@ docker container run --name jenkins_node_ubuntu22 \
 ```
 
 :::
-
-<br />
-
-## 源码管理
-
-<br />
-
-## 凭据管理
 
 <br />
 
