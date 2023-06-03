@@ -280,7 +280,7 @@ docker container run --name jenkins_node_ubuntu22 \
 
 :::
 
-::: details （4）Launch agent via SSH（SSH连接方式）：需要安装 SSH Build Agents 插件
+::: details （3）Launch agent via SSH（SSH连接方式）：需要安装 SSH Build Agents 插件
 
 ```bash
 # 在添加节点时指定主机、登录凭证等信息
