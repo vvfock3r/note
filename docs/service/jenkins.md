@@ -61,7 +61,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 **构建插件**
 
 * **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
-* **[Timestamper](https://plugins.jenkins.io/timestamper)**：在构建控制台输出中添加时间戳，可手动配置时间显示格式
+* **[Timestamper](https://plugins.jenkins.io/timestamper)**：在 Pipeline 流水线构建控制台输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
 
 <br />
 
@@ -323,3 +323,37 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 :::
 
 <br />
+
+::: details （2）Pipeline Script：需要 Pipeline 插件
+
+```groovy
+pipeline {
+    agent any
+    
+    stages {
+        stage('准备') {
+            steps {
+                echo '正在准备构建环境'
+            }
+        }
+        
+        stage('构建') {
+            steps {
+                echo '正在执行编译操作'
+            }
+        }
+        
+        stage('部署') {
+            steps {
+                echo '正在部署构建产物'
+            }
+        }
+    }
+}
+```
+
+输出结果
+
+![image-20230603152302489](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230603152302489.png)
+
+:::
