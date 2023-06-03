@@ -366,21 +366,21 @@ pipeline {
 
 :::
 
-::: details （3）Pipeline 插件：文件夹
+::: details （3）Pipeline 插件：Multi-configuration project（构建一个多配置项目）
+
+:::
+
+::: details （4）Pipeline 插件：Organization Folder
+
+:::
+
+::: details （5）Pipeline 插件：Multibranch Pipeline（多分支流水线）
+
+:::
+
+::: details （6）Pipeline 插件：Folder（文件夹）
 
 创建一个或多个文件夹，对Pipeline进行分类管理
-
-:::
-
-::: details （4）Pipeline 插件：构建一个多配置项目
-
-:::
-
-::: details （5）Pipeline 插件：Organization Folder
-
-:::
-
-::: details （6）Pipeline 插件：多分支流水线
 
 :::
 
