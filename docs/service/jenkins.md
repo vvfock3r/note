@@ -10,7 +10,7 @@ JDK下载地址：[https://www.oracle.com/java/technologies/downloads/](https://
 
 <br />
 
-## 安装
+## 部署
 
 ::: details Docker部署
 
@@ -36,22 +36,43 @@ Docker Hub：[https://hub.docker.com/r/jenkins/jenkins](https://hub.docker.com/r
 [root@localhost ~]# docker container logs jenkins
 
 # 查看初始密码: 方法2
-[root@localhost ~]# cat /var/lib/jenkins_home/secrets/initialAdminPassword 
+[root@localhost ~]# cat /var/lib/jenkins_home/secrets/initialAdminPassword
 b1766bfdbc5848ae8e9b00a8258207a9
 
 # 浏览器访问: http://192.168.8.130:8080
-# 建议不要安装中文插件
+
+# 这里选择不安装任何插件, 且不创建用户, 使用默认的admin用户
 ```
 
 :::
 
 <br />
 
+## 插件管理
+
+说明：安装插件时会自动安装依赖插件，所以安装一个插件时实际上有可能会安装几个甚至十几个插件
+
+### 节点插件
+
+**[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**
+
+提供通过 SSH 启动代理的方法
+
+<br />
+
+### 构建插件
+
+
+
+<br />
+
 ## 节点管理
+
+### 节点说明
 
 ### 添加节点
 
-::: details （1）在 Jenkins 上添加节点
+::: details 点击查看详情
 
 ![image-20230530071842289](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230530071842289.png)
 
@@ -91,7 +112,11 @@ Node Properties															# Node属性
 
 :::
 
-::: details （2）使用自定义镜像部署Jenkins Node节点：CentOS 7版
+<br />
+
+### 启动节点
+
+::: details （1）默认连接方式：使用自定义镜像部署Jenkins Node节点：CentOS 7版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -162,7 +187,7 @@ docker container run --name jenkins_node_centos7 \
 
 :::
 
-::: details （3）使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
+::: details （2）默认连接方式：使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -249,3 +274,51 @@ docker container run --name jenkins_node_ubuntu22 \
 ```
 
 :::
+
+::: details （4）SSH连接方式
+
+```bash
+# Node节点同样需要安装Java环境, 不再赘述
+```
+
+:::
+
+<br />
+
+## 任务管理
+
+::: details （1）自由风格项目
+
+![image-20230602221554047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230602221554047.png)
+
+参数说明
+
+```bash
+General 									# 通用部分
+Discard old builds							# 丢弃旧的构建, 可以按日期保留, 也可以按次数保留，两者可以同时使用, 任意一个达到要求后便会删除
+This project is parameterized				# 参数化构建
+Execute concurrent builds if necessary		# 允许并发构建, 默认情况下，一次只执行一个项目的单个构建
+Restrict where this project can be run		# 指定在特定Node或一组Node上运行构建
+
+
+Source Code Management 						# 源码管理, 需要安装对应的插件才能使用
+
+Build Triggers 								# 构建触发器		
+Trigger builds remotely (e.g., from scripts)# 远程触发构建
+Build after other projects are built		# 在构建其他项目后构建
+Build periodically							# 定期构建, 类似于Linux Crontab
+Poll SCM									# 轮询SCM依次来确定是否要触发构建
+
+Build Steps									# 构建步骤
+Execute Windows batch command				# 执行Windows批处理脚本 .bat
+Execute shell								# 执行Linux Shell脚本
+Invoke top-level Maven targets				# 执行顶层Maven目标
+
+Post-build Actions							# 构建后操作
+Archive the artifacts						# 归档文件
+Build other projects						# 执行其他构建
+Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用情况
+```
+
+:::
+
