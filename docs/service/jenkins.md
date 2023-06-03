@@ -52,29 +52,23 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 说明：安装插件时会自动安装依赖插件，所以安装一个插件时实际上有可能会安装几个甚至十几个插件
 
-### 节点插件
-
-**[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**
-
-提供通过 SSH 启动代理的方法
-
 <br />
 
-### 构建插件
+**节点插件**
 
+* **[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**：提供通过 SSH 启动代理的方法
 
+**构建插件**
+
+* 
 
 <br />
 
 ## 节点管理
 
-### 节点说明
-
 ### 添加节点
 
-::: details 点击查看详情
-
-![image-20230530071842289](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230530071842289.png)
+::: details 在Jenkins上添加一个节点
 
 ```bash
 # 基本配置
@@ -95,7 +89,7 @@ Usage																	# 用法
 
 Launch method															# 启动方式
 	Launch agent by connecting it to the controller 					# 1.使用代理连接Jenkins方式
-	Launch agent via SSH												# 2.使用Jenkins通过SSH连接代理的方式
+	Launch agent via SSH												# 2.Jenkins通过SSH连接代理的方式, 需要安装SSH Build Agents插件
 	
 Availability															# 可用性, 控制 Jenkins 何时启动和停止此代理
 	Keep this agent online as much as possible							# 1.尽可能让这个代理在线
@@ -112,11 +106,7 @@ Node Properties															# Node属性
 
 :::
 
-<br />
-
-### 启动节点
-
-::: details （1）默认连接方式：使用自定义镜像部署Jenkins Node节点：CentOS 7版
+::: details （1）默认连接方式（Launch agent by connecting it to the controller）：使用自定义镜像部署Jenkins Node节点：CentOS 7版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -187,7 +177,7 @@ docker container run --name jenkins_node_centos7 \
 
 :::
 
-::: details （2）默认连接方式：使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
+::: details （2）默认连接方式（Launch agent by connecting it to the controller）：使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -275,10 +265,11 @@ docker container run --name jenkins_node_ubuntu22 \
 
 :::
 
-::: details （4）SSH连接方式
+::: details （4）SSH连接方式（Launch agent via SSH），需要安装 SSH Build Agents 插件
 
 ```bash
-# Node节点同样需要安装Java环境, 不再赘述
+# 在添加节点时指定主机、登录凭证等信息
+# 在Node节点同样需要安装Java环境即可
 ```
 
 :::
