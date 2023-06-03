@@ -58,6 +58,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 **系统插件**
 
+* **[Instance Identity](https://plugins.jenkins.io/instance-identity)**：代理程序（Agent）连接到 Jenkins 服务器时的一种用于验证和确保通信安全性的机制，一般情况下默认已安装
 * **[locale](https://plugins.jenkins.io/locale)**：语言设置，可在 **系统配置** 中手动配置默认语言，推荐 `en`，可以解决即使不安装中文插件，还是有极小部分是中文字体的问题
 
 **节点插件**
