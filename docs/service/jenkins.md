@@ -66,6 +66,12 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 ## 节点管理
 
+### 内置节点
+
+对于内置节点，可以将 Number of executors 设置为0，以防止任务在Jenkins本地运行
+
+<br />
+
 ### 添加节点
 
 ::: details 在Jenkins上添加一个节点
@@ -106,7 +112,7 @@ Node Properties															# Node属性
 
 :::
 
-::: details （1）默认连接方式（Launch agent by connecting it to the controller）：使用自定义镜像部署Jenkins Node节点：CentOS 7版
+::: details （1）Launch agent by connecting it to the controller（默认连接方式）：使用自定义镜像部署Jenkins Node节点：CentOS 7版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -177,7 +183,7 @@ docker container run --name jenkins_node_centos7 \
 
 :::
 
-::: details （2）默认连接方式（Launch agent by connecting it to the controller）：使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
+::: details （2）Launch agent by connecting it to the controller（默认连接方式）：使用自定义镜像部署Jenkins Node节点：Ubuntu 22.04版
 
 ```bash
 # 创建一个目录, 用于存放所有文件
@@ -265,7 +271,7 @@ docker container run --name jenkins_node_ubuntu22 \
 
 :::
 
-::: details （4）SSH连接方式（Launch agent via SSH），需要安装 SSH Build Agents 插件
+::: details （4）Launch agent via SSH（SSH连接方式）：需要安装 SSH Build Agents 插件
 
 ```bash
 # 在添加节点时指定主机、登录凭证等信息
@@ -278,7 +284,9 @@ docker container run --name jenkins_node_ubuntu22 \
 
 ## 任务管理
 
-::: details （1）自由风格项目
+### 任务类型
+
+::: details （1）自由风格项目：默认支持
 
 ![image-20230602221554047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230602221554047.png)
 
@@ -313,3 +321,4 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 
 :::
 
+<br />
