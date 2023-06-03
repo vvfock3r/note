@@ -10,7 +10,9 @@ JDK下载地址：[https://www.oracle.com/java/technologies/downloads/](https://
 
 <br />
 
-## 部署
+## 基本配置
+
+### 服务部署
 
 ::: details Docker部署
 
@@ -20,17 +22,19 @@ Docker Hub：[https://hub.docker.com/r/jenkins/jenkins](https://hub.docker.com/r
 
 ```bash
 # 创建Jenkins家目录
-[root@localhost ~]#  mkdir -p /var/lib/jenkins_home
-[root@localhost ~]#  chown -R 1000:1000 /var/lib/jenkins_home
+[root@localhost ~]# mkdir -p /var/lib/jenkins_home
+[root@localhost ~]# chown -R 1000:1000 /var/lib/jenkins_home
 
 # 启动容器
-[root@localhost ~]#  docker container run --name jenkins \
+[root@localhost ~]# docker container run --name jenkins \
     -p 8080:8080 \
     -p 50000:50000 \
     -v /var/lib/jenkins_home:/var/jenkins_home \
     -d \
     --restart=always \
   jenkins/jenkins:2.387.3-lts
+
+# 浏览器访问: http://192.168.8.130:8080
 
 # 查看初始密码: 方法1
 [root@localhost ~]# docker container logs jenkins
@@ -39,16 +43,14 @@ Docker Hub：[https://hub.docker.com/r/jenkins/jenkins](https://hub.docker.com/r
 [root@localhost ~]# cat /var/lib/jenkins_home/secrets/initialAdminPassword
 b1766bfdbc5848ae8e9b00a8258207a9
 
-# 浏览器访问: http://192.168.8.130:8080
-
-# 这里选择不安装任何插件, 且不创建用户, 使用默认的admin用户
+# 插件可根据实际情况安装, 这里不创建用户, 使用默认的admin用户
 ```
 
 :::
 
 <br />
 
-## 插件管理
+### 推荐插件
 
 说明：安装插件时会自动安装依赖插件，所以安装一个插件时实际上有可能会安装几个甚至十几个插件
 
@@ -66,8 +68,15 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 * **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
 * **[Pipeline: Stage View](https://plugins.jenkins.io/pipeline-stage-view)**：Pipeline 可视化界面
-* **[Blue Ocean](https://plugins.jenkins.io/blueocean)**：Pipeline 可视化界面
 * **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式，对于Shell脚本需要手动勾选添加时间戳选项
+
+**源码管理**
+
+* **[Git](https://plugins.jenkins.io/git)**
+
+**认证插件**
+
+* **[LDAP](https://plugins.jenkins.io/ldap)**
 
 <br />
 
