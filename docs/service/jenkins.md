@@ -12,7 +12,7 @@ JDK下载地址：[https://www.oracle.com/java/technologies/downloads/](https://
 
 ## 基本配置
 
-### 服务部署
+### 部署服务
 
 ::: details Docker部署
 
@@ -137,9 +137,8 @@ mkdir jenkins_node_centos7 && cd jenkins_node_centos7
 # 下载JDK 17
 wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm
 
-# 【根据实际情况调整】下载Jenkins Agent Jar 和 生成密钥文件
+# 【根据实际情况调整】下载Jenkins Agent Jar
 curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
-echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
 
 # 【根据实际情况调整】编写启动脚本 entrypoint.sh
 #!/usr/bin/env bash
@@ -149,7 +148,7 @@ set -o pipefail
 
 java -jar agent.jar \
      -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-centos7/jenkins-agent.jnlp \
-     -secret @secret.txt \
+     -secret ${JNLP_SECRET} \
      -workDir /data/jenkins
 ```
 
@@ -163,6 +162,7 @@ RUN yum -y install epel-release && yum -y update
 # 设置环境
 WORKDIR /data
 ENV JNLP_URL=http://jenkins-host:port
+ENV JNLP_SECRET=secret
 
 # 复制文件
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
@@ -190,8 +190,9 @@ docker image build -t jenkins-node-centos7:v1.0.0 .
 # 运行容器
 docker container run --name jenkins_node_centos7 \
     -e JNLP_URL="http://192.168.48.132:8080" \
-    --cpus=2 \
-    --memory=4g \
+    -e JNLP_SECRET="b6ac03c5bb7c2738c08a5cd71143b9d5ce776a58a45fb4454edfe822e43f0303" \
+    --cpus=1 \
+    --memory=2g \
     --restart=always \
     -d \
   jenkins-node-centos7:v1.0.0
@@ -210,7 +211,6 @@ wget -c https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.deb
 
 # 【根据实际情况调整】下载Jenkins Agent Jar 和 生成密钥文件
 curl -sO http://192.168.48.132:8080/jnlpJars/agent.jar
-echo 32573065198c8cb2b05395514e99149021307d24c51099f757d51834613f2227 > secret.txt
 
 # 【根据实际情况调整】编写启动脚本 entrypoint.sh
 #!/usr/bin/env bash
@@ -220,7 +220,7 @@ set -o pipefail
 
 java -jar agent.jar \
      -jnlpUrl ${JNLP_URL}/manage/computer/docker-build-ubuntu22/jenkins-agent.jnlp \
-     -secret @secret.txt \
+     -secret ${JNLP_SECRET} \
      -workDir /data/jenkins
 ```
 
@@ -245,6 +245,7 @@ ENV LC_ALL=en_GB.UTF-8
 
 # 设置Jenkins地址
 ENV JNLP_URL=http://jenkins-host:port 
+ENV JNLP_SECRET=secret
 
 # 复制文件
 COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
@@ -278,8 +279,9 @@ docker image build -t jenkins-node-ubuntu22:v1.0.0 .
 # 运行容器
 docker container run --name jenkins_node_ubuntu22 \
     -e JNLP_URL="http://192.168.48.132:8080" \
-    --cpus=2 \
-    --memory=4g \
+    -e JNLP_SECRET="b6ac03c5bb7c2738c08a5cd71143b9d5ce776a58a45fb4454edfe822e43f0303" \
+    --cpus=1 \
+    --memory=2g \
     --restart=always \
     -d \
   jenkins-node-ubuntu22:v1.0.0
@@ -336,7 +338,7 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 
 :::
 
-::: details （2）Pipeline 插件：Pipeline
+::: details （2）Pipeline 插件：Pipeline 流水线
 
 参数说明
 
@@ -359,6 +361,10 @@ Pipeline speed/durability override									# 运行Pipeline时的默认持久性
 Preserve stashes from completed builds								# 新Pipeline可以使用旧Pipeline的数据? 这里不研究
 This project is parameterized										# 参数化构建, UI比较丑
 Throttle builds														# 这里不研究
+
+Advanced Project Options											# 高级项目选项
+	Display Name													# 显示名称, 这里只会修改显示名称, 比较好用, 
+																	# 而如果直接修改项目名作为显示名称的话,那么可以看到浏览器中的URL也会修改
 ```
 
 编写Pipeline script
@@ -396,7 +402,9 @@ pipeline {
 
 输出结果
 
+![image-20230603221747673](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230603221747673.png)
 
+![image-20230603221834012](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230603221834012.png)
 
 :::
 
@@ -409,4 +417,143 @@ pipeline {
 <br />
 
 ## Pipeline
+
+### 两种格式
+
+::: details （1）Scripted Pipeline：脚本式流水线
+
+```groovy
+node('docker-build-centos7') {
+    stage("准备") {
+        echo "正在准备构建环境"
+        sh "sleep 10"
+    }
+    
+    stage("构建") {
+        echo "正在执行编译操作"
+        sh "sleep 10"
+    }
+    
+    stage("部署") {
+        echo "正在部署构建产物"
+        sh "sleep 10"
+    }
+}
+```
+
+:::
+
+::: details （2）Declarative Pipeline：声明式流水线，后面都以此方式为主
+
+```groovy
+pipeline {
+    // agent 部分指定运行在哪个Node上
+    // agent any：表示流水线可以在任意可用的节点上执行
+    // agent none：表示流水线不在任何节点上执行
+    // agent { label 'label_name' }：表示流水线将在具有指定标签的节点上执行
+    agent {
+        label 'docker-build-centos7'
+    }
+    
+    // stages 是一组 stage 的集合
+    // 每个stage定义了流水线中的一个阶段，可以包含一个或多个步骤（steps）
+    // 每个步骤表示流水线中的一个单独任务，如构建代码、运行测试、部署应用等
+    stages {
+        stage("准备") {
+            steps {                
+                echo "正在准备构建环境"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+                sh "sleep 10"
+            }
+        }
+    }
+}
+```
+
+:::
+
+<br />
+
+### 运行目标
+
+::: details （1）同一条流水线中指定不同的stage运行在不同的Node上
+
+```groovy
+pipeline {
+    agent none
+    
+    stages {
+        stage("准备") {
+            agent {
+                label 'docker-build-centos7'
+            }
+            steps {
+                echo "在 docker-build-centos7 节点上执行准备步骤"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("构建") {
+            agent {
+                label 'docker-build-ubuntu22'
+            }
+            steps {
+                echo "在 docker-build-ubuntu22 节点上执行构建步骤"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("部署") {
+            agent any
+            steps {
+                echo "在任意节点上执行部署步骤"
+                sh "sleep 10"
+            }
+        }
+    }
+}
+```
+
+:::
+
+::: details （2）在执行时动态启动一个容器作为Node执行，执行完成后销毁容器释放资源
+
+:::
+
+<br />
+
+### 环境变量
+
+<br />
+
+### 使用参数
+
+静态参数
+
+动态参数
+
+<br />
+
+### 暂停确认
+
+<br />
+
+### 触发方式
+
+<br />
+
+## 认证和鉴权
 
