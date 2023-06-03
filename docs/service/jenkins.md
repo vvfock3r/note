@@ -315,7 +315,6 @@ This project is parameterized				# 参数化构建
 Execute concurrent builds if necessary		# 允许并发构建, 默认情况下，一次只执行一个项目的单个构建
 Restrict where this project can be run		# 指定在特定Node或一组Node上运行构建
 
-
 Source Code Management 						# 源码管理, 需要安装对应的插件才能使用
 
 Build Triggers 								# 构建触发器		
@@ -339,26 +338,51 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 
 ::: details （2）Pipeline 插件：Pipeline
 
+参数说明
+
+```bash
+Do not allow concurrent builds										# 不允许并发构建
+	Abort previous builds											# 触发新构建前终止当前正在执行的构建
+																	# 分析: 
+																	# 默认情况下允许并发构建, 最大的并发由节点的参数进行控制
+																	# 当达到最大并发数后, 构建将会等待
+																	
+Do not allow the pipeline to resume if the controller restarts		# Jenkins重启后不允许继续执行构建
+                                                                    # 分析: 
+                                                                    # 1.如果在构建过程中Jenkins重启了或关闭了, 等Jenkins启动好之后
+                                                                    #   Pipeline会继续向后执行, 这可能会存在一些问题, 这里不研究
+                                                                    # 2.此选项则不允许继续执行,而是直接终止Pipeline
+                                                                    #   不会重新触发构建, 就是简单的终止
+
+```
+
+编写Pipeline script
+
 ```groovy
 pipeline {
-    agent any
+    agent {
+        label 'docker-build-centos7'
+    }
     
     stages {
-        stage('准备') {
-            steps {
-                echo '正在准备构建环境'
+        stage("准备") {
+            steps {                
+                echo "正在准备构建环境"
+                sh "sleep 10"
             }
         }
         
-        stage('构建') {
+        stage("构建") {
             steps {
-                echo '正在执行编译操作'
+                echo "正在执行编译操作"
+                sh "sleep 10"
             }
         }
         
-        stage('部署') {
+        stage("部署") {
             steps {
-                echo '正在部署构建产物'
+                echo "正在部署构建产物"
+                sh "sleep 10"
             }
         }
     }
@@ -367,7 +391,7 @@ pipeline {
 
 输出结果
 
-![image-20230603152302489](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230603152302489.png)
+
 
 :::
 
