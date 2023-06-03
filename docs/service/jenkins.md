@@ -280,7 +280,7 @@ docker image build -t jenkins-node-ubuntu22:v1.0.0 .
 # 运行容器
 docker container run --name jenkins_node_ubuntu22 \
     -e JNLP_URL="http://192.168.48.132:8080" \
-    -e JNLP_SECRET="b6ac03c5bb7c2738c08a5cd71143b9d5ce776a58a45fb4454edfe822e43f0303" \
+    -e JNLP_SECRET="ff4b322611adc9bd316649442296642ce006e843bd8540cc6dc060229a41188c" \
     --cpus=1 \
     --memory=2g \
     --restart=always \
