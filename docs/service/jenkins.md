@@ -61,7 +61,8 @@ b1766bfdbc5848ae8e9b00a8258207a9
 **构建插件**
 
 * **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
-* **[Timestamper](https://plugins.jenkins.io/timestamper)**：在 Pipeline 流水线构建控制台输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
+* **[Timestamper](https://plugins.jenkins.io/timestamper)**：Pipeline 日志输出中添加时间戳，可在 **系统配置** 中手动配置时间格式
+* **[Blue Ocean](https://plugins.jenkins.io/blueocean)**：Pipeline 可视化界面
 
 <br />
 
