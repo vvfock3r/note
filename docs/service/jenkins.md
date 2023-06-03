@@ -60,7 +60,8 @@ b1766bfdbc5848ae8e9b00a8258207a9
 
 **构建插件**
 
-* 
+* **[Pipeline](https://plugins.jenkins.io/workflow-aggregator)**
+* **[Timestamper](https://plugins.jenkins.io/timestamper)**：在构建控制台输出中添加时间戳，可手动配置时间显示格式
 
 <br />
 
