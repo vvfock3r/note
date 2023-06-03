@@ -288,7 +288,7 @@ docker container run --name jenkins_node_ubuntu22 \
 
 ### 任务类型
 
-::: details （1）自由风格项目：默认支持
+::: details （1）默认支持：Freestyle project（自由风格项目）
 
 ![image-20230602221554047](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230602221554047.png)
 
@@ -325,7 +325,7 @@ Record fingerprints of files to track usage	# 记录文件指纹以跟踪使用�
 
 <br />
 
-::: details （2）Pipeline Script：需要 Pipeline 插件
+::: details （2）Pipeline 插件：Pipeline
 
 ```groovy
 pipeline {
@@ -358,3 +358,22 @@ pipeline {
 ![image-20230603152302489](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230603152302489.png)
 
 :::
+
+::: details （3）Pipeline 插件：文件夹
+
+创建一个或多个文件夹，对Pipeline进行分类管理
+
+:::
+
+::: details （4）Pipeline 插件：构建一个多配置项目
+
+:::
+
+::: details （5）Pipeline 插件：Organization Folder
+
+:::
+
+::: details （6）Pipeline 插件：多分支流水线
+
+:::
+
