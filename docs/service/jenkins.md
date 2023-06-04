@@ -588,6 +588,21 @@ pipeline {
         }
     }
 }
+
+// 其他变量, 未验证
+
+// env.BUILD_NUMBER：表示当前构建的编号，即构建在当前作业中的顺序编号
+// env.BUILD_URL：表示当前构建的 URL，即当前构建的可访问链接
+// env.JOB_NAME：表示当前作业（Job）的名称，即当前 Pipeline 所属的作业名称
+// env.CHANGE_ID：表示当前构建所对应的变更集 ID。如果构建是由某个源代码变更触发的，这个变量将包含变更集的唯一标识符
+
+// 用于判断整个 Pipeline 是否成功完成
+// 	currentBuild.result：表示当前构建的整体结果，即整个 Pipeline 的执行结果。它返回一个字符串，可能的值包括 SUCCESS、FAILURE、ABORTED 等
+// 	env.BUILD_STATUS：表示当前构建的状态，即整个 Pipeline 的执行状态。它返回一个字符串，可能的值包括 SUCCESS、FAILURE、ABORTED 等
+
+// 用于判断当前阶段是否成功完成
+// 	currentBuild.currentResult：表示当前阶段的结果，即当前正在执行的阶段的结果。它返回一个字符串，可能的值包括 SUCCESS、FAILURE、ABORTED 等
+// 	env.STAGE_STATUS：表示当前阶段的状态，即当前正在执行的阶段的状态。它返回一个字符串，可能的值包括 SUCCESS、FAILURE、ABORTED 等
 ```
 
 :::
