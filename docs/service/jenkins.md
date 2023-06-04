@@ -64,6 +64,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 **节点插件**
 
 * **[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**：提供通过 SSH 启动代理的方法
+* **[Docker Pipeline](https://plugins.jenkins.io/docker-workflow)**：在Node上启动一个Docker容器来执行Pipeline构建
 
 **构建插件**
 
@@ -419,7 +420,13 @@ pipeline {
 
 ## Pipeline
 
-### 两种格式
+文档：[https://www.jenkins.io/doc/book/pipeline](https://www.jenkins.io/doc/book/pipeline)
+
+<br />
+
+### 基础概念
+
+**两种书写格式**
 
 ::: details （1）Scripted Pipeline：脚本式流水线
 
@@ -447,18 +454,21 @@ node('docker-build-centos7') {
 ::: details （2）Declarative Pipeline：声明式流水线，后面都以此方式为主
 
 ```groovy
+// agent 部分指定运行在哪个Node上
+// agent any：表示流水线可以在任意可用的节点上执行
+// agent none：表示流水线不在任何节点上执行
+// agent { label 'label_name' }：表示流水线将在具有指定标签的节点上执行
+
+// stages 是一组 stage 的集合
+// 每个stage定义了流水线中的一个阶段，可以包含一个或多个步骤（steps）
+// 每个步骤表示流水线中的一个单独任务，如构建代码、运行测试、部署应用等
+
 pipeline {
-    // agent 部分指定运行在哪个Node上
-    // agent any：表示流水线可以在任意可用的节点上执行
-    // agent none：表示流水线不在任何节点上执行
-    // agent { label 'label_name' }：表示流水线将在具有指定标签的节点上执行
     agent {
         label 'docker-build-centos7'
     }
     
-    // stages 是一组 stage 的集合
-    // 每个stage定义了流水线中的一个阶段，可以包含一个或多个步骤（steps）
-    // 每个步骤表示流水线中的一个单独任务，如构建代码、运行测试、部署应用等
+
     stages {
         stage("准备") {
             steps {                
@@ -485,6 +495,21 @@ pipeline {
 ```
 
 :::
+
+<br />
+
+**Pipeline状态**
+
+* **Not Built**（未构建）：Pipeline 尚未开始执行，或者在构建队列中等待执行
+* **Running**（运行中）：Pipeline 正在执行中，尚未完成
+* **Success**（成功）：Pipeline 执行成功，所有的阶段和步骤都成功完成
+* **Unstable**（不稳定）：Pipeline 执行完成，但某些阶段或步骤出现了警告或部分失败。这可能意味着某些功能有问题，但整体上仍然可用
+* **Failure**（失败）：Pipeline 执行完成，其中一个或多个阶段或步骤失败。这表示 Pipeline 的执行出现了错误或问题
+* **Aborted**（已中止）：Pipeline 在执行过程中被用户中止，没有完成所有阶段和步骤
+
+<br />
+
+### 执行脚本
 
 <br />
 
@@ -537,9 +562,43 @@ pipeline {
 
 <br />
 
-### 环境变量
+### 变量相关
 
-::: details 点击查看详情
+文档：http://192.168.48.132:8080/job/pipeline/pipeline-syntax/globals
+
+::: details （1）内置变量有很多，简单列举几个
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage("准备") {
+            steps {                
+                echo "BUILD_ID:           ${BUILD_ID}"
+                echo "BUILD_DISPLAY_NAME: ${BUILD_DISPLAY_NAME}"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+                sh "sleep 10"
+            }
+        }
+    }
+}
+```
+
+:::
+
+::: details （2）自定义全局变量和局部变量
 
 ```groovy
 pipeline {
@@ -639,6 +698,39 @@ Finished: SUCCESS
 <br />
 
 ### 暂停确认
+
+文档：[https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step](https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step)
+
+::: details （1）暂停Pipeline执行，并确认是否继续执行还是 Abort后终止整个流水线
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage("准备") {
+            steps {
+	            echo "正在准备构建环境"
+            }
+        }
+        stage('确认更新?') {
+            steps {
+                input(message: "长长长长长文字, 请确认是否更新?", ok: '确认')                
+            }
+        }
+        stage('后续步骤') {
+            steps {
+                echo '后续步骤'
+            }
+        }
+    }
+}
+```
+
+输出结果
+
+![image-20230604195829583](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230604195829583.png)
+
+:::
 
 <br />
 
