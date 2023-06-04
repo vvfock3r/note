@@ -494,6 +494,7 @@ pipeline {
 
 ```groovy
 pipeline {
+    // 如果全局设置了agent none, 并且某个stage没有设置agent, 则pipeline会报错
     agent none
     
     stages {
@@ -503,7 +504,7 @@ pipeline {
             }
             steps {
                 echo "在 docker-build-centos7 节点上执行准备步骤"
-                sh "sleep 10"
+                sh "touch /tmp/1"
             }
         }
         
@@ -513,7 +514,7 @@ pipeline {
             }
             steps {
                 echo "在 docker-build-ubuntu22 节点上执行构建步骤"
-                sh "sleep 10"
+                sh "touch /tmp/2"
             }
         }
         
@@ -537,6 +538,95 @@ pipeline {
 <br />
 
 ### 环境变量
+
+::: details 点击查看详情
+
+```groovy
+pipeline {
+    agent any
+    environment {
+        // 设置全局变量
+        Service = "global"
+    }
+    stages {
+        stage("直接访问全局变量") {
+            steps {
+                // 访问全局变量
+                echo "Service: ${Service}"
+            }
+        }
+        stage("局部变量覆盖全局变量") {
+            steps {
+                script {
+                    // 设置局部变量
+                    def localService = "local"
+                    // 覆盖全局变量
+                    Service = localService
+                    // 访问局部变量
+                    echo "Service (Local): ${localService}"
+                }
+                // 访问全局变量（被局部变量覆盖）
+                echo "Service (Global): ${Service}"
+            }
+        }
+        stage("再次访问全局变量") {
+            steps {
+                // 访问全局变量
+                echo "Service: ${Service}"
+            }
+        }
+    }
+}
+```
+
+输出结果
+
+```bash
+Started by user admin
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on docker-build-centos7 in /data/jenkins/workspace/pipeline
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (直接访问全局变量)
+[Pipeline] echo
+Service: global
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (局部变量覆盖全局变量)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+Service (Local): local
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] echo
+Service (Global): local
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (再次访问全局变量)
+[Pipeline] echo
+Service: local
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
+
+# 分析
+# 1.可以定义全局变量和局部变量
+# 2.局部变量只能在script中定义和访问(其他情况下未测试)
+# 3.局部变量可以覆盖全局变量
+```
+
+:::
 
 <br />
 
