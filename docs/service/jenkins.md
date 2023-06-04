@@ -422,13 +422,13 @@ pipeline {
 
 文档：[https://www.jenkins.io/doc/book/pipeline](https://www.jenkins.io/doc/book/pipeline)
 
+语法：[https://www.jenkins.io/doc/book/pipeline/syntax](https://www.jenkins.io/doc/book/pipeline/syntax)
+
 <br />
 
-### 基础概念
+### 基础示例
 
-**两种书写格式**
-
-::: details （1）Scripted Pipeline：脚本式流水线
+::: details （1）Scripted Pipeline：脚本式流水线，已经不推荐使用
 
 ```groovy
 node('docker-build-centos7') {
@@ -498,65 +498,59 @@ pipeline {
 
 <br />
 
-**Pipeline状态**
+### 后置条件
 
-* **Not Built**（未构建）：Pipeline 尚未开始执行，或者在构建队列中等待执行
-* **Running**（运行中）：Pipeline 正在执行中，尚未完成
-* **Success**（成功）：Pipeline 执行成功，所有的阶段和步骤都成功完成
-* **Unstable**（不稳定）：Pipeline 执行完成，但某些阶段或步骤出现了警告或部分失败。这可能意味着某些功能有问题，但整体上仍然可用
-* **Failure**（失败）：Pipeline 执行完成，其中一个或多个阶段或步骤失败。这表示 Pipeline 的执行出现了错误或问题
-* **Aborted**（已中止）：Pipeline 在执行过程中被用户中止，没有完成所有阶段和步骤
+::: details 点击查看详情
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('这里会报错') {
+            steps {
+                sh "abc"
+            }
+        }
+    }
+    post { 
+        always { 
+            echo '这里总会运行'
+        }
+    }
+}
+
+// 字段解释
+// 	post		代表后置条件,
+// 	always 		无论Pipeline状态如何，始终都会运行
+
+// 其他常用状态
+//  success		成功状态下执行
+//	failure     失败状态下执行
+// 	aborted     中止状态下执行
+```
+
+:::
 
 <br />
 
 ### 执行脚本
 
-<br />
-
-### 运行目标
-
-::: details （1）同一条流水线中指定不同的stage运行在不同的Node上
+::: details （1）使用sh来执行简单的Shell命令，并获取输出
 
 ```groovy
 pipeline {
-    // 如果全局设置了agent none, 并且某个stage没有设置agent, 则pipeline会报错
-    agent none
-    
+    agent any
+
     stages {
         stage("准备") {
-            agent {
-                label 'docker-build-centos7'
-            }
-            steps {
-                echo "在 docker-build-centos7 节点上执行准备步骤"
-                sh "touch /tmp/1"
-            }
-        }
-        
-        stage("构建") {
-            agent {
-                label 'docker-build-ubuntu22'
-            }
-            steps {
-                echo "在 docker-build-ubuntu22 节点上执行构建步骤"
-                sh "touch /tmp/2"
-            }
-        }
-        
-        stage("部署") {
-            agent any
-            steps {
-                echo "在任意节点上执行部署步骤"
-                sh "sleep 10"
+            steps {                
+                def dateString = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
+                println "Node Date: ${dateString}"
             }
         }
     }
 }
 ```
-
-:::
-
-::: details （2）在执行时动态启动一个容器作为Node执行，执行完成后销毁容器释放资源
 
 :::
 
@@ -684,6 +678,55 @@ Finished: SUCCESS
 # 2.局部变量只能在script中定义和访问(其他情况下未测试)
 # 3.局部变量可以覆盖全局变量
 ```
+
+:::
+
+<br />
+
+### 运行目标
+
+::: details （1）同一条流水线中指定不同的stage运行在不同的Node上
+
+```groovy
+pipeline {
+    // 如果全局设置了agent none, 并且某个stage没有设置agent, 则pipeline会报错
+    agent none
+    
+    stages {
+        stage("准备") {
+            agent {
+                label 'docker-build-centos7'
+            }
+            steps {
+                echo "在 docker-build-centos7 节点上执行准备步骤"
+                sh "touch /tmp/1"
+            }
+        }
+        
+        stage("构建") {
+            agent {
+                label 'docker-build-ubuntu22'
+            }
+            steps {
+                echo "在 docker-build-ubuntu22 节点上执行构建步骤"
+                sh "touch /tmp/2"
+            }
+        }
+        
+        stage("部署") {
+            agent any
+            steps {
+                echo "在任意节点上执行部署步骤"
+                sh "sleep 10"
+            }
+        }
+    }
+}
+```
+
+:::
+
+::: details （2）在执行时动态启动一个容器作为Node执行，执行完成后销毁容器释放资源
 
 :::
 
