@@ -569,6 +569,10 @@ pipeline {
 
 :::
 
+::: details （2）使用script
+
+:::
+
 <br />
 
 ### 变量操作
