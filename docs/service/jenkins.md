@@ -499,6 +499,8 @@ pipeline {
 
 ### 后置条件
 
+文档：[https://www.jenkins.io/doc/book/pipeline/syntax/#post](https://www.jenkins.io/doc/book/pipeline/syntax/#post)
+
 ::: details 点击查看详情
 
 ```groovy
@@ -534,7 +536,7 @@ pipeline {
 
 ### 执行脚本
 
-::: details （1）使用sh来执行简单的Shell命令，并获取输出
+::: details （1）使用sh来执行简单的Shell命令
 
 ```groovy
 pipeline {
@@ -543,8 +545,22 @@ pipeline {
     stages {
         stage("准备") {
             steps {                
-                def dateString = sh(returnStdout: true, script: 'date "+%Y-%m-%d %H:%M:%S"')
-                println "Node Date: ${dateString}"
+                echo "正在准备构建环境"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+                sh "sleep 10"
             }
         }
     }
@@ -555,7 +571,7 @@ pipeline {
 
 <br />
 
-### 变量相关
+### 变量操作
 
 文档：http://192.168.48.132:8080/job/pipeline/pipeline-syntax/globals
 
