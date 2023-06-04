@@ -467,7 +467,6 @@ pipeline {
     agent {
         label 'docker-build-centos7'
     }
-    
 
     stages {
         stage("准备") {
