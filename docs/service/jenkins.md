@@ -511,7 +511,7 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '5'))
         // 禁止并发构建
 		disableConcurrentBuilds(abortPrevious: true)
-        // 设置pipeline超时时间为1小时
+        // 设置pipeline超时时间为1小时, 如果指定1分钟则修改单位为 MINUTES
         timeout(time: 1, unit: 'HOURS')
     }
 
