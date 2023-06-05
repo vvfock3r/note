@@ -64,7 +64,7 @@ b1766bfdbc5848ae8e9b00a8258207a9
 **节点插件**
 
 * **[SSH Build Agents](https://plugins.jenkins.io/ssh-slaves)**：提供通过 SSH 启动代理的方法
-* **[Docker Pipeline](https://plugins.jenkins.io/docker-workflow)**：在Node上启动一个Docker容器来执行Pipeline构建
+* **[Docker Pipeline](https://plugins.jenkins.io/docker-workflow)**：在Node上启动一个Docker容器来执行Pipeline构建（未深入研究）
 
 **构建插件**
 
@@ -569,7 +569,87 @@ pipeline {
 
 :::
 
-::: details （2）使用script
+::: details （2）获取sh的输出结果并赋值给全局变量
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage("准备") {
+			steps {
+                echo "正在准备构建环境"
+                // 使用script模块包裹
+                script {
+                    def date = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
+                    echo "${date}"
+                    env.buildDate = "${date}"
+                }
+			}
+        }
+        stage("构建") {
+			steps {
+                echo "正在执行编译操作"
+                echo "${env.buildDate}"
+			}
+        }
+    }
+}
+```
+
+输出结果
+
+```bash
+Started by user admin
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on docker-build-centos7 in /data/jenkins/workspace/pipeline
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (准备)
+[Pipeline] echo
+正在准备构建环境
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ date '+%Y-%m-%d %H:%M:%S'
+[Pipeline] echo
+2023-06-05 14:27:25
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (构建)
+[Pipeline] echo
+正在执行编译操作
+[Pipeline] echo
+2023-06-05 14:27:25
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
+```
+
+:::
+
+::: details （3）script{} 说明
+
+在Jenkins Pipeline中，`script{}`块是一种用于执行Groovy脚本的特殊块。它具有以下作用：
+
+**执行任意Groovy代码**
+
+`script{}`块允许您在Jenkins Pipeline中执行任意的Groovy代码。这使您可以使用丰富的Groovy语言特性和API，实现更复杂的逻辑和功能。
+
+**使用变量和函数**
+
+在`script{}`块内部，您可以使用Pipeline中定义的变量、函数和环境变量。这使您能够在脚本中引用和操作Pipeline中的数据。
+
+**访问Jenkins内部对象和方法**
+
+通过`script{}`块，您可以访问Jenkins的内部对象和方法，如构建日志、构建环境变量、构建触发原因等。这为您提供了更高级的控制和集成能力。
 
 :::
 
