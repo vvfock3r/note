@@ -497,6 +497,53 @@ pipeline {
 
 <br />
 
+### 可选选项
+
+文档：[https://www.jenkins.io/doc/book/pipeline/syntax/#options](https://www.jenkins.io/doc/book/pipeline/syntax/#options)
+
+::: details 点击查看详情
+
+```groovy
+pipeline {
+    agent any
+    options {
+        // 丢弃旧的构建, 只保留最近的5个构建
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+        // 禁止并发构建
+		disableConcurrentBuilds(abortPrevious: true)
+        // 设置pipeline超时时间为1小时
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    stages {
+        stage("准备") {
+            steps {                
+                echo "正在准备构建环境"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"
+                sh "sleep 10"
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+                sh "sleep 10"
+            }
+        }
+    }
+}
+```
+
+:::
+
+<br />
+
 ### 后置条件
 
 文档：[https://www.jenkins.io/doc/book/pipeline/syntax/#post](https://www.jenkins.io/doc/book/pipeline/syntax/#post)
