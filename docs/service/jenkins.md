@@ -895,9 +895,130 @@ pipeline {
 
 ### 使用参数
 
-静态参数
+文档：[https://www.jenkins.io/doc/book/pipeline/syntax/#parameters](https://www.jenkins.io/doc/book/pipeline/syntax/#parameters)
 
-动态参数
+::: details （1）基础类型参数：布尔、字符串、选择框
+
+```groovy
+pipeline {
+    agent any
+    // 定义参数
+    parameters {
+        string(name: 'ENVIRONMENT', defaultValue: 'dev', description: 'Deployment environment')
+        booleanParam(name: 'ENABLE_DEBUG', defaultValue: false, description: 'Enable debug mode')
+        choice(name: 'DATABASE', choices: ['mysql', 'postgresql', 'mongodb'], description: 'Select database type')
+    }
+    
+    stages {
+        stage("准备") {
+            steps {                
+                echo "Environment: ${params.ENVIRONMENT}"
+                echo "Debug mode enabled: ${params.ENABLE_DEBUG}"
+                echo "Database type: ${params.DATABASE}"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"                
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+            }
+        }
+    }
+}
+```
+
+输出结果
+
+![image-20230606215845525](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230606215845525.png)
+
+```bash
+Started by user admin
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on docker-build-centos7 in /data/jenkins/workspace/pipeline
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (准备)
+[Pipeline] echo
+Environment: pro
+[Pipeline] echo
+Debug mode enabled: true
+[Pipeline] echo
+Database type: mongodb
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (构建)
+[Pipeline] echo
+正在执行编译操作
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (部署)
+[Pipeline] echo
+正在部署构建产物
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
+```
+
+:::
+
+::: details （2）
+
+```groovy
+pipeline {
+    agent any
+    // 动态生成参数
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'prod'], description: 'Deployment environment')
+
+        script {
+            if (params.ENVIRONMENT == 'qa') {
+                string(name: 'QA_SERVER', defaultValue: '', description: 'QA server URL')
+            } else if (params.ENVIRONMENT == 'prod') {
+                string(name: 'PROD_SERVER', defaultValue: '', description: 'Production server URL')
+                booleanParam(name: 'ENABLE_CACHE', defaultValue: true, description: 'Enable caching')
+            }
+        }
+    }
+    
+    stages {
+        stage("准备") {
+            steps {                
+                echo "Environment: ${params.ENVIRONMENT}"
+                echo "Debug mode enabled: ${params.ENABLE_DEBUG}"
+                echo "Database type: ${params.DATABASE}"
+            }
+        }
+        
+        stage("构建") {
+            steps {
+                echo "正在执行编译操作"                
+            }
+        }
+        
+        stage("部署") {
+            steps {
+                echo "正在部署构建产物"
+            }
+        }
+    }
+}
+```
+
+
+
+:::
 
 <br />
 
