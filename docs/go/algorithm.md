@@ -41,13 +41,16 @@ func GenerateRandomPassword(length int) (string, error) {
 		special   = "!@#$%^&*()_+{}[]|:<>?"
 	)
 
-	// 所有数据源组成一个切片,以备后用,这里其实可以玩出很多花样
+	// 所有数据源组成一个切片,以备后用
 	sourceSlice := []string{number, lowercase, uppercase, special}
 
 	// 合并所有数据源,字符串拼接使用strings.Join也是为了提高性能
 	chars := strings.Join(sourceSlice, "")
 
-	// 定义密码,后面要填充字符,所以不能直接定义为不可变的字符串
+	// 定义密码
+    // 这里虽然可以直接定义为 []string, 但并不推荐
+    // 因为后面取随机字符的时候取出来的是byte类型,还要转换到string
+    // 不如直接定义为byte, 在函数返回的时候做一次转换即可
 	password := make([]byte, length)
 
 	// 至少包含一位 数字、小写字母、大写字母、特殊符号
