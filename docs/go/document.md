@@ -669,6 +669,26 @@ replace github.com/vvfock3r/test v1.1.2 => github.com/vvfock3r/test v1.1.1		# re
 
 <br />
 
+### 设置私有模块
+
+::: details （1）GOPRIVATE 说明
+
+`GOPRIVATE` 是一个环境变量，它用于指定一组私有模块的列表，这些模块不属于公共代码库，无法通过普通的方式访问和下载
+
+
+
+```bash
+# 默认 GOPRIVATE 为空
+C:\Users\Administrator>go env GOPRIVATE
+
+# 一般设置为私有仓库的项目地址
+export GOPRIVATE=gitlab.com/PRIVATE_REPO1,gitlab.com/PRIVATE_REPO2,gitlab.com/PRIVATE_REPO3
+```
+
+:::
+
+<br />
+
 ### Go命令文档
 
 ::: details （1）查看顶层帮助文档： go 或 go -h 或 go --help
