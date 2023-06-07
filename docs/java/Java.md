@@ -1,30 +1,32 @@
 # Java核心语法
 
-## 一、环境搭建（Windows）
+## 一、基础
+
+### 环境搭建
 
 JDK下载：[https://www.oracle.com/java/technologies/downloads/](https://www.oracle.com/java/technologies/downloads/)
 
-1、下载并安装`jdk-8u341-windows-x64.exe`
+IDEA下载地址：[https://www.jetbrains.com/idea/](https://www.jetbrains.com/idea/)
 
-2、检查版本
+<br />
 
-```bash
-C:\Users\Administrator>java -version  # 注意是 -version 而不是--version
-java version "1.8.0_341"
-Java(TM) SE Runtime Environment (build 1.8.0_341-b10)
-Java HotSpot(TM) 64-Bit Server VM (build 25.341-b10, mixed mode)
-```
+::: details （1）Windows 安装 JDK 17
 
-3、配置环境变量，目的是可以正常使用`javac`命令以及其他的命令
+1、下载并安装`jdk-17_windows-x64_bin.msi`
 
 ```bash
+# 检查版本
+C:\Users\Administrator> java -version        # 注意是 -version 而不是--version
+java version "17.0.7" 2023-04-18 LTS
+Java(TM) SE Runtime Environment (build 17.0.7+8-LTS-224)
+Java HotSpot(TM) 64-Bit Server VM (build 17.0.7+8-LTS-224, mixed mode, sharing)
+
+# 测试 javac命令以及其他的命令
 C:\Users\Administrator>javac -version
-javac 1.8.0_341
+javac 17.0.7
 ```
 
-4、编写源文件（文件名`Main`要和类名`Main`保持一致）
-
-`Main.java`
+2、IDEA创建项目：编写源文件`Main.java`（文件名`Main`要和类名`Main`保持一致）
 
 ```java
 public class Main {
@@ -34,27 +36,20 @@ public class Main {
 }
 ```
 
-5、编译`.java`文件（这会生成一个名为`Main.class`的文件）
+3、手动编译运行
 
 ```bash
-javac Main.java
+# 编译 .java 文件（这会生成一个名为 Main.class 的文件）
+D:\application\Java\demo\src>javac Main.java
+
+# 运行程序
+D:\application\Java\demo\src>java Main
+Hello world!
 ```
-
-6、运行程序
-
-```bash
-java Main
-```
-
-:::tip IDE下载
-
-`IntelliJ IDEA`下载地址：[https://www.jetbrains.com/idea/](https://www.jetbrains.com/idea/)
 
 :::
 
-## 
-
-## 二、基础
+<br />
 
 ### 命名规则
 
@@ -81,11 +76,15 @@ java Main
 
 * 满足`Pascal`命名规则（每个单词的首字母大写）
 
-### 变量和常量
+<br />
+
+### 变量常量
 
 变量语法：`<数据类型> <变量名> [ = 值];`
 
 常量语法：`final <变量语法>`
+
+<br />
 
 ### 基本语句
 
@@ -209,7 +208,7 @@ public class Main {
 
 :::
 
-
+<br />
 
 ### 基本数据类型
 
@@ -498,13 +497,13 @@ public class Main {
 
 :::
 
+<br />
+
 ## 三、引用数据类型
 
 ### 数组
 
-#### 创建
-
-::: details 点击查看完整代码
+::: details （1）创建
 
 ```java
 import java.util.Arrays;
@@ -557,9 +556,7 @@ class [I
 class [I
 ```
 
-#### 遍历
-
-::: details 点击查看完整代码
+::: details （2）遍历
 
 ```java
 import java.util.Arrays;
@@ -606,7 +603,7 @@ public class Main {
 5
 ```
 
-## 
+<br />
 
 ## 四、面向对象
 
