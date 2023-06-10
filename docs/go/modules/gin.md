@@ -2366,6 +2366,11 @@ C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET -d "username=root&pa
 C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET --form username=root --form password=测试汉字
 {"data":{"password":"测试汉字","username":"root"},"header":{"ContentType":"multipart/form-data; boundary=---------------
 ---------cbc16e65d7f7166d"}}
+
+# -----------------------------------------------------------------------------------
+# 总结
+# 1.
+# 2。
 ```
 
 :::
