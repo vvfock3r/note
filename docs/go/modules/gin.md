@@ -1930,6 +1930,43 @@ Content-Length: 46
 
 ### 流式响应
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"log"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/", func(ctx *gin.Context) {
+		for i := 0; i < 10; i++ {
+			_, err := ctx.Writer.WriteString(strconv.Itoa(i))
+			if err != nil {
+				ctx.Abort()
+			}
+			ctx.Writer.Flush()
+			time.Sleep(time.Second)
+		}
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+![202301251213](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//202301251213.gif)
+
+:::
+
 <br />
 
 ### 4xx和5xx
@@ -1947,52 +1984,47 @@ import (
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router := gin.Default()
 
 	// 设置HTML模板
-	r.LoadHTMLGlob("templates/*.html")
+	router.LoadHTMLGlob("templates/*.html")
 
-	// 自定义处理 401 的情况
-	r.Use(func(c *gin.Context) {
-		c.Next()
-		if c.Writer.Status() == http.StatusUnauthorized {
-			c.HTML(http.StatusUnauthorized, "401.html", gin.H{})
-			c.Abort()
+	// 自定义处理 401 的中间件
+	router.Use(func(ctx *gin.Context) {
+		ctx.Next()
+		if ctx.Writer.Status() == http.StatusUnauthorized {
+			ctx.HTML(http.StatusUnauthorized, "401.html", gin.H{})
+			ctx.Abort()
 		}
 	})
 
-	// 自定义处理 403 的情况
-	r.Use(func(c *gin.Context) {
-		c.Next()
-		if c.Writer.Status() == http.StatusForbidden {
-			c.HTML(http.StatusForbidden, "403.html", gin.H{})
-			c.Abort()
+	// 自定义处理 403 的中间件
+	router.Use(func(ctx *gin.Context) {
+		ctx.Next()
+		if ctx.Writer.Status() == http.StatusForbidden {
+			ctx.HTML(http.StatusForbidden, "403.html", gin.H{})
+			ctx.Abort()
 		}
 	})
 
-	// 自定义处理 404 的情况
-	r.NoRoute(func(c *gin.Context) {
-		c.HTML(http.StatusNotFound, "404.html", gin.H{})
+	// 自定义处理 404 的中间件
+	router.NoRoute(func(ctx *gin.Context) {
+		ctx.HTML(http.StatusNotFound, "404.html", gin.H{})
 	})
 
 	// 模拟 401 Unauthorized
-	r.GET("/401", func(c *gin.Context) {
-		c.AbortWithStatus(http.StatusUnauthorized)
+	router.GET("/401", func(ctx *gin.Context) {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
 	})
 
 	// 模拟 403 Forbidden
-	r.GET("/403", func(c *gin.Context) {
-		c.AbortWithStatus(http.StatusForbidden)
+	router.GET("/403", func(ctx *gin.Context) {
+		ctx.AbortWithStatus(http.StatusForbidden)
 	})
 
 	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
-
 ```
 
 创建模板文件
@@ -2098,24 +2130,78 @@ Content-Length: 186
 ::: details （2）5xx响应
 
 ```go
-	// 自定义处理 500 的情况
-	//r.Use(func(c *gin.Context) {
-	//	defer func() {
-	//		if r := recover(); r != nil {
-	//			c.HTML(http.StatusInternalServerError, "500.html", gin.H{
-	//				"title": "Internal Server Error",
-	//			})
-	//			c.Abort()
-	//		}
-	//	}()
-	//	c.Next()
-	//})
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.New()
+	router.Use(gin.Logger())
+
+	// 设置HTML模板
+	router.LoadHTMLGlob("templates/*.html")
+
+	// 自定义处理 500 的中间件
+	router.Use(func(ctx *gin.Context) {
+		defer func() {
+			if ctx.Writer.Status() == http.StatusInternalServerError {
+				ctx.HTML(http.StatusInternalServerError, "500.html", gin.H{})
+				ctx.Abort()
+			}
+		}()
+		ctx.Next()
+	})
+
+	// 模拟 500 InternalServerError
+	router.GET("/500", func(ctx *gin.Context) {
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+	})
+
+	// 启动Gin Server
+	log.Fatalln(router.Run(":80"))
+}
 ```
 
 输出结果
 
 ```bash
-
+# 注意：5xx报错和4xx报错性质是一样的，和代码的panic并不是一回事
+C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/500
+HTTP/1.1 500 Internal Server Error               
+Date: Sat, 10 Jun 2023 13:38:48 GMT              
+Content-Length: 530                              
+Content-Type: text/html; charset=utf-8           
+                                                 
+<!DOCTYPE html>                                  
+<html>                                           
+<head>                                           
+    <meta charset="UTF-8">                       
+    <title>500 Internal Server Error</title>     
+    <style>                                      
+        body {                                   
+            font-family: Arial, sans-serif;      
+            text-align: center;                  
+            padding: 50px;                       
+        }                                        
+        h1 {                                     
+            font-size: 36px;                     
+            margin-bottom: 20px;                 
+        }                                        
+        p {                                      
+            font-size: 18px;                     
+        }                                        
+    </style>                                     
+</head>                                          
+<body>                                           
+<h1>500 Internal Server Error</h1>
+<p>Sorry, something went wrong on the server.</p>
+</body>
+</html>
 ```
 
 :::
@@ -3035,7 +3121,9 @@ func main() {
 
 :::
 
-#### 多个中间件执行顺序问题
+<br />
+
+#### 执行顺序问题
 
 ::: details 点击查看完整代码
 
@@ -3173,8 +3261,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3182,7 +3268,11 @@ func main() {
 拿到M2中间件的值: []int{0, 0, 0}
 ```
 
-#### 中间件或Handler开启Goroutine情况下
+:::
+
+<br />
+
+#### 开启Goroutine
 
 ::: details 点击查看完整代码
 
@@ -3239,6 +3329,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 中间件收集列表
 
