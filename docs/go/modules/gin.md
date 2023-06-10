@@ -2286,64 +2286,48 @@ C:\Users\Administrator\Desktop> curl "http://127.0.0.1/?user\[id\]=10000&user\[n
 
 #### 表单解析
 
+::: details （1）提交表单示例
+
 | 方法                                                   | 说明                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------ |
 | `PostForm(key string) string`                          | 解析表单，若获取不到返回空字符串，若获取到多个则只返回第一个 |
 | `PostFormArray(key string) []string`                   | 类似`PostForm`，可以获取多个值                               |
-| `PostFormMap(key string) map[string]string`            | 类似`PostForm`，输入为`map`，返回为`map`                     |
+| `PostFormMap(key string) map[string]string`            | 类似`PostForm`，返回 Map                                     |
 | `GetPostForm(key string) (string, bool)`               | 类似`PostForm`，返回两个值，ok代表是否获取到值               |
 | `GetPostFormArray(key string) ([]string, bool)`        | 类似`PostFormArray`，返回两个值，ok代表是否获取到值          |
 | `GetPostFormMap(key string) (map[string]string, bool)` | 类似`PostFormMap`，返回两个值，ok代表是否获取到值            |
 | `DefaultPostForm(key, defaultValue string) string`     | 类似`PostForm`，可以设置默认值                               |
 
-::: details 提交表单示例
-
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
+func postFormHandler(ctx *gin.Context) {
+	contentType := ctx.GetHeader("Content-Type")
+	username := ctx.PostForm("username")
+	password := ctx.PostForm("password")
+	ctx.JSON(http.StatusOK, gin.H{
+		"header": gin.H{"ContentType": contentType},
+		"data": gin.H{
+			"username": username,
+			"password": password,
+		},
+	})
+}
+
 func main() {
-	// 监听地址
-	addr := "192.168.0.105:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router.GET("/", postFormHandler)
+	router.POST("/", postFormHandler)
 
-	// 注册路由
-	r.POST("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
-
-		// 解析表单数据
-		username := c.PostForm("username")
-		password := c.PostForm("password")
-
-		// 返回响应
-		msg := fmt.Sprintf("Content-Type: %q\nPostForm: username: %q, password: %q\n", contentType, username, password)
-		c.String(http.StatusOK, msg)
-	})
-	
-	r.GET("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
-
-		// 解析表单数据
-		username := c.PostForm("username")
-		password := c.PostForm("password")
-
-		// 返回响应
-		msg := fmt.Sprintf("Content-Type: %q\nPostForm: username: %q, password: %q\n", contentType, username, password)
-		c.String(http.StatusOK, msg)
-	})
-
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
@@ -2352,49 +2336,41 @@ func main() {
 ```bash
 # -------------先使用POST方法测试------------------------------------------------------
 # 什么都不传，服务端接收到空字符串
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST
-Content-Type: ""
-PostForm: username: "", password: ""
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST
+{"data":{"password":"","username":""},"header":{"ContentType":""}}
 
-# 服务端响应头的Content-Type为【text/plain; charset=utf-8】
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST -I
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Date: Fri, 06 May 2022 05:52:49 GMT
-Content-Length: 54
 
-# ⭐使用-d参数提交数据，curl会自动设置Content-Type为application/x-www-form-urlencoded
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国"
-Content-Type: "application/x-www-form-urlencoded"
-PostForm: username: "root", password: "123456中国"
+# ⭐使用-d参数提交数据, curl会自动设置 Content-Type为application/x-www-form-urlencoded
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
+{"data":{"password":"123456测试汉字","username":"root"},"header":{"ContentType":"application/x-www-form-urlencoded"}}
+
 
 # 给curl设置一个错误的Content-Type,可以看到服务端获取不到我们提交的数据了
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国" -H "Content-Type:abc"
-Content-Type: "abc"
-PostForm: username: "", password: ""
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字" -H "Cont
+ent-Type:abc"
+{"data":{"password":"","username":""},"header":{"ContentType":"abc"}}
 
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST -d "username=root&password=123456中国" -H "Content-Type:application/json"
-Content-Type: "application/json"
-PostForm: username: "", password: ""
 
 # ⭐使用-f参数提交表单，curl会自动设置Content-Type为multipart/form-data
-[root@localhost ~]# curl http://192.168.0.105/ -XPOST --form username=root --form password=中国你好
-Content-Type: "multipart/form-data; boundary=----------------------------cb1776d3bb87"
-PostForm: username: "root", password: "中国你好"
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST --form username=root --form password=中国你好      
+{"data":{"password":"中国你好","username":"root"},"header":{"ContentType":"multipart/form-data; boundary=---------------
+---------a626f7c3af0e2fcd"}}
+
 
 # -------------再使用GET方法测试------------------------------------------------------
-[root@localhost ~]# curl http://192.168.0.105/ -XGET -d "username=root&password=123456中国"
-Content-Type: "application/x-www-form-urlencoded"
-PostForm: username: "", password: ""
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET -d "username=root&password=123456测试汉字"         
+{"data":{"password":"","username":""},"header":{"ContentType":"application/x-www-form-urlencoded"}}
+
 
 [root@localhost ~]# curl http://192.168.0.105/ -XGET --form username=root --form password=中国你好
-Content-Type: "multipart/form-data; boundary=----------------------------cd010eead867"
-PostForm: username: "root", password: "中国你好"
+C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET --form username=root --form password=测试汉字
+{"data":{"password":"测试汉字","username":"root"},"header":{"ContentType":"multipart/form-data; boundary=---------------
+---------cbc16e65d7f7166d"}}
 ```
 
 :::
 
-::: details HTML中的form标签默认使用application/x-www-form-urlencoded
+::: details （2）HTML中的form标签默认使用application/x-www-form-urlencoded
 
 ```go
 <!DOCTYPE html>
@@ -2685,6 +2661,8 @@ func main() {
 ```
 
 :::
+
+<br />
 
 #### 参数绑定后校验
 
