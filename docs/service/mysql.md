@@ -1,6 +1,6 @@
 # MySQL
 
-## 部署
+## 容器部署
 
 （由Docker官方维护的）`Docker Hub`地址：
 
@@ -16,15 +16,13 @@
 
 <br />
 
-各个MySQL分支官网下载地址：
+各个MySQL及其分支官网下载地址：
 
 * MySQL：[https://dev.mysql.com/downloads/mysql/](https://dev.mysql.com/downloads/mysql/)
 * Percona：[https://www.percona.com/downloads/](https://www.percona.com/downloads/)
 * MariaDB：[https://mariadb.org/download/](https://mariadb.org/download/)
 
-
-
-**使用MySQL**
+<br />
 
 ::: details （1）下载镜像
 
