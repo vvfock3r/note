@@ -47,3 +47,34 @@ docker container logs archery -f -n 10
 
 :::
 
+<br />
+
+## 常用配置
+
+### 添加实例
+
+::: details （1）先添加资源组，否则后面有些功能用不了
+
+系统管理 ---> 资源组管理
+
+![image-20230610192513523](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230610192513523.png)
+
+:::
+
+::: details （2）再添加数据库实例，支持MySQL、PgSQL、MongoDB、Redis等多种数据库
+
+实例管理 ---> 实例列表
+
+![image-20230610192403392](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230610192403392.png)
+
+然后点击 测试，看是否可以连接成功
+
+:::
+
+<br />
+
+## 常用功能
+
+### SQL查询
+
+![image-20230610193153567](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230610193153567.png)
