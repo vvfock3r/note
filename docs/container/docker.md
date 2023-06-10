@@ -3311,7 +3311,40 @@ mysql> show variables like 'log_bin';
 
 :::
 
-::: details （11）删除MySQL
+::: details （11）开启或关闭GTID
+
+```bash
+# 先检查一下默认值
+mysql> SHOW VARIABLES LIKE 'gtid_mode';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| gtid_mode     | OFF   |
++---------------+-------+
+1 row in set (0.04 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+gtid_mode=ON
+enforce_gtid_consistency=ON
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'gtid_mode';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| gtid_mode     | ON    |
++---------------+-------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+::: details （12）删除MySQL
 
 ```bash
 docker container rm -f ${ContainerName}  # 删除容器
