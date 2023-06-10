@@ -188,7 +188,6 @@ mysql> select now();
 # 1、修改时区
 vim ${LocalHostConfPath}/my.cnf
 [mysqld]
-...
 default-time_zone = '+8:00'
 
 # 重启容器，使配置文件生效
@@ -228,7 +227,6 @@ vim ${LocalHostConfPath}/my.cnf
 [mysqld]
 character-set-server=utf8mb4
 collation-server=utf8mb4_general_ci
-...
 
 [client]
 default-character-set=utf8mb4
@@ -284,6 +282,8 @@ mysql> SELECT CONCAT(ROUND(@@max_allowed_packet / (1024 * 1024), 2), 'MB') AS ma
 
 :::
 
+<br />
+
 ### 最大连接数
 
 ::: details 点击查看详情
@@ -301,7 +301,6 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 # 根据实际情况调整
 vim ${LocalHostConfPath}/my.cnf
 [mysqld]
-...
 max_connections = 5000
 
 # 重启容器，使配置文件生效
@@ -315,6 +314,121 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 | max_connections | 1000  |
 +-----------------+-------+
 1 row in set (0.01 sec)
+```
+
+:::
+
+<br />
+
+### 启用独立表空间
+
+::: details 点击查看详情
+
+```bash
+# ON代表独立表空间, OFF代表共享表空间, 高版本默认开启
+# 如果是OFF可以参考后面的步骤开启独立表空间
+mysql> SHOW VARIABLES LIKE 'innodb_file_per_table';
++-----------------------+-------+
+| Variable_name         | Value |
++-----------------------+-------+
+| innodb_file_per_table | ON    |  
++-----------------------+-------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+innodb_file_per_table=ON
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'innodb_file_per_table';
++-----------------------+-------+
+| Variable_name         | Value |
++-----------------------+-------+
+| innodb_file_per_table | ON    |
++-----------------------+-------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+<br />
+
+### 调整临时表参数
+
+::: details 点击查看详情
+
+```bash
+# 在内存中创建临时表时的最大大小限制
+# 当临时表的大小超过这个值时，MySQL将使用磁盘上的临时文件来存储数据
+mysql> SHOW VARIABLES LIKE 'tmp_table_size';
++----------------+----------+
+| Variable_name  | Value    |
++----------------+----------+
+| tmp_table_size | 16777216 |
++----------------+----------+
+1 row in set (0.00 sec)
+
+# 在内存中创建基于内存的临时表时的最大大小限制
+# 当临时表的大小超过这个值时，MySQL将使用磁盘上的临时文件来存储数据
+mysql> SHOW VARIABLES LIKE 'max_heap_table_size';
++---------------------+----------+
+| Variable_name       | Value    |
++---------------------+----------+
+| max_heap_table_size | 16777216 |
++---------------------+----------+
+1 row in set (0.00 sec)
+
+# 用于存储临时文件的目录路径
+mysql> SHOW VARIABLES LIKE 'tmpdir';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| tmpdir        | /tmp  |
++---------------+-------+
+1 row in set (0.01 sec)
+
+# -----------------------------------------------------
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+tmp_table_size = 256M
+max_heap_table_size = 512M
+tmpdir = /var/lib/mysql          # 目录必须存在, 这里的值只是举个例子
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# -----------------------------------------------------
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'tmp_table_size';
++----------------+-----------+
+| Variable_name  | Value     |
++----------------+-----------+
+| tmp_table_size | 268435456 |
++----------------+-----------+
+1 row in set (0.01 sec)
+
+mysql> SHOW VARIABLES LIKE 'max_heap_table_size';
++---------------------+-----------+
+| Variable_name       | Value     |
++---------------------+-----------+
+| max_heap_table_size | 536870912 |
++---------------------+-----------+
+1 row in set (0.00 sec)
+
+mysql> SHOW VARIABLES LIKE 'tmpdir';
++---------------+----------------+
+| Variable_name | Value          |
++---------------+----------------+
+| tmpdir        | /var/lib/mysql |
++---------------+----------------+
+1 row in set (0.00 sec)
 ```
 
 :::
@@ -335,10 +449,9 @@ mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
 +-------------------------+------------+
 1 row in set (0.01 sec)
 
-# 根据实际情况调整
+# 根据实际情况调整, 增大此值可以提高查询和写入性能, 代价就是会占用较多的内存
 vim ${LocalHostConfPath}/my.cnf
 [mysqld]
-...
 innodb_buffer_pool_size=2G
 
 # 重启容器，使配置文件生效
@@ -489,10 +602,6 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 ```
 
 :::
-
-<br />
-
-
 
 <br />
 
