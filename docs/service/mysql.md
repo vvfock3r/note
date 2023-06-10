@@ -435,6 +435,39 @@ mysql> SHOW VARIABLES LIKE 'tmpdir';
 
 <br />
 
+### 调整数据目录位置
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> SHOW VARIABLES LIKE 'datadir';
++---------------+-----------------+
+| Variable_name | Value           |
++---------------+-----------------+
+| datadir       | /var/lib/mysql/ |
++---------------+-----------------+
+1 row in set (0.00 sec)
+
+# 停止MySQL
+# 把原来数据目录迁移到新的目录下
+
+# 根据实际情况调整, 这里只是举个例子
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+datadir = /tmp
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'datadir';
+```
+
+:::
+
+<br />
+
 ### Innodb缓冲池大小
 
 ::: details 点击查看详情
