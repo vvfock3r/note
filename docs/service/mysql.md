@@ -1,12 +1,498 @@
 # MySQL
 
+## 部署
+
+（由Docker官方维护的）`Docker Hub`地址：
+
+* MySQL：[https://hub.docker.com/_/mysql](https://hub.docker.com/_/mysql)
+* Percona：[https://hub.docker.com/_/percona](https://hub.docker.com/_/percona)
+* MariaDB：[https://hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb)
+
+（由各个MySQL分支官方维护的）`Docker Hub`地址：
+
+* MySQL：无
+* Percona：[https://hub.docker.com/r/percona/percona-server](https://hub.docker.com/r/percona/percona-server)
+* MariaDB：无
+
 <br />
 
-## Binlog
+各个MySQL分支官网下载地址：
+
+* MySQL：[https://dev.mysql.com/downloads/mysql/](https://dev.mysql.com/downloads/mysql/)
+* Percona：[https://www.percona.com/downloads/](https://www.percona.com/downloads/)
+* MariaDB：[https://mariadb.org/download/](https://mariadb.org/download/)
+
+
+
+**使用MySQL**
+
+::: details （1）下载镜像
+
+```bash
+# 下载镜像 - MySQL
+docker image pull mysql:5.7.39
+docker image pull mysql:8.0.30
+
+# 下载镜像 - Percona
+docker image pull percona:5.7.35
+docker image pull percona:8.0.29-21
+
+# 下载镜像 - MariaDB
+docker image pull mariadb:10.9.2
+```
+
+:::
+
+::: details （2）设置变量
+
+```bash
+# MySQL
+Type="mysql"                                                # 类型    （不要随意修改）
+Version="8.0.30"                                            # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="t6G1LJdzOlG^u5yb"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3306                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/mysql/conf.d                         # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/my.cnf                               # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
+
+# =========================================================================================
+
+# Percona
+Type="percona"                                              # 类型    （不要随意修改）
+Version="8.0.29-21"                                         # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="t6G1LJdzOlG^u5yb"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3307                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/my.cnf.d                             # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/my.cnf                               # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
+
+# =========================================================================================
+
+# MariaDB
+Type="mariadb"                                              # 类型    （不要随意修改）
+Version="10.9.2"                                            # 版本    （根据实际情况修改）
+AppName="demo"                                              # 应用名称 （根据实际情况修改）
+ContainerName="${AppName}-${Type}-${Version}"               # 容器名称 （根据实际情况修改）
+RootPassword="t6G1LJdzOlG^u5yb"                             # Root密码（根据实际情况修改）
+
+ContainerPort=3306                                          # 容器监听端口  （不要随意修改）
+LocalHostPort=3308                                          # 宿主机监听端口（根据实际情况修改）
+
+ContainerConfPath=/etc/mysql/conf.d                         # 容器中配置文件目录（不要随意修改）
+ContainerConfFile=/etc/mysql/my.cnf                         # 容器配置文件     （不要随意修改）
+LocalHostConfPath=/etc/${AppName}-${Type}-${Version}/conf.d # 宿主机配置文件目录（根据实际情况修改）
+
+ContainerDataPath=/var/lib/mysql/                           # 容器中数据目录（不要随意修改）
+LocalHostDataPath=/var/lib/${AppName}-${Type}-${Version}    # 宿主机数据目录（根据实际情况修改）
+```
+
+:::
+
+::: details （3）启动MySQL
+
+```bash
+# Percona需要先创建目录并授权，否则会报Permission denied
+mkdir -p ${LocalHostDataPath} && chmod -R 777 ${LocalHostDataPath} && ls -ld ${LocalHostDataPath}
+
+# 启动容器 - MySQL
+docker container run --name ${ContainerName} \
+                     -v ${LocalHostConfPath}:${ContainerConfPath} \
+                     -v ${LocalHostDataPath}:${ContainerDataPath} \
+                     -p ${LocalHostPort}:${ContainerPort} \
+                     -e MYSQL_ROOT_PASSWORD=${RootPassword} \
+                     --restart=always \
+                     -d \
+                   ${Type}:${Version}
+
+# 拷贝配置文件到宿主机,用于持久化, -L用于追踪软链文件源文件
+docker container cp -L ${ContainerName}:${ContainerConfFile} ${LocalHostConfPath}
+
+# 删掉下面所有的includedir配置
+vim ${LocalHostConfPath}/my.cnf
+
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mysql.conf.d/
+```
+
+:::
+
+::: details （4）连接MySQL
+
+最好使用与服务器相同版本的MySQL客户端，否则可能会出现奇怪的问题，比如使用**MySQL 5.7的客户端**连接**MySQL Server 8.x**，报错如下
+
+`ERROR 2059 (HY000): Authentication plugin 'caching_sha2_password' cannot be loaded: /usr/lib64/mysql/plugin/caching_sha2_password.so: cannot open shared object file: No such file or directory`
+
+```bash
+docker container exec -it ${ContainerName} mysql -uroot -P${ContainerPort} -p"${RootPassword}"  # 在容器内部连接MySQL
+mysql -h192.168.48.133 -P${LocalHostPort} -uroot -p"${RootPassword}"                            # 在容器外部连接MySQL
+```
+
+:::
+
+::: details （5）删除MySQL
+
+```bash
+docker container rm -f ${ContainerName}  # 删除容器
+rm -rf $(dirname ${LocalHostConfPath})   # 删除宿主机上的配置(请先确认目录是否正确)
+rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请先确认目录是否正确)
+```
+
+:::
 
 <br />
 
-## 只读模式
+## 基本配置
+
+### 时区
+
+::: details 点击查看详情
+
+```bash
+# 检查一下当前的时区, 使用系统时区，而系统时区是UTC
+mysql> show variables like "%time_zone%";
++------------------+--------+
+| Variable_name    | Value  |
++------------------+--------+
+| system_time_zone | UTC    |
+| time_zone        | SYSTEM |
++------------------+--------+
+2 rows in set (0.01 sec)
+
+# 通过获取当前时间验证一下
+mysql> select now();
++---------------------+
+| now()               |
++---------------------+
+| 2023-03-31 12:47:36 |  # 当前实际时间是 2023-03-31 20:47:36
++---------------------+
+1 row in set (0.00 sec)
+
+# --------------------------------------------------------------
+
+# 1、修改时区
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+default-time_zone = '+8:00'
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 3、验证
+mysql> show variables like "%time_zone%";
++------------------+--------+
+| Variable_name    | Value  |
++------------------+--------+
+| system_time_zone | UTC    |
+| time_zone        | +08:00 |
++------------------+--------+
+2 rows in set (0.00 sec)
+
+mysql> select now();
++---------------------+
+| now()               |
++---------------------+
+| 2023-03-31 20:51:09 |
++---------------------+
+1 row in set (0.00 sec)
+```
+
+:::
+
+<br />
+
+### 字符集
+
+::: details 点击查看详情
+
+```bash
+# 修改配置
+vim ${LocalHostConfPath}/my.cnf
+
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_general_ci
+...
+
+[client]
+default-character-set=utf8mb4
+...
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 检查字符集
+docker exec -it ${ContainerName} mysql -uroot -p"${RootPassword}" -e "status;" | grep -i characterset
+
+Server characterset:    utf8mb4
+Db     characterset:    utf8mb4
+Client characterset:    utf8mb4
+Conn.  characterset:    utf8mb4
+```
+
+:::
+
+<br />
+
+### 最大数据包
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> SELECT CONCAT(ROUND(@@max_allowed_packet / (1024 * 1024), 2), 'MB') AS max_allowed_packet;
++--------------------+
+| max_allowed_packet |
++--------------------+
+| 64.00MB            |
++--------------------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+max_allowed_packet = 1024M
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SELECT CONCAT(ROUND(@@max_allowed_packet / (1024 * 1024), 2), 'MB') AS max_allowed_packet;
++--------------------+
+| max_allowed_packet |
++--------------------+
+| 1024.00MB          |
++--------------------+
+1 row in set (0.00 sec)
+```
+
+:::
+
+### 最大连接数
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> SHOW VARIABLES LIKE 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 151   |
++-----------------+-------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+max_connections = 5000
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 1000  |
++-----------------+-------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+<br />
+
+### Innodb缓冲池大小
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值, 128M
+mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
++-------------------------+------------+
+| Variable_name           | Value      |
++-------------------------+------------+
+| innodb_buffer_pool_size | 134217728  |
++-------------------------+------------+
+1 row in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+innodb_buffer_pool_size=2G
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
++-------------------------+------------+
+| Variable_name           | Value      |
++-------------------------+------------+
+| innodb_buffer_pool_size | 2147483648 |
++-------------------------+------------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+<br />
+
+### 默认身份认证插件
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| caching_sha2_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+default_authentication_plugin = mysql_native_password
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SELECT @@default_authentication_plugin;
++---------------------------------+
+| @@default_authentication_plugin |
++---------------------------------+
+| mysql_native_password           |
++---------------------------------+
+1 row in set, 1 warning (0.00 sec)
+
+# 推荐使用 caching_sha2_password，但是为了兼容旧的MySQL客户端或者库，也可以设置成mysql_native_password
+```
+
+:::
+
+<br />
+
+### 二进制日志 binlog
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> show variables like 'log_%';
++----------------------------------------+----------------------------------------+
+| Variable_name                          | Value                                  |
++----------------------------------------+----------------------------------------+
+| log_bin                                | OFF                                    | # 这里是开关
+| log_bin_basename                       |                                        |
+| log_bin_index                          |                                        |
+| log_bin_trust_function_creators        | OFF                                    |
+| log_bin_use_v1_row_events              | OFF                                    |
+| log_error                              | stderr                                 |
+| log_error_services                     | log_filter_internal; log_sink_internal |
+| log_error_suppression_list             |                                        |
+| log_error_verbosity                    | 2                                      |
+| log_output                             | FILE                                   |
+| log_queries_not_using_indexes          | OFF                                    |
+| log_raw                                | OFF                                    |
+| log_replica_updates                    | OFF                                    |
+| log_slave_updates                      | OFF                                    |
+| log_slow_admin_statements              | OFF                                    |
+| log_slow_extra                         | OFF                                    |
+| log_slow_replica_statements            | OFF                                    |
+| log_slow_slave_statements              | OFF                                    |
+| log_statements_unsafe_for_binlog       | ON                                     |
+| log_throttle_queries_not_using_indexes | 0                                      |
+| log_timestamps                         | UTC                                    |
++----------------------------------------+----------------------------------------+
+21 rows in set (0.01 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+...
+log-bin = mysql-bin # 启用binlog
+disable-log-bin     # 关闭binlog, 使用 skip-log-bin 或 disable-log-bin 都可以
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> show variables like 'log_bin';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| log_bin       | ON    |
++---------------+-------+
+1 row in set (0.00 sec)
+```
+
+:::
+
+<br />
+
+### 全局事物标识符 gtid
+
+::: details 点击查看详情
+
+```bash
+# 先检查一下默认值
+mysql> SHOW VARIABLES LIKE 'gtid_mode';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| gtid_mode     | OFF   |
++---------------+-------+
+1 row in set (0.04 sec)
+
+# 根据实际情况调整
+vim ${LocalHostConfPath}/my.cnf
+[mysqld]
+gtid_mode=ON
+enforce_gtid_consistency=ON
+
+# 重启容器，使配置文件生效
+docker container restart ${ContainerName}
+
+# 验证
+mysql> SHOW VARIABLES LIKE 'gtid_mode';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| gtid_mode     | ON    |
++---------------+-------+
+1 row in set (0.01 sec)
+```
+
+:::
+
+<br />
+
+
 
 <br />
 
