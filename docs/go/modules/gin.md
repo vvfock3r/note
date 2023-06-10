@@ -2170,6 +2170,33 @@ func main() {
 输出结果
 
 ```bash
+# templates/500.html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>500 Internal Server Error</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+<h1>500 Internal Server Error</h1>
+<p>Sorry, something went wrong on the server.</p>
+</body>
+</html>
+
 # 注意：5xx报错和4xx报错性质是一样的，和代码的panic并不是一回事
 C:\Users\Administrator\Desktop> curl -i http://127.0.0.1/500
 HTTP/1.1 500 Internal Server Error               
@@ -2212,53 +2239,45 @@ Content-Type: text/html; charset=utf-8
 
 #### 查询字符串
 
+::: details 点击查看完整代码
+
 | 方法                                                | 说明                                                         |
 | --------------------------------------------------- | ------------------------------------------------------------ |
 | `Query(key string) string`                          | 获取key的值，若获取不到返回空字符串，若传递多个则只获取第一个 |
 | `QueryArray(key string) []string`                   | 类似`Query`，可以获取多个值                                  |
 | `DefaultQuery(key, defaultValue string) string`     | 类似`Query`，可以自定义默认值                                |
-| `QueryMap(key string) map[string]string`            | 获取key的值，输入为`map`，返回为`map`                        |
+| `QueryMap(key string) map[string]string`            | 获取key的值，返回 Map                                        |
 | `GetQuery(key string) (string, bool)`               | 类似`Query`，返回两个值，ok代表是否获取到值                  |
 | `GetQueryArray(key string) ([]string, bool)`        | 类似`QueryArray`，返回两个值，ok代表是否获取到值             |
 | `GetQueryMap(key string) (map[string]string, bool)` | 类似`QueryMap`，返回两个值，ok代表是否获取到值               |
-
-示例代码
-
-::: details 点击查看完整代码
 
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由 - 路径参数
-	r.GET("/", func(c *gin.Context) {
-		msg := fmt.Sprintf("%#v\n", c.QueryMap("map"))
-		c.String(http.StatusOK, msg)
+	router.GET("/", func(ctx *gin.Context) {
+		user := ctx.QueryMap("user")
+		ctx.JSON(http.StatusOK, user)
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-C:\Users\Administrator>curl "http://127.0.0.1/?map\[id\]=abc&map\[name\]=bob"
-map[string]string{"id":"abc", "name":"bob"}
+C:\Users\Administrator\Desktop> curl "http://127.0.0.1/?user\[id\]=10000&user\[name\]=bob"
+{"id":"10000","name":"bob"}
 ```
 
 :::
@@ -2403,6 +2422,8 @@ PostForm: username: "root", password: "中国你好"
 ```
 
 :::
+
+<br />
 
 #### 参数绑定
 
