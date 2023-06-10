@@ -31,7 +31,15 @@ const navbar = [
 		    },
         ]
     },
-	
+    {
+        text: '服务',
+        children: [
+			{text: 'MySQL ', link: '/service/mysql'},
+			{text: 'Archery', link: '/service/archery'},
+			{text: 'Jenkins', link: '/service/jenkins'},
+			{text: 'ElasticStack', link: '/service/elasticstack'},
+        ]
+    },
     {
         text: '开发',
         children: [
