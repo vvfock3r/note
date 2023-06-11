@@ -2093,6 +2093,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -2101,11 +2102,11 @@ import (
 func main() {
 	router := gin.Default()
 
-	router.GET("/events", func(c *gin.Context) {
-		c.Header("Content-Type", "text/event-stream")
-		c.Header("Cache-Control", "no-cache")
-		c.Header("Connection", "keep-alive")
-		c.Header("Access-Control-Allow-Origin", "*")
+	router.GET("/events", func(ctx *gin.Context) {
+		ctx.Header("Content-Type", "text/event-stream")
+		ctx.Header("Cache-Control", "no-cache")
+		ctx.Header("Connection", "keep-alive")
+		ctx.Header("Access-Control-Allow-Origin", "*")
 
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -2113,24 +2114,31 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				message := fmt.Sprintf("Message sent at %s", time.Now().Format("2006-01-02 15:04:05"))
-				data := fmt.Sprintf("data: %s\n\n", message)
-				_, _ = c.Writer.WriteString(data)
-				c.Writer.Flush()
-			case <-c.Writer.CloseNotify():
+				message := fmt.Sprintf("Message sent at %s", time.Now().Format(time.DateTime))
+				data := fmt.Sprintf("data: %s\n", message)
+				_, _ = ctx.Writer.WriteString(data)
+				ctx.Writer.Flush()
+			case <-ctx.Writer.CloseNotify():
 				return
 			}
 		}
 	})
 
-	router.Run(":8080")
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/events  
+data: Message sent at 2023-06-11 15:08:26
+data: Message sent at 2023-06-11 15:08:27
+data: Message sent at 2023-06-11 15:08:28
+data: Message sent at 2023-06-11 15:08:29
+data: Message sent at 2023-06-11 15:08:30
+data: Message sent at 2023-06-11 15:08:31
+...
 ```
 
 :::
