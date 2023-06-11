@@ -3285,50 +3285,61 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-// 计算每次请求花费时间中间件
+// RequestCostMiddleware 计算每次请求花费时间中间件
 func RequestCostMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		// 开始计时
 		start := time.Now()
-		fmt.Println(start)
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
+
+		// 调用后续的处理逻辑
+		ctx.Next()
 
 		// 结束计时(单位毫秒)
 		timedelta := time.Since(start).Milliseconds()
 
 		// 输出结果
-		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", ctx.Request.Method, ctx.Request.URL, timedelta)
 	}
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router := gin.Default()
 
 	// 中间件使用方式一: 注册全局中间件,对所有路由有效
-	r.Use(RequestCostMiddleware())
+	router.Use(RequestCostMiddleware())
 
-	// 注册路由
-	r.GET("/", func(c *gin.Context) {
-		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "Hello Gin!",
+	router.GET("/", func(ctx *gin.Context) {
+		n := rand.Intn(500)
+		time.Sleep(time.Millisecond * time.Duration(n))
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"SleepMillisecond": strconv.Itoa(n),
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+```bash
+# 客户端输出
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+{
+    "SleepMillisecond": "58"
+}
+
+# 服务端日志
+GET  /: Used 68 milliseconds
 ```
 
 :::
@@ -3340,48 +3351,59 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-// 计算每次请求花费时间中间件
+// RequestCostMiddleware 计算每次请求花费时间中间件
 func RequestCostMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		// 开始计时
 		start := time.Now()
-		fmt.Println(start)
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
+
+		// 调用后续的处理逻辑
+		ctx.Next()
 
 		// 结束计时(单位毫秒)
 		timedelta := time.Since(start).Milliseconds()
 
 		// 输出结果
-		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", ctx.Request.Method, ctx.Request.URL, timedelta)
 	}
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
 	// 注册单个路由中间件
-	r.GET("/", RequestCostMiddleware(), func(c *gin.Context) {
-		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "Hello Gin!",
+	router.GET("/", RequestCostMiddleware(), func(ctx *gin.Context) {
+		n := rand.Intn(500)
+		time.Sleep(time.Millisecond * time.Duration(n))
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"SleepMillisecond": strconv.Itoa(n),
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+```bash
+# 客户端输出
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+{
+    "SleepMillisecond": "493"
+}
+
+# 服务端日志
+GET  /: Used 496 milliseconds
 ```
 
 :::
@@ -3393,52 +3415,61 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-// 计算每次请求花费时间中间件
+// RequestCostMiddleware 计算每次请求花费时间中间件
 func RequestCostMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		// 开始计时
 		start := time.Now()
-		fmt.Println(start)
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
+
+		// 调用后续的处理逻辑
+		ctx.Next()
 
 		// 结束计时(单位毫秒)
 		timedelta := time.Since(start).Milliseconds()
 
 		// 输出结果
-		fmt.Printf("%-4s %-s: Used %d milliseconds\n", c.Request.Method, c.Request.URL, timedelta)
+		fmt.Printf("%-4s %-s: Used %d milliseconds\n", ctx.Request.Method, ctx.Request.URL, timedelta)
 	}
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由组
-	apiV1 := r.Group("/api/v1")
+	router := gin.Default()
 
 	// 路由组内注册全局中间件,仅对路由内的所有路由生效
+	apiV1 := router.Group("/api/v1")
 	apiV1.Use(RequestCostMiddleware())
 
-	apiV1.GET("/", RequestCostMiddleware(), func(c *gin.Context) {
-		time.Sleep(time.Millisecond * 30) // 休眠30毫秒
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "Hello Gin!",
+	apiV1.GET("/", func(ctx *gin.Context) {
+		n := rand.Intn(500)
+		time.Sleep(time.Millisecond * time.Duration(n))
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"SleepMillisecond": strconv.Itoa(n),
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/api/v1/
+{
+    "SleepMillisecond": "335"
+}
+
+# 服务端日志
+GET  /api/v1/: Used 339 milliseconds
 ```
 
 :::
