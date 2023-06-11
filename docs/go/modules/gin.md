@@ -1658,7 +1658,61 @@ Content-Length: 82
 
 :::
 
-::: details （3）HTML响应
+::: details （3）YAML响应
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/yaml", func(ctx *gin.Context) {
+		ctx.YAML(http.StatusOK, gin.H{
+			"name":  "John Doe",
+			"age":   30,
+			"email": "johndoe@example.com",
+			"address": gin.H{
+				"street":  "123 Main Street",
+				"city":    "New York",
+				"state":   "NY",
+				"country": "USA",
+			},
+			"interests": []string{"music", "sports", "reading"},
+		})
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```yaml
+curl http://127.0.0.1/yaml
+address:
+    city: New York
+    country: USA
+    state: NY
+    street: 123 Main Street
+age: 30
+email: johndoe@example.com
+interests:
+    - music
+    - sports
+    - reading
+name: John Doe
+```
+
+:::
+
+::: details （4）HTML响应
 
 ```go
 package main
@@ -1724,7 +1778,7 @@ Content-Length: 130
 
 :::
 
-::: details （4）XML响应
+::: details （5）XML响应
 
 ```go
 package main
@@ -1765,7 +1819,7 @@ Content-Length: 52
 
 :::
 
-::: details （5）File响应，ContentType：text/plain
+::: details （6）File响应，ContentType：text/plain
 
 ```go
 package main
@@ -1823,7 +1877,7 @@ func main() {
 
 :::
 
-::: details （6）Data响应，返回二进制数据，通过手动指定ContentType可解析为任意类型的数据：模拟 JSON
+::: details （7）Data响应，返回二进制数据，通过手动指定ContentType可解析为任意类型的数据：模拟 JSON
 
 ```go
 package main
