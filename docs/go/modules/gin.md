@@ -1571,11 +1571,35 @@ import (
 func main() {
 	router := gin.Default()
 
-	// 返回Json响应格式
+	// 普通JSON
 	router.GET("/json", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": "200",
-			"data": "Hello World!",
+			"data": "<h1>北京欢迎您!</h1>",
+		})
+	})
+
+	// pure json
+	router.GET("/pure-json", func(ctx *gin.Context) {
+		ctx.PureJSON(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "<h1>北京欢迎您!</h1>",
+		})
+	})
+
+	// ascii json
+	router.GET("/ascii-json", func(ctx *gin.Context) {
+		ctx.AsciiJSON(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "<h1>北京欢迎您!</h1>",
+		})
+	})
+
+	// 格式化JSON
+	router.GET("/indented-json", func(ctx *gin.Context) {
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"code": "200",
+			"data": "<h1>北京欢迎您!</h1>",
 		})
 	})
 
@@ -1586,13 +1610,50 @@ func main() {
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/json -i
+# 普通JSON
+C:\Users\Administrator> curl http://127.0.0.1/json -i
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
-Date: Sun, 28 May 2023 09:36:20 GMT
-Content-Length: 36
+Date: Sun, 11 Jun 2023 01:49:34 GMT
+Content-Length: 69
 
-{"code":"200","data":"Hello World!"}
+{"code":"200","data":"\u003ch1\u003e北京欢迎您!\u003c/h1\u003e"}
+
+# ----------------------------------------------------------------------------------
+
+# pure json, 不替换html标签为实体符号
+C:\Users\Administrator> curl http://127.0.0.1/pure-json -i
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 11 Jun 2023 01:50:07 GMT
+Content-Length: 50
+
+{"code":"200","data":"<h1>北京欢迎您!</h1>"}
+
+# ----------------------------------------------------------------------------------
+
+# ascii json, unicode转ascii
+C:\Users\Administrator> curl http://127.0.0.1/ascii-json -i
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Sun, 11 Jun 2023 01:51:24 GMT
+Content-Length: 84
+
+{"code":"200","data":"\u003ch1\u003e\u5317\u4eac\u6b22\u8fce\u60a8!\u003c/h1\u003e"}
+
+# ----------------------------------------------------------------------------------
+
+# 格式化JSON
+C:\Users\Administrator> curl http://127.0.0.1/indented-json -i
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 11 Jun 2023 01:51:52 GMT
+Content-Length: 82
+
+{
+    "code": "200",
+    "data": "\u003ch1\u003e北京欢迎您!\u003c/h1\u003e"
+}
 ```
 
 :::
@@ -2266,7 +2327,7 @@ func main() {
 
 	router.GET("/", func(ctx *gin.Context) {
 		user := ctx.QueryMap("user")
-		ctx.JSON(http.StatusOK, user)
+		ctx.IndentedJSON(http.StatusOK, user)
 	})
 
 	log.Fatalln(router.Run(":80"))
@@ -2276,8 +2337,11 @@ func main() {
 输出结果
 
 ```bash
-C:\Users\Administrator\Desktop> curl "http://127.0.0.1/?user\[id\]=10000&user\[name\]=bob"
-{"id":"10000","name":"bob"}
+C:\Users\Administrator> curl "http://127.0.0.1/?user\[id\]=10000&user\[name\]=bob"
+{
+    "id": "10000",
+    "name": "bob"
+}
 ```
 
 :::
@@ -2312,7 +2376,7 @@ func postFormHandler(ctx *gin.Context) {
 	contentType := ctx.GetHeader("Content-Type")
 	username := ctx.PostForm("username")
 	password := ctx.PostForm("password")
-	ctx.JSON(http.StatusOK, gin.H{
+	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"header": gin.H{"ContentType": contentType},
 		"data": gin.H{
 			"username": username,
@@ -2336,41 +2400,78 @@ func main() {
 ```bash
 # -------------先使用POST方法测试------------------------------------------------------
 # 什么都不传，服务端接收到空字符串
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST
-{"data":{"password":"","username":""},"header":{"ContentType":""}}
-
+curl http://127.0.0.1/ -XPOST
+{
+    "data": {
+        "password": "",
+        "username": ""
+    },
+    "header": {
+        "ContentType": ""
+    }
+}
 
 # ⭐使用-d参数提交数据, curl会自动设置 Content-Type为application/x-www-form-urlencoded
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
-{"data":{"password":"123456测试汉字","username":"root"},"header":{"ContentType":"application/x-www-form-urlencoded"}}
-
+curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
+{
+    "data": {
+        "password": "123456测试汉字",
+        "username": "root"
+    },
+    "header": {
+        "ContentType": "application/x-www-form-urlencoded"
+    }
+}
 
 # 给curl设置一个错误的Content-Type,可以看到服务端获取不到我们提交的数据了
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字" -H "Cont
-ent-Type:abc"
-{"data":{"password":"","username":""},"header":{"ContentType":"abc"}}
+curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字" -H "Content-Type:abc"
+{
+    "data": {
+        "password": "",
+        "username": ""
+    },
+    "header": {
+        "ContentType": "abc"
+    }
+}
 
 
 # ⭐使用-f参数提交表单，curl会自动设置Content-Type为multipart/form-data
-C:\Users\Administrator\Desktop> curl http://127.0.0.1/ -XPOST -XPOST --form username=root --form password=中国你好      
-{"data":{"password":"中国你好","username":"root"},"header":{"ContentType":"multipart/form-data; boundary=---------------
----------a626f7c3af0e2fcd"}}
+curl http://127.0.0.1/ -XPOST -XPOST --form username=root --form password=中国你好
+{
+    "data": {
+        "password": "中国你好",
+        "username": "root"
+    },
+    "header": {
+        "ContentType": "multipart/form-data; boundary=------------------------14a01f4f04cd8866"
+    }
+}
 
 
 # -------------再使用GET方法测试------------------------------------------------------
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET -d "username=root&password=123456测试汉字"         
-{"data":{"password":"","username":""},"header":{"ContentType":"application/x-www-form-urlencoded"}}
+curl http://127.0.0.1/ -XGET -d "username=root&password=123456测试汉字"
+{
+    "data": {
+        "password": "",
+        "username": ""
+    },
+    "header": {
+        "ContentType": "application/x-www-form-urlencoded"
+    }
+}
 
 
-[root@localhost ~]# curl http://192.168.0.105/ -XGET --form username=root --form password=中国你好
-C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET --form username=root --form password=测试汉字
-{"data":{"password":"测试汉字","username":"root"},"header":{"ContentType":"multipart/form-data; boundary=---------------
----------cbc16e65d7f7166d"}}
-
-# -----------------------------------------------------------------------------------
-# 总结
-# 1.
-# 2.
+curl http://127.0.0.1/ -XGET --form username=root --form password=中国你好
+{
+    "data": {
+        "password": "中国你好",
+        "username": "root"
+    },
+    "header": {
+        "ContentType": "multipart/form-data; boundary=------------------------875fac19a0463f4c"
+    }
+}
 ```
 
 :::
@@ -2385,9 +2486,9 @@ C:\Users\Administrator\Desktop>curl http://127.0.0.1/ -XGET --form username=root
     <title>Title</title>
 </head>
 <body>
-<form action="http://192.168.0.105/" method="post">
+<form action="http://127.0.0.1/" method="post">
     <!-- 默认enctype的值为application/x-www-form-urlencoded -->
-    <!--<form action="http://192.168.0.105/" method="post" enctype="application/x-www-form-urlencoded">-->
+    <!--<form action="http://127.0.0.1/" method="post" enctype="application/x-www-form-urlencoded">-->
     <label>
         <span>用户名</span>
         <input type="text" name="username" placeholder="请输入您的用户名" autocomplete="off" autofocus>
