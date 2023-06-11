@@ -2412,7 +2412,7 @@ curl http://127.0.0.1/ -XPOST
 }
 
 # ⭐使用-d参数提交数据, curl会自动设置 Content-Type为application/x-www-form-urlencoded
-curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
+curl http://127.0.0.1/ -XPOST -d "username=root&password=123456测试汉字"
 {
     "data": {
         "password": "123456测试汉字",
@@ -2638,14 +2638,14 @@ func main() {
 输出结果
 
 ```bash
-C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
+C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -d "username=root&password=123456测试汉字"
 {
     "Content-Type": "application/x-www-form-urlencoded",
     "Password": "123456测试汉字",
     "Username": "root"
 }
 
-C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -XPOST --form username=root --form password=中国你好
+C:\Users\Administrator>curl http://127.0.0.1/ -XPOST --form username=root --form password=中国你好
 {
     "Content-Type": "multipart/form-data; boundary=------------------------f56cfab4c132b278",
     "Password": "中国你好",
@@ -2661,9 +2661,10 @@ C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -XPOST --form username=root
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // POST JSON参数绑定注意事项：
@@ -2671,27 +2672,21 @@ import (
 // (2) Content-Type必须设置成application/json
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `form:"username"`
+	Password string `form:"password"`
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.POST("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
 		// 参数绑定
 		var user User
-		err := c.ShouldBind(&user)
+		err := ctx.ShouldBind(&user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
 				"Message":      "请求参数错误" + err.Error(),
 			})
@@ -2699,19 +2694,36 @@ func main() {
 		}
 
 		// 返回响应
-		c.JSON(http.StatusOK, gin.H{
+		ctx.IndentedJSON(http.StatusOK, gin.H{
 			"Content-Type": contentType,
 			"Username":     user.Username,
 			"Password":     user.Password,
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
-![image-20220507134825424](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507134825424.png)
+输出结果
+
+```bash
+# Windows下需要对双引号转义, 最外层必须使用双引号
+curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"username\":\"John\",\"password\"
+{
+    "Content-Type": "application/json",
+    "Password": "123456",
+    "Username": "John"
+}
+
+# Linux下最外层使用单引号包裹即可
+[root@node-1 ~]# curl http://192.168.123.88/ -XPOST -H "Content-Type: application/json" -d '{"username":"John","password":"123456"}' ; echo
+{
+    "Content-Type": "application/json",
+    "Password": "123456",
+    "Username": "John"
+}
+```
 
 :::
 
@@ -2721,50 +2733,48 @@ func main() {
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 // 多次参数绑定注意事项：
 // 问题描述：
-// 		对于部分格式数据(JSON, XML, MsgPack, ProtoBuf)，使用ShouldBind多次绑定会出错,原因是c.Request.Body不可以重用，第二次读取就会出现EOF
+// 		对于部分格式数据(JSON, XML, MsgPack, ProtoBuf)使用ShouldBind多次绑定会出错,
+//		原因是c.Request.Body不可以重用，第二次读取就会出现EOF
 //      对于其他格式（Query, Form, FormPost, FormMultipart）则可以多次调用c.ShouldBind()
 // 解决办法：
-// 		使用ShouldBindBodyWith绑定
+// 		使用ShouldBindBodyWith绑定, JSON格式的绑定可以简写为 ctx.ShouldBindJSON(&user)
 
 type User struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
+	Username string `form:"username"`
+	Password string `form:"password"`
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
-	// 注册路由
-	r.POST("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
-
-		// 参数绑定
-		var user User
+		// 参数绑定-1
 		var user1 User
-		//if err := c.ShouldBind(&user); err != nil {
-		if err := c.ShouldBindBodyWith(&user, binding.JSON); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+		err := ctx.ShouldBindBodyWith(&user1, binding.JSON)
+		if err != nil {
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
 				"Message":      "请求参数错误" + err.Error(),
 			})
 			return
 		}
-		//if err := c.ShouldBind(&user1); err != nil {
-		if err := c.ShouldBindBodyWith(&user1, binding.JSON); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+
+		// 参数绑定-2
+		var user2 User
+		err = ctx.ShouldBindBodyWith(&user2, binding.JSON)
+		if err != nil {
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
 				"Message":      "请求参数错误" + err.Error(),
 			})
@@ -2772,25 +2782,52 @@ func main() {
 		}
 
 		// 返回响应
-		c.JSON(http.StatusOK, gin.H{
-			"Content-Type": contentType,
-			"Username":     user.Username,
-			"Password":     user.Password,
-			"Username1":    user1.Username,
-			"Password1":    user1.Password,
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"header": gin.H{
+				"Content-Type": contentType,
+			},
+			"data": []gin.H{
+				{
+					"Username1": user1.Username,
+					"Password1": user1.Password,
+				},
+				{
+					"Username2": user2.Username,
+					"Password2": user2.Password,
+				},
+			},
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+```bash
+curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"username\":\"John\",\"password\":\"123456\"}"
+{
+    "data": [
+        {
+            "Password1": "123456",
+            "Username1": "John"
+        },
+        {
+            "Password2": "123456",
+            "Username2": "John"
+        }
+    ],
+    "header": {
+        "Content-Type": "application/json"
+    }
 ```
 
 :::
 
 <br />
 
-#### 参数绑定后校验
+#### 参数校验
 
 `gin`参数校验使用的是`validator`库，因此具体的校验规则可以去下面的文档中查找
 
@@ -2804,9 +2841,11 @@ Github：[https://github.com/go-playground/validator](https://github.com/go-play
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 参数校验都卸载binding后面，常见的规则有：
@@ -2814,58 +2853,59 @@ import (
 //		omitempty 可选参数
 //		max/min/le/lt/ge/gt/eq/ne
 
+// User 设置密码最少是8位
 type User struct {
 	Id       int    `json:"id" binding:"omitempty"`
-	Username string `json:"username" binding:"required,min=1,max=20"`
-	Password string `json:"password" binding:"required,min=8,max=20"` // 设置字符串长度最低是8
+	Username string `json:"username" binding:"required,min=5,max=20"`
+	Password string `json:"password" binding:"required,min=8,max=20"`
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
-	// 注册路由
-	r.POST("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
-
-		// 参数绑定
+		// 参数绑定时校验
 		var user User
-		err := c.ShouldBind(&user)
+		err := ctx.ShouldBind(&user)
+
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
-				"Message":      "请求参数错误" + err.Error(),
+				"Message":      strings.Split(err.Error(), "\n"),
 			})
 			return
 		}
 
 		// 返回响应
-		c.JSON(http.StatusOK, gin.H{
+		ctx.IndentedJSON(http.StatusOK, gin.H{
 			"Content-Type": contentType,
-			"Id":           user.Id,
 			"Username":     user.Username,
 			"Password":     user.Password,
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"username\":\"John\",\"password\":\"123456\"}"
+{
+    "Content-Type": "application/json",
+    "Message": [
+        "Key: 'User.Username' Error:Field validation for 'Username' failed on the 'min' tag",
+        "Key: 'User.Password' Error:Field validation for 'Password' failed on the 'min' tag"
+    ]
 }
 ```
 
 :::
 
-输出结果
-
-![image-20220507144553806](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507144553806.png)
-
-
-
-
+<br />
 
 ### 文件上传下载
 
