@@ -3248,7 +3248,25 @@ C:\Users\Administrator\Desktop\a> curl http://127.0.0.1/main.go -O
 
 <br />
 
-## 优雅关闭
+## 优化篇
+
+### 运行模式
+
+::: details 点击查看完整代码
+
+```bash
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:   export GIN_MODE=release
+ - using code:  gin.SetMode(gin.ReleaseMode)
+
+# 默认为调试模式(Debug), 可通过环境变量或代码的方式设置为发布模式(Release)
+```
+
+:::
+
+<br />
+
+### 优雅关闭
 
 ::: details 点击查看完整代码
 
@@ -3336,6 +3354,73 @@ func main() {
 	// 监听Server信号
 	SignalEvent(server)
 }
+```
+
+:::
+
+<br />
+
+### 定制日志
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ZapLogger 日志中间件
+func ZapLogger(logger *zap.Logger) gin.HandlerFunc {
+	return func(ctx *gin.Context) {		
+		start := time.Now()
+		ctx.Next()
+		duration := time.Since(start)
+		logger.Info(fmt.Sprintf("[%s] %s %s %s %d %s",
+			start.Format("2006-01-02 15:04:05.000"),
+			ctx.ClientIP(),
+			ctx.Request.Method,
+			ctx.Request.URL.Path,
+			ctx.Writer.Status(),
+			duration,
+		))
+	}
+}
+
+func main() {
+	logger, _ := zap.NewProduction()
+	gin.SetMode(gin.ReleaseMode)
+
+	router := gin.New()
+	router.Use(
+		ZapLogger(logger),
+		gin.Recovery(),
+	)
+
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"Message": "Hello Gin!",
+		})
+	})
+
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+{"level":"info","ts":1686482000.1849709,"caller":"example/main.go:26","msg":"[2023-06-11 19:13:20.172] 127.0.0.1 GET / 200 1.3385ms"}
+
+# 以上代码只是简单写写，实际上还有很大的优化空间
 ```
 
 :::
