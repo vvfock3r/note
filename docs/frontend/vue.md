@@ -188,7 +188,7 @@ setTimeout(() => {
 
 <br />
 
-### 让响应式对象变为只读 readonly
+### 响应式对象变为只读 readonly
 
 ::: details 点击查看详情
 
@@ -196,77 +196,72 @@ setTimeout(() => {
 
 ```vue
 <script setup>
-import {reactive, readonly} from "vue";
+import { reactive, readonly } from 'vue'
 
 // readonly让对象只读；打开控制台可以看到会报警，而且数据也不会改
-const person = readonly(reactive({name: "jack"}))
+const person = readonly(reactive({ name: 'jack' }))
 
-// 设置一次性定时器
+// 设置一次性定时器, 此时不能再修改数据
 setTimeout(() => {
-  person.name = "bob";
+  person.name = 'bob'
 }, 2000)
-
 </script>
 
 <template>
   <div>{{ person.name }}</div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![image-20230611214741762](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611214741762.png)
 
 :::
 
 <br />
 
-### 解构响应式对象方式汇总
+### 响应式对象解构方式 toRefs
 
-::: details （1）解构时使用 toRefs 封装，新对象的修改会同步源响应式对象
+::: details （1）方式一：解构时使用 toRefs 封装，新对象的修改会同步源响应式对象
 
 `App.vue`
 
 ```vue
 <script setup>
-import {reactive, toRefs} from "vue";
+import { reactive, toRefs } from "vue";
 
 // 使用 reactive 封装引用类型为响应式对象
-const person = reactive({name: "jack"})
+const person = reactive({ name: "jack" });
 
-// 如果直接将person解构,响应式对象又变成非响应式了
-// 解决办法是利用toRefs
+// 如果直接将person解构,响应式对象又变成非响应式了, 解决办法是利用toRefs
 // 原理：proxy({name: 'jack'}) => {name: proxy({value: 'jack'})}
-var {name} = toRefs(person)
+var { name } = toRefs(person);
 
 // 设置一次性定时器
 setTimeout(() => {
   name.value = "bob";
-}, 2000)
-
+}, 2000);
 </script>
 
 <template>
   <div>{{ name }}</div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
 
-::: details （2）创建新的 ref，新对象的修改会同步源响应式对象
+::: details （2）方式二：创建新的 ref，新对象的修改会同步源响应式对象
 
 `App.vue`
 
 ```vue
 <script setup>
-import {reactive, toRef} from "vue";
+import { reactive, toRef } from 'vue'
 
 // 使用 reactive 封装引用类型为响应式对象
-const person = reactive({name: "jack"})
+const person = reactive({ name: 'jack' })
 
 // 基于响应式对象上的一个属性，创建一个对应的 ref
 // 这样创建的 ref 与其源属性保持同步
@@ -274,25 +269,22 @@ let firstName = toRef(person, 'name')
 
 // 设置一次性定时器
 setTimeout(() => {
-  firstName.value = "bob";
+  firstName.value = 'bob'
 }, 2000)
-
 </script>
 
 <template>
   <div>{{ person.name }}</div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
 
 <br />
 
-### 高性能的计算属性
+### 缓存特性的计算属性 computed
 
 文档：[https://cn.vuejs.org/api/reactivity-core.html#computed](https://cn.vuejs.org/api/reactivity-core.html#computed)
 
@@ -302,14 +294,14 @@ setTimeout(() => {
 
 ```vue
 <script setup>
-import {computed, ref} from "vue";
+import { computed, ref } from 'vue'
 
 // 定义一个普通方法
 function getNow() {
   return Date.now()
 }
 
-// 定义一个计算属性
+// 定义一个计算属性, 它虽然是一个方法但是我们要以一个变量来看待它
 const now = computed(() => {
   return Date.now()
 })
@@ -319,28 +311,27 @@ const n = ref(0)
 setInterval(() => {
   n.value++
 }, 1000)
-
 </script>
 
 <template>
-  <div>计数变量: {{ n }}</div>
   <!-- 计算属性会缓存，只有当依赖的数据发生改变才会改变 -->
   <!-- 方法取到的值是其他数据变了，方法也会重新渲染 -->
   <!-- 如果以上两种方式都能满足需求的话，推荐使用计算属性,因为有缓存，性能会高一些 -->
+  <div>计数变量: {{ n }}</div>
   <div>方法取值: {{ getNow() }}</div>
   <div>计算属性: {{ now }}</div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![QQ截图20230611215607](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//QQ%E6%88%AA%E5%9B%BE20230611215607.gif)
 
 :::
 
 <br />
 
-### 侦听一个或多个响应式对象
+### 侦听多个响应式对象 watchxx
 
 文档：
 
