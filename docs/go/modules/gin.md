@@ -2413,7 +2413,7 @@ Content-Type: text/html; charset=utf-8
 
 ## 参数解析
 
-#### 查询字符串
+### 查询字符串
 
 ::: details 点击查看完整代码
 
@@ -2463,7 +2463,7 @@ C:\Users\Administrator> curl "http://127.0.0.1/?user\[id\]=10000&user\[name\]=bo
 
 <br />
 
-#### 表单解析
+### 表单解析
 
 ::: details （1）提交表单示例
 
@@ -2622,7 +2622,7 @@ curl http://127.0.0.1/ -XGET --form username=root --form password=中国你好
 
 <br />
 
-#### 参数绑定
+### 参数绑定
 
 ::: details （1）GET查询字符串参数绑定
 
@@ -2942,7 +2942,7 @@ curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"usernam
 
 <br />
 
-#### 参数校验
+### 参数校验
 
 `gin`参数校验使用的是`validator`库，因此具体的校验规则可以去下面的文档中查找
 
@@ -3023,8 +3023,6 @@ curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"usernam
 <br />
 
 ### 文件上传下载
-
-#### 文件上传
 
 ::: details （1）上传单文件
 
@@ -3162,11 +3160,7 @@ D:\application\GoLand\example>curl http://127.0.0.1/ -XPOST -F "files=@main.go" 
 
 :::
 
-<br />
-
-#### 文件下载
-
-::: details 点击查看完整代码
+::: details （3）文件下载
 
 ```go
 package main
