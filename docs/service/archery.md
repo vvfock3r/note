@@ -73,8 +73,108 @@ docker container logs archery -f -n 10
 
 <br />
 
+### 审批流程
+
+系统管理 --> 配置项管理 --> 工单审核流配置 --> 请选择审批权限组
+
+审批流是针对资源组的，不同资源组可以包含不同的审批流
+
+![image-20230611091202206](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611091202206.png)
+
+<br />
+
+### goInception
+
+文档：[https://archerydms.com/configuration/#goinception](https://archerydms.com/configuration/#goinception)
+
+::: details （1）查看goInception配置文件
+
+```bash
+[root@node-1 ~]# docker exec -it goinception cat /etc/config.toml | grep -E '^port|^backup_'
+port = 4000
+backup_host = "mysql"
+backup_port = 3306
+backup_user = "root"
+backup_password = "123456"
+```
+
+:::
+
+::: details （2）配置goInception
+
+系统管理 --> 配置项管理 ---> 系统设置
+
+![image-20230611092456907](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611092456907.png)
+
+:::
+
+ <br />
+
 ## 常用功能
 
-### SQL查询
+### SQL查询 - 在线查询
+
+::: details （1）插入测试数据
+
+```sql
+CREATE TABLE users (
+  id INT NOT NULL AUTO_INCREMENT,
+  first_name VARCHAR(50),
+  last_name VARCHAR(50),
+  email VARCHAR(100),
+  age INT,
+  address VARCHAR(100),
+  city VARCHAR(50),
+  country VARCHAR(50),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO users (first_name, last_name, email, age, address, city, country)
+VALUES
+  ('John', 'Doe', 'johndoe@example.com', 25, '123 Main St', 'New York', 'USA'),
+  ('Jane', 'Smith', 'janesmith@example.com', 30, '456 Elm St', 'Los Angeles', 'USA'),
+  ('Michael', 'Johnson', 'michaeljohnson@example.com', 35, '789 Oak St', 'Chicago', 'USA'),
+  ('Emily', 'Williams', 'emilywilliams@example.com', 28, '321 Pine St', 'San Francisco', 'USA'),
+  ('David', 'Brown', 'davidbrown@example.com', 32, '987 Cedar St', 'Seattle', 'USA'),
+  ('Sarah', 'Taylor', 'sarahtaylor@example.com', 29, '654 Maple St', 'Boston', 'USA'),
+  ('Christopher', 'Miller', 'christophermiller@example.com', 31, '741 Birch St', 'Denver', 'USA'),
+  ('Jessica', 'Anderson', 'jessicaanderson@example.com', 27, '852 Walnut St', 'Austin', 'USA'),
+  ('Matthew', 'Thomas', 'matthewthomas@example.com', 33, '159 Spruce St', 'Miami', 'USA'),
+  ('Olivia', 'Roberts', 'oliviaroberts@example.com', 26, '753 Chestnut St', 'Atlanta', 'USA'),
+  ('Alice', 'Johnson', 'alicejohnson@example.com', 28, '123 Main St', 'New York', 'USA'),
+  ('Bob', 'Smith', 'bobsmith@example.com', 32, '456 Elm St', 'Los Angeles', 'USA'),
+  ('Charlie', 'Davis', 'charliedavis@example.com', 30, '789 Oak St', 'Chicago', 'USA');
+```
+
+:::
+
+::: details （2）SQL查询，依赖：添加实例
 
 ![image-20230610193153567](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230610193153567.png)
+
+:::
+
+<br />
+
+### SQL审核 - SQL上线
+
+::: details （1）准备SQL语句
+
+```sql
+INSERT INTO users (first_name, last_name, email, age, address, city, country)
+VALUES ('Ethan', 'Johnson', 'ethanjohnson@example.com', 24, '246 Oak St', 'San Francisco', 'USA');
+
+INSERT INTO users (first_name, last_name, email, age, address, city, country)
+VALUES ('Sophia', 'Brown', 'sophiabrown@example.com', 29, '369 Elm St', 'Los Angeles', 'USA');
+
+INSERT INTO users (first_name, last_name, email, age, address, city, country)
+VALUES ('Jacob', 'Smith', 'jacobsmith@example.com', 31, '852 Maple St', 'New York', 'USA');
+```
+
+:::
+
+::: details （2）SQL上线，依赖：审批流程、goInception
+
+![image-20230611092956838](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611092956838.png)
+
+:::
