@@ -3625,51 +3625,63 @@ C:\Users\Administrator\Desktop> curl http://127.0.0.1/
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"sync"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Change(c *gin.Context, wg *sync.WaitGroup) {
+func Middleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// 当需要开启一个Goroutine时应该使用c.Copy()，
+		// 而不是直接修改原始对象
+
+		// 初始环境
+		wg := new(sync.WaitGroup)
+		wg.Add(1)
+
+		// 错误的写法
+		//go ChangePost(ctx, wg)
+
+		// 正确的写法
+		go ChangePost(ctx.Copy(), wg)
+
+		wg.Wait()
+
+		// 后续处理逻辑
+		ctx.Next()
+	}
+}
+
+func ChangePost(c *gin.Context, wg *sync.WaitGroup) {
 	c.Request.Method = http.MethodPost
 	wg.Done()
 }
 
-func M1Middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 当需要开启一个Goroutine时应该使用c.Copy()，而不是直接修改原始对象
-		wg := new(sync.WaitGroup)
-		wg.Add(1)
-		//go Change(c, wg)
-		go Change(c.Copy(), wg) // 应该使用c.Copy
-		wg.Wait()
-
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
-	}
-}
-
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router.Use(Middleware())
 
-	// 注册全局中间件
-	r.Use(M1Middleware())
-
-	// 注册路由组
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+	router.GET("/", func(c *gin.Context) {
+		c.IndentedJSON(http.StatusOK, gin.H{
 			"Method":  c.Request.Method,
 			"Message": "Hello Gin!",
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
+}
+```
+
+输出结果
+
+```bash
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+{
+    "Message": "Hello Gin!",
+    "Method": "POST"
 }
 ```
 
