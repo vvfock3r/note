@@ -331,7 +331,7 @@ setInterval(() => {
 
 <br />
 
-### 侦听多个响应式对象 watchxx
+### 侦听N个响应式对象 watchxx
 
 文档：
 
@@ -344,32 +344,34 @@ setInterval(() => {
 
 ```vue
 <script setup>
-import {ref, watch} from "vue";
+import { ref, watch } from "vue";
 
 // 使用 ref 封装基本类型为响应式对象
 const name = ref("dell");
 
 // 监听一个 ref 对象, {immediate: true} 用于表示 立即执行监听器
+// prettier-ignore
 watch(name, (currentValue, prevValue) => {
-  console.log('当前值: ', currentValue)
-  console.log('上次值: ', prevValue)
-}, {immediate: true})
+    console.log("当前值: ", currentValue);
+    console.log("上次值: ", prevValue);
+  },
+  { immediate: true }
+);
 
 // 修改 name 的值
 setTimeout(() => {
-  name.value = "bob"
-}, 2000)
-
+  name.value = "bob";
+}, 2000);
 </script>
 
 <template>
   <div></div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![image-20230611220534372](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611220534372.png)
 
 :::
 
@@ -377,36 +379,39 @@ setTimeout(() => {
 
 ```vue
 <script setup>
-import {reactive, watch} from "vue";
+import { reactive, watch } from "vue";
 
 // 使用 reactive 封装引用类型为响应式对象
-const name = reactive({firstName: "san", lastName: "zhang"});
+const name = reactive({ firstName: "san", lastName: "zhang" });
 
 // 监听一个 reactive 对象, {immediate: true} 用于表示 立即执行监听器
-watch([() => name.firstName, () => name.lastName],
-    ([currentFirstName, currentLastName], [prevFirstName, prevLastName]) => {
-      console.log("当前值: ", currentFirstName)
-      console.log("上次值: ", prevFirstName)
-      console.log("当前值: ", currentLastName)
-      console.log("上次值: ", prevLastName)
-    }, {immediate: true})
+watch(
+  [() => name.firstName, () => name.lastName],
+  ([currentFirstName, currentLastName], [prevFirstName, prevLastName]) => {
+    console.log("当前值: ", currentFirstName);
+    console.log("上次值: ", prevFirstName);
+    console.log("当前值: ", currentLastName);
+    console.log("上次值: ", prevLastName);
+    console.log("\n");
+  },
+  { immediate: true }
+);
 
 // 修改 name 的值
 setTimeout(() => {
-  name.firstName = "si"
-  name.lastName = "li"
-}, 2000)
-
+  name.firstName = "si";
+  name.lastName = "li";
+}, 2000);
 </script>
 
 <template>
   <div></div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![image-20230611220756907](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611220756907.png)
 
 :::
 
@@ -414,10 +419,10 @@ setTimeout(() => {
 
 ```vue
 <script setup>
-import {reactive, watchEffect} from "vue";
+import { reactive, watchEffect } from "vue";
 
 // 使用 reactive 封装引用类型为响应式对象
-const name = reactive({firstName: "san", lastName: "zhang"});
+const name = reactive({ firstName: "san", lastName: "zhang" });
 
 // 使用 watchEffect 监听对象
 // 1、watchEffect是非惰性的，一开始就执行
@@ -425,32 +430,34 @@ const name = reactive({firstName: "san", lastName: "zhang"});
 // 3、watchEffect内部调用了外部变量时，当外部变量改变时才会执行这个函数，如果没有依赖，就不会执行
 //   也就是说 能自动感知内部函数的依赖
 watchEffect(() => {
-  console.log(name.firstName)
-  console.log(name.lastName)
-})
+  console.log(name.firstName);
+  console.log(name.lastName);
+  console.log("\n");
+});
 
-// 修改 names 的值
+// 修改 name 的值
 setTimeout(() => {
-  name.firstName = "si"
-  name.lastName = "li"
-}, 2000)
-
+  name.firstName = "si";
+  name.lastName = "li";
+}, 2000);
 </script>
 
 <template>
   <div></div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![image-20230611221039625](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611221039625.png)
 
 :::
 
 <br />
 
-### 生命周期函数简单举例
+### 组件的生命周期函数 xxx
+
+文档：[https://cn.vuejs.org/guide/essentials/lifecycle.html](https://cn.vuejs.org/guide/essentials/lifecycle.html)
 
 ::: details 点击查看详情
 
@@ -458,24 +465,64 @@ setTimeout(() => {
 
 ```vue
 <script setup>
-import {onBeforeMount, onMounted} from "vue";
+import {
+  onActivated,
+  onBeforeMount,
+  onBeforeUnmount,
+  onBeforeUpdate,
+  onMounted,
+  onUnmounted,
+  onUpdated,
+  onDeactivated,
+  onErrorCaptured
+} from "vue";
+
+// Vue 3 中的生命周期钩子函数与 Vue 2 中的不完全相同
+// 这里还需要仔细研究
 
 onBeforeMount(() => {
-  console.log('onBeforeMount')
-})
+  console.log("onBeforeMount");
+});
 onMounted(() => {
-  console.log('onMounted')
-})
+  console.log("onMounted");
+});
 
+onBeforeUpdate(() => {
+  console.log("onBeforeUpdate");
+});
+
+onUpdated(() => {
+  console.log("onUpdated");
+});
+
+onBeforeUnmount(() => {
+  console.log("onBeforeUnmount");
+});
+
+onUnmounted(() => {
+  console.log("onUnmounted");
+});
+
+onActivated(() => {
+  console.log("onActivated");
+});
+
+onDeactivated(() => {
+  console.log("onDeactivated");
+});
+
+onErrorCaptured(() => {
+  console.log("onErrorCaptured");
+});
+
+console.log("Setup");
 </script>
 
 <template>
   <div></div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
