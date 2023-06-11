@@ -3244,6 +3244,8 @@ C:\Users\Administrator\Desktop\a> curl http://127.0.0.1/main.go -O
 
 #### 中间件格式要求
 
+::: details 点击查看详情
+
 ```go
 func Default() *Engine {
 	debugPrintWARNINGDefault()
@@ -3266,14 +3268,17 @@ type HandlerFunc func(*Context)
 说明
 
 * 只要符合`func(*Context)`函数定义，就可以是一个中间件
-* 在中间件中调用`c.Next()`，可以穿透中间件，执行后面的逻辑，后面逻辑的执行完成后`c.Next()`函数执行结束，继续执行中间件内容
+* 在中间件中调用`ctx.Next()`，可以穿透中间件，执行后面的逻辑
+* 可以这样理解，`ctx.Next()`上面的代码在Handler处理之前执行，下面的代码则在Handler处理之后执行
 * 在中间件中调用`c.Abort()`，可以阻止穿透中间件
+
+:::
 
 <br />
 
 #### 中间件使用示例
 
-::: details 注册全局中间件
+::: details （1）注册全局中间件
 
 ```go
 package main
@@ -3328,7 +3333,7 @@ func main() {
 
 :::
 
-::: details 注册单个路由中间件
+::: details （2）注册单个路由中间件
 
 ```go
 package main
@@ -3381,7 +3386,7 @@ func main() {
 
 :::
 
-::: details 注册路由组内全局中间件
+::: details （3）注册路由组内全局中间件
 
 ```go
 package main
