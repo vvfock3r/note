@@ -34,7 +34,7 @@ npm init vue@latest
 
 ::: details （2）配置WebStorm
 
-![image-20230611204206714](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611204206714.png)
+![image-20230611213700274](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611213700274.png)
 
 :::
 
@@ -99,7 +99,6 @@ createApp(App).mount('#app')
 
 ```vue
 <script setup>
-
 // 计数器
 let count = 0
 
@@ -107,7 +106,6 @@ let count = 0
 function add() {
   count++
 }
-
 </script>
 
 <template>
@@ -118,9 +116,7 @@ function add() {
   <button @click="add">计数器加1</button>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
@@ -131,7 +127,7 @@ function add() {
 
 ```vue
 <script setup>
-import {ref} from "vue";
+import { ref } from 'vue'
 
 // 使用 ref 封装基本类型为响应式对象
 // 原理
@@ -145,7 +141,6 @@ const count = ref(0)
 function add() {
   count.value++
 }
-
 </script>
 
 <template>
@@ -156,9 +151,7 @@ function add() {
   <button @click="add">计数器加1</button>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
@@ -173,25 +166,22 @@ function add() {
 
 ```vue
 <script setup>
-import {reactive} from "vue";
+import { reactive } from 'vue'
 
 // 使用 reactive 封装引用类型为响应式对象
-const person = reactive({name: "jack"})
+const person = reactive({ name: 'jack' })
 
 // 设置一次性定时器
 setTimeout(() => {
-  person.name = "bob";
+  person.name = 'bob'
 }, 2000)
-
 </script>
 
 <template>
   <div>{{ person.name }}</div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
 
 :::
