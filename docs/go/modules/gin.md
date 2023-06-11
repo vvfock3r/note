@@ -3272,6 +3272,10 @@ type HandlerFunc func(*Context)
 * 可以这样理解，`ctx.Next()`上面的代码在Handler处理之前执行，下面的代码则在Handler处理之后执行
 * 在中间件中调用`c.Abort()`，可以阻止穿透中间件
 
+注意：
+
+* 注册中间件尽量在注册路由之前
+
 :::
 
 <br />
@@ -3476,7 +3480,7 @@ GET  /api/v1/: Used 339 milliseconds
 
 <br />
 
-#### 执行顺序问题
+#### 中间件执行顺序
 
 ::: details 点击查看完整代码
 
@@ -3485,69 +3489,69 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func MyMiddleware(name string) gin.HandlerFunc {
+// NamedMiddleware 测试中间件执行顺序
+func NamedMiddleware(name string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fmt.Printf("中间件%s开始执行\n", name)
-		c.Next() // 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
+		c.Next()
 		fmt.Printf("中间件%s结束执行\n", name)
 	}
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册全局中间件
-	r.Use(
-		MyMiddleware("m1"),
-		MyMiddleware("m2"),
-		MyMiddleware("m3"),
+	router.Use(
+		NamedMiddleware("m1"),
+		NamedMiddleware("m2"),
+		NamedMiddleware("m3"),
 	)
 
-	// 注册路由组
-	r.GET("/", MyMiddleware("m4"), func(c *gin.Context) {
+	router.GET("/", func(ctx *gin.Context) {
 		fmt.Println("Handler开始执行")
-		c.JSON(http.StatusOK, gin.H{
+		ctx.IndentedJSON(http.StatusOK, gin.H{
 			"Message": "Hello Gin!",
 		})
 		fmt.Println("Handler结束执行")
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
+# 客户端执行
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+{
+    "Message": "Hello Gin!"
+}
+
+# 服务端日志
 # 可以看到，与我们注册的顺序保持一致
-# 注意：全局中间件注册要在路由注册之前，否则不会执行到
 中间件m1开始执行
 中间件m2开始执行
 中间件m3开始执行
-中间件m4开始执行
-Handler开始执行
-Handler结束执行
-中间件m4结束执行
+Handler开始执行 
+Handler结束执行 
 中间件m3结束执行
 中间件m2结束执行
 中间件m1结束执行
+[GIN] 2023/06/11 - 14:37:56 | 200 |       540.8µs |       127.0.0.1 | GET      "/"
 ```
 
 :::
 
 <br />
 
-#### 跨中间件传值
+#### 中间件之间传值
 
 ::: details 点击查看完整代码
 
