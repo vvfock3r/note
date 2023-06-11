@@ -2084,6 +2084,59 @@ func main() {
 
 <br />
 
+### SSE推送
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+
+	router.GET("/events", func(c *gin.Context) {
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+		c.Header("Access-Control-Allow-Origin", "*")
+
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				message := fmt.Sprintf("Message sent at %s", time.Now().Format("2006-01-02 15:04:05"))
+				data := fmt.Sprintf("data: %s\n\n", message)
+				_, _ = c.Writer.WriteString(data)
+				c.Writer.Flush()
+			case <-c.Writer.CloseNotify():
+				return
+			}
+		}
+	})
+
+	router.Run(":8080")
+}
+```
+
+输出结果
+
+```bash
+
+```
+
+:::
+
+<br />
+
 ### 4xx和5xx
 
 ::: details （1）4xx响应
@@ -2963,142 +3016,140 @@ curl http://127.0.0.1/ -XPOST -H "Content-Type: application/json" -d "{\"usernam
 
 ### 文件上传下载
 
-#### 单文件上传
+#### 文件上传
 
-::: details 点击查看完整代码
+::: details （1）上传单文件
 
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "192.168.0.105:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router := gin.Default()
 
 	// 参数调整
-	//r.MaxMultipartMemory默认内存限制为32MB，意思是当读取的文件大小超过这个值就会进行刷盘
-	//可以通过以下方法来设置
-	//r.MaxMultipartMemory = 64 << 20 // 64 MB
-
-	// 注册路由
-	r.POST("/upload/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
-		fmt.Println("Content-Type: ", contentType)
+	//   router.MaxMultipartMemory 当读取的文件大小超过这个值就会进行刷盘, 默认内存限制为32MB
+	//   router.MaxMultipartMemory = 64 << 20 // 64 MB
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
 		// 读取文件
-		f, err := c.FormFile("logo")
+		f, err := ctx.FormFile("filename")
 		if err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("请求错误: %s\n", err.Error()))
-            return
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+				"Message": err.Error(),
+			})
+			return
 		}
 
 		// 保存文件,如果文件已经存在则会覆盖
-		err = c.SaveUploadedFile(f, f.Filename)
+		err = ctx.SaveUploadedFile(f, f.Filename)
 		if err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("服务器保存文件失败: %s\n", err.Error()))
-            return
+			ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+				"Message": err.Error(),
+			})
+			return
 		}
 
 		// 返回响应
-		msg := fmt.Sprintf("Content-Type: %s\n文件上传成功\n", contentType)
-		c.String(http.StatusOK, msg)
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Message":      "ok",
+		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-[root@localhost ~]# curl http://192.168.0.105/upload/ -F "logo=@anaconda-ks.cfg" -XPOST
-Content-Type: multipart/form-data; boundary=----------------------------0338377c72ec
-文件上传成功
+# -F "filename=@main.go" filename字段和代码中的filename相对应
+D:\application\GoLand\example> curl http://127.0.0.1/ -XPOST -F "filename=@main.go" 
+{
+    "Content-Type": "multipart/form-data; boundary=------------------------df62ed492254df1b",
+    "Message": "ok"
+}
 ```
 
 :::
 
-<br />
-
-#### 多个文件上传
-
-::: details 点击查看完整代码
+::: details （2）上传多文件
 
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "192.168.0.105:80"
-
-	// 实例化Gin路由引擎
-	r := gin.Default()
+	router := gin.Default()
 
 	// 参数调整
-	//r.MaxMultipartMemory默认内存限制为32MB，意思是当读取的文件大小超过这个值就会进行刷盘
-	//可以通过以下方法来设置
-	//r.MaxMultipartMemory = 64 << 20 // 64 MB
-
-	// 注册路由
-	r.POST("/upload/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
+	//   router.MaxMultipartMemory 当读取的文件大小超过这个值就会进行刷盘, 默认内存限制为32MB
+	//   router.MaxMultipartMemory = 64 << 20 // 64 MB
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
 		// 读取文件列表
-		form, err := c.MultipartForm()
+		form, err := ctx.MultipartForm()
 		if err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("请求错误: %s\n", err.Error()))
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+				"Message": err.Error(),
+			})
 			return
 		}
-		files := form.File["files"] // 返回一个切片 []*FileHeader
+
+		// 返回一个切片 []*FileHeader
+		files := form.File["files"]
 		if len(files) <= 0 {
-			c.String(http.StatusBadRequest, fmt.Sprintf("未上传任何文件或未指定标识符files\n"))
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+				"Message": "未上传任何文件或未指定标识符files\n",
+			})
 			return
 		}
 
 		// 保存文件,如果文件已经存在则会覆盖
 		for _, file := range files {
-			err := c.SaveUploadedFile(file, file.Filename)
+			err := ctx.SaveUploadedFile(file, file.Filename)
 			if err != nil {
-				c.String(http.StatusBadRequest, fmt.Sprintf("服务器保存文件失败: %s\n", err.Error()))
+				ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+					"Message": err.Error(),
+				})
 				return
 			}
 		}
 
 		// 返回响应
-		msg := fmt.Sprintf("Content-Type: %s\n文件上传成功\n", contentType)
-		c.String(http.StatusOK, msg)
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"Content-Type": contentType,
+			"Message":      "ok",
+		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-[root@localhost ~]# curl http://192.168.0.105/upload/ -F "files=@anaconda-ks.cfg" --form "files=@1.txt"  -XPOST
-Content-Type: multipart/form-data; boundary=----------------------------a3bb45431558
-文件上传成功
+D:\application\GoLand\example>curl http://127.0.0.1/ -XPOST -F "files=@main.go" -F "files=@go.mod"
+{                                                                                            
+    "Content-Type": "multipart/form-data; boundary=------------------------5ec76a8772e412fb",
+    "Message": "ok"                                                                          
+}
 ```
 
 :::
@@ -3113,37 +3164,76 @@ Content-Type: multipart/form-data; boundary=----------------------------a3bb4543
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	
 	// 指定单个文件下载
-	// 访问 http://127.0.0.1/go.mod/ 会下载当前目录下的 go.mod文件
-	r.StaticFile("/go.mod", "./go.mod")
+	// 访问 http://127.0.0.1/main.go 会下载当前目录下的main.go文件
+	router.GET("/main.go", func(ctx *gin.Context) {
+		ctx.File("main.go")
+	})
 
 	// 指定多个文件下载
 	// 访问 http://127.0.0.1/download/go.mod会下载当前目录下的go.mod文件
 	// 访问 http://127.0.0.1/download/会报404错误
-	r.Static("/download/", "./")
+	router.Static("/download/", ".")
 
 	// 静态文件服务器
-	// 访问 http://127.0.0.1/download2/go.mod会下载go.mod文件
-	// 访问 http://127.0.0.1/download2/会展示出当前目录下有哪些文件，点击可以下载（同样也可以打开子目录）
-	r.StaticFS("/download2", http.Dir("./"))
+	// 访问 http://127.0.0.1/fileserver/go.mod会下载go.mod文件
+	// 访问 http://127.0.0.1/fileserver/会展示出当前目录下有哪些文件，点击可以下载（同样也可以打开子目录）
+	router.StaticFS("/fileserver/", http.Dir("./"))
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
+```
+
+输出结果
+
+```bash
+# 直接访问
+C:\Users\Administrator\Desktop\a> curl http://127.0.0.1/main.go
+package main
+
+import (
+        "log"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+func main() {
+        router := gin.Default()
+
+        // 指定单个文件下载
+        // 访问 http://127.0.0.1/main.go 会下载当前目录下的main.go文件
+        router.GET("/main.go", func(ctx *gin.Context) {
+                ctx.File("main.go")
+        })
+
+        // 指定多个文件下载
+        // 访问 http://127.0.0.1/download/go.mod会下载当前目录下的go.mod文件
+        // 访问 http://127.0.0.1/download/会报404错误
+        router.Static("/download/", ".")
+
+        // 静态文件服务器
+        // 访问 http://127.0.0.1/fileserver/go.mod会下载go.mod文件
+        // 访问 http://127.0.0.1/fileserver/会展示出当前目录下有哪些文件，点击可以下载（同样也可以打开子目录）
+        router.StaticFS("/fileserver/", http.Dir("./"))
+
+        log.Fatalln(router.Run(":80"))
+}
+
+# 下载
+C:\Users\Administrator\Desktop\a> curl http://127.0.0.1/main.go -O
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   812  100   812    0     0  33134      0 --:--:-- --:--:-- --:--:-- 33833
 ```
 
 :::
