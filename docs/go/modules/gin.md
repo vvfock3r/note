@@ -3497,9 +3497,9 @@ import (
 
 // NamedMiddleware 测试中间件执行顺序
 func NamedMiddleware(name string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		fmt.Printf("中间件%s开始执行\n", name)
-		c.Next()
+		ctx.Next()
 		fmt.Printf("中间件%s结束执行\n", name)
 	}
 }
@@ -3559,72 +3559,58 @@ Handler结束执行
 package main
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func M1Middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 设置值
-		c.Set("m1", "m1 value")
+// NamedMiddleware 测试中间件设置值
+func NamedMiddleware(name string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// 最简单的方式是直接设置值, ctx.Set("name", name)
+		// 但是这有一个问题, 其他中间件会覆盖这个值, 因为有相同的key
 
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
-	}
-}
+		// 这里我们采用先拿到之前的值再追加的方式
+		nameSlice := ctx.GetStringSlice("names")
+		nameSlice = append(nameSlice, name)
+		ctx.Set("names", nameSlice)
 
-func M2Middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 设置值
-		c.Set("m2", make([]int, 3))
-
-		// 调用后续的处理逻辑，在本代码中会执行后面的Handler逻辑
-		c.Next()
+		ctx.Next()
 	}
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册全局中间件
-	r.Use(
-		M1Middleware(),
-		M2Middleware(),
+	router.Use(
+		NamedMiddleware("m1"),
+		NamedMiddleware("m2"),
+		NamedMiddleware("m3"),
 	)
 
-	// 注册路由组
-	r.GET("/", func(c *gin.Context) {
-		m1, ok := c.Get("m1")
-		if ok {
-			fmt.Printf("拿到M1中间件的值: %#v\n", m1)
-		}
-
-		m2, ok := c.Get("m2")
-		if ok {
-			fmt.Printf("拿到M2中间件的值: %#v\n", m2)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "Hello Gin!",
+	router.GET("/", func(ctx *gin.Context) {
+		nameSlice := ctx.GetStringSlice("names")
+		ctx.IndentedJSON(http.StatusOK, gin.H{
+			"NameSlice": nameSlice,
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
 输出结果
 
 ```bash
-拿到M1中间件的值: "m1 value"
-拿到M2中间件的值: []int{0, 0, 0}
+C:\Users\Administrator\Desktop> curl http://127.0.0.1/
+{
+    "NameSlice": [
+        "m1",
+        "m2",
+        "m3"
+    ]
+}
 ```
 
 :::
