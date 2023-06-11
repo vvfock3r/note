@@ -1,4 +1,4 @@
-# Gin
+Gin
 
 官网：[https://gin-gonic.com/](https://gin-gonic.com/)
 
@@ -2509,15 +2509,16 @@ curl http://127.0.0.1/ -XGET --form username=root --form password=中国你好
 
 #### 参数绑定
 
-::: details GET查询字符串参数绑定和【第一次使用参数绑定注意事项】
+::: details （1）GET查询字符串参数绑定
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 第一次使用参数绑定注意事项：
@@ -2534,22 +2535,16 @@ type User struct {
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.GET("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
+	router.GET("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
 		// 参数绑定
 		var user User
-		err := c.ShouldBind(&user)
+		err := ctx.ShouldBind(&user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
 				"Message":      "请求参数错误" + err.Error(),
 			})
@@ -2557,36 +2552,54 @@ func main() {
 		}
 
 		// 返回响应
-		c.JSON(http.StatusOK, gin.H{
+		ctx.IndentedJSON(http.StatusOK, gin.H{
 			"Content-Type": contentType,
 			"Username":     user.Username,
 			"Password":     user.Password,
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
-![image-20220507134109116](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507134109116.png)
+输出结果
+
+```bash
+curl "http://127.0.0.1/"
+{
+    "Content-Type": "",
+    "Password": "",
+    "Username": ""
+}
+
+curl "http://127.0.0.1/?username=root&password=123456"
+{
+    "Content-Type": "",
+    "Password": "123456",
+    "Username": "root"
+}
+```
 
 :::
 
-::: details POST表单参数绑定
+::: details （2）POST表单参数绑定
 
 ```go
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Post表单参数绑定注意事项
 // (1) form可选，如果不写，传递参数时必须与结构体名字一致
-// (2) Content-Type为【application/x-www-form-urlencoded】或【multipart/form-data;boundary=xx】都可以
+// (2) Content-Type为
+//		【application/x-www-form-urlencoded】或
+//		【multipart/form-data;boundary=xx】都可以
 
 type User struct {
 	Username string `form:"username"`
@@ -2594,22 +2607,16 @@ type User struct {
 }
 
 func main() {
-	// 监听地址
-	addr := "127.0.0.1:80"
+	router := gin.Default()
 
-	// 实例化Gin路由引擎
-	r := gin.Default()
-
-	// 注册路由
-	r.POST("/", func(c *gin.Context) {
-		// 获取Content-Type
-		contentType := c.GetHeader("Content-Type")
+	router.POST("/", func(ctx *gin.Context) {
+		contentType := ctx.GetHeader("Content-Type")
 
 		// 参数绑定
 		var user User
-		err := c.ShouldBind(&user)
+		err := ctx.ShouldBind(&user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 				"Content-Type": contentType,
 				"Message":      "请求参数错误" + err.Error(),
 			})
@@ -2617,25 +2624,38 @@ func main() {
 		}
 
 		// 返回响应
-		c.JSON(http.StatusOK, gin.H{
+		ctx.IndentedJSON(http.StatusOK, gin.H{
 			"Content-Type": contentType,
 			"Username":     user.Username,
 			"Password":     user.Password,
 		})
 	})
 
-	// 启动Gin Server
-	log.Fatalln(r.Run(addr))
+	log.Fatalln(router.Run(":80"))
 }
 ```
 
-![image-20220507133521628](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507133521628.png)
+输出结果
 
-![image-20220507133540059](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20220507133540059.png)
+```bash
+C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -XPOST -d "username=root&password=123456测试汉字"
+{
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Password": "123456测试汉字",
+    "Username": "root"
+}
+
+C:\Users\Administrator>curl http://127.0.0.1/ -XPOST -XPOST --form username=root --form password=中国你好
+{
+    "Content-Type": "multipart/form-data; boundary=------------------------f56cfab4c132b278",
+    "Password": "中国你好",
+    "Username": "root"
+}
+```
 
 :::
 
-::: details POST JSON参数绑定
+::: details （3）POST JSON参数绑定
 
 ```go
 package main
@@ -2695,7 +2715,7 @@ func main() {
 
 :::
 
-::: details 多次参数绑定问题
+::: details （4）多次参数绑定问题
 
 ```go
 package main
