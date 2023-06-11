@@ -2078,7 +2078,7 @@ func main() {
 
 输出结果
 
-![202301251213](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//202301251213.gif)
+![20230610131006](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//20230610131006.gif)
 
 :::
 
