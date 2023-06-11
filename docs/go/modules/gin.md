@@ -3019,8 +3019,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3028,6 +3026,10 @@ func main() {
 Content-Type: multipart/form-data; boundary=----------------------------0338377c72ec
 文件上传成功
 ```
+
+:::
+
+<br />
 
 #### 多个文件上传
 
@@ -3091,8 +3093,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3100,6 +3100,10 @@ func main() {
 Content-Type: multipart/form-data; boundary=----------------------------a3bb45431558
 文件上传成功
 ```
+
+:::
+
+<br />
 
 #### 文件下载
 
@@ -3144,6 +3148,8 @@ func main() {
 
 :::
 
+<br />
+
 ### 中间件
 
 #### 中间件格式要求
@@ -3172,6 +3178,8 @@ type HandlerFunc func(*Context)
 * 只要符合`func(*Context)`函数定义，就可以是一个中间件
 * 在中间件中调用`c.Next()`，可以穿透中间件，执行后面的逻辑，后面逻辑的执行完成后`c.Next()`函数执行结束，继续执行中间件内容
 * 在中间件中调用`c.Abort()`，可以阻止穿透中间件
+
+<br />
 
 #### 中间件使用示例
 
@@ -3392,8 +3400,6 @@ func main() {
 }
 ```
 
-:::
-
 输出结果
 
 ```bash
@@ -3410,6 +3416,10 @@ Handler结束执行
 中间件m2结束执行
 中间件m1结束执行
 ```
+
+:::
+
+<br />
 
 #### 跨中间件传值
 
@@ -3560,5 +3570,3 @@ func main() {
 第三方中间件：
 
 * 官方收集：[https://github.com/gin-gonic/contrib](https://github.com/gin-gonic/contrib)
-
-<br />
