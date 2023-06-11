@@ -3248,9 +3248,103 @@ C:\Users\Administrator\Desktop\a> curl http://127.0.0.1/main.go -O
 
 <br />
 
-### 中间件
+## 优雅关闭
 
-#### 中间件格式要求
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// SignalEvent 监听信号
+func SignalEvent(server *http.Server) {
+	// 注册信号
+	interrupt := make(chan os.Signal)
+	reload := make(chan os.Signal)
+
+	// 退出信号
+	signal.Notify(
+		interrupt,
+		syscall.SIGINT,  // kill -2 || Ctrl+C
+		syscall.SIGQUIT, // kill -3 || Ctrl+\
+		syscall.SIGTERM, // kill -15
+	)
+
+	// 重载配置
+	signal.Notify(reload, syscall.SIGHUP) // kill -1
+
+	// 监听信号
+	for {
+		select {
+		case <-interrupt:
+			Shutdown(server, time.Second*10)
+		case <-reload:
+			Reload(server)
+		}
+	}
+}
+
+// Shutdown 优雅关闭
+func Shutdown(server *http.Server, timeout time.Duration) {
+	fmt.Println()
+	log.Println("Waiting for the remaining connections to finish...")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	err := server.Shutdown(ctx)
+	if err != nil {
+		log.Println("HTTP Server graceful shutdown failed: " + err.Error())
+		log.Println("HTTP Server forced shutdown successfully")
+	} else {
+		log.Println("HTTP Server gracefully shutdown successfully")
+	}
+	os.Exit(0)
+}
+
+// Reload 重载配置
+func Reload(server *http.Server) {
+	log.Println("Reload")
+	server.WriteTimeout = time.Second * 10
+}
+
+func main() {
+	router := gin.Default()
+	server := &http.Server{Addr: ":80", Handler: router}
+
+	router.GET("/", func(ctx *gin.Context) {
+		time.Sleep(time.Second * 4)
+	})
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// 监听Server信号
+	SignalEvent(server)
+}
+```
+
+:::
+
+<br />
+
+## 中间件
+
+### 中间件格式要求
 
 ::: details 点击查看详情
 
@@ -3288,7 +3382,7 @@ type HandlerFunc func(*Context)
 
 <br />
 
-#### 中间件使用示例
+### 中间件使用示例
 
 ::: details （1）注册全局中间件
 
@@ -3488,7 +3582,7 @@ GET  /api/v1/: Used 339 milliseconds
 
 <br />
 
-#### 中间件执行顺序
+### 中间件执行顺序
 
 ::: details 点击查看完整代码
 
@@ -3559,7 +3653,7 @@ Handler结束执行
 
 <br />
 
-#### 中间件之间传值
+### 中间件之间传值
 
 ::: details 点击查看完整代码
 
@@ -3625,7 +3719,7 @@ C:\Users\Administrator\Desktop> curl http://127.0.0.1/
 
 <br />
 
-#### 开启Goroutine
+### 开启Goroutine
 
 ::: details 点击查看完整代码
 
@@ -3697,7 +3791,7 @@ C:\Users\Administrator\Desktop> curl http://127.0.0.1/
 
 <br />
 
-#### 中间件收集列表
+### 中间件收集列表
 
 内置中间件：
 
