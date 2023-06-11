@@ -529,7 +529,7 @@ console.log("Setup");
 
 <br />
 
-### 获取原始的DOM节点
+### 获取原始的文档对象 ref
 
 文档：[https://cn.vuejs.org/api/built-in-special-attributes.html#ref](https://cn.vuejs.org/api/built-in-special-attributes.html#ref)
 
@@ -539,26 +539,25 @@ console.log("Setup");
 
 ```vue
 <script setup>
-import {ref, onMounted} from "vue";
+import { ref, onMounted } from "vue";
 
 // 定义一个变量，变量名要和下面模板中ref的值一样
 const input = ref();
 
 onMounted(() => {
-  input.value.focus()
-  console.log(input.value)
-})
-
+  input.value.focus();
+  console.log(input.value);
+});
 </script>
 
 <template>
-  <input ref="input" placeholder="请输入您的姓名"/>
+  <input ref="input" placeholder="请输入您的姓名" />
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
 ```
+
+![image-20230611223429509](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611223429509.png)
 
 :::
 
