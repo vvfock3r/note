@@ -2,57 +2,45 @@
 
 ## 文档
 
-官网：[https://cn.vuejs.org](https://cn.vuejs.org)
+官网（英）：[https://vuejs.org](https://vuejs.org)
+
+官网（中）：[https://cn.vuejs.org](https://cn.vuejs.org)
+
+本文档采用**组合式API（CompositionAPI）**
 
 <br />
 
-## 初始化项目
+## 新建项目
+
+### 初始化项目
 
 安装文档：[https://cn.vuejs.org/guide/quick-start.html](https://cn.vuejs.org/guide/quick-start.html)
 
-::: details 点击查看详情
+::: details （1）项目初始化
 
 ```bash
-C:\Users\Administrator\Desktop>npm init vue@latest
-Need to install the following packages:
-  create-vue@3.6.1
-Ok to proceed? (y) y
+# 升级npm
+npm install -g npm
 
-Vue.js - The Progressive JavaScript Framework
-
-√ Project name: ... demo
-√ Add TypeScript? ... No / Yes
-√ Add JSX Support? ... No / Yes
-√ Add Vue Router for Single Page Application development? ... No / Yes
-√ Add Pinia for state management? ... No / Yes
-√ Add Vitest for Unit Testing? ... No / Yes
-√ Add an End-to-End Testing Solution? » No
-√ Add ESLint for code quality? ... No / Yes
-√ Add Prettier for code formatting? ... No / Yes
-
-Scaffolding project in C:\Users\Administrator\Desktop\demo...
-
-Done. Now run:
-
-  cd demo
-  npm install
-  npm run format
-  npm run dev
-
-npm notice
-npm notice New major version of npm available! 8.15.1 -> 9.6.6
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v9.6.6
-npm notice Run npm install -g npm@9.6.6 to update!
-npm notice
+# 初始化vue项目
+npm init vue@latest
 ```
+
+![image-20230611203522739](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611203522739.png)
+
+![image-20230611203555991](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611203555991.png)
+
+:::
+
+::: details （2）配置WebStorm
+
+![image-20230611204206714](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611204206714.png)
 
 :::
 
 <br />
 
-## 组合式API（CompositionAPI）
-
-### Hello Vue
+### 第一个示例
 
 ::: details 点击查看详情
 
@@ -79,11 +67,15 @@ npm notice
 import { createApp } from 'vue'
 import App from './App.vue'
 
-// 注释此行,因为此文件已经被我们删除
+// 注释或删除此行,因为此文件已经被我们删除
 // import './assets/main.css'
 
 createApp(App).mount('#app')
 ```
+
+输出结果
+
+![image-20230611204930126](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611204930126.png)
 
 说明
 
@@ -96,6 +88,8 @@ createApp(App).mount('#app')
 :::
 
 <br />
+
+## 基础操作
 
 ### 基本类型响应式封装 ref
 
