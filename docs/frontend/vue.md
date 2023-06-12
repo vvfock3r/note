@@ -569,6 +569,30 @@ onMounted(() => {
 
 ## 常用指令
 
+### 更新文本内容 - v-text
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const message = ref('Hello Vue')
+</script>
+
+<template>
+  <!-- 以下两行代码是等价的 -->
+  <div>{{ message }}</div>
+  <div v-text="message"></div>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
 ### 条件渲染指令 - v-if 
 
 文档：[https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template](https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template)
