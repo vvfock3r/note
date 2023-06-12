@@ -569,7 +569,7 @@ onMounted(() => {
 
 ## 常用指令
 
-### 条件渲染 - v-if 
+### 条件渲染指令 - v-if 
 
 文档：[https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template](https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template)
 
@@ -608,7 +608,7 @@ const person = reactive({
 
 <br />
 
-### 条件渲染 - v-show
+### 条件渲染指令 - v-show
 
 ::: details 点击查看详情
 
@@ -640,7 +640,7 @@ const person = reactive({
 
 <br />
 
-### 对象循环 - v-for
+### 对象循环指令 - v-for
 
 文档：[https://cn.vuejs.org/guide/essentials/list.html](https://cn.vuejs.org/guide/essentials/list.html)
 
@@ -732,7 +732,7 @@ const obj = { name: "Bob", age: 21 };
 
 <br />
 
-### 事件绑定 - v-on
+### 事件绑定指令 - v-on
 
 ::: details 点击查看详情
 
@@ -761,6 +761,203 @@ function handleClick() {
 :::
 
 <br />
+
+### 数据双向绑定 - v-model
+
+::: details （1）input 数据双向绑定
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const inputValue = ref()
+const todoList = ref([])
+
+function handlerSubmit() {
+  todoList.value.push(inputValue.value)
+  inputValue.value = ''
+}
+</script>
+
+<template>
+  <!-- v-model 数据双向绑定, @keyup.enter 绑定回车事件 -->
+  <span>请输入待办事项: </span>
+  <input type="text" autofocus v-model="inputValue" @keyup.enter="handlerSubmit" />
+
+  <!-- 循环对象 -->
+  <ul>
+    <li v-for="(item, index) in todoList" :key="index">{{ item }}</li>
+  </ul>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （2）表单 数据双向绑定
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const msg1 = ref('hello1')
+const msg2 = ref('hello2')
+const msg3 = ref(true)
+
+const msg4 = ref([])
+const msg5 = ref()
+
+const msg6 = ref('2')
+const msg7 = ref([])
+const msg8 = ref('hello')
+</script>
+
+<template>
+  <div>
+    <span>input双向绑定，初始值为字符串{{ msg1 }}</span>
+    <input v-model="msg1" type="text" />
+  </div>
+
+  <div>
+    <span>textarea，正常写HTML要写双标签，这里只需要写单标签即可，初始值为字符串 {{ msg2 }}</span>
+    <textarea v-model="msg2" />
+  </div>
+
+  <div>
+    <span>checkbox复选框，初始值可以为布尔值{{ msg3 }}</span>
+    <input v-model="msg3" type="checkbox" />
+  </div>
+
+  <div>
+    <span>checkbox复选框，当有多个checkbox时，初始值可以为数组{{ msg4 }}</span>
+    <input v-model="msg4" type="checkbox" value="box1" />
+    <input v-model="msg4" type="checkbox" value="box2" />
+    <input v-model="msg4" type="checkbox" value="box3" />
+  </div>
+
+  <div>
+    <span>radio单选框，初始值为字符串 {{ msg5 }}</span>
+    <input v-model="msg5" type="radio" value="r1" />
+    <input v-model="msg5" type="radio" value="r2" />
+  </div>
+
+  <div>
+    <span>select选择框-单选，初始值为字符串 {{ msg6 }}</span>
+    <select v-model="msg6">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+  </div>
+
+  <div>
+    <span
+      >select选择框-多选（按住Ctrl），需要在select上添加multiple属性，初始值为数组 {{ msg7 }}</span
+    >
+    <select v-model="msg7" multiple>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+  </div>
+
+  <div>
+    <span>checkbox选中或者不选中，自定义值 {{ msg8 }}</span>
+    <input v-model="msg8" type="checkbox" true-value="hello" false-value="world" />
+  </div>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 属性双向绑定 - v-bind
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const inputValue = ref();
+</script>
+
+<template>
+  <!-- 数据双向绑定 -->
+  <input type="text" v-model="inputValue" autofocus />
+
+  <!-- 属性双向绑定, 当鼠标移动到按钮上会显示输入框中的值 -->
+  <!-- v-bind:title 可以简写成 :title -->
+  <button v-bind:title="inputValue">我是按钮</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 使用原生模板  - v-html
+
+文档：[https://cn.vuejs.org/api/built-in-directives.html#v-html](https://cn.vuejs.org/api/built-in-directives.html#v-html)
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const item = ref("<li>Item</li>");
+</script>
+
+<template>
+  <ul v-html="item"></ul>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 仅仅渲染一次 - v-once
+
+文档：[https://cn.vuejs.org/api/built-in-directives.html#v-once](https://cn.vuejs.org/api/built-in-directives.html#v-once)
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const item = ref("Item1");
+
+setTimeout(() => {
+  item.value = "Item2";
+}, 2000);
+</script>
+
+<template>
+  <ul>
+    <li v-once>{{ item }}</li>
+    <li>{{ item }}</li>
+  </ul>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+
 
 ### Context参数
 
