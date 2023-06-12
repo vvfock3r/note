@@ -95,7 +95,7 @@ createApp(App).mount('#app')
 
 ## 基础操作
 
-### 基本类型响应式封装 ref
+### 基本类型响应式封装 - ref
 
 ::: details （1）编写一个计数器：默认情况下对象并不是响应式
 
@@ -162,7 +162,7 @@ function add() {
 
 <br />
 
-### 引用类型响应式封装 reactive
+### 引用类型响应式封装 - reactive
 
 ::: details 点击查看详情
 
@@ -192,7 +192,7 @@ setTimeout(() => {
 
 <br />
 
-### 响应式对象变为只读 readonly
+### 响应式对象变为只读 - readonly
 
 ::: details 点击查看详情
 
@@ -224,7 +224,7 @@ setTimeout(() => {
 
 <br />
 
-### 响应式对象解构方式 toRefs
+### 响应式对象解构方式 - toRefs
 
 ::: details （1）方式一：解构时使用 toRefs 封装，新对象的修改会同步源响应式对象
 
@@ -288,7 +288,7 @@ setTimeout(() => {
 
 <br />
 
-### 缓存特性的计算属性 computed
+### 缓存特性的计算属性 - computed
 
 文档：[https://cn.vuejs.org/api/reactivity-core.html#computed](https://cn.vuejs.org/api/reactivity-core.html#computed)
 
@@ -335,7 +335,7 @@ setInterval(() => {
 
 <br />
 
-### 侦听N个响应式对象 watchxx
+### 侦听N个响应式对象 - watchxx
 
 文档：
 
@@ -459,7 +459,7 @@ setTimeout(() => {
 
 <br />
 
-### 组件的生命周期函数 xxx
+### 组件的生命周期函数 - xxx
 
 文档：[https://cn.vuejs.org/guide/essentials/lifecycle.html](https://cn.vuejs.org/guide/essentials/lifecycle.html)
 
@@ -533,7 +533,7 @@ console.log("Setup");
 
 <br />
 
-### 获取原始的文档对象 ref
+### 获取原始的文档对象 - ref
 
 文档：[https://cn.vuejs.org/api/built-in-special-attributes.html#ref](https://cn.vuejs.org/api/built-in-special-attributes.html#ref)
 
