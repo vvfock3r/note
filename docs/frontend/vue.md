@@ -6,7 +6,7 @@
 
 官网（中）：[https://cn.vuejs.org](https://cn.vuejs.org)
 
-本文档采用**组合式API（CompositionAPI）**
+本文档采用 **组合式API（CompositionAPI）**，旧版本文档参考：[https://jinhui.dev/frontend/deprecated/vue-option.html](https://jinhui.dev/frontend/deprecated/vue-option.html)
 
 <br />
 
@@ -19,6 +19,10 @@
 ::: details （1）项目初始化
 
 ```bash
+# 查看node版本
+C:\Users\Administrator>node -v
+v18.16.0
+
 # 升级npm
 npm install -g npm
 
@@ -563,9 +567,168 @@ onMounted(() => {
 
 <br />
 
-### 常用指令
+## 常用指令
 
+### 条件渲染 - v-if 
 
+文档：[https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template](https://cn.vuejs.org/guide/essentials/conditional.html#v-if-on-template)
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { reactive } from "vue";
+
+const person = reactive({
+  name: "bob",
+  isShow: false,
+  isHidden: false
+});
+
+// 深度分析:
+// 1.v-if 主要用于根据表达式的真假值来控制元素或组件的显示或隐藏
+// 2.v-if 通过控制DOM存在与否来控制是否显示, 这一点区别于v-show
+// 3.v-if 指令本身不直接支持对大小的判断
+</script>
+
+<template>
+  <!-- 基础用法 -->
+  <li v-if="person.isShow">{{ person.name }}</li>
+
+  <!-- if else用法 -->
+  <li v-if="person.isHidden">隐藏</li>
+  <li v-else-if="person.isShow">{{ person.name }}</li>
+  <li v-else>未知</li>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 条件渲染 - v-show
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { reactive } from "vue";
+
+const person = reactive({
+  name: "bob",
+  isShow: false
+});
+
+// 深度分析:
+// 1.v-show 主要用于根据表达式的真假值来控制元素或组件的显示或隐藏
+// 2.v-show 通过控制display: none来控制是否显示, 这一点区别于v-if
+// 3.v-show 不能于v-else等连用
+</script>
+
+<template>
+  <li v-show="person.isShow">{{ person.name }}</li>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+![image-20230612221818086](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230612221818086.png)
+
+:::
+
+<br />
+
+### 对象循环 - v-for
+
+文档：[https://cn.vuejs.org/guide/essentials/list.html](https://cn.vuejs.org/guide/essentials/list.html)
+
+::: details （1）v-for 基础
+
+```vue
+<script setup>
+const list = [
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" },
+  { id: 3, name: "Charlie" }
+];
+const obj = { name: "Bob", age: 21 };
+
+// 分析:
+// 1.v-for 可以不带:key, 但推荐带上
+// 2.v-for 如果带:key, 则要求是一个基础类型的值, 且同一个父元素下的子元素key值必须唯一
+// 3.v-for 不推荐使用index作为key, 如果实在没有合适的key， 可以考虑使用uuid
+//         在对象遍历中我们的key就存在问题, 虽然不会报错, 实际工作中不能这样用
+// 4.v-for 不推荐和v-if连用, 如果要连用推荐外面包一层 template
+</script>
+
+<template>
+  <!-- 可以直接循环数字，输出1-5，注意是从1开始的 -->
+  <li v-for="item in 5" :key="item">{{ item }}</li>
+
+  <!--------------------------------------------------------------------------->
+
+  <!-- 遍历数组值 -->
+  <li v-for="item in list" :key="item.id">{{ item }}</li>
+
+  <!-- 遍历数组值和索引 -->
+  <li v-for="(item, index) in list" :key="item.id">{{ index }} {{ item }}</li>
+
+  <!--------------------------------------------------------------------------->
+  
+  <!-- 遍历对象值 -->
+  <li v-for="value in obj" :key="value">{{ value }}</li>
+
+  <!-- 遍历对象值和key -->
+  <li v-for="(value, key) in obj" :key="value">{{ key }}:{{ value }}</li>
+
+  <!-- 遍历对象值、key和索引 -->
+  <li v-for="(value, key, index) in obj" :key="value">{{ index }} {{ key }}:{{ value }}</li>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （2）v-for 与 v-if 连用
+
+```vue
+<script setup></script>
+
+<template>
+  <ul>
+    <!-- 可以直接循环数字，输出1-5，注意是从1开始的 -->
+    <li v-for="item in 5" :key="item">{{ item }}</li>
+  </ul>
+
+  <!-- 如果我们不想输出3这个数字，这样做可以解决，但是li标签依然存在 -->
+  <ul>
+    <li v-for="item in 5" :key="item">
+      <div v-if="item !== 3">{{ item }}</div>
+    </li>
+  </ul>
+
+  <!-- 这样做li标签就没了，但是还是有问题，DOM结构中li外边多了一层div -->
+  <ul>
+    <div v-for="item in 5" :key="item">
+      <li v-if="item !== 3">{{ item }}</li>
+    </div>
+  </ul>
+
+  <!-- 完美解决方案是：将div修改为template， template代表占位符，并不实际渲染 -->
+  <ul>
+    <template v-for="item in 5" :key="item">
+      <li v-if="item !== 3">{{ item }}</li>
+    </template>
+  </ul>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
 
 <br />
 
@@ -811,5 +974,4 @@ export default {
 <style scoped>
 </style>
 ```
-
 
