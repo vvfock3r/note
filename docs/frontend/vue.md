@@ -732,6 +732,36 @@ const obj = { name: "Bob", age: 21 };
 
 <br />
 
+### 事件绑定 - v-on
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const list = ref([]);
+
+function handleClick() {
+  list.value.push(list.value.length + 1);
+}
+</script>
+
+<template>
+  <!-- v-on: click可以简写成@click, 也是常用的的写法 -->
+  <button v-on:click="handleClick">添加列表</button>
+  <ul>
+    <li v-for="(item, index) in list" :key="index">{{ item }}</li>
+  </ul>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
 ### Context参数
 
 ::: details （1）点击查看详情
