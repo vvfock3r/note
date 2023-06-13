@@ -26,8 +26,12 @@ v18.16.0
 # 升级npm
 npm install -g npm
 
-# 初始化vue项目
+# 初始化vue项目, 并根据提示进行操作
+# 这里使用的是 "vue": "^3.3.2"
 npm init vue@latest
+
+# 安装CSS预处理器, 不然后面写scss样式会报错
+npm install sass --save-dev
 ```
 
 ![image-20230611203522739](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230611203522739.png)
