@@ -1123,9 +1123,99 @@ function add6() {
 
 ### 事件修饰符
 
+::: details 点击查看详情
 
+```vue
+<script setup>
+import { ref } from 'vue'
 
+const item1 = ref(1)
+const item2 = ref(2)
 
+function div1Click() {
+  alert(item1.value)
+}
+
+function div2Click() {
+  alert(item2.value)
+}
+</script>
+
+<template>
+  冒泡阶段事件传播说明:<br />
+  没有任何修饰符情况下<br />
+  点击外层div,外层事件执行<br />
+  点击内层div, 内层和外层div都会执行<br />
+  通过查看值可以区分出这是冒泡阶段事件传播<br />
+  <div class="div1" @click="div1Click">
+    {{ item1 }}
+    <div class="div2" @click="div2Click">
+      {{ item2 }}
+    </div>
+  </div>
+
+  <!-- ----------------------------------------- -->
+  方法1: 阻止冒泡阶段事件传播, click.stop 等同于 e.stopPropagation()<br />
+  <div class="div1" @click="div1Click">
+    {{ item1 }}
+    <div class="div2" @click.stop="div2Click">
+      {{ item2 }}
+    </div>
+  </div>
+
+  <!-- ----------------------------------------- -->
+  方法2: self代表只有点击的是自己才会触发<br />
+  <div class="div1" @click.self="div1Click">
+    {{ item1 }}
+    <div class="div2" @click="div2Click">
+      {{ item2 }}
+    </div>
+  </div>
+
+  <!-- ----------------------------------------- -->
+  事件捕获阶段说明<br />
+  click.capture指定事件捕获阶段<br />
+  先执行外层再执行内层, 这有别于事件冒泡阶段<br />
+  <div class="div1" @click.capture="div1Click">
+    {{ item1 }}
+    <div class="div2" @click="div2Click">
+      {{ item2 }}
+    </div>
+  </div>
+
+  <!-- ----------------------------------------- -->
+  声明事件只执行一次<br />
+  在这里外层只会执行一次, 无论是捕获阶段还是冒泡阶段都不会再执行<br />
+  <div class="div1" @click.once="div1Click">
+    {{ item1 }}
+    <div class="div2" @click="div2Click">
+      {{ item2 }}
+    </div>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+div {
+  border: 1px solid #abc;
+  margin-bottom: 10px;
+}
+
+.div1 {
+  width: 200px;
+  height: 200px;
+  margin-bottom: 20px;
+}
+
+.div2 {
+  width: 100px;
+  height: 100px;
+}
+</style>
+```
+
+:::
+
+<br />
 
 
 
