@@ -567,7 +567,7 @@ onMounted(() => {
 
 <br />
 
-## 常用指令
+## 指令基础
 
 ### 更新文本内容 - v-text
 
@@ -786,6 +786,33 @@ function handleClick() {
 
 <br />
 
+### 属性双向绑定 - v-bind
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const inputValue = ref();
+</script>
+
+<template>
+  <!-- 数据双向绑定 -->
+  <input type="text" v-model="inputValue" autofocus />
+
+  <!-- 属性双向绑定, 当鼠标移动到按钮上会显示输入框中的值 -->
+  <!-- v-bind:title 可以简写成 :title -->
+  <button v-bind:title="inputValue">我是按钮</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
 ### 数据双向绑定 - v-model
 
 ::: details （1）input 数据双向绑定
@@ -899,33 +926,6 @@ const msg8 = ref('hello')
 
 <br />
 
-### 属性双向绑定 - v-bind
-
-::: details 点击查看详情
-
-```vue
-<script setup>
-import { ref } from "vue";
-
-const inputValue = ref();
-</script>
-
-<template>
-  <!-- 数据双向绑定 -->
-  <input type="text" v-model="inputValue" autofocus />
-
-  <!-- 属性双向绑定, 当鼠标移动到按钮上会显示输入框中的值 -->
-  <!-- v-bind:title 可以简写成 :title -->
-  <button v-bind:title="inputValue">我是按钮</button>
-</template>
-
-<style lang="scss" scoped></style>
-```
-
-:::
-
-<br />
-
 ### 使用原生模板  - v-html
 
 文档：[https://cn.vuejs.org/api/built-in-directives.html#v-html](https://cn.vuejs.org/api/built-in-directives.html#v-html)
@@ -981,7 +981,173 @@ setTimeout(() => {
 
 <br />
 
-## 动态指令
+## 指令进阶
+
+### 动态属性名
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const style = ref("style");
+const value = ref("color: red");
+</script>
+
+<template>
+  <!-- style 和 value 都是变量 -->
+  <p :[style]="value">Hello</p>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 动态事件名
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const event = ref("click");
+
+function handler() {
+  alert("Hello");
+}
+
+setTimeout(() => {
+  // 修改为双击事件
+  event.value = "dblclick";
+}, 2000);
+</script>
+
+<template>
+  <!-- event 和 handler 都是变量 -->
+  <p @[event]="handler">点我</p>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 事件的方法
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const value1 = ref(0)
+const value2 = ref(0)
+const value3 = ref(0)
+const value4 = ref(0)
+const value5 = ref(0)
+
+function add1() {
+  value1.value += 1
+}
+
+function add2(event) {
+  console.log(event.target)
+  value2.value += 1
+}
+
+function add3(n) {
+  value3.value += n
+}
+
+function add4(n, event) {
+  console.log(event.target)
+  value4.value += n
+}
+
+function add5() {
+  console.log('add5 runing')
+  value5.value += 1
+}
+
+function add6() {
+  console.log('add6 runing')
+  value5.value += 1
+}
+</script>
+
+<template>
+  <!-- 最简单的写法 -->
+  <div>
+    <button @click="add1">按钮</button>
+    <span>{{ value1 }}</span>
+  </div>
+
+  <!-- 获取一下事件 -->
+  <div>
+    <button @click="add2">按钮</button>
+    <span>{{ value2 }}</span>
+  </div>
+
+  <!-- 指定固定参数 -->
+  <div>
+    <button @click="add3(2)">按钮</button>
+    <span>{{ value3 }}</span>
+  </div>
+
+  <!-- 指定固定参数,并且还携带上event -->
+  <div>
+    <button @click="add4(2, $event)">按钮</button>
+    <span>{{ value4 }}</span>
+  </div>
+
+  <!-- 可以调用多个函数，注意：多个函数用逗号隔开，而且要加括号 -->
+  <div>
+    <button @click="add5(), add6()">按钮</button>
+    <span>{{ value5 }}</span>
+  </div>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 事件修饰符
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
