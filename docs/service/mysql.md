@@ -636,6 +636,40 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 
 <br />
 
+### 用户管理
+
+::: details 点击查看详情
+
+```bash
+# 创建用户
+语法: create user '<user>'@'<host>' identified by '<password>';
+示例: create user 'admin'@'%' identified by '2jtr0JLhULEpaLkB';
+
+# 用户授权
+# 可使用select, insert等单独授权, 中间用逗号分隔, 也可用 all privileges 代指所有权限
+# db和table可用*代指所有
+语法: grant <privileges> on <db>.<table> to '<user>'@'<host>';
+示例: grant all privileges on *.* to 'admin'@'%';
+
+# 修改密码
+语法: alter user '<user>'@'<host>' identified by '<password>';
+语法: alter user '<user>'@'<host>' identified with mysql_native_password by 'password';
+示例: alter user 'admin'@'%' identified by 'Icnq8LHMT2nrlsdu';
+
+# 撤销用户权限
+语法: revoke all privileges on <db>.<table> from '<user>'@'<host>';
+示例: revoke all privileges on *.* from 'admin'@'%';
+
+# 删除用户和权限
+语法: drop user '<user>'@'<host>';
+示例: drop user 'admin'@'%';
+
+# 备注
+# flush privileges;
+```
+
+:::
+
 ## 主从同步
 
 ### 基本配置
