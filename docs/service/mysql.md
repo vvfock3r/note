@@ -2,7 +2,7 @@
 
 ## 部署
 
-### Server（容器部署）
+### Server（使用容器部署）
 
 （由Docker官方维护的）`Docker Hub`地址：
 
@@ -157,7 +157,7 @@ rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请
 
 <br />
 
-### Client（包管理器）
+### Client（包管理器安装）
 
 ::: details 点击查看详情
 
