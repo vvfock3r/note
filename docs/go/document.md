@@ -3,12 +3,10 @@
 文档：
 
 * 官网：[https://golang.google.cn/](https://golang.google.cn/)
-
 * 安装：[https://golang.google.cn/doc/install](https://golang.google.cn/doc/install)
-
 * 命令：[https://golang.google.cn/cmd/go/](https://golang.google.cn/cmd/go/)
-
 * FAQ：[https://go.dev/doc/faq](https://go.dev/doc/faq)
+* GopherChina：[https://github.com/gopherchina/conference](https://github.com/gopherchina/conference)
 
 <br />
 
