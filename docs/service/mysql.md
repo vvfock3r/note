@@ -651,6 +651,17 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 语法: grant <privileges> on <db>.<table> to '<user>'@'<host>';
 示例: grant all privileges on *.* to 'admin'@'%';
 
+# 查看用户权限
+mysql> select * from mysql.user where user="root"\G
+*************************** 1. row ***************************
+                    Host: %
+                    User: root
+             Select_priv: Y
+             Insert_priv: Y
+             Update_priv: Y
+             Delete_priv: Y
+             ...
+
 # 修改密码
 语法: alter user '<user>'@'<host>' identified by '<password>';
 语法: alter user '<user>'@'<host>' identified with mysql_native_password by 'password';
@@ -660,12 +671,13 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 语法: revoke all privileges on <db>.<table> from '<user>'@'<host>';
 示例: revoke all privileges on *.* from 'admin'@'%';
 
-# 删除用户和权限
+# 删除用户(同时也会删除权限)
 语法: drop user '<user>'@'<host>';
 示例: drop user 'admin'@'%';
 
 # 备注
-# flush privileges;
+# 1.为了能正确解析特殊字符, 可以使用反引号、单引号或双引号包裹用户名、密码、主机等字段
+# 2.为了避免缓存问题, 可以在授权等操作完成后执行 flush privileges; 来重新加载授权表
 ```
 
 :::
