@@ -1,6 +1,8 @@
 # MySQL
 
-## 容器部署
+## 部署
+
+### Server（容器部署）
 
 （由Docker官方维护的）`Docker Hub`地址：
 
@@ -149,6 +151,30 @@ mysql -h192.168.48.133 -P${LocalHostPort} -uroot -p"${RootPassword}"            
 docker container rm -f ${ContainerName}  # 删除容器
 rm -rf $(dirname ${LocalHostConfPath})   # 删除宿主机上的配置(请先确认目录是否正确)
 rm -rf ${LocalHostDataPath}              # 删除宿主机上的数据目录(请先确认目录是否正确)
+```
+
+:::
+
+<br />
+
+### Client（包管理器）
+
+::: details 点击查看详情
+
+```bash
+# Percona Distribution for MySQL 举例
+# 在官网上至少要下载这3个包, 否则安装会报错
+[root@node-1 ~]# ls -lh
+total 17M
+-rw-rw-rw- 1 root root  14M Jun 15 23:27 percona-server-client-8.0.30-22.1.el7.x86_64.rpm
+-rw-rw-rw- 1 root root 1.5M Jun 15 23:27 percona-server-shared-8.0.30-22.1.el7.x86_64.rpm
+-rw-rw-rw- 1 root root 1.2M Jun 15 23:26 percona-server-shared-compat-8.0.30-22.1.el7.x86_64.rpm
+
+# 安装
+[root@node-1 ~]# yum -y install percona-server-*.rpm
+
+# 登录
+[root@node-1 ~]# mysql --default-character-set=utf8mb4 -h127.0.0.1 -P3307 -uroot -pt6G1LJdzOlG^u5yb
 ```
 
 :::
@@ -636,7 +662,9 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 
 <br />
 
-### 常规的用户权限管理
+## 基本管理
+
+### 用户管理
 
 ::: details 点击查看详情
 
@@ -684,7 +712,19 @@ mysql> select * from mysql.user where user="root"\G
 
 <br />
 
-### 经典的主从同步配置
+### 备份恢复
+
+::: details （1）mysqldump数据备份  ＋  mysql数据导入
+
+```bash
+
+```
+
+:::
+
+<br />
+
+### 主从同步
 
 ::: details 环境说明
 
