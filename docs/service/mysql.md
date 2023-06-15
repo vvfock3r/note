@@ -636,7 +636,7 @@ mysql> SHOW VARIABLES LIKE 'gtid_mode';
 
 <br />
 
-### 用户管理
+### 常规的用户权限管理
 
 ::: details 点击查看详情
 
@@ -682,19 +682,15 @@ mysql> select * from mysql.user where user="root"\G
 
 :::
 
-## 主从同步
+<br />
 
-### 基本配置
+### 经典的主从同步配置
 
-::: details 环境要求
+::: details 环境说明
 
-环境要求
+环境说明
 
-* 两台MySQL版本、基础配置保持一致
-
-实验环境
-
-* Docker部署的两台 MySQL 8.0.30
+* 两台MySQL版本、基础配置保持一致，由Docker部署，版本为 MySQL 8.0.30
 
 :::
 
@@ -773,11 +769,7 @@ Slave_SQL_Running: Yes
 
 :::
 
-<br />
-
-### 管理命令
-
-::: details 点击查看详情
+::: details （4）常用的管理命令
 
 ```bash
 # 从服务器
@@ -793,11 +785,7 @@ reset master;          # 清除二进制日志(binlog)并重新启动新的二�
 
 :::
 
-<br />
-
-### 参数解释
-
-::: details 从服务器参数解释
+::: details （5）从服务器参数解释
 
 ```bash
 mysql> show slave status\G
@@ -867,11 +855,7 @@ Master_SSL_Verify_Server_Cert: No                               # 是否验证�
 
 :::
 
-<br />
-
-### 复制错误
-
-::: details （1）IO 线程错误：Lost connection to MySQL server at 'reading initial communication packet', system error: 0
+::: details （6）常见错误之：IO 线程错误：Lost connection to MySQL server at 'reading initial communication packet', system error: 0
 
 原因：将主服务器重启，从服务器通常会报此错误
 
@@ -879,7 +863,7 @@ Master_SSL_Verify_Server_Cert: No                               # 是否验证�
 
 :::
 
-::: details （2）SQL 线程错误：Coordinator stopped because there were error(s) in the worker(s).
+::: details （7）常见错误之：SQL 线程错误：Coordinator stopped because there were error(s) in the worker(s).
 
 背景：主从数据不一致的情况下，执行SQL可能会出现问题
 
