@@ -1061,7 +1061,9 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 Github：[https://github.com/google/cadvisor](https://github.com/google/cadvisor)
 
-Tips：cadvisor的监控指标常用 `container_` 开头
+暴露的指标：[https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md)
+
+Tips：cadvisor的监控指标常用 `container_` 和 `machine_` 开头
 
 ::: details 在Kubernetes中部署cadvisor
 
