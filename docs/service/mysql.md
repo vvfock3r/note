@@ -719,10 +719,10 @@ mysql> select * from mysql.user where user="root"\G
 
 ### 备份恢复
 
-::: details （1）mysqldump数据备份  ＋  mysql数据导入
+::: details （1）mysqldump数据备份
 
 ```bash
-# 备份整个库
+# (1) 备份整个库
 # --single-transaction  以单个事务的方式进行备份，确保备份数据的一致性
 # --max_allowed_packet  设置导出过程中允许的最大数据包大小
 # --set-gtid-purged     是否清除GTID信息
@@ -731,6 +731,7 @@ mysql> select * from mysql.user where user="root"\G
 # --add-drop-database   备份文件中包含删除库的语句, 根据实际情况选择
 # --add-drop-table      备份文件中包含删除表的语句, 根据实际情况选择
 # --ignore-table        备份文件不包含某张表的数据, 根据实际情况选择
+# ...还有更多选项
 export MYSQL_PWD="t6G1LJdzOlG^u5yb"
 mysqldump --default-character-set=utf8mb4 \
   -h127.0.0.1 \
@@ -749,7 +750,7 @@ mysqldump --default-character-set=utf8mb4 \
 /*!40000 DROP DATABASE IF EXISTS `mysql`*/;  # 这不是注释, 因为多了一个!
 
 
-# 备份SQL查询出来的结果, --where可以写的很复杂
+# (2) 备份SQL查询出来的结果, --where可以写的很复杂
 export MYSQL_PWD="t6G1LJdzOlG^u5yb"
 mysqldump --default-character-set=utf8mb4 \
   -h127.0.0.1 \
