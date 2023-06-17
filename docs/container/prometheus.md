@@ -1072,10 +1072,10 @@ Tips：请注意所兼容的Kubernetes版本
 [root@node-1 ~]# git clone https://github.com/kubernetes/kube-state-metrics.git
 [root@node-1 ~]# cd kube-state-metrics/
 
-# 修改命名空间
+# 修改命名空间(可选)
 [root@node-1 kube-state-metrics]# sed -ri 's/namespace: kube-system/namespace: monitor/g' examples/standard/*
 
-# 检查服务是否正常
+# 检查指标数据是否正常
 [root@node-1 kube-state-metrics]# kubectl -n monitor get pods -o wide
 NAME                                  READY   STATUS    RESTARTS      AGE     IP              NODE
 kube-state-metrics-6b84464c8b-6rrx7   1/1     Running   0             9m52s   10.100.84.171   node-1
