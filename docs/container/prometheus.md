@@ -143,6 +143,8 @@ docker container run --name "prometheus" \
 
 ::: details Kubernetes部署
 
+注意：根据实际情况修改，这只是一个单节点的Kubernetes
+
 ```bash
 # 创建Namespace
 kubectl create ns monitor
