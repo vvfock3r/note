@@ -336,7 +336,7 @@ General 									# 通用部分
 Discard old builds							# 丢弃旧的构建, 可以按日期保留, 也可以按次数保留，两者可以同时使用, 任意一个达到要求后便会删除
 This project is parameterized				# 参数化构建
 Execute concurrent builds if necessary		# 允许并发构建, 默认情况下，一次只执行一个项目的单个构建
-Restrict where this project can be run		# 指定在特定Node或一组Node上运行构建
+Restrict where this project can be run		# 【常用】指定在特定Node或一组Node上运行构建
 
 Source Code Management 						# 源码管理, 需要安装对应的插件才能使用
 
@@ -348,7 +348,7 @@ Poll SCM									# 轮询SCM依次来确定是否要触发构建
 
 Build Steps									# 构建步骤
 Execute Windows batch command				# 执行Windows批处理脚本 .bat
-Execute shell								# 执行Linux Shell脚本
+Execute shell								# 【常用】执行Linux Shell脚本
 Invoke top-level Maven targets				# 执行顶层Maven目标
 
 Post-build Actions							# 构建后操作
