@@ -189,7 +189,7 @@ RUN yum install -y jdk-17_linux-x64_bin.rpm
 ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
 ENV PATH=$PATH:$JAVA_HOME/bin
 
-# 安装软件包
+# 安装软件包, 注意这里的nodejs版本比较低
 RUN yum install -y curl wget telnet vim && \
     yum install -y nodejs python3 go && \    
     yum clean all && \
@@ -261,32 +261,30 @@ WORKDIR /data
 #   date 命令查看结果是小时制是否正确
 #   touch 中文.txt 是否可以正常创建
 ENV LC_ALL=en_GB.UTF-8
+RUN apt install -y locales && locale-gen $LC_ALL && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone && \
+    apt install -y tzdata
 
 # 设置Jenkins地址
 ENV JNLP_URL=http://jenkins-host:port 
 ENV JNLP_SECRET=secret
 
 # 复制文件
-COPY agent.jar secret.txt jdk-17_linux-x64_bin.deb entrypoint.sh ./
+COPY agent.jar jdk-17_linux-x64_bin.deb entrypoint.sh ./
 
 # 安装JDK
 RUN apt --fix-broken install -y ./jdk-17_linux-x64_bin.deb
 
-# 设置语言和时区及24小时制时间
-RUN apt install -y locales && locale-gen $LC_ALL && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone && \
-    apt install -y tzdata
+# 设置JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/jdk-17
+ENV PATH=$PATH:$JAVA_HOME/bin
 
-# 安装软件包
+# 安装软件包, 注意这里的nodejs版本比较低
 RUN apt install -y curl wget telnet vim && \
     apt install -y nodejs python3 golang && \
     apt clean && \
     ln -sf /usr/bin/bash /usr/bin/sh && \
     chmod 755 entrypoint.sh
-
-# 设置JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/jdk-17
-ENV PATH=$PATH:$JAVA_HOME/bin
 
 ENTRYPOINT ["/data/entrypoint.sh"]
 ```
