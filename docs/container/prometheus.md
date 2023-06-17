@@ -1061,6 +1061,54 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 Github：[https://github.com/google/cadvisor](https://github.com/google/cadvisor)
 
+::: details 在Kubernetes中部署cadvisor
+
+```bash
+# 拉取代码
+[root@node-1 ~]# git clone https://github.com/google/cadvisor.git
+[root@node-1 ~]# cd cadvisor/deploy/kubernetes/base
+
+# 修改Namespace
+[root@node-1 base]# sed -ri 's/namespace: cadvisor/namespace: monitor/g' serviceaccount.yaml daemonset.yaml
+
+# 创建Service
+[root@node-1 base]# vim service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadvisor
+  namespace: monitor
+spec:
+  type: ClusterIP
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: http   # 也可以直接写死为 8080
+  selector:
+    name: cadvisor
+    
+# 部署
+[root@node-1 base]# kubectl apply -f serviceaccount.yaml -f service.yaml -f daemonset.yaml
+
+# 检查指标数据是否正常
+[root@node-1 base]# kubectl -n monitor get pods -o wide
+NAME                                  READY   STATUS    RESTARTS       AGE    IP              NODE
+cadvisor-ztvwv                        1/1     Running   0              2m3s   10.100.84.175   node-1
+kube-state-metrics-6b84464c8b-6rrx7   1/1     Running   0              100m   10.100.84.171   node-1
+prometheus-64fd9d59c8-qnnrr           1/1     Running   4 (116m ago)   117m   10.100.84.173   node-1
+
+[root@node-1 base]# curl -s http://10.100.84.175:8080/metrics | wc
+   7566   28790 25744578
+   
+# 配置Promethues
+  - job_name: "cadvisor"
+    static_configs:
+      - targets:
+        - "cadvisor:8080"
+```
+
+:::
+
 <br />
 
 ### kube-state-metrics
