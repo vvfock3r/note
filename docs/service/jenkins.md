@@ -906,7 +906,7 @@ pipeline {
 
 :::
 
-::: details （2）在执行时动态启动一个容器作为Node执行，执行完成后销毁容器释放资源
+::: details （2）在执行时动态启动一个容器作为Node执行，执行完成后销毁容器释放资源（略）
 
 :::
 
@@ -992,7 +992,7 @@ Finished: SUCCESS
 
 :::
 
-::: details （2）
+::: details （2）???
 
 ```groovy
 pipeline {
