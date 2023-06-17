@@ -1065,7 +1065,7 @@ Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/k
 
 Tips：请注意所兼容的Kubernetes版本
 
-::: details （1）在Kubernetes中部署kube-state-metrics
+::: details 在Kubernetes中部署kube-state-metrics
 
 ```bash
 # 拉取代码
