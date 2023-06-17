@@ -199,7 +199,7 @@ ENTRYPOINT ["/data/entrypoint.sh"]
 ```
 
 ```bash
-# 构建镜像
+# 构建镜像, 如果构建有问题可以尝试添加 --no-cache 不使用缓存看能否解决
 docker image build -t jenkins-node-centos7:v1.0.0 .
 
 # 运行容器
@@ -290,7 +290,7 @@ ENTRYPOINT ["/data/entrypoint.sh"]
 ```
 
 ```bash
-# 构建镜像
+# 构建镜像, 如果构建有问题可以尝试添加 --no-cache 不使用缓存看能否解决
 docker image build -t jenkins-node-ubuntu22:v1.0.0 .
 
 # 运行容器
