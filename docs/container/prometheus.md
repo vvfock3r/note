@@ -13,7 +13,7 @@ Github：[https://github.com/prometheus/prometheus/](https://github.com/promethe
 
 <br />
 
-## 服务部署
+## 部署
 
 <br />
 
@@ -137,6 +137,14 @@ docker container run --name "prometheus" \
                  prom/prometheus:v2.38.0
 
 # (5) 浏览器访问：http://192.168.48.133:9090
+```
+
+:::
+
+::: details Kubernetes部署
+
+```bash
+
 ```
 
 :::
@@ -943,7 +951,21 @@ Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/k
 ::: details （1）在Kubernetes中部署kube-state-metrics
 
 ```bash
+# 部署
+[root@node-1 ~]# git clone https://github.com/kubernetes/kube-state-metrics.git
+[root@node-1 ~]# cd kube-state-metrics/
+[root@node-1 kube-state-metrics]# kubectl apply -f examples/standard
+clusterrolebinding.rbac.authorization.k8s.io/kube-state-metrics created
+clusterrole.rbac.authorization.k8s.io/kube-state-metrics created
+deployment.apps/kube-state-metrics created
+serviceaccount/kube-state-metrics created
+service/kube-state-metrics created
 
+# 检查
+[root@node-1 standard]# curl -s 10.100.84.152:8080/metrics |  grep kube_node_info
+# HELP kube_node_info [STABLE] Information about a cluster node.
+# TYPE kube_node_info gauge
+kube_node_info{node="node-1",kernel_version="3.10.0-1160.88.1.el7.x86_64",os_image="CentOS Linux 7 (Core)",container_runtime_version="docker://23.0.5",kubelet_version="v1.27.1",kubeproxy_version="v1.27.1",provider_id="",pod_cidr="10.100.0.0/24",system_uuid="4E6B4D56-716E-9C8F-A541-3C882F73029E",internal_ip="192.168.48.132"} 1
 ```
 
 :::
