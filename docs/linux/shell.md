@@ -2584,14 +2584,6 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 <br />
 
-## 网络工具
-
-### tcpdump
-
-<br />
-
-## 其他整理
-
 ### expect
 
 文档：[https://linux.die.net/man/1/expect](https://linux.die.net/man/1/expect)
@@ -2770,6 +2762,12 @@ Type "help", "copyright", "credits" or "license" for more information.
 * Shell命令退出码获取起来比较困难
 
 :::
+
+<br />
+
+## 网络工具
+
+### tcpdump
 
 <br />
 
@@ -3034,6 +3032,33 @@ http 192.168.0.102 7890   # 新增一行
 [proxychains] config file found: /etc/proxychains.conf
 [proxychains] preloading /usr/local/lib/libproxychains4.so
 Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artifacts-prod/images/pause/manifests/3.8": dial tcp 64.233.189.82:443: connect: connection refused
+```
+
+:::
+
+<br />
+
+## 特定工具
+
+### git
+
+::: details （1）设置代理
+
+```bash
+# 不加代理的情况下可能会拉取失败
+[root@node-1 ~]# git clone https://github.com/kubernetes/kube-state-metrics.git
+Cloning into 'kube-state-metrics'...
+fatal: unable to access 'https://github.com/kubernetes/kube-state-metrics.git/': TCP connection reset by peer
+
+# 添加一个支持科学上网的代理
+[root@node-1 ~]# git -c http://192.168.123.88:7890 clone https://github.com/kubernetes/kube-state-metrics.git
+Cloning into 'kube-state-metrics'...
+remote: Enumerating objects: 28639, done.
+remote: Counting objects: 100% (424/424), done.
+remote: Compressing objects: 100% (266/266), done.
+remote: Total 28639 (delta 223), reused 297 (delta 145), pack-reused 28215
+Receiving objects: 100% (28639/28639), 22.06 MiB | 4.61 MiB/s, done.
+Resolving deltas: 100% (18363/18363), done.
 ```
 
 :::

@@ -936,6 +936,20 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 <br />
 
+### kube-state-metrics
+
+Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)（请注意所兼容的Kubernetes版本）
+
+::: details （1）在Kubernetes中部署kube-state-metrics
+
+```bash
+
+```
+
+:::
+
+<br />
+
 ## 采集配置
 
 ### 添加目标
