@@ -168,6 +168,8 @@ RUN yum -y install epel-release && yum -y update
 # 两方面进行测试
 #   date 命令查看结果是小时制是否正确
 #   touch 中文.txt 是否可以正常创建
+RUN localedef -c -f UTF-8 -i en_GB en_GB.utf8
+RUN echo 'LANG="en_GB.UTF-8"' > /etc/locale.conf
 ENV LC_ALL=en_GB.UTF-8
 
 # 设置环境
@@ -211,6 +213,10 @@ docker container run --name jenkins_node_centos7 \
     --restart=always \
     -d \
   jenkins-node-centos7:v1.0.0
+  
+# 在Jenkins Web界面Script Console中测试时区和中文
+print "date".execute().text
+print "echo 中文".execute().text
 ```
 
 :::
@@ -300,6 +306,10 @@ docker container run --name jenkins_node_ubuntu22 \
     --restart=always \
     -d \
   jenkins-node-ubuntu22:v1.0.0
+  
+# 在Jenkins Web界面Script Console中测试时区和中文
+print "date".execute().text
+print "echo 中文".execute().text
 ```
 
 :::
