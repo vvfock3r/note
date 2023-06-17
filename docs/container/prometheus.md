@@ -1063,7 +1063,10 @@ Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/k
 
 暴露的指标：[https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics](https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics)
 
-Tips：请注意所兼容的Kubernetes版本
+Tips：
+
+* 1、请注意Kubernetes版本
+* 2、不依赖于Metrics Server
 
 ::: details 在Kubernetes中部署kube-state-metrics
 
