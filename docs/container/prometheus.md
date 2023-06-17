@@ -144,7 +144,115 @@ docker container run --name "prometheus" \
 ::: details Kubernetes部署
 
 ```bash
+# 创建Namespace
+kubectl create ns monitor
 
+# 创建ConfigMap, 存储Prometheus配置文件
+kubectl create configmap prometheus-etc \
+  -n monitor \
+  --from-file=prometheus.yml=prometheus-etc.yaml
+
+# 更新ConfigMap
+kubectl create configmap prometheus-etc \
+  -n monitor \
+  --from-file=prometheus.yml=prometheus-etc.yaml \
+  --dry-run=client \
+  -o yaml | \
+  kubectl apply -f -
+
+# 部署
+kubectl apply -f prometheus-deploy.yaml
+```
+
+prometheus-deploy.yaml
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data
+  namespace: monitor
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /data/k8s/monitor/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/os
+          operator: In
+          values:
+          - linux
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: monitor
+spec:
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.38.0
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+          - name: prometheus-etc
+            mountPath: /etc/prometheus
+          - name: prometheus-data
+            mountPath: /prometheus
+      volumes:
+        - name: prometheus-etc
+          configMap:
+            name: prometheus-etc
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitor
+spec:
+  selector:
+    app: prometheus
+  type: NodePort
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+      nodePort: 31000
 ```
 
 :::
