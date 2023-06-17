@@ -1061,6 +1061,8 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 Github：[https://github.com/google/cadvisor](https://github.com/google/cadvisor)
 
+Tips：cadvisor的监控指标常用 `container_` 开头
+
 ::: details 在Kubernetes中部署cadvisor
 
 ```bash
@@ -1121,6 +1123,7 @@ Tips：
 
 * 1、请注意Kubernetes版本
 * 2、不依赖于Metrics Server
+* 3、kube-state-metrics的监控指标常用 `kube_` 开头
 
 ::: details 在Kubernetes中部署kube-state-metrics
 
