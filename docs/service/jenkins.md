@@ -176,7 +176,7 @@ ENV JNLP_URL=http://jenkins-host:port
 ENV JNLP_SECRET=secret
 
 # 复制文件
-COPY agent.jar secret.txt jdk-17_linux-x64_bin.rpm entrypoint.sh ./
+COPY agent.jar jdk-17_linux-x64_bin.rpm entrypoint.sh ./
 
 # 安装JDK
 RUN yum install -y jdk-17_linux-x64_bin.rpm
