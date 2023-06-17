@@ -160,6 +160,9 @@ kubectl create configmap prometheus-etc \
   -o yaml | \
   kubectl apply -f -
 
+# 创建存储目录 或者 挂载网络存储等
+mkdir -p /data/k8s/monitor/prometheus
+
 # 部署
 kubectl apply -f prometheus-deploy.yaml
 ```
