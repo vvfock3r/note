@@ -175,6 +175,11 @@ total 17M
 
 # 登录
 [root@node-1 ~]# mysql --default-character-set=utf8mb4 -h127.0.0.1 -P3307 -uroot -pt6G1LJdzOlG^u5yb
+
+# 如果写到Shell脚本中的话, 会输出一行提醒 mysql: [Warning] Using a password on the command line interface can be insecure
+# 此时可以这样做
+export MYSQL_PWD="t6G1LJdzOlG^u5yb"
+mysql --default-character-set=utf8mb4 -h127.0.0.1 -P3307 -uroot
 ```
 
 :::
