@@ -165,11 +165,13 @@ RUN yum -y install epel-release && yum -y update
 #   en_GB.UTF-8 语言为英文, 时间是24小时制
 #   en_US.UTF-8 语言为英文, 时间是12小时制
 #   zh_CN.UTF-8 语言为中文, 时间是24小时制
-# 两方面进行测试
+# 测试
 #   date 命令查看结果是小时制是否正确
 #   touch 中文.txt 是否可以正常创建
-RUN localedef -c -f UTF-8 -i en_GB en_GB.utf8
-RUN echo 'LANG="en_GB.UTF-8"' > /etc/locale.conf
+RUN localedef -c -f UTF-8 -i en_GB en_GB.utf8 && \
+    echo 'LANG="en_GB.UTF-8"' > /etc/locale.conf && \
+    yum -y install tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
 ENV LC_ALL=en_GB.UTF-8
 
 # 设置环境
@@ -183,19 +185,15 @@ COPY agent.jar jdk-17_linux-x64_bin.rpm entrypoint.sh ./
 # 安装JDK
 RUN yum install -y jdk-17_linux-x64_bin.rpm
 
-# 设置语言和时区及24小时制时间
-RUN yum -y install tzdata && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+# 设置JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
+ENV PATH=$PATH:$JAVA_HOME/bin
 
 # 安装软件包
 RUN yum install -y curl wget telnet vim && \
     yum install -y nodejs python3 go && \    
     yum clean all && \
     chmod 755 entrypoint.sh
-
-# 设置JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/jdk-17-oracle-x64
-ENV PATH=$PATH:$JAVA_HOME/bin
 
 ENTRYPOINT ["/data/entrypoint.sh"]
 ```
@@ -259,7 +257,7 @@ WORKDIR /data
 #   en_GB.UTF-8 语言为英文, 时间是24小时制
 #   en_US.UTF-8 语言为英文, 时间是12小时制
 #   zh_CN.UTF-8 语言为中文, 时间是24小时制
-# 两方面进行测试
+# 测试
 #   date 命令查看结果是小时制是否正确
 #   touch 中文.txt 是否可以正常创建
 ENV LC_ALL=en_GB.UTF-8
