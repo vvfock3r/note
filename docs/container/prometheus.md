@@ -1057,6 +1057,12 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 <br />
 
+### cadvisor
+
+Github：[https://github.com/google/cadvisor](https://github.com/google/cadvisor)
+
+<br />
+
 ### kube-state-metrics
 
 Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
