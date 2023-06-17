@@ -2157,7 +2157,7 @@ sys     0m11.046s
 
 ### printf
 
-::: details （1）/etc/passwd 格式化输出
+::: details /etc/passwd 格式化输出
 
 ```bash
 #!/bin/bash
@@ -2584,7 +2584,13 @@ Error: bad file '-': yaml: line 1: did not find expected <document start>
 
 <br />
 
-## 工具整理
+## 网络工具
+
+### tcpdump
+
+<br />
+
+## 其他整理
 
 ### expect
 
