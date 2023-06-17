@@ -3626,6 +3626,69 @@ SECRET = 123456
 
 :::
 
+::: details  （4）ConfigMap换行问题
+
+```bash
+# 任意一个ConfigMap, 看起来很工整
+[root@node-1 ~]# kubectl get cm test -o yaml
+apiVersion: v1
+data:
+  env: fat
+  fat.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = true
+    SECRET = 123456
+  pro.ini: |
+    HOST  = 127.0.0.1
+    PORT  = 80
+    DEBUG = false
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2023-06-17T04:15:19Z"
+  name: test
+  namespace: default
+  resourceVersion: "385724"
+  uid: 471eb5b0-8434-4031-ad1b-6e5519563384
+
+# 修改ConfigMap, 在任意一行行尾加一个空格或Table
+[root@node-1 ~]# kubectl edit cm test
+apiVersion: v1
+data:
+  env: fat
+  fat.ini: |
+    HOST  = 0.0.0.0
+    PORT  = 8080
+    DEBUG = true
+    SECRET = 123456
+  pro.ini: |
+    HOST  = 127.0.0.1
+    PORT  = 80
+    DEBUG = false
+    
+# 再次查看, 格式乱了???
+# 仔细观察, 发现有一个\t\n, 这说明行尾是有一个Table
+# 再次编辑, 将Table去掉发现格式又好了
+[root@node-1 ~]# kubectl get cm test -o yaml
+apiVersion: v1
+data:
+  env: fat
+  fat.ini: "HOST  = 0.0.0.0\nPORT  = 8080\t\nDEBUG = true\nSECRET = 123456\n"
+  pro.ini: |
+    HOST  = 127.0.0.1
+    PORT  = 80
+    DEBUG = false
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2023-06-17T04:15:19Z"
+  name: test
+  namespace: default
+  resourceVersion: "385986"
+  uid: 471eb5b0-8434-4031-ad1b-6e5519563384
+```
+
+:::
+
 <br />
 
 ### Secret
