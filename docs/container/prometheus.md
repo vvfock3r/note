@@ -1061,24 +1061,34 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)（请注意所兼容的Kubernetes版本）
 
+暴露的指标：[https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics](https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics)
+
 ::: details （1）在Kubernetes中部署kube-state-metrics
 
 ```bash
-# 部署
+# 拉取代码
 [root@node-1 ~]# git clone https://github.com/kubernetes/kube-state-metrics.git
 [root@node-1 ~]# cd kube-state-metrics/
-[root@node-1 kube-state-metrics]# kubectl apply -f examples/standard
-clusterrolebinding.rbac.authorization.k8s.io/kube-state-metrics created
-clusterrole.rbac.authorization.k8s.io/kube-state-metrics created
-deployment.apps/kube-state-metrics created
-serviceaccount/kube-state-metrics created
-service/kube-state-metrics created
 
-# 检查
-[root@node-1 standard]# curl -s 10.100.84.152:8080/metrics |  grep kube_node_info
+# 修改命名空间
+[root@node-1 kube-state-metrics]# sed -ri 's/namespace: kube-system/namespace: monitor/g' examples/standard/*
+
+# 检查服务是否正常
+[root@node-1 kube-state-metrics]# kubectl -n monitor get pods -o wide
+NAME                                  READY   STATUS    RESTARTS      AGE     IP              NODE
+kube-state-metrics-6b84464c8b-6rrx7   1/1     Running   0             9m52s   10.100.84.171   node-1
+prometheus-64fd9d59c8-qnnrr           1/1     Running   4 (25m ago)   26m     10.100.84.173   node-1
+
+[root@node-1 standard]# curl -s 10.100.84.171:8080/metrics |  grep kube_node_info
 # HELP kube_node_info [STABLE] Information about a cluster node.
 # TYPE kube_node_info gauge
 kube_node_info{node="node-1",kernel_version="3.10.0-1160.88.1.el7.x86_64",os_image="CentOS Linux 7 (Core)",container_runtime_version="docker://23.0.5",kubelet_version="v1.27.1",kubeproxy_version="v1.27.1",provider_id="",pod_cidr="10.100.0.0/24",system_uuid="4E6B4D56-716E-9C8F-A541-3C882F73029E",internal_ip="192.168.48.132"} 1
+
+# 配置Promethues
+  - job_name: "kube-state-metrics"
+    static_configs:
+      - targets:
+        - "kube-state-metrics:8080"
 ```
 
 :::
