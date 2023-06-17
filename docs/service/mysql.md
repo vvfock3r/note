@@ -722,7 +722,45 @@ mysql> select * from mysql.user where user="root"\G
 ::: details （1）mysqldump数据备份  ＋  mysql数据导入
 
 ```bash
+# 备份整个库
+# --single-transaction  以单个事务的方式进行备份，确保备份数据的一致性
+# --max_allowed_packet  设置导出过程中允许的最大数据包大小
+# --set-gtid-purged     是否清除GTID信息
+# --hex-blob            如果包含二进制数据, 强烈添加此选项, 使用可读的十六进制字符表示不可读的二进制数据
+#
+# --add-drop-database   备份文件中包含删除库的语句, 根据实际情况选择
+# --add-drop-table      备份文件中包含删除表的语句, 根据实际情况选择
+# --ignore-table        备份文件不包含某张表的数据, 根据实际情况选择
+export MYSQL_PWD="t6G1LJdzOlG^u5yb"
+mysqldump --default-character-set=utf8mb4 \
+  -h127.0.0.1 \
+  -P3307 \
+  -uroot \
+  --single-transaction \
+  --max_allowed_packet=1024MB \
+  --set-gtid-purged=OFF \
+  --hex-blob \
+  --add-drop-database \
+  --databases ${dbName} > ${dbName}.sql
 
+
+# 请注意, 如果添加了 --add-drop-database, 那么删除的语句看起来像是注释， 但实际上并不是注释
+/* 40000 DROP DATABASE IF EXISTS `mysql`*/   # 这是注释, 注释不需要加 ;
+/*!40000 DROP DATABASE IF EXISTS `mysql`*/;  # 这不是注释, 因为多了一个!
+
+
+# 备份SQL查询出来的结果, --where可以写的很复杂
+export MYSQL_PWD="t6G1LJdzOlG^u5yb"
+mysqldump --default-character-set=utf8mb4 \
+  -h127.0.0.1 \
+  -P3307 \
+  -uroot \
+  --single-transaction \
+  --max_allowed_packet=1024MB \
+  --set-gtid-purged=OFF \
+  --hex-blob \
+  --where="age >= 18" \
+  ${dbName} ${tableName} > ${tableName}.sql
 ```
 
 :::
