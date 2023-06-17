@@ -1059,9 +1059,11 @@ Github：[https://github.com/prometheus-community/elasticsearch_exporter](https:
 
 ### kube-state-metrics
 
-Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)（请注意所兼容的Kubernetes版本）
+Github：[https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
 
 暴露的指标：[https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics](https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics)
+
+Tips：请注意所兼容的Kubernetes版本
 
 ::: details （1）在Kubernetes中部署kube-state-metrics
 
