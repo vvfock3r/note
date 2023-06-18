@@ -1488,46 +1488,7 @@ import ButtonCounter from './ButtonCounter.vue'
 
 :::
 
-::: details （3）运行时参数校验
-
-| 参数      | 说明                                                         |
-| --------- | ------------------------------------------------------------ |
-| type      | 数据类型，Number、String、Boolean、Array、Object、Function等 |
-| required  | 是否必填，值为`true`或`false`，若参数不符合要求不会报错只会提醒 |
-| default   | 默认值                                                       |
-| validator | 参数校验，值是一个函数，函数参数是传入的值，函数返回结果为`true`或`false，若参数不符合要求不会报错只会提醒 |
-
-`ButtonCounter.vue`
-
-```vue
-<script setup>
-import { toRefs } from "vue";
-
-const props = defineProps({
-  start: {
-    type: Number,
-    required: true
-  }
-});
-
-// 响应式解构
-const { start } = toRefs(props);
-
-// 看一下传递过来的是什么数据类型
-console.log(typeof start.value);
-</script>
-
-<template>
-  <!-- 子组件不能改变父组件的数据(单向数据流), 所以这里点击后并不会+1, 控制台会报一个提醒 -->
-  <button @click="start++">Click {{ start }}</button>
-</template>
-
-<style lang="scss" scoped></style>
-```
-
-:::
-
-::: details （4）参数很多时优化
+::: details （3）参数很多时优化
 
 `App.vue`
 
@@ -1577,9 +1538,88 @@ const { a, b, c, d, e } = toRefs(props)
 
 :::
 
+::: details （4）运行时参数校验
+
+| 参数      | 说明                                                         |
+| --------- | ------------------------------------------------------------ |
+| type      | 数据类型，Number、String、Boolean、Array、Object、Function等 |
+| required  | 是否必填，值为`true`或`false`，若参数不符合要求不会报错只会提醒 |
+| default   | 默认值                                                       |
+| validator | 参数校验，值是一个函数，函数参数是传入的值，函数返回结果为`true`或`false，若参数不符合要求不会报错只会提醒 |
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+import { toRefs } from "vue";
+
+const props = defineProps({
+  start: {
+    type: Number,
+    required: true
+  }
+});
+
+// 响应式解构
+const { start } = toRefs(props);
+
+// 看一下传递过来的是什么数据类型
+console.log(typeof start.value);
+</script>
+
+<template>
+  <!-- 子组件不能改变父组件的数据(单向数据流), 所以这里点击后并不会+1, 控制台会报一个提醒 -->
+  <button @click="start++">Click {{ start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （5）传参变量大小写问题
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from "./ButtonCounter.vue";
+</script>
+
+<template>
+  <!-- 传递的时候使用 小写单词-小写单词 -->
+  <ButtonCounter :start-number="11" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+import { toRefs } from "vue";
+
+// 接收时候使用驼峰命名，小写单词-首字母大写单词
+const props = defineProps(["startNumber"]);
+
+const { startNumber } = toRefs(props);
+</script>
+
+<template>
+  <p>{{ startNumber }}</p>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
 
 
 
+<br />
+
+### 单向数据流
 
 
 
