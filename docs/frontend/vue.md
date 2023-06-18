@@ -1308,7 +1308,7 @@ div {
 
 ### 数据修饰符
 
-::: details 点击查看详情
+::: details （1）内置的v-model修饰符
 
 ```vue
 <script setup>
@@ -1349,6 +1349,10 @@ div {
 }
 </style>
 ```
+
+:::
+
+::: details （2）自定义v-model修饰符
 
 :::
 
@@ -1753,9 +1757,105 @@ function setNumber(n) {
 
 文档：[https://cn.vuejs.org/guide/components/v-model.html](https://cn.vuejs.org/guide/components/v-model.html)
 
-::: details （1）
+::: details （1）简单用法，不够灵活，用来理解原理
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from "./ButtonCounter.vue";
+import { ref } from "vue";
+
+const startNumber = ref(1);
+</script>
+
+<template>
+  <!-- 父组件使用数据双向绑定, 这相当于 -->
+  <!-- :modelValue="startNumber" -->
+  <!-- @update:modelValue="newValue => startNumber = newValue" -->
+  <ButtonCounter v-model="startNumber" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+// 所以这里需要接收一个叫做 modelValue 的变量
+const props = defineProps({
+  modelValue: {
+    type: Number
+  }
+});
+</script>
+
+<template>
+  <!-- 子组件计算好并传递给父组件, 父组件只管赋值 -->
+  <!-- 子组件触发 update:modelValue 事件 -->
+  <button @click="$emit('update:modelValue', props.modelValue + 1)">
+    Click {{ props.modelValue }}
+  </button>
+</template>
+
+<style lang="scss" scoped></style>
+```
 
 :::
+
+::: details （2）使用自定义的变量
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+import { ref } from 'vue'
+
+const startNumber = ref(1)
+</script>
+
+<template>
+  <!-- 父组件使用数据双向绑定, 这相当于 -->
+  <!-- :start="startNumber" -->
+  <!-- @update:start="newValue => startNumber = newValue" -->
+  <ButtonCounter v-model:start="startNumber" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+// 所以这里需要接收一个叫做 start 的变量
+const props = defineProps({
+  start: {
+    type: Number
+  }
+})
+</script>
+
+<template>
+  <!-- 子组件计算好并传递给父组件, 父组件只管赋值 -->
+  <!-- 子组件触发 update:start 事件 -->
+  <button @click="$emit('update:start', props.start + 1)">Click {{ props.start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （3）自定义v-model修饰符
+
+:::
+
+<br />
+
+### 插槽 Slots
 
 <br />
 
