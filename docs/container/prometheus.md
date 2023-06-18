@@ -158,6 +158,8 @@ kubectl create configmap prometheus-etc \
 mkdir -p /data/k8s/monitor/prometheus
 
 # 4.创建SA, 用于Kubernetes服务发现, 默认的SA权限太低
+#   -clusterrole=cluster-admin       绑定的角色为cluster-admin, 请确保存在此角色
+#   --serviceaccount=monitor:monitor 第一个monitor代表NameSpace, 第二个monitor代表SA
 kubectl -n monitor create sa monitor
 kubectl -n monitor create clusterrolebinding monitor --clusterrole=cluster-admin --serviceaccount=monitor:monitor
 
