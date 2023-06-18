@@ -1399,23 +1399,21 @@ Checking /etc/prometheus/prometheus.yml
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config)
 
-::: details 发现Pod
+注意：本章节适用于Prometheus部署在Kubernetes集群中的情况
+
+::: details （1）发现Pod
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
-
   - job_name: 'kubernetes-pods'
     kubernetes_sd_configs:
     - role: pod
-      kubeconfig_file: /etc/.kube.config
     relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_pod_label_(.+)
-
       - action: replace
         target_label: namespace
         source_labels: [__meta_kubernetes_namespace]
-
       - action: replace
         target_label: pod
         source_labels: [__meta_kubernetes_pod_name]
