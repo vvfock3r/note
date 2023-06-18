@@ -146,14 +146,22 @@ docker container run --name "prometheus" \
 注意：根据实际情况修改，这只是一个单节点的Kubernetes
 
 ```bash
-# 创建Namespace
+# 1.创建Namespace
 kubectl create ns monitor
 
-# 创建ConfigMap, 存储Prometheus配置文件
+# 2.创建ConfigMap, 存储Prometheus配置文件
 kubectl create configmap prometheus-etc \
   -n monitor \
   --from-file=prometheus.yml=prometheus-etc.yaml
 
+# 3.创建存储目录 或者 挂载网络存储等
+mkdir -p /data/k8s/monitor/prometheus
+
+# 4.部署
+kubectl apply -f prometheus-deploy.yaml
+
+# -------------------------------------------------------------
+# 后续维护
 # 更新ConfigMap
 kubectl create configmap prometheus-etc \
   -n monitor \
@@ -161,12 +169,6 @@ kubectl create configmap prometheus-etc \
   --dry-run=client \
   -o yaml | \
   kubectl apply -f -
-
-# 创建存储目录 或者 挂载网络存储等
-mkdir -p /data/k8s/monitor/prometheus
-
-# 部署
-kubectl apply -f prometheus-deploy.yaml
 ```
 
 prometheus-deploy.yaml
