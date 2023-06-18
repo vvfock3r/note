@@ -1426,6 +1426,10 @@ Checking /etc/prometheus/prometheus.yml
       - action: replace
         target_label: pod
         source_labels: [__meta_kubernetes_pod_name]
+      # 这里可以不发现一些特定的Pod, 根据实际情况设置
+      - action: drop
+        regex: pod_to_exclude
+        source_labels: [__meta_kubernetes_pod_name]
 ```
 
 :::
