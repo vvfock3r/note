@@ -1413,6 +1413,24 @@ Checking /etc/prometheus/prometheus.yml
 ::: details （1）发现 Pod（还有待研究）
 
 ```bash
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+    - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - action: replace
+        target_label: __address__
+        source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:9100'
+```
+
+:::
+
+::: details （2）发现 Pod（还有待研究）
+
+```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
   - job_name: 'kubernetes-pods'
     kubernetes_sd_configs:
