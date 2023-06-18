@@ -1403,7 +1403,7 @@ import ButtonCounter from "./ButtonCounter.vue";
 
 <br />
 
-### 简单传值
+### 父子间传值
 
 文档：[https://cn.vuejs.org/guide/components/props.html](https://cn.vuejs.org/guide/components/props.html)
 
@@ -1497,16 +1497,82 @@ import ButtonCounter from './ButtonCounter.vue'
 | default   | 默认值                                                       |
 | validator | 参数校验，值是一个函数，函数参数是传入的值，函数返回结果为`true`或`false，若参数不符合要求不会报错只会提醒 |
 
-`App.vue` 
+`ButtonCounter.vue`
 
 ```vue
+<script setup>
+import { toRefs } from "vue";
 
+const props = defineProps({
+  start: {
+    type: Number,
+    required: true
+  }
+});
+
+// 响应式解构
+const { start } = toRefs(props);
+
+// 看一下传递过来的是什么数据类型
+console.log(typeof start.value);
+</script>
+
+<template>
+  <!-- 子组件不能改变父组件的数据(单向数据流), 所以这里点击后并不会+1, 控制台会报一个提醒 -->
+  <button @click="start++">Click {{ start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （4）参数很多时优化
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+import { reactive } from 'vue'
+
+const params = reactive({
+  a: 1,
+  b: 2,
+  c: 3,
+  d: 4,
+  e: 5
+})
+</script>
+
+<template>
+  <!-- 方式一：一个参数一个参数的写，参数数量太多时不建议  -->
+  <!--  <ButtonCounter :a="1" :b="2" :c="3" :d="4" :e="5" />-->
+
+  <!-- 方式二：使用v-bind绑定属性 -->
+  <ButtonCounter v-bind="params" />
+</template>
+
+<style lang="scss" scoped></style>
 ```
 
 `ButtonCounter.vue`
 
 ```vue
+<script setup>
+import { toRefs } from 'vue'
 
+const props = defineProps(['a', 'b', 'c', 'd', 'e'])
+
+// 响应式解构
+const { a, b, c, d, e } = toRefs(props)
+</script>
+
+<template>
+  <p>{{ a }}-{{ b }}-{{ c }}-{{ d }}-{{ e }}</p>
+</template>
+
+<style lang="scss" scoped></style>
 ```
 
 :::
