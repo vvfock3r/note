@@ -157,11 +157,11 @@ kubectl create configmap prometheus-etc \
 # 3.创建存储目录 或者 挂载网络存储等
 mkdir -p /data/k8s/monitor/prometheus
 
-# 4.创建serviceaccount
+# 4.创建SA, 用于Kubernetes服务发现, 默认的SA权限太低
 kubectl -n monitor create sa monitor
 kubectl -n monitor create clusterrolebinding monitor --clusterrole=cluster-admin --serviceaccount=monitor:monitor
 
-# 4.部署
+# 5.部署
 kubectl apply -f prometheus-deploy.yaml
 
 # -------------------------------------------------------------
