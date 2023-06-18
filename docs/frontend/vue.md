@@ -1451,7 +1451,21 @@ console.log(typeof start.value);
 
 :::
 
+::: details （2）动态传值
 
+`App.vue` 
+
+```vue
+
+```
+
+`ButtonCounter.vue`
+
+```vue
+
+```
+
+:::
 
 
 
