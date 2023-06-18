@@ -1279,7 +1279,7 @@ scrape_configs:
 
 <br />
 
-### 服务发现：基于文件
+### Metrics发现：基于文件
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#file_sd_config)
 
@@ -1336,7 +1336,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 服务发现：基于DNS
+### Metrics发现：基于DNS
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#dns_sd_config)
 
@@ -1373,7 +1373,7 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 服务发现：基于Docker
+### Metrics发现：基于Docker
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#docker_sd_config)
 
@@ -1404,13 +1404,13 @@ Checking /etc/prometheus/prometheus.yml
 
 <br />
 
-### 服务发现：基于Kubernetes
+### Metrics发现：基于Kubernetes
 
 文档：[https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config](https://prometheus.io/docs/prometheus/2.38/configuration/configuration/#kubernetes_sd_config)
 
 注意：本章节适用于Prometheus部署在Kubernetes集群中的情况
 
-::: details （1）发现Pod
+::: details （1）发现 Pod（还有待研究）
 
 ```bash
 [root@localhost ~]# vim /etc/prometheus/prometheus.yml
@@ -1426,7 +1426,7 @@ Checking /etc/prometheus/prometheus.yml
       - action: replace
         target_label: pod
         source_labels: [__meta_kubernetes_pod_name]
-      # 这里可以不发现一些特定的Pod, 根据实际情况设置
+      # 这里可以不发现一些特定的Pod, 根据实际情况设置      
       - action: drop
         regex: pod_to_exclude
         source_labels: [__meta_kubernetes_pod_name]
