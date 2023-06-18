@@ -1364,7 +1364,34 @@ div {
 
 ::: details 点击查看详情
 
+新建一个组件 `ButtonCounter.vue`
+
 ```vue
+<script setup>
+import { ref } from 'vue'
+
+const count = ref(1)
+</script>
+
+<template>
+  <button @click="count++">Click {{ count }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`App.vue` 中使用此组件
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+</script>
+
+<template>
+  <ButtonCounter />
+</template>
+
+<style lang="scss" scoped></style>
 ```
 
 :::
