@@ -157,6 +157,10 @@ kubectl create configmap prometheus-etc \
 # 3.创建存储目录 或者 挂载网络存储等
 mkdir -p /data/k8s/monitor/prometheus
 
+# 4.创建serviceaccount
+kubectl -n monitor create sa monitor
+kubectl -n monitor create clusterrolebinding monitor --clusterrole=cluster-admin --serviceaccount=monitor:monitor
+
 # 4.部署
 kubectl apply -f prometheus-deploy.yaml
 
@@ -227,6 +231,7 @@ spec:
       labels:
         app: prometheus
     spec:
+      serviceAccountName: monitor
       containers:
       - name: prometheus
         image: prom/prometheus:v2.38.0
