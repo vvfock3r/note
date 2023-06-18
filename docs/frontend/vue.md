@@ -1710,13 +1710,50 @@ const props = defineProps(['start'])
 
 ::: details （3）emit事件注意：两种计算思想
 
+第一种
 
+```vue
+  <!-- 子组件触发事件, 由父组件执行计算 -->
+  <button @click="$emit('addNumber')">Click {{ props.start }}</button>
+
+<script setup>
+// 父组件
+const startNumber = ref(1)
+
+function addNumber() {
+  startNumber.value++
+}
+</script>
+```
+
+第二种
+
+```vue
+  <!-- 子组件计算好并传递给父组件, 父组件只管赋值 -->
+  <button @click="$emit('setNumber', props.start+1)">Click {{ props.start }}</button>
+
+<script setup>
+// 父组件
+function setNumber(n) {
+  startNumber.value = n;
+}
+</script>
+
+<template>
+  <!-- 父组件监听add-number事件  -->
+  <ButtonCounter :start="startNumber" @set-number="setNumber" />
+</template>
+```
 
 :::
 
 <br />
 
-### 2
+### 数据双向绑定
+
+文档：[https://cn.vuejs.org/guide/components/v-model.html](https://cn.vuejs.org/guide/components/v-model.html)
+
+
 
 <br />
 
