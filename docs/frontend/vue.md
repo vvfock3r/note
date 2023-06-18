@@ -1753,7 +1753,9 @@ function setNumber(n) {
 
 文档：[https://cn.vuejs.org/guide/components/v-model.html](https://cn.vuejs.org/guide/components/v-model.html)
 
+::: details （1）
 
+:::
 
 <br />
 
