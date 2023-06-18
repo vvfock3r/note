@@ -1439,8 +1439,15 @@ import { toRefs } from 'vue'
 // const props = defineProps(["start"]);
 
 // 方法2:接一个对象
+// const props = defineProps({
+//   start: Number
+// })
+
+// 方法3:接一个对象
 const props = defineProps({
-  start: Number
+  start: {
+    type: String
+  }
 })
 
 // 响应式解构
@@ -1481,7 +1488,14 @@ import ButtonCounter from './ButtonCounter.vue'
 
 :::
 
-::: details （3）参数校验
+::: details （3）运行时参数校验
+
+| 参数      | 说明                                                         |
+| --------- | ------------------------------------------------------------ |
+| type      | 数据类型，Number、String、Boolean、Array、Object、Function等 |
+| required  | 是否必填，值为`true`或`false`，若参数不符合要求不会报错只会提醒 |
+| default   | 默认值                                                       |
+| validator | 参数校验，值是一个函数，函数参数是传入的值，函数返回结果为`true`或`false，若参数不符合要求不会报错只会提醒 |
 
 `App.vue` 
 
