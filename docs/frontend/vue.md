@@ -1390,9 +1390,10 @@ import ButtonCounter from "./ButtonCounter.vue";
 </script>
 
 <template>
-  <div><ButtonCounter /></div>
-  <div><ButtonCounter /></div>
-  <div><ButtonCounter /></div>
+  <!-- 各个组件之间数据独立 -->
+  <ButtonCounter />
+  <ButtonCounter />
+  <ButtonCounter />
 </template>
 
 <style lang="scss" scoped></style>
@@ -1402,9 +1403,53 @@ import ButtonCounter from "./ButtonCounter.vue";
 
 <br />
 
+### 简单传值
 
+::: details （1）静态传值
 
+`App.vue` 
 
+```vue
+<script setup>
+import ButtonCounter from "./ButtonCounter.vue";
+</script>
+
+<template>
+  <!-- 静态传参，传递过去是一个字符串, 即使写的是数字 -->
+  <ButtonCounter start="1" />
+  <ButtonCounter start="2" />
+  <ButtonCounter start="3" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+import { toRefs } from "vue";
+
+// 子组件需要使用 defineProps 接收参数
+// defineProps 在编译阶段使用, 不需要导入
+const props = defineProps(["start"]);
+
+// 响应式解构
+const { start } = toRefs(props);
+
+// 看一下传递过来的是什么数据类型
+console.log(typeof start.value);
+</script>
+
+<template>
+  <!-- 子组件不能改变父组件的数据(单向数据流), 所以这里点击后并不会+1, 控制台会报一个提醒 -->
+  <button @click="start++">Click {{ start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
 
 
 
