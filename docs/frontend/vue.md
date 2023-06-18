@@ -987,9 +987,9 @@ setTimeout(() => {
 
 ## 指令进阶
 
-### 动态属性名
+### 动态名称
 
-::: details 点击查看详情
+::: details （1）动态属性名
 
 ```vue
 <script setup>
@@ -1009,11 +1009,7 @@ const value = ref("color: red");
 
 :::
 
-<br />
-
-### 动态事件名
-
-::: details 点击查看详情
+::: details （2）动态事件名
 
 ```vue
 <script setup>
@@ -1043,7 +1039,7 @@ setTimeout(() => {
 
 <br />
 
-### 事件的方法
+### 事件方法
 
 ::: details 点击查看详情
 
@@ -1125,9 +1121,9 @@ function add6() {
 
 <br />
 
-### 事件修饰符
+### 各类修饰符
 
-::: details 点击查看详情
+::: details （1）事件修饰符
 
 ```vue
 <script setup>
@@ -1219,11 +1215,7 @@ div {
 
 :::
 
-<br />
-
-### 按键修饰符
-
-::: details 点击查看详情
+::: details （2）按键修饰符
 
 ```vue
 <script setup>
@@ -1251,11 +1243,7 @@ function keydown(e) {
 
 :::
 
-<br />
-
-### 鼠标修饰符
-
-::: details 点击查看详情
+::: details （3）鼠标修饰符
 
 ```vue
 <script setup>
@@ -1304,11 +1292,7 @@ div {
 
 :::
 
-<br />
-
-### 数据修饰符
-
-::: details （1）内置的v-model修饰符
+::: details （4）数据修饰符：内置的v-model修饰符
 
 ```vue
 <script setup>
@@ -1352,7 +1336,7 @@ div {
 
 :::
 
-::: details （2）自定义v-model修饰符
+::: details （5）数据修饰符：自定义v-model修饰符
 
 :::
 
