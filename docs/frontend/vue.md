@@ -1405,6 +1405,8 @@ import ButtonCounter from "./ButtonCounter.vue";
 
 ### 简单传值
 
+文档：[https://cn.vuejs.org/guide/components/props.html](https://cn.vuejs.org/guide/components/props.html)
+
 ::: details （1）静态传值
 
 `App.vue` 
@@ -1428,17 +1430,24 @@ import ButtonCounter from "./ButtonCounter.vue";
 
 ```vue
 <script setup>
-import { toRefs } from "vue";
+import { toRefs } from 'vue'
 
 // 子组件需要使用 defineProps 接收参数
 // defineProps 在编译阶段使用, 不需要导入
-const props = defineProps(["start"]);
+
+// 方法1: 接一个数组
+// const props = defineProps(["start"]);
+
+// 方法2:接一个对象
+const props = defineProps({
+  start: Number
+})
 
 // 响应式解构
-const { start } = toRefs(props);
+const { start } = toRefs(props)
 
 // 看一下传递过来的是什么数据类型
-console.log(typeof start.value);
+console.log(typeof start.value)
 </script>
 
 <template>
@@ -1456,6 +1465,27 @@ console.log(typeof start.value);
 `App.vue` 
 
 ```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+</script>
+
+<template>
+  <!-- 动态传参 -->
+  <ButtonCounter :start="1" />
+  <ButtonCounter :start="2" />
+  <ButtonCounter :start="3" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （3）参数校验
+
+`App.vue` 
+
+```vue
 
 ```
 
@@ -1466,8 +1496,6 @@ console.log(typeof start.value);
 ```
 
 :::
-
-
 
 
 
