@@ -1360,6 +1360,8 @@ div {
 
 ## 组件从入门到放弃
 
+文档：[https://cn.vuejs.org/guide/essentials/component-basics.html#using-a-component](https://cn.vuejs.org/guide/essentials/component-basics.html#using-a-component)
+
 ### 第一个组件
 
 ::: details 点击查看详情
@@ -1384,11 +1386,13 @@ const count = ref(1)
 
 ```vue
 <script setup>
-import ButtonCounter from './ButtonCounter.vue'
+import ButtonCounter from "./ButtonCounter.vue";
 </script>
 
 <template>
-  <ButtonCounter />
+  <div><ButtonCounter /></div>
+  <div><ButtonCounter /></div>
+  <div><ButtonCounter /></div>
 </template>
 
 <style lang="scss" scoped></style>
