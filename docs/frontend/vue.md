@@ -1223,15 +1223,136 @@ div {
 
 ### 按键修饰符
 
+::: details 点击查看详情
+
+```vue
+<script setup>
+function keydown(e) {
+  alert(e.code)
+}
+</script>
+
+<template>
+  <div>
+    <span>按键修饰符, 任意按键都会触发</span><br />
+    <input type="text" @keydown="keydown" />
+  </div>
+
+  <div>
+    <span>Enter回车键</span><br />
+    <input @keydown.enter="keydown" type="text" />
+  </div>
+
+  <div><span>其他按键：tab,delete,esc,up,down,left,right</span><br /></div>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
 <br />
 
 ### 鼠标修饰符
+
+::: details 点击查看详情
+
+```vue
+<script setup>
+function btnClick() {
+  alert("您点下了按钮");
+}
+</script>
+
+<template>
+  <div>
+    <span>默认左键、右键、中间键应该都生效，但测试只有左键生效</span>
+    <button @click="btnClick">点我</button>
+  </div>
+
+  <div>
+    <span>指定为左键</span>
+    <button @click.left="btnClick">点我</button>
+  </div>
+  <div>
+    <span>指定为右键</span>
+    <button @click.right="btnClick">点我</button>
+  </div>
+  <div>
+    <span>指定为中间键（滚轮）</span>
+    <button @click.middle="btnClick">点我</button>
+  </div>
+
+  <div>
+    <span>按住CTRL，再点击才会执行</span>
+    <button @click.ctrl="btnClick">点我</button>
+  </div>
+
+  <div>
+    <span>仅按住CTRL，没有按其他键，再点击才会执行</span>
+    <button @click.ctrl.exact="btnClick">点我</button>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+div {
+  height: 30px;
+  margin-bottom: 15px;
+}
+</style>
+```
+
+:::
 
 <br />
 
 ### 数据修饰符
 
+::: details 点击查看详情
 
+```vue
+<script setup>
+import { ref } from "vue";
+
+const msg1 = ref("");
+const msg2 = ref("");
+const msg3 = ref("0");
+const msg4 = ref("");
+</script>
+
+<template>
+  <div>
+    <span>v-model正常情况，没有修饰符{{ msg1 }}</span>
+    <input v-model="msg1" type="text" />
+  </div>
+
+  <div>
+    <span>v-model修饰符.lazy，当input失去焦点时才会触发数据改变 {{ msg2 }}</span>
+    <input v-model.lazy="msg2" type="text" />
+  </div>
+
+  <div>
+    <span>v-model修饰符.number，做类型转换 {{ typeof msg3 }}</span>
+    <input v-model.number="msg3" type="number" />
+  </div>
+
+  <div>
+    <span>v-model修饰符.trim，去除值前后空格 {{ msg4 }}</span>
+    <input v-model.trim="msg4" type="text" />
+  </div>
+</template>
+
+<style lang="scss" scoped>
+div {
+  height: 30px;
+  margin-bottom: 15px;
+}
+</style>
+```
+
+:::
+
+<br />
 
 
 
