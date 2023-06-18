@@ -1666,7 +1666,7 @@ const start = ref(props.start);
 
 :::
 
-::: details （2）子组件监听自身事件，事件中使用emit通知父组件，父组件执行自己事件监听，修改数据，子组件重新渲染
+::: details （2）emit事件基础：子组件监听自身事件，事件中使用emit通知父组件，父组件执行自己事件监听，修改数据，子组件重新渲染
 
 `App.vue`
 
@@ -1705,6 +1705,12 @@ const props = defineProps(['start'])
 
 <style lang="scss" scoped></style>
 ```
+
+:::
+
+::: details （3）emit事件注意：两种计算思想
+
+
 
 :::
 
