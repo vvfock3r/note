@@ -1865,6 +1865,32 @@ const props = defineProps({
 
 <br />
 
+
+
+## 应用规模化
+
+### 常用UI库
+
+Element Plus：[https://element-plus.org/zh-CN](https://element-plus.org/zh-CN)
+
+<br />
+
+### 路由管理
+
+<br />
+
+### 状态管理
+
+<br />
+
+### 其他模块
+
+Axios：[https://axios-http.com](https://axios-http.com)
+
+Apache ECharts：[https://echarts.apache.org/](https://echarts.apache.org/)
+
+<br />
+
 ## 等待整理
 
 ### Context参数
