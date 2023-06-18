@@ -1450,7 +1450,7 @@ const props = defineProps({
   }
 })
 
-// 响应式解构
+// 响应式解构, 非必须
 const { start } = toRefs(props)
 
 // 看一下传递过来的是什么数据类型
@@ -1615,13 +1615,102 @@ const { startNumber } = toRefs(props);
 
 :::
 
-
-
 <br />
 
 ### 单向数据流
 
+单向数据流指的是父组件的数据流向子组件，子组件不能流向父组件（不能修改父组件数据）
 
+如果子组件非要做 "修改"，可以转换一下思路，有以下几种方法（不违背单向数据流规则）
+
+::: details （1）子组件定义一个新的变量，从而子组件就可以任意修改数据
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+</script>
+
+<template>
+  <!-- 静态传参，传递过去是一个字符串, 即使写的是数字 -->
+  <ButtonCounter start="1" />
+  <ButtonCounter start="2" />
+  <ButtonCounter start="3" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+
+import { ref } from "vue";
+
+const props = defineProps(["start"]);
+
+console.log(props);
+
+// 定义一个新变量
+const start = ref(props.start);
+</script>
+
+<template>
+  <button @click="start++">Click {{ start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （2）子组件监听自身事件，事件中使用emit通知父组件，父组件执行自己事件监听，修改数据，子组件重新渲染
+
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+import { ref } from 'vue'
+
+const startNumber = ref(1)
+
+function addNumber() {
+  startNumber.value++
+}
+</script>
+
+<template>
+  <!-- 父组件监听add-number事件  -->
+  <ButtonCounter :start="startNumber" @add-number="addNumber" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+const props = defineProps(['start'])
+</script>
+
+<template>
+  <!-- 事件函数向外触发 addNumber事件, 父组件需要使用add-number来监听 -->
+  <!-- 如果需要传参，写到第二个参数即可 -->
+  <button @click="$emit('addNumber')">Click {{ props.start }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+<br />
+
+### 2
 
 <br />
 
