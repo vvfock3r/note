@@ -1835,6 +1835,59 @@ const props = defineProps({
 
 ::: details （3）自定义v-model修饰符
 
+`App.vue`
+
+```vue
+<script setup>
+import ButtonCounter from './ButtonCounter.vue'
+import { ref } from 'vue'
+
+const message = ref('Hello Vue')
+</script>
+
+<template>
+  <!-- 自定义修饰符uppercase，使字母全部大写  -->
+  <!-- WebStorm这里需要优化, 不认自定义修饰符 -->
+  <ButtonCounter v-model:message.uppercase="message" />
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ButtonCounter.vue`
+
+```vue
+<script setup>
+const props = defineProps({
+  message: String,
+  // modelModifiers用来接收修饰符, 固定写法
+  // 因为我们给modelValue起了别名, 所以modelModifiers的名字需要对应改一下
+  // 本来是 default: ( ) => return {};
+  // 一行的话 return 可以省略，但是只写 {} 也不行，所以加个括号
+  messageModifiers: { default: () => ({}) }
+})
+
+const emit = defineEmits(['update:message'])
+
+function handleMessage() {
+  let message = props.message
+  // props.messageModifiers => {uppercase: true}
+  if (props.messageModifiers.uppercase) {
+    message = message.toUpperCase()
+  }
+  emit('update:message', message)
+}
+</script>
+
+<template>
+  <!-- 子组件计算好并传递给父组件, 父组件只管赋值 -->
+  <!-- 子组件触发 update:start 事件 -->
+  <button @click="handleMessage">Click {{ message }}</button>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
 :::
 
 <br />
