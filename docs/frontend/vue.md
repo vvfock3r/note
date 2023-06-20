@@ -1896,6 +1896,56 @@ function handleMessage() {
 
 文档：[https://cn.vuejs.org/guide/components/slots.html](https://cn.vuejs.org/guide/components/slots.html)
 
+::: details （1）基础示例
+
+`App.vue`
+
+```vue
+<script setup>
+import SlotForm from './SlotForm.vue'
+import { ref } from 'vue'
+
+const message = ref('Hello Vue')
+</script>
+
+<template>
+  <!-- 变量是使用父组件的 -->
+  <SlotForm>
+    <button>{{ message }}</button>
+  </SlotForm>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`SlotForm.vue`
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const inputValue = ref()
+
+function handleClick() {
+  alert(inputValue.value)
+}
+</script>
+
+<template>
+  <form>
+    <input type="text" v-model="inputValue" autofocus />
+    <!-- 插槽不可以直接绑定事件，所以在它前面包一层span, 注意不能写template -->
+    <span @click.prevent="handleClick">
+      <slot></slot>
+    </span>
+  </form>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
 <br />
 
 ### 内置的组件
