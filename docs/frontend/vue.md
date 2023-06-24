@@ -2063,21 +2063,37 @@ Element Plus：[https://element-plus.org/zh-CN](https://element-plus.org/zh-CN)
 安装
 
 ```bash
+# 安装 ElementPlus
 npm install element-plus --save
+
+# 安装 ElementPlus图标
+npm install @element-plus/icons-vue
 ```
 
 完整引入和全局配置：`main.js`
 
 ```javascript
-import { createApp } from 'vue'
-import App from './App.vue'
+// Vue 核心导入
+import { createApp } from "vue";
+import App from "./App.vue";
 
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+const app = createApp(App);
 
-const app = createApp(App)
-app.use(ElementPlus, { size: 'small', zIndex: 3000, locale: zhCn })
-app.mount('#app')
+// ElementPlus 核心导入
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
+
+app.use(ElementPlus, { size: "small", zIndex: 3000 });
+
+// ElementPlus 图标导入
+import * as ElementPlusIconsVue from "@element-plus/icons-vue";
+
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
+
+// Vue App挂载
+app.mount("#app");
 ```
 
 测试：`App.vue`
@@ -2089,11 +2105,31 @@ app.mount('#app')
   <div class="common-layout">
     <el-container>
       <el-container>
-        <el-aside width="200px">Aside</el-aside>
+        <el-aside width="200px">
+          Aside
+          <el-icon>
+            <CaretLeft />
+          </el-icon>
+        </el-aside>
         <el-container>
-          <el-header>Header</el-header>
-          <el-main>Main</el-main>
-          <el-footer>Footer</el-footer>
+          <el-header>
+            Header
+            <el-icon>
+              <Setting />
+            </el-icon>
+          </el-header>
+          <el-main>
+            Main
+            <el-icon>
+              <IceTea />
+            </el-icon>
+          </el-main>
+          <el-footer>
+            Footer
+            <el-icon>
+              <Location />
+            </el-icon>
+          </el-footer>
         </el-container>
       </el-container>
     </el-container>
@@ -2149,6 +2185,10 @@ app.mount('#app')
 Axios：[https://axios-http.com](https://axios-http.com)
 
 Apache ECharts：[https://echarts.apache.org/](https://echarts.apache.org/)
+
+<br />
+
+### 打包编译
 
 <br />
 
