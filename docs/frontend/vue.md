@@ -2058,6 +2058,82 @@ const list = ref([1, 2, 3])
 
 Element Plus：[https://element-plus.org/zh-CN](https://element-plus.org/zh-CN)
 
+::: details （1）安装、完整引入和全局配置
+
+安装
+
+```bash
+npm install element-plus --save
+```
+
+完整引入和全局配置：`main.js`
+
+```javascript
+import { createApp } from 'vue'
+import App from './App.vue'
+
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+const app = createApp(App)
+app.use(ElementPlus, { size: 'small', zIndex: 3000, locale: zhCn })
+app.mount('#app')
+```
+
+测试：`App.vue`
+
+```vue
+<script setup></script>
+
+<template>
+  <div class="common-layout">
+    <el-container>
+      <el-container>
+        <el-aside width="200px">Aside</el-aside>
+        <el-container>
+          <el-header>Header</el-header>
+          <el-main>Main</el-main>
+          <el-footer>Footer</el-footer>
+        </el-container>
+      </el-container>
+    </el-container>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.common-layout .el-header,
+.common-layout .el-footer,
+.common-layout .el-main,
+.common-layout .el-aside {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.common-layout .el-header,
+.common-layout .el-footer {
+  background-color: var(--el-color-primary-light-7);
+  color: var(--el-text-color-primary);
+  text-align: center;
+}
+
+.common-layout .el-aside {
+  background-color: var(--el-color-primary-light-8);
+  color: var(--el-text-color-primary);
+  text-align: center;
+}
+
+.common-layout .el-main {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-text-color-primary);
+  text-align: center;
+  height: 150px;
+}
+</style>
+```
+
+:::
+
 <br />
 
 ### 路由管理
