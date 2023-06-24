@@ -2165,6 +2165,11 @@ app.mount("#app");
   text-align: center;
   height: 150px;
 }
+
+.el-icon {
+  font-size: 21px;
+  margin-left: 5px;
+}
 </style>
 ```
 
