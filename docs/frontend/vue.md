@@ -2058,7 +2058,7 @@ const list = ref([1, 2, 3])
 
 Element Plus：[https://element-plus.org/zh-CN](https://element-plus.org/zh-CN)
 
-::: details （1）安装、完整引入和全局配置
+::: details （1）初始化
 
 安装
 
@@ -2172,6 +2172,10 @@ app.mount("#app");
 }
 </style>
 ```
+
+:::
+
+::: details （2）xxx
 
 :::
 
