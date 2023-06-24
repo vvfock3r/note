@@ -1946,6 +1946,104 @@ function handleClick() {
 
 :::
 
+::: details （2）具名插槽
+
+普通插槽：父组件将模板通过插槽传递给子组件，子组件收到插槽，渲染，所有的操作插槽都是一个整体，很不灵活
+
+具名插槽：我们可以给插槽的每部分命名一个名字，子组件可以灵活使用插槽每个名字
+
+`App.vue`
+
+```vue
+<script setup>
+import ContainerLayout from './ContainerLayout.vue'
+</script>
+
+<template>
+  <ContainerLayout>
+    <!-- 传递的插槽内容，这是一个整体，这样很不灵活 -->
+    <!-- <div>header</div>-->
+    <!-- <div>footer</div>-->
+
+    <!-- 具名插槽，固定写法; 父组件中v-slot:header 可以简写成 #header -->
+    <template v-slot:header>
+      <div>header</div>
+    </template>
+
+    <!-- 具名插槽，固定写法; 父组件中v-slot:footer 可以简写成 #footer -->
+    <template #footer>
+      <div>footer</div>
+    </template>
+  </ContainerLayout>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`ContainerLayout.vue`
+
+```vue
+<script setup></script>
+
+<template>
+  <!-- 接收的插槽内容，这也是一个整体，这很不灵活 -->
+  <!-- <slot></slot>-->
+  <!-- <div>content</div>-->
+
+  <!-- 具名插槽，固定写法 -->
+  <slot name="header"></slot>
+  <div>content</div>
+  <slot name="footer"></slot>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
+::: details （3）作用域插槽
+
+子组件循环自己的数据放到某个标签内，但是这个标签是父组件通过插槽传递给子组件的，这时候可以这么写
+
+`App.vue`
+
+```vue
+<script setup>
+import SlotList from './SlotList.vue'
+</script>
+
+<template>
+  <SlotList>
+    <!--  注意这里使用了 =，而不是冒号 -->
+    <template v-slot="props">
+      <div>{{ props.item }}</div>
+    </template>
+  </SlotList>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`SlotList.vue`
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const list = ref([1, 2, 3])
+</script>
+
+<template>
+  <div>
+    <slot v-for="item in list" :item="item"></slot>
+  </div>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+:::
+
 <br />
 
 ### 内置的组件
