@@ -2183,9 +2183,21 @@ app.mount("#app");
 
 ### 路由管理
 
+Vue Router：[https://router.vuejs.org/zh](https://router.vuejs.org/zh)
+
+::: details （1）初始化
+
+:::
+
 <br />
 
 ### 状态管理
+
+Pinia：[https://pinia.vuejs.org/zh](https://pinia.vuejs.org/zh)
+
+::: details （1）初始化
+
+:::
 
 <br />
 
