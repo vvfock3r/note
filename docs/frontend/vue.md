@@ -2317,6 +2317,79 @@ app.use(router)
 
 ::: details （2）路由跳转的几种方式
 
+1、router-link：跳转到静态路由
+
+```vue
+<script setup></script>
+
+<template>
+  <!-- router-link 是路由跳转的一种方式 -->
+  <router-link to="/">Home</router-link>|
+  <router-link to="/about">About</router-link><br />
+
+  <!-- router-view 用于展示路由内容 -->
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+2、router.push：向history添加一个新的记录，所以支持浏览器回退
+
+```vue
+<script setup>
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+function handleHome() {
+  router.push('/')
+}
+
+function handleAbout() {
+  router.push('/about')
+}
+</script>
+
+<template>
+  <!-- 定义导航 -->
+  <span @click="handleHome">Home</span>|
+  <span @click="handleAbout">About</span><br />
+
+  <!-- router-view用于展示新路由的内容 -->
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+3、router.replace：替换当前路由位置，并不会向history添加新记录，所以不支持浏览器回退
+
+```vue
+<script setup>
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+function handleHome() {
+  router.replace('/')
+}
+
+function handleAbout() {
+  router.replace('/about')
+}
+</script>
+
+<template>
+  <!-- 定义导航 -->
+  <span @click="handleHome">Home</span>|
+  <span @click="handleAbout">About</span><br />
+
+  <!-- router-view用于展示新路由的内容 -->
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
 :::
 
 <br />
