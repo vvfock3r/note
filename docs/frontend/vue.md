@@ -2317,6 +2317,8 @@ app.use(router)
 
 ::: details （2）路由跳转的几种方式
 
+文档：[https://router.vuejs.org/zh/guide/essentials/navigation.html](https://router.vuejs.org/zh/guide/essentials/navigation.html)
+
 1、router-link：跳转到静态路由
 
 ```vue
@@ -2392,6 +2394,14 @@ function handleAbout() {
 
 :::
 
+::: details （3）导航守卫
+
+文档：[https://router.vuejs.org/zh/guide/advanced/navigation-guards.html](https://router.vuejs.org/zh/guide/advanced/navigation-guards.html)
+
+
+
+:::
+
 <br />
 
 ### 状态管理
@@ -2404,7 +2414,7 @@ Pinia：[https://pinia.vuejs.org/zh](https://pinia.vuejs.org/zh)
 
 <br />
 
-### 其他模块
+### 常用模块
 
 Axios：[https://axios-http.com](https://axios-http.com)
 
