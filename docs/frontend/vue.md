@@ -48,6 +48,39 @@ npm install sass --save-dev
 
 <br />
 
+### ESLint配置
+
+文档：[https://eslint.org/docs/latest](https://eslint.org/docs/latest)
+
+::: details （1）关闭组件必须使用多个单词命名（默认开启）
+
+`.eslintrc.cjs`
+
+```javascript
+/* eslint-env node */
+require('@rushstack/eslint-patch/modern-module-resolution')
+
+module.exports = {
+  root: true,
+  'extends': [
+    'plugin:vue/vue3-essential',
+    'eslint:recommended',
+    '@vue/eslint-config-prettier/skip-formatting'
+  ],
+  parserOptions: {
+    ecmaVersion: 'latest'
+  },
+  // 添加下面3行
+  rules: {
+    'vue/multi-word-component-names': 0,
+  },
+}
+```
+
+:::
+
+<br />
+
 ### 第一个示例
 
 ::: details 点击查看详情
@@ -2175,10 +2208,6 @@ app.mount("#app");
 
 :::
 
-::: details （2）xxx
-
-:::
-
 <br />
 
 ### 路由管理
@@ -2186,6 +2215,107 @@ app.mount("#app");
 Vue Router：[https://router.vuejs.org/zh](https://router.vuejs.org/zh)
 
 ::: details （1）初始化
+
+1、安装
+
+```bash
+npm install vue-router@4
+```
+
+<br />
+
+2、创建2个测试组件
+
+`Home.vue`
+
+```vue
+<script setup></script>
+
+<template>
+  <p>Home</p>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`About.vue`
+
+```vue
+<script setup></script>
+
+<template>
+  <p>About</p>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+`App.vue`
+
+```vue
+<script setup></script>
+
+<template>
+  <!-- router-link 是路由跳转的一种方式 -->
+  <router-link to="/">Home</router-link>|
+  <router-link to="/about">About</router-link><br />
+
+  <!-- router-view 用于展示路由内容 -->
+  <router-view></router-view>
+</template>
+
+<style lang="scss" scoped></style>
+```
+
+<br />
+
+3、创建路由
+
+src/router/index.js（在src目录下创建router目录，在router目录下创建index.js文件）
+
+```javascript
+import { createRouter, createWebHashHistory } from "vue-router";
+
+// 导入组件, @在vite.config.js中默认定义, 一般代指的是项目下的src目录
+import Home from "@/Home.vue";
+import About from "@/About.vue";
+
+// 定义静态路由
+const routes = [
+  { path: "/", component: Home },
+  { path: "/about", component: About }
+];
+
+// 创建路由
+const router = createRouter({
+  // 用于管理路由历史记录
+  history: createWebHashHistory(),
+  // 指定路由, routes: routes 的缩写
+  routes
+});
+
+export default router;
+```
+
+<br />
+
+4、加载路由
+
+`main.js`
+
+```javascript
+// Vue Router 核心导入
+import router from '@/router'
+app.use(router)
+```
+
+<br />
+
+5、访问测试
+
+:::
+
+::: details （2）路由跳转的几种方式
 
 :::
 
