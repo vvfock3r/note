@@ -128,7 +128,7 @@ docker container rm -f get-prometheus-config
 chmod -R 777 /var/lib/prometheus
 
 # (4) 启动容器
-docker container run --name "prometheus" \
+docker container run --name prometheus \
                      -p 9090:9090 \
                      -v /etc/prometheus:/etc/prometheus \
                      -v /var/lib/prometheus:/prometheus \
@@ -167,14 +167,7 @@ kubectl -n monitor create clusterrolebinding monitor --clusterrole=cluster-admin
 kubectl apply -f prometheus-deploy.yaml
 
 # -------------------------------------------------------------
-# 后续维护
-# 更新ConfigMap
-kubectl create configmap prometheus-etc \
-  -n monitor \
-  --from-file=prometheus.yml=prometheus-etc.yaml \
-  --dry-run=client \
-  -o yaml | \
-  kubectl apply -f -
+# 后续维护参考：管理API
 ```
 
 prometheus-deploy.yaml
@@ -237,6 +230,12 @@ spec:
       containers:
       - name: prometheus
         image: prom/prometheus:v2.38.0
+        command:
+         - /bin/prometheus
+         - --config.file=/etc/prometheus/prometheus.yml
+         - --storage.tsdb.path=/prometheus
+         - --web.console.libraries=/usr/share/prometheus/console_libraries
+         - --web.console.templates=/usr/share/prometheus/consoles
         securityContext:
           runAsUser: 0
         volumeMounts:
@@ -1162,6 +1161,52 @@ kube_node_info{node="node-1",kernel_version="3.10.0-1160.88.1.el7.x86_64",os_ima
     static_configs:
       - targets:
         - "kube-state-metrics:8080"
+```
+
+:::
+
+<br />
+
+## 管理API
+
+文档：[https://prometheus.io/docs/prometheus/latest/management_api/#management-api](https://prometheus.io/docs/prometheus/latest/management_api/#management-api)
+
+简单分为两部分：
+
+* /-/healthy 和 /-/ready 直接可以使用
+* /-/reload 和 /-/quit 默认是禁用的，需要使用 --web.enable-lifecycle 开启 或者 直接向进程发送信号的方式使用
+
+::: details 举例：更新ConfigMap（存储Prometheus主配置文件）
+
+```bash
+# 更新前建议先检查配置文件
+promtool check config prometheus-etc.yaml
+
+# 通过更新文件的方式来更新ConfigMap
+kubectl create configmap prometheus-etc \
+  -n monitor \
+  --from-file=prometheus.yml=prometheus-etc.yaml \
+  --dry-run=client \
+  -o yaml | \
+  kubectl apply -f -
+
+# 重新加载配置(暴力方法, 直接重建所有Pod)
+kubectl -n monitor get pods | \
+  grep -E '^prometheus-.{9,}-.{5,}' | \
+  awk '{print $1}' | \
+  xargs kubectl -n monitor delete pod
+
+# 重新加载配置(未开启--web.enable-lifecycle情况下, 给所有进程发信号)
+kubectl -n monitor get pods | \
+  grep -E '^prometheus-.{9,}-.{5,}' | \
+  awk '{print $1}' | \
+  xargs -i kubectl -n monitor exec -i {} -- kill -s SIGHUP 1
+
+# 重新加载配置(已开启--web.enable-lifecycle情况下, 通过HTTP请求, 根据实际情况替换Prometheus地址和9090端口)
+kubectl -n monitor get pods -o wide | \
+  grep -E '^prometheus-.{9,}-.{5,}' | \
+  awk '{print $6}' | \
+  xargs -i curl -XPOST http://{}:9090/-/reload
 ```
 
 :::
