@@ -24,7 +24,7 @@ Github：[https://github.com/fluent/fluentd](https://github.com/fluent/fluentd)
 [root@node-1 ~]# docker container cp get-fluentd-config:/fluentd/etc/fluent.conf /data/fluentd/etc
 [root@node-1 ~]# docker container rm -f get-fluentd-config
 
-# 启动Fluentd, 注意时区
+# 启动Fluentd, 注意时区的设置
 # 最后两行是为了我们方便测试所添加的
 [root@node-1 ~]# chmod -R 777 /data/fluentd/log
 [root@node-1 ~]# docker container run --name fluentd \
@@ -179,11 +179,16 @@ fluent/fluentd:v1.16.1-1.0
 nginx version: nginx/1.24.0
 
 # 配置
+# @type tail 从文本文件的尾部读取日志
+# path       指定读取哪个文件
+# pos_file   指定记录文件读取位置的文件
+# tag        打个标签
+# parse      解析器, 定义Nginx日志的格式
 [root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
 <source>
   @type tail
   path /host/var/log/nginx/access.log
-  pos_file /var/log/nginx-access.log.pos
+  pos_file /host/var/log/nginx-access.log.pos
   tag nginx.access
   <parse>
     @type nginx
