@@ -24,8 +24,8 @@ Github：[https://github.com/fluent/fluentd](https://github.com/fluent/fluentd)
 [root@node-1 ~]# docker container cp get-fluentd-config:/fluentd/etc/fluent.conf /data/fluentd/etc
 [root@node-1 ~]# docker container rm -f get-fluentd-config
 
-# 启动Fluentd, 是否需要修改时区？
-# 最后一行的 -v "/:/host" 是为了我们方便测试
+# 启动Fluentd, 注意时区
+# 最后两行是为了我们方便测试所添加的
 [root@node-1 ~]# chmod -R 777 /data/fluentd/log
 [root@node-1 ~]# docker container run --name fluentd \
   -p 24224:24224 \
@@ -33,11 +33,14 @@ Github：[https://github.com/fluent/fluentd](https://github.com/fluent/fluentd)
   -v /data/fluentd/etc:/fluentd/etc \
   -v /data/fluentd/log:/fluentd/log \
   -v /data/fluentd/plugins:/fluentd/plugins \
-  -d \
+  -v /etc/timezone:/etc/timezone:ro \
+  -v /etc/localtime:/etc/localtime:ro \
   --cpus=1 \
   --memory=2g \
   --restart=always \
+  -d \
   -v "/:/host" \
+  --user 0 \
 fluent/fluentd:v1.16.1-1.0
 ```
 
@@ -171,8 +174,28 @@ fluent/fluentd:v1.16.1-1.0
 文档：[https://docs.fluentd.org/input/tail](https://docs.fluentd.org/input/tail)
 
 ```bash
-[root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
+# 以Nginx日志的默认格式举例
+[root@node-1 ~]# nginx -v
+nginx version: nginx/1.24.0
 
+# 配置
+[root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
+<source>
+  @type tail
+  path /host/var/log/nginx/access.log
+  pos_file /var/log/nginx-access.log.pos
+  tag nginx.access
+  <parse>
+    @type nginx
+  </parse>
+</source>
+
+<match **>
+  @type stdout
+</match>
+
+# 当我们访问Nginx后, fluentd会抓取到Nginx日志
+2023-06-28 23:32:18.000000000 +0800 nginx.access: {"remote":"127.0.0.1","host":"-","user":"-","method":"GET","path":"/","code":"200","size":"615","referer":"-","agent":"curl/7.29.0","http_x_forwarded_for":"-"}
 ```
 
 :::
