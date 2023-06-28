@@ -25,6 +25,7 @@ Github：[https://github.com/fluent/fluentd](https://github.com/fluent/fluentd)
 [root@node-1 ~]# docker container rm -f get-fluentd-config
 
 # 启动Fluentd, 是否需要修改时区？
+# 最后一行的 -v "/:/host" 是为了我们方便测试
 [root@node-1 ~]# chmod -R 777 /data/fluentd/log
 [root@node-1 ~]# docker container run --name fluentd \
   -p 24224:24224 \
@@ -36,6 +37,7 @@ Github：[https://github.com/fluent/fluentd](https://github.com/fluent/fluentd)
   --cpus=1 \
   --memory=2g \
   --restart=always \
+  -v "/:/host" \
 fluent/fluentd:v1.16.1-1.0
 ```
 
@@ -47,7 +49,7 @@ fluent/fluentd:v1.16.1-1.0
 
 ### 基础语法
 
-::: details （1）Docker镜像默认带的配置文件说明
+::: details Docker镜像默认带的配置文件说明
 
 ```bash
 # <source>模块指定数据从哪里来
@@ -61,7 +63,7 @@ fluent/fluentd:v1.16.1-1.0
 #        每个组件都可以使用 @id 来命名自己
 #        同样可以使用 @id 来引用其他组件, 这样可以将不同组件连接在一起，建立组件之间的关联关系
 #
-# @label 创建一个标签, 值必须以@开头
+# @label 指定一个标签, 值必须以@开头, 若指定则标签必须存在否则会报错
 #
 # port   指定 Fluentd 输入源监听的端口号, TCP和UDP都会监听
 #
@@ -73,13 +75,27 @@ fluent/fluentd:v1.16.1-1.0
   port  24224
 </source>
 
-# <filter>模块用于对日志事件进行过滤和处理操作, ** 是一个通配符，用于匹配所有的标签
+# <filter> 用于对日志进行处理, 包含过滤和转换等操作, ** 是一个通配符，用于匹配所有的标签
 # @type stdout 表示将日志事件打印到标准输出
 <filter **>
   @type stdout
 </filter>
 
-# label 定义一个叫做mainstream的标签
+# <label>           定义一个叫做mainstream的标签
+# <match>           用于路由处理, 也就是日志发送到哪个地方
+#  @type file       将日志输出到文件中
+#  @id              定义一个唯一标识符
+#  path             指定了输出文件的路径
+#  symlink_path     指定一个符号链接,指向最新生成的日志文件
+# append true       以追加模式写入文件
+# time_slice_format 定义时间片的命名格式
+# time_slice_wait   定义时间片的滚动时间
+# time_format       定义时间戳的格式
+#
+# 总结
+# 1.将匹配的日志数据输出到指定的文件中
+# 2.文件名根据时间和来源进行命名
+# 3.它使用时间片滚动机制，即按照一定的时间间隔生成新的日志文件，以便管理和归档日志数据
 <label @mainstream>
   <match docker.**>
     @type file
@@ -90,9 +106,6 @@ fluent/fluentd:v1.16.1-1.0
     time_slice_format %Y%m%d
     time_slice_wait 1m
     time_format %Y%m%dT%H%M%S%z
-  </match>
-  <match myapp.logs>
-    @type stdout
   </match>
   <match **>
     @type file
@@ -109,32 +122,57 @@ fluent/fluentd:v1.16.1-1.0
 
 :::
 
-::: details （1）数据源
+::: details 一个最简单的示例
 
 ```bash
 # 编辑配置文件
 [root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
 <source>
   @type  forward
-  @id    input1
   port  24224
 </source>
 
-<filter **>
+<match myapp.logs>
   @type stdout
-</filter>
-
+</match>
+  
 # 重启服务
 [root@node-1 ~]# docker container restart fluentd
 
-# 发送测试数据, 默认要求为JSON格式
+# 发送测试数据
+# 1、fluent-cat的第一个参数是tag, 其实就对应fluentd中的label
+# 2、默认要求为JSON格式的日志, 如果是非JSON格式日志, 可以使用 -f none 或 --none 来指定格式
+#   fluentd同样会收到一条JSON数据, 会自动追加key为message, 暂不清楚这是由fluent-cat还是fluentd来隐式操作的
+# 3、-p 24224 -h 127.0.0.1 这是默认值, 也可以不写
+
 [root@node-1 ~]# docker exec -it fluentd sh
 / $ echo '{"message": "这是一条测试日志"}' | fluent-cat myapp.logs -p 24224 -h 127.0.0.1
 
-# 查看日志, fluentd接收到了消息, 但是报了一条提醒
-2023-06-27 23:48:19.289976446 +0000 myapp.logs: {"message":"这是一条测试日志"}
-2023-06-27 23:48:19 +0000 [warn]: #0 no patterns matched tag="myapp.logs"
-2023-06-27 23:48:19.290809925 +0000 fluent.warn: {"tag":"myapp.logs","message":"no patterns matched tag=\"myapp.logs\""}
+# 查看日志, fluentd接收到了消息
+2023-06-28 14:22:25.745107356 +0000 myapp.logs: {"message":"这是一条测试日志"}
+```
+
+:::
+
+<br />
+
+### 输入插件
+
+::: details （1）forward：通过监听TCP和UDP端口来接收数据
+
+文档：[https://docs.fluentd.org/input/forward](https://docs.fluentd.org/input/forward)
+
+示例以后再补充
+
+:::
+
+::: details （2）tail：从文本文件的尾部读取日志
+
+文档：[https://docs.fluentd.org/input/tail](https://docs.fluentd.org/input/tail)
+
+```bash
+[root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
+
 ```
 
 :::
