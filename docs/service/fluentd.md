@@ -161,17 +161,15 @@ fluent/fluentd:v1.16.1-1.0
 
 ### 输入插件
 
-::: details （1）forward：通过监听TCP和UDP端口来接收数据
+文档：[https://docs.fluentd.org/input](https://docs.fluentd.org/input)
 
-文档：[https://docs.fluentd.org/input/forward](https://docs.fluentd.org/input/forward)
+::: details （1）forward：通过监听TCP和UDP端口来接收数据
 
 示例以后再补充
 
 :::
 
 ::: details （2）tail：从文本文件的尾部读取日志
-
-文档：[https://docs.fluentd.org/input/tail](https://docs.fluentd.org/input/tail)
 
 ```bash
 # 以Nginx日志的默认格式举例
@@ -201,6 +199,14 @@ nginx version: nginx/1.24.0
 
 # 当我们访问Nginx后, fluentd会抓取到Nginx日志
 2023-06-28 23:32:18.000000000 +0800 nginx.access: {"remote":"127.0.0.1","host":"-","user":"-","method":"GET","path":"/","code":"200","size":"615","referer":"-","agent":"curl/7.29.0","http_x_forwarded_for":"-"}
+```
+
+:::
+
+::: details （3）http：从HTTP请求中读取日志
+
+```bash
+
 ```
 
 :::
