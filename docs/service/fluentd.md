@@ -165,14 +165,17 @@ fluent/fluentd:v1.16.1-1.0
 
 ::: details （1）forward：通过监听TCP和UDP端口来接收数据
 
-示例以后再补充
+参考上面示例，更丰富的参数后续补充
 
 :::
 
 ::: details （2）tail：从文本文件的尾部读取日志
 
 ```bash
-# 以Nginx日志的默认格式举例
+# 以Nginx日志举例
+# 1、默认内置了Nginx正常访问日志解析器
+# 2、Nginx错误日志需要自己写正则匹配
+# 3、如果修改了Nginx日志格式则同样需要自己写正则匹配
 [root@node-1 ~]# nginx -v
 nginx version: nginx/1.24.0
 
@@ -193,6 +196,19 @@ nginx version: nginx/1.24.0
   </parse>
 </source>
 
+<source>
+  @type tail
+  path /host/var/log/nginx/error.log
+  pos_file /host/var/log/nginx-error.log.pos
+  tag nginx.error
+  <parse>
+    @type regexp
+    expression /^(?<logtime>\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}) (?<level>\[[^\s]+\]) (?<message>.*)$/
+    time_key logtime
+    time_format %Y/%m/%d %H:%M:%S
+  </parse>
+</source>
+
 <match **>
   @type stdout
 </match>
@@ -206,7 +222,31 @@ nginx version: nginx/1.24.0
 ::: details （3）http：从HTTP请求中读取日志
 
 ```bash
+[root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
+# body_size_limit   限制POST提交的body大小
+# keepalive_timeout 指定HTTP keep-alive 的超时时间, 如果在10秒内没有新的请求到达，连接将被关闭
+<source>
+  @type http
+  port 24224
+  bind 0.0.0.0
+  body_size_limit 32m
+  keepalive_timeout 10s
+</source>
 
+<match **>
+  @type stdout
+</match>
+
+# 测试
+# 注意: test.info对应label, 可以是任意字符串, 不是必须的
+[root@node-1 ~]# curl http://127.0.0.1:24224/test.info \
+  -XPOST \
+  -H 'Content-Type: application/json' \
+  -d '{"message": "这是一条测试日志"}'
+  
+# Fluentd日志
+2023-06-29 22:26:02.411145483 +0800 test.info: {"message":"这是一条测试日志"}
+2023-06-29 22:26:42.283409578 +0800 test.info: {"message":"这是一条测试日志"}
 ```
 
 :::
