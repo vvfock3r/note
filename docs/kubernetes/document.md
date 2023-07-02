@@ -1164,6 +1164,9 @@ Taints:             node-role.kubernetes.io/control-plane:NoSchedule
 Name:               node-4
 Taints:             <none>
 
+# 优化, 根据具体情况后面可以再接printf格式化
+kubectl describe nodes | grep -Ei '\bname:|taints'  | awk '{print $2}' | sed ':1;N;s/\n/ /;0~2b;t1'
+
 # 给node-1节点添加一个污点
 # 解释：
 #   （1）a=b是一个键值对，写啥都可以，但尽量是有意义的名称,其中值可以不写，=也不用写
@@ -2027,6 +2030,12 @@ nginx-7d7b7d595-s8glt   1/1     Running   0          47s   10.100.247.11   node-
 NAME              DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES         SELECTOR
 nginx-7d7b7d595   3         3         3       99s   web          nginx:latest   app=web,pod-template-hash=7d7b7d595
 ```
+
+:::
+
+::: details （2）revisionHistoryLimit：设置保留N个历史修订版本
+
+
 
 :::
 
