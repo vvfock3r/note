@@ -2035,7 +2035,20 @@ nginx-7d7b7d595   3         3         3       99s   web          nginx:latest   
 
 ::: details （2）revisionHistoryLimit：设置保留N个历史修订版本
 
+```bash
+# 默认值为10
+[root@node-1 ~]# kubectl -n monitor get deploy prometheus -o=jsonpath='{.spec.revisionHistoryLimit}' ; echo
+10
 
+# 查看一下版本
+[root@node-1 ~]# kubectl -n monitor rollout history deploy prometheus
+deployment.apps/prometheus 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+4         <none>
+5         <none>
+```
 
 :::
 
