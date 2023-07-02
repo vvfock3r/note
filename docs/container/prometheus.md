@@ -3434,7 +3434,7 @@ Vector     go_info{instance="redis://192.168.48.133:6379", job="redis_exporter",
 
 :::
 
-::: details （2）查询所有指标（注意小心Prometheus卡死）
+::: details （2）查询所有指标（注意Prometheus会不会卡死）
 
 ```go
 package main
