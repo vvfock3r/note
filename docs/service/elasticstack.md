@@ -8,7 +8,7 @@
 
 下载地址：[https://www.docker.elastic.co](https://www.docker.elastic.co)
 
-::: details （1）部署 ElasticSearch
+::: details （1）部署 ElasticSearch - Version 6.8.6
 
 指定版本文档：[https://www.elastic.co/guide/en/elasticsearch/reference/6.8/docker.html](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/docker.html)
 
