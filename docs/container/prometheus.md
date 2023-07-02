@@ -2775,7 +2775,7 @@ route:
 
 <br />
 
-## Exporter开发
+## Exporter 开发
 
 支持的语言：[https://prometheus.io/docs/instrumenting/clientlibs/](https://prometheus.io/docs/instrumenting/clientlibs/)
 
@@ -3347,3 +3347,173 @@ business_exporter_random_number_float64 0.4377141871869802
 
 <br />
 
+## Server 接口
+
+### 基础示例
+
+::: details （1）基础示例
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	promAPI "github.com/prometheus/client_golang/api"
+	promV1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	promModel "github.com/prometheus/common/model"
+)
+
+func main() {
+	// 创建 Prometheus API 客户端
+	client, err := promAPI.NewClient(promAPI.Config{
+		Address: "http://192.168.48.132:31000/", // Prometheus 地址
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 创建查询 API 实例
+	queryAPI := promV1.NewAPI(client)
+
+	// context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 发起查询请求
+	// warnings 是一个字符串切片，用于存储来自查询请求的警告消息
+	// 当发出查询请求时，Prometheus 服务器可能会返回一些与查询相关的警告信息，
+	// 例如查询中的语法问题、不推荐使用的查询方式等
+	query := "go_info{kubernetes_io_os!='linux'}"
+	result, warnings, err := queryAPI.Query(ctx, query, time.Now())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(warnings) > 0 {
+		log.Println("Warnings:", warnings)
+	}
+
+	// 处理查询结果
+	switch result.Type() {
+	// 向量类型, 通常带有标签, 几乎常用的指标都属于此中类型
+	case promModel.ValVector:
+		vector := result.(promModel.Vector)
+		for _, sample := range vector {
+			fmt.Printf("%-10s %s %s\n", "Vector", sample.Metric, sample.Value)
+		}
+	// 标量类型, 通常没有标签(但并不是一定没有), 几乎见不到此中数据类型
+	case promModel.ValScalar:
+		scalar := result.(*promModel.Scalar)
+		fmt.Printf("%-10s %s", "Scalar", scalar.Value)
+	// 矩阵类型, 不了解
+	case promModel.ValMatrix:
+		fmt.Println("Matrix")
+	// 字符串类型, 不了解
+	case promModel.ValString:
+		fmt.Println("String")
+	// 无效或未知类型
+	case promModel.ValNone:
+		fmt.Println("none type")
+	default:
+		fmt.Println("unknown type")
+	}
+}
+```
+
+输出结果
+
+```bash
+D:\application\GoLand\example>go run .
+Vector     go_info{instance="cadvisor:8080", job="cadvisor", version="go1.18.5"} 1
+Vector     go_info{instance="localhost:9090", job="prometheus", version="go1.18.5"} 1
+Vector     go_info{instance="redis://192.168.48.133:6379", job="redis_exporter", version="go1.20.3"} 1
+```
+
+:::
+
+::: details （2）查询所有指标（注意小心Prometheus卡死）
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	promAPI "github.com/prometheus/client_golang/api"
+	promV1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	promModel "github.com/prometheus/common/model"
+)
+
+func main() {
+	// 创建 Prometheus API 客户端
+	client, err := promAPI.NewClient(promAPI.Config{
+		Address: "http://192.168.48.132:31000/", // Prometheus 地址
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 创建查询 API 实例
+	queryAPI := promV1.NewAPI(client)
+
+	// context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 发起查询请求
+	query := "{__name__=~'.+'}"
+	result, warnings, err := queryAPI.Query(ctx, query, time.Now())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(warnings) > 0 {
+		log.Println("Warnings:", warnings)
+	}
+
+	// 处理查询结果
+	switch result.Type() {
+	// 向量类型
+	case promModel.ValVector:
+		vector := result.(promModel.Vector)
+		for _, sample := range vector {
+			fmt.Printf("%-10s %s %s\n", "Vector", sample.Metric, sample.Value)
+		}
+		fmt.Printf("向量类型指标总个数: %d\n", len(vector))
+	// 标量类型
+	case promModel.ValScalar:
+		scalar := result.(*promModel.Scalar)
+		fmt.Printf("%-10s %s", "Scalar", scalar.Value)
+	// 矩阵类型
+	case promModel.ValMatrix:
+		fmt.Println("Matrix")
+	// 字符串类型
+	case promModel.ValString:
+		fmt.Println("String")
+	// 无效或未知类型
+	case promModel.ValNone:
+		fmt.Println("none type")
+	default:
+		fmt.Println("unknown type")
+	}
+}
+```
+
+输出结果
+
+```bash
+Vector     up{instance="cadvisor:8080", job="cadvisor"} 1
+Vector     up{instance="kube-state-metrics:8080", job="kube-state-metrics"} 1
+Vector     up{instance="localhost:9090", job="prometheus"} 1
+Vector     up{instance="redis://192.168.48.133:6379", job="redis_exporter"} 1
+向量类型指标总个数: 12064
+```
+
+![image-20230702182836888](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230702182836888.png)
+
+:::
