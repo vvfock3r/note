@@ -103,23 +103,13 @@ No manual entry for ascii
 
 <br />
 
-## 设备管理
+## 磁盘系统
 
-### 设备分类
-
-
+### 分区
 
 <br />
 
-### 磁盘分区
-
-<br />
-
-### 逻辑卷管理
-
-<br />
-
-## 文件系统
+### 逻辑卷
 
 <br />
 
@@ -571,6 +561,21 @@ umount: /target: target is busy.
 [root@archlinux target]# cd
 [root@archlinux ~]# ls -l /target/
 total 0
+```
+
+:::
+
+<br />
+
+## 救援模式
+
+::: details 点击查看详情
+
+```bash
+按e
+linux16 rd.break, 然后按 ctrl +x
+mount -o remount,rw /sysroot
+chroot /sysroot
 ```
 
 :::

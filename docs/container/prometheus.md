@@ -3517,3 +3517,4 @@ Vector     up{instance="redis://192.168.48.133:6379", job="redis_exporter"} 1
 ![image-20230702182836888](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230702182836888.png)
 
 :::
+
