@@ -2812,9 +2812,10 @@ go get github.com/prometheus/client_golang/prometheus/promhttp
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -2889,11 +2890,12 @@ promhttp_metric_handler_requests_total{code="503"} 0
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"runtime"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const version = "1.0.0"
@@ -2959,12 +2961,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -2989,6 +2992,7 @@ func main() {
 
 	// 初始化标签值, 这一步不是必须的
 	// 假如不进行初始化，那么在没有访问路由的话，将不会生成metrics
+	// myMetric.With(prometheus.Labels{"label_name": "value2"}).Add(2)
 	business_exporter_http_requests_total.WithLabelValues("200", "/login").Add(0)
 	business_exporter_http_requests_total.WithLabelValues("500", "/login").Add(0)
 
@@ -3139,7 +3143,7 @@ Collect is running
 
 <br />
 
-### 数据采样方法
+### 数据采样更新
 
 ::: details 关于数据采样
 
