@@ -2991,8 +2991,7 @@ func main() {
 	prometheus.MustRegister(business_exporter_http_requests_total)
 
 	// 初始化标签值, 这一步不是必须的
-	// 假如不进行初始化，那么在没有访问路由的话，将不会生成metrics
-	// myMetric.With(prometheus.Labels{"label_name": "value2"}).Add(2)
+	// 假如不进行初始化，那么在没有访问路由的话，将不会生成metrics	
 	business_exporter_http_requests_total.WithLabelValues("200", "/login").Add(0)
 	business_exporter_http_requests_total.WithLabelValues("500", "/login").Add(0)
 
@@ -3219,6 +3218,10 @@ type Summary interface {
 	// for details.
 	Observe(float64)
 }
+
+// 备注
+// 如果是带有标签的指标, 可以先使用 WithLabelValues 携带标签信息然后再更新指标值, 示例
+// business_exporter_http_requests_total.WithLabelValues("500", "/login").Add(1)
 ```
 
 :::
