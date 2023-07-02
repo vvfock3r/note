@@ -2775,11 +2775,13 @@ route:
 
 <br />
 
-## Exporter开发（Go）
+## Exporter开发
 
 支持的语言：[https://prometheus.io/docs/instrumenting/clientlibs/](https://prometheus.io/docs/instrumenting/clientlibs/)
 
 Go客户端库：[https://github.com/prometheus/client_golang](https://github.com/prometheus/client_golang)
+
+<br />
 
 ### 安装
 
@@ -2792,9 +2794,15 @@ go get github.com/prometheus/client_golang/prometheus/promhttp
 
 <br />
 
-### 定义指标
+### 定义指标函数
 
-> 请注意，在我们下面的描述中，标签值和指标值是两个完全不一样概念
+> 请注意，在我们下面的描述中，标签值和指标值是两个完全不一样概念，例如如下标签
+>
+> go_info{version="go1.17.12"} 1
+>
+> 指标名：go_info     |         指标值：1
+>
+> 标签名：version      |        标签值：go1.17.12
 
 ::: details （1）先把Exporter跑起来
 
@@ -2826,6 +2834,7 @@ func main() {
 
 # 查看metrics
 [root@localhost ~]# curl -s http://127.0.0.1:8080/metrics | grep -Ev '^#'
+
 go_gc_duration_seconds{quantile="0"} 0
 go_gc_duration_seconds{quantile="0.25"} 0
 go_gc_duration_seconds{quantile="0.5"} 0
@@ -2874,7 +2883,7 @@ promhttp_metric_handler_requests_total{code="503"} 0
 
 :::
 
-::: details （2）自定义指标：标签值固定：使用类似 NewXx(opts XxOpts) 格式的函数
+::: details （2）自定义指标：标签名和标签值都固定：使用类似 NewXx(opts XxOpts) 格式的函数
 
 ```go
 package main
@@ -2928,12 +2937,14 @@ func main() {
 ```bash
 # 以上指标是模仿 node_exporter_build_info 写的一个简单示例
 [root@localhost ~]# curl -s http://127.0.0.1:9100/metrics  | grep -i node_exporter_build_info
+
 # HELP node_exporter_build_info A metric with a constant '1' value labeled by version ...
 # TYPE node_exporter_build_info gauge
 node_exporter_build_info{branch="HEAD",goversion="go1.17.3",revision="a2321e7b940ddcff26873612bccdf7cd4c42b6b6",version="1.3.1"} 1
 
 # 测试我们自己定义的指标
 [root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+
 # HELP business_exporter_build_info A metric with a constant '1' value
 # TYPE business_exporter_build_info gauge
 business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
@@ -2941,7 +2952,7 @@ business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
 
 :::
 
-::: details （3）自定义指标：标签值可变：使用类似 NewXxVec(opts XxOpts, labelNames []string) 格式的函数
+::: details （3）自定义指标：标签名固定，标签值可变：使用类似 NewXxVec(opts XxOpts, labelNames []string) 格式的函数
 
 ```go
 package main
@@ -2966,7 +2977,7 @@ func main() {
 			// 定义帮助信息
 			Help: "business_exporter_http_requests_total Counter of HTTP requests.",
 
-			// 定义固定的标签
+			// 定义固定的标签, 这里为空, 也可以直接不写
 			ConstLabels: map[string]string{},
 		},
 		// 第二个参数定义标签名,标签值可变
@@ -3033,41 +3044,63 @@ business_exporter_http_requests_total{code="500",handler="GET"} 328
 
 :::
 
-::: details （4）自定义指标：请求/metrics时执行回调函数更新指标值：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
+<br />
+
+### 实现指标接口
+
+::: details （1）定义一个结构体用于实现指标注册的接口
 
 ```go
 package main
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+	"runtime"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
-	"math/rand"
-	"net/http"
 )
 
+const version = "1.0.0"
+
+// BuildInfo 定义一个结构体，实现 Collector 接口
+type BuildInfo struct {
+	desc *prometheus.Desc
+}
+
+// Describe 生成指标元信息, 此方法在注册时会调用
+func (c *BuildInfo) Describe(desc chan<- *prometheus.Desc) {
+	fmt.Println("Description is running")
+	desc <- c.desc
+}
+
+// Collect 收集标签值和指标值, 此方法在访问/metrics接口时会调用
+func (c *BuildInfo) Collect(metrics chan<- prometheus.Metric) {
+	fmt.Println("Collect is running")
+	metrics <- prometheus.MustNewConstMetric(c.desc, prometheus.GaugeValue, 1)
+}
+
+// NewBuildInfo 构造函数
+func NewBuildInfo() *BuildInfo {
+	return &BuildInfo{
+		prometheus.NewDesc(
+			// 指标名称
+			"business_exporter_build_info",
+			// 帮助信息
+			"A metric with a constant 1 value",
+			// 可变标签（标签名固定, 标签值可变）
+			nil,
+			// 常量标签（标签名和标签值都固定）
+			map[string]string{"version": version, "goversion": runtime.Version()},
+		),
+	}
+}
+
 func main() {
-	// 定义一个 Counter 类型的指标
-	business_exporter_random_number_float64 := prometheus.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			// 定义指标名称
-			Name: "business_exporter_random_number_float64",
-
-			// 定义帮助信息
-			Help: "business_exporter_random_number_float64 Randomly generate a floating point number from 0.0 to 1.0",
-
-			// 定义固定的标签
-			ConstLabels: map[string]string{},
-		},
-		// 第二个参数定义一个函数，请求/metrics时会调用此函数
-		func() float64 {
-			log.Println("Callback function is running")
-			return rand.Float64()
-		},
-	)
-
 	// 注册指标
-	prometheus.MustRegister(business_exporter_random_number_float64)
+	prometheus.MustRegister(NewBuildInfo())
 
 	// 注册Handler
 	http.Handle("/metrics", promhttp.Handler())
@@ -3080,25 +3113,46 @@ func main() {
 输出结果
 
 ```bash
-# 启动Exporter
+# 启动服务
 [root@localhost demo]# go run main.go
+Description is running
 
 # 访问/metrics
-[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep -Ev '^#' | grep business_exporter_random_number_float64
-business_exporter_random_number_float64 0.4377141871869802
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+# HELP business_exporter_build_info A metric with a constant '1' value
+# TYPE business_exporter_build_info gauge
+business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
 
-# 查看Exporter输出日志
-[root@localhost demo]# go run main.go
-2022/09/22 20:57:11 Callback function is running
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
+# HELP business_exporter_build_info A metric with a constant '1' value
+# TYPE business_exporter_build_info gauge
+business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
+
+# 每次访问/metrics，Collect方法便会执行一次
+[root@localhost demo]# go run main.go 
+Description is running
+Collect is running
+Collect is running
 ```
 
 :::
 
 <br />
 
-### 数据采样
+### 数据采样方法
 
-::: details （1）采样数据更新方法
+::: details 关于数据采样
+
+数据采样方式：
+
+* 启动一个`Goroutine`定期更新指标值
+  * 劣势：当采样时间间隔比较长时会导致数据不准，比如每隔30秒更新一次指标值，第20秒去抓取`/metrics`时数据就会不准
+* 请求`/metrics`时更新采样数据
+  * 劣势：当采样时间耗时比较长时会影响`/metrics`响应时间
+
+<br />
+
+数据采样方法：
 
 ```go
 type Gauge interface {
@@ -3165,80 +3219,96 @@ type Summary interface {
 
 :::
 
-::: details （2）采样数据更新方式
-
-* 启动一个`Goroutine`定期更新指标值
-  * 劣势：当采样时间间隔比较长时会导致数据不准，比如每隔30秒更新一次指标值，第20秒去抓取`/metrics`时数据就会不准
-* 请求`/metrics`时更新采样数据
-  * 劣势：当采样时间耗时比较长时会影响`/metrics`响应时间
-
-:::
-
-<br />
-
-### 注册指标
-
-::: details 点击查看完整代码
+::: details （1）定期更新指标值：使用类似 格式的函数
 
 ```go
 package main
 
 import (
-	"fmt"
+	"log"
+	"math/rand"
+	"net/http"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
-	"net/http"
-	"runtime"
 )
 
-const version = "1.0.0"
-
-// 定义一个结构体，实现 Collector 接口
-type BuildInfo struct {
-	desc *prometheus.Desc
-}
-
-// Describe方法：指标元信息
-func (c *BuildInfo) Describe(desc chan<- *prometheus.Desc) {
-	fmt.Println("Description is running")
-	desc <- c.desc
-}
-
-// Collect方法：收集标签值和指标值
-func (c *BuildInfo) Collect(metrics chan<- prometheus.Metric) {
-	fmt.Println("Collect is running")
-	metrics <- prometheus.MustNewConstMetric(
-		c.desc,
-		prometheus.GaugeValue,
-		1,
-	)
-}
-
-// 构造函数
-func NewBuildInfo() *BuildInfo {
-	return &BuildInfo{
-		prometheus.NewDesc(
-			// 指标名称
-			"business_exporter_build_info",
-			// 帮助信息
-			"A metric with a constant '1' value",
-			// 标签名切片（标签值可变）
-			nil,
-			// 标签名字典（标签值固定）
-			map[string]string{"version": version, "goversion": runtime.Version()},
-		),
-	}
-}
-
 func main() {
-	// 注册指标
-	prometheus.MustRegister(NewBuildInfo())
+	// 定义一个 Counter 类型的指标
+	business_exporter_random_number_float64 := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			// 定义指标名称
+			Name: "business_exporter_random_number_float64",
 
-	// 暴露http api
+			// 定义帮助信息
+			Help: "business_exporter_random_number_float64 Randomly generate a floating point number from 0.0 to 1.0",
+		},
+	)
+
+	// 注册指标
+	prometheus.MustRegister(business_exporter_random_number_float64)
+
+	// 定期更新指标值
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			business_exporter_random_number_float64.Set(rand.Float64())
+		}
+	}()
+
+	// 注册Handler
 	http.Handle("/metrics", promhttp.Handler())
 
-	// 启动web服务
+	// 启动服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+:::
+
+::: details （2）数据采样方式2：请求/metrics时执行回调函数更新指标值：使用类似 NewXxFunc(opts XxOpts,  function func() float64) 格式的函数
+
+```go
+package main
+
+import (
+	"log"
+	"math/rand"
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+func main() {
+	// 定义一个 Counter 类型的指标
+	business_exporter_random_number_float64 := prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			// 定义指标名称
+			Name: "business_exporter_random_number_float64",
+
+			// 定义帮助信息
+			Help: "business_exporter_random_number_float64 Randomly generate a floating point number from 0.0 to 1.0",
+
+			// 定义固定的标签
+			ConstLabels: map[string]string{},
+		},
+		// 第二个参数定义一个函数，请求/metrics时会调用此函数
+		func() float64 {
+			log.Println("Callback function is running")
+			return rand.Float64()
+		},
+	)
+
+	// 注册指标
+	prometheus.MustRegister(business_exporter_random_number_float64)
+
+	// 注册Handler
+	http.Handle("/metrics", promhttp.Handler())
+
+	// 启动服务
 	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
 }
 ```
@@ -3246,27 +3316,16 @@ func main() {
 输出结果
 
 ```bash
-# 启动服务
+# 启动Exporter
 [root@localhost demo]# go run main.go
-Description is running
 
 # 访问/metrics
-[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
-# HELP business_exporter_build_info A metric with a constant '1' value
-# TYPE business_exporter_build_info gauge
-business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
+[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep -Ev '^#' | grep business_exporter_random_number_float64
+business_exporter_random_number_float64 0.4377141871869802
 
-[root@localhost ~]# curl http://127.0.0.1:8080/metrics | grep business_exporter_build_info
-# HELP business_exporter_build_info A metric with a constant '1' value
-# TYPE business_exporter_build_info gauge
-business_exporter_build_info{goversion="go1.17.12",version="1.0.0"} 1
-
-# 每次访问/metrics，Collect方法便会执行一次
-[root@localhost demo]# go run main.go 
-Description is running
-Collect is running
-Collect is running
+# 查看Exporter输出日志
+[root@localhost demo]# go run main.go
+2022/09/22 20:57:11 Callback function is running
 ```
 
 :::
-
