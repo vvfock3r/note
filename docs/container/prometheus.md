@@ -3336,3 +3336,14 @@ business_exporter_random_number_float64 0.4377141871869802
 ```
 
 :::
+
+<br />
+
+### 关闭默认指标
+
+::: details 点击查看详情
+
+:::
+
+<br />
+
