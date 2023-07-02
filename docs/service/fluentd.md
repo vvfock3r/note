@@ -250,3 +250,68 @@ nginx version: nginx/1.24.0
 ```
 
 :::
+
+::: details （4）更多等待补充...
+
+:::
+
+<br />
+
+### 输出插件
+
+文档：[https://docs.fluentd.org/output](https://docs.fluentd.org/output)
+
+::: details （1）输出到ES中
+
+```bash
+# 先安装插件, 也不知道装到哪去了
+[root@node-1 ~]# docker exec -it fluentd sh
+/ # fluent-gem install fluent-plugin-elasticsearch
+
+# 编辑配置文件
+[root@node-1 ~]# vim /data/fluentd/etc/fluent.conf
+<source>
+  @type tail
+  path /host/var/log/nginx/access.log
+  pos_file /host/var/log/nginx-access.log.pos
+  tag nginx.access
+  <parse>
+    @type nginx
+  </parse>
+</source>
+
+<source>
+  @type tail
+  path /host/var/log/nginx/error.log
+  pos_file /host/var/log/nginx-error.log.pos
+  tag nginx.error
+  <parse>
+    @type regexp
+    expression /^(?<logtime>\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}) (?<level>\[[^\s]+\]) (?<message>.*)$/
+    time_key logtime
+    time_format %Y/%m/%d %H:%M:%S
+  </parse>
+</source>
+
+<match **>
+  @type elasticsearch
+  host 192.168.48.133
+  port 9200
+  logstash_format true
+</match>
+```
+
+查看日志，ES版本是8.8.2
+
+```bash
+docker container run --name kibana \
+    -p 5601:5601 \
+    -e SERVER_HOST=0.0.0.0 \
+    -e SERVER_PORT=5601 \
+    -e ELASTICSEARCH_HOSTS=http://192.168.48.133:9200 \
+    --restart=always \
+    -d \
+  docker.elastic.co/kibana/kibana:8.8.2
+```
+
+:::

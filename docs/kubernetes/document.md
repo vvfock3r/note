@@ -1930,6 +1930,18 @@ busybox   1/1     Running   0          10s   10.100.84.164   node-1   <none>    
 
 <br />
 
+### 节点压力驱逐
+
+文档：[https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/node-pressure-eviction](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/node-pressure-eviction)
+
+::: details （1）当磁盘可用空间低于20%（非准确值）时节点上的Pod会被驱逐
+
+实验待补充
+
+:::
+
+<br />
+
 ## 工作负载控制器
 
 ### 简介
