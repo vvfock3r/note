@@ -585,6 +585,10 @@ docker info | grep -i proxy
  HTTP Proxy: http://192.168.0.102:7890
  HTTPS Proxy: http://192.168.0.102:7890
  No Proxy: 127.0.0.1,localhost
+ 
+# 优化
+# 为了后续IP地址可能会变化, 建议使用域名代替, 比如 编辑/etc/hosts
+192.168.1.8 proxy.local
 ```
 
 :::
