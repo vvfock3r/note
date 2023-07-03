@@ -21,11 +21,25 @@ beats_system		Beats 用户
 
 # 内置用户存储在 .security 索引中
 
+# 重置用户密码, -u指定用户名
+[root@node-1 ~]# /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
 ```
 
 :::
 
-::: details （2）Token说明
+::: details （2）Service Accounts Token说明
+
+文档：[https://www.elastic.co/guide/en/elasticsearch/reference/current/service-accounts.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/service-accounts.html)
+
+```bash
+# 内置服务账号
+elastic/fleet-server				队列服务器用于与 Elasticsearch 通信的服务帐户
+elastic/kibana						Kibana 用于与 Elasticsearch 通信的服务帐户
+elastic/enterprise-search-server	Enterprise Search 用于与 Elasticsearch 通信的服务帐户
+
+# 重置用户Token
+[root@node-1 ~]# /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+```
 
 :::
 
@@ -73,16 +87,13 @@ autorefresh=1
 type=rpm-md
 
 # 安装ES
-[root@node-1 ~]# sudo yum install -y --enablerepo=elasticsearch elasticsearch
+[root@node-1 ~]# sudo yum install --enablerepo=elasticsearch elasticsearch
 
 # 启动ES
 [root@node-1 ~]# systemctl start elasticsearch.service
 [root@node-1 ~]# systemctl enable elasticsearch.service
 
-# 重置elastic用户密码
-[root@node-1 ~]# /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
-
-# 使用elastic用户测试
+# 使用elastic用户测试, 如果不知道密码可以重置
 [root@node-1 ~]# curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic https://localhost:9200
 Enter host password for user 'elastic':
 {
@@ -102,6 +113,44 @@ Enter host password for user 'elastic':
   },
   "tagline" : "You Know, for Search"
 }
+```
+
+:::
+
+::: details （2）部署 Kibana
+
+文档：[https://www.elastic.co/guide/en/kibana/8.8/rpm.html](https://www.elastic.co/guide/en/kibana/8.8/rpm.html)
+
+```bash
+# 安装, 若未配置yum源请参考 ElasticSearch 部分
+[root@node-1 bin]# yum install --enablerepo=elasticsearch kibana
+
+# 配置
+[root@node-1 ~]# vim /etc/kibana/kibana.yml
+server.port: 5601
+server.host: "0.0.0.0"
+
+# 启动
+[root@node-1 bin]# systemctl start kibana.service
+[root@node-1 bin]# systemctl enable kibana.service
+
+# 查看日志, 获取一个连接地址用于初始化操作
+[root@node-1 ~]# systemctl status kibana
+[root@node-1 ~]# journalctl --unit kibana
+
+Jul 04 07:25:45 node-1 kibana[56557]: Go to http://0.0.0.0:5601/?code=295191 to get started.
+
+# 根据URL初始化, 需要用到Service Account Token
+```
+
+:::
+
+::: details （3）部署 FileBeat
+
+文档：[https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-overview.html](https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-overview.html)
+
+```bash
+
 ```
 
 :::
@@ -203,8 +252,6 @@ sh-4.2$ vi /usr/share/kibana/config/kibana.yml       # 修改配置
 i18n.locale: "zh-CN"                                 # 添加这行
 [root@localhost ~]# docker container restart kibana  # 重启容器
 ```
-
-
 
 :::
 
