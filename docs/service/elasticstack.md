@@ -4,7 +4,111 @@
 
 <br />
 
-## Docker部署
+## 部署
+
+### 说明
+
+::: details （1）用户说明
+
+内置用户：[https://www.elastic.co/guide/en/elasticsearch/reference/8.8/built-in-users.html](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/built-in-users.html)
+
+```bash
+# 内置用户有很多, 简单列举几个
+elastic				超级管理员
+kibana_system		Kibana用户
+logstash_system		logstash用户
+beats_system		Beats 用户
+
+# 内置用户存储在 .security 索引中
+
+```
+
+:::
+
+::: details （2）Token说明
+
+:::
+
+::: details （3）SSL说明
+
+```bash
+# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
+# 客户端与ES之间是否开启SSL, 默认为true
+xpack.security.http.ssl:
+  enabled: true
+  keystore.path: certs/http.p12
+  
+# Enable encryption and mutual authentication between cluster nodes
+# ES Node之间否开启SSL, 默认为true
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  keystore.path: certs/transport.p12
+  truststore.path: certs/transport.p12
+# Create a new cluster with the current node only
+# Additional nodes can still join the cluster later
+```
+
+:::
+
+<br />
+
+### RPM包
+
+::: details （1）部署 ElasticSearch
+
+文档：[https://www.elastic.co/guide/en/elasticsearch/reference/8.8/rpm.html](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/rpm.html)
+
+```bash
+# 设置yum源, 默认不开启
+[root@node-1 ~]# rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+[root@node-1 ~]# vim /etc/yum.repos.d/elastic.repo
+[elasticsearch]
+name=Elasticsearch repository for 8.x packages
+baseurl=https://artifacts.elastic.co/packages/8.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+
+# 安装ES
+[root@node-1 ~]# sudo yum install -y --enablerepo=elasticsearch elasticsearch
+
+# 启动ES
+[root@node-1 ~]# systemctl start elasticsearch.service
+[root@node-1 ~]# systemctl enable elasticsearch.service
+
+# 重置elastic用户密码
+[root@node-1 ~]# /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+
+# 使用elastic用户测试
+[root@node-1 ~]# curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic https://localhost:9200
+Enter host password for user 'elastic':
+{
+  "name" : "node-1",
+  "cluster_name" : "elasticsearch",
+  "cluster_uuid" : "K5IYfLfvQ0mO41K_339UBw",
+  "version" : {
+    "number" : "8.8.2",
+    "build_flavor" : "default",
+    "build_type" : "rpm",
+    "build_hash" : "98e1271edf932a480e4262a471281f1ee295ce6b",
+    "build_date" : "2023-06-26T05:16:16.196344851Z",
+    "build_snapshot" : false,
+    "lucene_version" : "9.6.0",
+    "minimum_wire_compatibility_version" : "7.17.0",
+    "minimum_index_compatibility_version" : "7.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
+```
+
+:::
+
+<br />
+
+### Docker
 
 下载地址：[https://www.docker.elastic.co](https://www.docker.elastic.co)
 
@@ -31,6 +135,9 @@ docker container run --name es-01 \
     --restart=always \
     -d \
   docker.elastic.co/elasticsearch/elasticsearch:8.8.2
+
+# 关闭SSL
+xpack.security.http.ssl.enabled=true
 
 # 1.重置密码, 已省略无关紧要的输出
 [root@node-1 ~]# docker container exec -it es-01 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
