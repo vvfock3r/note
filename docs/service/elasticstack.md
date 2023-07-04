@@ -59,15 +59,13 @@ xpack.security.transport.ssl:
   verification_mode: certificate
   keystore.path: certs/transport.p12
   truststore.path: certs/transport.p12
-# Create a new cluster with the current node only
-# Additional nodes can still join the cluster later
 ```
 
 :::
 
 <br />
 
-### RPM包
+### RPM
 
 ::: details （1）部署 ElasticSearch
 
@@ -123,7 +121,7 @@ Enter host password for user 'elastic':
 
 ```bash
 # 安装, 若未配置yum源请参考 ElasticSearch 部分
-[root@node-1 bin]# yum install --enablerepo=elasticsearch kibana
+[root@node-1 ~]# yum install --enablerepo=elasticsearch kibana
 
 # 配置
 [root@node-1 ~]# vim /etc/kibana/kibana.yml
@@ -147,10 +145,32 @@ Jul 04 07:25:45 node-1 kibana[56557]: Go to http://0.0.0.0:5601/?code=295191 to 
 
 ::: details （3）部署 FileBeat
 
-文档：[https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-overview.html](https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-overview.html)
+文档：[https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-installation-configuration.html](https://www.elastic.co/guide/en/beats/filebeat/8.8/filebeat-installation-configuration.html)
 
 ```bash
+# 安装, 若未配置yum源请参考 ElasticSearch 部分
+[root@node-1 ~]# yum install --enablerepo=elasticsearch filebeat
 
+# 启动
+[root@node-1 bin]# systemctl start filebeat.service
+[root@node-1 bin]# systemctl enable filebeat.service
+
+# 配置连接到ES, 这里为了方便设置ES关闭SSL连接
+[root@node-1 ~]# vim /etc/filebeat/filebeat.yml
+output.elasticsearch:
+  hosts: ["localhost:9200"]
+  username: "elastic"
+  password: "f0PxVmx_YXj*GLK4i-FL"
+
+# 初始化预置索引模板
+[root@node-1 ~]# filebeat setup -e
+
+# 收集Nginx日志
+[root@node-1 ~]# vim /etc/filebeat/modules.d/nginx.yml
+- module: nginx  
+  access:
+    enabled: true
+    var.paths: ["/var/log/nginx/access.log*"]
 ```
 
 :::
@@ -163,7 +183,7 @@ Jul 04 07:25:45 node-1 kibana[56557]: Go to http://0.0.0.0:5601/?code=295191 to 
 
 ::: details （1）部署 ElasticSearch
 
-指定版本文档：[https://www.elastic.co/guide/en/elasticsearch/reference/8.8/docker.html](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/docker.html)
+文档：[https://www.elastic.co/guide/en/elasticsearch/reference/8.8/docker.html](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/docker.html)
 
 设置虚拟内存：[https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
 
@@ -172,8 +192,15 @@ Jul 04 07:25:45 node-1 kibana[56557]: Go to http://0.0.0.0:5601/?code=295191 to 
 docker pull docker.elastic.co/elasticsearch/elasticsearch:8.8.2
 
 # 设置虚拟内存
-vim /etc/sysctl.conf
+sysctl -w vm.max_map_count=262144  # 临时
+vim /etc/sysctl.conf               # 永久
 vm.max_map_count=262144
+
+# 先启动服务用于获取配置文件
+mkdir -p /usr/share/elasticsearch/config
+docker container run --name get-es-config -d docker.elastic.co/elasticsearch/elasticsearch:8.8.2
+docker container cp get-es-config:/usr/share/elasticsearch/config/elasticsearch.yml /usr/share/elasticsearch/config
+docker container rm -f get-es-config
 
 # 启动服务
 docker network create elastic
@@ -181,25 +208,16 @@ docker container run --name es-01 \
     --net elastic \
     -p 9200:9200 \
     -p 9300:9300 \
+    -v /usr/share/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
     --restart=always \
     -d \
   docker.elastic.co/elasticsearch/elasticsearch:8.8.2
 
-# 关闭SSL
-xpack.security.http.ssl.enabled=true
 
-# 1.重置密码, 已省略无关紧要的输出
-[root@node-1 ~]# docker container exec -it es-01 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
-Password for the [elastic] user successfully reset.
-New value: AvFAyEjJZ0m4zPY8B8so
-
-# 2.重置Token
-[root@node-1 ~]# docker container exec -it es-01 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
-
-# 3.获取证书
+# 1.获取证书
 docker container cp es-01:/usr/share/elasticsearch/config/certs/http_ca.crt .
 
-# 4.简单测试, 注意这里是HTTPS
+# 2.简单测试, 注意这里是HTTPS
 [root@node-1 ~]# curl --cacert http_ca.crt -u elastic https://localhost:9200
 Enter host password for user 'elastic':
 {
@@ -225,7 +243,7 @@ Enter host password for user 'elastic':
 
 ::: details （2）部署 Kibana
 
-指定版本文档：[https://www.elastic.co/guide/en/kibana/8.8/docker.html](https://www.elastic.co/guide/en/kibana/8.8/docker.html)
+文档：[https://www.elastic.co/guide/en/kibana/8.8/docker.html](https://www.elastic.co/guide/en/kibana/8.8/docker.html)
 
 ```bash
 # 拉取镜像
@@ -257,9 +275,7 @@ i18n.locale: "zh-CN"                                 # 添加这行
 
 ::: details （3）部署 FileBeat
 
-指定版本文档：[https://www.elastic.co/guide/en/beats/filebeat/6.8/running-on-docker.html](https://www.elastic.co/guide/en/beats/filebeat/6.8/running-on-docker.html)
-
-最新版本文档：[https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html](https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html)
+文档：[https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html](https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html)
 
 **1、拉取镜像，并执行setup子命令进行初始化**
 
