@@ -197,10 +197,17 @@ vim /etc/sysctl.conf               # 永久
 vm.max_map_count=262144
 
 # 先启动服务用于获取配置文件
-mkdir -p /usr/share/elasticsearch/config
-docker container run --name get-es-config -d docker.elastic.co/elasticsearch/elasticsearch:8.8.2
-docker container cp get-es-config:/usr/share/elasticsearch/config/elasticsearch.yml /usr/share/elasticsearch/config
+mkdir -p /usr/share/elasticsearch
+chown -R 1000:root /usr/share/elasticsearch
+docker container run --name get-es-config -d docker.elastic.co/elasticsearch/elasticsearch:8.8.2  # 等待启动成功
+docker container cp get-es-config:/usr/share/elasticsearch/config /usr/share/elasticsearch/
 docker container rm -f get-es-config
+
+# 删除动态配置的信息
+cd /usr/share/elasticsearch/config
+rm -rf certs
+rm -rf elasticsearch.keystore
+> elasticsearch.yml
 
 # 启动服务
 docker network create elastic
@@ -208,11 +215,10 @@ docker container run --name es-01 \
     --net elastic \
     -p 9200:9200 \
     -p 9300:9300 \
-    -v /usr/share/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
+    -v /usr/share/elasticsearch/config:/usr/share/elasticsearch/config \
     --restart=always \
     -d \
   docker.elastic.co/elasticsearch/elasticsearch:8.8.2
-
 
 # 1.获取证书
 docker container cp es-01:/usr/share/elasticsearch/config/certs/http_ca.crt .
