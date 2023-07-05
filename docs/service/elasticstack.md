@@ -171,7 +171,7 @@ Jul 04 07:25:45 node-1 kibana[56557]: Go to http://0.0.0.0:5601/?code=295191 to 
 [root@node-1 bin]# systemctl start filebeat.service
 [root@node-1 bin]# systemctl enable filebeat.service
 
-# 配置连接到ES, 这里为了方便设置ES关闭SSL连接
+# 配置连接到ES
 [root@node-1 ~]# vim /etc/filebeat/filebeat.yml
 output.elasticsearch:
   hosts: ["localhost:9200"]
@@ -309,7 +309,7 @@ docker container rm -f get-kibana-config
 # 修改配置
 vim /usr/share/kibana/config/kibana.yml
 server.host: "0.0.0.0"                        		#
-server.port: 5601                             		# 添加此行
+server.port: "5601"                             	# 添加此行
 server.shutdownTimeout: "5s"                  		# 
 elasticsearch.hosts: [ "http://es-01:9200" ]  		# 修改ES地址, 注意协议
 elasticsearch.username: "kibana_system"             # 内置的kibana用户
