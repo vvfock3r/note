@@ -198,7 +198,6 @@ vm.max_map_count=262144
 
 # 先启动服务用于获取配置文件
 mkdir -p /usr/share/elasticsearch
-chown -R 1000:root /usr/share/elasticsearch
 docker container run --name get-es-config -d docker.elastic.co/elasticsearch/elasticsearch:8.8.2  # 等待启动成功
 docker container cp get-es-config:/usr/share/elasticsearch/config /usr/share/elasticsearch/
 docker container rm -f get-es-config
@@ -211,6 +210,7 @@ rm -rf elasticsearch.keystore
 
 # 启动服务
 docker network create elastic
+chown -R 1000:root /usr/share/elasticsearch
 docker container run --name es-01 \
     --net elastic \
     -p 9200:9200 \
@@ -256,7 +256,6 @@ Enter host password for user 'elastic':
 docker pull docker.elastic.co/kibana/kibana:8.8.2
 
 # 配置文件
-
 
 # 启动服务
 docker container run --name kibana \
