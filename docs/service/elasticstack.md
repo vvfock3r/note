@@ -312,6 +312,8 @@ server.host: "0.0.0.0"                        		#
 server.port: 5601                             		# 添加此行
 server.shutdownTimeout: "5s"                  		# 
 elasticsearch.hosts: [ "http://es-01:9200" ]  		# 修改ES地址, 注意协议
+elasticsearch.username: "kibana_system"             # 内置的kibana用户
+elasticsearch.password: "rj*5bTeaUG4W6JoCFLPl"      # 密码如果不知道可以重置
 monitoring.ui.container.elasticsearch.enabled: true # 
 
 # 启动服务
@@ -323,9 +325,6 @@ docker container run --name kibana \
     --restart=always \
     -d \
   docker.elastic.co/kibana/kibana:8.8.2
-
-# 配置文件目录
-# /usr/share/kibana/config
 
 # 修改语言为中文(临时,未做持久化)
 [root@localhost ~]# docker exec -it kibana sh
