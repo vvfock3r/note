@@ -308,12 +308,11 @@ docker container rm -f get-kibana-config
 
 # 修改配置
 vim /usr/share/kibana/config/kibana.yml
-server.host: "0.0.0.0"                        #
-server.port: 5601                             # 添加此行
-server.shutdownTimeout: "5s"                  # 
-elasticsearch.hosts: [ "http://es-01:9200" ]  # 修改ES地址
-elasticsearch.serviceAccountToken: eyJ2ZXIiOiI4LjguMiIsImFkciI6WyIxNzIuMTguMC4yOjkyMDAiXSwiZmdyIjoiNjEyYjQ4OWRmNjRkMTc4ZmJlN2U4ZDE1MjZlNmE1ZjBiMWY5NjdkODVjMTQzYjNkMDM1MTFjOTlhOWNlMTNhNCIsImtleSI6IjFFaUhKb2tCa3BYc245bzROMXUxOk11RDBaUG9NVGp1d1VoSk9kbzBoUlEifQ==  # 添加此行
-monitoring.ui.container.elasticsearch.enabled: true
+server.host: "0.0.0.0"                        		#
+server.port: 5601                             		# 添加此行
+server.shutdownTimeout: "5s"                  		# 
+elasticsearch.hosts: [ "http://es-01:9200" ]  		# 修改ES地址, 注意协议
+monitoring.ui.container.elasticsearch.enabled: true # 
 
 # 启动服务
 chown -R 1000:root /usr/share/kibana
