@@ -46,6 +46,15 @@ elastic/enterprise-search-server	Enterprise Search 用于与 Elasticsearch 通�
 ::: details （3）SSL说明
 
 ```bash
+# Enable security features
+# 是否启用安全功能, 包括身份验证、授权和传输层加密等
+xpack.security.enabled: true
+
+# 是否启用安全自动注册(enrollment)功能
+# 安全自动注册是指允许节点自动加入到安全集群中的过程，以便它们能够受到安全功能的保护
+# 当设置为false时，表示禁用安全自动注册功能, 意味着需要手动配置和注册节点，以确保它们具有正确的安全设置和凭据
+xpack.security.enrollment.enabled: true
+
 # Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
 # 客户端与ES之间是否开启SSL, 默认为true
 xpack.security.http.ssl:
@@ -72,7 +81,7 @@ xpack.security.transport.ssl:
 文档：[https://www.elastic.co/guide/en/elasticsearch/reference/8.8/rpm.html](https://www.elastic.co/guide/en/elasticsearch/reference/8.8/rpm.html)
 
 ```bash
-# 设置yum源, 默认不开启
+# 1.设置yum源, 默认不开启
 [root@node-1 ~]# rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 [root@node-1 ~]# vim /etc/yum.repos.d/elastic.repo
 [elasticsearch]
@@ -84,14 +93,15 @@ enabled=0
 autorefresh=1
 type=rpm-md
 
-# 安装ES
+# 2.安装最新版ES
 [root@node-1 ~]# sudo yum install --enablerepo=elasticsearch elasticsearch
 
-# 启动ES
+# 3.启动ES
 [root@node-1 ~]# systemctl start elasticsearch.service
 [root@node-1 ~]# systemctl enable elasticsearch.service
 
-# 使用elastic用户测试, 如果不知道密码可以重置
+# 4.使用elastic用户测试, 如果不知道密码可以重置
+[root@node-1 ~]# /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
 [root@node-1 ~]# curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic https://localhost:9200
 Enter host password for user 'elastic':
 {
@@ -111,6 +121,12 @@ Enter host password for user 'elastic':
   },
   "tagline" : "You Know, for Search"
 }
+
+# 5.关闭【客户端连接ES】所使用的SSL
+vim /usr/share/elasticsearch/config/elasticsearch.yml
+xpack.security.http.ssl:
+  enabled: false
+  keystore.path: certs/http.p12
 ```
 
 :::
@@ -202,11 +218,11 @@ docker container run --name get-es-config -d docker.elastic.co/elasticsearch/ela
 docker container cp get-es-config:/usr/share/elasticsearch/config /usr/share/elasticsearch/
 docker container rm -f get-es-config
 
-# 删除动态配置的信息
+# 删除动态生成的配置
 cd /usr/share/elasticsearch/config
 rm -rf certs
 rm -rf elasticsearch.keystore
-> elasticsearch.yml
+sed -ri '/BEGIN SECURITY AUTO CONFIGURATION/, /END SECURITY AUTO CONFIGURATION/'d elasticsearch.yml
 
 # 启动服务
 docker network create elastic
@@ -223,13 +239,42 @@ docker container run --name es-01 \
 # 1.获取证书
 docker container cp es-01:/usr/share/elasticsearch/config/certs/http_ca.crt .
 
-# 2.简单测试, 注意这里是HTTPS
-[root@node-1 ~]# curl --cacert http_ca.crt -u elastic https://localhost:9200
+# 2.重置密码
+docker container exec -it es-01 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+
+# 3.简单测试, 注意这里是HTTPS
+curl --cacert http_ca.crt -u elastic https://localhost:9200
 Enter host password for user 'elastic':
 {
   "name" : "aa0f449b4e68",
   "cluster_name" : "docker-cluster",
   "cluster_uuid" : "v9PX9PDaQuyZusAtynJbBg",
+  "version" : {
+    "number" : "8.8.2",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "98e1271edf932a480e4262a471281f1ee295ce6b",
+    "build_date" : "2023-06-26T05:16:16.196344851Z",
+    "build_snapshot" : false,
+    "lucene_version" : "9.6.0",
+    "minimum_wire_compatibility_version" : "7.17.0",
+    "minimum_index_compatibility_version" : "7.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+# 4.关闭【客户端连接ES】所使用的SSL
+vim /usr/share/elasticsearch/config/elasticsearch.yml
+xpack.security.http.ssl:
+  enabled: false
+  keystore.path: certs/http.p12
+
+[root@node-1 ~]# curl  -u elastic http://localhost:9200
+Enter host password for user 'elastic':
+{
+  "name" : "1ae82614e395",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "hbR6yGYpR0-890xNRV_vmw",
   "version" : {
     "number" : "8.8.2",
     "build_flavor" : "default",
@@ -255,13 +300,27 @@ Enter host password for user 'elastic':
 # 拉取镜像
 docker pull docker.elastic.co/kibana/kibana:8.8.2
 
-# 配置文件
+# 先启动服务用于获取配置文件
+mkdir -p /usr/share/kibana
+docker container run --name get-kibana-config -d docker.elastic.co/kibana/kibana:8.8.2 # 等待启动成功
+docker container cp get-kibana-config:/usr/share/kibana/config /usr/share/kibana/
+docker container rm -f get-kibana-config
+
+# 修改配置
+vim /usr/share/kibana/config/kibana.yml
+server.host: "0.0.0.0"                        #
+server.port: 5601                             # 添加此行
+server.shutdownTimeout: "5s"                  # 
+elasticsearch.hosts: [ "http://es-01:9200" ]  # 修改ES地址
+elasticsearch.serviceAccountToken: eyJ2ZXIiOiI4LjguMiIsImFkciI6WyIxNzIuMTguMC4yOjkyMDAiXSwiZmdyIjoiNjEyYjQ4OWRmNjRkMTc4ZmJlN2U4ZDE1MjZlNmE1ZjBiMWY5NjdkODVjMTQzYjNkMDM1MTFjOTlhOWNlMTNhNCIsImtleSI6IjFFaUhKb2tCa3BYc245bzROMXUxOk11RDBaUG9NVGp1d1VoSk9kbzBoUlEifQ==  # 添加此行
+monitoring.ui.container.elasticsearch.enabled: true
 
 # 启动服务
+chown -R 1000:root /usr/share/kibana
 docker container run --name kibana \
     --net elastic \
     -p 5601:5601 \
-    -v /etc/kibana/config:/usr/share/kibana/config \
+    -v /usr/share/kibana/config:/usr/share/kibana/config \
     --restart=always \
     -d \
   docker.elastic.co/kibana/kibana:8.8.2
