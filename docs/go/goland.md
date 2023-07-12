@@ -160,6 +160,18 @@ func main() {
 
 <br />
 
+### 导入优化
+
+注意点：
+
+1、优化后的排序自上而下：标准库、项目模块、第三方库
+
+2、不会对包含空行的模块进行排序，可以将所有空行删除，然后CTRL+S保存来做一次的排序
+
+![image-20230712231123111](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230712231123111.png)
+
+<br />
+
 ### 行分隔符
 
 ![image-20230228163013728](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230228163013728.png)
