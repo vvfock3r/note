@@ -121,10 +121,27 @@ Cost取值范围: 4 - 31 (default: 10)
 
 注意事项
 
-* `cost`值（`GenerateFromPassword`函数的第二个参数）越大,加密速度越慢，同样解密速度也会变慢，一般建议使用默认值（`bcrypt.DefaultCost`）即可
+* `cost`值（`GenerateFromPassword`函数的第二个参数）越大,加密速度越慢
+
+  同样解密速度也会变慢，一般建议使用默认值（`bcrypt.DefaultCost`）即可
 
   当加密用户登录密码时，避免因为`cost`过大导致加解密缓慢从而影响用户体验
 
 * 对同一个密码多次进行加密会得到不同的密文，因为 随机盐 存储在了密文中
+
+* 密码不能超过72个字节，参考源码
+
+  ```go
+  func GenerateFromPassword(password []byte, cost int) ([]byte, error) {
+  	if len(password) > 72 {
+  		return nil, ErrPasswordTooLong
+  	}
+  	p, err := newFromPassword(password, cost)
+  	if err != nil {
+  		return nil, err
+  	}
+  	return p.Hash(), nil
+  }
+  ```
 
 :::
