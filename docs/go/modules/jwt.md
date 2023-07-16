@@ -1,8 +1,57 @@
-# jwt
+# JWT
 
 官网：[https://jwt.io/](https://jwt.io/)
 
 Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
+
+<br />
+
+## 原理
+
+JWT（JSON Web Token）是一种用于在网络应用间传递声明的开放标准（RFC 7519），它以紧凑且自包含的方式传递信息，通常用于身份验证和授权
+
+
+
+::: details 组成
+
+JWT由三部分组成，通过点号（.）分隔开：
+
+* Header（头部）：JWT的头部包含了关于该令牌的元数据和签名算法的信息。通常使用Base64编码表示，例如
+
+  ```go
+  // "alg"表示签名算法, "typ"表示令牌类型
+  
+  {
+    "alg": "HS256",
+    "typ": "JWT"
+  }
+  ```
+
+* Payload（负载）：JWT的负载是包含有关声明和要传递的信息的部分。负载可以包含标准的声明（如身份信息、权限等）和自定义的声明。同样，负载也是Base64编码的，例如：
+
+  ```go
+  // "sub"表示主题（Subject）, "name"表示姓名, "iat"表示令牌的签发时间
+  
+  {
+    "sub": "1234567890",
+    "name": "John Doe",
+    "iat": 1626352377
+  }
+  ```
+
+* Signature（签名）：JWT的签名部分是使用指定的算法对头部和负载进行签名的结果，以确保数据的完整性和验证令牌的来源。签名通常使用密钥进行计算，只有持有密钥的一方才能验证和解析JWT。签名部分的形式如下：
+
+  ```go
+  // 使用HMAC-SHA256算法和密钥(secret)对头部和负载进行签名
+  
+  HMACSHA256(
+    base64UrlEncode(header) + "." +
+    base64UrlEncode(payload),
+    secret
+  )
+  ```
+
+:::
 
 <br />
 
@@ -123,7 +172,7 @@ func main() {
 
 <br />
 
-## Payload
+## Payload详解
 
 文档：[https://jwt.io/introduction](https://jwt.io/introduction)
 
