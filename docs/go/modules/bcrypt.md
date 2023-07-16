@@ -110,10 +110,10 @@ func main() {
 密文:  $2a$10$mLhxQszxfMW8felV.cdllep2etXEAc7W/OjMamti6nwH/DD4/GkXu
 验证:  true
 
-Cost取值范围: 4 - 31 (default: 10)        
-提取密文Cost: 10                          
+Cost取值范围: 4 - 31 (default: 10)
+提取密文Cost: 10
                                           
-提权密文算法标识符: 2a                    
+提权密文算法标识符: 2a
 提取密文随机盐的值: mLhxQszxfMW8felV.cdlle
 ```
 
