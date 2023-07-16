@@ -6,11 +6,15 @@ Go客户端库：[https://github.com/golang-jwt/jwt](https://github.com/golang-j
 
 <br />
 
-## 原理
+## 原理介绍
 
 JWT（JSON Web Token）是一种用于在网络应用间传递声明的开放标准（RFC 7519），它以紧凑且自包含的方式传递信息，通常用于身份验证和授权
 
 
+
+<br />
+
+## 结构组成
 
 ::: details 组成
 
@@ -55,7 +59,7 @@ JWT由三部分组成，通过点号（.）分隔开：
 
 <br />
 
-## 安装
+## 安装模块
 
 ```bash
 go get -u github.com/golang-jwt/jwt/v4
@@ -63,7 +67,7 @@ go get -u github.com/golang-jwt/jwt/v4
 
 <br />
 
-## 示例
+## 简单示例
 
 ::: details 点击查看详情
 
@@ -172,7 +176,7 @@ func main() {
 
 <br />
 
-## Payload详解
+## 负载详解
 
 文档：[https://jwt.io/introduction](https://jwt.io/introduction)
 
