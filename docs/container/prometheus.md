@@ -1831,6 +1831,7 @@ Checking /etc/prometheus/prometheus.yml
 
 * 正则表达式匹配完全锚定，即 `env=~"foo"`被视为`env=~"^foo$"`
 * `prometheus_http_requests_total{code="200"}`也等同于 `{__name__="prometheus_http_requests_total", code="200"}`
+* `{__name__=~".+"}` 能查询出所有的指标
 
 <br />
 
@@ -2363,6 +2364,28 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 ![image-20230521173509473](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521173509473.png)
 
 ![image-20230521173738381](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230521173738381.png)
+
+:::
+
+::: details （7）标签替换：可对标签进行增删改
+
+**备注：语法和relabel、metric_relabel等使用类似，不再解释**
+
+**默认输出结果**
+
+![image-20230718070658314](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718070658314.png)
+
+**1、根据原有标签，新增一个标签**
+
+![image-20230718070819813](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718070819813.png)
+
+**2、删除一个指定的标签**
+
+![image-20230718071149663](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718071149663.png)
+
+**3、替换标签的值**
+
+![image-20230718071656002](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718071656002.png)
 
 :::
 
