@@ -2094,11 +2094,11 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 :::
 
-::: details （7）其他聚合
+::: details （7）实战：统计所有node_exporter的内核版本是否一致
 
-- `stddev`（计算维度上的总体标准偏差）
-- `stdvar`（计算维度上的总体标准方差）
-- `quantile`（在维度上计算 φ-quantile (0 ≤ φ ≤ 1)）
+```bash
+count ( sum by (kernel) (label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*")) ) > 1
+```
 
 :::
 
