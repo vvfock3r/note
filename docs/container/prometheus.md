@@ -2367,7 +2367,7 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 :::
 
-::: details （7）标签替换：可对标签进行增删改
+::: details （7）单标签替换：可对标签进行增删改
 
 **备注：语法和relabel、metric_relabel等使用类似，不再解释**
 
@@ -2386,6 +2386,12 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 **3、替换标签的值**
 
 ![image-20230718071656002](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718071656002.png)
+
+:::
+
+::: details （8）多标签连接：可将多个标签值组成一个新标签
+
+
 
 :::
 
