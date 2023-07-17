@@ -149,25 +149,29 @@ docker container run --name prometheus \
 # 1.创建Namespace
 kubectl create ns monitor
 
-# 2.创建ConfigMap, 存储Prometheus配置文件
+# 2、需要提前准备配置文件prometheus.yml
+docker container run --name get-prometheus-config --rm -d prom/prometheus:v2.38.0
+docker container cp get-prometheus-config:/etc/prometheus/prometheus.yml ./prometheus-etc.yaml
+docker container rm -f get-prometheus-config
+
+# 3.创建ConfigMap, 存储Prometheus配置文件
 kubectl create configmap prometheus-etc \
   -n monitor \
   --from-file=prometheus.yml=prometheus-etc.yaml
 
-# 3.创建存储目录 或者 挂载网络存储等
+# 4.创建存储目录 或者 挂载网络存储等
 mkdir -p /data/k8s/monitor/prometheus
 
-# 4.创建SA, 用于Kubernetes服务发现, 默认的SA权限太低
+# 5.创建SA, 用于Kubernetes服务发现, 默认的SA权限太低
 #   -clusterrole=cluster-admin       绑定的角色为cluster-admin, 请确保存在此角色
 #   --serviceaccount=monitor:monitor 第一个monitor代表NameSpace, 第二个monitor代表SA
 kubectl -n monitor create sa monitor
 kubectl -n monitor create clusterrolebinding monitor --clusterrole=cluster-admin --serviceaccount=monitor:monitor
 
-# 5.部署
+# 6.部署
 kubectl apply -f prometheus-deploy.yaml
 
-# -------------------------------------------------------------
-# 后续维护参考：管理API
+# 7、后续维护参考：管理API
 ```
 
 prometheus-deploy.yaml
