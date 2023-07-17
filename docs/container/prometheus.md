@@ -2377,21 +2377,35 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 **1、根据原有标签，新增一个标签**
 
+目标标签设置为一个新标签
+
 ![image-20230718070819813](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718070819813.png)
 
 **2、删除一个指定的标签**
+
+目标标签和源标签都设置为一个已经存在的标签，并将目标标签设置为空
 
 ![image-20230718071149663](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718071149663.png)
 
 **3、替换标签的值**
 
+目标标签和源标签都设置为一个已经存在的标签，并将目标标签设置为具体的值
+
 ![image-20230718071656002](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718071656002.png)
 
 :::
 
-::: details （8）多标签连接：可将多个标签值组成一个新标签
+::: details （8）链接两个标签：可将多个标签值组成一个新标签
 
+**默认输出结果**
 
+![image-20230718070658314](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718070658314.png)
+
+**链接两个标签，组成一个新标签**
+
+第二个参数是新标签名称（也可以指定已有的标签，就达到了替换的目的），第三个参数指定连接字符，第四和第五是被链接的标签
+
+![image-20230718073519608](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230718073519608.png)
 
 :::
 
