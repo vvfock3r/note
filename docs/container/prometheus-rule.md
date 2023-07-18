@@ -33,7 +33,9 @@ severity: critical	致命	电话告警
 
 ## 主机层面
 
-### 主机宕机
+### 运行状态
+
+::: details （1）主机宕机
 
 ```yaml
 - alert: node_down
@@ -48,9 +50,31 @@ severity: critical	致命	电话告警
       主机宕机, 主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
+:::
+
+::: details （2）主机重启
+
+```yaml
+- alert: node_reboot
+  expr: time() - node_boot_time_seconds > 600
+  for: 1m
+  labels:
+    severity: critical
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机自启动以来到现在, 运行时长小于600秒, 当前值: {{ $value | printf "%.0f" }}秒
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
+```
+
+:::
+
 <br />
 
 ### 平均负载
+
+::: details 点击查看详情
 
 ```yaml
 - record: mega_node_cpu_cores_total
@@ -93,9 +117,13 @@ severity: critical	致命	电话告警
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
+:::
+
 <br />
 
-### CPU
+### CPU相关
+
+::: details 点击查看详情
 
 ```yaml
 - record: mega_node_cpu_utilization
@@ -126,9 +154,13 @@ severity: critical	致命	电话告警
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
+:::
+
 <br />
 
-### 内存
+### 内存相关
+
+::: details 点击查看详情
 
 ```yaml
 # 内存使用率: 按比例监控
@@ -181,9 +213,13 @@ severity: critical	致命	电话告警
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
+:::
+
 <br />
 
-### 磁盘
+### 磁盘相关
+
+::: details 点击查看详情
 
 ```yaml
 # 磁盘剩余空间百分比
@@ -219,9 +255,13 @@ severity: critical	致命	电话告警
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
 ```
 
+:::
+
 <br />
 
-### 网络
+### 网络相关
+
+
 
 <br />
 
