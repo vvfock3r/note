@@ -2405,7 +2405,7 @@ prometheus_http_requests_total{code="200", handler="/api/v1/query", instance="lo
 
 第二个参数是新标签名称（也可以指定已有的标签，就达到了替换的目的），第三个参数指定链接字符，第四和第五是被链接的标签
 
-![image-20230718073519608](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230718073519608.png)
+![image-20230718073519608](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230718073519608.png)
 
 :::
 
