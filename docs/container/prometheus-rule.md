@@ -56,7 +56,7 @@ severity: critical	致命	电话告警
 
 ```yaml
 - alert: node_reboot
-  expr: time() - node_boot_time_seconds > 600
+  expr: time() - node_boot_time_seconds < 600
   for: 1m
   labels:
     severity: critical
