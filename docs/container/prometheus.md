@@ -2254,7 +2254,7 @@ prometheus_http_requests_total{code="200", handler="/metrics", instance="localho
 190 @1684637685.526
 191 @1684637700.526
 
-# 3、计算时间戳最大的值 和 时间戳最小的值 的差
+# 3、计算时间戳最大的值 和 时间戳最小的值 的差( 也可能是他们的差加起来? )
 191 - 188 = 3
 
 # 4、计算时间戳最大 和 时间戳最小 的差
@@ -2265,7 +2265,7 @@ prometheus_http_requests_total{code="200", handler="/metrics", instance="localho
 相差了45秒
 
 # 5、计算平均每秒增长率
-3 / 45 =~ 0.066666666667 
+3 / 45 =~ 0.066666666667
 ```
 
 <br />

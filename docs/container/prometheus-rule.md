@@ -279,10 +279,33 @@ severity: critical	致命	电话告警
     description: |-
       主机最近5分钟入口总流量大于20M/s, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
-      
+
 # 最近5分钟内外网出口流量总和
 - record: mega_node_network_transmit_bytes_total
   expr: sum(rate(node_network_transmit_bytes_total{device="ens33"}[5m]))
+  
+- alert: node_network_transmit_bytes_high
+  expr: mega_node_network_transmit_bytes_total > 20 * 1024 * 1024
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机最近5分钟出口总流量大于20M/s, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+```
+
+:::
+
+::: details （2）传输错误
+
+```yaml
+node_network_transmit_errs_total
+
+# 其他
+node_network_transmit_
 ```
 
 :::
@@ -291,5 +314,75 @@ severity: critical	致命	电话告警
 
 ### 聚合监控
 
+::: details （1）检查所有主机系统内核版本是否一致
 
+```yaml
+# 关键点: 对标签值进行分组, 并统计个数, 进行判断 ( 关键词 sum函数 + by分组 )
+- alert: node_system_kernel_release_mismatch
+  expr: count(sum by (kernel) (label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*"))) > 1
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机系统内核版本不一致, 当前内核版本种类个数: {{ $value | printf "%.0f" }}
+```
 
+如果遇到告警排查的思路
+
+![image-20230719064953850](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719064953850.png)
+
+![image-20230719065025508](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719065025508.png)
+
+![image-20230719065204005](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719065204005.png)
+
+:::
+
+::: details （2）检查所有主机系统时间是否一致
+
+```yaml
+# 关键点: 对指标值进行分组, 并统计个数, 进行判断 ( 关键词: count_values )
+- alert: node_system_time_mismatch
+  expr: count(count_values("timestamp", floor(node_time_seconds))) > 1
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机系统时间不一致, 当前时间种类个数: {{ $value | printf "%.0f" }}
+
+# 注意事项
+# 以上使用了 floor 来取整, 但在实际中可能会带来误差(猜想, 未实际验证), 比如
+# 	1689722835.999999
+# 	1689722836.000000
+
+# 优化方式: 通过四舍五入来消除误差, 还可以指定round的第二个参数来兼容多秒内的误差
+- alert: node_system_time_mismatch
+  expr: count(count_values("timestamp", round(node_time_seconds))) > 1
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机系统时间不一致, 当前时间种类个数: {{ $value | printf "%.0f" }}
+```
+
+1、可以看到两台主机的时间戳并不一致
+
+![image-20230719073706711](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719073706711.png)
+
+2、验证我们的告警规则
+
+![image-20230719073731352](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719073731352.png)
+
+3、通过 sort 或 sort_desc 对值进行排序，找出个别有问题的主机
+
+![image-20230719073938905](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719073938905.png)
+
+:::
