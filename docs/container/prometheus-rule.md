@@ -1,10 +1,10 @@
 # Prometheus告警规则
 
-## 备注
+## 约定
 
-使用率过低也要报警info
+* 资源使用率低也需要添加监控，尽早发现闲置资源，尽早降低成本
 
-
+<br />
 
 ## 说明
 
@@ -37,7 +37,7 @@ severity: critical	致命	电话告警
 
 ```yaml
 - alert: node_down
-  expr: up{job=~"node-exporte.*"} != 1
+  expr: up{job=~"node-exporter.*"} != 1
   for: 1m
   labels:
     severity: critical
@@ -52,7 +52,7 @@ severity: critical	致命	电话告警
 
 ### 平均负载
 
-```bash
+```yaml
 - record: mega_node_cpu_cores_total
   expr: count(node_cpu_seconds_total{mode="idle"}) by (job, instance, hostname)
 
@@ -97,7 +97,7 @@ severity: critical	致命	电话告警
 
 ### CPU
 
-```bash
+```yaml
 - record: mega_node_cpu_utilization
   expr: 100 - ( avg by (job,hostname,instance) (irate(node_cpu_seconds_total{mode="idle"}[1m])) * 100 )
 
@@ -130,8 +130,8 @@ severity: critical	致命	电话告警
 
 ### 内存
 
-```bash
-# 内存使用率
+```yaml
+# 内存使用率: 按比例监控
 - record: mega_node_memory_utilization
   expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100
 
@@ -147,7 +147,7 @@ severity: critical	致命	电话告警
       主机内存使用率超过85%, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 
-# 剩余可用内存(GB)
+# 剩余可用内存(GB): 按可用数量级监控
 - record: mega_node_memory_available_gb
   expr: node_memory_MemAvailable_bytes / 1024 / 1024 / 1024
   
@@ -166,13 +166,26 @@ severity: critical	致命	电话告警
 # 总内存(GB), 暂时没用到
 - record: mega_node_memory_total_gb
   expr: node_memory_MemTotal_bytes / 1024 / 1024 / 1024
+  
+# 资源闲置监控: 按使用率监控
+- alert: node_memory_utilization_low
+  expr: mega_node_memory_utilization < 20
+  for: 1w
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机内存使用率低于20%, 已持续1周, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
 <br />
 
 ### 磁盘
 
-```bash
+```yaml
 # 磁盘剩余空间百分比
 - record: mega_node_disk_available_utilization
   expr: |-
@@ -191,13 +204,26 @@ severity: critical	致命	电话告警
     description: |-
       主机磁盘剩余空间不足30%, 已持续30分钟, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+      
+# 资源闲置监控
+- alert: node_disk_available_utilization_low
+  expr: mega_node_disk_available_utilization > 80
+  for: 1w
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机磁盘剩余空间大于80%, 已持续1周, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
 ```
-
-Inodes
 
 <br />
 
 ### 网络
+
+<br />
 
 ### 聚合监控
 
