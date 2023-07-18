@@ -204,7 +204,7 @@ severity: critical	致命	电话告警
   expr: mega_node_memory_utilization < 20
   for: 1w
   labels:
-    severity: error
+    severity: info
   annotations:
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
@@ -246,7 +246,7 @@ severity: critical	致命	电话告警
   expr: mega_node_disk_available_utilization > 80
   for: 1w
   labels:
-    severity: error
+    severity: info
   annotations:
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
@@ -261,7 +261,31 @@ severity: critical	致命	电话告警
 
 ### 网络相关
 
+::: details （1）内外网流量
 
+```yaml
+# 最近5分钟内外网入口流量总和
+- record: mega_node_network_receive_bytes_total
+  expr: sum(rate(node_network_receive_bytes_total{device="ens33"}[5m]))
+
+- alert: node_network_receive_bytes_high
+  expr: mega_node_network_receive_bytes_total > 20 * 1024 * 1024
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机最近5分钟入口总流量大于20M/s, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+      
+# 最近5分钟内外网出口流量总和
+- record: mega_node_network_transmit_bytes_total
+  expr: sum(rate(node_network_transmit_bytes_total{device="ens33"}[5m]))
+```
+
+:::
 
 <br />
 
