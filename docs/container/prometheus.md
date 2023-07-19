@@ -7,9 +7,10 @@
 Github：[https://github.com/prometheus/prometheus/](https://github.com/prometheus/prometheus/)
 
 * AlertManager：[https://github.com/prometheus/alertmanager](https://github.com/prometheus/alertmanager)
-* Awesome：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
 * Exporters：[https://prometheus.io/docs/instrumenting/exporters/](https://prometheus.io/docs/instrumenting/exporters/)
 * 多目标导出器模式：[https://prometheus.io/docs/guides/multi-target-exporter](https://prometheus.io/docs/guides/multi-target-exporter)
+* Awesome监控指标：[https://awesome-prometheus-alerts.grep.to/](https://awesome-prometheus-alerts.grep.to/)
+* 阿里云Prometheus：[https://www.alibabacloud.com/help/zh/arms/prometheus-monitoring/basic-metrics](https://www.alibabacloud.com/help/zh/arms/prometheus-monitoring/basic-metrics)
 
 <br />
 
