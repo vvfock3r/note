@@ -12,8 +12,8 @@
 # 日志级别
 severity: info		通知
 severity: warning	警告
-severity: error		严重	
-severity: critical	致命	电话告警
+severity: error		严重
+severity: critical	致命
 
 # 自定义指标的种类
 1、记录规则, 比如 mega_node_average_cpu_utilization
@@ -59,12 +59,12 @@ severity: critical	致命	电话告警
   expr: time() - node_boot_time_seconds < 600
   for: 1m
   labels:
-    severity: critical
+    severity: warning
   annotations:
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
-      主机自启动以来到现在, 运行时长小于600秒, 当前值: {{ $value | printf "%.0f" }}秒
+      主机自上次启动到现在, 运行时长小于600秒, 当前值: {{ $value | printf "%.0f" }}秒
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
@@ -129,6 +129,7 @@ severity: critical	致命	电话告警
 - record: mega_node_cpu_utilization
   expr: 100 - ( avg by (job,hostname,instance) (irate(node_cpu_seconds_total{mode="idle"}[1m])) * 100 )
 
+# 使用率监控
 - alert: node_average_cpu_utilization_high
   expr: mega_node_cpu_utilization > 80
   for: 1h
@@ -138,7 +139,7 @@ severity: critical	致命	电话告警
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
-      主机平均CPU使用率超过80%, 已持续1小时, 当前值: {{ $value | printf "%.1f" }}%
+      主机CPU使用率超过80%, 已持续1小时, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 
 - alert: node_average_cpu_utilization_high
@@ -151,6 +152,19 @@ severity: critical	致命	电话告警
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
       主机平均CPU使用率超过95%, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
+      
+# 资源闲置监控: 按使用率监控
+- alert: node_average_cpu_utilization_high
+  expr: mega_node_cpu_utilization < 5
+  for: 1d
+  labels:
+    severity: warning
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机平均CPU使用率小于5%, 已持续1天, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
@@ -219,7 +233,7 @@ severity: critical	致命	电话告警
 
 ### 磁盘相关
 
-::: details 点击查看详情
+::: details （1）磁盘空间监控
 
 ```yaml
 # 磁盘剩余空间百分比
@@ -253,6 +267,14 @@ severity: critical	致命	电话告警
     description: |-
       主机磁盘剩余空间大于80%, 已持续1周, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+```
+
+:::
+
+::: details （2）磁盘IO监控
+
+```yaml
+
 ```
 
 :::
@@ -386,3 +408,6 @@ node_network_transmit_
 ![image-20230719073938905](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230719073938905.png)
 
 :::
+
+<br />
+
