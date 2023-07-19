@@ -336,7 +336,17 @@ severity: critical	致命
 ::: details （1）连接数监控
 
 ```yaml
-
+- alert: node_network_established_high
+  expr: node_netstat_Tcp_CurrEstab > 500
+  for: 1m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机连接数大于500, 当前值: {{ $value | printf "%.0f" }}
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
 :::
