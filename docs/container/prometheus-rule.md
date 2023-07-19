@@ -289,6 +289,24 @@ severity: critical	致命
 
 :::
 
+::: details （3）Inodes可用数量所占百分比
+
+```yaml
+- alert: node_filesystem_inodes_utilization_high
+  expr: 100 -  floor(node_filesystem_files_free / node_filesystem_files * 100) > 80
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机文件系统已使用Inodes数量超过80%, 当前值: {{ $value | printf "%.1f" }}%
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+```
+
+:::
+
 <br />
 
 ### 磁盘相关
@@ -300,7 +318,7 @@ severity: critical	致命
   expr: rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) / 1000 > 100
   for: 1m
   labels:
-    severity: critical
+    severity: warning
   annotations:
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
