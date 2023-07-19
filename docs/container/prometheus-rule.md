@@ -289,7 +289,7 @@ severity: critical	致命
 
 :::
 
-::: details （3）Inodes使用率
+::: details （3）文件系统Inodes使用率
 
 ```yaml
 - alert: node_filesystem_inodes_utilization_high
