@@ -231,20 +231,20 @@ severity: critical	致命
 
 <br />
 
-### 磁盘相关
+### 文件系统
 
-::: details （1）磁盘空间监控
+::: details （1）文件系统空间监控
 
 ```yaml
-# 磁盘剩余空间百分比
-- record: mega_node_disk_available_utilization
+# 文件系统剩余空间百分比
+- record: mega_node_filesystem_available_utilization
   expr: |-
     100 -
     ( node_filesystem_size_bytes - node_filesystem_free_bytes )  /              
     ( node_filesystem_size_bytes - node_filesystem_free_bytes + node_filesystem_avail_bytes ) * 100
 
-- alert: node_disk_available_utilization_low
-  expr: mega_node_disk_available_utilization < 30
+- alert: node_filesystem_available_utilization_low
+  expr: mega_node_filesystem_available_utilization < 30
   for: 30m
   labels:
     severity: error
@@ -256,8 +256,8 @@ severity: critical	致命
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
       
 # 资源闲置监控
-- alert: node_disk_available_utilization_low
-  expr: mega_node_disk_available_utilization > 80
+- alert: node_filesystem_available_utilization_low
+  expr: mega_node_filesystem_available_utilization > 80
   for: 1w
   labels:
     severity: info
@@ -271,10 +271,20 @@ severity: critical	致命
 
 :::
 
-::: details （2）磁盘IO监控
+::: details （2）文件系统只读监控
 
 ```yaml
-
+- alert: node_filesystem_readonly
+  expr: node_filesystem_readonly == 1
+  for: 1m
+  labels:
+    severity: critical
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机文件系统为只读状态, 已持续1分钟
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
 ```
 
 :::
