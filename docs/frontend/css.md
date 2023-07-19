@@ -3582,7 +3582,7 @@ transition: width       1s      linear        0s;
                 如果自身没有font-size，那么该元素就会从父元素继承font-size，看起来好像是跟父元素有关，其实是继承的
                 如果自身的font-size也是em单位，那么也会从父元素继承
                 em很少使用，不过有一个好用的地方在于，段落首行缩进2个字符，同样这样写：
-                    text-ident: 2em;
+                    text-indent: 2em;
 
             rem 1rem = 1 * html的font-size大小
                 相比em，rem用的更多
