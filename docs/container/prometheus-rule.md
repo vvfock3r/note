@@ -305,7 +305,7 @@ severity: critical	致命
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
-      主机文件系统在过去1分钟内的平均磁盘写入时间大于100毫秒, 当前值: {{ $value | printf "%.1f" }}毫秒
+      主机磁盘在过去1分钟内的平均写入时间大于100毫秒, 当前值: {{ $value | printf "%.1f" }}毫秒
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 磁盘: {{ $labels.device }}
 ```
 
