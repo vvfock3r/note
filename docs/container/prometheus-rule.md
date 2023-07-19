@@ -293,7 +293,7 @@ severity: critical	致命
 
 ### 网络相关
 
-::: details （1）内外网流量
+::: details （1）内外网总流量
 
 ```yaml
 # 最近5分钟内外网入口流量总和
@@ -310,7 +310,7 @@ severity: critical	致命
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
       主机最近5分钟入口总流量大于20M/s, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
-      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 
 # 最近5分钟内外网出口流量总和
 - record: mega_node_network_transmit_bytes_total
@@ -326,18 +326,7 @@ severity: critical	致命
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
       主机最近5分钟出口总流量大于20M/s, 已持续5分钟, 当前值: {{ $value | printf "%.1f" }}%
-      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 挂载点: {{ $labels.mountpoint }}
-```
-
-:::
-
-::: details （2）传输错误
-
-```yaml
-node_network_transmit_errs_total
-
-# 其他
-node_network_transmit_
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
 :::
