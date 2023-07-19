@@ -333,7 +333,15 @@ severity: critical	致命
 
 ### 网络相关
 
-::: details （1）内外网总流量
+::: details （1）连接数监控
+
+```yaml
+
+```
+
+:::
+
+::: details （2）内外网总流量
 
 ```yaml
 # 最近5分钟内外网入口流量总和
