@@ -291,6 +291,28 @@ severity: critical	致命
 
 <br />
 
+### 磁盘相关
+
+::: details （1）磁盘平均每秒写操作所花费的时间
+
+```yaml
+- alert: node_disk_write_time_high
+  expr: rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) / 1000 > 100
+  for: 1m
+  labels:
+    severity: critical
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      主机文件系统在过去1分钟内的平均磁盘写入时间大于100毫秒, 当前值: {{ $value | printf "%.1f" }}毫秒
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}, 磁盘: {{ $labels.device }}
+```
+
+:::
+
+<br />
+
 ### 网络相关
 
 ::: details （1）内外网总流量
