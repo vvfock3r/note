@@ -281,7 +281,8 @@ ENV PATH=$PATH:$JAVA_HOME/bin
 
 # 安装软件包, 注意这里的nodejs版本比较低
 RUN apt install -y curl wget telnet vim && \
-    apt install -y nodejs python3 golang && \
+    apt install -y nodejs python3 python3-pip golang && \
+    pip3 install -U pip && \
     apt clean && \
     ln -sf /usr/bin/bash /usr/bin/sh && \
     chmod 755 entrypoint.sh
