@@ -2,6 +2,8 @@
 
 Github：[https://github.com/go-resty/resty](https://github.com/go-resty/resty)
 
+<br />
+
 ## 安装
 
 ```bash
@@ -160,17 +162,313 @@ Request Trace Info:
 
 ### 调试模式
 
-### 超时时间
+::: details 点击查看详情
 
-### 重试次数
+```go
+package main
 
-### 设置代理
+import (
+	"github.com/go-resty/resty/v2"
+)
 
-### 设置证书
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 开启调试模式
+	client.SetDebug(true)
+
+	// 发送Get请求
+	_, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+2023/07/22 18:16:16.031363 DEBUG RESTY
+==============================================================================
+~~~ REQUEST ~~~
+GET  /  HTTP/1.1
+HOST   : ip.jinhui.dev
+HEADERS:
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)        
+BODY   :
+***** NO CONTENT *****
+------------------------------------------------------------------------------
+~~~ RESPONSE ~~~
+STATUS       : 200 OK
+PROTO        : HTTP/2.0
+RECEIVED AT  : 2023-07-22T18:16:16.0201462+08:00
+TIME DURATION: 272.2173ms
+HEADERS      :
+        Content-Length: 15
+        Content-Type: text/plain; charset=utf-8
+        Date: Sat, 22 Jul 2023 10:16:15 GMT
+        Server: nginx/1.23.2
+BODY         :
+221.217.50.160
+==============================================================================
+```
+
+:::
+
+<br />
 
 ### 钩子函数
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置钩子函数
+	client.OnBeforeRequest(func(client *resty.Client, request *resty.Request) error {
+		fmt.Printf("%-20s%s\n", "OnBeforeRequest", "发送请求之前执行")
+		return nil
+	})
+	client.OnAfterResponse(func(client *resty.Client, response *resty.Response) error {
+		fmt.Printf("%-20s%s\n", "OnAfterResponse", "接收响应之后执行")
+		return nil
+	})
+	client.OnError(func(req *resty.Request, err error) {
+		fmt.Printf("%-20s%s\n", "OnError", "发生错误时执行, 具体不详")
+		if v, ok := err.(*resty.ResponseError); ok {
+			fmt.Println(v, ok)
+		}
+	})
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
+```
+
+输出结果
+
+```bash
+OnBeforeRequest     发送请求之前执行
+OnAfterResponse     接收响应之后执行
+221.217.50.160
+```
+
+:::
+
 <br />
+
+### 超时时间
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置超时时间(全局生效)
+	client.SetTimeout(time.Second * 5)
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
+```
+
+输出结果
+
+```bash
+221.217.50.160
+```
+
+:::
+
+<br />
+
+### 请求重试
+
+::: details （1）基本配置
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置重试参数, 在设置重试前最好先显示设置一下超时参数
+	// 1、SetRetryCount  		重试3次 即最多会发送4次请求
+	// 2、SetRetryWaitTime		每次重试前的等待时间
+	// 3、SetRetryMaxWaitTime	用法不详
+	// 4、SetRetryAfter			重试后的回调函数
+    // 5、重试的触发条件是什么?      不详
+	client.SetTimeout(time.Second * 5).SetRetryCount(3).SetRetryWaitTime(time.Second)
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
+```
+
+:::
+
+::: details （2）自定义重试条件
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置重试参数, 在设置重试前最好先显示设置一下超时参数
+	// 1、SetRetryCount  		重试3次 即最多会发送4次请求
+	// 2、SetRetryWaitTime		每次重试前的等待时间
+	// 3、SetRetryMaxWaitTime	用法不详
+	// 4、SetRetryAfter			重试后的回调函数
+	client.SetTimeout(time.Second * 5).SetRetryCount(3).SetRetryWaitTime(time.Second)
+
+	// 自定义重试条件
+	client.AddRetryCondition(
+		func(r *resty.Response, err error) bool {
+			return r.StatusCode() == http.StatusTooManyRequests
+		},
+	)
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
+```
+
+:::
+
+<br />
+
+### 设置代理
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置代理
+	// 1、如果代理要求认证, 则使用类似的语法 http://username:password@proxy.com:8080
+	// 2、都支持哪些类型的代理? 不详, 一般常见的应该都支持
+	client.SetProxy("http://127.0.0.1:7890")
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
+```
+
+输出结果
+
+```bash
+18.162.191.69
+```
+
+:::
+
+<br />
+
+### 设置证书
+
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
+<br />
+
+### 重定向策略
+
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
+<br />
+
+
 
 ## 常见功能
 
