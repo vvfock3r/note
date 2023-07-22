@@ -476,7 +476,35 @@ func main() {
 ::: details 点击查看详情
 
 ```go
+package main
 
+import (
+	"fmt"
+
+	"github.com/go-resty/resty/v2"
+)
+
+func main() {
+	// 实例化客户端
+	client := resty.New()
+
+	// 设置请求头
+	// 1、client.SetHeader() 	用于一次设置一个键值对
+	// 2、client.SetHeaders()	用于一次设置多个键值对
+	client.SetHeaders(map[string]string{
+		"Content-Type": "application/json",
+		"User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+	})
+
+	// 发送Get请求
+	response, err := client.R().Get("https://ip.jinhui.dev")
+	if err != nil {
+		panic(err)
+	}
+
+	// 读取响应
+	fmt.Println(response)
+}
 ```
 
 :::
