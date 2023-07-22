@@ -87,7 +87,8 @@ func main() {
 
 	// 发送Get请求
 	// 1、.R() 等同于 .NewRequest(), 即 创建一个请求
-	// 2、EnableTrace() 启用请求/响应跟踪，以便用于调试
+	// 2、EnableTrace()  启用请求/响应跟踪，以便用于调试
+    // 3、DisableTrace() 关闭请求/响应追踪
 	response, err := client.R().EnableTrace().Get("https://ip.jinhui.dev")
 	if err != nil {
 		panic(err)
@@ -421,6 +422,8 @@ func main() {
 	// 设置代理
 	// 1、如果代理要求认证, 则使用类似的语法 http://username:password@proxy.com:8080
 	// 2、都支持哪些类型的代理? 不详, 一般常见的应该都支持
+    // 3、client.RemoveProxy() 可以移除代理
+    // 4、client.IsProxySet()  判断是否设置了代理
 	client.SetProxy("http://127.0.0.1:7890")
 
 	// 发送Get请求
@@ -468,7 +471,41 @@ func main() {
 
 <br />
 
+### 设置请求头
 
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
+<br />
+
+### 设置认证
+
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
+<br />
+
+### 设置Cookie
+
+::: details 点击查看详情
+
+```go
+
+```
+
+:::
+
+<br />
 
 ## 常见功能
 
