@@ -71,7 +71,7 @@ sidebar: off
   * [goproxy](https://jinhui.dev/go/modules/goproxy.html)：HTTP Proxy
 * 加密相关
   * [x/crypto/bcrypt](https://jinhui.dev/go/modules/bcrypt.html)：bcrypt算法
-  * crypto/tls：TLS 1.2和TLS 1.3实现
+  * [crypto/tls](https://jinhui.dev/go/modules/crypto-tls.html)：TLS 1.2和TLS 1.3实现
   * crypto/x509：X.509证书解析
 * 安全保护
 
