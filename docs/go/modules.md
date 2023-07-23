@@ -63,8 +63,9 @@ sidebar: off
   * [database/sql](https://jinhui.dev/go/modules/database-sql.html)：Go内置接口和常用驱动
   * [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库（已弃坑）
 * Web
-  * [net/http](https://jinhui.dev/go/modules/net-http.html)：内置的Web Server
-  * [gin](https://jinhui.dev/go/modules/gin.html)：流行的Web Server
+  * [net/http](https://jinhui.dev/go/modules/net-http.html)：Build-In
+  * [restry](https://jinhui.dev/go/modules/restry.html)：HTTP Client
+  * [gin](https://jinhui.dev/go/modules/gin.html)：Web Server
   * [grpc](https://jinhui.dev/go/modules/grpc.html)：RPC Server
   * [go-socks5](https://jinhui.dev/go/modules/go-socks5.html)：Socks5 Proxy
   * [goproxy](https://jinhui.dev/go/modules/goproxy.html)：HTTP Proxy
