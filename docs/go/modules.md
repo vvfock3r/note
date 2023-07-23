@@ -64,7 +64,7 @@ sidebar: off
   * [gorm](https://jinhui.dev/go/modules/gorm.html)：数据库（已弃坑）
 * Web
   * [net/http](https://jinhui.dev/go/modules/net-http.html)：Build-In
-  * [restry](https://jinhui.dev/go/modules/restry.html)：HTTP Client
+  * [resty](https://jinhui.dev/go/modules/resty.html)：HTTP Client
   * [gin](https://jinhui.dev/go/modules/gin.html)：Web Server
   * [grpc](https://jinhui.dev/go/modules/grpc.html)：RPC Server
   * [go-socks5](https://jinhui.dev/go/modules/go-socks5.html)：Socks5 Proxy
