@@ -32,6 +32,21 @@ severity: critical	致命
 
 ## 主机层面
 
+说明：需为每台主机添加自定义标签 hostname，这样我们在接收到报警后，可以通过主机名来判断主机的用途
+
+```yaml
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["192.168.48.132:9100"]
+        labels:
+          hostname: "prometheus"
+      - targets: ["jinhui.dev:9100"]
+        labels:
+          hostname: "jinhui.dev"
+```
+
+<br />
+
 ### 运行状态
 
 ::: details （1）主机宕机
