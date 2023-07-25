@@ -210,3 +210,9 @@ func main() {
 ![image-20230303165826422](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230303165826422.png)
 
 :::
+
+<br />
+
+## 注意
+
+好像不能调整表格宽度，比如设置最小宽度等
