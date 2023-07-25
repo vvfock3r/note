@@ -35,14 +35,27 @@ severity: critical	致命
 说明：需为每台主机添加自定义标签 hostname，这样我们在接收到报警后，可以通过主机名来判断主机的用途
 
 ```yaml
+# YAML格式有很多种写法, 双引号不是必须的
+
+# 写法1: 散开型
+- job_name: "node-exporter"
+    static_configs:
+      - targets:
+          - "192.168.48.132:9100"
+        labels:
+          hostname: "prometheus"
+      - targets:
+          - "jinhui.dev:9100"
+        labels:
+          hostname: "jinhui.dev"
+
+# 写法2: 紧凑型
   - job_name: "node-exporter"
     static_configs:
       - targets: ["192.168.48.132:9100"]
-        labels:
-          hostname: "prometheus"
+        labels: {hostname: "prometheus"}
       - targets: ["jinhui.dev:9100"]
-        labels:
-          hostname: "jinhui.dev"
+        labels: {hostname: "jinhui.dev"}
 ```
 
 <br />
