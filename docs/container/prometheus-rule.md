@@ -1,14 +1,13 @@
 # Prometheus告警规则
 
-## 约定
-
-* 资源使用率低也需要添加监控，尽早发现闲置资源，尽早降低成本
-
 <br />
 
 ## 说明
 
 ```bash
+# 监控类型
+资源使用率低也需要添加监控，尽早发现闲置资源，尽早降低成本
+
 # 日志级别
 severity: info		通知
 severity: warning	警告
@@ -16,14 +15,14 @@ severity: error		严重
 severity: critical	致命
 
 # 自定义指标的种类
-1、记录规则, 比如 mega_node_average_cpu_utilization
+1、记录规则
 2、自定义Exporter规则
 
 # 自定义指标书写规则
 1、第一个字段必须以mega_开头, 也可以使用其他字符串, 但一定要统一, 方便区分Exporter内置和自定义指标
 2、第二个字段代表某个领域, 比如主机层面均使用node, k8s层面均使用k8s
 3、第三个字段代表某种资源，比如CPU/内存等, 这个字段可能包含多个下划线
-4、最后一个字段使用high等词语
+4、最后一个字段使用high、low等词语
 
 # 告警规则书写规则
 1、同一领域内告警描述应该使用相同的词语开头, 比如node对应主机
@@ -157,14 +156,14 @@ severity: critical	致命
 # 资源闲置监控: 按使用率监控
 - alert: node_average_cpu_utilization_high
   expr: mega_node_cpu_utilization < 5
-  for: 1d
+  for: 7d
   labels:
-    severity: warning
+    severity: info
   annotations:
     timestamp: |-
       @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
     description: |-
-      主机平均CPU使用率小于5%, 已持续1天, 当前值: {{ $value | printf "%.1f" }}%
+      主机平均CPU使用率小于5%, 已持续7天, 当前值: {{ $value | printf "%.1f" }}%
       主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
 ```
 
@@ -467,4 +466,32 @@ severity: critical	致命
 :::
 
 <br />
+
+### 应用状态
+
+::: details （1）监控进程是否正在运行
+
+```yaml
+# 前提
+# node_exporter需要添加--collector.systemd选项 或者 使用systemd_exporter
+
+# 检查Docker服务是否正在运行
+- alert: node_systemd_service_not_running
+  expr: node_systemd_unit_state{name="firewalld.service", state="active"} == 0
+  for: 1m
+  labels:
+    severity: error
+  annotations:
+    timestamp: |-
+      @{{ with query "time()" }}{{ . | first | value | humanizeTimestamp }}{{ end }}
+    description: |-
+      系统服务firewalld.service处于停止状态
+      主机名: {{ $labels.hostname }}, 实例: {{ $labels.instance }}
+```
+
+:::
+
+::: details （2）监控进程是否开机自启（未找到解决办法）
+
+:::
 
