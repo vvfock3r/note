@@ -4,7 +4,7 @@
 
 <br />
 
-## 01）基础操作
+## 1、基础操作
 
 ### 安装
 
@@ -543,7 +543,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 <br />
 
-## 02）镜像
+## 2、镜像
 
 ### 从第三方镜像仓库拉取镜像
 
@@ -1355,7 +1355,7 @@ Hello, world!
 
 <br />
 
-## 03） 存储
+## 3、存储
 
 ### 持久化方式1：`bind mounts`
 
@@ -1889,7 +1889,7 @@ DRIVER    VOLUME NAME
 
 <br />
 
-## 04）资源限制
+## 4、资源限制
 
 文档：[https://docs.docker.com/config/containers/resource_constraints/](https://docs.docker.com/config/containers/resource_constraints/)
 
@@ -1935,7 +1935,7 @@ a1c45e35b8df   jinhui.dev     0.00%     3.164MiB / 1GiB     0.31%     29.1kB / 9
 
 <br />
 
-## 05）网络
+## 5、网络
 
 ### Docker自带的3种网络
 
@@ -1948,7 +1948,7 @@ db9a2c63802b   host      host      local
 e05e046464f3   none      null      local
 ```
 
-### （1）none网络
+### 1、none网络
 
 文档：[https://docs.docker.com/network/none/](https://docs.docker.com/network/none/)
 
@@ -1979,7 +1979,7 @@ none类型的网络只有一个回环接口lo，没有办法联网，封闭的�
 
 <br />
 
-### （2）host网络
+### 2、host网络
 
 文档：[https://docs.docker.com/network/host/](https://docs.docker.com/network/host/)
 
@@ -2037,7 +2037,7 @@ nc: bind: Address already in use
 
 <br />
 
-### （3）container网络
+### 3、container网络
 
 我们在启动容器时候，可以指定共享已存在的容器的网络
 
@@ -2076,7 +2076,7 @@ nc: bind: Address already in use
 
 <br />
 
-### （4-1）默认bridge网络
+### 4-1、默认bridge网络
 
 文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
 
@@ -2277,7 +2277,7 @@ docker0         8000.024259017b71       no              veth2df3118
 
 <br />
 
-### （4-2）自定义bridge网络
+### 4-2、自定义bridge网络
 
 文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
 
@@ -2424,7 +2424,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 
 <br />
 
-### （4-3）自定义bridge与默认的区别
+### 4-3、自定义bridge与默认的区别
 
 文档：[https://docs.docker.com/network/bridge/](https://docs.docker.com/network/bridge/)
 
@@ -2560,7 +2560,7 @@ a0805b036165408cbdeabbfaa21b110df42cf994df2e19b9d3b03fe922352596
 
 <br />
 
-### （4-4）不同bridge下的容器互通
+### 4-4、不同bridge下的容器互通
 
 ::: details 不同bridge下的容器互通
 
@@ -2651,7 +2651,7 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 <br />
 
-### （4-5）修改默认的bridge
+### 4-5、修改默认的bridge
 
 文档：[https://docs.docker.com/network/bridge/#configure-the-default-bridge-network](https://docs.docker.com/network/bridge/#configure-the-default-bridge-network)
 
@@ -2777,7 +2777,7 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 <br />
 
-## 06）安全
+## 6、安全
 
 ### （1）特权模式
 
@@ -2896,7 +2896,7 @@ drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
 
 <br />
 
-## 07）部署常用服务
+## 7、部署常用服务
 
 部署常用服务用于**开发环境**
 
@@ -3145,7 +3145,7 @@ redis
 
 <br />
 
-## 08）杂项汇总
+## 8、杂项汇总
 
 <br />
 
@@ -3502,7 +3502,7 @@ Sat Jul 29 11:51:54 UTC 2023
 
 ## 
 
-## 09）Namespace
+## 9、Namespace
 
 ### 简介
 
@@ -3684,7 +3684,7 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 <br />
 
-## 10）Cgroups
+## 10、Cgroups
 
 文档：
 
@@ -4137,7 +4137,7 @@ max 100000
 
 <br />
 
-## 11）Union FS
+## 11、Union FS
 
 ### 模拟联合挂载
 
@@ -4205,7 +4205,7 @@ total 0
 
 <br />
 
-## 12）SDK使用
+## 12、SDK使用
 
 文档：[https://docs.docker.com/engine/api/](https://docs.docker.com/engine/api/)
 
@@ -4802,7 +4802,7 @@ func main() {
 
 <br />
 
-## 13）Compose
+## 13、Compose
 
 文档：[https://docs.docker.com/compose/](https://docs.docker.com/compose/)
 
