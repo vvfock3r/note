@@ -1345,7 +1345,7 @@ Hello, world!
 
 ## 3、存储
 
-### 持久化方式1：bind mounts
+### 持久化方式一：bind mounts
 
 文档：[https://docs.docker.com/storage/bind-mounts/](https://docs.docker.com/storage/bind-mounts/)
 
@@ -1557,7 +1557,7 @@ See 'docker run --help'.
 
 <br />
 
-### 持久化方式2：volumes
+### 持久化方式二：volumes
 
 文档：[https://docs.docker.com/storage/volumes/](https://docs.docker.com/storage/volumes/)
 
@@ -1925,7 +1925,7 @@ a1c45e35b8df   jinhui.dev     0.00%     3.164MiB / 1GiB     0.31%     29.1kB / 9
 
 ## 5、网络
 
-### Docker自带的3种网络
+### 自带的3种网络
 
 ```bash
 # 通过如下命令可以查看Docker自带的3种基本网络，但实际上我们可用的并不仅仅是这3种，后面会一一介绍
