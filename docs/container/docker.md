@@ -545,7 +545,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 ## 2、镜像
 
-### 从第三方镜像仓库拉取镜像
+### 国内仓库镜像
 
 使用Docker时需要首先下载一个官方镜像，例如`ubuntu`、`mysql`，默认会从[Docker Hub](https://hub.docker.com/)中去下载
 
@@ -557,7 +557,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 <br />
 
-### 设置代理服务绕过某些限制
+### 设置代理服务
 
 ::: details 点击查看详情
 
