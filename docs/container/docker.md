@@ -908,7 +908,7 @@ CMD ["ls", "-l"]
 
 :::
 
-::: details 不同点测试1：`docker container run`时覆盖镜像中的`CMD`或`ENTRYPOINT`命令时的语法不一样
+::: details 不同点测试1：docker container run时覆盖镜像中的CMD或ENTRYPOINT命令时的语法不一样
 
 先看一下`docker container run`的语法格式
 
@@ -1064,9 +1064,7 @@ drwxr-xr-x.   1 root root  78 Nov 13  2020 var
 
 ### Dockerfile：多阶段构
 
-（1）创建Go项目
-
-::: details 点击查看详情
+::: details （1）创建Go项目
 
 ```bash
 [root@localhost ~]# mkdir webserver
@@ -1104,9 +1102,7 @@ func main() {
 
 :::
 
-（2）编写Dockerfile
-
-::: details 点击查看详情
+::: details （2）编写Dockerfile
 
 ```bash
 [root@localhost webserver]# cat Dockerfile
@@ -1121,9 +1117,7 @@ CMD ["./server"]
 
 :::
 
-（3）构建镜像
-
-::: details 点击查看详情
+::: details （3）构建镜像
 
 ```bash
 [root@localhost webserver]# docker build -t server:v1 .
@@ -1169,9 +1163,7 @@ golang       1.18         65b2f1fa535f   9 hours ago          964MB
 
 :::
 
-（4）启动容器试一下
-
-::: details 点击查看详情
+::: details （4）启动容器试一下
 
 ```bash
 # 启动容器
@@ -1190,9 +1182,7 @@ Hello, world!
 
 :::
 
-（5）镜像大小第一次优化：先编译Go项目，然后将编译好的二进制拷贝到镜像中
-
-::: details 点击查看详情
+::: details （5）镜像大小第一次优化：先编译Go项目，然后将编译好的二进制拷贝到镜像中
 
 ```bash
 # 关闭CGO_ENABLED
@@ -1271,9 +1261,7 @@ removed 'server'
 
 :::
 
-（6）镜像大小第二次优化：使用镜像多阶段构建（推荐）
-
-::: details 点击查看详情
+::: details （6）镜像大小第二次优化：使用镜像多阶段构建（推荐）
 
 ```bash
 # 修改Dockerfile
@@ -1282,7 +1270,7 @@ removed 'server'
 FROM golang:1.18.2-alpine3.15 as builder
 WORKDIR /build
 COPY . .
-RUN go build -o server server.go
+RUN go build -o server .
 
 # 用于程序运行
 FROM alpine:3.15.4
