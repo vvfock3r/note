@@ -3504,7 +3504,7 @@ Sat Jul 29 11:51:54 UTC 2023
 
 ## 9、Namespace
 
-### 简介
+**1、简介**
 
 Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行隔离
 
@@ -3527,7 +3527,7 @@ Docker的隔离性主要运用Linux Namespace 技术，可以对6种资源进行
 
 <br />
 
-### 相关命令
+**2、相关命令**
 
 ::: details （1）查看当前系统上所有的命名空间
 
@@ -3695,7 +3695,7 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 <br />
 
-### 简介
+**1、简介**
 
 * Cgroups（Control Groups）是Linux下用于对一个或一组进程进行资源限制和监控的机制
 * Cgroups可以对CPU、内存、磁盘I/O等进行所需要的资源进行限制，不同资源的的具体工作由对应的Cgroups子系统（Subsystem）来实现
@@ -3713,7 +3713,7 @@ root          20  0.0  0.2  58736  4008 pts/0    R+   13:28   0:00 ps aux
 
 <br />
 
-### 检查版本
+**2、检查版本**
 
 参考文档：[https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version](https://kubernetes.io/zh-cn/docs/concepts/architecture/cgroups/#check-cgroup-version)
 
@@ -3731,7 +3731,7 @@ cgroup2fs
 
 <br />
 
-### CPU限制
+**3、CPU限制**
 
 ::: details 准备一个能消耗CPU的程序：main.go
 
@@ -4137,9 +4137,7 @@ max 100000
 
 <br />
 
-## 11、Union FS
-
-### 模拟联合挂载
+## 11、Union FS 联合挂载
 
 ::: details  模拟联合挂载
 
