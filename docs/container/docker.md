@@ -1357,7 +1357,7 @@ Hello, world!
 
 ## 3、存储
 
-### 持久化方式1：`bind mounts`
+### 持久化方式1：bind mounts
 
 文档：[https://docs.docker.com/storage/bind-mounts/](https://docs.docker.com/storage/bind-mounts/)
 
@@ -1569,7 +1569,7 @@ See 'docker run --help'.
 
 <br />
 
-### 持久化方式2：`volumes`
+### 持久化方式2：volumes
 
 文档：[https://docs.docker.com/storage/volumes/](https://docs.docker.com/storage/volumes/)
 
@@ -1918,7 +1918,7 @@ DRIVER    VOLUME NAME
 
 <br />
 
-### 查看资源使用率
+### 查看使用率
 
 ::: details 点击查看详情
 
@@ -2779,7 +2779,7 @@ round-trip min/avg/max = 0.081/0.094/0.114 ms
 
 ## 6、安全
 
-### （1）特权模式
+### 1、特权模式
 
 * 创建容器时添加`--privileged=true`可以开启特权模式
 * 特权模式下允许容器内的root拥有近似于宿主机root的权利，在后面我们会看到一些具体的示例
@@ -2888,7 +2888,7 @@ drwxr-xr-x.  20 root root  4096 Apr 22  2022 var
 
 <br />
 
-### （2）进程用户
+### 2、进程用户
 
 * Docker Daemon进程一般使用root来启动，也可以使用non-root来启动，参考文档：[https://docs.docker.com/engine/security/rootless/](https://docs.docker.com/engine/security/rootless/)
 * Docker启动的容器一般也是root权限
@@ -4827,7 +4827,7 @@ Compose是一个用于定义和运行多容器Docker应用程序的工具
 2. 定义`docker-compose.yml`文件
 3. 运行`docker compose up`
 
-### Compose 安装
+### 安装
 
 文档：[https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
@@ -4871,6 +4871,8 @@ Docker Compose version v2.6.0
 >
 > /usr/local/libexec/docker/cli-plugins
 
+<br />
+
 ### 软链接到全局
 
 有些服务（比如Harbor）可能会调用`docker-compose`命令，而我们并没有将其放到PATH变量中，这可能会有些问题，解决方法有很多，这里仅展示一种
@@ -4896,7 +4898,7 @@ Docker Compose version v2.5.0
 lrwxrwxrwx 1 root root 46 Jun 10 10:12 /usr/bin/docker-compose -> /usr/libexec/docker/cli-plugins/docker-compose
 ```
 
-
+<br />
 
 ### Compose 示例
 
@@ -5089,6 +5091,8 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 :::
 
+<br />
+
 ### Compose 常用命令
 
 | 命令                            | 说明                                                         |
@@ -5111,11 +5115,9 @@ NETWORK ID     NAME                  DRIVER    SCOPE
 
 <br />
 
-### Compose file
+### 01、编写一个简单的Compose file
 
 文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/](https://docs.docker.com/compose/compose-file/compose-file-v3/)
-
-#### 01、编写一个简单的Demo
 
 `Version`字段文档：[https://docs.docker.com/compose/compose-file/compose-versioning/](https://docs.docker.com/compose/compose-file/compose-versioning/)
 
@@ -5205,7 +5207,7 @@ demo-web-1    | /docker-entrypoint.sh: Configuration complete; ready for start u
 
 <br />
 
-#### 02、convert/config 查看当前配置
+### 02、convert/config 查看当前配置
 
 ```bash
 # 下面两个输出是一样的
@@ -5253,7 +5255,7 @@ networks:
 
 <br />
 
-#### 03、指定环境变量
+### 03、指定环境变量
 
 文档：[https://docs.docker.com/compose/environment-variables/](https://docs.docker.com/compose/environment-variables/)
 
@@ -5433,7 +5435,7 @@ qaz.123=
 
 <br />
 
-#### 04、build 构建镜像
+### 04、build 构建镜像
 
 文档1：[https://docs.docker.com/compose/compose-file/compose-file-v3/#build](https://docs.docker.com/compose/compose-file/compose-file-v3/#build)
 
@@ -5535,7 +5537,7 @@ services:
 
 <br />
 
-#### 05、指定容器名称
+### 05、指定容器名称
 
 ```bash
 [root@localhost demo]# cat docker-compose.yml 
@@ -5562,7 +5564,7 @@ services:
 
 <br />
 
-#### 06、指定重启策略
+### 06、指定重启策略
 
 文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#restart](https://docs.docker.com/compose/compose-file/compose-file-v3/#restart)
 
@@ -5602,7 +5604,7 @@ services:
 
 <br />
 
-#### 07、指定端口映射
+### 07、指定端口映射
 
 ```bash
 # MySQL容器3306端口映射到宿主机3307端口
@@ -5649,7 +5651,7 @@ Threads: 2  Questions: 10  Slow queries: 0  Opens: 117  Flush tables: 3  Open ta
 
 <br />
 
-#### 08、覆盖Dockerfile CMD指令
+### 08、覆盖Dockerfile CMD指令
 
 文档：[https://docs.docker.com/compose/compose-file/#command](https://docs.docker.com/compose/compose-file/#command)
 
@@ -5671,7 +5673,7 @@ demo-server-1  | 2022-06-07 23:28:41
 
 <br />
 
-#### 09、✨网络配置
+### 09、✨网络配置
 
 文档：[https://docs.docker.com/compose/compose-file/#networks-top-level-element](https://docs.docker.com/compose/compose-file/#networks-top-level-element)
 
@@ -5945,7 +5947,7 @@ rtt min/avg/max/mdev = 42.123/42.190/42.219/0.209 ms
 
 <br />
 
-#### 10、✨持久化配置
+### 10、✨持久化配置
 
 文档：[https://docs.docker.com/compose/compose-file/#volumes-top-level-element](https://docs.docker.com/compose/compose-file/#volumes-top-level-element)
 
@@ -6005,7 +6007,7 @@ local     demo_data2
 
 <br />
 
-#### 11、资源限制（未解决）
+### 11、资源限制（未解决）
 
 文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#resources](https://docs.docker.com/compose/compose-file/compose-file-v3/#resources)
 
@@ -6062,7 +6064,7 @@ CONTAINER ID   NAME            CPU %     MEM USAGE / LIMIT   MEM %     NET I/O  
 
 <br />
 
-#### 12、服务依赖关系
+### 12、服务依赖关系
 
 文档：[https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on](https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on)
 
