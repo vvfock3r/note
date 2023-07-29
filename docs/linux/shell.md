@@ -3042,7 +3042,28 @@ Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artif
 
 ### git
 
-::: details （1）设置代理
+::: details （1）CentOS7系统升级Git版本
+
+```bash
+# 查看默认版本
+[root@node-1 ~]# git version 
+git version 1.8.3.1
+
+# 卸载低版本Git
+[root@node-1 ~]# yum -y remove git
+
+# 安装高版本Git
+[root@node-1 ~]# yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+[root@node-1 ~]# yum -y install git
+
+# 查看版本
+[root@node-1 ~]# git version 
+git version 2.41.0
+```
+
+:::
+
+::: details （2）临时设置代理
 
 ```bash
 # 不加代理的情况下可能会拉取失败
@@ -3051,7 +3072,7 @@ Cloning into 'kube-state-metrics'...
 fatal: unable to access 'https://github.com/kubernetes/kube-state-metrics.git/': TCP connection reset by peer
 
 # 添加一个支持科学上网的代理
-[root@node-1 ~]# git -c http://192.168.123.88:7890 clone https://github.com/kubernetes/kube-state-metrics.git
+[root@node-1 ~]# git clone -c http.proxy=http://192.168.123.88:7890 https://github.com/kubernetes/kube-state-metrics.git
 Cloning into 'kube-state-metrics'...
 remote: Enumerating objects: 28639, done.
 remote: Counting objects: 100% (424/424), done.
