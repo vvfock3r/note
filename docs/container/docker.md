@@ -3390,6 +3390,116 @@ the input device is not a TTY           # 报错了，这是什么鬼?
 
 <br />
 
+### 修改容器时间
+
+::: details （1）默认情况下不允许修改时间
+
+```bash
+# 启动容器
+[root@node-1 ~]# docker container run --name test -it -d centos:7 bash
+7fd5c4bb0a7dec19367a939443a7c4a487204ed7e19f3aaed4bf48c67fde9084
+
+# 进入容器
+[root@node-1 ~]# docker container exec -it test bash
+[root@7fd5c4bb0a7d /]# date
+Sat Jul 29 10:55:16 UTC 2023
+
+# 修改时间, 不允许操作
+[root@7fd5c4bb0a7d /]# date -s "2020-01-01 12:00:00"
+date: cannot set date: Operation not permitted
+Wed Jan  1 12:00:00 UTC 2020
+
+# 宿主机上删除容器
+[root@node-1 ~]# docker container rm -f test
+test
+```
+
+:::
+
+::: details （2）使用 --cap-add SYS_TIME ，但同时也会修改宿主机时间
+
+```bash
+# 启动容器, 添加 --cap-add SYS_TIME 参数
+[root@node-1 ~]# docker container run --name test -it -d --cap-add SYS_TIME centos:7 bash
+77bb0c31d66923ba05d046644b8efe40926f89f731bddcc05ae3ee26d6310297
+
+# 进入容器, 修改时间
+[root@node-1 ~]# docker container exec -it test bash
+[root@77bb0c31d669 /]# date -s "2020-01-01 12:00:00"
+Wed Jan  1 12:00:00 UTC 2020
+
+# 查看当前时间, 已经被修改
+[root@77bb0c31d669 /]# date
+Wed Jan  1 12:00:02 UTC 2020
+
+# 退出容器, 查看宿主机时间, 发现也被修改了
+[root@node-1 ~]# date
+Wed Jan  1 20:01:41 CST 2020
+
+# 宿主机一般都有时间同步, 但经过测试此时好像并不会同步
+```
+
+:::
+
+::: details （3）使用 libfaketime 拦截时间函数调用
+
+Github：[https://github.com/wolfcw/libfaketime](https://github.com/wolfcw/libfaketime)
+
+```bash
+# 安装依赖
+[root@node-1 ~]# yum -y install gcc gcc-c++
+
+# 编译安装
+[root@node-1 ~]# git clone https://github.com/wolfcw/libfaketime.git
+[root@node-1 ~]# cd libfaketime
+[root@node-1 libfaketime]# make
+[root@node-1 libfaketime]# make install
+
+# 查看编译后的库文件
+[root@node-1 libfaketime]# ls -lh /usr/local/lib/faketime
+total 152K
+-rw-r--r-- 1 root root 75K Jul 29 19:38 libfaketimeMT.so.1
+-rw-r--r-- 1 root root 75K Jul 29 19:38 libfaketime.so.1
+
+# ---------------------------------------------------------------------------------------------------------------
+
+# 启动容器
+[root@node-1 ~]# docker container run --name test -it -d centos:7 bash
+6348f2eb51724b72d12121c18f828513d62d85984d37ffaf07dcf7c2962465bf
+
+# 拷贝动态链接库文件到容器中, 随便拷贝到什么目录下都可以
+[root@node-1 libfaketime]# docker container cp /usr/local/lib/faketime/libfaketime.so.1 test:/usr/local/lib/
+Successfully copied 77.8kB to test:/usr/local/lib/
+
+# 进入容器修准备改时间
+[root@node-1 libfaketime]# docker container exec -it test bash
+
+# ---------------------------------------------------------------------------------------------------------------
+
+# 修改时间-方式1: 修改后容器时间会一直固定在某个时间点; 容器重启后失效
+[root@6348f2eb5172 /]# export LD_PRELOAD=/usr/local/lib/libfaketime.so.1 FAKETIME="2020-01-01 12:00:00"
+[root@6348f2eb5172 /]# date
+Wed Jan  1 12:00:00 UTC 2020
+
+# 修改时间-方式2: 此时间可变化; 容器重启后失效
+[root@6348f2eb5172 /]# export LD_PRELOAD=/usr/local/lib/libfaketime.so.1 FAKETIME="-5d" # 修改为5天前的时间
+
+[root@6348f2eb5172 /]# date
+Mon Jul 24 11:50:53 UTC 2023
+
+[root@6348f2eb5172 /]# date
+Mon Jul 24 11:50:55 UTC 2023
+
+# ---------------------------------------------------------------------------------------------------------------
+# 取消时间修改
+[root@6348f2eb5172 /]# export LD_PRELOAD=
+
+[root@6348f2eb5172 /]# date
+Sat Jul 29 11:51:54 UTC 2023
+```
+
+:::
+
 ## 
 
 ## 09）Namespace
