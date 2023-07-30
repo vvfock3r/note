@@ -47,15 +47,16 @@ sidebar: off
   * [path/filepath](https://jinhui.dev/go/modules/path-filepath.html)：文件路径
   * [embed](https://jinhui.dev/go/modules/embed.html)：打包静态文件
 * 命令行
+  * [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
   * [cobra](https://jinhui.dev/go/modules/cobra.html)：参数解析
   * [color](https://jinhui.dev/go/modules/color.html)：终端颜色
   * [simpletable](https://jinhui.dev/go/modules/simpletable.html)：终端表格
-  * [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
   * [go-runewidth](https://jinhui.dev/go/modules/go-runewidth.html)：终端下的中英文对齐
-  * pty：Unix伪终端 [Github](https://github.com/creack/pty)
+  * [pterm](https://jinhui.dev/go/modules/pterm.html)：终端美化
   * x/term：处理终端交互
+  * pty：Unix伪终端 [Github](https://github.com/creack/pty)
+  * [readline](https://jinhui.dev/go/modules/readline.html)：交互式
   * tcell：终端仿真器 [Github](https://github.com/gdamore/tcell)
-  * 
 * 网络
   * [net](https://jinhui.dev/go/modules/net.html)：基础网络库
   * [net/url](https://jinhui.dev/go/modules/net-url.html)：URL解析和编码
