@@ -129,7 +129,7 @@ func main() {
 
 :::
 
-::: details （3）文本加颜色的情况下分析
+::: details （4）文本加颜色的情况下分析
 
 **1、添加颜色后不对齐**
 
@@ -273,7 +273,7 @@ func main() {
 
 :::
 
-::: details （4）编写一个通用的函数
+::: details （5）编写一个通用的函数
 
 ```go
 package main
