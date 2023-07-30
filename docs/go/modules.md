@@ -51,6 +51,7 @@ sidebar: off
   * [color](https://jinhui.dev/go/modules/color.html)：终端颜色
   * [simpletable](https://jinhui.dev/go/modules/simpletable.html)：终端表格
   * [os/exec](https://jinhui.dev/go/modules/os-exec.html)：执行Shell命令
+  * [go-runewidth](https://jinhui.dev/go/modules/go-runewidth.html)：终端下的中英文对齐
   * pty：Unix伪终端 [Github](https://github.com/creack/pty)
   * x/term：处理终端交互
   * tcell：终端仿真器 [Github](https://github.com/gdamore/tcell)
