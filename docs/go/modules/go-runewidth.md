@@ -316,7 +316,7 @@ func main() {
 		{"四五a", "|"},
 	}
 
-	// 第一列设置宽度为8, 对齐输出
+	// 第一列设置宽度为7, 对齐输出
 	width := 7
 	for _, line := range data {
 		line[0] = color.CyanString(line[0]) + color.RedString("c") + color.GreenString("d")
