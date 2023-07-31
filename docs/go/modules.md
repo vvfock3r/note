@@ -28,6 +28,7 @@ sidebar: off
 * [regexp](https://jinhui.dev/go/modules/regexp.html)：正则表达式
 * [signal](https://jinhui.dev/go/modules/signal.html)：系统信号
 * [math/rand](https://jinhui.dev/go/modules/math-rand.html)：随机数
+* [container/list](https://jinhui.dev/go/modules/container-list.html)：双向链表
 * [zap](https://jinhui.dev/go/modules/zap.html)：日志记录
 * [viper](https://jinhui.dev/go/modules/viper.html)：配置读写
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务

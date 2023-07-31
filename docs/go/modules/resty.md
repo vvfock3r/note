@@ -549,3 +549,22 @@ func main() {
 
 ## 常见功能
 
+### Get提交
+
+```go
+response, err = client.R().SetQueryParam("type", "local").Get("/artifactory/api/repositories")
+if err != nil {
+panic(err)
+}
+```
+
+<br />
+
+### Post提交
+
+```go
+response, err := client.R().
+	SetBody(map[string]string{"username": username, "password": password}).
+	Post("/access/api/v1/auth/login")
+```
+
