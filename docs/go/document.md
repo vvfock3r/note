@@ -6342,7 +6342,7 @@ func main() {
 
 ## 
 
-## 并发编程
+## 并发基础
 
 ### Goroutine
 
@@ -7027,7 +7027,15 @@ func main() {
 
 <br />
 
-### Select 多路复用
+### Channel的典型用法
+
+<br />
+
+### Channel的错误处理
+
+<br />
+
+### Select 多路复用用法
 
 **说明**
 
@@ -7583,13 +7591,13 @@ func main() {
 
 <br />
 
-### Sync 互斥锁和读写锁
+## 并发原语
+
+### 互斥锁和读写锁
 
 官方文档：[https://pkg.go.dev/sync](https://pkg.go.dev/sync)
 
 `sync`是Go的标准库，提供了最基本的同步原语，使用时需要注意：对象一旦被使用就不应该被复制。
-
-
 
 ::: details （1）锁说明
 
@@ -7712,7 +7720,7 @@ func main() {
 
 <br />
 
-### Sync 并发安全的Map
+### 并发安全的Map
 
 ::: details （1）原生Map+读写锁
 
@@ -7934,7 +7942,7 @@ func main() {
 
 <br />
 
-### Sync 确保只执行一次
+### 确保只执行一次
 
 `sync.Once`只暴露了一个方法`Do`,多次调用`Do`方法，但是只有第一次调用`Do`方法时参数`f`函数才会执行，`f`函数是无参数无返回值的函数
 
@@ -7998,7 +8006,7 @@ func main() {
 
 <br />
 
-### Sync 缓存池提高性能
+### 缓存池提高性能
 
 `sync.Pool`是一个临时缓存池，并发安全
 
@@ -8079,7 +8087,7 @@ func main() {
 
 <br />
 
-### Sync 并发安全的字节池
+### 并发安全的字节池
 
 ::: details （1）sync.Pool实现
 
@@ -8282,7 +8290,7 @@ var (
 
 <br />
 
-### Sync 条件变量基础使用
+### 条件变量基础使用
 
 `sync.Cond`并不被推荐使用，这里权当了解一下
 
@@ -8334,7 +8342,7 @@ func main() {
 
 <br />
 
-### Atomic 原子操作基础
+### 原子操作无锁并发
 
 官方文档：[https://pkg.go.dev/sync/atomic](https://pkg.go.dev/sync/atomic)
 
