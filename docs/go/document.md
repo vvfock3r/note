@@ -5168,6 +5168,43 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+::: details （7）fmt.Fscanf：接收用户输入
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	for {
+		fmt.Printf("Enter your name: ")
+
+		// 从os.Stdin读取, format指定数据格式, 并赋值给 指针变量
+		var name string
+		_, err := fmt.Fscanf(os.Stdin, "%s", &name)
+		if err != nil {
+			continue
+		}
+
+		fmt.Println(name)
+		break
+	}
+}
+```
+
+输出结果
+
+```bash
+Enter your name:		  # 直接输入空格, 会报错, 重新循环
+Enter your name: zhangsan # 输入, 并按回车
+zhangsan                  # 输出, 跳出循环
+```
+
+:::
+
 <br />
 
 ### `os`：基础文件读写
