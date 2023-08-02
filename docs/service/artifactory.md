@@ -15,7 +15,11 @@ API版本：
 
 ::: details （1）服务版本说明
 
-开源版本只支持Gradle、ivy、maven、SBT、Generic等5种仓库类型，如果你想要支持其他类型的仓库的话，可以使用jfrog的企业版
+注：没有找到官方的说明
+
+* 社区版：Artifactory OSS，只支持Generic、Gradle、ivy、maven、SBT等5种仓库类型，但通常使用Generic类型仓库就够用
+* 专业版：Artifactory Pro，很多API只有Pro版本才能调用
+* 企业版？
 
 :::
 
