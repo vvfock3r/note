@@ -910,6 +910,73 @@ Use "kubectl [command] --help" for more information about a command.
 
 :::
 
+### （7）父子传值
+
+::: details 点击查看完整代码
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+)
+
+type Data struct {
+	Username string
+	Password string
+}
+
+// 定义根命令
+var rootCmd = &cobra.Command{
+	Use:   "kubectl",
+	Short: "kubectl controls the Kubernetes cluster manager",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// 父命令有一个对象需要传递给子命令
+		data := &Data{Username: "zhangsan", Password: "123456"}
+
+		// 设置Context, 用于传递给所有子命令
+		ctx := context.WithValue(cmd.Context(), "data", data)
+		cmd.SetContext(ctx)
+
+		return nil
+	},
+}
+
+// 定义子命令
+var createCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a resource from a file or from stdin.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		data := cmd.Context().Value("data").(*Data)
+		fmt.Printf("%#v\n", data)
+		return nil
+	},
+}
+
+func main() {
+	// 注册到根命令中
+	rootCmd.AddCommand(createCmd)
+
+	// 执行入口
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+}
+```
+
+输出结果
+
+```bash
+&main.Data{Username:"zhangsan", Password:"123456"}
+```
+
+:::
+
 <br />
 
 ## 选项
@@ -1210,6 +1277,24 @@ json:  false
 yaml:  false
 username:  root
 password:  123456
+```
+
+:::
+
+<br />
+
+### （5）其他函数总结
+
+::: details 点击查看完整代码
+
+```go
+// cobra.CheckErr()	 若有错误则输出并输出, 可以用于 标记必选参数 等场景下检查错误
+func CheckErr(msg interface{}) {
+	if msg != nil {
+		fmt.Fprintln(os.Stderr, "Error:", msg)
+		os.Exit(1)
+	}
+}
 ```
 
 :::
