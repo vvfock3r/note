@@ -69,6 +69,50 @@ func main() {
 
 <br />
 
+## 打印链表顺序
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"container/list"
+	"fmt"
+)
+
+func PrintList(l *list.List) {
+	fmt.Print("List: ")
+	for e := l.Front(); e != nil; e = e.Next() {
+		fmt.Print(e.Value, " -> ")
+	}
+	fmt.Println("nil")
+}
+
+func main() {
+	// 创建一个新的双向链表
+	doublyLinkedList := list.New()
+
+	// 在链表尾部插入元素
+	for i := 0; i < 3; i++ {
+		doublyLinkedList.PushBack(i)
+	}
+
+	// 打印链表
+	PrintList(doublyLinkedList)
+}
+```
+
+输出结果
+
+```bash
+List: 0 -> 1 -> 2 -> nil
+```
+
+:::
+
+<br />
+
 ## 两个链表合并
 
 ::: details 点击查看详情
@@ -167,7 +211,55 @@ func main() {
 ::: details 点击查看详情
 
 ```go
+package main
 
+import (
+	"container/list"
+	"fmt"
+)
+
+func PrintList(l *list.List) {
+	fmt.Print("List: ")
+	for e := l.Front(); e != nil; e = e.Next() {
+		fmt.Print(e.Value, " -> ")
+	}
+	fmt.Println("nil")
+}
+
+func main() {
+	// 创建一个新的双向链表
+	doublyLinkedList := list.New()
+
+	// 向链表中添加一些元素
+	e1 := doublyLinkedList.PushBack("Element 1")
+	e2 := doublyLinkedList.PushBack("Element 2")
+	e3 := doublyLinkedList.PushBack("Element 3")
+	PrintList(doublyLinkedList)
+	fmt.Println()
+
+	// 将e1移动到e2之后
+	doublyLinkedList.MoveAfter(e1, e2)
+	PrintList(doublyLinkedList)
+	fmt.Println()
+
+	// 将e3移动到e1之前
+	doublyLinkedList.MoveBefore(e3, e1)
+	PrintList(doublyLinkedList)
+
+	// 将元素移动到开头或结尾
+	//doublyLinkedList.MoveToBack()
+	//doublyLinkedList.MoveToFront()
+}
+```
+
+输出结果
+
+```bash
+List: Element 1 -> Element 2 -> Element 3 -> nil
+                                                
+List: Element 2 -> Element 1 -> Element 3 -> nil
+                                                
+List: Element 2 -> Element 3 -> Element 1 -> nil
 ```
 
 :::
