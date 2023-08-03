@@ -17,7 +17,7 @@ API版本：
 
 注：没有找到官方的说明
 
-* 社区版：Artifactory OSS，只支持Generic、Gradle、ivy、maven、SBT等5种仓库类型，但通常使用Generic类型仓库就够用
+* 社区版：Artifactory OSS，只支持Generic、Gradle、Helm、Ivy、Maven、SBT等6种仓库类型，但通常使用Generic类型仓库就够用
 * 专业版：Artifactory Pro，很多API只有Pro版本才能调用
 * 企业版？
 
@@ -55,14 +55,14 @@ API版本：
 
 **仓库按照使用功能分类：**
 
-* Generic（通用仓库）：用于存储任何类型的制品，可以通过HTTP或其他协议上传和下载文件。这是最灵活的仓库类型
+* Generic：通用仓库，用于存储任何类型的制品，可以通过HTTP或其他协议上传和下载文件。这是最灵活的仓库类型
 * Maven：用于Java开发中的Maven项目。它支持Maven的特定目录结构和元数据，可以轻松地与Maven构建工具集成
 * Gradle：用于Gradle构建工具的仓库类型，也用于Java项目
-* npm：用于Node.js开发的仓库类型，支持npm包管理器
+* Npm：用于Node.js开发的仓库类型，支持npm包管理器
 * PyPI：用于Python开发的仓库类型，支持Python Package Index（PyPI）
 * Docker：用于Docker容器镜像的仓库类型，支持Docker Hub和Docker客户端
 * Helm：用于Kubernetes的Helm Chart仓库类型
-* Go：用作Go Modules仓库
+* ...
 
 :::
 
@@ -91,7 +91,7 @@ docker container run --name jfrog-oss \
   releases-docker.jfrog.io/jfrog/artifactory-oss:5.8.3
   
 # 浏览器访问
-# http://192.168.8.150:18081
+# http://192.168.8.150:8081
 # 默认账号: admin/password
 ```
 
@@ -140,7 +140,7 @@ curl -u admin:123456 -T monitor.zip "http://192.168.8.150:8081/artifactory/demo/
 curl -u admin:123456 -T hr_tools.zip "http://192.168.8.150:8081/artifactory/demo/tools/hr_tools.zip"
 
 # 5、如何删除文件?
-# 待补充
+curl -s -u admin:123456 -XDELETE "http://127.0.0.1:8081/artifactory/demo/monitor2.zip"
 ```
 
 :::
@@ -149,7 +149,7 @@ curl -u admin:123456 -T hr_tools.zip "http://192.168.8.150:8081/artifactory/demo
 
 ## 基本配置
 
-
+关闭匿名访问
 
 
 
