@@ -129,9 +129,9 @@ curl -u admin:123456 -T monitor.zip "http://192.168.8.150:8081/artifactory/demo/
 }
 
 # 3、下载文件
-[root@localhost ~]# curl -s -u admin:123456 -O "http://192.168.8.150:8081/artifactory/demo/monitor2.zip"
+curl -s -u admin:123456 -O "http://192.168.8.150:8081/artifactory/demo/monitor2.zip"
 
-[root@localhost ~]# md5sum monitor*.zip
+md5sum monitor*.zip
 65307dcc3869cc26a77678646da99210  monitor2.zip
 65307dcc3869cc26a77678646da99210  monitor.zip
 
