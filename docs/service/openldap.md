@@ -82,11 +82,13 @@ Docker Hub：[https://hub.docker.com/r/bitnami/openldap](https://hub.docker.com/
 
 下载地址：[http://www.ldapadmin.org/download/index.html](http://www.ldapadmin.org/download/index.html)
 
-1、连接
+官网不知道为啥下载地址是空的，所以从其他地方下载的，这里使用的是 1.8.3 版本
+
+**1、连接**
 
 ![image-20230805230401099](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230805230401099.png)
 
-2、主界面
+**2、主界面**
 
 ![image-20230805230511852](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230805230511852.png)
 
