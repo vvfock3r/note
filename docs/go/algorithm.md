@@ -440,3 +440,44 @@ func main() {
 
 ## 检查切片深度
 
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// GetSliceDepth 计算切片中嵌套切片的深度
+func GetSliceDepth(s any) int {
+	// 如果输入不是切片，则返回深度为 0
+	v := reflect.ValueOf(s)
+	if v.Kind() != reflect.Slice {
+		return 0
+	}
+
+	// 设置初始值
+	maxDepth := 0
+
+	// 遍历切片, 对每一个元素递归调用, 并对返回值进行计算出最大值
+	for i := 0; i < v.Len(); i++ {
+		depth := GetSliceDepth(v.Index(i).Interface())
+		if depth > maxDepth {
+			maxDepth = depth
+		}
+	}
+
+	return maxDepth + 1
+}
+
+func main() {
+	// 测试示例
+	slice := []any{1, 2, []int{3, 4, 5}, []any{6, 7, []string{"a", "b"}}}
+	depth := GetSliceDepth(slice)
+	fmt.Println("Max depth:", depth) // 3
+}
+```
+
+:::
