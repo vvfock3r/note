@@ -282,7 +282,7 @@ Source                         Target     Find Index
 * 对一个切片中的数据去重
 * 最简单的方式是使用双层for循环，不予考虑
 
-::: details （1）使用Set去重：胜在简单
+::: details （1）使用Set去重：胜在简单，此方法还需要优化
 
 ```go
 package main
