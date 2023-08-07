@@ -28,7 +28,6 @@ sidebar: off
 * [regexp](https://jinhui.dev/go/modules/regexp.html)：正则表达式
 * [signal](https://jinhui.dev/go/modules/signal.html)：系统信号
 * [math/rand](https://jinhui.dev/go/modules/math-rand.html)：随机数
-* [container/list](https://jinhui.dev/go/modules/container-list.html)：双向链表
 * [zap](https://jinhui.dev/go/modules/zap.html)：日志记录
 * [viper](https://jinhui.dev/go/modules/viper.html)：配置读写
 * [cron](https://jinhui.dev/go/modules/cron.html)：计划任务
@@ -39,6 +38,9 @@ sidebar: off
 * [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
 * [singleflight](https://jinhui.dev/go/modules/singleflight.html)：并发请求合并
 * [excelize](https://jinhui.dev/go/modules/excelize.html)：Excel操作
+* 数据结构
+  * [container/list](https://jinhui.dev/go/modules/container-list.html)：双向链表
+  * [orderedmap](https://jinhui.dev/go/modules/orderedmap.html)：有序Map
 * 编码和序列化
   * [json](https://jinhui.dev/go/modules/json.html)：JSON序列化
   * [encoding/base64](https://jinhui.dev/go/modules/encoding-base64.html)：base64编码
