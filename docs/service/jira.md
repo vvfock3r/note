@@ -94,27 +94,5 @@ docker container rm -f jira ; rm -rf /var/atlassian/application-data/jira/*
 
 :::
 
-<br />
-
-## Python库
-
-Github：[https://github.com/pycontribs/jira](https://github.com/pycontribs/jira)
-
-文档：[https://jira.readthedocs.io/](https://jira.readthedocs.io/)
-
-<br />
-
-### 安装模块
-
-```bash
-pip3 install jira
-```
-
-<br />
-
-### 基础示例
-
-
-
 
 
