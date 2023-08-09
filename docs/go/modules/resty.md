@@ -566,5 +566,12 @@ panic(err)
 response, err := client.R().
 	SetBody(map[string]string{"username": username, "password": password}).
 	Post("/access/api/v1/auth/login")
+
+response, err := client.R().
+	SetFormData(map[string]string{
+		"email": "xxx",
+		"password": "xxx",
+	}).
+	Post("/cgi/user/login")
 ```
 
