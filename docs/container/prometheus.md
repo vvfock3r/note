@@ -1909,39 +1909,35 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/operators/](https://prometheus.io/docs/prometheus/2.38/querying/operators/)
 
-::: details 点击查看详情
+::: details （1）算术二元运算符 和 比较二元运算符
 
-按优先级由高到低排序：
+算术二元运算符：
 
-1. `^`
-2. `*`, `/`, `%`,`atan2`
-3. `+`,`-`
-4. `==`, `!=`, `<=`, `<`, `>=`,`>`
-5. `and`（并且）,`unless`（排除）
-6. `or`（或者）
+- `+`（加）
+- `-`（减）
+- `*`（乘）
+- `/`（除）
+- `%`（取模）
+- `^`（次方）
 
-说明：
+比较二元运算符：
 
-* 相同优先级的运算符是左结合的
+- `==`（平等的）
+- `!=`（不等于）
+- `>`（大于）
+- `<`（少于）
+- `>=`（大于或等于）
+- `<=`（小于或等于）
 
-  例如， `2 * 3 % 2`等价于`(2 * 3) % 2`。然而`^`是右结合的，所以`2 ^ 3 ^ 2`等价于`2 ^ (3 ^ 2)`
+:::
 
-* 对于一个指标集合，要排除某个指标，可以使用基本操作符 `!=` 和 `!~`，但是请注意这是针对单标签情况下（可以确定唯一序列的标签），
+::: details （2）逻辑二元运算符
 
-  **如果一个指标需要多个标签才能确定其唯一性，则需要使用 unless**
+**1、and**
 
-**（1）计算Node内存使用率**
+对于一个指标集合，要排除某个指标，可以使用基本操作符 `!=` 和 `!~`，但是请注意这是针对单标签情况下（可以确定唯一序列的标签），
 
-```bash
-# 方式1
-( 1 - (node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes) / node_memory_MemTotal_bytes ) * 100
-
-# 方式2
-100 - (node_memory_Buffers_bytes + node_memory_Cached_bytes + node_memory_MemFree_bytes) / node_memory_MemTotal_bytes * 100
-
-# 方式3
-(node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / node_memory_MemTotal_bytes * 100
-```
+**如果一个指标需要多个标签才能确定其唯一性，则需要使用 unless**
 
 :::
 
