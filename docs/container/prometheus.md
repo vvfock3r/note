@@ -1821,6 +1821,8 @@ Checking /etc/prometheus/prometheus.yml
 
 文档：[https://prometheus.io/docs/prometheus/2.38/querying/basics/](https://prometheus.io/docs/prometheus/2.38/querying/basics/)
 
+英文表示为 `instant vector`
+
 **基本操作符**
 
 - `=`：等于
@@ -1837,6 +1839,8 @@ Checking /etc/prometheus/prometheus.yml
 <br />
 
 ### 选择器：范围向量
+
+英文表示为 `range vector`
 
 ::: details 点击查看详情
 
@@ -1934,6 +1938,15 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 ::: details （2）逻辑二元运算符
 
 **1、and**
+
+vector1 and vector2 这会生成一个新的向量，其中新向量具有以下两个特点：
+
+* 新向量只包含vector1和vector2都有的时间序列标签
+* 新向量标签值将继承自左侧（这里是vector1 ）的值
+
+
+
+**2、unless**
 
 对于一个指标集合，要排除某个指标，可以使用基本操作符 `!=` 和 `!~`，但是请注意这是针对单标签情况下（可以确定唯一序列的标签），
 
@@ -2107,7 +2120,7 @@ count ( sum by (kernel) (label_replace(node_uname_info, "kernel", "$1", "release
 
 须知：
 
-* 使用函数要知道操作的是哪种向量，即时向量（`instant-vector`）还是范围向量（`range vector`）
+* 使用函数要知道操作的是哪种向量，即时向量（`instant vector`）还是范围向量（`range vector`）
 * 有些函数是有默认参数的，比如`year(v=vector(time()) instant-vector)`
 
 ::: details （1）排序函数
