@@ -1941,10 +1941,12 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 vector1 and vector2 这会生成一个新的向量，其中新向量具有以下两个特点：
 
-* 新向量只包含vector1和vector2都有的时间序列标签
-* 新向量标签值将继承自左侧（这里是vector1 ）的值
+* 新向量将继承自左侧向量的值（这里是vector1 ）
+* vector1 和 vector2 必须具有相同的标签名和标签值，否则会生成一个空向量，也就是说，指标名可以不相同，但是标签名和标签值必须要相同
 
-
+```bash
+x and ignoring(c) z
+```
 
 **2、unless**
 
