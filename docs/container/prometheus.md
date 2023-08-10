@@ -2030,7 +2030,11 @@ x1 and x5				空
 x1 and ignoring(b) x3	x1{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}		100
 x3 and ignoring(b) x1	x3{a="1", b="3", instance="192.168.199.131:8080", job="node-exporter"}		300
 
-# 测试3: 使用 and on() 来近似达到我们平常理解的 "逻辑与", 只要左右两边都满足, 就输出左边的指标, 两个指标可以完全不一样
+# 测试3：通过其他手段忽略某个标签, 来达到符合 and 的情况, 这里使用 label_replace 来删除他们两个的b标签
+查询语句: label_replace(x1, "b", "", "b", ".*") and label_replace(x3, "b", "", "b", ".*")
+输出结果: x1{a="1", instance="192.168.199.131:8080", job="node-exporter"}		100
+
+# 测试4: 使用 and on() 来近似达到我们平常理解的 "逻辑与", 只要左右两边都满足, 就输出左边的指标, 两个指标可以完全不一样
 x3 and on() x1 > 1		x3{a="1", b="3", instance="192.168.199.131:8080", job="node-exporter"}			300
 up and on() x1 > 99		输出很多指标
 ```
