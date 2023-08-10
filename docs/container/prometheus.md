@@ -1937,15 +1937,102 @@ prometheus_http_requests_total{handler="/metrics"} @1662953760
 
 ::: details （2）逻辑二元运算符
 
+**自定义Exporter代码**
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+const version = "1.0.0"
+
+func main() {
+	// x1
+	x1 := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "x1",
+		ConstLabels: map[string]string{"a": "1", "b": "2"},
+	})
+
+	// x2: 和x1 标签名和标签值完全一样, 指标值不一样
+	x2 := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "x2",
+		ConstLabels: map[string]string{"a": "1", "b": "2"},
+	})
+
+	// x3: 和x1 标签名和标签值不完全一样, 指标值不一样
+	x3 := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "x3",
+		ConstLabels: map[string]string{"a": "1", "b": "3"},
+	})
+
+	// x4: 和x1 标签名和标签值完全一样, 但是标签比x1少, 指标值不一样
+	x4 := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "x4",
+		ConstLabels: map[string]string{"b": "2"},
+	})
+
+	// x4: 和x1 标签名和标签值完全一样, 但是标签比x1多, 指标值不一样
+	x5 := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:        "x5",
+		ConstLabels: map[string]string{"a": "1", "b": "2", "c": "3"},
+	})
+
+	// 注册指标
+	prometheus.MustRegister(x1)
+	prometheus.MustRegister(x2)
+	prometheus.MustRegister(x3)
+	prometheus.MustRegister(x4)
+	prometheus.MustRegister(x5)
+
+	// 更新指标的值
+	x1.Add(100)
+	x2.Add(200)
+	x3.Add(300)
+	x4.Add(400)
+	x5.Add(500)
+
+	// 注册Handler
+	http.Handle("/metrics", promhttp.Handler())
+
+	// 启动服务
+	log.Fatalln(http.ListenAndServe("0.0.0.0:8080", nil))
+}
+```
+
+<br />
+
 **1、and**
 
-vector1 and vector2 这会生成一个新的向量，其中新向量具有以下两个特点：
+vector1 and vector2 这会生成一个新的向量
+
+新向量的特点：
 
 * 新向量将继承自左侧向量的值（这里是vector1 ）
-* vector1 和 vector2 必须具有相同的标签名和标签值，否则会生成一个空向量，也就是说，指标名可以不相同，但是标签名和标签值必须要相同
+* vector1 和 vector2 必须具有相同的标签名和标签值，否则会生成一个空向量，也就是说，指标名和指标值可以不相同，但是标签名和标签值必须要相同
+
+新向量测试结果：
 
 ```bash
-x and ignoring(c) z
+# 测试1: 新向量特点测试
+x1 and x2				x1{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}		100
+x2 and x1				x2{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}		200
+x1 and x3				空
+x1 and x4				空
+x1 and x5				空
+
+# 测试2: 通过其他手段忽略某个标签, 来达到符合 and 的情况, ignoring用来忽略某个字段, 可以将 and ignoring(b)作为一个整体理解?
+x1 and ignoring(b) x3	x1{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}		100
+x3 and ignoring(b) x1	x3{a="1", b="3", instance="192.168.199.131:8080", job="node-exporter"}		300
+
+# 测试3: 使用 and on() 来近似达到我们平常理解的 "逻辑与", 只要左右两边都满足, 就输出左边的指标, 两个指标可以完全不一样
+x3 and on() x1 > 1		x3{a="1", b="3", instance="192.168.199.131:8080", job="node-exporter"}			300
+up and on() x1 > 99		输出很多指标
 ```
 
 **2、unless**
@@ -1958,13 +2045,13 @@ x and ignoring(c) z
 
 <br />
 
-### 运算符：向量匹配`on`和`ignoring`
+### 运算符：on和ignoring
 
-待补充
+参考上一节：二元运算符
 
 <br />
 
-### 运算符：组修饰符group_xx
+### 运算符：group_xx
 
 待补充
 
