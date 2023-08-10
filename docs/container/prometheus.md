@@ -1950,8 +1950,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const version = "1.0.0"
-
 func main() {
 	// x1
 	x1 := prometheus.NewGauge(prometheus.GaugeOpts{
@@ -1977,7 +1975,7 @@ func main() {
 		ConstLabels: map[string]string{"b": "2"},
 	})
 
-	// x4: 和x1 标签名和标签值完全一样, 但是标签比x1多, 指标值不一样
+	// x5: 和x1 标签名和标签值完全一样, 但是标签比x1多, 指标值不一样
 	x5 := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name:        "x5",
 		ConstLabels: map[string]string{"a": "1", "b": "2", "c": "3"},
