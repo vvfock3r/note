@@ -2005,6 +2005,16 @@ func main() {
 
 <br />
 
+**0、原始序列**
+
+```bash
+x1{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}			100
+x2{a="1", b="2", instance="192.168.199.131:8080", job="node-exporter"}			200
+x3{a="1", b="3", instance="192.168.199.131:8080", job="node-exporter"}			300
+x4{b="2", instance="192.168.199.131:8080", job="node-exporter"}					400
+x5{a="1", b="2", c="3", instance="192.168.199.131:8080", job="node-exporter"}	500
+```
+
 **1、and**
 
 vector1 and vector2 这会生成一个新的向量
