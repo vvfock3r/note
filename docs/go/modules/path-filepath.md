@@ -781,7 +781,7 @@ false <nil>
 
 ## 目录遍历
 
-::: details filepath.Walk系列基本使用
+::: details （1）filepath.Walk基本使用：Go 1.11版本引入
 
 ```go
 package main
@@ -801,7 +801,7 @@ func main() {
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// path 是文件或目录, info是path的元信息
 		fmt.Printf("%-90s %-10t %s\n", path, info.IsDir(), info.Name())
-		return nil
+		return err
 	})
 	if err != nil {
 		panic(err)
@@ -816,7 +816,7 @@ func main() {
 		if n == 3 {
 			return errors.New("Stop") // 返回错误来终止遍历
 		}
-		return nil
+		return err
 	})
 	if err != nil && err.Error() != "Stop" {
 		panic(err)
@@ -824,9 +824,88 @@ func main() {
 }
 ```
 
+输出结果
+
+```bash
+C:\Windows\System32\drivers                                                                true       drivers
+C:\Windows\System32\drivers\1394ohci.sys                                                   false      1394ohci.sys
+C:\Windows\System32\drivers\360AntiAttack64.sys                                            false      360AntiAttack64.sys
+...
+C:\Windows\System32\drivers\zh-CN\winnat.sys.mui                                           false      winnat.sys.mui
+C:\Windows\System32\drivers\zh-CN\wof.sys.mui                                              false      wof.sys.mui
+C:\Windows\System32\drivers\zh-CN\ws2ifsl.sys.mui                                          false      ws2ifsl.sys.mui
+C:\Windows\System32\drivers\zh-CN\wudfpf.sys.mui                                           false      wudfpf.sys.mui
+
+C:\Windows\System32\drivers                                                                true       drivers
+C:\Windows\System32\drivers\1394ohci.sys                                                   false      1394ohci.sys
+C:\Windows\System32\drivers\360AntiAttack64.sys                                            false      360AntiAttack64.sys
+```
+
 :::
 
-::: details （1）filepath.Walk遍历：不跟随符号链接：Go 1.11版本引入
+::: details （2）filepath.WalkDir基本使用：Go 1.16版本引入，推荐使用
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"path/filepath"
+)
+
+func main() {
+	// 定义根目录
+	root := "C:\\Windows\\System32\\drivers"
+
+	// 1.遍历所有文件和目录
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		// path 是文件或目录, DirEntry 表示文件系统目录项（文件或目录）的接口类型, err代表遍历中的错误
+		fmt.Printf("%-90s %-10t %s\n", path, d.IsDir(), d.Name())
+		return err
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println()
+
+	// 	2.如果遍历到一半想退出的话, 可以这样做
+	var n int
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		fmt.Printf("%-90s %-10t %s\n", path, d.IsDir(), d.Name())
+		n++
+		if n == 3 {
+			return errors.New("Stop") // 返回错误来终止遍历
+		}
+		return err
+	})
+	if err != nil && err.Error() != "Stop" {
+		panic(err)
+	}
+}
+```
+
+输出结果
+
+```bash
+C:\Windows\System32\drivers                                                                true       drivers
+C:\Windows\System32\drivers\1394ohci.sys                                                   false      1394ohci.sys
+C:\Windows\System32\drivers\360AntiAttack64.sys                                            false      360AntiAttack64.sys
+...
+C:\Windows\System32\drivers\zh-CN\winnat.sys.mui                                           false      winnat.sys.mui
+C:\Windows\System32\drivers\zh-CN\wof.sys.mui                                              false      wof.sys.mui
+C:\Windows\System32\drivers\zh-CN\ws2ifsl.sys.mui                                          false      ws2ifsl.sys.mui
+C:\Windows\System32\drivers\zh-CN\wudfpf.sys.mui                                           false      wudfpf.sys.mui
+
+C:\Windows\System32\drivers                                                                true       drivers
+C:\Windows\System32\drivers\1394ohci.sys                                                   false      1394ohci.sys
+C:\Windows\System32\drivers\360AntiAttack64.sys                                            false      360AntiAttack64.sys
+```
+
+:::
+
+::: details （3）测试：filepath.Walk遍历D盘
 
 ```go
 package main
@@ -928,7 +1007,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）filepath.WalkDir遍历：跟随符号链接，比Walk效率高：Go 1.16版本引入
+::: details （4）测试：filepath.WalkDir遍历D盘
 
 ```go
 package main
