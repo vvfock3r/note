@@ -905,7 +905,7 @@ C:\Windows\System32\drivers\360AntiAttack64.sys                                 
 
 :::
 
-::: details （3）测试：filepath.Walk遍历D盘
+::: details （3）测试：filepath.Walk遍历C盘
 
 ```go
 package main
@@ -971,7 +971,7 @@ func main() {
 	go Stat(result, wg, stopCh)
 
 	// 遍历目录
-	root := "D://"
+	root := "C://"
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			result.problems = append(result.problems, path)
@@ -997,8 +997,8 @@ func main() {
 输出结果
 
 ```bash
-目录个数: 102432     文件个数: 555724     错误个数: 1
-Used 17 seconds
+目录个数: 243977     文件个数: 891174     错误个数: 16
+Used 107 seconds
 ```
 
 资源消耗：CPU使用比较稳定，内存使用一直在增长
@@ -1007,7 +1007,7 @@ Used 17 seconds
 
 :::
 
-::: details （4）测试：filepath.WalkDir遍历D盘
+::: details （4）测试：filepath.WalkDir遍历C盘
 
 ```go
 package main
@@ -1073,7 +1073,7 @@ func main() {
 	go Stat(result, wg, stopCh)
 
 	// 遍历目录
-	root := "D://"
+	root := "C://"
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			result.problems = append(result.problems, path)
@@ -1099,9 +1099,8 @@ func main() {
 输出结果
 
 ```bash
-# 这里为什么会多统计一个目录呢?
-目录个数: 102433     文件个数: 555724     错误个数: 1
-Used 8 seconds
+目录个数: 243993     文件个数: 891179     错误个数: 16
+Used 19 seconds
 ```
 
 资源消耗：CPU使用比较稳定，内存使用一直在增长，和Walk函数表现一致
