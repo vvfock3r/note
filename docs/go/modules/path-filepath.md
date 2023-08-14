@@ -918,67 +918,69 @@ import (
 	"time"
 )
 
-// Walk 用于存储filepath.Walk遍历的结果
-type Walk struct {
+// WalkResult 用于存储filepath.Walk遍历的结果
+type WalkResult struct {
 	directories []string
 	files       []string
 	problems    []string // 有问题的目录，可能是没有权限等，可以使用os.IsPermission()判断有无权限
 }
 
+// Stat 显示统计信息
+func Stat(result *WalkResult, waitGroup *sync.WaitGroup, stopCh <-chan struct{}) {
+	// 定义变量
+	start := time.Now()
+
+	// 定义统计函数
+	stat := func() {
+		fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 错误个数: %d",
+			len(result.directories),
+			len(result.files),
+			len(result.problems),
+		)
+	}
+
+	defer func() {
+		stat()                                                         // 最后再输出一次执行结果
+		fmt.Printf("\nUsed %.0f seconds", time.Since(start).Seconds()) // 输出耗时
+		waitGroup.Done()                                               // 结束
+	}()
+
+	// 定时器,每隔1秒输出信息
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			stat()
+		default:
+		}
+	}
+}
+
 func main() {
 	// 存储遍历结果
-	walk := &Walk{}
+	result := &WalkResult{}
 	stopCh := make(chan struct{})
 	wg := new(sync.WaitGroup)
 
 	// 统计信息
 	wg.Add(1)
-	go func(chan struct{}) {
-		// 统计函数
-		DisplayResult := func() {
-			fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 问题个数: %d",
-				len(walk.directories),
-				len(walk.files),
-				len(walk.problems),
-			)
-		}
-
-		defer wg.Done()
-
-		// 运行时间
-		fmt.Printf("%s Start\n", time.Now().Format("2006-01-02 15:04:05"))
-		defer func() {
-			fmt.Printf("\n%s Complete\n", time.Now().Format("2006-01-02 15:04:05"))
-		}()
-
-		// 最后再输出一次执行结果
-		defer DisplayResult()
-
-		// 定时器,每隔1秒输出信息
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-stopCh:
-				return
-			case <-ticker.C:
-				DisplayResult()
-			default:
-			}
-		}
-	}(stopCh)
+	go Stat(result, wg, stopCh)
 
 	// 遍历目录
-	err := filepath.Walk("D://", func(path string, info fs.FileInfo, err error) error {
+	root := "D://"
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			walk.problems = append(walk.problems, path)
+			result.problems = append(result.problems, path)
 			return nil
 		}
 		if info.IsDir() {
-			walk.directories = append(walk.directories, path)
+			result.directories = append(result.directories, path)
 		} else {
-			walk.files = append(walk.files, path)
+			result.files = append(result.files, path)
 		}
 		return nil
 	})
@@ -986,6 +988,7 @@ func main() {
 		panic(err)
 	}
 
+	// 清理等待
 	close(stopCh)
 	wg.Wait()
 }
@@ -994,11 +997,8 @@ func main() {
 输出结果
 
 ```bash
-# 用时27秒
-D:\application\GoLand\example>go run main.go
-2022-12-30 14:25:53 Start
-目录个数: 72054      文件个数: 367434     问题个数: 1
-2022-12-30 14:26:20 Complete
+目录个数: 102432     文件个数: 555724     错误个数: 1
+Used 17 seconds
 ```
 
 资源消耗：CPU使用比较稳定，内存使用一直在增长
@@ -1020,67 +1020,69 @@ import (
 	"time"
 )
 
-// Walk 用于存储filepath.Walk遍历的结果
-type Walk struct {
+// WalkResult 用于存储filepath.Walk遍历的结果
+type WalkResult struct {
 	directories []string
 	files       []string
 	problems    []string // 有问题的目录，可能是没有权限等，可以使用os.IsPermission()判断有无权限
 }
 
+// Stat 显示统计信息
+func Stat(result *WalkResult, waitGroup *sync.WaitGroup, stopCh <-chan struct{}) {
+	// 定义变量
+	start := time.Now()
+
+	// 定义统计函数
+	stat := func() {
+		fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 错误个数: %d",
+			len(result.directories),
+			len(result.files),
+			len(result.problems),
+		)
+	}
+
+	defer func() {
+		stat()                                                         // 最后再输出一次执行结果
+		fmt.Printf("\nUsed %.0f seconds", time.Since(start).Seconds()) // 输出耗时
+		waitGroup.Done()                                               // 结束
+	}()
+
+	// 定时器,每隔1秒输出信息
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			stat()
+		default:
+		}
+	}
+}
+
 func main() {
 	// 存储遍历结果
-	walk := &Walk{}
+	result := &WalkResult{}
 	stopCh := make(chan struct{})
 	wg := new(sync.WaitGroup)
 
 	// 统计信息
 	wg.Add(1)
-	go func(chan struct{}) {
-		// 统计函数
-		DisplayResult := func() {
-			fmt.Printf("\r目录个数: %-10d 文件个数: %-10d 问题个数: %d",
-				len(walk.directories),
-				len(walk.files),
-				len(walk.problems),
-			)
-		}
-
-		defer wg.Done()
-
-		// 运行时间
-		fmt.Printf("%s Start\n", time.Now().Format("2006-01-02 15:04:05"))
-		defer func() {
-			fmt.Printf("\n%s Complete\n", time.Now().Format("2006-01-02 15:04:05"))
-		}()
-
-		// 最后再输出一次执行结果
-		defer DisplayResult()
-
-		// 定时器,每隔1秒输出信息
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-stopCh:
-				return
-			case <-ticker.C:
-				DisplayResult()
-			default:
-			}
-		}
-	}(stopCh)
+	go Stat(result, wg, stopCh)
 
 	// 遍历目录
-	err := filepath.WalkDir("D://", func(path string, d fs.DirEntry, err error) error {
+	root := "D://"
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			walk.problems = append(walk.problems, path)
+			result.problems = append(result.problems, path)
 			return nil
 		}
 		if d.IsDir() {
-			walk.directories = append(walk.directories, path)
+			result.directories = append(result.directories, path)
 		} else {
-			walk.files = append(walk.files, path)
+			result.files = append(result.files, path)
 		}
 		return nil
 	})
@@ -1088,6 +1090,7 @@ func main() {
 		panic(err)
 	}
 
+	// 清理等待
 	close(stopCh)
 	wg.Wait()
 }
@@ -1096,12 +1099,9 @@ func main() {
 输出结果
 
 ```bash
-# 用时10秒
-# 这里为什么比Walk函数多一个目录呢？暂时还搞不清楚
-D:\application\GoLand\example>go run main.go
-2022-12-30 14:27:13 Start
-目录个数: 72055      文件个数: 367434     问题个数: 1
-2022-12-30 14:27:23 Complete
+# 这里为什么会多统计一个目录呢?
+目录个数: 102433     文件个数: 555724     错误个数: 1
+Used 8 seconds
 ```
 
 资源消耗：CPU使用比较稳定，内存使用一直在增长，和Walk函数表现一致
