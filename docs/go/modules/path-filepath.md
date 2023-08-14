@@ -275,7 +275,7 @@ C:\Users\Administrator>mklink C:\Users\Administrator\Desktop\main.exe D:\applica
 
 <br />
 
-## 函数示例
+## 基础函数
 
 ::: details （1）filepath.Abs：获取文件或目录的绝对路径，filepath.IsAbs：返回路径是否是绝对路径
 
