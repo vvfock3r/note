@@ -306,7 +306,9 @@ func main() {
 ```bash
 # Windows下输出结果
 D:\application\GoLand\example>go run main.go
-D:\abc <nil> # 测试绝对路径，Windows下没有/,或者说Windows下有多个/，每个驱动器(C盘/D盘等)都是一个根, /abc => D:\abc
+
+D:\abc <nil>                             # 测试绝对路径，Windows下没有/,或者说Windows下有多个/
+                                         # 每个驱动器(C盘/D盘等)都是一个根, /abc => D:\abc
 D:\application\GoLand\example\abc <nil>  # 测试相对路径，程序运行时用户所在目录 + 相对目录
 C:\abc <nil>                             # Windows下的绝对目录，原样输出
 D:\application\GoLand\example <nil>      # 特殊目录测试
@@ -642,6 +644,40 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
+::: details （9）filepath.Rel：获取相对路径
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+func main() {
+	// 定义变量
+	basePath := "C:\\Windows\\System32\\drivers"
+	targetPath := "C:\\Windows\\System32\\drivers\\etc\\host"
+
+	// 获取相对目录
+	// 1.如果两个目录相同会返回 .
+	// 2.如果target路径比base路径短, 会返回类似 ..\.. 这种值
+	relPath, err := filepath.Rel(basePath, targetPath)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("相对路径: %s\n", relPath)
+
+	// 判断相对目录的深度
+	relPathSlice := strings.Split(relPath, string(os.PathSeparator))
+	fmt.Printf("路径分割: %#v\n", relPathSlice)
+}
+```
+
+:::
+
 <br />
 
 ## 模式匹配
@@ -745,7 +781,52 @@ false <nil>
 
 ## 目录遍历
 
-::: details （1）filepath.Walk遍历：不跟随符号链接
+::: details filepath.Walk系列基本使用
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"path/filepath"
+)
+
+func main() {
+	// 定义根目录
+	root := "C:\\Windows\\System32\\drivers"
+
+	// 1.遍历所有文件和目录
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+		// path 是文件或目录, info是path的元信息
+		fmt.Printf("%-90s %-10t %s\n", path, info.IsDir(), info.Name())
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println()
+
+	// 	2.如果遍历到一半想退出的话, 可以这样做
+	var n int
+	err = filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+		fmt.Printf("%-90s %-10t %s\n", path, info.IsDir(), info.Name())
+		n++
+		if n == 3 {
+			return errors.New("Stop") // 返回错误来终止遍历
+		}
+		return nil
+	})
+	if err != nil && err.Error() != "Stop" {
+		panic(err)
+	}
+}
+```
+
+:::
+
+::: details （1）filepath.Walk遍历：不跟随符号链接：Go 1.11版本引入
 
 ```go
 package main
@@ -847,7 +928,7 @@ D:\application\GoLand\example>go run main.go
 
 :::
 
-::: details （2）filepath.WalkDir遍历：不跟随符号链接，比Walk效率高
+::: details （2）filepath.WalkDir遍历：跟随符号链接，比Walk效率高：Go 1.16版本引入
 
 ```go
 package main
