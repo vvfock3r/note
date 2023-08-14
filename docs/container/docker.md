@@ -3217,12 +3217,12 @@ alias grep='grep --color'
 
 ### 清理资源空间
 
-::: details 点击查看详情
+::: details （1）综合清理：清理镜像、网络、缓存等
 
 ```bash
 # 主要有以下几条命令，根据实际情况选择使用
 
-# 命令1
+# 命令1：整体清理
 [root@ap-hongkang ~]# docker system prune
 WARNING! This will remove:
   - all stopped containers
@@ -3238,7 +3238,7 @@ e8fa00f9c9ee44123a1481eff81b069d1289ec75d8829741c6c4095e2fedb759
 
 Total reclaimed space: 5B
 
-# 命令2
+# 命令2: 只清理镜像
 [root@ap-hongkang ~]# docker image prune
 WARNING! This will remove all dangling images.
 Are you sure you want to continue? [y/N] y
@@ -3246,7 +3246,8 @@ Total reclaimed space: 0B
 
 # 特别说明
 # 1) dangling images是指<none>的镜像，而非是未使用的镜像
-# 2) 如果想删除的更彻底一些，可以添加-a参数，这将会把未使用的镜像也删掉，可以看一下下面的文字说明也变了
+# 2) 还可以这样操作: docker image rm -f $(docker image ls -f dangling=true -q)
+# 3) 如果想删除的更彻底一些，可以添加-a参数，这将会把未使用的镜像也删掉，可以看一下下面的文字说明也变了
 
 [root@ap-hongkang ~]# docker system prune -a
 WARNING! This will remove:
@@ -3257,15 +3258,25 @@ WARNING! This will remove:
 
 Are you sure you want to continue? [y/N]
 
-# 命令3
+# ---------------------------------------------------------------------------------------
+
+# 命令3: 清理存储, 慎用
 [root@ap-hongkang ~]# docker volume prune 
 WARNING! This will remove all local volumes not used by at least one container.
 Are you sure you want to continue? [y/N] y
 Total reclaimed space: 0B
+```
 
-# 还可以这样：
-[root@ap-hongkang ~]# docker image rm -f $(docker image ls -f dangling=true -q)
-Deleted: sha256:b2f41ea6822691436313b720eb6ee3fd1f46774544985e31e0256314a1a2bb00
+:::
+
+::: details （2）单独删除已退出的容器
+
+```bash
+# 查看
+docker container ps -f status=exited
+
+# 清理
+docker container rm $(docker container ps -q -f status=exited)
 ```
 
 :::
