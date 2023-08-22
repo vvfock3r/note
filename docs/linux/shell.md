@@ -3122,6 +3122,15 @@ curl -x socks5://proxy.jinhui.dev:8081 ip.jinhui.dev
 
 :::
 
+::: details （4）同时启动多个代理
+
+```bash
+# 多次使用 -L 参数即可
+gost -L http://0.0.0.0:8081 -L socks5://0.0.0.0:8082
+```
+
+:::
+
 <br />
 
 ## 特定工具
