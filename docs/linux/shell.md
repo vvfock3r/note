@@ -3069,12 +3069,12 @@ docker container run --rm gogost/gost:latest -V
 
 # 实际使用时
 docker container run --name=proxy.jinhui.dev \
-    -p 8081:8081 \
+    -p 1080:1080 \
     --restart=always \
     --memory=100m \
     --cpus=1 \
     -d \
-  gogost/gost:latest -L http://0.0.0.0:8081
+  gogost/gost:latest -L http://0.0.0.0:1080
 ```
 
 :::
@@ -3101,8 +3101,8 @@ curl -x http://admin:123456@proxy.jinhui.dev:8081 ip.jinhui.dev  # 测试代理
 
 ```bash
 # 1、使用proxy.jinhui.dev申请公开免费的SSL证书
-# 2、启动服务, 注意: 需要转义&
-gost -L http+tls://0.0.0.0:8081?cert=proxy.jinhui.dev_bundle.pem\&key=proxy.jinhui.dev.key
+# 2、启动服务, 注意: 要么使用双引号引起来, 要么对&等符号进行转义
+gost -L "http+tls://0.0.0.0:8081?cert=proxy.jinhui.dev_bundle.pem&key=proxy.jinhui.dev.key"
 
 # 测试, 访问的主机名要和证书域名相匹配
 curl -x https://proxy.jinhui.dev:8081 ip.jinhui.dev
