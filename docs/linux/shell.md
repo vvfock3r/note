@@ -3038,6 +3038,92 @@ Error response from daemon: Head "https://asia-east1-docker.pkg.dev/v2/k8s-artif
 
 <br />
 
+### gost
+
+文档V2：[https://v2.gost.run/](https://v2.gost.run/)
+
+文档V3：[https://latest.gost.run](https://latest.gost.run)
+
+Github：[https://github.com/ginuerzh/gost](https://github.com/ginuerzh/gost)
+
+<br />
+
+**部署服务**
+
+::: details 方式一：使用二进制文件
+
+```bash
+wget -c https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-linux-amd64-2.11.5.gz
+gunzip gost-linux-amd64-2.11.5.gz 
+mv gost-linux-amd64-2.11.5 /usr/local/bin/gost
+chmod 755 /usr/local/bin/gost
+```
+
+:::
+
+::: details 方式二：Docker部署
+
+```bash
+# 查看版本, 最新版为3.x版本
+docker container run --rm gogost/gost:latest -V
+
+# 实际使用时
+docker container run --name=proxy.jinhui.dev \
+    -p 8081:8081 \
+    --restart=always \
+    --memory=100m \
+    --cpus=1 \
+    -d \
+  gogost/gost -L http://0.0.0.0:8081
+```
+
+:::
+
+<br />
+
+**代理设置（以下以2.x版本举例）**
+
+::: details （1）HTTP代理
+
+```bash
+# 无认证
+gost -L http://0.0.0.0:8081                                      # 启动服务
+curl -x http://proxy.jinhui.dev:8081 ip.jinhui.dev               # 测试代理
+
+# Basic Auth认证
+gost -L admin:123456@0.0.0.0:8081                                # 启动服务
+curl -x http://admin:123456@proxy.jinhui.dev:8081 ip.jinhui.dev  # 测试代理
+```
+
+:::
+
+::: details （2）HTTPS代理
+
+```bash
+# 1、使用proxy.jinhui.dev申请公开免费的SSL证书
+# 2、启动服务, 注意: 需要转义&
+gost -L http+tls://0.0.0.0:8081?cert=proxy.jinhui.dev_bundle.pem\&key=proxy.jinhui.dev.key
+
+# 测试, 访问的主机名要和证书域名相匹配
+curl -x https://proxy.jinhui.dev:8081 ip.jinhui.dev
+```
+
+:::
+
+::: details （3）Socks5代理
+
+```bash
+# 启动socks5代理
+gost -L socks5://0.0.0.0:8081 
+
+# 测试
+curl -x socks5://proxy.jinhui.dev:8081 ip.jinhui.dev
+```
+
+:::
+
+<br />
+
 ## 特定工具
 
 ### git
