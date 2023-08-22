@@ -3074,7 +3074,7 @@ docker container run --name=proxy.jinhui.dev \
     --memory=100m \
     --cpus=1 \
     -d \
-  gogost/gost -L http://0.0.0.0:8081
+  gogost/gost:latest -L http://0.0.0.0:8081
 ```
 
 :::
@@ -3113,7 +3113,7 @@ curl -x https://proxy.jinhui.dev:8081 ip.jinhui.dev
 ::: details （3）Socks5代理
 
 ```bash
-# 启动socks5代理
+# 启动socks5代理, socks5代理一般默认端口是1080
 gost -L socks5://0.0.0.0:8081 
 
 # 测试
