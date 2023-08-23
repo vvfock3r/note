@@ -1261,11 +1261,12 @@ removed 'server'
 
 :::
 
-::: details （6）镜像大小第二次优化：使用镜像多阶段构建（推荐）
+::: details （6）镜像大小第二次优化：使用镜像多阶段构建
 
 ```bash
 # 修改Dockerfile
 [root@localhost webserver]# cat Dockerfile
+
 # 用于程序编译
 FROM golang:1.18.2-alpine3.15 as builder
 WORKDIR /build
@@ -1337,6 +1338,45 @@ b4b2c3f81fa9   server:v1   "./server"   16 minutes ago   Up 16 minutes   0.0.0.0
 
 [root@localhost webserver]# curl http://127.0.0.1:49162
 Hello, world!
+```
+
+:::
+
+::: details （7）镜像大小第二次优化：最终完善版【模板】
+
+```dockerfile
+# reference
+#   https://hub.docker.com/_/golang
+#   https://hub.docker.com/_/alpine
+#
+# build
+#   docker image build -f deploy/Dockerfile -t demo:v1.0.0 .
+# test
+#   docker container run --name demo -d demo:v1.0.0
+
+# build
+FROM golang:1.20.5-alpine3.18 as builder
+WORKDIR /build
+COPY . .
+RUN go env -w GO111MODULE=on && \
+    go env -w CGO_ENABLED=0 && \
+    go env -w GOPROXY=https://goproxy.cn,direct && \
+    go mod tidy && \
+    go build -o main .
+
+# run
+FROM alpine:3.18
+WORKDIR /app
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
+    apk update && \
+    apk add tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    apk add curl busybox-extras bind-tools
+RUN mkdir -p /etc/demo                                               # 创建配置文件目录
+COPY --from=builder /build/main .                                    # 拷贝二进制文件
+COPY --from=builder /build/etc/demo.yaml /etc/demo                   # 拷贝配置文件
+CMD ["./demo", "-c", "/etc/demo/demo.yaml"]                          # 启动服务
 ```
 
 :::
