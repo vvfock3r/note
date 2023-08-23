@@ -1342,7 +1342,7 @@ Hello, world!
 
 :::
 
-::: details （7）镜像大小第二次优化：最终完善版【模板】
+::: details （7）最终完善版【模板】
 
 ```dockerfile
 # reference
@@ -1350,22 +1350,25 @@ Hello, world!
 #   https://hub.docker.com/_/alpine
 #
 # build
-#   docker image build -f deploy/Dockerfile -t demo:v1.0.0 .
+#   docker image build -f deploy/Dockerfile -t harbor.jinhui.dev/public/demo:v1.0.0 .
 # test
-#   docker container run --name demo -d demo:v1.0.0
+#   docker container run --name demo -d harbor.jinhui.dev/public/demo:v1.0.0
+# push
+#   docker image push harbor.jinhui.dev/public/demo:v1.0.0
 
 # build
-FROM golang:1.20.5-alpine3.18 as builder
+FROM golang:1.21.0-alpine3.17 as builder
 WORKDIR /build
 COPY . .
 RUN go env -w GO111MODULE=on && \
     go env -w CGO_ENABLED=0 && \
     go env -w GOPROXY=https://goproxy.cn,direct && \
     go mod tidy && \
+    go vet . && \
     go build -o main .
 
 # run
-FROM alpine:3.18
+FROM alpine:3.17
 WORKDIR /app
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
     apk update && \
