@@ -57,7 +57,7 @@ sidebar: off
   * [go-runewidth](https://jinhui.dev/go/modules/go-runewidth.html)：终端下的中英文对齐
   * [pb](https://jinhui.dev/go/modules/pb.html)：进度条
   * x/term：处理终端交互
-  * [pty](https://jinhui.dev/go/modules/pty.html)：Unix伪终端
+  * [pty](https://jinhui.dev/go/modules/pty.html)：Unix伪终端 tty
   * [readline](https://jinhui.dev/go/modules/readline.html)：交互式终端【一般用不到】
   * [pterm](https://jinhui.dev/go/modules/pterm.html)：强大的终端美化【兼容性有问题】
 * 网络
