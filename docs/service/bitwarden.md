@@ -166,7 +166,6 @@ drwxr-xr-x 2 root root 4.0K Aug 24 18:41 tmp
 **编写备份脚本（简单写一下）**
 
 ```bash
-# 1、编写脚本
 [root@ap-hongkang ~]# vim /usr/local/bin/valut_backup.sh 
 #!/usr/bin/env bash
 set -o nounset
@@ -192,11 +191,15 @@ tar zcf ${dst}/$(date +"%Y-%m-%d-%H%M%S")_valut.jinhui.dev.tar.gz  ${src}
 
 # 删除过期备份
 find ${dst} -maxdepth 1 -type f -mtime +30 | xargs rm -f
+```
 
-# -------------------------------------------------------------------------------
+**添加计划任务**
 
-# 2、添加计划任务
+```bash
 [root@ap-hongkang ~]# crontab -l
 # 每小时备份一次
 0 */1 * * * bash /usr/local/bin/valut_backup.sh
 ```
+
+
+
