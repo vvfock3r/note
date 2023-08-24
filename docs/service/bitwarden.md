@@ -197,7 +197,7 @@ find ${dst} -maxdepth 1 -type f -mtime +30 | xargs rm -f
 
 ```bash
 [root@ap-hongkang ~]# crontab -l
-# 每小时备份一次
+# 每小时备份一次, 备份文件保留30天
 0 */1 * * * bash /usr/local/bin/valut_backup.sh
 ```
 
