@@ -119,8 +119,8 @@ docker container run -d --name vault.jinhui.dev \
 docker container rm -f vault.jinhui.dev
 
 # 新建容器
-# 1、监听地址修改为127.0.0.1
-# 2、新用户注册修改为false
+# 1、设置不允许新用户注册修
+# 2、设置监听地址为127.0.0.1
 docker container run -d --name vault.jinhui.dev \
     -p 127.0.0.1:8888:8888 \
     -v /data/vaultwarden/:/data/ \
