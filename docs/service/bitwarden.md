@@ -188,8 +188,10 @@ mkdir -p ${dst}
 
 # 备份目录
 tar zcf ${dst}/$(date +"%Y-%m-%d-%H%M%S")_valut.jinhui.dev.tar.gz  ${src}
+chattr +i ${dst}/$(date +"%Y-%m-%d-%H%M%S")_valut.jinhui.dev.tar.gz
 
 # 删除过期备份
+find ${dst} -maxdepth 1 -type f -name "*.tar.gz" -mtime +30 | xargs chattr -i
 find ${dst} -maxdepth 1 -type f -name "*.tar.gz" -mtime +30 | xargs rm -f
 ```
 
