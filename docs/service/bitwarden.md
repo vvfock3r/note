@@ -108,7 +108,7 @@ docker container run -d --name vault.jinhui.dev \
 * 使用公网域名申请一个免费证书
 * 部署一个Nginx，反向代理到 Vaultwarden 
 
-具体步骤就不再演示了，直接看登录后的界面
+具体步骤就不再演示了，直接看登录后的界面，可以修改语言为英文
 
 ![image-20230824210451725](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230824210451725.png)
 
