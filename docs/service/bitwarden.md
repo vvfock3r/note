@@ -190,7 +190,7 @@ mkdir -p ${dst}
 tar zcf ${dst}/$(date +"%Y-%m-%d-%H%M%S")_valut.jinhui.dev.tar.gz  ${src}
 
 # 删除过期备份
-find ${dst} -maxdepth 1 -type f -mtime +30 | xargs rm -f
+find ${dst} -maxdepth 1 -type f -name "*.tar.gz" -mtime +30 | xargs rm -f
 ```
 
 **添加计划任务**
