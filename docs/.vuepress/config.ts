@@ -40,6 +40,7 @@ const navbar = [
 			{text: 'ElasticStack', link: '/service/elasticstack'},
 			{text: 'Fluentd', link: '/service/fluentd'},
 			{text: 'Artifactory', link: '/service/artifactory'},
+			{text: 'Bitwarden', link: '/service/bitwarden'},
         ]
     },
     {
