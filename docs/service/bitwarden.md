@@ -168,7 +168,7 @@ drwxr-xr-x 2 root root 4.0K Aug 24 18:41 tmp
 ```bash
 # 1、编写脚本
 [root@ap-hongkang ~]# vim /usr/local/bin/valut_backup.sh 
-#!/usr/bin/env basho
+#!/usr/bin/env bash
 set -o nounset
 set -o errexit
 set -o pipefail
