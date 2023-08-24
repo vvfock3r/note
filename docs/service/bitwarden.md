@@ -198,5 +198,5 @@ find ${dst} -maxdepth 1 -type f -mtime +30 | xargs rm -f
 # 2、添加计划任务
 [root@ap-hongkang ~]# crontab -l
 # 每小时备份一次
-0 */1 * * * bash /usr/local/bin/value_backup.sh
+0 */1 * * * bash /usr/local/bin/valut_backup.sh
 ```
