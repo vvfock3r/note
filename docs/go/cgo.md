@@ -713,6 +713,8 @@ int main(void) {
 
 ::: details （1）Go调用Windows 10 64位DLL文件举例
 
+函数API：[https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messageboxw](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messageboxw)
+
 ```go
 package main
 
