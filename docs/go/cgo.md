@@ -709,6 +709,69 @@ int main(void) {
 
 ## 系统调用
 
+### DLL调用
+
+::: details （1）Go调用Windows 10 64位DLL文件举例
+
+```go
+package main
+
+import (
+	"fmt"
+	"syscall"
+	"unsafe"
+)
+
+// MB_YESNOCANCEL 用于指定消息框的样式, MB表示 MessageBox(消息框), YES代表是, NO代表否, CANCEL代表取消
+const MB_YESNOCANCEL = 0x00000003
+
+func main() {
+	// 加载动态链接库文件, 若当前目录不存在DLL文件, 则会通过PATH变量自动寻找DLL文件
+	var lazyDLL = syscall.NewLazyDLL("user32.dll")
+
+	// 准备获取要调用的某个函数的指针, 这里的函数是MessageBoxW
+	// MessageBoxW是一个用于显示消息框的Windows API函数
+	var messageBoxW = lazyDLL.NewProc("MessageBoxW")
+
+	// 搜寻一下函数是否存在, 否则在后面直接.Call的时候会panic
+	if err := messageBoxW.Find(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// 准备函数的参数, UTF16PtrFromString 将字符串转换为UTF-16编码的指针
+	title, err := syscall.UTF16PtrFromString("Title")
+	if err != nil {
+		panic(err)
+	}
+	body, err := syscall.UTF16PtrFromString("Hello World!")
+	if err != nil {
+		panic(err)
+	}
+
+	// 函数调用
+	// 参数1: 消息框所属窗口的句柄，这里为0表示没有特定窗口
+	// 参数2: 消息内容的指针
+	// 参数3: 标题的指针
+	// 参数4: 消息框样式
+	// 最后一个返回值总是非零的error, 调用者必须通过返回值来判断是否有错误
+	value, _, _ := messageBoxW.Call(
+		0,
+		uintptr(unsafe.Pointer(body)),
+		uintptr(unsafe.Pointer(title)),
+		uintptr(MB_YESNOCANCEL))
+
+	// 输出返回值
+	fmt.Println(value)
+}
+```
+
+输出结果
+
+![image-20230825214143223](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230825214143223.png)
+
+:::
+
 ### GNU扩展
 
 <br />
