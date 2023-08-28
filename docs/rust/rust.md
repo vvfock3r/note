@@ -12,9 +12,7 @@ Github：[https://github.com/rust-lang/rust](https://github.com/rust-lang/rust)
 
 **安装Rust**
 
-下载地址：[https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
-
-1、下载并运行 `rustup-init.exe`，这里选择的是默认安装位置
+1、下载并运行 [rustup-init.exe](https://www.rust-lang.org/tools/install)，这里选择安装到默认位置
 
 2、将 `C:\Users\Administrator\.cargo\bin` 加入到系统环境变量 PATH 中
 
@@ -30,9 +28,9 @@ Github：[https://github.com/rust-lang/rust](https://github.com/rust-lang/rust)
 
 **安装开发工具**
 
-下载地址：[https://www.jetbrains.com/clion](https://www.jetbrains.com/clion)
+下载地址：
 
-1、安装 CLion
+1、下载并安装 [CLion ](https://www.jetbrains.com/clion)
 
 2、安装 Rust插件，并等待索引更新完成
 
