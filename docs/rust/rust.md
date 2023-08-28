@@ -22,7 +22,11 @@ Github：[https://github.com/rust-lang/rust](https://github.com/rust-lang/rust)
 
 4、检查rust版本 `rustc --version`，这里使用的是 `rustc 1.72.0 (5680fa18f 2023-08-23)`
 
+5、安装 [Microsoft C++ 生成工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/)，以管理员权限运行
 
+![image-20230828232717012](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20230828232717012.png)
+
+其他参考：[https://www.cnblogs.com/andy-chi/p/16786718.html](https://www.cnblogs.com/andy-chi/p/16786718.html)
 
 **安装开发工具**
 
@@ -32,7 +36,7 @@ Github：[https://github.com/rust-lang/rust](https://github.com/rust-lang/rust)
 
 2、安装 Rust插件
 
-3、使用 Ctrl + F9 运行（注意不是Ctrl + F10）
+3、使用 Ctrl + F10 编译并运行
 
 :::
 
