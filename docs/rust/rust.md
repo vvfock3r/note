@@ -34,9 +34,9 @@ Github：[https://github.com/rust-lang/rust](https://github.com/rust-lang/rust)
 
 1、安装 CLion
 
-2、安装 Rust插件
+2、安装 Rust插件，并等待索引更新完成
 
-3、使用 Ctrl + F10 编译并运行
+3、使用 Ctrl + F10 编译并运行（PS：Ctrl + F9只编译不运行）
 
 :::
 
