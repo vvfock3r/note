@@ -295,7 +295,30 @@ a
 ::: details （1）元组
 
 ```rust
+fn main() {
+    // 定义元组
+    let x: (i32, char) = (65, 'A');
 
+    // 通过解构获取值
+    let (m, n) = x;
+    println!("{}", m);
+    println!("{}", n);
+
+    // 通过索引获取值
+    let d = x.0;
+    let e = x.1;
+    println!("{}", d);
+    println!("{}", e);
+}
+```
+
+输出结果
+
+```bash
+65
+A
+65
+A
 ```
 
 :::
