@@ -363,13 +363,29 @@ fn main() {
 ::: details （3）切片
 
 ```rust
+fn main() {
+    // 定义一个数组
+    // 1、切片是对数组的部分引用, 切片在编译阶段长度是未知的
+    let arr: [i32; 5] = [1, 2, 3, 4, 5];
 
+    // 定义一个切片, 引用数组的前第2、3、4个元素, 如果使用 .. 则代表引用所有元素
+    let slice = &arr[1..4];
+
+    // 输出
+    println!("切片的长度: {}", slice.len());
+    for i in slice {
+        println!("{}", i);
+    }
+}
 ```
 
 输出结果
 
 ```bash
-
+切片的长度: 3
+2
+3
+4
 ```
 
 :::
@@ -390,6 +406,94 @@ fn main() {
 
 ```bash
 Hello World!
+```
+
+:::
+
+::: details （4）结构体
+
+```rust
+// 定义一个元组结构体
+struct Pair(i32, f32);
+
+// 定义一个标准的C结构体
+struct Person {
+    name: String,
+    age: u32,
+}
+
+// 定义一个单元结构体, 通常用在泛型中, 其他情况用的比较少
+// struct Unit;
+
+fn main() {
+    // 初始化元组结构体
+    let pair = Pair(100, 3.14);
+    println!("{}", pair.0);
+
+    // 初始化标准C结构体
+    let jack = Person {
+        name: String::from("jack"),
+        age: 18,
+    };
+    println!("{} {}", jack.name, jack.age);
+
+    // 初始化单元结构体, 不知道该如何使用, 所以先注释掉
+    // let unit = Unit;
+}
+```
+
+输出结果
+
+```bash
+100
+jack 18
+```
+
+:::
+
+::: details （5）枚举类型
+
+```rust
+use crate::Planet::Earth;
+
+// 无参数的枚举
+enum Planet {
+    Mars,
+    Earth,
+}
+
+// 带值的枚举
+enum Color {
+    Red = 0xff0000,
+    Green = 0x00ff00,
+    Blue = 0x0000ff,
+}
+
+// 带参数的枚举
+enum IpAddr {
+    IPV4(u8, u8, u8, u8),
+    IPV6(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8),
+}
+
+
+fn main() {
+    // 上面的枚举不知道咋用
+
+    // 枚举通常和模式匹配连用
+    let localhost: IpAddr = IpAddr::IPV4(127, 0, 0, 1);
+    match localhost {
+        IpAddr::IPV4(a, b, c, d) => {
+            println!("{} {} {} {}", a, b, c, d);
+        }
+        _ => {} // 非IPV4走这条路
+    }
+}
+```
+
+输出结果
+
+```bash
+127 0 0 1
 ```
 
 :::
