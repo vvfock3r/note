@@ -49,8 +49,8 @@ const navbar = [
             {
                 text: '前端基础',
                 children: [
-                    {text: 'CSS', link: '/frontend/css'},
-                    {text: 'JavaScript', link: '/frontend/javascript'},
+                    {text: 'CSS', link: '/frontend/css.html'},
+                    {text: 'JavaScript', link: '/frontend/javascript.html'},
                 ]
             },
             {
@@ -65,7 +65,7 @@ const navbar = [
                 text: '可视化',
                 children: [
                     {text: '浏览器原生绘图', link: '/frontend/Browser-Native-Drawing.html'},
-                    {text: 'Apache Echarts', link: '/frontend/echarts'},
+                    {text: 'Apache Echarts', link: '/frontend/echarts.html'},
                 ]
             },
             {
