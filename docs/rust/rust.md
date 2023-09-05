@@ -390,26 +390,6 @@ fn main() {
 
 :::
 
-::: details （3）字符串
-
-```rust
-fn main() {
-    // 定义字符串, 注意这里是 &str
-    let s: &str = "Hello World!";
-
-    // 输出结果
-    println!("{}", s);
-}
-```
-
-输出结果
-
-```bash
-Hello World!
-```
-
-:::
-
 ::: details （4）结构体
 
 ```rust
@@ -494,6 +474,62 @@ fn main() {
 
 ```bash
 127 0 0 1
+```
+
+:::
+
+::: details （6）字符串：乱入，待整理，也不知道属于啥结构
+
+```rust
+fn main() {
+    // 定义字符串, 注意这里是 &str
+    let s: &str = "Hello World!";
+
+    // 输出结果
+    println!("{}", s);
+}
+```
+
+输出结果
+
+```bash
+Hello World!
+```
+
+:::
+
+<br />
+
+## 流程控制语法
+
+::: details （1）if else
+
+```rust
+fn main() {
+    // 先看一段和多数语言类似的的if语句
+    let n = 5;
+    if n > 0 {
+        println!("{} > 0", n);
+    } else if n < 0 {
+        println!("{} < 0", n);
+    } else {
+        println!("{} == 0", n);
+    }
+
+    // rust独有的if else
+    // 1、if..else是一个表达式, 可以有返回值, 所以可以在前面定义变量
+    // 2、if 和 else返回值的类型必须保持一致
+    // 3、最后面的 ; 和 if..else没有关系, 是 let xx = xx; 中的分号
+    // 4、代码量少推荐写成一行, 代码量多推荐写成多行
+    let a = if n > 0 { 2 } else { 3 };
+    println!("{}", a);
+}
+```
+
+输出结果
+
+```bash
+
 ```
 
 :::
