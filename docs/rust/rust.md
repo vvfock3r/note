@@ -529,7 +529,44 @@ fn main() {
 输出结果
 
 ```bash
+5 > 0
+2
+```
 
+:::
+
+::: details （2）loop 无限循环
+
+```rust
+fn main() {
+    // loop 表示无限循环
+    let mut sum = 0;
+    let mut end = 100;
+    loop {
+        if end == 0 {
+            break;
+        }
+        sum += end;
+        end -= 1;
+    }
+    println!("sum: {}", sum);
+
+    // loop 中使用 break 返回值, 这里就随便写一段垃圾代码
+    let result = loop {
+        let i = 0;
+        if i == 0 {
+            break 100;
+        }
+    };
+    println!("result: {}", result);
+}
+```
+
+输出结果
+
+```bash
+sum: 5050
+result: 100
 ```
 
 :::
