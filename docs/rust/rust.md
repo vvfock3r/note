@@ -570,3 +570,138 @@ result: 100
 ```
 
 :::
+
+::: details （3）while 循环
+
+```rust
+fn main() {
+    // while循环
+    let mut n = 1;
+    while n < 100 {
+        if n % 33 == 0 {
+            println!("{}", n);
+        }
+        n += 1;
+    }
+}
+```
+
+输出结果
+
+```bash
+33
+66
+99
+```
+
+:::
+
+::: details （4）for .. range
+
+```rust
+fn main() {
+    // 基本用法: for in 用来遍历迭代器
+
+    // 包含0, 但不包含3
+    for i in 0..3 {
+        println!("{}", i);
+    }
+    println!();
+
+    // 包含0, 也包含3
+    for i in 0..=3 {
+        println!("{}", i);
+    }
+    println!();
+
+    // 用来遍历数组
+    let arr = [1, 2, 3];
+    for i in arr.iter() {
+        println!("{}", i);
+    }
+    println!();
+
+    // 用来修改数组
+    let mut arr = [1, 2, 3];
+    for i in arr.iter_mut() {
+        *i *= 2;
+    }
+    for i in arr.iter() {
+        println!("{}", i);
+    }
+}
+```
+
+输出结果
+
+```bash
+0
+1
+2
+
+0
+1
+2
+3
+
+1
+2
+3
+
+2
+4
+6
+```
+
+:::
+
+::: details （5）match 和 if let
+
+```rust
+enum Alphabet {
+    A,
+    B,
+}
+
+fn main() {
+    let a = Alphabet::A;
+    let b = Alphabet::B;
+
+    // 使用match匹配
+    match a {
+        Alphabet::A => {
+            println!("A");
+        }
+        Alphabet::B => {
+            println!("B");
+        }
+    }
+    match b {
+        Alphabet::A => {
+            println!("A");
+        }
+        Alphabet::B => {
+            println!("B");
+        }
+    }
+
+    // 使用 if let 简写
+    if let Alphabet::A = a {
+        println!("A");
+    }
+    if let Alphabet::B = b {
+        println!("B");
+    }
+}
+```
+
+输出结果
+
+```bash
+A
+B
+A
+B
+```
+
+:::
