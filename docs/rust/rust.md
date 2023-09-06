@@ -705,3 +705,31 @@ B
 ```
 
 :::
+
+<br />
+
+## 函数和方法
+
+::: details （1）定义函数
+
+```rust
+// 定义一个函数
+fn fib(n: u64) -> u64 {
+    if n < 2 {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn main() {
+    println!("{}", fib(10));
+}
+```
+
+输出结果
+
+```bash
+55
+```
+
+:::
