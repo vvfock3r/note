@@ -5755,7 +5755,45 @@ func main() {
 
 :::
 
-::: details （4）读写快捷函数
+::: details （4）按行读取任何文本文件
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	// 打开文件
+	file, err := os.Open("main.go")
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = file.Close() }()
+
+	// 创建一个带缓冲的读取器
+	reader := bufio.NewReader(file)
+
+	// 逐行读取文件内容
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		// 去除换行符
+		line = strings.TrimRight(line, "\n")
+		fmt.Println(line)
+	}
+}
+```
+
+:::
+
+::: details （5）读写快捷函数
 
 `os.WriteFile`和`os.ReadFile`底层调用的是`OpenFile`，一次性加载数据到内存中，适合读取小文件，大文件有撑爆内存的风险
 
