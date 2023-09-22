@@ -1436,6 +1436,7 @@ topologyKey定义拓扑域：
   * 将 `topologyKey` 设置为 `"kubernetes.io/hostname"`，表示在亲和性或反亲和性规则中使用节点的主机名作为拓扑键（topology key）进行匹配
   * Pod亲和性场景下：调度器将将这些 Pod 调度到相同的主机
   * Pod反亲和性场景：将具有相同标签选择器的 Pod 调度到不同的主机上
+  * Pod反亲和性场景：将Pod调度到不同区域（机房）的主机上，此时可以设置 为 `topologyKey: topology.kubernetes.io/zone`
 
 :::
 
