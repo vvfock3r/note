@@ -3158,7 +3158,21 @@ git version 2.41.0
 
 :::
 
-::: details （2）临时设置代理
+::: details （2）配置用户信息
+
+```bash
+# 配置
+git config --global user.name "username"
+git config --global user.password "123456"
+git config --global user.email "admin@example.com"
+
+# 查看
+git config --list
+```
+
+:::
+
+::: details （3）临时设置代理
 
 ```bash
 # 不加代理的情况下可能会拉取失败
