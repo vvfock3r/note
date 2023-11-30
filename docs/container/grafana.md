@@ -10,6 +10,8 @@ Github：[https://github.com/grafana/grafana](https://github.com/grafana/grafana
 
 ## 部署服务
 
+### 部署服务
+
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/](https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/)
 
 下载：[https://grafana.com/grafana/download](https://grafana.com/grafana/download)
@@ -77,7 +79,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 <br />
 
-## 配置示例
+### 配置示例
 
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/)
 
@@ -107,29 +109,33 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 <br />
 
-## 仪表盘(Dashboards)
+## 仪表盘设置(Dashboards)
 
-### 设置(Settings)
+### 设置按钮(settings)
 
-#### 通用设置(General)
+![image-20231130134658648](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130134658648.png)
 
-::: details （1）Editable：是否可编辑
+<br />
 
-默认情况下是可编辑（`Editable`），如下图所示
+### 通用设置(General)
 
-![image-20220926172925207](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926172925207.png)
+::: details （1）基本设置
 
-当设置成`Read-only`后：
+![image-20231130134955230](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130134955230.png)
 
-![image-20220926173228391](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926173228391.png)
+当设置成可编辑模式（`Editable`）：
 
-同时点击设置按钮后，会提示仪表盘不可编辑（还可以改回可编辑模式）
+![image-20231130135157220](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130135157220.png)
 
-![image-20220926173326423](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926173326423.png)
+当设置成只读模式（`Read-only`）：
+
+![image-20231130135353316](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130135353316.png)
+
+![image-20231130135548762](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130135548762.png)
 
 :::
 
-::: details （2）修改自动刷新间隔时间
+::: details （2）时间设置
 
 `Auto refresh`默认为`5s,10s,30s,1m,5m,15m,30m,1h,2h,1d`，自动刷新时间最小的为5秒钟，
 
@@ -180,7 +186,7 @@ min_refresh_interval = 1s
 
 <br />
 
-#### 注释(Annotations)
+### 注释(Annotations)
 
 有一些数据更受事件驱动，不太适合图表 - 例如流程重新启动、配置重新加载或新版本的部署。
 
