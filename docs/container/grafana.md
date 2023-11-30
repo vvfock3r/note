@@ -18,15 +18,13 @@ Github：[https://github.com/grafana/grafana](https://github.com/grafana/grafana
 
 Grafana有两个版本：Enterprise和OSS
 
-Grafana Enterprise 是推荐的默认版本。它是免费的，且包含 OSS 版的所有功能
+Grafana Enterprise 是推荐的版本。它是免费的，且包含 OSS 版的所有功能
 
 <br />
 
-**部署方式1：RPM包**
+::: details （1）RPM包部署
 
 文档：[https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/rpm/](https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/rpm/)
-
-::: details 点击查看详情
 
 ```bash
 # 所以这里选择下载RPM包，使用本地安装的方式
@@ -44,15 +42,11 @@ Grafana Enterprise 是推荐的默认版本。它是免费的，且包含 OSS �
 
 :::
 
-<br />
-
-**部署方式2：Dcoker部署**
+::: details （2）Dcoker部署
 
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/docker/](https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/docker/)
 
 Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.docker.com/r/grafana/grafana-enterprise)
-
-::: details 点击查看详情
 
 ```bash
 # 先拷贝一份配置文件到本地
