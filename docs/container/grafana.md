@@ -178,7 +178,7 @@ min_refresh_interval = 1s
 
 按时间点添加注释：鼠标单击图表即可
 
-按时间范围添加注释：按住`Ctrl`选中一段时间即可
+按时间段添加注释：按住`Ctrl`选中一段时间即可
 
 ![image-20220926192417609](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926192417609.png)
 
