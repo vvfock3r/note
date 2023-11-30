@@ -8,7 +8,7 @@ Github：[https://github.com/grafana/grafana](https://github.com/grafana/grafana
 
 <br />
 
-## 安装
+## 部署服务
 
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/](https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/)
 
@@ -77,13 +77,11 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 <br />
 
-## 配置
+## 配置示例
 
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/)
 
 <br />
-
-## 示例
 
 ::: details （1）添加Prometheus数据源
 
