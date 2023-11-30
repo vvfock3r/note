@@ -131,38 +131,32 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 ::: details （2）时间设置
 
+![image-20231130141251995](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130141251995.png)
+
 `Auto refresh`默认为`5s,10s,30s,1m,5m,15m,30m,1h,2h,1d`，自动刷新时间最小的为5秒钟，
 
-当想加一个1秒钟的选项时是加不上去的（即使加上去了，Web界面也不会显示）
+
 
 这时候需要修改Grafana的配置文件
 
 ```ini
+# 说明1: 自动刷新时间(Auto refres) 
+# 最小可选值为5s, 当想加一个1秒钟的选项时是加不上去的（即使加上去了，Web界面也不会显示）, 此时需要修改配置文件
+# [root@localhost ~]# vim /etc/grafana/grafana.ini
 ;min_refresh_interval = 5s
 min_refresh_interval = 1s
+
+# 说明2: Hide time picker
+# 用于将仪表盘中的时间线选择器隐藏， 即隐藏 Last 5 minutes那个框
 ```
 
-然后就可以选择1秒选项了
-
-![image-20220926174546300](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174546300.png)
+:::
 
 :::
 
-::: details （3）隐藏时间选择器
+::: details （3）面板选项
 
-将`Hide time picker`打开即可，对比下图即可发现区别
-
-![image-20220926174718775](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174718775.png)
-
-![image-20220926174752712](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926174752712.png)
-
-:::
-
-::: details （4）Refresh live dashboards：这个不知道有啥用，略过
-
-:::
-
-::: details （5）面板选项
+![image-20231130141835068](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130141835068.png)
 
 **Default**
 
