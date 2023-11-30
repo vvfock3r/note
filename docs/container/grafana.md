@@ -46,7 +46,7 @@ Grafana Enterprise 是推荐的默认版本。它是免费的，且包含 OSS �
 
 **部署方式2：Dcoker部署**
 
-文档：[https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/docker/](https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/docker/)
+文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/docker/](https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/docker/)
 
 Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.docker.com/r/grafana/grafana-enterprise)
 
@@ -55,7 +55,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 ```bash
 # 先拷贝一份配置文件到本地
 [root@localhost ~]# mkdir /etc/grafana
-[root@localhost ~]# docker container run --name=get-grafana-config -d grafana/grafana-enterprise:9.1.6
+[root@localhost ~]# docker container run --name=get-grafana-config -d grafana/grafana-enterprise:10.2.2
 [root@localhost ~]# docker container cp get-grafana-config:/etc/grafana/grafana.ini /etc/grafana
 [root@localhost ~]# docker container rm -f get-grafana-config
 
@@ -67,7 +67,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
                                          --user $(id -u) \
                                          --restart=always \
                                          -d \
-                                     grafana/grafana-enterprise:9.1.6
+                                     grafana/grafana-enterprise:10.2.2
 
 # 浏览器访问：http://192.168.111.128:3000/
 # 默认账户：admin / admin
@@ -79,7 +79,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 ## 配置
 
-文档：[https://grafana.com/docs/grafana/v9.0/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v9.0/setup-grafana/configure-grafana/)
+文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/)
 
 <br />
 
