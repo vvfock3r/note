@@ -168,11 +168,7 @@ min_refresh_interval = 1s
 
 ### 注释(Annotations)
 
-有一些数据更受事件驱动，不太适合图表 - 例如流程重新启动、配置重新加载或新版本的部署。
-
-它们往往发生的频率较低，如果为它们专门绘制图表，则大多数情况下您会看到一条平坦的线。然而，这些事件仍然值得监控并与图表相关联。例如，故障配置的配置重新加载可以解释请求下降。
-
-在 Grafana 中实现这一点的一个好方法是使用注释
+有一些数据更受事件驱动，不太适合图表 - 例如流程重新启动、配置重新加载或新版本的部署。它们往往发生的频率较低，如果为它们专门绘制图表，则大多数情况下您会看到一条平坦的线。然而，这些事件仍然值得监控并与图表相关联。例如，故障配置的配置重新加载可以解释请求下降。在 Grafana 中实现这一点的一个好方法是使用注释。
 
 参考：[https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/](https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/)
 
