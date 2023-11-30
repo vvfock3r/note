@@ -85,13 +85,15 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 ::: details （1）添加Prometheus数据源
 
-![image-20220926152706930](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152706930.png)
+![image-20231130125331051](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130125331051.png)
 
-![image-20220926152808857](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152808857.png)
+![image-20231130130351689](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130130351689.png)
 
-![image-20220926152933015](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926152933015.png)
+![image-20231130131156137](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130131156137.png)
 
-![image-20220926153314413](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153314413.png)
+![image-20231130131425557](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130131425557.png)
+
+![image-20231130131532192](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130131532192.png)
 
 :::
 
