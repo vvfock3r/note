@@ -2,7 +2,9 @@
 
 Github：[https://github.com/grafana/grafana](https://github.com/grafana/grafana)
 
-官网：[https://grafana.com/grafana/](https://grafana.com/grafana/)
+官网：[https://grafana.com/grafana](https://grafana.com/grafana/)
+
+模版：[https://grafana.com/grafana/dashboards](https://grafana.com/grafana/dashboards)
 
 <br />
 
