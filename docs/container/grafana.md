@@ -10,7 +10,7 @@ Github：[https://github.com/grafana/grafana](https://github.com/grafana/grafana
 
 ## 安装
 
-文档：[https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/](https://grafana.com/docs/grafana/v9.0/setup-grafana/installation/)
+文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/](https://grafana.com/docs/grafana/v10.2/setup-grafana/installation/)
 
 下载：[https://grafana.com/grafana/download](https://grafana.com/grafana/download)
 
@@ -27,17 +27,16 @@ Grafana Enterprise 是推荐的默认版本。它是免费的，且包含 OSS �
 ::: details 点击查看详情
 
 ```bash
-# 若使用Yun仓库方式只能安装最新版本
 # 所以这里选择下载RPM包，使用本地安装的方式
-[root@localhost ~]# wget -c https://dl.grafana.com/enterprise/release/grafana-enterprise-9.1.6-1.x86_64.rpm
-[root@localhost ~]# yum install grafana-enterprise-9.1.6-1.x86_64.rpm
+[root@localhost ~]# wget -c https://dl.grafana.com/enterprise/release/grafana-enterprise-10.2.2-1.x86_64.rpm
+[root@localhost ~]# yum -y install grafana-enterprise-10.2.2-1.x86_64.rpm
 
 # 启动服务并设置为开机自启
 [root@localhost ~]# systemctl start grafana-server.service && \
                     systemctl enable grafana-server.service && \
                     systemctl status grafana-server.service
 
-# 浏览器访问：http://192.168.48.152:3000/
+# 浏览器访问：http://192.168.111.128:3000/
 # 默认账户：admin / admin
 ```
 
@@ -70,7 +69,7 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
                                          -d \
                                      grafana/grafana-enterprise:9.1.6
 
-# 浏览器访问：http://192.168.48.152:3000/
+# 浏览器访问：http://192.168.111.128:3000/
 # 默认账户：admin / admin
 ```
 
@@ -175,11 +174,11 @@ min_refresh_interval = 1s
 
 ![grafana_panel_default](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_default.gif)
 
-**Shared crosshair**
+**Shared crosshair：其他面板有对应时间的竖线**
 
 ![grafana_panel_crosshair](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_crosshair.gif)
 
-**Shared Tooltip**
+**Shared Tooltip：其他面板也会显示对应的数值**
 
 ![grafana_panel_tooltip](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//grafana_panel_tooltip.gif)
 
@@ -189,13 +188,13 @@ min_refresh_interval = 1s
 
 #### 注释(Annotations)
 
-参考：[https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/](https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/)
-
 有一些数据更受事件驱动，不太适合图表 - 例如流程重新启动、配置重新加载或新版本的部署。
 
 它们往往发生的频率较低，如果为它们专门绘制图表，则大多数情况下您会看到一条平坦的线。然而，这些事件仍然值得监控并与图表相关联。例如，故障配置的配置重新加载可以解释请求下降。
 
 在 Grafana 中实现这一点的一个好方法是使用注释
+
+参考：[https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/](https://www.inovex.de/de/blog/grafana-annotations-prometheus-deep-dive/)
 
 
 
