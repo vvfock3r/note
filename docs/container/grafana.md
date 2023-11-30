@@ -18,7 +18,7 @@ Grafana有两个版本：Enterprise和OSS
 
 Grafana Enterprise 是推荐的默认版本。它是免费的，且包含 OSS 版的所有功能
 
-
+<br />
 
 **部署方式1：RPM包**
 
@@ -81,8 +81,6 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 文档：[https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/](https://grafana.com/docs/grafana/v10.2/setup-grafana/configure-grafana/)
 
-<br />
-
 ::: details （1）添加Prometheus数据源
 
 ![image-20231130125331051](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130125331051.png)
@@ -99,15 +97,11 @@ Docker Hub：[https://hub.docker.com/r/grafana/grafana-enterprise](https://hub.d
 
 ::: details （2）添加NodeExporter仪表盘
 
-![image-20220926153529584](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153529584.png)
+![image-20231130132715761](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130132715761.png)
 
-![image-20220926153855241](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926153855241.png)
+![image-20231130133107806](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130133107806.png)
 
-这里我们输入`https://grafana.com/grafana/dashboards/13978` 或 `13978`
-
-成功导入后我们就可以看到数据了
-
-![image-20220926154051454](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220926154051454.png)
+![image-20231130133358090](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130133358090.png)
 
 :::
 
