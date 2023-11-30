@@ -146,8 +146,6 @@ min_refresh_interval = 1s
 
 :::
 
-:::
-
 ::: details （3）面板选项
 
 ![image-20231130141835068](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231130141835068.png)
