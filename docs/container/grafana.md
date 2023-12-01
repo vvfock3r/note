@@ -253,3 +253,12 @@ EOF
 
 ### 变量（Variables）
 
+::: details （1）简介
+
+![image-20231201135915242](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201135915242.png)
+
+:::
+
+::: details （2）xx
+
+:::
