@@ -188,19 +188,40 @@ min_refresh_interval = 1s
 
 ::: details （2）通过API请求添加注释
 
-（1）在`Service accounts`中创建一个token，大概长这个样子：`glsa_aGyWjmE0cN8Jb5mTeUotRLyDp4fEdTQS_40d0efdb`
+（1）创建一个服务账户，并生成Token
 
-（2）仪表盘中新增注释
+![image-20231201102912108](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201102912108.png)
 
-![image-20220927140651723](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220927140651723.png)
+![image-20231201103215830](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201103215830.png)
 
-（3）通过curl发送HTTP请求
+（2）仪表盘中新建一个注释项目
+
+![image-20231201105332712](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201105332712.png)
+
+```bash
+# 基础参数解释
+# Name			任意字符串
+# Data source	选Grafana
+# Enabled		是否显示注释的开关, 也可以在仪表盘界面可手动打开或者关闭
+# Hidden		是否隐藏仪表盘中【注释打开/关闭的选项】, 注意他和Enabled的区别
+# Color			注释的颜色
+# Show in		注释显示在哪些面板中
+
+# Query参数(重要)
+# Query type	默认就行
+# Filter by		选择Tags
+# Max limit		注释最大的个数
+# Match any		应该是匹配到任意一个Tag就返回, 默认为False
+# Tags			这里填写Tag, 可以写多个
+```
+
+（3）通过curl发送创建注释的请求
 
 ```bash
 # 发送请求
 curl -XPOST 127.0.0.1:3000/api/annotations \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer glsa_aGyWjmE0cN8Jb5mTeUotRLyDp4fEdTQS_40d0efdb" \
+  -H "Authorization: Bearer glsa_dQRBYFDMxpFEKuEAX5EaifnEpkhbfF9s_b3a07689" \
   --data @- << EOF
   {
     "text": "发布新版本\n
@@ -218,22 +239,13 @@ EOF
 {"id":25,"message":"Annotation added"}
 
 # 注意事项：
-# (1) Grafana地址替换为自己的
-# (2) Token替换为自己的
-# (3) tags.passport是我们在仪表盘中添加注释时匹配的那个tag，一定要和仪表盘中的一致，不然匹配不到
+# (1) Grafana地址和Token替换为自己的
+# (2) tags.passport是我们在仪表盘中添加注释时匹配的那个tag，一定要和仪表盘中的一致，不然匹配不到
 ```
 
 查看效果
 
-![image-20220927141506923](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20220927141506923.png)
-
-:::
-
-::: details （3）从其他数据源中查询来自动添加注释：有点费劲后面再研究
-
-```bash
-ALERTS{alertstate="firing"}
-```
+![image-20231201105947987](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201105947987.png)
 
 :::
 
