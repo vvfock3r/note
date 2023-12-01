@@ -259,6 +259,14 @@ EOF
 
 :::
 
-::: details （2）xx
+::: details （2）变量类型：Data Source：数据源类型
+
+当变量类型为 Data Source时，我们必须选择是哪一种的数据源，即数据源的类型，比如是Prometheus还是MySQL，不支持选择多种数据源类型
+
+:::
+
+::: details （3）变量类型：Query：变量值来自数据源查询
+
+
 
 :::
