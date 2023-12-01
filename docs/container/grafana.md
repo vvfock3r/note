@@ -271,4 +271,16 @@ EOF
 
 ![image-20231201145126410](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201145126410.png)
 
+```bash
+# 参数解释
+# Data source			选择数据源是哪个，注意: 
+#                       数据源可能是动态的, 所以这里使用 $(datasource) 代指 动态的Prometheus数据源
+#                       不同的数据源后面的查询参数也不一样
+#
+# Query type
+# Label *
+# Metric
+# Label filters
+```
+
 :::
