@@ -267,6 +267,8 @@ EOF
 
 ::: details （3）变量类型：Query：变量值来自数据源查询
 
+![image-20231201145008426](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201145008426.png)
 
+![image-20231201145126410](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201145126410.png)
 
 :::
