@@ -285,3 +285,19 @@ EOF
 ```
 
 :::
+
+<br />
+
+## 面板设置
+
+::: details 两种类型
+
+![image-20231201162721592](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201162721592.png)
+
+:::
+
+::: details 面板类型：执行查询语句
+
+![image-20231201162532498](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201162532498.png)
+
+:::
