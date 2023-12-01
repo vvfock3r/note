@@ -277,10 +277,11 @@ EOF
 #                       数据源可能是动态的, 所以这里使用 $(datasource) 代指 动态的Prometheus数据源
 #                       不同的数据源后面的查询参数也不一样
 #
-# Query type
-# Label *
-# Metric
-# Label filters
+# Query type			查询类型, Label values代表变量的值 等于 Label的值
+# Label *				指定是Label名称
+
+# Metric				可选项, 指定使用哪个Metric
+# Label filters         可选项, 使用Label过滤出Metric
 ```
 
 :::
