@@ -296,12 +296,18 @@ EOF
 
 :::
 
-::: details 面板类型：执行查询语句
+::: details 面板类型之：执行查询语句
 
 ![image-20231201162532498](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201162532498.png)
 
 ![image-20231201164202406](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201164202406.png)
 
 ![image-20231201165515392](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201165515392.png)
+
+:::
+
+::: details 面板类型之：数据转换
+
+![image-20231201172848287](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20231201172848287.png)
 
 :::
