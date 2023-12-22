@@ -34,6 +34,12 @@ python -m pip install ultralytics
 
 # -------------------------------------------------------------
 
+# 安装报错说明
+# 一般情况下报错通常是在安装scipy, 此时可以从直接下载编译好的包: https://pypi.org/simple/scipy/
+# 注意: pypi.org上没有Python 32位的包
+
+# -------------------------------------------------------------
+
 # 检查1: 安装完ultralytics库后, 命令行中可以使用yolo命令
 (venv) C:\Users\Administrator\Desktop\demo> yolo version   
 8.0.198
