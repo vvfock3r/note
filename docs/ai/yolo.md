@@ -1,16 +1,21 @@
-# YOLO
+# YOLOv8
 
-官网：[https://docs.ultralytics.com](https://docs.ultralytics.com)
+官网：[https://docs.ultralytics.com/zh/](https://docs.ultralytics.com/zh/)
 
 Github：[https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 
-注意：本文档所使用的是YOLO V8版本，也是当前最新的版本
+参考资料：
 
+* 基础入门教程：[https://juejin.cn/post/7265968581841682492](https://juejin.cn/post/7265968581841682492)
+* 屏幕实时检测：[https://www.bilibili.com/video/BV1js4y1Y77w](https://www.bilibili.com/video/BV1js4y1Y77w)
 
+<br />
 
-## 开发环境
+## 准备环境
 
-**清单**
+### 开发环境
+
+::: details （1）测试清单
 
 | 组件   | 版本            |
 | ------ | --------------- |
@@ -18,20 +23,24 @@ Github：[https://github.com/ultralytics/ultralytics](https://github.com/ultraly
 | Python | 3.9.13 64位     |
 | YOLO   | 8.0.198         |
 
+:::
 
-
-**安装YOLO**
+::: details （2）安装YOLOv8
 
 ```bash
-pip install ultralytics
-```
+# 安装
+python -m pip install -U pip
+python -m pip install ultralytics
 
+# -------------------------------------------------------------
 
+# 检查1: 安装完ultralytics库后, 命令行中可以使用yolo命令
+(venv) C:\Users\Administrator\Desktop\demo> yolo version   
+8.0.198
 
-**检查**
+# -------------------------------------------------------------
 
-```python
-# 检查1
+# 检查2: 调用yolo模块自带的检查函数
 import ultralytics
 
 ultralytics.checks()
@@ -39,18 +48,13 @@ ultralytics.checks()
 # 输出结果如下, 因为我们并没有单独设置GPU参数, 所以这里torch使用的CPU
 # Ultralytics YOLOv8.0.198  Python-3.9.13 torch-2.1.0+cpu CPU (Intel Core(TM) i7-4790K 4.00GHz)
 # Setup complete  (8 CPUs, 23.9 GB RAM, 85.1/99.2 GB disk)
-
-# --------------------------------------------------------------------------------------------------
-
-# 检查2
-# 安装完ultralytics库后, 命令行中可以使用yolo命令
-(venv) C:\Users\Administrator\Desktop\demo> yolo version   
-8.0.198
 ```
 
+:::
 
+<br />
 
-## 概念讲解
+### 概念讲解
 
 - Train：使用数据进行训练，训练完成后会得到一个模型
 - Val：使用模型验证数据，对我们的模型进行验证，在训练时会自动触发验证
@@ -59,11 +63,11 @@ ultralytics.checks()
 - Track：未知
 - Benchmark：性能测试，未知
 
+<br />
 
+### 官方示例
 
-## 官方示例
-
-**推理示例**
+::: details （1）推理示例
 
 ```bash
 # 使用官方已经训练好的模型对图片进行预测
@@ -89,11 +93,15 @@ Results saved to c:\users\administrator\desktop\demo\runs\detect\predict
 
 ![image-20231015170003139](https://tuchuang-1257805459.cos.accelerate.myqcloud.com//image-20231015170003139.png)
 
+:::
 
+<br />
 
 ## 训练模型
 
 ### 1、准备数据
+
+::: details 点击查看详情
 
 新建一个目录，目录名任意，用于存放我们的模型，这里叫做 model，目录结构如下
 
@@ -115,9 +123,11 @@ C:.
 # 3、用来【训练】和【推演】的图片大小要完全一致，不然推演会识别失败
 ```
 
-
+:::
 
 ### 2、数据标注
+
+::: details 点击查看详情
 
 ```bash
 # 安装数据标注工具
@@ -153,9 +163,11 @@ W：等同于点击 Create RectBox
 
 D：等同于点击 Next Image
 
-
+:::
 
 ### 3、训练数据
+
+::: details 点击查看详情
 
 ```bash
 # 创建一个配置文件, 名字叫什么无所谓, 这里是 config.yaml
@@ -169,9 +181,11 @@ names:        # 这里是数据标注中的分类, 要训练哪个分类
 yolo task=detect mode=train model=yolov8n.pt data=config.yaml batch=8 epochs=100
 ```
 
-
+:::
 
 ### 4、预测验证
+
+::: details 点击查看详情
 
 ```bash
 # 使用CLI推理
@@ -187,9 +201,11 @@ result = model.predict(source=img, save=True, conf=0.15)
 print(result)
 ```
 
-
+:::
 
 ### 5、结果分析
+
+::: details 点击查看详情
 
 ```bash
 # 待补充
@@ -200,13 +216,7 @@ print(result)
 5. result[0].boxes.xywh) 目标框中心点的坐标和宽度、高度
 ```
 
-
-
-## 参考资料
-
-* 基础入门教程：[https://juejin.cn/post/7265968581841682492](https://juejin.cn/post/7265968581841682492)
-
-* 屏幕实时检测：[https://www.bilibili.com/video/BV1js4y1Y77w](https://www.bilibili.com/video/BV1js4y1Y77w)
+:::
 
 
 
