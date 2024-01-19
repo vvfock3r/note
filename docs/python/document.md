@@ -1,3 +1,11 @@
+
+
+# Python
+
+已经编译好的包下载：[https://www.piwheels.org/](https://www.piwheels.org/)
+
+<br />
+
 ## 一、Python解释器
 
 官方文档：[https://docs.python.org/zh-cn/3.9/tutorial/interpreter.html](https://docs.python.org/zh-cn/3.9/tutorial/interpreter.html)
