@@ -108,7 +108,11 @@ Results saved to c:\users\administrator\desktop\demo\runs\detect\predict
 
 文档：[https://docs.ultralytics.com/zh/models/yolov8/#supported-tasks-and-modes](https://docs.ultralytics.com/zh/models/yolov8/#supported-tasks-and-modes)
 
-说明：从 `8n` 到 `8x`，模型的准确度会提高，但是随之效率也会降低
+说明：
+
+模型大分类：目标检测（yolov8n.pt）、实例分割（yolov8n-seg.pt）
+
+模型小分类：从 `8n` 到 `8x`，模型文件更大、精度更高，但是随之识别效率也会降低
 
 <br />
 
