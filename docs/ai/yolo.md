@@ -104,6 +104,14 @@ Results saved to c:\users\administrator\desktop\demo\runs\detect\predict
 
 <br />
 
+### 模型文件
+
+文档：[https://docs.ultralytics.com/zh/models/yolov8/#supported-tasks-and-modes](https://docs.ultralytics.com/zh/models/yolov8/#supported-tasks-and-modes)
+
+说明：从 `8n` 到 `8x`，模型的准确度会提高，但是随之效率也会降低
+
+<br />
+
 ## 训练模型
 
 ### 1、准备数据
@@ -211,6 +219,8 @@ print(result)
 :::
 
 ### 5、结果分析
+
+文档：[https://docs.ultralytics.com/zh/modes/predict/#working-with-results](https://docs.ultralytics.com/zh/modes/predict/#working-with-results)
 
 ::: details 点击查看详情
 
