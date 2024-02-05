@@ -2,6 +2,8 @@
 
 官网：[https://docs.ultralytics.com/zh/](https://docs.ultralytics.com/zh/)
 
+配置：https://docs.ultralytics.com/zh/usage/cfg/
+
 Github：[https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 
 参考资料：
@@ -110,10 +112,10 @@ Results saved to c:\users\administrator\desktop\demo\runs\detect\predict
 
 **模型大分类**
 
-| 分类     | 英文名称 | 模型文件名                 | 详细说明                                                     |
-| -------- | -------- | -------------------------- | ------------------------------------------------------------ |
-| 目标检测 | detect   | yolov8n.pt（无后缀）       | 目标检测仅仅关注**图像中的对象类别和位置**                   |
-| 实例分割 | segment  | yolov8n-seg.pt（-seg后缀） | 实例分割不仅关注**图像中的对象类别和位置**，还关注对每个对象的像素进行分割，以区分不同对象实例之间的边界 |
+| 任务分类 | 任务英文名称 | 对应的模型文件名           | 详细说明                                                     |
+| -------- | ------------ | -------------------------- | ------------------------------------------------------------ |
+| 目标检测 | detect       | yolov8n.pt（无后缀）       | 目标检测仅仅关注**图像中的对象类别和位置**                   |
+| 实例分割 | segment      | yolov8n-seg.pt（-seg后缀） | 实例分割不仅关注**图像中的对象类别和位置**，还关注对每个对象的像素进行分割，以区分不同对象实例之间的边界 |
 
 **模型小分类**
 
@@ -209,19 +211,40 @@ yolo task=detect mode=train model=yolov8n.pt data=config.yaml batch=8 epochs=100
 
 ### 4、预测验证
 
-::: details 点击查看详情
+::: details 使用CLI推理
 
 ```bash
-# 使用CLI推理
-yolo predict source=1.jpg model=C:\Users\Administrator\Desktop\demo\runs\detect\train\weights\best.pt
+ yolo predict source=1.jpg model=C:\Users\Administrator\Desktop\demo\runs\detect\train\weights\best.pt
+```
 
-# 使用Python推理
+:::
+
+
+
+::: details 使用Python推理
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
 from PIL import Image
 from ultralytics import YOLO
 
+# 加载模型
 model = YOLO(r"C:\Users\Administrator\Desktop\demo\runs\detect\train\weights\best.pt")
+
+# 打开图片
+start = datetime.now()
 img = Image.open("1.png")
-result = model.predict(source=img, save=True, conf=0.15)
+
+# 预测
+#   conf 指定最低的可信度
+#   save 预测结果是否保存，实际使用时不需要开启此参数，只需要分析预测结果即可
+result = model.predict(source=img, **{"conf": 0.8, "save": False})
+duration = (datetime.now() - start).total_seconds()
+print(f"耗时: {duration} seconds")
+
+# 分析结果
 print(result)
 ```
 
@@ -243,6 +266,10 @@ print(result)
 ```
 
 :::
+
+### 6、加快预测
+
+
 
 
 
