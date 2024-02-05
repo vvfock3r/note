@@ -213,6 +213,8 @@ yolo task=detect mode=train model=yolov8n.pt data=config.yaml batch=8 epochs=100
 
 预测参数：[https://docs.ultralytics.com/zh/modes/predict/#inference-arguments](https://docs.ultralytics.com/zh/modes/predict/#inference-arguments)
 
+::: details 点击查看详情
+
 **使用CLI推理**
 
 ```bash
@@ -249,6 +251,8 @@ print(f"预测图片耗时: {(datetime.now() - start).total_seconds()} seconds")
 # 分析结果
 print(type(result))
 ```
+
+:::
 
 ### 5、结果分析
 
