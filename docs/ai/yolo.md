@@ -211,27 +211,29 @@ yolo task=detect mode=train model=yolov8n.pt data=config.yaml batch=8 epochs=100
 
 ### 4、预测验证
 
-::: details 使用CLI推理
+预测参数：[https://docs.ultralytics.com/zh/modes/predict/#inference-arguments](https://docs.ultralytics.com/zh/modes/predict/#inference-arguments)
+
+**使用CLI推理**
 
 ```bash
  yolo predict source=1.jpg model=C:\Users\Administrator\Desktop\demo\runs\detect\train\weights\best.pt
 ```
 
-:::
-
-
-
-::: details 使用Python推理
+**使用Python推理**
 
 ```python
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 
+from datetime import datetime
+
 from PIL import Image
 from ultralytics import YOLO
 
 # 加载模型
+start = datetime.now()
 model = YOLO(r"C:\Users\Administrator\Desktop\demo\runs\detect\train\weights\best.pt")
+print(f"加载模型耗时: {(datetime.now() - start).total_seconds()} seconds")
 
 # 打开图片
 start = datetime.now()
@@ -240,15 +242,13 @@ img = Image.open("1.png")
 # 预测
 #   conf 指定最低的可信度
 #   save 预测结果是否保存，实际使用时不需要开启此参数，只需要分析预测结果即可
-result = model.predict(source=img, **{"conf": 0.8, "save": False})
+result = model.predict(source=img, conf=0.1, save=True)
 duration = (datetime.now() - start).total_seconds()
-print(f"耗时: {duration} seconds")
+print(f"预测图片耗时: {(datetime.now() - start).total_seconds()} seconds")
 
 # 分析结果
-print(result)
+print(type(result))
 ```
-
-:::
 
 ### 5、结果分析
 
@@ -268,8 +268,6 @@ print(result)
 :::
 
 ### 6、加快预测
-
-
 
 
 
