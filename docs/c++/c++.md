@@ -2,7 +2,7 @@
 
 <br />
 
-## 文档
+## 文档整理
 
 Clion：[https://www.jetbrains.com/clion/](https://www.jetbrains.com/clion/)
 
@@ -10,9 +10,11 @@ MinGW：[https://www.mingw-w64.org/](https://www.mingw-w64.org/)
 
 <br />
 
-## 第一个程序
+## 先混一个脸熟
 
-::: details （1）输出 Hello World!
+### 第一个程序
+
+::: details （1）常规写法：输出 Hello World!
 
 ```c++
 #include <iostream>
@@ -58,7 +60,38 @@ Hello World!
 
 :::
 
-::: details （3）Clion：去掉符号表和调试信息
+::: details （3）另一种写法：输出 Hello World!
+
+```c++
+#include <iostream>
+using namespace std;
+
+int main() {
+    // 显示指定使用std命名空间后, 可以直接使用 cout等对象
+    cout << "Hello World!" << endl;
+
+    // 当然继续使用 std::cout也是可以的
+    std::cout << "你好世界!\n";
+
+    // 需要注意的是, 如果定义一个字符串，不管是否显示指定使用std命名空间, 都要使用std::string
+    std::string str = "你好世界!";
+    cout << str << endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+Hello World!
+你好世界!
+你好世界!
+```
+
+:::
+
+::: details （4）Clion：去掉符号表和调试信息
 
 > 修改 CMakeLists.txt文件
 
@@ -80,7 +113,7 @@ add_executable(test main.cpp)
 
 <br />
 
-## 基本数据类型
+### 基本数据类型
 
 **基本数据类型**
 
@@ -250,7 +283,7 @@ int main() {
 
 <br />
 
-## 变量常量枚举
+### 变量常量枚举
 
 ::: details （1）作用域
 
@@ -411,13 +444,462 @@ int main() {
 
 :::
 
+<br />
+
+### 基本运算注意
+
+**运算符说明**
+
+| 运算符               | 说明                   | 示例 |
+| -------------------- | ---------------------- | ---- |
+| +、-、*、/、%        | 加、减、乘、除、取模   |      |
+| &&、\|\|、!          | 逻辑与、逻辑或、逻辑非 |      |
+| 表达式 ? 真值 : 假值 | 三元表达式             |      |
+
+::: details （1）除法注意事项
+
+```c++
+#include <iostream>
+
+int main() {
+    // 定义变量
+    int a = 5;
+
+    // 问题1: 除以2, 得到几?
+    // 这里会输出2, 因为 5 / 2, 5和2都是int类型, 计算结果也一定是int类型, 小数部分舍去, 得到2
+    std::cout << a / 2 << std::endl;
+
+    // 方法1: 如果想得到2.5, 那么需要将任意一个数转为浮点型, 计算时会进行隐式类型转换, 都转为float, 结果也是float
+    std::cout << a / 2.0 << std::endl;
+
+    // 方法2: 显示类型转换, 将两个数都调整为浮点数, static_cast用于数据类型转换
+    std::cout << static_cast<float>(a) / 2.0 << std::endl;
+
+    // ----------------------------------------------------------------------------------------------
+    // 问题2: 下面的计算结果是几?
+    // 结果还是2, 虽然定义了b为float类型, 但是先计算右边的, 得到一个int, 此时值已经是2了, b虽是float类型, 但是值是2
+    // 可以使用 std::cout << b / 3 << std::endl; 来验证b是float类型
+    float b = a / 2;
+    std::cout << b << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+2
+2.5
+2.5
+2
+```
+
+:::
+
+::: details （2）四舍五入
+
+```c++
+#include <iostream>
+#include <cmath>
+
+int main() {
+    // 定义变量
+    float a = 1.2;
+    float b = 1.8;
+
+    // 如何进行四舍五入呢?
+    // 方法1: 都加上0.5, 然后转为int类型
+    std::cout << "四舍五入: " << static_cast<int>(a + 0.5) << std::endl;
+    std::cout << "四舍五入: " << static_cast<int>(b + 0.5) << std::endl;
+
+    // 方法2: 使用cmath进行四舍五入(推荐)
+    // std::round   返回值类型与输入值类型相同
+    // std::lround  返回整数类型
+    // std::llround 返回long long int类型
+    // 其他类似函数 std::rint、std::nearbyint
+    std::cout << "四舍五入: " << std::round(a) << std::endl;
+    std::cout << "四舍五入: " << std::round(b) << std::endl;
+
+    // 向下取整
+    std::cout << "向下取整: " << std::floor(a) << std::endl;
+    std::cout << "向下取整: " << std::floor(b) << std::endl;
+
+    // 向上取整
+    std::cout << "向上取整: " << std::ceil(a) << std::endl;
+    std::cout << "向上取整: " << std::ceil(b) << std::endl;
+
+    // 截断取整, 截断小数, 保留整数
+    std::cout << "截断取整: " << std::trunc(a) << std::endl;
+    std::cout << "截断取整: " << std::trunc(b) << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+四舍五入: 1
+四舍五入: 2
+四舍五入: 1
+四舍五入: 2
+向下取整: 1
+向下取整: 1
+向上取整: 2
+向上取整: 2
+截断取整: 1
+截断取整: 1
+```
+
+:::
+
+::: details （3）大小写字母转换
+
+```c++
+#include <iostream>
+
+int main() {
+    // 定义一个字符类型, 必须用单引号, 双引号代表的是字符串
+    char x = 'r';
+
+    // 想要取得他的大写形式, 如何做呢?
+    // 为什么这么写呢? 这是根据ASCII表推到得到, 大小写字符差距是32
+    x -= 32;
+    std::cout << x << std::endl;
+
+    // 更直观一点的写法
+    char y = 'r';
+    y -= 'a' - 'A';
+    std::cout << y << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+### 循环控制语句
+
+::: details （1）while 语句，没啥好说的
+
+```c++
+#include <iostream>
+
+int main() {
+    int x = 0;
+    while (true) {
+        std::cout << x << std::endl;
+        x += 1;
+        if (x > 9) {
+            break;
+        }
+    }
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+:::
+
+::: details （2）for 语句，很重要
+
+```c++
+#include <iostream>
+
+int main() {
+    // 语法
+    // for (初始化循环变量; 循环保持条件; 循环变量变化){
+    // }
+
+    // 第一种写法, 简直是顺手就来
+    for (int x = 0; x < 3; x++) {
+        std::cout << x << std::endl;
+    }
+
+    // 第二种写法, 最后一个语句可以省略, 一般用的比较少
+    for (int x = 0; x < 3;) {
+        std::cout << x << std::endl;
+        x++;
+    }
+
+    // 问题1: 下面会有输出吗?
+    for (int x = 0; x == 0; x++) {
+        std::cout << "问题1: " << x << std::endl;
+    }
+
+    // 问题2: 下面会有输出吗?
+    for (int x = 5; x == 6; x++) {
+        std::cout << "问题2: " << x << std::endl;
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+1
+2
+0
+1
+2
+问题1: 0
+```
+
+:::
+
+<br />
+
+### 指针基础学习
+
+::: details （1）基本用法
+
+```c++
+#include <iostream>
 
 
+int main() {
+    // 定义一个变量
+    int x = 100;
+
+    // 输出指针, 他是一个整数, 固定占用4个字节, 指向p的值在内存中的地址
+    std::cout << &x << std::endl;
+
+    // 如果定义指针类型, 那么这样写
+    // ptr是指针类型, 存储的是一个整数, 注意它不是整数类型
+    int *ptr = &x;
+    std::cout << ptr << std::endl;
+
+    // 通过指针获取存储的值
+    std::cout << *ptr << std::endl;
+
+    // 当然, 也可以修改值
+    *ptr = 200;
+    std::cout << *ptr << std::endl;
+    std::cout << x << std::endl;
+
+    // 总结
+    // & 取地址运算符：获取变量的内存地址
+    // * 解引用运算符：访问指针指向的值
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0x86c2fffe64
+0x86c2fffe64
+100
+200
+200
+```
+
+:::
+
+::: details （2）空指针
+
+```c++
+#include <iostream>
 
 
+int main() {
+    // 这样定义是错误的，指针初始化时一定要有值
+    // int* py;       // 未初始化指针（危险！）
+    // *py = 5;       // 未定义行为，可能崩溃
+    // std::cout << py << std::endl;
+
+    // 定义一个空指针
+    // 空指针用于明确表示未指向任何对象或内存
+    int *ptr = nullptr;
+    std::cout << ptr << std::endl;
+
+    // 判断指针是否是空指针
+    if (ptr) {
+        // 但是需要注意, 在我们的代码中这里执行正常
+        // 但是有一种可能 ptr指向已经释放的内存, if判断会通过, 所以下面可能会有问题
+        *ptr = 42;
+    } else {
+        std::cout << "指针为空，不能解引用！";
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+指针为空，不能解引用！
+```
+
+:::
+
+::: details （3）野指针
+
+```c++
+#include <iostream>
+
+int *getPointer() {
+    int x = 10; // 局部变量
+    return &x; // ⚠️ 返回局部变量地址（野指针）
+}
+
+int main() {
+    // 野指针（Dangling Pointer）是指向无效内存或已释放内存的指针
+    // 以下是几个常见的野指针示例
+
+    // 示例1: 未初始化指针（指向随机地址）
+    int *ptr1; // ⚠️ 未初始化，可能指向随机地址（野指针）
+    std::cout << "野指针地址: " << ptr1 << std::endl;
+
+    // 示例 2：使用已释放的指针
+    int *ptr2 = new int(42);
+    delete ptr2; // 释放内存
+    std::cout << *ptr2 << std::endl; // ⚠️ 访问已释放内存（野指针）
+
+    // 示例 3：返回局部变量的地址
+    int *ptr3 = getPointer();
+    std::cout << *ptr3 << std::endl; // ❌ 未定义行为
+
+    // 示例 4：数组越界访问
+    int arr[3] = {1, 2, 3};
+    int *ptr4 = arr + 10; // ⚠️ 超出数组范围，可能是野指针
+    std::cout << *ptr4 << std::endl; // ❌ 未定义行为
 
 
+    // 方式1修正方法: 初始化为空指针
+    // int* ptr1 = nullptr;
 
+    // 方式2修正方法: 释放指针后, 将指针设置为空指针
+    // delete ptr2;
+    // ptr2 = nullptr;
+
+    // 方式3修正方法: 使用静态变量
+    // static int x = 10;
+    // return &x;
+
+    // 方式4修正方法: 确保指针在合法范围内
+    // if (ptr4 >= arr && ptr4 < arr + 3) {
+    //     std::cout << *ptr4 << std::endl;
+    // }
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+## 函数重点讲解
+
+### 基本用法
+
+::: details （1）基本用法
+
+```c++
+#include <iostream>
+
+// 定义一个函数, 函数名左侧是返回值类型
+// 如果函数无返回值, 使用 void
+// 如果函数应该有返回值, 但是忘记写返回值, 会返回一个垃圾数值, 一定要避免
+int Add(int x, int y) {
+    return x + y;
+}
+
+int main() {
+    // 调用函数
+    std::cout << Add(1, 2) << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+3
+```
+
+:::
+
+::: details （2）函数内部的 static 变量修饰符
+
+```c++
+#include <iostream>
+
+// static修饰符
+int Add(int x, int y) {
+    // 定义一个变量, 记录函数的调用次数, 并输出
+    // 使用static修饰符, 就是告诉编译器, 此变量只需要初始化一次,
+    // 不要每次调用这个函数都初始化被static修饰的变量
+    static int count = 0;
+    count += 1;
+    std::cout << count << std::endl;
+
+    return x + y;
+}
+
+int main() {
+    // 循环调用函数
+    for (int i = 1; i <= 10; i++) {
+        Add(1, 2);
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```
+
+:::
+
+::: details （3）
+
+:::
+
+::: details （4）
+
+:::
+
+::: details （5）
+
+:::
 
 
 
