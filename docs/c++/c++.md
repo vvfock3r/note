@@ -911,9 +911,67 @@ int main() {
 
 :::
 
-::: details （3）std::cout是一个"状态流"，它会记住你对它设置的样式，直到你手动改变或者重置它
+::: details （3）std::cout是一个"状态流"，它是全局共享对象（单例），它会记住你对它设置的样式，直到你手动改变或者重置它或者程序结束
 
+```c++
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
+int main() {
+    // 设置科学计数法, 只针对浮点数有效
+    std::cout << std::scientific << 100 * 1.0 << std::endl;
+
+    // 方法1: 取消科学计数法样式
+    // 这种方法的弊端就是需要知道设置的每种样式的默认样式是什么, 比较麻烦
+    std::cout << std::defaultfloat << 100 * 1.0 << std::endl;
+
+    // -----------------------------------------------------------
+
+    // // 设置科学计数法, 只针对浮点数有效
+    // std::cout << std::scientific << 100 * 1.0 << std::endl;
+    //
+    // // 方法2: 手动清除
+    // std::cout.unsetf(std::ios::scientific);
+    //
+    // std::cout << 100 * 1.0 << std::endl;
+
+    // -----------------------------------------------------------
+
+    // // 方法3: 先保存cout状态, 再修改, 再恢复状态
+    // std::ios oldState(nullptr);
+    // oldState.copyfmt(std::cout); // 保存状态
+    //
+    // // 设置科学计数法, 只针对浮点数有效
+    // std::cout << std::scientific << 100 * 1.0 << std::endl;
+    //
+    // // 恢复状态
+    // std::cout.copyfmt(oldState);
+    //
+    // std::cout << 100 * 1.0 << std::endl;
+
+    // -----------------------------------------------------------
+    // // 方法4: 不使用全局的std::cout
+    //
+    // // 定义一个字符串输出流
+    // std::ostringstream oss;
+    //
+    // // 向oss输入内容
+    // oss << std::scientific << 100 * 1.0;
+    //
+    // // 把oss流中的内容取出来, 并输出
+    // std::cout << oss.str() << std::endl;
+    //
+    // // 测试全局的std::cout
+    // std::cout << 100 * 1.0 << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+::: details （4）
 
 :::
 
