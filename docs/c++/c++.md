@@ -889,15 +889,44 @@ int main() {
 
 :::
 
-::: details （3）
+::: details （3）函数重载：允许相同的函数名具有不同的形参
+
+```c++
+#include <iostream>
+
+int Add(int a, int b) {
+    std::cout << "Add-2 execute" << std::endl;
+    return a + b;
+}
+
+int Add(int a, int b, int c) {
+    std::cout << "Add-3 execute" << std::endl;
+    return a + b + c;
+}
+
+int main() {
+    std::cout << Add(1, 2) << std::endl;
+    std::cout << Add(1, 2, 3) << std::endl;
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+Add-2 execute
+3
+Add-3 execute
+6
+```
 
 :::
 
-::: details （4）
+::: details （4）带默认值的参数：与其他语言一样的写法，不再叙述
 
 :::
 
-::: details （5）
+::: details （5）不定长参数
 
 :::
 
