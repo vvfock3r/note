@@ -813,6 +813,112 @@ int main() {
 
 <br />
 
+### 格式化输出
+
+::: details （1）iomanip：简介、对齐、填充
+
+```c++
+#include <iostream>
+#include <iomanip>
+
+
+int main() {
+    // 说明
+    // iomanip 侧重于数字类型的格式化操作, 部分函数也支持字符串
+    // 需要在输出值前设置样式，注意代码顺序问题
+    // 部分样式代码是全局的, 比如第一段代码设置左对齐, 第二段代码自动会左对齐, 已知的有
+    //   左右对齐
+    //   字符填充
+    //   科学计数法
+
+    // 设置字符宽度, 默认右对齐
+    std::cout << std::setw(50) << "Hello World!" << std::endl;
+
+    // 设置左右对齐, left 左对齐, right 右对齐
+    std::cout << std::setw(50) << std::left << "Hello World!" << std::endl;
+
+    // 设置填充, 默认空格
+    std::cout << std::setw(50) << std::setfill('_') << "Hello World!" << std::endl;
+
+    // 处理带符号数字的对齐方式
+    std::cout << std::setw(50) << std::internal << -99 << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+                                      Hello World!
+Hello World!                                      
+Hello World!______________________________________
+-_______________________________________________99
+```
+
+:::
+
+::: details （2）iomanip：小数位数、显示+号、科学计数法
+
+```c++
+#include <iostream>
+#include <iomanip>
+
+
+int main() {
+    // 默认情况下显示几位小数并不确定
+    std::cout << 10 / 3.0 << std::endl << std::endl;
+
+    // 设置保留小数位数
+    // std::setprecision(2) 设置浮点数精度(保留小数位数), 但是单独用这个并不好使
+    // std::fixed           固定小数点格式, 这两个配合使用, 完美
+    std::cout << std::setprecision(2) << 10 / 3.0 << std::endl;
+    std::cout << std::setprecision(2) << 5.00 << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << 10 / 3.0 << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << 5 << std::endl << std::endl;
+
+    // 这个没测试出来, 基本也不用管, 后面会告诉原因和解决办法
+    std::cout << std::showpoint << std::fixed << std::setprecision(2) << 3.0 << std::endl;
+    std::cout << std::noshowpoint << 3.0 << std::endl << std::endl;
+
+    // 科学计数法, 只针对浮点数有效
+    std::cout << std::scientific << 100000000000000 * 1.0 << std::endl << std::endl;
+
+    // 整数显示+号
+    std::cout << std::showpos << 10.0 << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+3.33333
+
+3.3
+5
+3.33
+5
+
+3.00
+3.00
+
+1.00e+14
+
++1.00e+01
+```
+
+:::
+
+::: details （3）std::cout是一个"状态流"，它会记住你对它设置的样式，直到你手动改变或者重置它
+
+
+
+:::
+
+<br />
+
 ## 函数重点讲解
 
 ### 基本用法
@@ -929,10 +1035,6 @@ Add-3 execute
 ::: details （5）不定长参数
 
 :::
-
-
-
-
 
 
 
