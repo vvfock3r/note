@@ -1350,10 +1350,78 @@ int main() {
 
 :::
 
-卡方分布
+::: details （6）卡方分布：应用：检验骰子是否作弊
+
+```c++
+#include <iostream>
+#include <random>
+#include <vector>
+#include <cmath>
+
+// 模拟投掷骰子（n次，返回各点数出现次数）
+std::vector<int> rollDice(int n, bool isCheat) {
+    std::mt19937 gen(std::random_device{}());
+    std::discrete_distribution<> dist;
+    if (isCheat) {
+        // 作弊骰子：点数6的概率是其他的两倍
+        std::vector<double> weights{1, 1, 1, 1, 1, 2};
+        dist = std::discrete_distribution<>(weights.begin(), weights.end());
+    } else {
+        // 公平骰子
+        dist = std::discrete_distribution<>({1, 1, 1, 1, 1, 1});
+    }
+
+    std::vector<int> counts(6, 0);
+    for (int i = 0; i < n; ++i) counts[dist(gen)]++;
+    return counts;
+}
+
+// 卡方检验（返回卡方统计量）
+double chiSquareTest(const std::vector<int> &observed) {
+    double expected = std::accumulate(observed.begin(), observed.end(), 0.0) / observed.size();
+    double chi2 = 0.0;
+    for (int obs: observed) {
+        chi2 += std::pow(obs - expected, 2) / expected;
+    }
+    return chi2;
+}
+
+int main() {
+    // 模拟公平骰子和作弊骰子各600次
+    auto fair_counts = rollDice(600, false);
+    auto cheat_counts = rollDice(600, true);
+
+    // 计算卡方值
+    double fair_chi2 = chiSquareTest(fair_counts);
+    double cheat_chi2 = chiSquareTest(cheat_counts);
+
+    std::cout << "公平骰子的卡方值: " << fair_chi2 << "（应接近0）\n";
+    std::cout << "作弊骰子的卡方值: " << cheat_chi2 << "（应明显偏大）\n";
+
+    // 查卡方分布表（自由度=5，显著性0.05的临界值≈11.07）
+    if (cheat_chi2 > 11.07) {
+        std::cout << "检测到作弊！\n";
+    } else {
+        std::cout << "未检测到作弊。\n";
+    }
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+公平骰子的卡方值: 1.34（应接近0）
+作弊骰子的卡方值: 55.12（应明显偏大）
+检测到作弊！
+```
+
+:::
 
 学生 t 分布
 
 F 分布
 
 魏布尔分布
+
+<br />
