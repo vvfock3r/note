@@ -1094,7 +1094,221 @@ Add-3 execute
 
 :::
 
+<br />
+
+## 必备的库文件
+
+### random
+
+`<random>` 的结构大致可以分为三类：
+
+* 随机数引擎
+* 分布器
+* 种子源/工具
+
+::: details （1）随机数示例
+
+```c++
+#include <iostream>
+#include <random>
+#include <chrono>
+
+// 随机数平台推荐 mt19937
+
+int main() {
+    // 初始化随机数种子, 固定种子, 结果固定
+    // std::mt19937 prng(42);
+
+    // 初始化随机数种子, 运行时变化
+    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
+
+    /*
+     *  prng 是一个变量, 代表的是 mt19937实例对象
+    */
+
+    // 定义一个均匀分布器，生成 1 到 100 之间的整数, 注意是包含1和100的
+    std::uniform_int_distribution<int> int_dist(1, 100);
+
+    // 生成并输出一个随机整数: 分布器(随机数引擎)
+    int number = int_dist(prng);
+    std::cout << number << std::endl;
+
+    // 生成多个随机数
+    for (int i = 0; i < 9; ++i) {
+        int n = int_dist(prng);
+        std::cout << n << std::endl;
+    }
+}
+```
+
+输出结果
+
+```bash
+96
+20
+26
+33
+47
+9
+7
+25
+98
+38
+```
+
+:::
+
+::: details （2）正态分布：随机距离均值越远概率越小
+
+![image-20250510135846538](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250510135846538.png)
+
+```c++
+#include <iostream>
+#include <random>
+#include <chrono>
+
+int main() {
+    // 初始化随机数种子, 运行时变化
+    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
+
+    /* 正态分布: 均值为 0，标准差为 1 的正态分布随机数
+     * 关于范围
+     *      正态分布是一个连续概率分布，其理论上没有固定的范围，因为它的值可以是任何实数（从负无穷到正无穷）
+     *      然而，绝大多数的样本将会集中在均值附近，且随着距离均值的增大，生成的随机数的概率会迅速减少
+     *      在实际应用中，通常可以使用68-95-99.7规则来估计正态分布的范围
+     *          68%的样本会落在均值±1倍标准差范围内（即 -1 到 +1）
+     *          95%的样本会落在均值±2倍标准差范围内（即 -2 到 +2
+     *          99.7%的样本会落在均值±3倍标准差范围内（即 -3 到 +3）
+     *          对于 normal_dist(0.0, 1.0)，大部分生成的随机数会位于 -3 到 +3 之间，但仍然有可能生成更远离均值的数值
+    */
+    std::normal_distribution<double> normal_dist(0.0, 1.0);
+
+
+    // 生成多个随机数
+    for (int i = 0; i < 9; ++i) {
+        double n = normal_dist(prng);
+        std::cout << n << std::endl;
+    }
+}
+```
+
+输出结果
+
+```bash
+0.720939
+0.142195
+0.0793346
+-0.0617685
+0.92558
+0.7241
+-1.08853
+1.81012
+0.502112
+```
+
+:::
+
+::: details （3）伯努利分布：真假概率
+
+```c++
+#include <iostream>
+#include <random>
+#include <chrono>
+
+int main() {
+    // 初始化随机数种子, 运行时变化
+    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
+
+    /* 伯努利分布: 生成二元值（0 或 1），模拟成功或失败事件的概率，适用于简单的二项式实验
+     * 返回的布尔类型 ture 和 false
+     * 下面的代码意思是: 1 的出现概率为 10%，0 的出现概率为 90%
+     * 总结一下: 为真的概率是10%, false的概率为90%
+    */
+    std::bernoulli_distribution bernoulli_dist(0.1);
+
+
+    // 生成多个随机数
+    for (int i = 0; i < 9; ++i) {
+        bool ok = bernoulli_dist(prng);
+        std::cout << ok << std::endl;
+    }
+}
+```
+
+输出结果
+
+```bash
+0
+0
+0
+0
+0
+0
+1
+0
+0
+```
+
+:::
+
+::: details （4）离散概率分布：每个元素有自己的权重
+
+```c++
+#include <iostream>
+#include <random>
+#include <chrono>
+
+int main() {
+    // 初始化随机数种子, 运行时变化
+    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
+
+    /* 离散概率分布: 根据用户提供的每个元素的权重, 筛选出一个值(数字)
+     * {70, 20, 10} 代表的意思是:
+     *      第一个值的权重是 70,
+     *      第二个值的权重是 20,
+     *      第三个值的权重是 10,
+     * 为了方便计算, 我们约定所有权重加起来是100, 方便计算
+     * 返回的值是列表的索引(整数), 代表哪个权重被命中了
+    */
+    std::discrete_distribution<int> discrete_dist({70, 20, 10});
+
+    // 自定义值, 对应上面的权限
+    std::vector<int> values = {100, 200, 300};
+
+    // 生成多个随机数
+    for (int i = 0; i < 9; ++i) {
+        int n = discrete_dist(prng);
+        std::cout << n << " => " << values[n] << std::endl;
+    }
+}
+```
+
+输出结果
+
+```bash
+1 => 200
+2 => 300
+0 => 100
+1 => 200
+0 => 100
+0 => 100
+0 => 100
+0 => 100
+0 => 100
+```
+
+:::
+
+::: details （5）指数分布
+
+:::
 
 
 
+卡方分布
 
+学生 t 分布
+
+F 分布
+
+魏布尔分布
