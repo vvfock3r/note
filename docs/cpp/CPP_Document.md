@@ -10,7 +10,7 @@ MinGW：[https://www.mingw-w64.org/](https://www.mingw-w64.org/)
 
 <br />
 
-## 先混一个脸熟
+## 基础
 
 ### 第一个程序
 
@@ -717,6 +717,37 @@ int main() {
 
 :::
 
+::: details （2）通过指针修改数据
+
+```c++
+#include <iostream>
+
+void f(int *p) {
+    *p = 10;
+}
+
+int main() {
+    // 定义一个变量
+    int x = 20;
+
+    //
+    f(&x);
+
+    // 输出值
+    std::cout << x << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+10
+```
+
+:::
+
 ::: details （2）空指针
 
 ```c++
@@ -756,7 +787,36 @@ int main() {
 
 :::
 
-::: details （3）野指针
+::: details （3）释放内存后要将指针设置为空指针
+
+```c++
+#include <iostream>
+#include <ostream>
+
+int main() {
+    // 定义变量
+    int *ptr = new int(10);
+
+    // 释放了内存
+    delete ptr;
+    // ptr = nullptr; // 这里必须要加上
+
+    // 这里 ptr 不是 nullptr，if 条件成立
+    if (ptr) {
+        //*ptr = 42;  // 但指向的内存已经释放，危险！
+        std::cout << "1" << std::endl;
+    } else {
+        std::cout << "2" << std::endl;
+    }
+
+
+    return 0;
+}
+```
+
+:::
+
+::: details （4）野指针
 
 ```c++
 #include <iostream>
@@ -820,7 +880,6 @@ int main() {
 ```c++
 #include <iostream>
 #include <iomanip>
-
 
 int main() {
     // 说明
@@ -973,13 +1032,43 @@ int main() {
 
 ::: details （4）
 
+```c++
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
+int main() {
+    // 定义一个字符串输出流
+    std::ostringstream oss;
+
+    // 向oss输入内容
+    oss << std::scientific << 100 * 1.0;
+
+    // 把oss流中的内容取出来, 并输出
+    std::cout << oss.str() << std::endl;
+
+    // ---------------------------------------
+
+    // 下面的待补充
+
+    // 定义一个字符串输入流
+    std::istringstream iss;
+
+    // 向iss输入内容
+
+    // 把oss流中的内容取出来, 并输出
+
+    return 0;
+}
+```
+
 :::
 
 <br />
 
-## 函数重点讲解
+## 入门
 
-### 基本用法
+### 函数
 
 ::: details （1）基本用法
 
@@ -1096,3 +1185,169 @@ Add-3 execute
 
 <br />
 
+### 数组
+
+::: details （1）数组基本用法
+
+```c++
+#include <iostream>
+#include <sstream>
+
+int main() {
+    // 定义一个int数组, 元素个数为9, 当不指定个数时会自动推断, 即 array[] = { ... }
+    // 注意: 不支持使用负数下标访问
+    int array[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    // 计算最大值
+    int max = 0;
+    int size = sizeof(array) / sizeof(array[0]);
+    for (int i = 0; i < size; i++) {
+        if (array[i] > max) {
+            max = array[i];
+        }
+    }
+
+    // 优化for循环
+    // int max = 0;
+    // for (int i : array) {
+    //     if (i > max) {
+    //         max = i;
+    //     }
+    // }
+
+    std::cout << max << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+::: details （2）数组赋值给指针
+
+```c++
+#include <iostream>
+
+void f(int *p) {
+    *p = 10;
+}
+
+int main() {
+    // 定义一个int数组
+    int a[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    // 定义一个int指针
+    int *p = a;
+
+    // 让我们输出看一下
+    // 指针存储的是数组的第一个元素的地址
+    std::cout << a << ", " << sizeof(a) << std::endl;
+    std::cout << p << ", " << sizeof(p) << std::endl;
+
+    // 通过指针p来获取数组所有数据, 用法就和使用a[i]一样
+    int size = sizeof(a) / sizeof(a[0]); // 计算数组长度, 因为指针是不记录数据长度的
+    for (int i = 0; i < size; i++) {
+        std::cout << p[i] << std::endl;
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0x32ce1ff9d0, 36
+0x32ce1ff9d0, 8
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+:::
+
+::: details （3）数组拷贝
+
+```c++
+#include <iostream>
+
+void copy1(int *dst, int *src, const int *src_end) {
+    for (int *p = src; p < src_end; p++) {
+        *dst++ = *p;
+    }
+}
+
+void copy2(int *dst, const int *src, const int n) {
+    for (int i = 0; i < n; i++) {
+        dst[i] = src[i];
+    }
+}
+
+
+// 完美的写法
+void copy(int *dst, const int *src, const int *src_end) {
+    // 如果相等直接返回
+    if (src == dst) {
+        return;
+    }
+
+    // 计算长度
+    auto n = src_end - src;
+    if (dst > src) {
+        for (auto i = n - 1; i >= 0; i--) {
+            dst[i] = src[i];
+        }
+    } else {
+        for (int i = 0; i < n; i++) {
+            dst[i] = src[i];
+        }
+    }
+}
+
+
+int main() {
+    // 定义一个int数组
+    int a[] = {1, 2, 3};
+
+
+    // 第一种方法
+    int b[] = {4, 5, 6};
+    copy1(b, a, a + 3); // 写 a+3 也是可以的
+    for (int i: b) {
+        std::cout << i << std::endl;
+    }
+
+    // 第二种方法
+    int c[] = {4, 5, 6};
+    copy2(c, a, 3);
+    for (int i: c) {
+        std::cout << i << std::endl;
+    }
+
+    // 总结
+    // C++中一般 dst写在前面, src写再后面
+    // 指针相见返回的是long long类型, 代表其中的元素个数
+    // 拷贝数组时要考虑元素顺序的问题, 是从前往后拷, 还是从后往前拷
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1
+2
+3
+1
+2
+3
+```
+
+:::
