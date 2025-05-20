@@ -342,7 +342,9 @@ int main() {
 
 int main() {
     // 1.const 用于声明一个常量，它可以修饰任何基本数据类型、指针或引用
-    const int x = 10;
+    //   优先左结合, 左边没东西的话, 就会右结合
+    // int const x = 10; // 左结合
+    const int x = 10;    // 右结合, 一般我们都会这么写
 
     // 2.constexpr 用于定义编译时常量，这意味着编译器可以在编译期间计算常量的值。
     // 它比 const 更严格，因为它要求常量的值在编译时就可以确定
@@ -671,210 +673,6 @@ int main() {
 
 <br />
 
-### 指针基础学习
-
-::: details （1）基本用法
-
-```c++
-#include <iostream>
-
-
-int main() {
-    // 定义一个变量
-    int x = 100;
-
-    // 输出指针, 他是一个整数, 固定占用4个字节, 指向p的值在内存中的地址
-    std::cout << &x << std::endl;
-
-    // 如果定义指针类型, 那么这样写
-    // ptr是指针类型, 存储的是一个整数, 注意它不是整数类型
-    int *ptr = &x;
-    std::cout << ptr << std::endl;
-
-    // 通过指针获取存储的值
-    std::cout << *ptr << std::endl;
-
-    // 当然, 也可以修改值
-    *ptr = 200;
-    std::cout << *ptr << std::endl;
-    std::cout << x << std::endl;
-
-    // 总结
-    // & 取地址运算符：获取变量的内存地址
-    // * 解引用运算符：访问指针指向的值
-
-    return 0;
-}
-```
-
-输出结果
-
-```bash
-0x86c2fffe64
-0x86c2fffe64
-100
-200
-200
-```
-
-:::
-
-::: details （2）通过指针修改数据
-
-```c++
-#include <iostream>
-
-void f(int *p) {
-    *p = 10;
-}
-
-int main() {
-    // 定义一个变量
-    int x = 20;
-
-    //
-    f(&x);
-
-    // 输出值
-    std::cout << x << std::endl;
-
-    return 0;
-}
-```
-
-输出结果
-
-```bash
-10
-```
-
-:::
-
-::: details （2）空指针
-
-```c++
-#include <iostream>
-
-
-int main() {
-    // 这样定义是错误的，指针初始化时一定要有值
-    // int* py;       // 未初始化指针（危险！）
-    // *py = 5;       // 未定义行为，可能崩溃
-    // std::cout << py << std::endl;
-
-    // 定义一个空指针
-    // 空指针用于明确表示未指向任何对象或内存
-    int *ptr = nullptr;
-    std::cout << ptr << std::endl;
-
-    // 判断指针是否是空指针
-    if (ptr) {
-        // 但是需要注意, 在我们的代码中这里执行正常
-        // 但是有一种可能 ptr指向已经释放的内存, if判断会通过, 所以下面可能会有问题
-        *ptr = 42;
-    } else {
-        std::cout << "指针为空，不能解引用！";
-    }
-
-    return 0;
-}
-```
-
-输出结果
-
-```bash
-0
-指针为空，不能解引用！
-```
-
-:::
-
-::: details （3）释放内存后要将指针设置为空指针
-
-```c++
-#include <iostream>
-#include <ostream>
-
-int main() {
-    // 定义变量
-    int *ptr = new int(10);
-
-    // 释放了内存
-    delete ptr;
-    // ptr = nullptr; // 这里必须要加上
-
-    // 这里 ptr 不是 nullptr，if 条件成立
-    if (ptr) {
-        //*ptr = 42;  // 但指向的内存已经释放，危险！
-        std::cout << "1" << std::endl;
-    } else {
-        std::cout << "2" << std::endl;
-    }
-
-
-    return 0;
-}
-```
-
-:::
-
-::: details （4）野指针
-
-```c++
-#include <iostream>
-
-int *getPointer() {
-    int x = 10; // 局部变量
-    return &x; // ⚠️ 返回局部变量地址（野指针）
-}
-
-int main() {
-    // 野指针（Dangling Pointer）是指向无效内存或已释放内存的指针
-    // 以下是几个常见的野指针示例
-
-    // 示例1: 未初始化指针（指向随机地址）
-    int *ptr1; // ⚠️ 未初始化，可能指向随机地址（野指针）
-    std::cout << "野指针地址: " << ptr1 << std::endl;
-
-    // 示例 2：使用已释放的指针
-    int *ptr2 = new int(42);
-    delete ptr2; // 释放内存
-    std::cout << *ptr2 << std::endl; // ⚠️ 访问已释放内存（野指针）
-
-    // 示例 3：返回局部变量的地址
-    int *ptr3 = getPointer();
-    std::cout << *ptr3 << std::endl; // ❌ 未定义行为
-
-    // 示例 4：数组越界访问
-    int arr[3] = {1, 2, 3};
-    int *ptr4 = arr + 10; // ⚠️ 超出数组范围，可能是野指针
-    std::cout << *ptr4 << std::endl; // ❌ 未定义行为
-
-
-    // 方式1修正方法: 初始化为空指针
-    // int* ptr1 = nullptr;
-
-    // 方式2修正方法: 释放指针后, 将指针设置为空指针
-    // delete ptr2;
-    // ptr2 = nullptr;
-
-    // 方式3修正方法: 使用静态变量
-    // static int x = 10;
-    // return &x;
-
-    // 方式4修正方法: 确保指针在合法范围内
-    // if (ptr4 >= arr && ptr4 < arr + 3) {
-    //     std::cout << *ptr4 << std::endl;
-    // }
-
-    return 0;
-}
-```
-
-:::
-
-<br />
-
 ### 格式化输出
 
 ::: details （1）iomanip：简介、对齐、填充
@@ -1187,6 +985,217 @@ Add-3 execute
 
 <br />
 
+### 指针
+
+::: details （1）基本用法
+
+```c++
+#include <iostream>
+
+
+int main() {
+    // 定义一个变量
+    int x = 100;
+
+    // 输出指针, 他是一个整数, 固定占用4个字节, 指向p的值在内存中的地址
+    std::cout << &x << std::endl;
+
+    // 如果定义指针类型, 那么这样写
+    // ptr是指针类型, 存储的是一个整数, 注意它不是整数类型
+    int *ptr = &x;
+    std::cout << ptr << std::endl;
+
+    // 通过指针获取存储的值
+    std::cout << *ptr << std::endl;
+
+    // 当然, 也可以修改值
+    *ptr = 200;
+    std::cout << *ptr << std::endl;
+    std::cout << x << std::endl;
+
+    // 总结
+    // & 取地址运算符：获取变量的内存地址
+    // * 解引用运算符：访问指针指向的值
+    
+    // 深入
+    // 指针的值是内存地址，本质上是一个整数（表示内存中的某个位置）
+    // 指针本身有类型，比如 int*、char*、std::string* 等，类型告诉编译器这个地址指向的数据类型和大小，决定了如何访问内存。
+	// 虽然指针存的是地址（整数），但不能把它当普通整数来用，因为它带有类型信息，关系到安全和内存访问正确性
+
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0x86c2fffe64
+0x86c2fffe64
+100
+200
+200
+```
+
+:::
+
+::: details （2）通过指针修改数据
+
+```c++
+#include <iostream>
+
+// 定义函数, 形参是一个int类型指针
+void f(int *p) {
+    *p = 10; // 修改值
+}
+
+int main() {
+    // 定义一个变量
+    int x = 20;
+
+    // 将变量的指针传递进去
+    f(&x);
+
+    // 输出值
+    std::cout << x << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+10
+```
+
+:::
+
+::: details （2）空指针
+
+```c++
+#include <iostream>
+
+
+int main() {
+    // 这样定义是错误的，指针初始化时一定要有值
+    // int* py;       // 未初始化指针（危险！）
+    // *py = 5;       // 未定义行为，可能崩溃
+    // std::cout << py << std::endl;
+
+    // 定义一个空指针
+    // 空指针用于明确表示未指向任何对象或内存
+    int *ptr = nullptr;
+    std::cout << ptr << std::endl;
+
+    // 判断指针是否是空指针
+    if (ptr) {
+        // 但是需要注意, 在我们的代码中这里执行正常
+        // 但是有一种可能 ptr指向已经释放的内存, if判断会通过, 所以下面可能会有问题
+        *ptr = 42;
+    } else {
+        std::cout << "指针为空，不能解引用！";
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+指针为空，不能解引用！
+```
+
+:::
+
+::: details （3）释放内存后要将指针设置为空指针
+
+```c++
+#include <iostream>
+#include <ostream>
+
+int main() {
+    // 定义变量
+    int *ptr = new int(10);
+
+    // 释放了内存
+    delete ptr;
+    // ptr = nullptr; // 这里必须要加上
+
+    // 这里 ptr 不是 nullptr，if 条件成立
+    if (ptr) {
+        //*ptr = 42;  // 但指向的内存已经释放，危险！
+        std::cout << "1" << std::endl;
+    } else {
+        std::cout << "2" << std::endl;
+    }
+
+
+    return 0;
+}
+```
+
+:::
+
+::: details （4）野指针
+
+```c++
+#include <iostream>
+
+int *getPointer() {
+    int x = 10; // 局部变量
+    return &x; // ⚠️ 返回局部变量地址（野指针）
+}
+
+int main() {
+    // 野指针（Dangling Pointer）是指向无效内存或已释放内存的指针
+    // 以下是几个常见的野指针示例
+
+    // 示例1: 未初始化指针（指向随机地址）
+    int *ptr1; // ⚠️ 未初始化，可能指向随机地址（野指针）
+    std::cout << "野指针地址: " << ptr1 << std::endl;
+
+    // 示例 2：使用已释放的指针
+    int *ptr2 = new int(42);
+    delete ptr2; // 释放内存
+    std::cout << *ptr2 << std::endl; // ⚠️ 访问已释放内存（野指针）
+
+    // 示例 3：返回局部变量的地址
+    int *ptr3 = getPointer();
+    std::cout << *ptr3 << std::endl; // ❌ 未定义行为
+
+    // 示例 4：数组越界访问
+    int arr[3] = {1, 2, 3};
+    int *ptr4 = arr + 10; // ⚠️ 超出数组范围，可能是野指针
+    std::cout << *ptr4 << std::endl; // ❌ 未定义行为
+
+
+    // 方式1修正方法: 初始化为空指针
+    // int* ptr1 = nullptr;
+
+    // 方式2修正方法: 释放指针后, 将指针设置为空指针
+    // delete ptr2;
+    // ptr2 = nullptr;
+
+    // 方式3修正方法: 使用静态变量
+    // static int x = 10;
+    // return &x;
+
+    // 方式4修正方法: 确保指针在合法范围内
+    // if (ptr4 >= arr && ptr4 < arr + 3) {
+    //     std::cout << *ptr4 << std::endl;
+    // }
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
 ### 数组
 
 ::: details （1）数组基本用法
@@ -1353,3 +1362,128 @@ int main() {
 ```
 
 :::
+
+<br />
+
+### 动态内存分配
+
+::: details （1）malloc 和 free
+
+```c++
+#include <iostream>
+
+int main() {
+    // 语法:
+    //  申请内存
+    //      函数原型: void* malloc(size_t size);
+    //      函数参数： size_t 要分配的字节数
+    //      函数返回: 分配成功：返回一块大小为 size 的内存首地址，类型为 void*，需要强制类型转换
+    //               分配失败：返回 nullptr（C 中是 NULL）
+    //  释放内存：free(内存地址)
+
+    // 分配一个能存 5 个 int 的空间
+    int *arr = (int *) malloc(5 * sizeof(int));
+
+    // 判断申请失败的情况下
+    if (arr == nullptr) {
+        std::cerr << "Memory allocation failed!\n";
+        return 1;
+    }
+
+    // 写入数据, 并输出
+    for (int i = 0; i < 5; ++i) {
+        arr[i] = i * 10;
+        std::cout << arr[i] << std::endl;
+    }
+
+    // 释放内存
+    free(arr);
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+10
+20
+30
+40
+```
+
+:::
+
+::: details （2）new 和 delete (推荐)
+
+```c++
+#include <iostream>
+
+int main() {
+    // 语法:
+    //  申请内存
+    //      说明
+    //          new 是一个 运算符，不是普通的函数，因此它没有像 malloc 那样的标准函数原型。
+    //          但它的行为是通过 重载的全局 operator new 函数 实现的
+    //      返回值
+    //          返回值类型是指定类型的指针（不需要强制类型转换）
+    //          如果分配失败，会抛出 std::bad_alloc 异常, 所以不需要手动检查返回值是否为 nullptr
+    //  释放内存
+    //      delete 用于释放 new 分配的单个对象,
+    //      delete[] 用于释放 new[] 分配的数组
+
+    // 分配 5 个 int 的数组
+    int *arr = new int[5];
+
+    // 写入数据并输出
+    for (int i = 0; i < 5; ++i) {
+        arr[i] = i * 10;
+        std::cout << arr[i] << std::endl;
+    }
+
+    // 释放内存
+    delete []arr;
+
+    // 别忘记将指针设置空指针, 这样做是为了避免悬空指针
+    arr = nullptr;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0
+10
+20
+30
+40
+```
+
+:::
+
+<br />
+
+### 指针数组和数组指针
+
+指针数组是一个数组，它的每个元素都是指针，这个指针可以是任何类型
+
+::: details （1）指针数组
+
+```c++
+int main() {
+    // 指针数组： p是含有9个元素的数组, 每个元素类型是 int*
+    int *p[9]; // 声明变量
+    p[0] = new int(3); // 第一个指针指向: 一个int类型内存地址
+    p[1] = new int[4]; // 第二个指针指向: 一个int数组内存地址, 该数据可以包含4个int数据
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
