@@ -8,6 +8,8 @@ Clion：[https://www.jetbrains.com/clion/](https://www.jetbrains.com/clion/)
 
 MinGW：[https://www.mingw-w64.org/](https://www.mingw-w64.org/)
 
+Visual Studio：[https://visualstudio.microsoft.com/](https://visualstudio.microsoft.com/)
+
 <br />
 
 ## 先混一个脸熟
