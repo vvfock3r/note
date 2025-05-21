@@ -868,6 +868,36 @@ int main() {
 
 ## 入门
 
+### 别名
+
+::: details （1）基本用法
+
+```c++
+#include <iostream>
+
+int main() {
+    // 定义别名: 方法一
+    typedef int MyInt1;
+
+    // 定义别名: 方法二
+    using MyInt2 = int;
+
+    // 定义变量
+    MyInt1 a = 10;
+    MyInt2 b = 20;
+
+    // 和直接用 int 一模一样
+    int sum = a + b;
+    std::cout << sum << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
 ### 函数
 
 ::: details （1）基本用法
@@ -1363,6 +1393,28 @@ int main() {
 
 :::
 
+::: details （4）字符数组
+
+```c++
+#include <iostream>
+
+int main() {
+    char name[6] = {'A', 'l', 'i', 'c', 'e', '\0'};  // 手动加上 \0
+
+    std::cout << "名字是：" << name << std::endl;  // 正确输出：Alice
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+Alice
+```
+
+:::
+
 <br />
 
 ### 动态内存分配
@@ -1487,3 +1539,84 @@ int main() {
 
 <br />
 
+## 工程化
+
+### 头文件
+
+::: details （1）头文件示例：头文件、体文件、main函数都在项目根目录下
+
+`add.h`
+
+```c++
+#ifndef ADD_H
+#define ADD_H
+int Add(int a, int b);
+#endif //ADD_H
+```
+
+`add.cpp`
+
+```c++
+int Add(int a, int b) {
+    return a + b;
+}
+```
+
+`main.cpp`
+
+```c++
+#include <iostream>
+#include "add.h"
+
+int main() {
+    std::cout << Add(1, 2) << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+### 命名空间
+
+::: details （1）定义自己的命名空间，并在里面定义Add函数
+
+`add.h`
+
+```c++
+#ifndef ADD_H
+#define ADD_H
+
+namespace my {
+    int Add(int a, int b);
+}
+
+#endif //ADD_H
+```
+
+`add.cpp`
+
+```c++
+#include "add.h"
+
+int my::Add(int a, int b) {
+    return a + b;
+}
+```
+
+`main.cpp`
+
+```c++
+#include <iostream>
+#include "add.h"
+
+int main() {
+    std::cout << my::Add(1, 2) << std::endl;
+
+    return 0;
+}
+```
+
+:::
