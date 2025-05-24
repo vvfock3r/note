@@ -1,6 +1,122 @@
-# C++ Module
+# C++标准库
 
-## random
+## 通用类
+
+| 标准库         | 说明                                                  |
+| -------------- | ----------------------------------------------------- |
+| `<fstream>`    | 文件读写                                              |
+| `<filesystem>` | 文件系统管理（C++17）                                 |
+| `<utility>`    | `std::move`, `std::swap`, `std::pair`, `std::forward` |
+| `<functional>` | `std::function`, `std::bind`                          |
+| `<iterator>`   | 迭代器工具                                            |
+| `<stdexcept>`  | 标准异常类                                            |
+
+<br />
+
+### fstream
+
+::: details （1）打开文件的方式
+
+**在打开文件时需要先想好使用哪个类，类决定了读写方式**
+
+* `std::ifstream`：只读文件，默认打开模式 `std::ios::in`
+* `std::ofstream`：只写文件，默认打开模式 `std::ios::out`
+* `std::fstream`：读 + 写文件，无默认，需指定模式
+
+**模式说明**
+
+| 打开模式                                   | 说明                                                         |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `std::ifstream("file.txt", std::ios::in)`  | 默认行为，只读，文本模式                                     |
+| `std::ofstream("file.txt", std::ios::out)` | 默认行为，只写，若文件存在会清空，不存在会创建               |
+| `std::ios::app`                            | 所有写入都附加到文件末尾（append）                           |
+| `std::ios::ate`                            | 打开文件后立即移动到末尾，但可以在中间写入（需要手动 `seekp`） |
+| `std::ios::trunc`                          | 打开文件时清空原有内容（通常与 `ios::out` 一起用）           |
+| `std::ios::binary`                         | 以“二进制模式”打开文件（不转换换行符，逐字节处理）           |
+
+```c++
+#include <iostream>
+#include <fstream>
+#include <cerrno>
+#include <cstring>
+
+int main() {
+    // 定义文件名
+    std::string filename = R"(C:\Users\VVFock3r\Desktop\a.txt)";
+
+    // 创建一个输入文件流对象 file，并尝试打开名为 "example.txt" 的文件
+    // 等同于如下代码
+    // std::ifstream file;
+    // file.open("example.txt");
+    // open函数没有返回值, （返回类型是 void），异常情况不会抛出异常（默认情况下），只是让流进入失败状态
+    // 所以不能通过它直接判断打开文件是否成功
+    // std::ifstream file(filename);    
+    
+    // 读写模式、文本模式打开文件，文件必须存在
+    // std::fstream file(filename, std::ios::in | std::ios::out);
+
+    // 读写模式、文本模式打开文件，并自动清空原内容, 文件不存在会自动创建
+    std::fstream file(filename, std::ios::in | std::ios::out | std::ios::trunc);
+
+    // 检查文件流对象 file 是否成功打开文件
+    //      !file 会调用文件流的 operator bool()，判断流是否处于有效状态。
+    //      如果打开失败，流会处于“失败”状态，转换成 false，条件成立
+    // 关于错误原因
+    //       errno 是一个全局变量（准确地说，是线程局部存储变量），
+    //      定义在 <cerrno>（C++）或 <errno.h>（C）中，用来表示最近一次发生错误的错误码。
+    //      很多标准库函数（尤其是系统调用或 I/O 操作）在失败时，不直接说明原因，而是：
+    //      返回错误码（比如 -1）或空指针（如 nullptr）并设置 errno 变量来说明失败的原因    
+    if (!file) {
+        std::cerr << "Failed to open file: " << std::strerror(errno) << std::endl;
+        return 1;
+    }
+
+    // 关闭文件
+    file.close();
+
+    return 0;
+}
+```
+
+:::
+
+::: details （2）读取文件：文本模式下按行读取
+
+```c++
+#include <iostream>
+#include <fstream>
+#include <cerrno>
+#include <cstring>
+
+int main() {
+    // 定义文件名
+    std::string filename = R"(C:\Users\VVFock3r\Desktop\a.txt)";
+
+    // 1.打开
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Failed to open file: " << std::strerror(errno) << '\n';
+        return 1;
+    }
+
+    // 3.读取一行文本，存入 line
+    std::string line;
+    while (std::getline(file, line)) {
+        std::cout << line << std::endl;
+    }
+
+    // 4.关闭文件流，释放资源
+    file.close();
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+### random
 
 `<random>` 的结构大致可以分为三类：
 
@@ -328,7 +444,7 @@ F 分布
 
 <br />
 
-## chrono
+### chrono
 
 ::: details （1）获取时间戳
 
@@ -475,3 +591,50 @@ int main() {
 ```
 
 :::
+
+<br />
+
+## 容器类
+
+| 头文件             | 容器类型             |
+| ------------------ | -------------------- |
+| `<vector>`         | 动态数组             |
+| `<array>`          | 固定大小数组（栈上） |
+| `<list>`           | 双向链表             |
+| `<forward_list>`   | 单向链表             |
+| `<deque>`          | 双端队列             |
+| `<stack>`          | 栈（适配器）         |
+| `<queue>`          | 队列（适配器）       |
+| `<priority_queue>` | 优先队列             |
+| `<set>`            | 有序集合             |
+| `<unordered_set>`  | 无序集合             |
+| `<map>`            | 有序映射             |
+| `<unordered_map>`  | 无序映射             |
+| `<bitset>`         | 定长位集合           |
+
+<br />
+
+##  迭代器与算法
+
+| 头文件        | 功能说明                   |
+| ------------- | -------------------------- |
+| `<iterator>`  | 迭代器适配器、traits       |
+| `<algorithm>` | 排序、查找、变换等通用算法 |
+| `<execution>` | 并行算法（C++17 起）       |
+| `<ranges>`    | 范围库（C++20）            |
+
+<br />
+
+## 并发与线程支持
+
+| `<thread>`           | `std::thread` 线程类    |
+| -------------------- | ----------------------- |
+| `<mutex>`            | 互斥锁                  |
+| `<shared_mutex>`     | 共享互斥锁（读写锁）    |
+| <condition_variable> | 条件变量                |
+| `<atomic>`           | 原子操作类型            |
+| `<future>`           | 异步任务与 `std::async` |
+| `<semaphore>`        | 信号量（C++20）         |
+| `<barrier>`          | 屏障（C++20）           |
+| `<latch>`            | 闭锁（C++20）           |
+| `<stop_token>`       | 停止线程控制（C++20）   |
