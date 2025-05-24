@@ -1539,6 +1539,113 @@ int main() {
 
 <br />
 
+### 结构体和联合体
+
+**结构体**
+
+::: details （1）基本示例
+
+```c++
+#include <format>
+#include <iostream>
+
+// 定义一个结构体, 这是一个新类型, 地位相当于int
+struct Point {
+    int x;
+    int y;
+};
+
+int main() {
+    // 结构体初始化
+    Point p1 = {10, 20}; // 方法1, 推荐
+    auto p2 = Point{10, 20}; // 方法2
+    Point p3 = p1; // 方法3
+    Point *p4 = &p1; // 定义一个指针
+
+    // 修改
+    p1.x = 100;
+    p1.y = 200;
+
+    // 访问,  p4->x 相当于 (*p4).x
+    // 需要注意的是只有指针对象和自定义类才能使用 ->
+    // 在这个代码中, p1、p2、p3都是不能使用 -> 的
+    p4->x = 1000;
+    std::cout << p4->x << std::endl;
+
+    // 输出
+    std::cout << std::format("Point({}, {})", p1.x, p1.y) << std::endl;
+    std::cout << std::format("Point({}, {})", p2.x, p2.y) << std::endl;
+    std::cout << std::format("Point({}, {})", p3.x, p3.y) << std::endl;
+
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1000
+Point(1000, 200)
+Point(10, 20)
+Point(10, 20)
+```
+
+:::
+
+**联合体**
+
+`union`（联合体）是一种特殊的用户自定义类型，允许多个成员共享同一段内存空间。
+
+相比 `struct`，`union` 的最大特点是 **所有成员共用一块内存，但一次只能使用一个成员**
+
+::: details （1）联合体说明
+
+```c++
+#include <format>
+#include <iostream>
+
+// 定义一个联合体，包含三个成员：int x, float y, char z
+// 所有成员占用相同的内存地址
+// union 的总大小等于 最大成员的大小
+union MyUnion {
+    int x;
+    float y;
+    char z;
+};
+
+int main() {
+    // 初始化, 注意只能不能把3个值全写上
+    MyUnion u = {1};
+
+    // 修改
+    u.y = 2.0f;
+
+    // 输出
+    std::cout << u.x << std::endl;
+    std::cout << u.y << std::endl;
+    std::cout << u.z << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+1073741824
+2
+ 
+```
+
+:::
+
+<br />
+
+
+
+<br />
+
 ## 工程化
 
 ### 头文件
