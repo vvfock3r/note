@@ -1638,6 +1638,76 @@ int main() {
 
 :::
 
+### 面向对象
+
+::: details （1）类语法
+
+```c++
+// 语法
+// class 类名 {
+//     访问权限修饰符(private, public, protected)
+//     成员数据;
+//     成员函数;
+// };
+
+// class 和 struct
+// class是struct的升级版本，用struct定义类也是可以的，默认的修饰符是 public
+
+#include <iostream>
+
+class Person {
+public:
+    // 在对象创建时初始化age为0
+    Person(): age(0) {
+    };
+
+    // 方法, nodiscard是 告诉编译器：“这个函数的返回值不能被忽略”, 不是必须要写
+    [[nodiscard]] int get() const { return age; }
+
+    // 方法
+    bool set(int age) {
+        if (age < 0) { return false; }
+        this->age = age;
+        return true;
+    }
+
+private:
+    int age;
+};
+
+int main() {
+    // 实例化类
+    Person p;
+
+    // 调用方法
+    p.set(10);
+
+    // 调用方法
+    std::cout << p.get() << std::endl;
+
+    // 调用方法
+    int age = -1;
+    if (!p.set(age)) {
+        std::cerr << "Invalid age: " << age << std::endl;
+    }
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+10
+Invalid age: -1
+```
+
+:::
+
+::: details （2）构造函数
+
+:::
+
 <br />
 
 ## 工程化
