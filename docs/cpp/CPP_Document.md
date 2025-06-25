@@ -1942,7 +1942,37 @@ Bob
 
 ### this 指针
 
+::: details 基础用法
 
+```c++
+#include <iostream>
+#include <utility>
+
+class Person {
+public:
+    std::string name;
+
+    void setName(std::string newName) {
+        // this 是一个指向当前对象的 指针，类型是 Person*
+        // this->name 完全等同于  (*this).name
+        // 如果需要链式调用, 可以返回 *this, 表示当前对象本身，类型是 Person&（对象的引用）
+        this->name = std::move(newName);
+    }
+};
+
+
+int main() {
+    // 实例化对象
+    Person p;
+
+    // 调用方法
+    p.setName("Bob");
+
+    return 0;
+}
+```
+
+:::
 
 <br />
 
