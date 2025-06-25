@@ -1686,11 +1686,9 @@ c: Hello
 
 ::: details （1）类语法
 
-```c++
-#include <iostream>
-#include <random>
-#include <chrono>
+**语法简介**
 
+```c++
 // 语法
 // class 类名 {
 //     访问权限修饰符(private, public, protected)
@@ -1700,51 +1698,81 @@ c: Hello
 //
 // class 和 struct
 // class是struct的升级版本，用struct定义类也是可以的，默认的修饰符是 public
+```
+
+**示例代码**
+
+```c++
+#include <iostream>
+#include <utility>
 
 class Person {
+
 public:
-    // 方法
-    // 可以在int前面添加 [[nodiscard]], 不是必须要写
-    // nodiscard是 告诉编译器：“这个函数的返回值不能被忽略”
-    [[nodiscard]] int get() const {
-        return age;
+    // 定义属性
+    std::string name; // 默认是空字符串, 可以认为默认已经初始化了
+    int age; // 语法没问题, 但是注意这里未初始化
+
+    // 定义方法
+    void set(std::string n, int a) {
+        name = std::move(n);
+        age = a;
     }
 
-    // 方法
-    bool set(int _age) {
-        if (_age < 0) {
-            return false;
-        }
-        this->age = _age;
-        return true;
+    // 定义方法
+    void sayHello() const {
+        std::cout << "Name: " << name << ", Age: " << age;
     }
-
-private:
-    int age = -1;
 };
 
+
 int main() {
-    // 实例化类
+    // 实例化对象
     Person p;
 
     // 调用方法
-    std::cout << p.get() << std::endl;
+    p.set("Bob", 12);
+    p.sayHello();
 
-    // 调用方法
-    p.set(10);
-    std::cout << p.get() << std::endl;
+    return 0;
+}
+```
 
-    // 生成一个随机数
-    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
-    std::uniform_int_distribution<int> int_dist(-10, 10);
-    int age = int_dist(prng);
+输出结果
 
-    // 调用方法
-    if (!p.set(age)) {
-        std::cerr << "Invalid age: " << age << std::endl;
-    } else {
-        std::cout << p.get() << std::endl;
-    }
+```bash
+Name: Bob, Age: 12
+```
+
+:::
+
+::: details （2）直接初始化变量的值（但更推荐使用构造函数来初始化）
+
+```c++
+#include <iostream>
+#include <utility>
+
+class Person {
+
+public:
+    // 定义属性
+    std::string name; // 默认是空字符串, 可以认为默认已经初始化了
+    std::string name2 = "Bob";
+
+    int age = 0; // 方法1
+    int age2{}; // 方法2, 值也是0
+};
+
+
+int main() {
+    // 实例化对象
+    Person p;
+
+    // 查看属性
+    std::cout << p.name << std::endl;
+    std::cout << p.name2 << std::endl;
+    std::cout << p.age << std::endl;
+    std::cout << p.age2 << std::endl;
 
 
     return 0;
@@ -1754,9 +1782,10 @@ int main() {
 输出结果
 
 ```bash
--1
-10
-Invalid age: -8
+
+Bob
+0
+0
 ```
 
 :::
@@ -1782,7 +1811,6 @@ public:
         age = 10;
         std::cout << "构造函数被调用" << std::endl;
     }
-
 };
 
 
