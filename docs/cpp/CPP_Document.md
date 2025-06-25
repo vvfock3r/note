@@ -46,23 +46,7 @@ Hello World!
 
 :::
 
-::: details （2）Clion：解决不能显示中文问题
-
-**1.确保文件编码为UTF-8，同时注意：文件的右下角编码也应该显示为UTF-8**
-
-![image-20250401202918138](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401202918138.png)
-
-**2.设置不勾选 run.processes.with.pty**
-
-> 按两次Shift， 输入Registry, 选择Registry...，点击Key, 让它自动按字母排序
-
-![image-20250401203149065](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401203149065.png)
-
-
-
-:::
-
-::: details （3）另一种写法：输出 Hello World!
+::: details （2）另一种写法：输出 Hello World!
 
 ```c++
 #include <iostream>
@@ -93,7 +77,7 @@ Hello World!
 
 :::
 
-::: details （4）Clion：去掉符号表和调试信息
+::: details （3）Clion：去掉符号表和调试信息
 
 > 修改 CMakeLists.txt文件
 
@@ -863,6 +847,32 @@ int main() {
 ```
 
 :::
+
+<br />
+
+### Clion 设置
+
+::: details （1）解决不能显示中文问题
+
+**1.确保文件编码为UTF-8，同时注意：文件的右下角编码也应该显示为UTF-8**
+
+![image-20250401202918138](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401202918138.png)
+
+**2.设置不勾选 run.processes.with.pty**
+
+> 按两次Shift， 输入Registry, 选择Registry...，点击Key, 让它自动按字母排序
+
+![image-20250401203149065](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401203149065.png)
+
+
+
+:::
+
+::: details （2）设置*号位置
+
+:::
+
+
 
 <br />
 
@@ -1790,6 +1800,12 @@ Bob
 
 :::
 
+::: details （3）类 类型 解引用返回的是引用
+
+
+
+:::
+
 <br />
 
 ### 构造函数
@@ -1921,6 +1937,12 @@ Bob
 ```
 
 :::
+
+<br />
+
+### this 指针
+
+
 
 <br />
 
