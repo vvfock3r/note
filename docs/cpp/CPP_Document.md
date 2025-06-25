@@ -1634,45 +1634,93 @@ int main() {
 
 :::
 
-::: details （3）
+### 常用方式注意事项
+
+::: details std::move 将左值转换为右值引用
+
+```c++
+#include <iostream>
+#include <string>
+
+// std::move 是类型转换，它本身并不动数据
+// 默认情况下，变量是左值，传递或赋值会调用拷贝操作，比较耗性能。
+// 移动语义允许“偷走”对象内部资源，效率更高。
+// 但移动操作只能针对右值，std::move是告诉编译器“放心，这个左值你可以当成右值用”。
+//
+// 总结: 把 std::move(x) 看作是给变量 x 贴了个标签: “这个东西可以被搬走了，别复制，直接拿走就好。”
+
+// 注意事项
+// 复杂对象，有资源（堆内存），比如 std::string, 移动它比复制更高效
+// 基本数据类型，比如 int, 拷贝非常轻量，移动和拷贝没区别
+
+int main() {
+    // 定义变量
+    std::string a = "Hello";
+
+    // 拷贝构造
+    std::string b = a;
+    std::cout << "a: " << a << ", b: " << b << std::endl;
+
+    // 移动构造
+    std::string c = std::move(a);
+    std::cout << "a (被移动后): " << a << std::endl; // 通常是空字符串
+    std::cout << "c: " << c << std::endl;
+}
+```
+
+输出结果
+
+```bash
+a: Hello, b: Hello
+a (被移动后): 
+c: Hello
+```
 
 :::
 
-### 面向对象
+<br />
+
+## 面向对象
+
+### 基本语法
 
 ::: details （1）类语法
 
 ```c++
+#include <iostream>
+#include <random>
+#include <chrono>
+
 // 语法
 // class 类名 {
 //     访问权限修饰符(private, public, protected)
 //     成员数据;
 //     成员函数;
 // };
-
+//
 // class 和 struct
 // class是struct的升级版本，用struct定义类也是可以的，默认的修饰符是 public
 
-#include <iostream>
-
 class Person {
 public:
-    // 在对象创建时初始化age为0
-    Person(): age(0) {
-    };
-
-    // 方法, nodiscard是 告诉编译器：“这个函数的返回值不能被忽略”, 不是必须要写
-    [[nodiscard]] int get() const { return age; }
+    // 方法
+    // 可以在int前面添加 [[nodiscard]], 不是必须要写
+    // nodiscard是 告诉编译器：“这个函数的返回值不能被忽略”
+    [[nodiscard]] int get() const {
+        return age;
+    }
 
     // 方法
-    bool set(int age) {
-        if (age < 0) { return false; }
-        this->age = age;
+    bool set(int _age) {
+        if (_age < 0) {
+            return false;
+        }
+        this->age = _age;
         return true;
     }
 
 private:
-    int age;
+    int age = -1;
 };
 
 int main() {
@@ -1680,16 +1728,24 @@ int main() {
     Person p;
 
     // 调用方法
-    p.set(10);
-
-    // 调用方法
     std::cout << p.get() << std::endl;
 
     // 调用方法
-    int age = -1;
+    p.set(10);
+    std::cout << p.get() << std::endl;
+
+    // 生成一个随机数
+    std::mt19937 prng(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::uniform_int_distribution<int> int_dist(-10, 10);
+    int age = int_dist(prng);
+
+    // 调用方法
     if (!p.set(age)) {
         std::cerr << "Invalid age: " << age << std::endl;
+    } else {
+        std::cout << p.get() << std::endl;
     }
+
 
     return 0;
 }
@@ -1698,13 +1754,143 @@ int main() {
 输出结果
 
 ```bash
+-1
 10
-Invalid age: -1
+Invalid age: -8
 ```
 
 :::
 
-::: details （2）构造函数
+<br />
+
+### 构造函数
+
+::: details （1）基本用法
+
+```c++
+#include <iostream>
+
+class Person {
+
+public:
+    std::string name;
+    int age;
+
+    // 构造函数, 写法如下
+    Person() {
+        name = "bob";
+        age = 10;
+        std::cout << "构造函数被调用" << std::endl;
+    }
+
+};
+
+
+int main() {
+    // 构造函数是一种特殊的成员函数，在对象被创建时自动调用
+    Person p;
+
+    // 查看属性
+    std::cout << p.name << std::endl;
+    std::cout << p.age << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+构造函数被调用
+bob
+10
+```
+
+:::
+
+::: details （2）带参数的构造函数
+
+```c++
+#include <iostream>
+
+class Person {
+
+public:
+    std::string name;
+    int age;
+
+    // 构造函数, 写法如下
+    Person(std::string n, int a) {
+        name = std::move(n);
+        age = a;
+        std::cout << "构造函数被调用" << std::endl;
+    }
+
+};
+
+
+int main() {
+    // 带参数的构造函数
+    Person p("Bob", 12);
+
+    // 查看属性
+    std::cout << p.name << std::endl;
+    std::cout << p.age << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+构造函数被调用
+Bob
+12
+```
+
+:::
+
+::: details （3）构造函数初始化列表（更高效）
+
+```c++
+#include <iostream>
+#include <utility>
+
+class Person {
+
+public:
+    std::string name;
+    int age;
+
+    // 构造函数初始化列表（更高效）
+    // name(n) 等于 name = string(n);
+    // age(a)  等于 age = int(a);
+    Person(std::string n, int a) : name(std::move(n)), age(a) {
+        std::cout << "构造函数被调用" << std::endl;
+    }
+};
+
+
+int main() {
+    // 带参数的构造函数
+    Person p("Bob", 12);
+
+    // 查看属性
+    std::cout << p.name << std::endl;
+    std::cout << p.age << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+构造函数被调用
+Bob
+12
+```
 
 :::
 
@@ -1791,3 +1977,5 @@ int main() {
 ```
 
 :::
+
+<br />
