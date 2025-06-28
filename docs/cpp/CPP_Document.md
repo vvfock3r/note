@@ -1111,7 +1111,7 @@ int main() {
 
 :::
 
-::: details （2）空指针
+::: details （3）空指针
 
 ```c++
 #include <iostream>
@@ -1150,7 +1150,7 @@ int main() {
 
 :::
 
-::: details （3）释放内存后要将指针设置为空指针
+::: details （4）释放内存后要将指针设置为空指针
 
 ```c++
 #include <iostream>
@@ -1179,7 +1179,7 @@ int main() {
 
 :::
 
-::: details （4）野指针
+::: details （5）野指针
 
 ```c++
 #include <iostream>
@@ -1230,6 +1230,49 @@ int main() {
 
     return 0;
 }
+```
+
+:::
+
+<br />
+
+### 引用
+
+::: details 对比学习一下指针和引用
+
+```c++
+#include <iostream>
+
+
+int main() {
+    // 定义变量
+    int a = 10;
+    int b = 20;
+
+    // p是个指针, 指针是一个变量，它保存另一个变量的地址
+    int* p = &a;
+
+    // r是个引用, 引用是某个变量的别名，相当于给变量起了另一个名字, 不占新内存
+    // 引用必须在定义时初始化，且不能再改为引用其他变量
+    int& r = b;
+
+    // 获取值(修改值也一样的用法)
+    std::cout << *p << std::endl;  // 指针要通过 *指针 来获取到值
+    std::cout << r << std::endl;  // 引用直接用就可以了
+
+    // 总结:
+    // p是一个int指针, 类型是 int*
+    // r是一个int引用, 类型是int&
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+10
+20
 ```
 
 :::
@@ -1651,6 +1694,7 @@ int main() {
 ```c++
 #include <iostream>
 #include <string>
+#include <utility>
 
 // std::move 是类型转换，它本身并不动数据
 // 默认情况下，变量是左值，传递或赋值会调用拷贝操作，比较耗性能。
@@ -1731,7 +1775,7 @@ public:
 
     // 定义方法
     void sayHello() const {
-        std::cout << "Name: " << name << ", Age: " << age;
+        std::cout << "Name: " << name << ", Age: " << age << std::endl;
     }
 };
 
@@ -1744,6 +1788,19 @@ int main() {
     p.set("Bob", 12);
     p.sayHello();
 
+    // ---------------------------------------------------------------------------
+    // 也可以使用下面的方式初始化, 略显繁琐
+    auto* p2 = new Person;  // p2的类型为Person*
+    (*p2).set("Jack", 18);
+    (*p2).sayHello();
+    delete p2;
+
+    // ---------------------------------------------------------------------------
+    auto p3 = new Person;  // p3的类型为Person*
+    p3->set("Alice", 20);
+    p3->sayHello();
+    delete p3;
+
     return 0;
 }
 ```
@@ -1752,6 +1809,8 @@ int main() {
 
 ```bash
 Name: Bob, Age: 12
+Name: Jack, Age: 18
+Name: Alice, Age: 20
 ```
 
 :::
@@ -1802,7 +1861,44 @@ Bob
 
 ::: details （3）类 类型 解引用返回的是引用
 
+```c++
+#include <iostream>
+#include <utility>
 
+class Person {
+
+public:
+    // 定义属性
+    std::string name; // 默认是空字符串, 可以认为默认已经初始化了
+    int age; // 语法没问题, 但是注意这里未初始化
+
+    // 定义方法
+    void set(std::string n, int a) {
+        name = std::move(n);
+        age = a;
+    }
+
+    // 定义方法
+    void sayHello() const {
+        std::cout << "Name: " << name << ", Age: " << age << std::endl;
+    }
+};
+
+
+int main() {
+    // 实例化对象
+    auto p = new Person;
+
+    // 对指针p进行解引用, 得到的类型是：Person的引用, 级 Person&
+    // *p
+
+    // 删除指针
+    delete p;
+    p = nullptr;
+
+    return 0;
+}
+```
 
 :::
 
@@ -1955,7 +2051,8 @@ public:
     void setName(std::string newName) {
         // this 是一个指向当前对象的 指针，类型是 Person*
         // this->name 完全等同于  (*this).name
-        // 如果需要链式调用, 可以返回 *this, 表示当前对象本身，类型是 Person&（对象的引用）
+        // *this就是当前对象的引用, Person&
+		// 如果需要链式调用, 可以返回 *this, 表示当前对象本身，类型是 Person&（对象的引用）
         this->name = std::move(newName);
     }
 };
