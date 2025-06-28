@@ -2,7 +2,9 @@
 
 <br />
 
-## 文档整理
+## 文档
+
+C++: [https://learn.microsoft.com/zh-cn/cpp/cpp/cpp-language-reference](https://learn.microsoft.com/zh-cn/cpp/cpp/cpp-language-reference)
 
 Clion：[https://www.jetbrains.com/clion/](https://www.jetbrains.com/clion/)
 
@@ -10,9 +12,11 @@ MinGW：[https://www.mingw-w64.org/](https://www.mingw-w64.org/)
 
 Visual Studio：[https://visualstudio.microsoft.com/](https://visualstudio.microsoft.com/)
 
+vcpkg：[https://learn.microsoft.com/zh-cn/vcpkg/](https://learn.microsoft.com/zh-cn/vcpkg/)
+
 <br />
 
-## 基础
+## 1）牛刀小试
 
 ### 第一个程序
 
@@ -878,7 +882,7 @@ int main() {
 
 <br />
 
-## 入门
+## 2）基础入门
 
 ### 别名
 
@@ -1736,7 +1740,7 @@ c: Hello
 
 <br />
 
-## 面向对象
+## 3）面向对象
 
 ### 基本语法
 
@@ -1920,6 +1924,9 @@ public:
     int age;
 
     // 构造函数, 写法如下
+    // 与类同名
+    // 由系统调用, 无返回值
+    // 构造函数可以有多个，可以适应不同的场景
     Person() {
         name = "bob";
         age = 10;
@@ -1993,7 +2000,7 @@ Bob
 
 :::
 
-::: details （3）构造函数初始化列表（更高效）
+::: details （3）构造函数初始化列表
 
 ```c++
 #include <iostream>
@@ -2036,11 +2043,191 @@ Bob
 
 :::
 
+::: details （4）必须使用初始化列表的情况：const成员变量
+
+```c++
+#include <iostream>
+
+class A {
+
+public:
+    // 常量
+    const int x;
+
+    // ✅ 正确
+    A(int val) : x(val) {}
+
+    // ❌ 错误：常量不能在函数体内赋值
+    // A(int val) { x = val; }
+};
+
+
+int main() {
+    // 实例化A对象
+    A a(12);
+    std::cout << a.x << std::endl;
+
+    return 0;
+}
+```
+
+:::
+
+::: details （5）必须使用初始化列表的情况：引用成员变量
+
+```c++
+class A {
+    int& ref;
+public:
+    // ✅ 正确
+    A(int& r) : ref(r) {}
+
+    // ❌ 错误：引用必须在初始化列表中初始化
+    // A(int& r) { ref = r; }
+};
+
+
+int main() {
+    // 实例化A对象
+    A a;
+
+    return 0;
+}
+```
+
+:::
+
+::: details （6）必须使用初始化列表的情况：没有默认构造函数的成员
+
+```c++
+#include <iostream>
+
+class B {
+public:
+    B(int x) { std::cout << "B 构造: " << x << std::endl; }
+};
+
+class A {
+    B b;
+public:
+    // ✅ 正确，调用 B 的有参构造
+    A() : b(10) {}
+
+    // ❌ 错误，b 无默认构造函数，无法先构造再赋值
+    // 如果B中的构造函数没有参数, 就可以不必须要写在在初始化列表中
+    // A() { b = B(10); }
+};
+
+
+int main() {
+    // 实例化A对象
+    A a;
+
+    return 0;
+}
+```
+
+:::
+
+::: details （7）必须使用初始化列表的情况：派生类必须用初始化列表来调用基类的构造函数（除非基类有默认构造函数）
+
+```c++
+#include <iostream>
+
+class Base {
+public:
+    Base(int x) {}
+};
+
+class Derived : public Base {
+public:
+    // ✅ 正确
+    Derived() : Base(10) {}
+
+    // ❌ 错误：Base 没有默认构造函数
+    // Derived() { }
+};
+
+
+int main() {
+    // 实例化对象
+    Derived a;
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+### 析构函数
+
+::: details （1）基础用法
+
+```c++
+#include <iostream>
+
+class Person {
+
+public:
+    std::string name;
+    int age;
+
+    // 构造函数
+    Person() {
+        name = "bob";
+        age = 10;
+        std::cout << "构造函数被调用" << std::endl;
+    }
+
+    // 析构函数是当对象生命周期结束时自动调用的特殊成员函数，用于清理资源（如内存、文件句柄、网络连接等）
+    // 名字和类同名，前面加 ~
+    // 没有返回值，也不能有参数
+    // 每个类最多一个析构函数
+    // 会在对象销毁时自动调用
+    ~Person() {
+        std::cout << "析构函数被调用" << std::endl;
+    }
+};
+
+
+int main() {
+    // 方式1: {}结束后, 代表作用域结束，析构函数自动被调用
+    {
+        Person p;
+    }
+
+    std::cout << "End - 1\n" << std::endl;
+
+    // 方式2：使用delete销毁对象时自动回收
+    auto p = new Person();
+    delete p;
+    std::cout << "End - 2\n" << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+构造函数被调用
+析构函数被调用
+End - 1
+
+构造函数被调用
+析构函数被调用
+End - 2
+```
+
+:::
+
 <br />
 
 ### this 指针
 
-::: details 基础用法
+::: details （1）基础用法
 
 ```c++
 #include <iostream>
@@ -2053,7 +2240,7 @@ public:
     void setName(std::string newName) {
         // this 是一个指向当前对象的 指针，类型是 Person*
         // this->name 完全等同于  (*this).name
-        // *this就是当前对象的引用, Person&, 如果需要链式调用, 可以返回 *this
+        // *this就是当前对象的引用, 类型是Person&, 如果需要链式调用, 可以返回 *this
         this->name = std::move(newName);
     }
 };
@@ -2072,9 +2259,54 @@ int main() {
 
 :::
 
+::: details （2）验证this的值
+
+```c++
+#include <iostream>
+#include <utility>
+
+class Person {
+public:
+    std::string name;
+
+    void setName(std::string newName) {
+        // this 是一个指向当前对象的 指针，类型是 Person*
+        // this->name 完全等同于  (*this).name
+        // *this就是当前对象的引用, 类型是Person&, 如果需要链式调用, 可以返回 *this
+        this->name = std::move(newName);
+
+        // 输出this
+        std::cout << this << std::endl;
+    }
+};
+
+
+int main() {
+    // 实例化对象
+    Person p;
+
+    // 调用方法
+    p.setName("Bob");
+
+    // 输出p的地址
+    std::cout << &p << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+0x5c275ff7e0
+0x5c275ff7e0
+```
+
+:::
+
 <br />
 
-## 工程化
+## 4）工程化
 
 ### 头文件
 
@@ -2157,3 +2389,18 @@ int main() {
 :::
 
 <br />
+
+### vcpkg
+
+<br />
+
+### MSVC
+
+说明：Clion默认使用的是MinGW，这里我们使用MSVC代替MinGW
+
+**1.安装 Visual Studio**
+
+![image-20250628235942394](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250628235942394.png)
+
+**2.设置 Clion**
+
