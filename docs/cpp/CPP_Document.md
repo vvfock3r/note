@@ -856,23 +856,25 @@ int main() {
 
 **1.确保文件编码为UTF-8，同时注意：文件的右下角编码也应该显示为UTF-8**
 
-![image-20250401202918138](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401202918138.png)
+![image-20250401202918138](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250401202918138.png)
 
-**2.设置不勾选 run.processes.with.pty**
+:::
 
-> 按两次Shift， 输入Registry, 选择Registry...，点击Key, 让它自动按字母排序
+::: details （2）解决不能打开终端的问题
 
-![image-20250401203149065](https://tuchuang-1257805459.cos.ap-shanghai.myqcloud.com/image-20250401203149065.png)
+> 按两次Shift， 输入Registry, 选择Registry...，点击Key, 让它自动按字母排序，设置不勾选 run.processes.with.pty
+
+![image-20250401203149065](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250401203149065.png)
 
 
 
 :::
 
-::: details （2）设置*号位置
+::: details （3）设置*和&位置
+
+![20250628194803](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/20250628194803.png)
 
 :::
-
-
 
 <br />
 
@@ -2051,8 +2053,7 @@ public:
     void setName(std::string newName) {
         // this 是一个指向当前对象的 指针，类型是 Person*
         // this->name 完全等同于  (*this).name
-        // *this就是当前对象的引用, Person&
-		// 如果需要链式调用, 可以返回 *this, 表示当前对象本身，类型是 Person&（对象的引用）
+        // *this就是当前对象的引用, Person&, 如果需要链式调用, 可以返回 *this
         this->name = std::move(newName);
     }
 };
