@@ -2402,5 +2402,40 @@ int main() {
 
 ![image-20250628235942394](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250628235942394.png)
 
-**2.设置 Clion**
+```bash
+# 核心程序
+# cl.exe   编译器
+# link.exe 连接器
 
+# cl路径路径参考
+# cl和link路径一般不在系统环境变量中, 为了使用方法可以手动添加到 系统环境变量中
+# C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64
+
+# 测试
+C:\Users\VVFock3r> cl
+用于 x64 的 Microsoft (R) C/C++ 优化编译器 19.44.35211 版
+版权所有(C) Microsoft Corporation。保留所有权利。
+
+用法: cl [ 选项... ] 文件名... [ /link 链接选项... ]
+
+# ------------------------------------------------------------------------------------------------------------
+
+# MSVC中有cmake.exe, 但是我们无法直接使用, MSVC 自带的CMake运行前需要特别的环境初始化，所以我们无法直接使用它，路径参考如下
+# C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin
+```
+
+**2.安装 独立版 CMake（不确定是否必须做这一步）**
+
+下载地址：[https://cmake.org/download/](https://cmake.org/download/)
+
+**3.设置 Clion**
+
+![image-20250629010100424](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250629010100424.png)
+
+**4.重启Clion**
+
+修改了Clion里使用的编译器配置（比如切换了MSVC和MinGW，或者改了编译器路径），强烈建议重启Clion
+
+**5.确保MSVC和MinGW编译器都可以正常使用（切换后重启 Clion）**
+
+<br />
