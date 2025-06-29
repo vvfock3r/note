@@ -2436,7 +2436,9 @@ C:\Users\VVFock3r> cl
 
 **6.注意事项**
 
-* 代码中的特殊注释会影响到MSVC编译器，比如 `// 定义属性`，所以注释不能随便写，暂时还不知道如何修复这个问题
+* 代码中的特殊注释会影响到MSVC编译器，比如 `// 定义属性`，解决办法之一：在`CMakeLists.txt`中添加 `add_compile_options("/source-charset:utf-8")`
+
+
 
 <br />
 
