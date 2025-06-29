@@ -1787,7 +1787,7 @@ public:
 
 
 int main() {
-    // 实例化对象
+    // 实例化对象, 在栈上分配内存
     Person p;
 
     // 调用方法
@@ -1796,13 +1796,13 @@ int main() {
 
     // ---------------------------------------------------------------------------
     // 也可以使用下面的方式初始化, 略显繁琐
-    auto* p2 = new Person;  // p2的类型为Person*
+    auto* p2 = new Person;  // p2的类型为Person*, 在堆上分配内存
     (*p2).set("Jack", 18);
     (*p2).sayHello();
     delete p2;
 
     // ---------------------------------------------------------------------------
-    auto p3 = new Person;  // p3的类型为Person*
+    auto p3 = new Person;  // p3的类型为Person*, 在堆上分配内存
     p3->set("Alice", 20);
     p3->sayHello();
     delete p3;
@@ -2390,10 +2390,6 @@ int main() {
 
 <br />
 
-### vcpkg
-
-<br />
-
 ### MSVC
 
 说明：Clion默认使用的是MinGW，这里我们使用MSVC代替MinGW
@@ -2439,3 +2435,141 @@ C:\Users\VVFock3r> cl
 **5.确保MSVC和MinGW编译器都可以正常使用（切换后重启 Clion）**
 
 <br />
+
+### vcpkg
+
+代码仓库：[https://github.com/microsoft/vcpkg/releases](https://github.com/microsoft/vcpkg/releases)
+
+独立二进制（还依赖仓库中其他文件所以不能直接使用）：[https://github.com/microsoft/vcpkg-tool/releases](https://github.com/microsoft/vcpkg-tool/releases)
+
+::: details 
+
+```bash
+# 1、克隆仓库
+D:\> git -c http.proxy=http://127.0.0.1:7890 clone https://github.com/microsoft/vcpkg.git
+Cloning into 'vcpkg'...
+remote: Enumerating objects: 278455, done.
+remote: Counting objects: 100% (432/432), done.
+remote: Compressing objects: 100% (263/263), done.
+remote: Total 278455 (delta 343), reused 169 (delta 169), pack-reused 278023 (from 3)
+Receiving objects: 100% (278455/278455), 86.50 MiB | 11.37 MiB/s, done.
+Resolving deltas: 100% (185590/185590), done.
+Updating files: 100% (12522/12522), done.
+
+# 2、初始化，这会在当前目录下生成vcpkg.exe
+D:\> cd vcpkg
+D:\vcpkg> .\bootstrap-vcpkg.bat
+Downloading https://github.com/microsoft/vcpkg-tool/releases/download/2025-06-20/vcpkg.exe -> D:\vcpkg\vcpkg.exe (using IE proxy: 127.0.0.1:7890)... done.
+Validating signature... done.
+
+vcpkg package management program version 2025-06-20-ef7c0d541124bbdd334a03467e7edb6c3364d199
+
+See LICENSE.txt for license information.
+Telemetry
+---------
+vcpkg collects usage data in order to help us improve your experience.
+The data collected by Microsoft is anonymous.
+You can opt-out of telemetry by re-running the bootstrap-vcpkg script with -disableMetrics,
+passing --disable-metrics to vcpkg on the command line,
+or by setting the VCPKG_DISABLE_METRICS environment variable.
+
+Read more about vcpkg telemetry at docs/about/privacy.m
+
+# 3、设置环境变量 VCPKG_ROOT 指向完整仓库
+# 变量名: VCPKG_ROOT
+# 变量值：D:\vcpkg
+
+# 4、将vcpkg.exe加入到PATH中
+
+# 5、安装第三方库
+D:\person\test_msvc> vcpkg install fmt
+Computing installation plan...
+The following packages will be built and installed:
+    fmt:x64-windows@11.0.2#1
+  * vcpkg-cmake:x64-windows@2024-04-23
+  * vcpkg-cmake-config:x64-windows@2024-05-23
+Additional packages (*) will be modified to complete this operation.
+Detecting compiler hash for triplet x64-windows...
+-- Automatically setting %HTTP(S)_PROXY% environment variables to "127.0.0.1:7890".
+A suitable version of powershell-core was not found (required v7.2.24).
+Downloading https://github.com/PowerShell/PowerShell/releases/download/v7.2.24/PowerShell-7.2.24-win-x64.zip -> PowerShell-7.2.24-win-x64.zip
+Successfully downloaded PowerShell-7.2.24-win-x64.zip
+Extracting powershell-core...
+A suitable version of 7zip was not found (required v24.9.0).
+Downloading https://github.com/ip7z/7zip/releases/download/24.09/7z2409.exe -> 7z2409.7z.exe
+Successfully downloaded 7z2409.7z.exe
+Extracting 7zip...
+A suitable version of 7zr was not found (required v24.9.0).
+Downloading https://github.com/ip7z/7zip/releases/download/24.09/7zr.exe -> 44d8504a-7zr.exe
+Successfully downloaded 44d8504a-7zr.exe
+Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+Restored 0 package(s) from C:\Users\VVFock3r\AppData\Local\vcpkg\archives in 234 us. Use --debug to see more details.
+Installing 1/3 vcpkg-cmake:x64-windows@2024-04-23...
+Building vcpkg-cmake:x64-windows@2024-04-23...
+-- Installing: D:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_configure.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_build.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_install.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg-port-config.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/copyright
+-- Performing post-build validation
+Starting submission of vcpkg-cmake:x64-windows@2024-04-23 to 1 binary cache(s) in the background
+Elapsed time to handle vcpkg-cmake:x64-windows: 110 ms
+vcpkg-cmake:x64-windows package ABI: bb017a8dcc06f79634525c381c8f0eb7656d379df25e2ee0578091cbd9772905
+Installing 2/3 vcpkg-cmake-config:x64-windows@2024-05-23...
+Building vcpkg-cmake-config:x64-windows@2024-05-23...
+-- Installing: D:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg_cmake_config_fixup.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg-port-config.cmake
+-- Installing: D:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/copyright
+-- Skipping post-build validation due to VCPKG_POLICY_EMPTY_PACKAGE
+Starting submission of vcpkg-cmake-config:x64-windows@2024-05-23 to 1 binary cache(s) in the background
+Elapsed time to handle vcpkg-cmake-config:x64-windows: 86.7 ms
+vcpkg-cmake-config:x64-windows package ABI: 5c31fd4592e807c23c7ca0272717f73500112c3bde68b4d442727193d196f520
+Completed submission of vcpkg-cmake:x64-windows@2024-04-23 to 1 binary cache(s) in 56.9 ms
+Installing 3/3 fmt:x64-windows@11.0.2#1...
+Building fmt:x64-windows@11.0.2#1...
+Downloading https://github.com/fmtlib/fmt/archive/11.0.2.tar.gz -> fmtlib-fmt-11.0.2.tar.gz
+Successfully downloaded fmtlib-fmt-11.0.2.tar.gz
+-- Extracting source D:/vcpkg/downloads/fmtlib-fmt-11.0.2.tar.gz
+-- Applying patch fix-write-batch.patch
+-- Applying patch fix-pass-utf-8-only-if-the-compiler-is-MSVC-at-build.patch
+-- Using source at D:/vcpkg/buildtrees/fmt/src/11.0.2-c30c0a133f.clean
+-- Found external ninja('1.12.1').
+-- Configuring x64-windows
+-- Building x64-windows-dbg
+-- Building x64-windows-rel
+-- Fixing pkgconfig file: D:/vcpkg/packages/fmt_x64-windows/lib/pkgconfig/fmt.pc
+Downloading msys2-mingw-w64-x86_64-pkgconf-1~2.4.3-1-any.pkg.tar.zst, trying https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-pkgconf-1~2.4.3-1-any.pkg.tar.zst
+Successfully downloaded msys2-mingw-w64-x86_64-pkgconf-1~2.4.3-1-any.pkg.tar.zst
+Downloading msys2-msys2-runtime-3.6.2-2-x86_64.pkg.tar.zst, trying https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.6.2-2-x86_64.pkg.tar.zst
+Successfully downloaded msys2-msys2-runtime-3.6.2-2-x86_64.pkg.tar.zst
+-- Using msys root at D:/vcpkg/downloads/tools/msys2/9272adbcaf19caef
+-- Fixing pkgconfig file: D:/vcpkg/packages/fmt_x64-windows/debug/lib/pkgconfig/fmt.pc
+-- Installing: D:/vcpkg/packages/fmt_x64-windows/share/fmt/usage
+-- Installing: D:/vcpkg/packages/fmt_x64-windows/share/fmt/copyright
+-- Performing post-build validation
+Starting submission of fmt:x64-windows@11.0.2#1 to 1 binary cache(s) in the background
+Elapsed time to handle fmt:x64-windows: 15 s
+fmt:x64-windows package ABI: bd4764581a44022a112e7ec103c246b4e0c71664b5853f6edf49c9ed8fac9efe
+Total install time: 15 s
+Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant any licenses to, third-party packages.
+Packages installed in this vcpkg installation declare the following licenses:
+MIT
+The package fmt provides CMake targets:
+
+    find_package(fmt CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE fmt::fmt)
+
+    # Or use the header-only version
+    find_package(fmt CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE fmt::fmt-header-only)
+
+Completed submission of vcpkg-cmake-config:x64-windows@2024-05-23 to 1 binary cache(s) in 79.4 ms
+Waiting for 1 remaining binary cache submissions...
+Completed submission of fmt:x64-windows@11.0.2#1 to 1 binary cache(s) in 301 ms (1/1)
+All requested installations completed successfully in: 15 s
+
+# 6、修改cmake, 待补充
+
+```
+
+:::
