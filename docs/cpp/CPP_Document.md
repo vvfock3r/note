@@ -862,6 +862,10 @@ int main() {
 
 ![image-20250401202918138](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250401202918138.png)
 
+如果使用的是MSVC，上面的方法并不管用，解决办法：
+
+* 手动调用编译命令，可以在项目根目录下封装成一个`.bat`并设置Clion一键执行，参考MSVC，但是这样`CMakeLists.txt`配置会失效，解决办法就是将配置中的设置都修改为对应的 `cl` 命令选项
+
 :::
 
 ::: details （2）解决不能打开终端的问题
@@ -2225,7 +2229,7 @@ End - 2
 
 <br />
 
-### this 指针
+### THIS 指针
 
 ::: details （1）基础用法
 
@@ -2300,6 +2304,157 @@ int main() {
 ```bash
 0x5c275ff7e0
 0x5c275ff7e0
+```
+
+:::
+
+<br />
+
+### 静态函数
+
+::: details 基本用法
+
+```c++
+#include <iostream>
+
+class Util {
+
+public:
+    // TIP 静态成员函数 <br />
+    // 1.函数使用 static 修饰 <br />
+    // 2.调用时使用 类名::静态成员函数, 此时类名的作用类似于命名空间
+    static int Add(int x, int y) {
+        return x + y;
+    }
+};
+
+
+int main() {
+    // 调用静态成员方法
+    int sum = Util::Add(1, 2);
+    std::cout << sum << std::endl;
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+3
+```
+
+:::
+
+<br />
+
+### 静态成员
+
+::: details 基本用法
+
+```c++
+#include <iostream>
+
+class Util {
+
+public:
+    // TIP 静态变量  <br />
+    // 1.对象未创建, 就已经存在, 可以用静态方法操纵它 <br />
+    // 2.与全局变量, 静态变量类似, 存在静态空间 <br />
+    // 3.只有一份,不跟随对象创建, 不属于 sizeof(对象) 大小 <br />
+    // 4.它可以被本类型所有对象共享 <br />
+    // 5.静态成员变量的定义必须放在函数外部（全局作用域）,所以不能写在main函数和其他函数中
+    int a; // 跟随对象生而灭
+    static int b; // 只有一份, 需要在外部创建并初始化
+
+    void print() {
+        b += 1;
+        std::cout << b << std::endl;
+    }
+};
+
+
+// 初始化静态变量
+int Util::b = 10;
+
+int main() {
+    // 实例化类
+    Util u1;
+    Util u2;
+
+    // 输出
+    std::cout << Util::b << std::endl;
+    u1.print();
+    u2.print();
+
+    // 修改下值
+    Util::b = 20;
+
+    // 输出
+    std::cout << Util::b << std::endl;
+    u1.print();
+    u2.print();
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+10
+11
+12
+20
+21
+22
+```
+
+:::
+
+<br />
+
+### 对象数组
+
+::: details 基本用法
+
+```c++
+#include <iostream>
+#include <windows.h>
+
+class Person {
+
+public:
+    Person() {
+        std::cout << "构造函数调用" << std::endl;
+    }
+
+    ~Person() {
+        std::cout << "析构函数调用" << std::endl;
+    }
+};
+
+
+int main() {
+    // 定义一个指针数组
+    Person* a[5];
+
+    // 填充数据
+    for (int i = 0; i < 5; i++) {
+        a[i] = new Person;
+    }
+
+    // 释放内存，调用析构函数
+    // for (int i = 0; i < 5; i++) {
+    //    delete a[i];
+    // }
+
+    // 代码如上
+    // 构造函数会调用5次
+    // 不会调用析构函数, 必须手动调用
+
+    return 0;
+}
 ```
 
 :::
@@ -2438,7 +2593,20 @@ C:\Users\VVFock3r> cl
 
 * 代码中的特殊注释会影响到MSVC编译器，比如 `// 定义属性`，解决办法之一：在`CMakeLists.txt`中添加 `add_compile_options("/source-charset:utf-8")`
 
+**7.手动调用编译命令**
 
+```bash
+# 设置环境变量, 因为如果直接执行 cl 命令而不运行此脚本，系统找不到编译器和库路径，会导致编译失败
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+# 切换当前命令行窗口的代码页为 65001（UTF-8）, 这样可以显示中文, 不会乱码
+chcp 65001
+
+# 用 MSVC 编译器编译 main.cpp 并运行
+# /utf-8: 告诉编译器源代码文件是 UTF-8 编码
+# /EHsc: 启用标准 C++ 异常处理模型，支持 C++ 异常的正常传播。是常用的编译选项
+cl /utf-8 /EHsc main.cpp && main.exe
+```
 
 <br />
 
