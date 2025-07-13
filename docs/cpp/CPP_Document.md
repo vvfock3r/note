@@ -2634,7 +2634,9 @@ cl /utf-8 /EHsc main.cpp && main.exe
 
 代码仓库：[https://github.com/microsoft/vcpkg/releases](https://github.com/microsoft/vcpkg/releases)
 
-独立二进制（还依赖仓库中其他文件所以不能直接使用）：[https://github.com/microsoft/vcpkg-tool/releases](https://github.com/microsoft/vcpkg-tool/releases)
+> 注意事项
+>
+> 有的仓库提供独立的二进制命令，比如 [vcpkg-tool](https://github.com/microsoft/vcpkg-tool/releases)，但是不能直接用，因为使用`vcpkg`命令的时候还依赖它自身仓库的一些文件
 
 ::: details 
 
@@ -2763,7 +2765,6 @@ Completed submission of fmt:x64-windows@11.0.2#1 to 1 binary cache(s) in 301 ms 
 All requested installations completed successfully in: 15 s
 
 # 6、修改cmake, 待补充
-
 ```
 
 :::
