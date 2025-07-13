@@ -862,10 +862,7 @@ int main() {
 
 ![image-20250401202918138](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250401202918138.png)
 
-如果使用的是MSVC，上面的方法并不管用，解决办法：
-
-* 方法1：手动调用编译命令，可以在项目根目录下封装成一个`.bat`并设置Clion一键执行，参考MSVC，但是这样`CMakeLists.txt`配置会失效，解决办法就是将配置中的设置都修改为对应的 `cl` 命令选项，然后再把Clion默认的编译过程删掉（Before Launch中删掉Build）
-* 方法2：在.bat中使用cmake命令构建，并执行（推荐），待补充
+如果使用了MSVC，那么参考MSVC部分修改`CMakeLists.txt`添加UTF-8支持
 
 :::
 
@@ -2462,6 +2459,23 @@ int main() {
 
 <br />
 
+### 友元函数
+
+::: details 等待补充
+
+```c++
+// TIP 友元函数 <br />
+// 友元函数是一个对某个类有特权的普通函数 <br />
+// 类对该函数授权, 加 friend 修饰符
+int main() {
+
+}
+```
+
+:::
+
+<br />
+
 ## 4）工程化
 
 ### 头文件
@@ -2590,9 +2604,14 @@ C:\Users\VVFock3r> cl
 
 **5.确保MSVC和MinGW编译器都可以正常使用（切换后重启 Clion）**
 
-**6.注意事项**
+**6.编码注意事项**
 
-* 代码中的特殊注释会影响到MSVC编译器，比如 `// 定义属性`，解决办法之一：在`CMakeLists.txt`中添加 `add_compile_options("/source-charset:utf-8")`
+代码中的特殊注释会影响到 `MSVC` 编译器，比如 `// 定义属性`，：
+
+```bash
+# 解决办法1
+在 CMakeLists.txt 中添加 add_compile_options("/utf-8")，这样代码中可以正常写注释，但是有一个小问题，编译过程中会乱码，程序执行后是可以显示中文的
+```
 
 **7.手动调用编译命令**
 
@@ -2611,7 +2630,7 @@ cl /utf-8 /EHsc main.cpp && main.exe
 
 <br />
 
-### vcpkg
+### VCPKG
 
 代码仓库：[https://github.com/microsoft/vcpkg/releases](https://github.com/microsoft/vcpkg/releases)
 
