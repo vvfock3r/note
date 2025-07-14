@@ -4,6 +4,218 @@
 
 Latex：[https://www.latex-project.org/](https://www.latex-project.org/)
 
+### Typora说明
+
+**1.默认情况下Typora不启用内联公式，可以将功能打开**
+
+文件 ---> 偏好设置 ---> Markdown ---> 启用内联公式，测试语句：这是一个行内公式： $E = mc^2$
+
+**2.Latex语法格式**
+
+* **行内公式**: 用 `$...$` 包裹
+* **行间公式**：用 `$$...$$` 包裹
+
+**3.```latex说明**
+
+在 **Typora** 中，使用 ````latex` 并不会渲染成 LaTeX 公式，因为这个语法并不是为公式渲染设计的，而是用于 **代码块**
+
+````latex` 是 Markdown 中用于显示 **代码块** 的语法，尤其是当你想显示 LaTeX 代码的原始文本时（例如写数学公式的源代码），而不是渲染它们
+
+**4.渲染说明**
+
+Typora 使用 **MathJax** 或 **KaTeX** 渲染 LaTeX 数学公式，但它并不渲染 LaTeX 的其他文档结构元素（如列表、定理等）
+
+<br />
+
+### 换行和注释
+
+* 换行：`\\` 用来强制换行（个人习惯，推荐空一格再写`\\`）
+* 注释：`%` 后面的会被注释
+
+```latex
+a \\ b%c
+```
+
+
+$$
+a\\b%c
+$$
+<br />
+
+### 文本格式化
+
+* **加粗**: `\textbf{加粗文本}`
+* **斜体**: `\textit{斜体文本}`
+* **下划线**: `\underline{下划线文本}`
+* **小号字体**: `\small{小字体}`
+* **大号字体**: `\Large{大字体}`
+* **打字机字体**: `\texttt{打字机字体}`
+
+```latex
+\textbf{加粗} \\
+\textit{斜体} \\
+\underline{下划线} \\
+\small{小字体} \\
+\Large{大字体} \\
+\texttt{打字机字体}
+```
+
+
+$$
+\textbf{加粗} \\
+\textit{斜体} \\
+\underline{下划线} \\
+\small{小字体} \\
+\Large{大字体} \\
+\texttt{打字机字体}
+$$
+
+### 颜色设置
+
+$$
+\text{字体颜色} \\
+\textcolor{red}{E = mc^2} \\ 			% 设置字体颜色, 使用标准颜色名称
+\textcolor[RGB]{255,0,0}{E = mc^2} \\   % 设置字体颜色, 使用RGB
+\color{blue} {a^2 + b^2 = c^2} \\       % 另一种设置颜色的方法
+$$
+
+$$
+\text{背景颜色，一般用在矩阵或表格中} \\
+\begin{bmatrix}
+\cellcolor{yellow} 1 & 2 \\
+3 & 4 
+\end{bmatrix}
+$$
+
+
+
+### 常见数学符号
+
+* **加法与减法**: `+`, `-`
+* **乘法与除法**: `\times`, `\div`
+* **分数**: `\frac{a}{b}`
+* **平方根**: `\sqrt{a}`
+* **指数**: `a^b`
+* **上下标**: `a_{i}`, `a^{i}`
+
+```latex
+a + b \\       % 加法
+a - b \\       % 减法
+a \times b \\  % 乘法
+a \div b  \\   % 除法
+\frac{1}{2} \\ % 分数
+\sqrt{25}  \\  % 平方根
+x^3  \\        % 指数
+a^{2} \\       % 上标
+a_{2} \\       % 下标
+```
+
+
+$$
+a + b \\       % 加法
+a - b \\       % 减法
+a \times b \\  % 乘法
+a \div b  \\   % 除法
+\frac{1}{2} \\ % 分数
+\sqrt{25}  \\  % 平方根
+x^3  \\        % 指数
+a^{2} \\       % 上标
+a_{2} \\       % 下标
+$$
+
+### 矩阵
+
+* **无括号矩阵 matrix**
+
+$$
+\begin{matrix}
+1 & 2 & 3 \\
+4 & 5 & 6
+\end{matrix}
+
+% & 是用来分隔 列 的符号
+$$
+
+* **带括号矩阵 pmatrix**
+
+$$
+\begin{pmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6
+\end{pmatrix}
+$$
+
+* **对称矩阵 bmatrix**
+
+$$
+\begin{bmatrix}
+1 & 2 \\
+2 & 3
+\end{bmatrix}
+$$
+
+* **行列式（单竖线）vmatrix**
+
+$$
+\begin{vmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+7 & 8 & 9
+\end{vmatrix}
+$$
+
+* **行列式（双竖线）Vmatrix**
+
+$$
+\begin{Vmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+7 & 8 & 9
+\end{Vmatrix}
+$$
+
+* **小型矩阵，适用于紧凑型排版 smallmatrix**
+
+$$
+\begin{smallmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+7 & 8 & 9
+\end{smallmatrix}
+$$
+
+* **通用表格和矩阵环境 array**
+
+$$
+\begin{array}{clr}  
+1 & 20 & 30 \\
+4 & 5 & 6 \\
+7 & 8 & 9
+\end{array}
+
+% {clr}代表每一列的对齐
+% c 代表 centered（居中对齐）
+% l 代表 left-aligned（左对齐）
+% r 代表 right-aligned（右对齐）
+$$
+
+### 表格
+
+* **`|`** 用于添加竖线
+* **`\hline`** 用于添加水平线
+
+$$
+\begin{array}{|c|c|}
+\hline
+1 & 2 \\
+\hline
+& 3 \\ & 4 \\   % 模拟合并单元格的情况
+\hline
+\end{array}
+$$
+
+
+
 <br />
 
 ## 三角形（Triangle）
@@ -578,3 +790,18 @@ print(range_matrix)
 <br />
 
 ### 基本运算
+
+
+
+<br />
+
+## 求解N元一次方程组
+
+```latex
+\begin{cases}
+x + y + z = 1 \\
+x + y + 2z = 2 \\
+x + 2y + z = 3
+\end{cases}
+```
+
