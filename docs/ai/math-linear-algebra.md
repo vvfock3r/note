@@ -1,14 +1,14 @@
 # 线性代数
 
-## 工具
+## Latex
 
 Latex：[https://www.latex-project.org/](https://www.latex-project.org/)
 
 <br />
 
-## 基础
+## 三角形（Triangle）
 
-### 三角形基础
+### 简介
 
 **1.三角形的分类**
 
