@@ -23,7 +23,7 @@ pip install matplotlib
 
 每个模块的功能协作，使得 `matplotlib` 成为一个强大的数据可视化工具
 
-
+<br />
 
 ## 快速绘图（pyplot）
 
