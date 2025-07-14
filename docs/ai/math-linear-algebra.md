@@ -73,19 +73,20 @@ $$
 ### 颜色设置
 
 $$
-\text{字体颜色} \\
+\text{1.字体颜色} \\
 \textcolor{red}{E = mc^2} \\ 			% 设置字体颜色, 使用标准颜色名称
 \textcolor[RGB]{255,0,0}{E = mc^2} \\   % 设置字体颜色, 使用RGB
 \color{blue} {a^2 + b^2 = c^2} \\       % 另一种设置颜色的方法
-$$
-
-$$
-\text{背景颜色，一般用在矩阵或表格中} \\
+\\
+\\
+\cellcolor{red}\text{2.背景颜色} \\
 \begin{bmatrix}
 \cellcolor{yellow} 1 & 2 \\
 3 & 4 
 \end{bmatrix}
 $$
+
+
 
 
 
