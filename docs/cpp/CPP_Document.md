@@ -2461,15 +2461,239 @@ int main() {
 
 ### 友元函数
 
-::: details 等待补充
+::: details 友元函数
 
 ```c++
-// TIP 友元函数 <br />
-// 友元函数是一个对某个类有特权的普通函数 <br />
-// 类对该函数授权, 加 friend 修饰符
-int main() {
+#include <iostream>
 
+// TIP 友元函数 <br />
+// 友元函数不是类的成员函数，但被允许访问类的所有成员，包括私有成员<br />
+// 用关键字 friend 在类中声明<br />
+// 可以是普通函数，也可以是其他类的成员函数（称为友元成员函数）<br />
+// 友元函数即使在类中定义，也本质上是普通的非成员函数，它只是“被类授权”访问私有成员而已
+
+class Point {
+private:
+    int x, y;
+
+public:
+    explicit Point(int x = 0, int y = 0) : x(x), y(y) {}
+
+    // 声明友元函数，允许它访问私有成员
+    friend void printPoint(const Point& p);
+};
+
+// 友元函数定义，可以访问 Point 的私有成员 x 和 y
+void printPoint(const Point& p) {
+    std::cout << "Point(" << p.x << ", " << p.y << ")" << std::endl;
 }
+
+int main() {
+    // 实例化对象
+    Point p(5, 8);
+
+    // 调用友元函数，访问并打印私有成员
+    printPoint(p);
+
+    return 0;
+}
+```
+
+:::
+
+<br />
+
+### 运算符重载
+
+::: details （1）成员函数版本的运算符重载示例
+
+```c++
+#include <iostream>
+
+class Point {
+
+public:
+    int x, y;
+
+    explicit Point(int x = 0, int y = 0) : x(x), y(y) {}
+
+    // 重载加法运算符， operator是固定写法
+    Point operator+(const Point& other) const {
+        return Point(this->x + other.x, this->y + other.y);
+    }
+
+    void print() const {
+        std::cout << "(" << x << ", " << y << ")" << std::endl;
+    }
+};
+
+
+int main() {
+    Point p1(1, 2);
+    Point p2(3, 4);
+
+    // 调用了重载的 + 运算符
+    // 实际调用：p1.operator+(p2), 所以成员函数的左边（即调用者）必须是 Point 类型对象, 也就是说：
+    // Point + int ✅ 成员函数可实现,
+    // int + Point ❌ 成员函数无能为力（int 不是 Point，不能调用成员函数）
+    Point p3 = p1 + p2;
+
+    // 输出: (4, 6)
+    p3.print();
+
+    // 注意事项：特殊运算符重载，必须重载为成员函数：（）、[]、->、=
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+(4, 6)
+```
+
+:::
+
+::: details （2）独立函数版本的运算符重载示例
+
+```c++
+#include <iostream>
+
+class Point {
+
+public:
+    int x, y;
+
+    explicit Point(int x = 0, int y = 0) : x(x), y(y) {}
+
+    void print() const {
+        std::cout << "(" << x << ", " << y << ")" << std::endl;
+    }
+};
+
+// 单独定义运算符重载
+Point operator+(const Point& a, const Point& b) {
+    return Point(a.x + b.x, a.y + b.y);
+}
+
+
+int main() {
+    Point p1(1, 2);
+    Point p2(3, 4);
+
+    // 调用了重载的 + 运算符
+    Point p3 = p1 + p2;
+
+    // 输出: (4, 6)
+    p3.print();
+
+    return 0;
+}
+```
+
+:::
+
+::: details （3）进阶版本
+
+```c++
+#include <iostream>
+
+class Point {
+private:
+    int x, y;
+
+public:
+    // 构造函数
+    explicit Point(int x = 0, int y = 0) : x(x), y(y) {}
+
+    // 成员函数：支持 Point + Point
+    Point operator+(const Point& other) const {
+        return Point(x + other.x, y + other.y);
+    }
+
+    // 成员函数：支持 Point + int
+    Point operator+(int value) const {
+        return Point(x + value, y + value);
+    }
+
+    // friend 非成员函数：支持 int + Point
+    friend Point operator+(int value, const Point& p) {
+        return Point(p.x + value, p.y + value);
+    }
+
+    void print() const {
+        std::cout << "(" << x << ", " << y << ")" << std::endl;
+    }
+};
+
+int main() {
+    Point p1(1, 2);
+    Point p2(3, 4);
+
+    Point a = p1 + p2;   // Point + Point
+    Point b = p1 + 10;   // Point + int
+    Point c = 20 + p1;   // int + Point（调用 friend 函数）
+
+    a.print();  // (4, 6)
+    b.print();  // (11, 12)
+    c.print();  // (21, 22)
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+(4, 6)
+(11, 12)
+(21, 22)
+```
+
+:::
+
+<br />
+
+### 禁止隐式类型转换
+
+::: details explicit 使用示例
+
+```c++
+#include <iostream>
+
+class Point {
+public:
+    int x, y;
+
+    // Point(int x = 0, int y = 0) : x(x), y(y) {}
+    explicit Point(int x = 0, int y = 0) : x(x), y(y) {}
+
+    void print() const {
+        std::cout << "(" << x << ", " << y << ")" << std::endl;
+    }
+};
+
+// 写一个单独的函数，需要传入Point对象
+void printPoint(Point p) {
+    p.print();
+}
+
+int main() {
+    // 类定义中不写 explicit, 是可以隐式类型转换的，我们这直接输入数字， 这可能会使我们的代码不够严谨
+    // printPoint(10);
+
+    // 类定义中使用 explicit, 那么下面必须传入Point类型
+    Point p(10, 20);
+    printPoint(p);
+
+    return 0;
+}
+```
+
+输出结果
+
+```bash
+(10, 20)
 ```
 
 :::
