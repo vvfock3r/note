@@ -824,13 +824,103 @@ print(range_matrix)
 
 <br />
 
-## N元一次方程组
+## 行列式
+
+### 定义
+
+**行列式（Determinant）** 是一个**由方阵计算出来的实数**，用于描述该矩阵的某些性质，比如：
+
+- 是否可逆（满秩）
+- 是否线性相关
+- 变换后的体积或面积变化
+
+<span style="color:red;">**它不是矩阵，而是从矩阵导出的一个数**</span>
+
+假设A 是一个方阵（比如 $n \times n$ 的矩阵），那么**det(A)** 就是指矩阵 **A** 的**行列式的值**
+
+<br />
+
+### 计算方式（低阶行列式）
+
+**一阶行列式计算规则**
+$$
+\left| a \right| = a
+\\ \\
+举例: \left| 5 \right| = 5
+$$
+**二阶行列式计算规则**
+$$
+主对角线乘积 − 副对角线乘积 \\
+\begin{vmatrix}
+a & b \\
+c & d
+\end{vmatrix}
+= ad - bc
+$$
+
+$$
+举例: \\
+\begin{vmatrix}
+2 & 3 \\
+4 & 5
+\end{vmatrix}
+= 2 \times 5 - 3 \times 4 = 10 - 12 = -2
+$$
+
+**三阶行列式计算规则**
+$$
+简单记忆：加加加, 减减减 \\
+\begin{vmatrix}
+a & b & c \\
+d & e & f \\
+g & h & i
+\end{vmatrix}
+= aei + bfg + cdh - ceg - bdi - afh
+
+\\ \\
+
+也可以写成按第一行展开的形式 \\
+= a \begin{vmatrix} e & f \\ h & i \end{vmatrix}
+- b \begin{vmatrix} d & f \\ g & i \end{vmatrix}
++ c \begin{vmatrix} d & e \\ g & h \end{vmatrix}
+$$
+
+$$
+举例: \\
+
+= 1(4 \times 6 - 0 \times 5) - 2(0 \times 6 - 1 \times 5) + 3(0 \times 0 - 1 \times 4)
+= 1(24) - 2(-5) + 3(-4) \\
+= 24 + 10 - 12 \\
+= 22
+
+\\ \\
+\begin{vmatrix}
+1 & 2 & 3 \\
+0 & 4 & 5 \\
+1 & 0 & 6
+\end{vmatrix}
+= 1 \begin{vmatrix} 4 & 5 \\ 0 & 6 \end{vmatrix}
+- 2 \begin{vmatrix} 0 & 5 \\ 1 & 6 \end{vmatrix}
++ 3 \begin{vmatrix} 0 & 4 \\ 1 & 0 \end{vmatrix} \\
+= 1\times(4\times6-5\times0) - 2\times(0\times6-5\times1) + 3\times(0\times0-4\times1) \\
+= 24 - (-10) + (-12) \\
+= 34 - 12 \\
+= 22
+$$
+
+
+
+
+
+<br />
+
+## 线性方程组
 
 ### 定义
 
 **定义**
 
-**N 元一次方程组** 是由若干个**一次方程**组成的方程组，每个方程都满足：
+线性方程组，也可以称为N 元一次方程组，是由若干个**一次方程**组成的方程组，每个方程都满足：
 
 * 未知数个数为 N
 * 每个未知数的次数为 1（即幂为 1）
@@ -853,7 +943,7 @@ x + y + z = 6 \\
 $$
 
 $$
-
+
 $$
 
 
@@ -906,7 +996,8 @@ x + y = 2
 $$
 **总结一下**
 
-* N元一次方程组，也叫 **线性方程组（Linear System）**
+*  **线性方程组（Linear System）**，也可以称为N元一次方程组
 * 不属于 N元一次方程组的，一般统称为 **非线性方程组（Nonlinear System）**
 
 <br />
+
