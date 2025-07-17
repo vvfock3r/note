@@ -1,8 +1,26 @@
-# Matplotlib
+# Data Science
+
+## NumPy
+
+<br />
+
+## SciPy
+
+<br />
+
+## Pandas
+
+<br />
+
+## Sklearn
+
+<br />
+
+## Matplotlib
 
 官网：[https://matplotlib.org/](https://matplotlib.org/)
 
-## 安装
+### 安装
 
 ```bash
 pip install matplotlib
@@ -25,7 +43,7 @@ pip install matplotlib
 
 <br />
 
-## 快速绘图（pyplot）
+### 快速绘图（pyplot）
 
 ::: details 折线图（Line Plot），表示数据随时间或其他变量变化的趋势
 
@@ -274,6 +292,4 @@ if __name__ == "__main__":
 ```
 
 :::
-
-<br />
 
