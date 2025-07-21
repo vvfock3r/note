@@ -1054,6 +1054,81 @@ $$
   z = 2
 ```
 
+::: details Python标准库实现，仅供学习使用
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+def solve_3x3_by_substitution(equations):
+    """代入法解三元一次方程组
+    方程组原型为:
+        a1x + b1y + c1z = d1
+        a2x + b2y + c2z = d2
+        a3x + b3y + c3z = d3
+
+    equations:
+        是一个 3x4 的列表，代表增广矩阵, 每一行代表一个方程
+        [a1, b1, c1, d1],
+        [a2, b2, c2, d2],
+        [a3, b3, c3, d3],
+    """
+    # 拆分系数
+    a1, b1, c1, d1 = equations[0]
+    a2, b2, c2, d2 = equations[1]
+    a3, b3, c3, d3 = equations[2]
+
+    # 第一步：从第一个方程中解出 x
+    def x_func(y, z):
+        return (d1 - b1 * y - c1 * z) / a1
+
+    # 第二步：将 x = f(y,z) 代入第二个方程
+    def eq2(y, z):
+        return a2 * x_func(y, z) + b2 * y + c2 * z - d2
+
+    # 第三步：将 x = f(y,z) 代入第三个方程
+    def eq3(y, z):
+        return a3 * x_func(y, z) + b3 * y + c3 * z - d3
+
+    # 解这个非线性方程组（2元1次）用穷举（仅标准库）
+    for y in range(-1000, 1000):
+        for z in range(-1000, 1000):
+            if abs(eq2(y, z)) < 1e-6 and abs(eq3(y, z)) < 1e-6:
+                x = x_func(y, z)
+                return round(x, 6), round(y, 6), round(z, 6)
+
+    return None
+
+
+# 示例输入
+# x + y + z = 6
+# 2x - y + 3z = 14
+# x + 2y + z = 2
+eqs = [
+    [1, 1, 1, 6],
+    [2, -1, 3, 14],
+    [1, 2, -1, 2]
+]
+
+result = solve_3x3_by_substitution(eqs)
+
+if result:
+    x, y, z = result
+    print(f"解为: x = {x}, y = {y}, z = {z}")
+else:
+    print("无解")
+
+```
+
+输出结果
+
+```bash
+解为: x = 4.0, y = 0, z = 2
+```
+
+:::
+
 <br />
 
 ### 高斯消元法求解
@@ -1069,7 +1144,6 @@ x + 2y - z = 2
 $$
 
 $$
-
 \hline
 
 答: \\
@@ -1142,3 +1216,151 @@ x = 4 \\
 所以最终求得: x =4, y = 0, z = 2
 $$
 
+<br />
+
+### 行列式求解
+
+<br />
+
+### Python求解
+
+::: details numpy解法，相对计算快，浮点计算
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import numpy as np
+
+
+def linear_system(augmented_matrix, n=None):
+    """使用 numpy.linalg.solve 解N元一次方程组, n默认值为None时自动推导是N元一次方程组
+    返回:
+        解的元组 (x1, x2, ..., xn) 或 None（无解或无唯一解）
+
+    示例: 解3元一次方程组
+        1.方程组原型为:
+            a1x + b1y + c1z = d1
+            a2x + b2y + c2z = d2
+            a3x + b3y + c3z = d3
+
+        2.augmented_matrix:
+            是一个 3x4 的列表，代表增广矩阵, 每一行代表一个方程
+            [a1, b1, c1, d1],
+            [a2, b2, c2, d2],
+            [a3, b3, c3, d3],
+    """
+
+    # 自动推导变量个数 n（除去最后一列是常数项）
+    if n is None:
+        n = len(augmented_matrix[0]) - 1
+
+    # A 是系数矩阵，从每一行中取前n个元素 [a, b, c, ...]
+    A = np.array([row[:n] for row in augmented_matrix], dtype=float)
+
+    # 常数列向量
+    b = np.array([row[n] for row in augmented_matrix], dtype=float)
+
+    if A.shape[0] != A.shape[1]:
+        print(f"警告：系数矩阵不是方阵，行数={A.shape[0]}, 列数={A.shape[1]}，无法用 numpy.linalg.solve 求唯一解")
+        return None
+
+    # 使用 numpy 的线性代数模块 linalg 中的 solve() 函数
+    # 基于 LU 分解 实现的高效解法
+    # 当矩阵 A 可逆（即有唯一解）时，它才会成功
+    # 每个数字保留小数点后 6 位（方便阅读）
+    # 报错说明矩阵不可逆，可能无解或有无穷多解
+    try:
+        solution = np.linalg.solve(A, b)
+        return tuple(solution)
+    except np.linalg.LinAlgError:
+        return None
+
+
+# 示例输入, 对应方程组
+# 2x + 3y - z = 1
+# 4x - y + 5z = 7
+# -x + 2y + 3z = 4
+eqs = [
+    [2, 3, -1, 1],
+    [4, -1, 5, 7],
+    [-1, 2, 3, 4]
+]
+
+result = linear_system(eqs)
+
+if result:
+    x, y, z = result
+    print(f"解为: x = {x}, y = {y}, z = {z}")
+else:
+    print("无解或无唯一解")
+
+```
+
+输出结果
+
+```bash
+解为: x = 0.40476190476190466, y = 0.45238095238095255, z = 1.1666666666666667
+```
+
+:::
+
+::: details sympy解，相对计算慢，分数计算
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+from sympy import Matrix, Rational
+
+
+def linear_system_sympy(augmented_matrix):
+    """用 sympy 解线性方程组，支持分数"""
+
+    # 把输入转成 sympy.Rational 对象
+    mtx = []
+    for row in augmented_matrix:
+        mtx.append([Rational(x) for x in row])
+
+    # 转成矩阵
+    M = Matrix(mtx)
+
+    # 系数矩阵 A 和常数向量 b
+    A = M[:, :-1]
+    b = M[:, -1]
+
+    # 解方程 Ax = b
+    try:
+        sol = A.LUsolve(b)
+        return tuple(sol)
+    except Exception:
+        return None
+
+
+# 示例
+# 2x + 3y - z = 1
+# 4x - y + 5z = 7
+# -x + 2y + 3z = 4
+eqs = [
+    [2, 3, -1, 1],
+    [4, -1, 5, 7],
+    [-1, 2, 3, 4]
+]
+
+res = linear_system_sympy(eqs)
+if res:
+    for i, val in enumerate(res, 1):
+        print(f"x{i} = {str(val):8} (约等于 {float(val):.6f})")
+else:
+    print("无解或无唯一解")
+```
+
+输出结果
+
+```bash
+x1 = 17/42    (约等于 0.404762)
+x2 = 19/42    (约等于 0.452381)
+x3 = 7/6      (约等于 1.166667)
+```
+
+:::
