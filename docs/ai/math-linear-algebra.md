@@ -433,7 +433,9 @@ $$
 
 <br />
 
-**代码演示**
+**Python创建向量**
+
+::: details 点击查看详情
 
 ```python
 import numpy as np
@@ -445,19 +447,36 @@ vector2 = np.array([
     [2, 3],
     [3, 4]
 ])
+vector3 = np.array([
+    [[1, 2, 3, 4], [5, 6, 7, 8]],
+    [[1, 2, 3, 4], [5, 6, 7, 8]],
+    [[1, 2, 3, 4], [5, 6, 7, 8]],
+])
 
 # 查看向量的信息
 print("向量: ", vector1)
 print("维度: ", vector1.ndim)  # 1 表示一维向量
-print("形状: ", vector1.shape)  # 代表3个元素, 注意看第二个值是空的
+print("形状: ", vector1.shape)  # 形状
 print("大小: ", vector1.size)  # 大小，代表总的个数
 print()
 
 # 查看向量的信息
 print("向量: ", vector2)
-print("维度: ", vector2.ndim)  # 表示二维向量
-print("形状: ", vector2.shape)  #
-print("大小: ", vector2.size)  # 大小，代表总的个数
+print("维度: ", vector2.ndim)
+print("形状: ", vector2.shape)
+print("大小: ", vector2.size)
+print()
+
+# 查看向量的信息
+print("向量: ", vector3)
+print("维度: ", vector3.ndim)
+print("形状: ", vector3.shape)
+print("大小: ", vector3.size)
+
+# 总结:
+# 1.形状可以理解成: 先看最外层有多少个元素, 记作 a, 然后看每个元素包含多少个元素, 记作 b, 以此类推
+# 2.形状的返回值不是固定的, 具体要看深度有多深
+# 3.len(vector.shape) 就等于它的维度数，也可以写作 vector.ndim
 ```
 
 输出结果
@@ -474,11 +493,27 @@ print("大小: ", vector2.size)  # 大小，代表总的个数
 维度:  2
 形状:  (3, 2)
 大小:  6
+
+向量:  [[[1 2 3 4]
+  [5 6 7 8]]
+
+ [[1 2 3 4]
+  [5 6 7 8]]
+
+ [[1 2 3 4]
+  [5 6 7 8]]]
+维度:  3
+形状:  (3, 2, 4)
+大小:  24
 ```
+
+:::
 
 <br />
 
-### 向量加法
+### 向量加减
+
+::: details 点击查看详情
 
 ```python
 import numpy as np
@@ -497,14 +532,17 @@ vector3 = np.array([
 print(vector1 + 1)
 print(vector2 + 1)
 print(vector3 + 1)
+print()
 
 # 加一个向量
 # 公式: (x, y) + (a, b) = (x+a, y+b)
 print(vector1 + vector2)
-# print(vector1 + vector3) # 因为两个向量形状不一样，不能这样使用加法
 print(vector3 + vector3)
+# print(vector1 + vector3) # 因为两个向量形状不一样，不能这样使用加法
 
-# 减法也一样
+# 总结
+# 1.减法也是一样的规则
+# 2.两个向量相加或相减, 必须具有相同的形状才可以, 否则不能这样计算
 ```
 
 输出结果
@@ -520,6 +558,8 @@ print(vector3 + vector3)
  [ 6  8]
  [10 12]]
 ```
+
+:::
 
 <br />
 
@@ -738,9 +778,8 @@ print(f"点乘结果（方法3 - 手动计算） : {dot3}")
 
 ### 说明
 
-向量是对数的拓展，一个向量表示一组数
+向量是对数的拓展，一个向量表示一组数，**矩阵是对向量的拓展，一个矩阵表示一组向量**
 
-**矩阵是对向量的拓展，一个矩阵表示一组向量**
 $$
 矩阵示例如下\\
 \begin{bmatrix}
