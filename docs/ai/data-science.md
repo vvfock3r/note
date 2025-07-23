@@ -386,7 +386,8 @@ axes[0, 1].legend(loc='upper left')  # 显示图例并设置位置
 # 第三个图画矩形，等待补充
 
 
-# 显示窗口
+# 自动调整子图间距并显示
+plt.tight_layout()
 plt.show()
 ```
 
