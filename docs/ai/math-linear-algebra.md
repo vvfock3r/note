@@ -150,6 +150,18 @@ $$
 
 <br />
 
+### 向量
+
+$$
+\vec{v} = [v_1, v_2]\\
+
+\\
+
+\vec{v} = \begin{pmatrix} v_1 \\ v_2 \end{pmatrix}\\
+$$
+
+
+
 ### 矩阵
 
 * **无括号矩阵 matrix**
@@ -628,9 +640,9 @@ print(vector1 / vector2)
 
 :::
 
-::: details （3）向量点乘（重要）
+::: details （3）向量点积
 
-向量的点乘（也叫**内积**或**标量积**）是一种重要的数学运算，它不仅在纯数学中有着广泛的应用，而且在物理学、计算机科学、工程学等领域也有着重要作用。
+向量的点乘（也叫**点积**或**内积**或**标量积**）是一种重要的数学运算，它不仅在纯数学中有着广泛的应用，而且在物理学、计算机科学、工程学等领域也有着重要作用。
 
 需要注意的是，向量的点乘运算结果不是一个向量，而是一个**数字**
 
@@ -688,6 +700,139 @@ print(f"点乘结果（方法3 - 手动计算） : {dot3}")
 点乘结果（方法2 - @ 运算符）: 10
 点乘结果（方法3 - 手动计算） : 10
 ```
+
+:::
+
+::: details （4）向量叉积（只适用于三维空间）
+
+叉积（cross product），是一个**只适用于三维空间（或二维延伸成三维）\**的运算，结果是一个新的\**向量**，并且这个向量：
+
+* **方向**：**垂直**于原来的两个向量构成的平面，遵循“右手法则”确定方向"
+* **大小**：等于两个向量构成的平行四边形的面积
+
+
+$$
+\vec{a} \times \vec{b} =
+\begin{vmatrix}
+\mathbf{i} & \mathbf{j} & \mathbf{k} \\
+a_1 & a_2 & a_3 \\
+b_1 & b_2 & b_3
+\end{vmatrix}
+=
+\left( a_2b_3 - a_3b_2,\ a_3b_1 - a_1b_3,\ a_1b_2 - a_2b_1 \right)
+$$
+<br />二维向量没有“正宗”的叉积，但可以看作是三维向量 z 分量为 0 的特例
+
+* 这个值的**绝对值**代表向量 a 和 b 所构成的平行四边形的面积
+
+* 若叉积为 0，说明两个向量平行（如：在一条直线上)
+
+叉积计算示例：
+
+```python
+import numpy as np
+
+# 2D 向量（结果是标量）
+a = np.array([1, 2])
+b = np.array([3, 4])
+print(np.cross(a, b))
+
+# 3D 向量（结果是向量）
+a = np.array([1, 2, 3])
+b = np.array([4, 5, 6])
+print(np.cross(a, b))
+```
+
+二维向量叉积画图示例：
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 定义两个向量并计算叉积
+a = np.array([3, 1])
+b = np.array([1, 2])
+cross = np.cross(a, b)
+
+# 创建一个绘图窗口（figure）和一个坐标轴（axes）对象
+fig, ax = plt.subplots(figsize=(6, 6))
+
+# 设置坐标轴的纵横比为“相等”，也就是说 x 轴和 y 轴单位长度相同，不会让图形变形
+ax.set_aspect('equal')
+
+# 显示坐标轴上的网格线，方便观察坐标位置
+ax.grid(True)
+
+# 限定 x和y 轴的显示范围是从 -1 到 5
+ax.set_xlim(-1, 5)
+ax.set_ylim(-1, 5)
+
+# 画向量 a 和 b
+# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0], a[1]箭头指向的终点
+# 2.angles='xy' 指定箭头方向角度的解释方式, 'xy' 表示箭头的方向角度是基于数据坐标系（x, y 坐标轴）计算的
+# 3.scale_units='xy' 指定箭头的缩放单位参照, 'xy' 表示箭头的长度单位与坐标轴的 x,y 单位一致
+# 4.scale=1 缩放因子，用来控制箭头的长度, scale=1 表示箭头长度和向量大小一一对应，不做额外缩放
+# 3.color设置颜色, label设置了用 LaTeX 语法显示向量符号
+ax.quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$')
+ax.quiver(0, 0, b[0], b[1], angles='xy', scale_units='xy', scale=1, color='green', label=r'$\vec{b}$')
+
+# 画平行四边形的另外两条边并填充
+# 语法: .fill(x坐标数组, y坐标数组, ...)
+# parallelogram[:, 0] 其中 : 表示“所有行”，即取数组的每一行, 0 表示“第 0 列”，即取每一行的第一个元素
+# orange 设置填充颜色
+# alpha 设置透明度为 0.3，使得填充颜色半透明，不会遮挡后面的图形
+# label 设置图例标签
+parallelogram = np.array([[0, 0], a, a + b, b])
+ax.fill(parallelogram[:, 0], parallelogram[:, 1], 'orange', alpha=0.3, label=f'Area = |a × b| = {abs(cross)}')
+
+# 设置标题
+ax.set_title(r'2D: np.cross($\vec{a}, \vec{b}$)')
+
+# 设置图例
+ax.legend(loc='upper left')
+
+# 显示图形
+plt.show()
+```
+
+![image-20250723220215613](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250723220215613.png)
+
+三维向量叉积画图示例：
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 定义三个三维向量：a, b, a×b
+a = np.array([1, 2, 0])
+b = np.array([2, 1, 0])
+cross = np.cross(a, b)
+
+# 创建三维图
+fig = plt.figure(figsize=(8, 6))
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlim([-1, 3])
+ax.set_ylim([-1, 3])
+ax.set_zlim([-1, 3])
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+ax.set_title('3D Cross Product Visualization')
+
+# 绘制向量 a、b 和 a×b
+origin = np.array([0, 0, 0])
+ax.quiver(*origin, *a, color='blue', label=r'$\vec{a}$')
+ax.quiver(*origin, *b, color='green', label=r'$\vec{b}$')
+ax.quiver(*origin, *cross, color='red', label=r'$\vec{a} \times \vec{b}$')
+
+# 添加图例并展示
+ax.legend(loc='upper left')
+plt.show()
+```
+
+![image-20250723221137145](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250723221137145.png)
+
+
 
 :::
 

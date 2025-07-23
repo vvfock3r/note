@@ -43,7 +43,7 @@ pip install matplotlib
 
 <br />
 
-### 快速绘图（pyplot）
+### 快速绘图
 
 ::: details 折线图（Line Plot），表示数据随时间或其他变量变化的趋势
 
@@ -293,3 +293,101 @@ if __name__ == "__main__":
 
 :::
 
+<br />
+
+### 布局和坐标轴
+
+::: details （1）布局示例
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 创建一个图像窗口
+# matplotlib.figure.Figure 对象是 Matplotlib 中的图像窗口或画布，是所有图表的“容器”，你看到的图表最终都画在一个 Figure 上
+# figsize=(width, height), 单位为英寸, 因为 matplotlib 的设计初衷是高质量排版输出（如 PDF）
+fig = plt.figure(figsize=(10, 8))
+
+# 设置左上角标题, 默认值一般是 Figure 1
+fig.canvas.manager.set_window_title("这里是标题")
+
+# add_subplot 用来添加子图, 在这里我们一个窗口中包含4个图像, 分为2行和2列
+# add_subplot 第一个参数代表整个窗口分为2行
+# add_subplot 第二个参数代表整个窗口分为2列
+# add_subplot 第三个参数代表当前正在添加第几个子图
+# 备注: 
+#   1.add_subplot() 添加的一定是坐标轴（Axes）对象
+#   2.也可以写成 fig.add_subplot(221) 这种形式
+row, col = 2, 2
+ax1 = fig.add_subplot(row, col, 1)  # 第1行第1列
+ax2 = fig.add_subplot(row, col, 2)  # 第1行第2列
+ax3 = fig.add_subplot(row, col, 3)  # 第2行第1列
+ax4 = fig.add_subplot(row, col, 4)  # 第2行第2列
+
+# 绘制不同内容
+x = np.linspace(0, 10, 100)
+ax1.plot(x, np.sin(x))
+ax1.set_title("sin(x)")
+
+ax2.plot(x, np.cos(x))
+ax2.set_title("cos(x)")
+
+ax3.plot(x, np.tan(x))
+ax3.set_ylim(-5, 5)
+ax3.set_title("tan(x)")
+
+ax4.plot(x, np.exp(-x))
+ax4.set_title("exp(-x)")
+
+# 自动调整子图间距并显示
+plt.tight_layout()
+plt.show()
+```
+
+![image-20250723223620209](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250723223620209.png)
+
+:::
+
+::: details （2）坐标常用参数
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 创建图像窗口, 并添加一个坐标轴（1行1列的第1个）
+# fig = plt.figure(figsize=(宽度, 高度))
+# ax = fig.add_subplot(111)
+
+# 可以简写成如下代码, 这里是2行2列, axes[0, 1] 访问第1行第2列的子图
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
+
+
+# 第一个图画线条
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+axes[0, 0].plot(x, y)             # 画曲线
+axes[0, 0].set_title("Sine Wave") # 设置坐标轴标题
+axes[0, 0].set_xlabel("X axis")   # 设置 X 轴标签
+axes[0, 0].set_ylabel("Y axis")   # 设置 Y 轴标签
+
+# 第二个图画向量
+# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0], a[1]箭头指向的终点
+# 2.angles='xy' 指定箭头方向角度的解释方式, 'xy' 表示箭头的方向角度是基于数据坐标系（x, y 坐标轴）计算的
+# 3.scale_units='xy' 指定箭头的缩放单位参照, 'xy' 表示箭头的长度单位与坐标轴的 x,y 单位一致
+# 4.scale=1 缩放因子，用来控制箭头的长度, scale=1 表示箭头长度和向量大小一一对应，不做额外缩放
+# 3.color设置颜色, label设置了用 LaTeX 语法显示向量符号
+a = np.array([2, 4])              # 向量a
+axes[0, 1].set_xlim(-1, 5)        # 限定x轴的显示范围是从 -1 到 5
+axes[0, 1].set_ylim(-1, 5)        # 限定y轴的显示范围是从 -1 到 5
+axes[0, 1].grid(True)             # 显示网格
+axes[0, 1].quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$') # 画向量
+axes[0, 1].legend(loc='upper left')  # 显示图例并设置位置
+
+# 第三个图画矩形，等待补充
+
+
+# 显示窗口
+plt.show()
+```
+
+:::
