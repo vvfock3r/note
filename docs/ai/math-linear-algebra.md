@@ -691,6 +691,8 @@ dot3 = a[0] * b[0] + a[1] * b[1]
 print(f"点乘结果（方法1 - np.dot） : {dot1}")
 print(f"点乘结果（方法2 - @ 运算符）: {dot2}")
 print(f"点乘结果（方法3 - 手动计算） : {dot3}")
+
+# 注意: 要求两个向量的元素个数必须相同, 即维度相同, 而形状可以不一样
 ```
 
 输出结果
@@ -1105,7 +1107,244 @@ print(range_matrix)
 
 ### 基本运算
 
+::: details （1）矩阵加减法
 
+```python
+import numpy as np
+
+m1 = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+m2 = np.array([
+    [1, 2, 3],
+    [7, 8, 9],
+])
+
+# 矩阵+标量: 每个位置都加该标量
+print(m1 + 1)
+print(m1 - 1)
+
+print("\n" + "*" * 80)
+
+# 矩阵+矩阵: 对应位置相加或相减
+# 注意: 不同形状的矩阵不能相加减
+print(m1 + m2)
+print(m1 - m2)
+```
+
+输出结果
+
+```bash
+[[2 3 4]
+ [5 6 7]]
+[[0 1 2]
+ [3 4 5]]
+
+********************************************************************************
+
+[[ 2  4  6]
+ [11 13 15]]
+[[ 0  0  0]
+ [-3 -3 -3]]
+```
+
+:::
+
+::: details （2）矩阵乘除法
+
+```python
+import numpy as np
+
+m1 = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+m2 = np.array([
+    [1, 2, 3],
+    [7, 8, 9],
+])
+
+# 矩阵*标量: 每个位置都乘该标量
+print(m1 * 3)
+print(m1 / 3)
+
+print("\n" + "*" * 80)
+
+# 矩阵*矩阵: 对应位置相乘或相除
+# 注意: 不同形状的矩阵不能使用*进行相乘除
+print(m1 * m2)
+print(m1 / m2)
+```
+
+输出结果
+
+```bash
+[[ 3  6  9]
+ [12 15 18]]
+[[0.33333333 0.66666667 1.        ]
+ [1.33333333 1.66666667 2.        ]]
+
+********************************************************************************
+
+[[ 1  4  9]
+ [28 40 54]]
+[[1.         1.         1.        ]
+ [0.57142857 0.625      0.66666667]]
+```
+
+:::
+
+<br />
+
+### 矩阵乘法
+
+::: details （1）矩阵的点积
+
+```python
+import numpy as np
+
+a = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+b = np.array([
+    [1, 2],
+    [3, 4],
+    [5, 6],
+])
+
+# 矩阵a的形状是 (2, 3)
+# 矩阵b的形状是 (3, 2)
+
+# 矩阵A 点乘 矩阵B, 要求: 矩阵A的列数 = 矩阵B的行数
+# 矩阵B 点乘 矩阵A, 要求: 矩阵B的列数 = 矩阵A的行数
+# 需要注意, 上面两者是不同的, 也就是矩阵相乘, 不满足乘法的交换律
+
+# 我们来看一下是如何计算的
+# 1.a的列数 = b得行数, 所以可以进行点乘操作
+# 2.输出的是一个矩阵, 形状为(a的行数, b的列数)
+# 3.计算规则是:
+#   1) 拿a的第一行向量 点成 b的第一列向量
+#      [1, 2, 3] dot [1, 3, 5] = 1×1 + 2×3 + 3×5 = 1 + 6 + 15 = 22
+#   2) 拿a的第一行向量 点成 b的第二列向量
+#      [1, 2, 3] dot [2, 4, 6] = 1×2 + 2×4 + 3×6 = 2 + 8 + 18 = 28
+#   3) b没有第三列了, 所以a的第一行计算完毕, 所以就得到一个向量 [22, 28]
+#   4) 拿a的第二行向量 点成 b的第一列向量
+#      [4, 5, 6] dot [1, 3, 5] = 4×1 + 5×3 + 6×5 = 4 + 15 + 30 = 49
+#   5) 拿a的第二行向量 点成 b的第二列向量
+#      [4, 5, 6] dot [2, 4, 6] = 4×2 + 5×4 + 6×6 = 8 + 20 + 36 = 64
+#   6) a的第二行计算完毕, 所以就得到一个向量 [49, 64]
+#   7) 所以最终结果是
+#      [
+#        [22, 28],
+#        [49, 64]
+#      ]
+
+c = np.dot(a, b)
+print(c)
+
+print("_" * 30)
+
+# 现在计算 b * a
+# 最终得到的是 (b的行数, a的列数) = (3, 3), 也就是3行3列的矩阵
+c = np.dot(b, a)
+print(c)
+```
+
+输出结果
+
+```bash
+[[22 28]
+ [49 64]]
+______________________________
+[[ 9 12 15]
+ [19 26 33]
+ [29 40 51]]
+```
+
+:::
+
+::: details （2）矩阵的点积示例：在三维空间中进行二维平面内的旋转
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 设置支持中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+plt.rcParams['axes.unicode_minus'] = False  # 正常显示负号
+
+def rotate_z(vectors, theta_deg):
+    """
+    绕Z轴旋转向量集合
+    :param vectors: numpy数组，形状 (n, 3)，n个三维点
+    :param theta_deg: 旋转角度，单位度
+    :return: 旋转后的点，numpy数组，形状 (n, 3)
+    """
+    theta = np.radians(theta_deg)  # 角度转弧度
+
+    # 绕Z轴的旋转矩阵
+    Rz = np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta),  np.cos(theta), 0],
+        [0,              0,             1]
+    ])
+
+    # 注意：这里 vectors 是 n×3 的行向量集合，矩阵乘法用转置矩阵
+    rotated_vectors = vectors @ Rz.T
+    return rotated_vectors
+
+# 准备几个三维点，方便观察旋转效果（只用XY平面，Z都为0）
+points = np.array([
+    [1, 0, 0],   # X轴正方向点
+    [0, 1, 0],   # Y轴正方向点
+    [-1, 0, 0],  # X轴负方向点
+    [0, -1, 0]   # Y轴负方向点
+])
+
+# 旋转角度（单位：度）
+angle = 45
+
+# 计算旋转后的点
+rotated_points = rotate_z(points, angle)
+
+# 打印旋转前后的点
+print("旋转前的点：")
+print(points)
+print(f"\n绕Z轴旋转{angle}度后的点：")
+print(rotated_points)
+
+# 可视化：画原始点和旋转后的点（XY平面）
+plt.figure(figsize=(6,6))
+plt.axhline(0, color='gray', lw=1)
+plt.axvline(0, color='gray', lw=1)
+
+# 原始点
+plt.scatter(points[:,0], points[:,1], color='blue', label='原始点')
+for i, (x, y) in enumerate(points[:, :2]):
+    plt.text(x+0.05, y+0.05, f"P{i+1}", color='blue')
+
+# 旋转后点
+plt.scatter(rotated_points[:,0], rotated_points[:,1], color='red', label='旋转后点')
+for i, (x, y) in enumerate(rotated_points[:, :2]):
+    plt.text(x+0.05, y+0.05, f"P{i+1}\'", color='red')
+
+plt.title(f'绕Z轴旋转{angle}度示意图')
+plt.xlabel('X轴')
+plt.ylabel('Y轴')
+plt.axis('equal')
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+
+![image-20250726213153179](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250726213153179.png)
+
+:::
 
 <br />
 

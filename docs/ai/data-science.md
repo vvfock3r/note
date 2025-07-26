@@ -113,6 +113,24 @@ pip install matplotlib
 
 <br />
 
+### 显示中文问题
+
+默认情况下显示中文会有问题, 添加如下代码解决
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import matplotlib.pyplot as plt
+
+if __name__ == "__main__":
+	# 设置支持中文字体
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+    plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
+```
+
+<br />
+
 ### 绘制常见图形
 
 ::: details 折线图（Line Plot），表示数据随时间或其他变量变化的趋势
@@ -552,6 +570,33 @@ plt.ylabel('f(x)')  # y 轴标签
 plt.title('Plot of f(x)')  # 图标题
 plt.grid(True)  # 添加网格线
 plt.legend()  # 显示图例
+plt.show()
+```
+
+:::
+
+::: details （4）抛物线：开口向左或者右
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 定义 y 范围
+y = np.linspace(-10, 10, 500)
+
+# 横向抛物线, ×0.2 的作用是为了缩放抛物线的开口宽度
+# 如果需要改变开口方向, 将下面的任意一个值修改为负数即可
+x = y ** 2 * 0.2
+
+plt.plot(x, y, label='Right: x = y^2')
+plt.axhline(0, color='black', linewidth=0.5)
+plt.axvline(0, color='black', linewidth=0.5)
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Right')
+plt.grid(True)
+plt.legend()
+plt.gca().set_aspect('equal', adjustable='box')  # 保持比例
 plt.show()
 ```
 
