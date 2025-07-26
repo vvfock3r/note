@@ -1037,6 +1037,8 @@ $$
 
 ### 定义矩阵
 
+::: details 点击查看详情
+
 ```python
 import numpy as np
 
@@ -1096,6 +1098,8 @@ print(range_matrix)
 [[10 12 14]
  [16 18 20]]
 ```
+
+:::
 
 <br />
 
