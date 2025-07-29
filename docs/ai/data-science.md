@@ -449,30 +449,44 @@ import numpy as np
 # 可以简写成如下代码, 这里是2行2列, axes[0, 1] 访问第1行第2列的子图
 fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
 
-
 # 第一个图画线条
 x = np.linspace(0, 10, 100)
 y = np.sin(x)
-axes[0, 0].plot(x, y)             # 画曲线
-axes[0, 0].set_title("Sine Wave") # 设置坐标轴标题
-axes[0, 0].set_xlabel("X axis")   # 设置 X 轴标签
-axes[0, 0].set_ylabel("Y axis")   # 设置 Y 轴标签
+axes[0, 0].plot(x, y)  # 画曲线
+axes[0, 0].set_title("Sine Wave")  # 设置坐标轴标题
+axes[0, 0].set_xlabel("X axis")  # 设置 X 轴标签
+axes[0, 0].set_ylabel("Y axis")  # 设置 Y 轴标签
 
 # 第二个图画向量
-# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0], a[1]箭头指向的终点
+# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0]代表终点的x轴, a[1]代表终点的y轴, x和y参数是分开写的
 # 2.angles='xy' 指定箭头方向角度的解释方式, 'xy' 表示箭头的方向角度是基于数据坐标系（x, y 坐标轴）计算的
 # 3.scale_units='xy' 指定箭头的缩放单位参照, 'xy' 表示箭头的长度单位与坐标轴的 x,y 单位一致
 # 4.scale=1 缩放因子，用来控制箭头的长度, scale=1 表示箭头长度和向量大小一一对应，不做额外缩放
 # 3.color设置颜色, label设置了用 LaTeX 语法显示向量符号
-a = np.array([2, 4])              # 向量a
-axes[0, 1].set_xlim(-1, 5)        # 限定x轴的显示范围是从 -1 到 5
-axes[0, 1].set_ylim(-1, 5)        # 限定y轴的显示范围是从 -1 到 5
-axes[0, 1].grid(True)             # 显示网格
-axes[0, 1].quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$') # 画向量
+a = np.array([2, 4])  # 向量a
+axes[0, 1].set_xlim(-1, 5)  # 限定x轴的显示范围是从 -1 到 5
+axes[0, 1].set_ylim(-1, 5)  # 限定y轴的显示范围是从 -1 到 5
+axes[0, 1].grid(True)  # 显示网格
+axes[0, 1].quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$')  # 画向量
 axes[0, 1].legend(loc='upper left')  # 显示图例并设置位置
 
-# 第三个图画矩形，等待补充
+# 第三个图一次性画多个向量, 看一下写法有什么不同
+# 第一个参数是两条线条的起点的x坐标, 第二个参数是起点的y坐标
+# 第三个参数是终点的x坐标, 第四个参数是终点的y坐标
+# 注意他们是所有的x写到一块, 所有的y写到一块去的
+b = np.array([[1, 3], [3, 5]])
+axes[1, 0].set_xlim(-1, 5)  # 限定x轴的显示范围是从 -1 到 5
+axes[1, 0].set_ylim(-1, 5)  # 限定y轴的显示范围是从 -1 到 5
+axes[1, 0].grid(True)  # 显示网格
+axes[1, 0].quiver([0, 0], [0, 0], b[:, 0], b[:, 1], angles='xy', scale_units='xy', scale=1,
+                  color=['blue', "red"], label=r'$\vec{a}$')  # 画向量
+axes[1, 0].legend(loc='upper left')  # 显示图例并设置位置
 
+# 第四张图画任意箭头: annotate方法, 待补充
+axes[1, 1].set_xlim(-1, 5)
+axes[1, 1].set_ylim(-1, 5)
+axes[1, 1].grid(True)
+axes[1, 1].annotate('', xy=(2, 3), xytext=(0, 0), arrowprops=dict(arrowstyle='->', color='blue', lw=2))
 
 # 自动调整子图间距并显示
 plt.tight_layout()
