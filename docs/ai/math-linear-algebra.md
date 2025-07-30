@@ -1151,7 +1151,7 @@ print(m1 - m2)
 
 :::
 
-::: details （2）矩阵乘除法
+::: details （2）矩阵哈达玛积 和 除法
 
 ```python
 import numpy as np
@@ -1173,7 +1173,9 @@ print(m1 / 3)
 print("\n" + "*" * 80)
 
 # 矩阵*矩阵: 对应位置相乘或相除
-# 注意: 不同形状的矩阵不能使用*进行相乘除
+# 注意: 
+#   1.不同形状的矩阵不能使用*进行相乘除
+#   2.这不是矩阵乘法（矩阵乘法是用@来计算）, 这叫做 哈达玛积，一定要注意!!!
 print(m1 * m2)
 print(m1 / m2)
 ```
@@ -1357,6 +1359,32 @@ plt.show()
 ![image-20250726213153179](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250726213153179.png)
 
 :::
+
+<br />
+
+### dot方法
+
+**np.dot 是多义的：**
+
+- 对于一维向量是点积；
+- 对于二维矩阵是矩阵乘法；
+- 对于混合维度时自动广播；
+- **更推荐使用 `@` 或 `np.matmul` 来明确表示矩阵乘法**，避免歧义
+
+```python
+import numpy as np
+
+# 定义矩阵
+A = np.ones((2, 3, 4))
+B = np.ones((2, 4, 5))
+
+# 计算
+print(np.dot(A, B).shape)
+print((A @ B).shape)
+print(np.matmul(A, B).shape)
+```
+
+更详细的等待补充
 
 <br />
 
