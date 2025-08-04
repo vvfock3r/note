@@ -1362,6 +1362,68 @@ plt.show()
 
 <br />
 
+### 变换举例
+
+::: details （1）将向量 `[2, 2]` 逆时针旋转 90 度，求新坐标
+
+```python
+import numpy as np
+
+# 原始向量
+v = np.array([2, 2])
+
+# 旋转角度（单位：度）
+theta_deg = 90
+theta_rad = np.radians(theta_deg)  # 转换为弧度
+
+# 构造旋转矩阵（逆时针）
+# 第一列是旋转后 x 轴的位置，第二列是旋转后 y 轴
+R = np.array([
+    [np.cos(theta_rad), -np.sin(theta_rad)],
+    [np.sin(theta_rad), np.cos(theta_rad)]
+])
+
+# 线性变换（旋转）
+v_rotated = R @ v
+
+print("旋转前向量:", v)
+print(f"旋转{theta_deg}度后:", v_rotated)
+```
+
+输出结果
+
+```bash
+旋转前向量: [2 2]
+旋转90度后: [-2.  2.]
+```
+
+<br />
+
+**思考：构造旋转矩阵是如何构造出来的？**
+
+比如一个点（1，0），逆时针旋转90度，它变成了（0，1）
+
+比如一个点（0，1），逆时针旋转90度，它变成了（-1，0）
+
+所以，逆时针旋转90度我们就得到了一个矩阵（第一列代表x轴的旋转，第二列代表y轴的旋转）
+$$
+\begin{bmatrix}
+0 & -1 \\
+1 & 0
+\end{bmatrix}
+$$
+**现在我们如何将它扩展到旋转任意角度？**
+
+先看x轴，比如我们逆时针旋转一下，那么可以得到下面的图形
+
+![image-20250804232038316](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250804232038316.png)
+
+针对y轴，我们也获取到另一个变换后的坐标（图形待补充）
+
+:::
+
+<br />
+
 ### dot方法
 
 **np.dot 是多义的：**
@@ -1679,6 +1741,7 @@ A = np.arange(1, 10).reshape(3, 3)
 print(f"原始矩阵如下:\n {A}\n")
 
 # 计算 特征值 和 特征向量, 第一个特征值 对应 特征向量的第一列, 依次类推
+# 一个n * n的矩阵，最多有n个特征向量
 values, vector = np.linalg.eig(A)
 print(f"特征值为:\n {values}\n")
 print(f"特征向量为:\n {vector}\n")
