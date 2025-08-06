@@ -84,6 +84,8 @@ print(len(y))
 
 ## Sklearn
 
+scikit-image
+
 <br />
 
 ## Matplotlib
@@ -124,7 +126,7 @@ pip install matplotlib
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-	# 设置支持中文字体
+	# 设置Matplotlib支持中文字体
     plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
     plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
 ```

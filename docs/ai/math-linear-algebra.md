@@ -1912,6 +1912,168 @@ print(D)
 
 <br />
 
+### 奇异值分解
+
+**公式**
+$$
+A = U \Sigma V^T
+$$
+
+
+其中：
+
+- $A$ 是原始矩阵，维度是 $m\times n$
+- $U$ 是一个 $m \times m$ 的正交矩阵（列向量是左奇异向量）
+- $Σ$ 是一个 $m \times n$ 的**对角矩阵**（对角线上的元素称为“奇异值”）
+- $V^{T}$ 是 $n \times n$ 的正交矩阵的转置（行向量是右奇异向量）
+
+奇异值分解（**Singular Value Decomposition**，简称 **SVD**）大致可以理解为：
+
+把一个任意矩阵 $A$，看成是对一个单位正方体先进行旋转（$V^{T}$），再进行拉伸（$Σ$），最后再进行旋转（$U$）。
+
+
+
+::: details （1）用法示例
+
+```python
+import numpy as np
+
+# 定义矩阵
+A = np.array([[3, 2], [2, 3]])
+
+# 奇异值分解
+U, S, VT = np.linalg.svd(A)
+
+print("U:\n", U)
+print("\nS:\n", S)
+print("\nV^T:\n", VT)
+
+# -------------------------------------------------
+# 还原奇异值矩阵 Sigma（对角矩阵）
+Sigma = np.zeros((U.shape[0], VT.shape[0]))
+np.fill_diagonal(Sigma, S)
+
+# 矩阵乘法还原 A
+B = U @ Sigma @ VT
+print("\n还原矩阵:\n ", B)
+```
+
+输出结果
+
+```bash
+U:
+ [[-0.70710678 -0.70710678]
+ [-0.70710678  0.70710678]]
+
+S:
+ [5. 1.]
+
+V^T:
+ [[-0.70710678 -0.70710678]
+ [-0.70710678  0.70710678]]
+
+还原矩阵:
+  [[3. 2.]
+ [2. 3.]]
+```
+
+:::
+
+::: details （2）举例：图像压缩：有损压缩：（灰度）
+
+```python
+import ssl
+import skimage
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 忽略 SSL 验证
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# 设置Matplotlib支持中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+plt.rcParams['axes.unicode_minus'] = False  # 正常显示负号
+
+# -------------------------------加载图像，并转为灰度 ---------------------------------------------
+
+# 定义图像地址
+url = "https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-2025-08-06.png"
+
+# 从本地或者URL中读取图像, 返回Numpy数组
+# 彩色图像：(高度, 宽度, 3) （RGB 通道）
+# 灰度图像：(高度, 宽度)
+image = skimage.io.imread(url)
+
+# 会将彩色图像按人眼感知加权公式转换成灰度图像，值在 0~1
+# 0.0 完全黑色
+# 0.1 非常深的暗灰色
+# 0.5 中灰色
+# 0.9 非常浅的浅灰色
+# 1.0 完全白色
+gray = skimage.color.rgb2gray(image)
+
+# ------------------------------- 奇异值分解(SVD) ---------------------------------------------
+
+U, S, VT = np.linalg.svd(gray, full_matrices=False)
+
+
+# ------------------------------- 重建图像 ---------------------------------------------
+def recover_from_svd(U, S, VT, k):
+    """ 重建图像，从而实现压缩和简化，只保留图像的主要信息，舍弃细节和噪声
+    k: 仅保留前k个奇异值的重建图像
+    """
+
+    # 取矩阵U的前k列, 返回值还是矩阵, 行数不变, 列数变为k
+    Uk = U[:, :k]
+
+    # 用 S 中的前 k 个奇异值构造对角矩阵 Sk
+    Sk = np.diag(S[:k])
+
+    # 取矩阵 VT 的前 k 行（右奇异向量对应的前 k 个方向）
+    VTk = VT[:k, :]
+
+    # 最后重建一个近似的图像矩阵
+    return np.dot(Uk, np.dot(Sk, VTk))
+
+
+if __name__ == "__main__":
+    # 设置多个奇异值数（保留信息比例）
+    ks = [5, 20, 50, 100, 200, 400, 512]
+
+    # 初始化
+    plt.figure(figsize=(12, 8))
+    plt.subplot(2, 4, 1)
+    plt.imshow(gray, cmap='gray')
+    plt.title("原图")
+    plt.axis("off")
+
+    # 展示不同压缩比下的图像
+    for i, k in enumerate(ks):
+        image = recover_from_svd(U, S, VT, k)
+        plt.subplot(2, 4, i + 2)
+        plt.imshow(image, cmap='gray')
+        plt.title(f"k = {k}")
+        plt.axis("off")
+
+    # 展示
+    plt.tight_layout()
+    plt.show()
+```
+
+![image-20250806230231308](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250806230231308.png)
+
+:::
+
+::: details （3）举例：图像压缩：有损压缩：（彩色）
+
+```python
+
+```
+
+:::
+
+<br />
+
 ## 行列式
 
 ### 定义
