@@ -84,6 +84,8 @@ print(len(y))
 
 ## Sklearn
 
+scikit-image
+
 <br />
 
 ## Matplotlib
@@ -110,6 +112,24 @@ pip install matplotlib
 10. **Utility Functions**：图形调整和辅助函数。
 
 每个模块的功能协作，使得 `matplotlib` 成为一个强大的数据可视化工具
+
+<br />
+
+### 显示中文问题
+
+默认情况下显示中文会有问题, 添加如下代码解决
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+import matplotlib.pyplot as plt
+
+if __name__ == "__main__":
+	# 设置Matplotlib支持中文字体
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+    plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
+```
 
 <br />
 
@@ -431,30 +451,44 @@ import numpy as np
 # 可以简写成如下代码, 这里是2行2列, axes[0, 1] 访问第1行第2列的子图
 fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
 
-
 # 第一个图画线条
 x = np.linspace(0, 10, 100)
 y = np.sin(x)
-axes[0, 0].plot(x, y)             # 画曲线
-axes[0, 0].set_title("Sine Wave") # 设置坐标轴标题
-axes[0, 0].set_xlabel("X axis")   # 设置 X 轴标签
-axes[0, 0].set_ylabel("Y axis")   # 设置 Y 轴标签
+axes[0, 0].plot(x, y)  # 画曲线
+axes[0, 0].set_title("Sine Wave")  # 设置坐标轴标题
+axes[0, 0].set_xlabel("X axis")  # 设置 X 轴标签
+axes[0, 0].set_ylabel("Y axis")  # 设置 Y 轴标签
 
 # 第二个图画向量
-# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0], a[1]箭头指向的终点
+# 1.quiver用来绘制箭头（向量）, 0,0 代表箭头的起点坐标, a[0]代表终点的x轴, a[1]代表终点的y轴, x和y参数是分开写的
 # 2.angles='xy' 指定箭头方向角度的解释方式, 'xy' 表示箭头的方向角度是基于数据坐标系（x, y 坐标轴）计算的
 # 3.scale_units='xy' 指定箭头的缩放单位参照, 'xy' 表示箭头的长度单位与坐标轴的 x,y 单位一致
 # 4.scale=1 缩放因子，用来控制箭头的长度, scale=1 表示箭头长度和向量大小一一对应，不做额外缩放
 # 3.color设置颜色, label设置了用 LaTeX 语法显示向量符号
-a = np.array([2, 4])              # 向量a
-axes[0, 1].set_xlim(-1, 5)        # 限定x轴的显示范围是从 -1 到 5
-axes[0, 1].set_ylim(-1, 5)        # 限定y轴的显示范围是从 -1 到 5
-axes[0, 1].grid(True)             # 显示网格
-axes[0, 1].quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$') # 画向量
+a = np.array([2, 4])  # 向量a
+axes[0, 1].set_xlim(-1, 5)  # 限定x轴的显示范围是从 -1 到 5
+axes[0, 1].set_ylim(-1, 5)  # 限定y轴的显示范围是从 -1 到 5
+axes[0, 1].grid(True)  # 显示网格
+axes[0, 1].quiver(0, 0, a[0], a[1], angles='xy', scale_units='xy', scale=1, color='blue', label=r'$\vec{a}$')  # 画向量
 axes[0, 1].legend(loc='upper left')  # 显示图例并设置位置
 
-# 第三个图画矩形，等待补充
+# 第三个图一次性画多个向量, 看一下写法有什么不同
+# 第一个参数是两条线条的起点的x坐标, 第二个参数是起点的y坐标
+# 第三个参数是终点的x坐标, 第四个参数是终点的y坐标
+# 注意他们是所有的x写到一块, 所有的y写到一块去的
+b = np.array([[1, 3], [3, 5]])
+axes[1, 0].set_xlim(-1, 5)  # 限定x轴的显示范围是从 -1 到 5
+axes[1, 0].set_ylim(-1, 5)  # 限定y轴的显示范围是从 -1 到 5
+axes[1, 0].grid(True)  # 显示网格
+axes[1, 0].quiver([0, 0], [0, 0], b[:, 0], b[:, 1], angles='xy', scale_units='xy', scale=1,
+                  color=['blue', "red"], label=r'$\vec{a}$')  # 画向量
+axes[1, 0].legend(loc='upper left')  # 显示图例并设置位置
 
+# 第四张图画任意箭头: annotate方法, 待补充
+axes[1, 1].set_xlim(-1, 5)
+axes[1, 1].set_ylim(-1, 5)
+axes[1, 1].grid(True)
+axes[1, 1].annotate('', xy=(2, 3), xytext=(0, 0), arrowprops=dict(arrowstyle='->', color='blue', lw=2))
 
 # 自动调整子图间距并显示
 plt.tight_layout()
@@ -552,6 +586,33 @@ plt.ylabel('f(x)')  # y 轴标签
 plt.title('Plot of f(x)')  # 图标题
 plt.grid(True)  # 添加网格线
 plt.legend()  # 显示图例
+plt.show()
+```
+
+:::
+
+::: details （4）抛物线：开口向左或者右
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 定义 y 范围
+y = np.linspace(-10, 10, 500)
+
+# 横向抛物线, ×0.2 的作用是为了缩放抛物线的开口宽度
+# 如果需要改变开口方向, 将下面的任意一个值修改为负数即可
+x = y ** 2 * 0.2
+
+plt.plot(x, y, label='Right: x = y^2')
+plt.axhline(0, color='black', linewidth=0.5)
+plt.axvline(0, color='black', linewidth=0.5)
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Right')
+plt.grid(True)
+plt.legend()
+plt.gca().set_aspect('equal', adjustable='box')  # 保持比例
 plt.show()
 ```
 
