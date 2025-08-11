@@ -4,7 +4,185 @@
 
 文档：[https://helpx.adobe.com/photoshop/user-guide.html](https://helpx.adobe.com/photoshop/user-guide.html)
 
+<br />
 
+## 认识图片
+
+**各种类型图片**
+
+| 格式                       | 压缩方式             | 压缩是否有损 | 支持透明     | 支持动图     | 是否矢量图        | 典型用途               |
+| -------------------------- | -------------------- | ------------ | ------------ | ------------ | ----------------- | ---------------------- |
+| **JPEG / JPG**             | 有损                 | ✅            | ❌            | ❌            | ❌（位图）         | 数码摄影、网页图片     |
+| **PNG-8**                  | 无损                 | ❌            | ✅            | ❌            | ❌（位图）         | 网页图标、简单图形     |
+| **PNG-24**                 | 无损                 | ❌            | ✅            | ❌            | ❌（位图）         | 网页高质量图像         |
+| **GIF**                    | 无损（256色索引）    | ❌            | ✅（1位透明） | ✅            | ❌（位图）         | 动图、简单插画         |
+| **APNG**                   | 无损                 | ❌            | ✅            | ✅            | ❌（位图）         | 高质量动画             |
+| **WebP（有损）**           | 有损                 | ✅            | ✅            | ✅            | ❌（位图）         | 网页优化图像           |
+| **WebP（无损）**           | 无损                 | ❌            | ✅            | ✅            | ❌（位图）         | 网页透明动图           |
+| **AVIF（有损）**           | 有损                 | ✅            | ✅            | ✅            | ❌（位图）         | 新一代网页图像         |
+| **AVIF（无损）**           | 无损                 | ❌            | ✅            | ✅            | ❌（位图）         | 高压缩透明动图         |
+| **BMP**                    | 无压缩               | ❌            | ✅            | ❌            | ❌（位图）         | 老式 Windows 图像      |
+| **TIFF**                   | 可无压缩 / 无损压缩  | ❌            | ✅            | ❌            | ❌（位图）         | 扫描件、印刷、摄影存档 |
+| **RAW（CR2、NEF、ARW等）** | 无压缩/轻压缩        | ❌            | ✅            | ❌            | ❌（位图）         | 专业摄影原始数据       |
+| **SVG**                    | 文本压缩（可选）     | ❌            | ✅            | ✅（SMIL/JS） | ✅（矢量）         | 网页图标、插画         |
+| **PSD**                    | 无损压缩             | ❌            | ✅            | ❌            | ❌（位图+图层）    | Photoshop 编辑文件     |
+| **HEIC / HEIF**            | 有损/无损            | ✅/❌          | ✅            | ✅            | ❌（位图）         | iOS 照片、视频帧       |
+| **ICO**                    | 无损压缩             | ❌            | ✅            | ❌            | ❌（位图，多尺寸） | 应用/网站图标          |
+| **EPS / AI**               | 文本压缩（矢量数据） | ❌            | ✅            | ❌            | ✅（矢量）         | 印刷、标志、插画       |
+| **PDF（图片为主）**        | 无损/有损            | ✅/❌          | ✅            | ❌            | ✅/❌（混合）       | 文档、矢量+位图混合    |
+| **EXR**                    | 无损                 | ❌            | ✅            | ❌            | ❌（位图）         | 电影特效、HDR 渲染     |
+
+**图片元数据查询**
+
+下载地址：https://exiftool.org/
+
+::: details 点积查看详情
+
+```bash
+# 查看元数据信息
+C:\Users\VVFock3r\Desktop>exiftool 3.jpg
+ExifTool Version Number         : 13.33
+File Name                       : 3.jpg
+Directory                       : .
+File Size                       : 4.0 MB
+File Modification Date/Time     : 2025:08:11 17:02:31+08:00
+File Access Date/Time           : 2025:08:11 17:02:38+08:00
+File Creation Date/Time         : 2025:08:11 17:02:37+08:00
+File Permissions                : -rw-rw-rw-
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+JFIF Version                    : 1.01
+Exif Byte Order                 : Little-endian (Intel, II)
+Make                            : realme
+Camera Model Name               : realme GT Neo5 SE
+Orientation                     : Horizontal (normal)
+X Resolution                    : 72
+Y Resolution                    : 72
+Resolution Unit                 : inches
+Modify Date                     : 2025:08:11 16:50:52
+Y Cb Cr Positioning             : Centered
+Interoperability Index          : R98 - DCF basic file (sRGB)
+Interoperability Version        : 1.0
+Exposure Time                   : 1/33
+F Number                        : 1.8
+Exposure Program                : Not Defined
+ISO                             : 200
+Exif Version                    : 0220
+Date/Time Original              : 2025:08:11 16:50:52
+Create Date                     : 2025:08:11 16:50:52
+Offset Time Original            : +08:00
+Components Configuration        : Y, Cb, Cr, -
+Shutter Speed Value             : 1/33
+Aperture Value                  : 1.8
+Brightness Value                : undef
+Exposure Compensation           : 0
+Max Aperture Value              : 1.8
+Metering Mode                   : Center-weighted average
+Flash                           : Off, Did not fire
+Focal Length                    : 4.7 mm
+Maker Note Unknown Text         : (Binary data 230 bytes, use -b option to extract)
+User Comment                    : oplus_32
+Sub Sec Time                    : 266
+Sub Sec Time Original           : 266
+Sub Sec Time Digitized          : 266
+Flashpix Version                : 0100
+Color Space                     : sRGB
+Exif Image Width                : 0
+Exif Image Height               : 0
+Sensing Method                  : Not defined
+Scene Type                      : Unknown (0)
+Exposure Mode                   : Auto
+White Balance                   : Auto
+Digital Zoom Ratio              : 0
+Focal Length In 35mm Format     : 25 mm
+Scene Capture Type              : Standard
+Lens Model                      : realme GT Neo5 SE back camera 4.70mm f/1.8
+Profile CMM Type                : Apple Computer Inc.
+Profile Version                 : 4.0.0
+Profile Class                   : Display Device Profile
+Color Space Data                : RGB
+Profile Connection Space        : XYZ
+Profile Date Time               : 2018:06:24 13:22:32
+Profile File Signature          : acsp
+Primary Platform                : Apple Computer Inc.
+CMM Flags                       : Not Embedded, Independent
+Device Manufacturer             : Unknown (OPPO)
+Device Model                    :
+Device Attributes               : Reflective, Glossy, Positive, Color
+Rendering Intent                : Perceptual
+Connection Space Illuminant     : 0.9642 1 0.82491
+Profile Creator                 : Apple Computer Inc.
+Profile ID                      : 0
+Profile Description             : Display P3
+Profile Copyright               : Copyright Apple Inc., 2017
+Media White Point               : 0.95045 1 1.08905
+Red Matrix Column               : 0.51512 0.2412 -0.00105
+Green Matrix Column             : 0.29198 0.69225 0.04189
+Blue Matrix Column              : 0.1571 0.06657 0.78407
+Red Tone Reproduction Curve     : (Binary data 32 bytes, use -b option to extract)
+Chromatic Adaptation            : 1.04788 0.02292 -0.0502 0.02959 0.99048 -0.01706 -0.00923 0.01508 0.75168
+Blue Tone Reproduction Curve    : (Binary data 32 bytes, use -b option to extract)
+Green Tone Reproduction Curve   : (Binary data 32 bytes, use -b option to extract)
+Image Width                     : 3468
+Image Height                    : 4624
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:0 (2 2)
+JSON Info                       : [{"length":4,"name":"private.emptyspace","offset":51,"version":1},{"length":47,"name":"watermark.device","offset":47,"version":1}]
+Device                          : 0xcdcc8c3f00 鐪熸垜GT Neo5 SE
+Aperture                        : 1.8
+Image Size                      : 3468x4624
+Megapixels                      : 16.0
+Scale Factor To 35 mm Equivalent: 5.3
+Shutter Speed                   : 1/33
+Create Date                     : 2025:08:11 16:50:52.266
+Date/Time Original              : 2025:08:11 16:50:52.266+08:00
+Modify Date                     : 2025:08:11 16:50:52.266
+Circle Of Confusion             : 0.006 mm
+Field Of View                   : 71.5 deg
+Focal Length                    : 4.7 mm (35 mm equivalent: 25.0 mm)
+Hyperfocal Distance             : 2.18 m
+Light Value                     : 5.7
+Lens ID                         : realme GT Neo5 SE back camera 4.70mm f/1.8
+
+# 清除元数据信息
+exiftool -all= <Image File>                      # 会生成一个新的文件，原文件会备份为 文件名_original
+exiftool -all= -overwrite_original <Image File>  # 直接修改源文件
+
+C:\Users\VVFock3r\Desktop>exiftool -all= -overwrite_original 3.jpg
+Warning: ICC_Profile deleted. Image colors may be affected - 3.jpg
+    1 image files updated
+    
+# 再次查看
+C:\Users\VVFock3r\Desktop>exiftool  3.jpg
+ExifTool Version Number         : 13.33
+File Name                       : 3.jpg
+Directory                       : .
+File Size                       : 4.0 MB
+File Modification Date/Time     : 2025:08:11 17:07:42+08:00
+File Access Date/Time           : 2025:08:11 17:07:42+08:00
+File Creation Date/Time         : 2025:08:11 17:02:37+08:00
+File Permissions                : -rw-rw-rw-
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+Image Width                     : 3468
+Image Height                    : 4624
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:0 (2 2)
+Image Size                      : 3468x4624
+Megapixels                      : 16.0
+
+# 其他
+# 微信直接发图片通常会清除部分元数据, 用于保护隐私。如果选择发送文件则不会主动清除元数据
+# QQ发送文件通常不会清除元数据信息
+```
+
+:::
 
 <br />
 
