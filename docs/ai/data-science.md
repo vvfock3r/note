@@ -1,4 +1,4 @@
-# Data Science
+# 数据处理与科学计算基础
 
 ## NumPy
 
@@ -68,8 +68,6 @@ print(len(y))
 200
 ```
 
-
-
 :::
 
 <br />
@@ -78,15 +76,23 @@ print(len(y))
 
 <br />
 
+## SymPy
+
+<br />
+
 ## Pandas
 
 <br />
 
-## Sklearn
-
-scikit-image
+## Dask
 
 <br />
+
+## Polars
+
+<br />
+
+# 数据可视化
 
 ## Matplotlib
 
@@ -617,3 +623,290 @@ plt.show()
 ```
 
 :::
+
+<br />
+
+# 传统机器学习
+
+## Sklearn
+
+### 安装
+
+```bash
+pip install -U scikit-learn
+```
+
+<br />
+
+# 深度学习框架
+
+## PyTorch
+
+<br />
+
+## FastAI
+
+<br />
+
+#  图像处理与计算机视觉
+
+<br />
+
+## Pillow (PIL)
+
+<br />
+
+## scikit-image
+
+### 安装
+
+```bash
+pip install -U scikit-image
+```
+
+<br />
+
+### 内置测试图片
+
+::: details （1）查看内置图片所在的目录
+
+```python
+import os
+import skimage
+
+print(os.path.join(os.path.dirname(skimage.__file__), 'data'))
+```
+
+截图如下
+
+![image-20250812180009752](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812180009752.png)
+
+**内置图片说明**
+
+| 图片名                | 类型 | 特点简介                       | 典型应用场景                           |
+| --------------------- | ---- | ------------------------------ | -------------------------------------- |
+| **camera**            | 灰度 | 经典人像图，512x512，细节丰富  | 图像滤波、边缘检测、压缩、复原测试     |
+| **coins**             | 灰度 | 多个硬币散落，带明显边缘       | 图像分割（阈值分割、边缘检测）、形态学 |
+| **astronaut**         | 彩色 | 彩色人像，色彩丰富             | 颜色空间转换、色彩增强、纹理分析       |
+| **chelsea**           | 彩色 | 彩色猫咪图片                   | 图像分割、颜色空间实验                 |
+| **coffee**            | 彩色 | 咖啡杯和桌面细节丰富           | 纹理分析、图像增强                     |
+| **text**              | 灰度 | 黑白文字，清晰对比             | 二值化、OCR预处理、边缘检测            |
+| **page**              | 灰度 | 文本文档扫描图                 | 噪声去除、二值化、图像复原             |
+| **brick**             | 灰度 | 砖块纹理图                     | 纹理分析、周期图案检测                 |
+| **grass**             | 灰度 | 草地纹理                       | 纹理分割、纹理特征提取                 |
+| **gravel**            | 灰度 | 石子路面随机纹理               | 纹理识别、聚类实验                     |
+| **clock**             | 彩色 | 彩色时钟图片                   | 形状检测（圆形）、边缘提取             |
+| **hubble_deep_field** | 彩色 | 天文深空图（需联网下载）       | 天文图像分析、目标检测                 |
+| **human_mitosis**     | 彩色 | 显微镜下细胞分裂过程（需联网） | 医学图像分割、细胞计数                 |
+| **retina**            | 彩色 | 视网膜图像                     | 医学图像分析、血管分割                 |
+
+**展示内置图片**
+
+```python
+import skimage
+import matplotlib.pyplot as plt
+
+# 加载内置图片chelsea(一张小猫咪图片), 返回值是Numpy数组类型
+image = skimage.data.cat()
+
+# 显示图片
+plt.imshow(image)
+plt.axis("off")  # 不显示坐标轴
+plt.title("Cat")
+plt.show()
+```
+
+![image-20250812183045042](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812183045042.png)
+
+:::
+
+::: details （2）下载完整数据集（数据集很少）
+
+```bash
+# 安装pooch库
+pip install -U pooch
+
+# 交互式界面输入 或者 写入到Python脚本执行也可以
+>>> from skimage.data import download_all
+>>> download_all()
+```
+
+使用示例
+
+```python
+import pooch
+import numpy as np
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+# 获取scikit-image缓存的根目录
+cache_dir = pooch.os_cache("scikit-image")
+
+# 你要找的相对路径（根据你的文件层级）
+relative_path = Path("0.25.2/color/tests/data/lab_array_a_2.npy")
+
+# 拼接成绝对路径
+file_path = cache_dir / relative_path
+
+print("缓存目录: ", cache_dir)
+print("示例文件:", file_path)
+
+# 展示文件
+img = np.load(file_path)
+plt.imshow(img)
+plt.axis('off')
+plt.show()
+```
+
+![image-20250812183343523](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812183343523.png)
+
+:::
+
+<br />
+
+### 颜色空间转换
+
+`scikit-image` 本身并不“识别”图像文件的颜色空间信息，它提供了`RGB` 颜色空间转为其他颜色空间的方法，适用于整张图片颜色空间转换。
+
+如果只是做简单的像素点颜色空间转换，使用Python标准库`colorsys`就够了
+
+**颜色空间对比**
+
+| 颜色空间             | 是否给人看（适合直接显示） | 主要用途/应用领域                  | 备注                                     |
+| -------------------- | -------------------------- | ---------------------------------- | ---------------------------------------- |
+| **RGB**              | 是                         | 显示设备（显示器、手机屏幕、相机） | 最常用的“屏幕色彩”空间，直接显示友好     |
+| **CMYK**             | 否                         | 印刷领域                           | 用于印刷油墨调配，不适合屏幕直接显示     |
+| **HSV/HSL**          | 否（不完全适合）           | 颜色分析、调色、图像处理           | 方便色调分离和调节，但数值不适合直接显示 |
+| **Lab**              | 否                         | 颜色校正、色差计算、色彩管理       | 感知均匀空间，计算颜色差异，人眼感知近似 |
+| **LUV**              | 否                         | 色彩科学、颜色转换                 | 与Lab类似，主要用于计算                  |
+| **XYZ**              | 否                         | 颜色科学标准空间                   | 设备无关的颜色标准，不适合直接显示       |
+| **YUV/YCbCr**        | 否                         | 视频编码、传输                     | 分离亮度和色度，适合压缩编码             |
+| **Grayscale (灰度)** | 是                         | 黑白显示、图像分析                 | 单通道，直接显示黑白图像                 |
+| **RGBA**             | 是                         | 含透明通道的显示                   | RGB基础上加透明度，适合直接显示          |
+
+::: details 同一张图片在不同颜色空间下展示
+
+```python
+import matplotlib.pyplot as plt
+from skimage import data, color
+
+if __name__ == "__main__":
+	# 设置Matplotlib支持中文字体
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置中文字体为黑体
+    plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
+
+    # 加载内置猫图片（RGB）
+    img_rgb = data.cat()
+
+    # 转换为灰度图
+    img_gray = color.rgb2gray(img_rgb)
+
+    # 转换为 HSV
+    img_hsv = color.rgb2hsv(img_rgb)
+
+    # 转换为 Lab
+    img_lab = color.rgb2lab(img_rgb)
+
+    # 显示图片
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+    axes[0][0].imshow(img_rgb)
+    axes[0][0].set_title('RGB 原图')
+    axes[0][0].axis('off')
+
+    axes[0][1].imshow(img_gray, cmap='gray')
+    axes[0][1].set_title('灰度图')
+    axes[0][1].axis('off')
+
+    axes[1][0].imshow(img_hsv)
+    axes[1][0].set_title('HSV 图')
+    axes[1][0].axis('off')
+
+    # Lab 图数值范围较大，归一化显示
+    axes[1][1].imshow((img_lab - img_lab.min()) / (img_lab.max() - img_lab.min()))
+    axes[1][1].set_title('Lab 图（归一化显示）')
+    axes[1][1].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+```
+
+![image-20250812185356403](C:\Users\VVFock3r\AppData\Roaming\Typora\typora-user-images\image-20250812185356403.png)
+
+:::
+
+::: details 检测鼠标当前位置是什么颜色（粗粒度判断）
+
+```python
+import time
+import colorsys
+import logging
+import pyautogui
+
+logging.basicConfig(level=logging.INFO,format='%(asctime)s [%(levelname)s] %(message)s',datefmt='%H:%M:%S')
+
+def rgb_to_hsv(r, g, b):
+    r, g, b = r / 255.0, g / 255.0, b / 255.0
+    return colorsys.rgb_to_hsv(r, g, b)
+
+# 不是很准, 可以根据实际情况调整
+def hsv_to_color_name(h, s, v):
+    if s < 0.1:
+        return "灰色"
+    if v < 0.2:
+        return "黑色"
+    if v > 0.9 and s < 0.2:
+        return "白色"
+    if (h >= 0 and h < 0.05) or (h > 0.95 and h <= 1):
+        return "红色"
+    elif h >= 0.05 and h < 0.15:
+        return "橙色"
+    elif h >= 0.15 and h < 0.4:
+        return "黄色"
+    elif h >= 0.4 and h < 0.6:
+        return "绿色"
+    elif h >= 0.6 and h < 0.75:
+        return "青色"
+    elif h >= 0.75 and h < 0.9:
+        return "蓝色"
+    else:
+        return "紫色"
+
+def get_mouse_color():
+    start_time = time.time()
+
+    x, y = pyautogui.position()
+    img = pyautogui.screenshot(region=(x, y, 1, 1))
+    r, g, b = img.getpixel((0, 0))
+    h, s, v = rgb_to_hsv(r, g, b)
+    color_name = hsv_to_color_name(h, s, v)
+
+    end_time = time.time()
+    elapsed_ms = (end_time - start_time) * 1000
+
+    # 格式化输出，字段宽度固定，左对齐或右对齐根据情况
+    log_msg = (f"位置: ({x:4d},{y:4d}) | "
+               f"RGB: ({r:3d},{g:3d},{b:3d}) | "
+               f"HSV: ({h:5.2f},{s:5.2f},{v:5.2f}) | "
+               f"颜色: {color_name:<5} | "
+               f"耗时: {elapsed_ms:7.2f} ms")
+
+    logging.info(log_msg)
+
+if __name__ == "__main__":
+    logging.info("开始鼠标颜色检测，按 Ctrl+C 停止")
+    try:
+        while True:
+            get_mouse_color()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logging.info("程序已停止")
+```
+
+:::
+
+<br />
+
+## OpenCV
+
+<br />
