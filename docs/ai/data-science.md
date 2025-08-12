@@ -851,26 +851,29 @@ def rgb_to_hsv(r, g, b):
 
 # 不是很准, 可以根据实际情况调整
 def hsv_to_color_name(h, s, v):
-    if s < 0.1:
-        return "灰色"
     if v < 0.2:
         return "黑色"
-    if v > 0.9 and s < 0.2:
-        return "白色"
-    if (h >= 0 and h < 0.05) or (h > 0.95 and h <= 1):
+    if s < 0.15:
+        if v > 0.9:
+            return "白色"
+        else:
+            return "灰色"
+    if (h < 0.05 or h > 0.95) and s > 0.15:
         return "红色"
-    elif h >= 0.05 and h < 0.15:
+    if 0.05 <= h < 0.1 and s > 0.15:
         return "橙色"
-    elif h >= 0.15 and h < 0.4:
+    if 0.1 <= h < 0.16 and s > 0.15:
         return "黄色"
-    elif h >= 0.4 and h < 0.6:
+    if 0.16 <= h < 0.42 and s > 0.15:
         return "绿色"
-    elif h >= 0.6 and h < 0.75:
+    if 0.42 <= h < 0.58 and s > 0.15:
         return "青色"
-    elif h >= 0.75 and h < 0.9:
+    if 0.58 <= h < 0.75 and s > 0.15:
         return "蓝色"
-    else:
+    if 0.75 <= h <= 0.95 and s > 0.15:
         return "紫色"
+    return "未知"
+
 
 def get_mouse_color():
     start_time = time.time()
