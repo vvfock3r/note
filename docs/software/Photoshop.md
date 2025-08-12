@@ -186,7 +186,38 @@ Megapixels                      : 16.0
 
 <br />
 
-## 111
+## 基础操作
+
+### 初认
+
+**新建文档**
+
+* 快捷键：`CTRL + N`
+
+![image-20250812213503769](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812213503769.png)
+
+**布局介绍**
+
+* 右键工具栏的小图标，可以选择细分类
+
+![image-20250812212637493](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812212637493.png)
+
+**首选项**
+
+* 编辑 - 首选项 - 常规
+* 快捷键 `CTRL + K`
+* 优化建议：内存根据实际情况调整；暂存盘一般不选择 C 盘
+
+![image-20250812213230443](https://tuchuang-1257805459.cos.accelerate.myqcloud.com/image-20250812213230443.png)
+
+**另存为**
+
+* 文件 - 存储为
+* 快捷键：`CTRL + SHIFT + S`
+
+<br />
+
+### 111
 
 <br />
 
