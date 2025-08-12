@@ -2623,7 +2623,227 @@ x3 = 7/6      (约等于 1.166667)
 
 ## PCA主成分分析
 
-PCA（Principal Component Analysis，主成分分析）是一种**数据降维**与**特征提取**的方法，本质上是通过**线性变换**，找到数据中方差最大的方向，并用这些方向重新表示数据
+PCA（Principal Component Analysis，主成分分析）是一种**数据降维**与**特征提取**的方法，
+
+本质上是通过**线性变换**，找到数据中方差最大的方向，并用这些方向重新表示数据
+
+<br />
+
+### 协方差矩阵
+
+**1、均值和期望值**
+
+* 均值（Mean）：对一组已知的数据，取它们的算术平均数
+
+* 期望值（Expectation）：是随机变量在概率意义下的“平均值”，是均值的概率版本，计算公式是 `值 * 概率`。举例说明：
+
+  掷一个均匀的六面骰子，结果可能是 1~6，每个面的概率为 $\frac{1}{6}$ ,那么计算期望值如下：
+  $$
+  E[X] = 1 \times \frac{1}{6} + 2 \times \frac{1}{6} + 3 \times \frac{1}{6} + 4 \times \frac{1}{6} + 5 \times \frac{1}{6} + 6 \times \frac{1}{6} = \frac{1 + 2 + 3 + 4 + 5 + 6}{6} = 3.5
+  $$
+  也就是说，投掷100次骰子求平均值，会在3.5左右，随着投掷次数越多，距离3.5越近。再进一步说，如果投掷骰子，得到几点就能得到几元，那么投掷一次定价多少合适？
+
+总结：均值是已经发生的一组数据的平均值，期望值是理论上的平均值
+
+::: details 点积查看详情
+
+```python
+import numpy as np
+
+# 可能的取值
+values = np.array([1, 2, 3, 4, 5, 6])
+
+# 对应概率（均匀分布）
+probabilities = np.ones(6) / 6  # [1/6, 1/6, ..., 1/6]
+
+# 计算期望值
+expectation = np.sum(values * probabilities)
+
+print("骰子的期望值是:", expectation)
+
+# ---------------------------------------------------------
+
+# 掷骰子次数
+count = 100
+
+# 生成100个随机整数，范围1到6（包含6）
+number = np.random.randint(1, 7, size=count)
+
+# 计算平均值
+average_roll = np.mean(number)
+
+print(f"掷{count}次骰子的结果：")
+print(number)
+print(f"平均点数（样本均值）：{average_roll:.4f}")
+```
+
+:::
+
+<br />
+
+**2、方差和标准差**
+
+- **方差（Variance）**
+  - 说明：衡量数据中各个值与均值之间差异的平方的平均数。
+  - 计算：每个数据-平均值，再平方，加起来，除以数据个数
+  - 意义：方差越大，表示数据点离均值的偏差越大，数据分布越分散，波动越明显
+- **标准差（Standard Deviation）**
+  - 说明：标准差（Standard Deviation）是方差的平方根，是用来衡量数据分布的离散程度的指标
+
+::: details 点击查看详情
+
+```python
+import numpy as np
+
+data = np.array([2, 4, 6, 4, 5, 5, 7, 9])
+
+mean = np.mean(data)
+
+# 总体方差（除以 n）
+variance_pop = np.var(data)
+
+# 样本方差（除以 n-1）
+variance_sample = np.var(data, ddof=1)
+
+# 总体标准差
+std_dev_pop = np.std(data)
+
+# 样本标准差
+std_dev_sample = np.std(data, ddof=1)
+
+print(f"数据: {data}")
+print(f"均值: {mean}")
+print(f"总体方差: {variance_pop}")
+print(f"样本方差: {variance_sample}")
+print(f"总体标准差: {std_dev_pop}")
+print(f"样本标准差: {std_dev_sample}")
+```
+
+输出结果
+
+```bash
+数据: [2 4 6 4 5 5 7 9]
+均值: 5.25
+总体方差: 3.9375
+样本方差: 4.5
+总体标准差: 1.984313483298443    # 它表示数据点大多数会落在均值的上下约1.98的范围内
+样本标准差: 2.1213203435596424
+```
+
+:::
+
+<br />
+
+**3、协方差和协方差矩阵**
+
+协方差（Covariance）是统计学中衡量两个变量之间**线性关系强弱和方向**的指标。
+
+它告诉你当一个变量变化时，另一个变量是倾向于一起增加、一起减少，还是没有明显关系。
+
+数值含义：
+
+* **协方差 > 0**：两个变量倾向于同向变化（一个增，另一个也增）
+* **协方差 < 0**：两个变量倾向于反向变化（一个增，另一个减）
+* **协方差 ≈ 0**：两个变量变化没有线性关系，可能独立或者非线性相关
+
+::: details 点击查看详情
+
+```python
+import numpy as np
+
+X = np.array([2, 4, 6, 8])
+Y = np.array([1, 3, 5, 7])
+
+# 计算协方差矩阵
+cov_matrix = np.cov(X, Y, bias=True)
+
+# 取X和Y之间的协方差
+cov_xy = cov_matrix[0, 1]
+
+print(f"协方差矩阵:\n ", cov_matrix)
+print("协方差值:", cov_xy)
+```
+
+输出结果
+
+```bash
+协方差矩阵:
+  [[5. 5.]
+ [5. 5.]]
+协方差值: 5.0
+```
+
+:::
+
+<br />
+
+### 计算举例
+
+::: details 举例说明
+
+```python
+import numpy as np
+
+A = np.arange(1,7).reshape(3,2)
+print("原始矩阵 A:\n", A)
+
+# 1. 中心化数据（列中心化）
+mean_A = np.mean(A, axis=0)
+A_centered = A - mean_A
+print("中心化后的矩阵 A_centered:\n", A_centered)
+
+# 2. 计算协方差矩阵
+cov_matrix = np.cov(A_centered, rowvar=False)
+print("协方差矩阵:\n", cov_matrix)
+
+# 3. 计算特征值和特征向量
+eigvals, eigvecs = np.linalg.eigh(cov_matrix)  # eigh 用于对称矩阵
+
+print("特征值:\n", eigvals)
+print("特征向量:\n", eigvecs)
+
+# 4. 按特征值大小排序（降序）
+sorted_indices = np.argsort(eigvals)[::-1]
+eigvals_sorted = eigvals[sorted_indices]
+eigvecs_sorted = eigvecs[:, sorted_indices]
+
+print("排序后的特征值:\n", eigvals_sorted)
+print("排序后的特征向量（主成分）:\n", eigvecs_sorted)
+
+```
+
+:::
+
+::: details 举例说明2
+
+```python
+import numpy as np
+from sklearn.decomposition import PCA
+
+# 原始数据
+A = np.arange(1, 7).reshape(3, 2)
+
+# 初始化 PCA，指定主成分数（这里设为2）
+pca = PCA(n_components=2)
+
+# 训练 PCA 模型
+pca.fit(A)
+
+# 主成分方向（特征向量）
+print("主成分方向（成分载荷）:")
+print(pca.components_)
+
+# 各主成分对应的方差（特征值）
+print("各主成分的方差（方差解释量）:")
+print(pca.explained_variance_)
+
+# 数据在主成分空间的投影
+transformed = pca.transform(A)
+print("数据在主成分空间的表示:")
+print(transformed)
+```
+
+:::
 
 ::: details PCA 从二维降到一维的例子
 
@@ -2671,65 +2891,3 @@ plt.show()
 ```
 
 :::
-
-<br />
-
-### 协方差矩阵
-
-举例：掷一个均匀的六面骰子，结果可能是 1~6，每个概率 $\frac{1}{6}$，那么期望值的计算公式就是
-
-* 协方差
-* 协方差矩阵
-
-**1、均值和期望值**
-
-* 均值（Mean）：对一组已知的数据，取它们的算术平均数
-
-* 期望值（Expectation）:解释：是随机变量在概率意义下的“平均值”，是均值的概率版本，计算公式是 `值 * 概率`
-
-  举例说明：
-
-  掷一个均匀的六面骰子，结果可能是 1~6，每个面的概率为 $\frac{1}{6}$ ,那么计算期望值如下：
-  $$
-  E[X] = 1 \times \frac{1}{6} + 2 \times \frac{1}{6} + 3 \times \frac{1}{6} + 4 \times \frac{1}{6} + 5 \times \frac{1}{6} + 6 \times \frac{1}{6} = \frac{1 + 2 + 3 + 4 + 5 + 6}{6} = 3.5
-  $$
-  也就是说，投掷100次骰子求平均值，会在3.5左右，随着投掷次数越多，距离3.5越近。再进一步说，如果投掷骰子，得到几点就能得到几元，那么投掷一次定价多少合适？
-
-总结：均值是已经发生的一组数据的平均值，期望值是理论上的平均值
-
-::: details 点积查看详情
-
-```python
-import numpy as np
-
-# 可能的取值
-values = np.array([1, 2, 3, 4, 5, 6])
-
-# 对应概率（均匀分布）
-probabilities = np.ones(6) / 6  # [1/6, 1/6, ..., 1/6]
-
-# 计算期望值
-expectation = np.sum(values * probabilities)
-
-print("骰子的期望值是:", expectation)
-
-# ---------------------------------------------------------
-
-# 掷骰子次数
-count = 100
-
-# 生成100个随机整数，范围1到6（包含6）
-number = np.random.randint(1, 7, size=count)
-
-# 计算平均值
-average_roll = np.mean(number)
-
-print(f"掷{count}次骰子的结果：")
-print(number)
-print(f"平均点数（样本均值）：{average_roll:.4f}")
-```
-
-:::
-
-**2、方差和标准差**
-
