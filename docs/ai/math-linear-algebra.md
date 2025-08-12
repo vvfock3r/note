@@ -2078,9 +2078,9 @@ if __name__ == "__main__":
 
 <br />
 
-## 行列式
+### 行列式
 
-### 定义
+**1.定义**
 
 **行列式（Determinant）** 是一个**由方阵计算出来的实数**，用于描述该矩阵的某些性质，比如：
 
@@ -2094,7 +2094,7 @@ if __name__ == "__main__":
 
 <br />
 
-### 计算方式（低阶行列式）
+**2.计算方式（低阶行列式）**
 
 **一阶行列式计算规则**
 $$
@@ -2618,3 +2618,118 @@ x3 = 7/6      (约等于 1.166667)
 ```
 
 :::
+
+<br />
+
+## PCA主成分分析
+
+PCA（Principal Component Analysis，主成分分析）是一种**数据降维**与**特征提取**的方法，本质上是通过**线性变换**，找到数据中方差最大的方向，并用这些方向重新表示数据
+
+::: details PCA 从二维降到一维的例子
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ===== 1. 构造一个二维数据集 =====
+np.random.seed(0)
+# 两个高度相关的特征
+x1 = np.random.normal(0, 1, 100)
+x2 = 2*x1 + np.random.normal(0, 1, 100)
+X = np.vstack((x1, x2)).T  # 形状 (100, 2)
+
+# ===== 2. 数据中心化（减去均值） =====
+X_centered = X - np.mean(X, axis=0)
+
+# ===== 3. 计算协方差矩阵 =====
+cov_matrix = np.cov(X_centered, rowvar=False)  # 形状 (2, 2)
+
+# ===== 4. 特征值分解 =====
+eig_vals, eig_vecs = np.linalg.eigh(cov_matrix)  # eigh 用于对称矩阵
+
+# ===== 5. 选取最大特征值对应的特征向量（主成分方向） =====
+idx = np.argsort(eig_vals)[::-1]  # 从大到小排序
+eig_vals = eig_vals[idx]
+eig_vecs = eig_vecs[:, idx]
+
+first_pc = eig_vecs[:, 0]  # 第一主成分
+
+# ===== 6. 投影到第一主成分上（降维） =====
+X_pca = X_centered @ first_pc
+
+# ===== 7. 可视化 =====
+plt.figure(figsize=(6,6))
+plt.scatter(X_centered[:,0], X_centered[:,1], alpha=0.5, label='原始数据')
+# 画主成分方向
+origin = np.array([[0,0]])
+plt.quiver(*origin.T, first_pc[0], first_pc[1],
+           angles='xy', scale_units='xy', scale=1, color='r', label='第一主成分')
+plt.axis('equal')
+plt.legend()
+plt.title("PCA 主成分分析示意")
+plt.show()
+```
+
+:::
+
+<br />
+
+### 协方差矩阵
+
+举例：掷一个均匀的六面骰子，结果可能是 1~6，每个概率 $\frac{1}{6}$，那么期望值的计算公式就是
+
+* 协方差
+* 协方差矩阵
+
+**1、均值和期望值**
+
+* 均值（Mean）：对一组已知的数据，取它们的算术平均数
+
+* 期望值（Expectation）:解释：是随机变量在概率意义下的“平均值”，是均值的概率版本，计算公式是 `值 * 概率`
+
+  举例说明：
+
+  掷一个均匀的六面骰子，结果可能是 1~6，每个面的概率为 $\frac{1}{6}$ ,那么计算期望值如下：
+  $$
+  E[X] = 1 \times \frac{1}{6} + 2 \times \frac{1}{6} + 3 \times \frac{1}{6} + 4 \times \frac{1}{6} + 5 \times \frac{1}{6} + 6 \times \frac{1}{6} = \frac{1 + 2 + 3 + 4 + 5 + 6}{6} = 3.5
+  $$
+  也就是说，投掷100次骰子求平均值，会在3.5左右，随着投掷次数越多，距离3.5越近。再进一步说，如果投掷骰子，得到几点就能得到几元，那么投掷一次定价多少合适？
+
+总结：均值是已经发生的一组数据的平均值，期望值是理论上的平均值
+
+::: details 点积查看详情
+
+```python
+import numpy as np
+
+# 可能的取值
+values = np.array([1, 2, 3, 4, 5, 6])
+
+# 对应概率（均匀分布）
+probabilities = np.ones(6) / 6  # [1/6, 1/6, ..., 1/6]
+
+# 计算期望值
+expectation = np.sum(values * probabilities)
+
+print("骰子的期望值是:", expectation)
+
+# ---------------------------------------------------------
+
+# 掷骰子次数
+count = 100
+
+# 生成100个随机整数，范围1到6（包含6）
+number = np.random.randint(1, 7, size=count)
+
+# 计算平均值
+average_roll = np.mean(number)
+
+print(f"掷{count}次骰子的结果：")
+print(number)
+print(f"平均点数（样本均值）：{average_roll:.4f}")
+```
+
+:::
+
+**2、方差和标准差**
+
