@@ -2,11 +2,17 @@
 
 ## NumPy
 
+### 安装
 
+```bash
+pip install numpy
+```
+
+<br />
 
 ### 生成数值序列
 
-::: details 折线图（Line Plot），表示数据随时间或其他变量变化的趋势
+::: details 生成数值序列
 
 ```python
 import numpy as np
@@ -70,7 +76,258 @@ print(len(y))
 
 :::
 
+::: details 生成随机数序列
+
+```python
+import numpy as np
+
+# 生成整数随机序列
+arr = np.random.randint(low=0, high=10, size=5)
+print(arr)
+print()
+
+# 从给定数组中随机选择
+arr = np.random.choice([10, 20, 30, 40], size=5)
+print(arr)
+print()
+
+# 打乱数组顺序
+arr = np.array([1, 2, 3, 4, 5])
+np.random.shuffle(arr)  # 原地打乱
+print(arr)
+print()
+
+# 设置随机种子（保证可复现）
+np.random.seed(42)  # 后续随机操作可复现
+arr = np.random.rand(5)
+print(arr)
+print()
+
+# 均匀分布 [0,1), np.random.rand(2,3) → 2x3 矩阵
+arr = np.random.rand(5)
+print(arr)
+print()
+
+# 均匀分布 [low, high)
+arr = np.random.uniform(low=10, high=20, size=5)
+print(arr)
+print()
+
+# 正态分布（高斯分布）
+arr = np.random.randn(5)  # 均值0，方差1
+print(arr)
+print()
+
+arr2 = np.random.normal(loc=5, scale=2, size=(2, 3))  # 均值5，标准差2
+print(arr2)
+print()
+```
+
+输出结果
+
+```bash
+[9 0 1 2 4]
+
+[30 40 20 10 20]
+
+[1 5 3 2 4]
+
+[0.37454012 0.95071431 0.73199394 0.59865848 0.15601864]
+
+[0.15599452 0.05808361 0.86617615 0.60111501 0.70807258]
+
+[10.20584494 19.69909852 18.32442641 12.12339111 11.81824967]
+
+[-0.57138017 -0.92408284 -2.61254901  0.95036968  0.81644508]
+
+[[1.952248   4.14390787 3.51518633]
+ [3.5933124  0.72075869 3.74105008]]
+```
+
+:::
+
 <br />
+
+### 数组常规操作
+
+::: details 视图和副本（了解概念）
+
+```python
+import numpy as np
+
+# 原始矩阵
+x = np.arange(1, 25, 1).reshape(3, 4, 2)
+
+# 视图 是原数组的不同“窗口”，本质上不复制数据，只是共享原数组的内存。修改视图的数据会 影响原数组，因为它们共用同一块内存
+#   切片操作通常返回 视图
+#   reshape 默认返回视图
+# 副本 是原数组数据的 完全拷贝，修改副本不会影响原数组
+#   使用 copy() 方法
+# 判断数组是视图还是副本
+#   base 属性指向原数组，如果是 None，说明它没有共享别的数组
+#   原数组的 .base 总是 None
+
+# 注意事项:
+#   不是所有切片都会返回 .base = 原数组
+#   .base 不能百分百保证判断视图，修改元素测试才是最终判断方法
+
+# 判断
+a = x[:, :, -1]
+b = x[:, :, -1].copy()
+print(a.base is x)  # False
+print(b.base is x)  # False
+
+# 修改一下查看
+a[0] = -100
+b[0] = 200
+print(x)
+
+# 这个例子说明：
+# 	copy()方法是可靠的
+# 	不要靠base来判断是否共享了内存, 不是百分百可靠，修改元素测试才是最终判断方法
+```
+
+输出结果
+
+```bash
+False
+False
+[[[   1 -100]
+  [   3 -100]
+  [   5 -100]
+  [   7 -100]]
+
+ [[   9   10]
+  [  11   12]
+  [  13   14]
+  [  15   16]]
+
+ [[  17   18]
+  [  19   20]
+  [  21   22]
+  [  23   24]]]
+```
+
+:::
+
+::: details 切片操作
+
+```python
+import numpy as np
+
+# 原始矩阵
+x = np.arange(1, 25, 1).reshape(3, 4, 2)
+print(x)
+
+print("-" * 50)
+
+# 语法: array[第一维, 第二维, 第三维, ...] 支持取任意维度数组
+
+# 举例
+# 第 0 维切片：:: → 默认取 所有数据
+# 第 1 维索引：-1 → 最后一行
+# 第 2 维没有指定 → 默认取 所有数据
+# 所以返回结果形状 (3,2)
+print(x[::, -1])
+
+# 举例
+# 第 0 维：: → 所有数据
+# 第 1 维：: → 所有数据
+# 第 2 维：-1 → 每行的最后一列
+print(x[:, :, -1])
+
+# 注意: 切片返回的数据并不是独立数据
+```
+
+输出结果
+
+```bash
+[[[ 1  2]
+  [ 3  4]
+  [ 5  6]
+  [ 7  8]]
+
+ [[ 9 10]
+  [11 12]
+  [13 14]
+  [15 16]]
+
+ [[17 18]
+  [19 20]
+  [21 22]
+  [23 24]]]
+--------------------------------------------------
+[[ 7  8]
+ [15 16]
+ [23 24]]
+[[ 2  4  6  8]
+ [10 12 14 16]
+ [18 20 22 24]]
+```
+
+:::
+
+::: details 遍历数组
+
+```python
+import numpy as np
+
+# 原始矩阵
+x = np.arange(1, 25, 1).reshape(3, 4, 2)
+print(x)
+print("-" * 50)
+
+# 支持多维数组便利，返回按 扁平化顺序 遍历的元素
+# 可以通过 order='C'（行优先, 默认）或 order='F'（列优先）控制遍历顺序
+for i in np.nditer(x, order="C"):
+    print(i)
+
+print("-" * 50)
+
+# 如果还想知道索引位置, 可以使用 np.ndenumerate
+# 它只支持行优先遍历
+for idx, i in np.ndenumerate(x):
+    print(idx, i)
+```
+
+输出结果
+
+```bash
+# 省略
+```
+
+:::
+
+::: details 连接数组 concatenate
+
+```python
+import numpy as np
+
+a = np.array([[1, 2], [3, 4]])
+b = np.array([[5, 6], [7, 8]])
+
+# 沿第0轴（行）拼接
+c = np.concatenate((a, b), axis=0)
+print(c)
+# [[1 2]
+#  [3 4]
+#  [5 6]
+#  [7 8]]
+
+# 沿第1轴（列）拼接
+d = np.concatenate((a, b), axis=1)
+print(d)
+# [[1 2 5 6]
+#  [3 4 7 8]]
+
+# 连接数组还有其他很多方法, 具体用时可以再查
+```
+
+:::
+
+<br />
+
+
 
 ## SciPy
 
