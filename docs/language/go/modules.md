@@ -38,6 +38,7 @@ sidebar: off
 * [gopsutil](https://jinhui.dev/go/modules/gopsutil.html)：Go版本的psutil
 * [singleflight](https://jinhui.dev/go/modules/singleflight.html)：并发请求合并
 * [excelize](https://jinhui.dev/go/modules/excelize.html)：Excel操作
+* [copy](https://jinhui.dev/go/modules/copy.html)：文件/目录（递归）拷贝
 * 数据结构
   * [container/list](https://jinhui.dev/go/modules/container-list.html)：双向链表
   * [orderedmap](https://jinhui.dev/go/modules/orderedmap.html)：有序Map
