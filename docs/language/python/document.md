@@ -341,6 +341,33 @@ C:\Users\VVFock3r>python -q
 
 ## 
 
+### 脚本加载虚拟环境并执行代码
+
+::: details Windows .bat脚本
+
+```bash
+@echo off
+
+:: 进入项目根目录
+cd /D D:\person\xxx
+
+:: 激活虚拟环境
+call .venv\Scripts\activate.bat
+
+:: 执行脚本
+.venv\Scripts\python main.py
+
+:: 撤销虚拟环境
+call .venv\Scripts\deactivate.bat
+
+:: 暂停
+pause
+```
+
+:::
+
+<br />
+
 ## 二、变量和数据结构
 
 ### 查看变量
