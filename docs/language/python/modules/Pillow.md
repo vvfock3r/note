@@ -306,7 +306,33 @@ for pixel in data:
 
 ### 图像裁剪方法
 
+::: details 点击查看详情
 
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+from PIL import Image
+
+# 打开图像
+image = Image.open("tmp/test.png").convert("RGB")
+width, height = image.size
+
+# 设置裁剪区域
+#   格式为 (left, upper, right, lower), 也就是 (左, 上, 右, 下)的坐标
+#   但是需要注意：裁剪区域 包含【左，上】坐标，不包含【右，下】坐标
+#   如果裁剪区域大于图像大小，超出图像边界的部分会进行填充, RGB模式用黑色填充, RGBA模式用透明填充
+
+# box = (50, 50, width-50, height-50)  # 四个边都裁剪50像素
+box = (-50, -50, width+50, height+50)  # 四个边都加上50像素, 会自动填充
+
+# 裁剪图像, 会返回一个新的 Image 对象
+image2 = image.crop(box)
+image2.show()
+```
+
+:::
 
 <br />
 
