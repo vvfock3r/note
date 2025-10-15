@@ -302,6 +302,20 @@ for pixel in data:
 
 :::
 
+::: details 减少颜色数量到指定个数：image.quantize(colors=256)
+
+```python
+quantize 是 颜色压缩与调色板生成的核心方法，常用于生成 GIF、减少 PNG 文件大小，或进行视觉风格化处理。
+	colors → 控制数量
+	method → 控制算法
+	dither → 控制抖动效果
+	palette → 自定义颜色映射
+
+暂时用不到
+```
+
+:::
+
 <br />
 
 ### 图像裁剪方法
@@ -336,11 +350,118 @@ image2.show()
 
 <br />
 
+### 图像缩放方法
+
+::: details 点击查看详情
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+from PIL import Image
+
+# 打开图像
+image = Image.open("tmp/qq.png")
+width, height = image.size
+
+# 图像缩放，返回一个 新的 Image 对象
+# 参数
+#   size        (width, height) 元组          目标图像的尺寸（像素为单位）
+#   resample    整数（常量）                   重采样算法（控制缩放质量）
+#   box         (left, upper, right, lower)   仅从原图指定区域中缩放（类似裁剪后再缩放）
+#   reducing_gap float                        用于优化性能和质量
+#                                             如果设置 reducing_gap=2.0，Pillow 会先临时缩小到 1/2 再精确缩放。
+#                                             通常建议设置为 1.0～2.0 之间，质量与性能平衡
+
+# resample参数
+# Image.Resampling.NEAREST	    最近邻	最快，但锯齿明显（像素化）
+# Image.Resampling.BOX	        盒采样	比 NEAREST 稍好一点，速度也快
+# Image.Resampling.BILINEAR	双线性插值	常用于放大，效果较柔和
+# Image.Resampling.HAMMING	    Hamming 滤波	略优于双线性
+# Image.Resampling.BICUBIC	    双三次插值	更平滑的缩放，放大质量好
+# Image.Resampling.LANCZOS	    高质量重采样（推荐）	最清晰，但速度最慢，尤其缩小时效果最佳
+
+# 总结
+# resize() 不会保持宽高比，除非你手动计算
+# 图像缩放后RGB一般会发生变化，NEAREST除外（待测试）
+
+# 按比例缩放：缩小1倍
+scale = 0.5
+resized = image.resize((int(width * scale), int(height * scale)), Image.Resampling.LANCZOS)
+resized.show()
+
+# 缩小1倍：也可以使用 reduce，它只能整数倍缩小, 不能放大
+image.reduce(2).show()
+```
+
+:::
+
+<br />
+
 ### 其他方法总结
 
 ```python
-# .copy()
-# .crop() / .resize()
+.copy()		# 图像复制，返回一个新的Image对象
+.readonly   # 图像是否是只读，只是 Pillow 内部的内存状态标志，它与操作系统层面的文件读写权限没有关系
 ```
 
 <br />
+
+## 图像绘制：ImageDraw
+
+说明：用于Pillow 中在图像上绘制各种形状、文字的核心模块
+
+<br />
+
+### 绘制形状
+
+::: details 绘制矩形
+
+```python
+
+from PIL import Image, ImageDraw
+
+# 创建画布，参数分别为：颜色模式、画布大小、背景颜色
+image = Image.new("RGB", (500, 400), (255, 255, 255))
+draw = ImageDraw.Draw(image)
+
+# 
+
+# 1️⃣ 正方形
+draw.rectangle((50, 50, 150, 150), fill=(255, 0, 0), outline=(0, 0, 0), width=3)
+
+# 2️⃣ 长方形
+draw.rectangle((200, 50, 350, 150), fill=(0, 255, 0), outline=(0, 0, 0), width=3)
+
+# 3️⃣ 三角形
+triangle_points = [(100, 250), (50, 350), (150, 350)]
+draw.polygon(triangle_points, fill=(0, 0, 255), outline=(0, 0, 0))
+
+# 4️⃣ 圆形
+draw.ellipse((225, 250, 325, 350), fill=(255, 255, 0), outline=(0, 0, 0), width=3)
+
+# 显示图像
+image.show()
+```
+
+:::
+
+<br />
+
+### 绘制文字
+
+<br />
+
+## 图像合成和覆盖
+
+```bash
+# 方法			是否修改原图	是否支持透明			特点						灵活性评价
+paste()				✅			✅			基础贴图/覆盖					高：可局部覆盖，支持 mask 和透明图像
+alpha_composite()	❌			✅			RGBA 层叠，自动透明处理		  中：自动处理透明，但只支持RGBA
+composite()			❌			✅			mask 控制选择性合成			高：局部透明控制精确，mask 可自由绘制
+blend()				❌			❌			全图按比例混合					低：只能做全图混合，不能局部控制
+ImageChops			❌			❌			通道运算，可做加减乘除等效果		高：可做任意像素运算，适合高级效果，但需要手动处理透明和位置
+ImageOps			❌			视具体方法	  图像风格化与颜色调整			中：偏向图像风格处理，不是精确合成工具
+```
+
