@@ -416,7 +416,7 @@ image.reduce(2).show()
 
 ### 绘制形状
 
-::: details 绘制矩形
+::: details 点击查看详情
 
 ```python
 
@@ -426,9 +426,37 @@ from PIL import Image, ImageDraw
 image = Image.new("RGB", (500, 400), (255, 255, 255))
 draw = ImageDraw.Draw(image)
 
-# 
+# xy参数在不同形状中的含义，xy = (left, top, right, bottom)
 
-# 1️⃣ 正方形
+# 矩形 rectangle:
+#   left, top → 左上角坐标，right, bottom → 右下角坐标
+# 	矩形形状由这两个点决定：
+# 	(left, top) --------
+#   |                  |
+#   |                  |
+#   -------- (right,bottom)
+
+# 圆形 ellipse:
+#   和矩形类似，圆会完全贴合这个矩形
+#   宽>高 → 横向椭圆
+#   宽=高 → 正圆
+
+# 多边形 polygon:
+# 	xy = 顶点列表 [(x1,y1), (x2,y2), ...]
+# 	Pillow 会按顺序连接这些顶点，并自动闭合最后一条边
+# 	顶点顺序决定多边形方向（顺时针或逆时针）
+
+# 线 line:
+# 	xy = 点列表 [(x1,y1), (x2,y2), ...]
+# 	Pillow 会依次连接这些点形成折线
+# 	可以绘制单条直线（两个点）或多段折线
+
+# 点 point:
+# 	xy = 单个坐标 (x,y) 或列表 [(x1,y1), (x2,y2), ...]
+# 	绘制单个像素点或一组单个的点
+
+
+# 1️⃣ 正方形， 左上角 (50,50), 右下角 (150,150)
 draw.rectangle((50, 50, 150, 150), fill=(255, 0, 0), outline=(0, 0, 0), width=3)
 
 # 2️⃣ 长方形
@@ -449,7 +477,85 @@ image.show()
 
 <br />
 
+### 边框问题
+
+::: details 点击查看详情
+
+```python
+from PIL import Image, ImageDraw, ImageOps
+
+# 创建画布，参数分别为：颜色模式、画布大小、背景颜色, 255为全白
+image = Image.new("RGB", (500, 400), (255, 255, 255))
+draw = ImageDraw.Draw(image)
+
+# 外边框，将边框放在画布外（画布尺寸变大，更直观可靠）, 返回一个 新的Image对象
+# 粗边框和细边框都显示正常
+# image2 = ImageOps.expand(image, border=50, fill=(0, 0, 0))
+# image2.show()
+
+# --------------------------------------------------------------------------
+
+# 内边框, 将边框放在画布内（画布尺寸不变），直接修改原图
+
+# 粗边框显示正常,
+# draw.rectangle(xy=(0, 0, image.width, image.height), outline=(0, 0, 0), width=50)
+
+# 细边框右边和下边显示不全
+# draw.rectangle(xy=(0, 0, image.width, image.height), outline=(0, 0, 0), width=1)
+
+# 所以需要右下坐标减去一点, 或者-0.5也行，这里的细节还没深入研究
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+draw.rectangle(xy=(0.5, 0.5, image.width - 0.5, image.height - 0.5), outline=(0, 0, 0), width=1)
+
+# 显示图像
+image.show()
+```
+
+:::
+
+<br />
+
 ### 绘制文字
+
+**查找字体安装位置**
+
+```bash
+# 字体存放位置
+为所有用户安装: C:\Windows\Fonts
+仅当前用户安装: C:\Users\<用户名>\AppData\Local\Microsoft\Windows\Fonts
+
+# 在命令行中使用如下代码可快速查看用户字体安装位置
+# python -c "import os; print(os.path.join(os.environ['LOCALAPPDATA'], 'Microsoft', 'Windows', 'Fonts'))"
+
+# 注意
+# Pillow 默认只扫描系统目录，用户字体可能找不到, 所以推荐在安装时选择右键->为所有用户安装
+```
+
+**查看字体详情**
+
+```python
+from PIL import ImageFont
+
+# 字体文件名并不等于字体名称
+# 如果本地有字体文件, 安装到系统中后需要使用 字体名称 到指定目录中去查赵
+# 可以通过如下代码查看字体名称
+
+font_path = r"font/华康墨字体 STD W9.OTF"  # 替换为你的字体文件路径
+font = ImageFont.truetype(font_path, 40)
+print(font.getname())  # 输出字体家族名和样式
+```
+
+**加载指定字体**
+
+```python
+from PIL import ImageFont
+
+# 需要为所有用户安装
+font = ImageFont.truetype(r"华康墨字体 STD W9.OTF", 40)
+
+# 直接加载字体文件
+
+```
 
 <br />
 
