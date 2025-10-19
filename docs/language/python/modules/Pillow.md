@@ -416,7 +416,7 @@ image.reduce(2).show()
 
 ### 绘制形状
 
-::: details 点击查看详情
+::: details 基本用法
 
 ```python
 
@@ -475,6 +475,35 @@ image.show()
 
 :::
 
+::: details 绘制一个十字形，将画布分为四个均匀大小的空格
+
+```python
+from PIL import Image, ImageDraw
+
+# 1️⃣ 创建画布
+width, height = 600, 400
+image = Image.new("RGB", (width, height), (255, 255, 255))
+draw = ImageDraw.Draw(image)
+
+# 画布边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 2️⃣ 计算中心坐标
+center_x = width // 2
+center_y = height // 2
+
+# 3️⃣ 绘制垂直线（从顶部到底部）
+draw.line((center_x, 0, center_x, height), fill=(128, 128, 128), width=1)
+
+# 4️⃣ 绘制水平线（从左到右）
+draw.line((0, center_y, width, center_y), fill=(128, 128, 128), width=1)
+
+# 5️⃣ 显示图片
+image.show()
+```
+
+:::
+
 <br />
 
 ### 边框问题
@@ -497,7 +526,7 @@ draw = ImageDraw.Draw(image)
 
 # 内边框, 将边框放在画布内（画布尺寸不变），直接修改原图
 
-# 粗边框显示正常,
+# 粗边框显示正常
 # draw.rectangle(xy=(0, 0, image.width, image.height), outline=(0, 0, 0), width=50)
 
 # 细边框右边和下边显示不全
@@ -515,7 +544,9 @@ image.show()
 
 <br />
 
-### 绘制文字
+### 加载字体
+
+::: details 点击查看详情
 
 **查找字体安装位置**
 
@@ -550,12 +581,219 @@ print(font.getname())  # 输出字体家族名和样式
 ```python
 from PIL import ImageFont
 
-# 需要为所有用户安装
-font = ImageFont.truetype(r"华康墨字体 STD W9.OTF", 40)
+# 参数1: 字体文件路径或文件对象。可以是 .ttf, .otf 等字体文件路径
+# 参数2: 字号大小（以像素为单位），即字体的高度
+
+# 需要为所有用户安装字体
+font1 = ImageFont.truetype(r"华康墨字体 STD W9.OTF", 40)
 
 # 直接加载字体文件
-
+font2 = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 40)
 ```
+
+:::
+
+<br />
+
+### 绘制文字
+
+::: details 绘制文字
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from PIL import Image, ImageDraw, ImageFont
+
+# 创建一个空白画布
+image = Image.new("RGBA", (600, 400), (255, 255, 255))
+draw = ImageDraw.Draw(image)
+
+# 给画布添加边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 加载字体文件
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
+
+# 绘制文字
+# 第一个参数:    设置文字左上角位置（默认以该点为文字的起点）。如果用了 anchor 参数，意义会变化。
+# 第二个参数:    要绘制的文字内容。支持换行符 \n
+# fill          字体颜色，例如 (255, 0, 0) 或 "red"
+# align         多行文字的水平对齐方式 "left" / "center" / "right"
+# anchor        控制文字锚点对齐方式。常用值：
+#                   "lt"：左上角（默认）
+#                   "mm"：中心点
+#                   "rb"：右下角
+#                   "ma"：水平中点、基线对齐
+# spacing       行间距（仅当 text 含换行符时生效）
+# direction     文字方向：
+#                   "ltr"：从左到右（默认）
+#                   "rtl"：从右到左（阿拉伯语等）
+#                   "ttb"：从上到下（竖排）
+# stroke_width  描边宽度（像素）
+# stroke_fill   描边颜色
+# embedded_color 是否使用字体自带的颜色（主要用于彩色字体，如 emoji 字体）。
+draw.text((0, 0), "你好", fill=(0, 0, 0), font=font)
+
+# 显示图片
+image.show()
+```
+
+:::
+
+::: details 获取字体绘制后的占用位置
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from PIL import Image, ImageDraw, ImageFont
+
+# 创建一个空白画布
+image = Image.new("RGBA", (600, 400), (255, 255, 255))
+draw = ImageDraw.Draw(image)
+
+# 给画布添加边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 加载字体文件
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
+
+# 绘制文字
+draw.text((0, 0), "你好", font=font, fill=(255, 0, 0))
+
+# 计算文字所占用的宽和高
+bbox = draw.textbbox((0, 0), "你好", font=font)
+width = bbox[2] - bbox[0]
+height = bbox[3] - bbox[1]
+print(bbox)  # (0, 30, 400, 172)
+print(width, height)
+
+# 如果只需要获取宽度的话:
+width = draw.textlength("你好", font=font)
+print(width)
+
+# 显示图片
+image.show()
+```
+
+:::
+
+::: details 让文字在画布中居中（不是太精确那种）
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from PIL import Image, ImageDraw, ImageFont
+
+# 创建一个空白画布, 黑色背景
+image = Image.new("RGBA", (600, 400), (0, 0, 0))
+draw = ImageDraw.Draw(image)
+
+# 加载字体文件
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
+text = "你好"
+
+# 给画布添加边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 测量文字尺寸
+bbox = draw.textbbox((0, 0), text, font=font)
+width = bbox[2] - bbox[0]
+height = bbox[3] - bbox[1]
+
+# 计算文字起点
+x = (image.width - width) // 2
+y = (image.height - height) // 2 * 0.78  # 视觉上偏下, 所以这里往上偏一些
+
+# 绘制文字
+draw.text((x, y), text, font=font, fill=(255, 0, 0))
+
+# 显示图片
+image.show()
+```
+
+:::
+
+::: details 给文字添加描边
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from PIL import Image, ImageDraw, ImageFont
+
+# 创建一个空白画布, 黑色背景
+image = Image.new("RGBA", (600, 400), (0, 0, 0))
+draw = ImageDraw.Draw(image)
+
+# 加载字体文件
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
+text = "你好"
+
+# 给画布添加边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 测量文字尺寸
+bbox = draw.textbbox((0, 0), text, font=font)
+width = bbox[2] - bbox[0]
+height = bbox[3] - bbox[1]
+
+# 计算文字起点
+x = (image.width - width) // 2
+y = (image.height - height) // 2 * 0.78  # 视觉上偏下, 所以这里往上偏一些
+
+# 绘制文字
+draw.text((x, y), text, font=font, fill=(255, 0, 0), stroke_width=50, stroke_fill=(255, 255, 255))
+
+# 显示图片
+image.show()
+```
+
+:::
+
+::: details 字体不支持该文字的情况下
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8 -*-
+
+from PIL import Image, ImageDraw, ImageFont
+
+# 创建一个空白画布, 黑色背景
+image = Image.new("RGBA", (600, 400), (0, 0, 0))
+draw = ImageDraw.Draw(image)
+
+# 加载字体文件
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
+text = "髾𤫩"
+
+# 给画布添加边框
+draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
+
+# 测量文字尺寸
+bbox = draw.textbbox((0, 0), text, font=font)
+width = bbox[2] - bbox[0]
+height = bbox[3] - bbox[1]
+print(width)
+
+# 计算文字起点
+x = (image.width - width) // 2
+y = (image.height - height) // 2 * 0.78  # 视觉上偏下, 所以这里往上偏一些
+
+# 绘制文字
+draw.text((x, y), text, font=font, fill=(255, 0, 0), stroke_width=50, stroke_fill=(255, 255, 255))
+
+# 显示图片
+image.show()
+
+# 分析
+# 第一种情况是: 字体直接不显示, 但是依旧占据大小
+# 第二种情况是: 字体使用方框代替
+```
+
+:::
 
 <br />
 
