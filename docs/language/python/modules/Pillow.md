@@ -114,7 +114,9 @@ width, height = image.size
 arr = np.array(image)
 for row in arr:
     for col in row:
-        print(col)  # 颜色, 一般是 RGB 或者 RGBA
+        # 颜色, 一般是 RGB 或者 RGBA
+        # col.tolist() 可以转为列表
+        print(col)
 ```
 
 :::
@@ -312,38 +314,6 @@ quantize 是 颜色压缩与调色板生成的核心方法，常用于生成 GIF
 	palette → 自定义颜色映射
 
 暂时用不到
-```
-
-:::
-
-<br />
-
-### 图像裁剪方法
-
-::: details 点击查看详情
-
-```python
-#!/usr/bin/env python
-# -*-coding:utf-8-*-
-
-
-from PIL import Image
-
-# 打开图像
-image = Image.open("tmp/test.png").convert("RGB")
-width, height = image.size
-
-# 设置裁剪区域
-#   格式为 (left, upper, right, lower), 也就是 (左, 上, 右, 下)的坐标
-#   但是需要注意：裁剪区域 包含【左，上】坐标，不包含【右，下】坐标
-#   如果裁剪区域大于图像大小，超出图像边界的部分会进行填充, RGB模式用黑色填充, RGBA模式用透明填充
-
-# box = (50, 50, width-50, height-50)  # 四个边都裁剪50像素
-box = (-50, -50, width+50, height+50)  # 四个边都加上50像素, 会自动填充
-
-# 裁剪图像, 会返回一个新的 Image 对象
-image2 = image.crop(box)
-image2.show()
 ```
 
 :::
@@ -724,13 +694,17 @@ image.show()
 
 from PIL import Image, ImageDraw, ImageFont
 
-# 创建一个空白画布, 黑色背景
-image = Image.new("RGBA", (600, 400), (0, 0, 0))
+# 创建一个空白画布
+# image = Image.new("RGBA", (600, 400), (0, 0, 0, 255))  # 黑色背景, 255=完全不透明
+image = Image.new("RGBA", (600, 400), (255, 255, 255, 0))  # 白色背景, 0=完全透明
 draw = ImageDraw.Draw(image)
 
+# 备注: 如果背景设置的是完全透明，那么背景颜色是什么也就无所谓了, 显示效果都一样
+
+
 # 加载字体文件
-font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 200)
-text = "你好"
+font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 350)
+text = "好"
 
 # 给画布添加边框
 draw.rectangle(xy=(0, 0, image.width - 1, image.height - 1), outline=(0, 0, 0), width=1)
@@ -742,10 +716,10 @@ height = bbox[3] - bbox[1]
 
 # 计算文字起点
 x = (image.width - width) // 2
-y = (image.height - height) // 2 * 0.78  # 视觉上偏下, 所以这里往上偏一些
+y = (image.height - height) // 2 * 0.3  # 视觉上偏下, 所以这里往上偏一些
 
 # 绘制文字
-draw.text((x, y), text, font=font, fill=(255, 0, 0), stroke_width=50, stroke_fill=(255, 255, 255))
+draw.text((x, y), text, font=font, fill="#B21F24", stroke_width=33, stroke_fill="#F5F8F4")
 
 # 显示图片
 image.show()
@@ -797,7 +771,104 @@ image.show()
 
 <br />
 
-## 图像合成和覆盖
+## 图像裁剪
+
+### 基础用法
+
+::: details 点击查看详情
+
+```python
+#!/usr/bin/env python
+# -*-coding:utf-8-*-
+
+
+from PIL import Image
+
+# 打开图像
+image = Image.open("tmp/test.png").convert("RGB")
+width, height = image.size
+
+# 设置裁剪区域
+#   格式为 (left, upper, right, lower), 也就是 (左, 上, 右, 下)的坐标
+#   但是需要注意：裁剪区域 包含【左，上】坐标，不包含【右，下】坐标
+#   如果裁剪区域大于图像大小，超出图像边界的部分会进行填充, RGB模式用黑色填充, RGBA模式用透明填充
+
+# box = (50, 50, width-50, height-50)  # 四个边都裁剪50像素
+box = (-50, -50, width+50, height+50)  # 四个边都加上50像素, 会自动填充
+
+# 裁剪图像, 会返回一个新的 Image 对象
+image2 = image.crop(box)
+image2.show()
+```
+
+:::
+
+### 案例：裁剪描边以外的像素
+
+::: details 裁剪掉描边以外的像素
+
+```python
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+
+def make_image(text):
+    # 创建空白画布
+    image = Image.new("RGBA", (600, 400), (255, 255, 255, 0))  # 透明背景
+    draw = ImageDraw.Draw(image)
+
+    # 加载字体
+    font = ImageFont.truetype(r"font/华康墨字体 STD W9.OTF", 350)
+
+    # 绘制文字（红色主体 + 白描边）
+    draw.text((100, 20), text, font=font, fill="#B21F24", stroke_width=33, stroke_fill="#F5F8F4")
+
+    return image
+
+
+def crop_non_transparent(image: Image):
+    arr = np.array(image)
+
+    # 找出所有非透明像素
+    alpha = arr[:, :, 3]
+    non_transparent = np.where(alpha > 0)
+    if non_transparent[0].size == 0:
+        print("图像中没有可见内容")
+        return
+
+    # 计算非透明区域的边界框
+    top = np.min(non_transparent[0])
+    bottom = np.max(non_transparent[0])
+    left = np.min(non_transparent[1])
+    right = np.max(non_transparent[1])
+
+    # 裁剪出含描边和主体的区域
+    cropped_arr = arr[top:bottom + 1, left:right + 1, :]
+
+    # 转回 Pillow 图像
+    result = Image.fromarray(cropped_arr)
+
+    return result
+
+
+if __name__ == "__main__":
+    # 绘制文字
+    image = make_image("好")
+
+    # 裁剪掉描边以外的部分
+    image = crop_non_transparent(image)
+
+    # 保存
+    image.save("test.png")
+```
+
+:::
+
+<br />
+
+## 图像合成
 
 ```bash
 # 方法			是否修改原图	是否支持透明			特点						灵活性评价
