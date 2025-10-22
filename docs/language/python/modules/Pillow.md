@@ -300,6 +300,16 @@ for pixel in data:
     name = get_color_name(*pixel[:3])
     if name not in ["白"]:
         print(name, pixel)
+        
+# 统计颜色数量
+colors = {}
+data = image.getdata()
+for pixel in data:
+    name = get_color_name(*pixel[:3])
+    if colors.get(name) is None:
+        colors[name] = 0
+    colors[name] += 1
+print(colors)
 ```
 
 :::
