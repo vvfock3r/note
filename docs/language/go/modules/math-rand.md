@@ -28,7 +28,9 @@ RAND_SEED = (RAND_SEED * 123 + 59 ) % 65536;
 
 <br />
 
-## Go 1.20之前
+## 生成随机数
+
+### Go 1.20之前
 
 ::: details 错误示例（1）：使用初始的随机数种子
 
@@ -209,7 +211,7 @@ D:\application\GoLand\demo>go run main.go
 
 <br />
 
-## Go 1.20之后
+### Go 1.20之后
 
 ::: details （1）使用系统自动设置的随机数种子
 
@@ -324,6 +326,168 @@ D:\application\GoLand\example>go run main.go
 61
 90
 79
+```
+
+:::
+
+<br />
+
+## 随机数的切片操作
+
+### 填充字节切片
+
+::: details 填充到字节切片
+
+```go
+package main
+
+import (
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	// 生成随机数据（比如 10 MB）
+	// rand.Read 已经被废弃了，使用 crypto/rand.Read
+	// 只需要导入 crypto/rand 即可
+	const dataSize = 10 * 1024 * 1024
+	data := make([]byte, dataSize)
+	n, err := rand.Read(data) // 将随机字节填充到切片中, 保证写满整个切片
+	if n != dataSize || err != nil {
+		panic("rand.Read failed")
+	}
+
+	// 计算MD5值并转为base64
+	dataMD5 := md5.Sum(data)
+	fmt.Println(base64.StdEncoding.EncodeToString(dataMD5[:]))
+}
+```
+
+输出结果
+
+```bash
+o7AmRvFcg8FBMI3nfaRURw==
+```
+
+:::
+
+<br />
+
+### 打乱顺序
+
+::: details 基础版本：打乱数字切片
+
+```go
+package main
+
+import (
+	"fmt"
+	mrand "math/rand"
+)
+
+func main() {
+	nums := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	// 打乱顺序，参数解释：
+	// 		n：切片长度
+	// 		swap：交换函数，参数 i, j，表示交换索引 i 和 j 的元素
+	//      也就是说，你需要告诉 Shuffle 如何交换元素，它就会随机调用 swap 来乱序
+	//
+    // 切片类型不限：可以是 []int、[]string 或自定义结构体切片
+    // Shuffle 不直接操作切片，它只调用你提供的 swap 函数, 更加灵活
+    // 也就是说，如果切片中的元素是结构体，我可以将所有结构体中某个字段随机打乱，而结构体顺序将始终保持一致
+	mrand.Shuffle(len(nums), func(i, j int) {
+		nums[i], nums[j] = nums[j], nums[i]
+	})
+	fmt.Println(nums)
+}
+```
+
+输出结果
+
+```bash
+[6 5 0 2 9 4 1 7 3 8]
+```
+
+:::
+
+::: details 进阶版本：打乱结构体切片
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+type Item struct {
+	Name  string
+	Value int
+}
+
+func main() {
+	items := []Item{
+		{"A", 1},
+		{"B", 2},
+		{"C", 3},
+		{"D", 4},
+	}
+
+	fmt.Println("打乱前:", items)
+
+	rand.Shuffle(len(items), func(i, j int) {
+		items[i].Value, items[j].Value = items[j].Value, items[i].Value
+	})
+
+	fmt.Println("打乱后:", items)
+}
+```
+
+输出结果
+
+```bash
+打乱前: [{A 1} {B 2} {C 3} {D 4}]
+打乱后: [{A 3} {B 4} {C 1} {D 2}]
+```
+
+:::
+
+<br />
+
+## 同时导入两个rand包
+
+::: details 点击查看详情
+
+```go
+package main
+
+import (
+	crand "crypto/rand"
+	"encoding/base64"
+	"fmt"
+	mrand "math/rand"
+)
+
+func main() {
+	// crypto/rand
+	buf := make([]byte, 16)
+	_, _ = crand.Read(buf)
+	fmt.Println("crypto/rand:", base64.StdEncoding.EncodeToString(buf))
+
+	// math/rand
+	n := mrand.Intn(100)
+	fmt.Println("math/rand:", n)
+}
+```
+
+输出结果
+
+```bash
+crypto/rand: 84Q/fBjSpQxCtyX6mTJp+w==
+math/rand: 81
 ```
 
 :::
