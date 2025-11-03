@@ -255,7 +255,7 @@ Megapixels                      : 16.0
 
 <br />
 
-## JSX（逐步淘汰中）
+## JSX（旧版本PS脚本）
 
 JSX脚本全称 `ExtendScript`，适用于Photoshop 早期版本（CS ~ CC 2020，v21及之前）
 
@@ -758,3 +758,167 @@ Photoshop 2021（v22）及之后，Adobe 推出了 **UXP (Unified Extensibility 
 - 不依赖旧的 ExtendScript 引擎，速度更快，支持异步 API。
 - 旧版 ExtendScript (.jsx) 依然可用，通过 `文件 → 脚本 → 浏览` 运行，保留向后兼容
 
+### 等待补充
+
+<br />
+
+## psd-tools（Python读取PSD）
+
+Github：[https://github.com/psd-tools/psd-tools](https://github.com/psd-tools/psd-tools)
+
+文档：[https://psd-tools.readthedocs.io/en/latest/](https://psd-tools.readthedocs.io/en/latest/)
+
+备注：适合做一些简单的操作，部分操作不支持，比如导出的图片中文字描边会丢失等
+
+<br />
+
+### 打开文档
+
+::: details 点击查看详情
+
+```python
+from psd_tools import PSDImage
+
+# 返回PSDImage对象，代表整个 PSD 文件，是一个PSD 文档对象
+# 类层级理解
+#   PSDImage   <-- 整个 PSD 文件
+#   ├─ LayerGroup (文件夹)
+#   │   ├─ Layer
+#   │   └─ Layer
+#   └─ Layer
+psd = PSDImage.open(r"C:\Users\VVFock3r\Desktop\test.psd")
+
+# 常用属性
+print("图层数量: ", len(psd))
+print("画布尺寸: ", psd.size)
+print("像素位深: ", psd.depth)  # 表示每个通道使用多少位来存储颜色信息
+print("颜色模式: ", psd.color_mode)
+print("图层列表: ", list(psd))
+```
+
+:::
+
+<br />
+
+### 图层类型
+
+::: details 查看图层类型
+
+```python
+from psd_tools import PSDImage
+
+# 返回PSDImage对象，代表整个 PSD 文件，是一个PSD 文档对象
+psd = PSDImage.open(r"C:\Users\VVFock3r\Desktop\test.psd")
+
+# 图形属性
+for layer in psd:
+    #  输出图层名称
+    print("图层名称: ", layer.name)
+
+    # 输出图层类型
+    # 	group 图层组
+    # 	pixel 普通像素图层
+    # 	type  文字图层
+    #   shape 矢量图层
+    
+    # 如果是图层组, 可以继续使用for循环遍历
+    print("图层类型: ", layer.kind)
+
+    # 判断是否是图层组
+    print("是图层组: ", layer.is_group())
+
+    # 图层可见性
+    print("图层可见: ", layer.is_visible())
+
+    print()
+```
+
+:::
+
+<br />
+
+### 遍历图层
+
+::: details 遍历所有图层
+
+```python
+from psd_tools import PSDImage
+from psd_tools.api.layers import Group, PixelLayer, TypeLayer
+
+from typing import List, Any
+
+# 返回PSDImage对象，代表整个 PSD 文件，是一个PSD 文档对象
+psd = PSDImage.open(r"C:\Users\VVFock3r\Desktop\test.psd")
+
+
+def walk_layers(layers) -> List[Group | PixelLayer | TypeLayer | Any]:
+    """遍历所有图层, 返回一个列表, 平铺"""
+    layer_list = []
+
+    for layer in layers:
+        layer_list.append(layer)
+        if layer.is_group():
+            layer_list.extend(walk_layers(layer))  # 递归
+
+    return layer_list
+
+
+ret = walk_layers(psd)
+for i in ret:
+    print(i)
+```
+
+:::
+
+<br />
+
+### 渲染图像
+
+::: details 渲染图像
+
+```python
+from psd_tools import PSDImage
+from psd_tools.api.layers import Group, PixelLayer, TypeLayer
+
+from typing import List, Any
+
+
+def walk_layers(layers) -> List[Group | PixelLayer | TypeLayer | Any]:
+    """遍历所有图层, 返回一个列表, 平铺"""
+    layer_list = []
+
+    for layer in layers:
+        layer_list.append(layer)
+        if layer.is_group():
+            layer_list.extend(walk_layers(layer))  # 递归
+
+    return layer_list
+
+
+# 返回PSDImage对象，代表整个 PSD 文件，是一个PSD 文档对象
+psd = PSDImage.open(r"C:\Users\VVFock3r\Desktop\test.psd")
+
+ret = walk_layers(psd)
+for i in ret:
+    if i.kind == "group":
+        i.visible = True
+        continue
+
+    if i.kind != "pixel":
+        continue
+    if i.name == "背景":
+        continue
+
+    # 渲染图像
+    # 注意事项：
+    #   1.图层必须可见
+    #   2.如果位于图层组中，那么图层组也必须可见
+    #   3.文字的描边效果不会被渲染
+    i.visible = True
+    image = i.composite()
+    image.save(i.name + ".png")
+```
+
+:::
+
+<br />
